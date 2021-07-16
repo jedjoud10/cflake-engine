@@ -5,9 +5,6 @@ const MAX_COMPONENTS: u8 = 32;
 
 // A component trait that can be added to other components
 pub trait Component {
-	fn get_component_id() -> u8 {
-		0
-	}
 	fn get_component_name() -> String {
 		String::from("Une patate")
 	}
@@ -15,7 +12,7 @@ pub trait Component {
 
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentID {
-	components: HashMap<String, i8>,	
+	pub components: HashMap<String, u8>,	
 }
 
 // Implement default values
@@ -30,8 +27,17 @@ impl Default for ComponentID {
 // Implement all the functions
 impl ComponentID {
 	// Get the component ID of a specific component
-	fn get_component_id<Component>(&mut self) -> u8 {
-		0
+	pub fn get_component_id<T: Component>(&mut self) -> u8 {
+		let name: String = T::get_component_name();
+		// It found the component, so just return it's id
+		if self.components.contains_key(&name) {
+			let value = self.components.get(&name).unwrap();
+			value.a
+		}
+		
+		// It did not find the component, so create a new one
+		self.components.insert(name, self.components.len() as u8);
+		self.components.len() as u8
 	}
 }
 
@@ -54,7 +60,18 @@ pub trait System {
 // A simple entity in the world
 pub struct Entity {
 	pub name: String,
+	pub entity_id: usize,
 	pub components_id: u8,
+}
+
+// ECS time bois
+impl Entity {
+	pub fn add_component(&mut self, id: u8) {
+
+	}
+	pub fn remove_component(&mut self, id: u8) {
+		
+	}
 }
 
 // Default
@@ -62,6 +79,7 @@ impl Default for Entity {
 	fn default() -> Self {
 		Self {
 			name: String::from("Unnamed Entity"),
+			entity_id: 0,
 			components_id: 0,
 		}
 	}
