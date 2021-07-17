@@ -29,12 +29,12 @@ impl World {
 		self.entities.remove(entity.entity_id);
 	}
 	// Adds a system to the world and enables it 
-	pub fn add_system<T>(&mut self, mut system: T) where T: System {
+	pub fn add_system<T>(&mut self, mut system: impl System + 'static) {
 		system.system_addded();
 		system.system_enabled();
+		self.systems.push(Box::new(system));
 
 		// TODO: Fix this sheit
-		//self.systems.push(Box::new());
 	}
 }
 
