@@ -72,17 +72,19 @@ impl ComponentID {
 }
 
 // Tells you the state of the system, and for how long it's been enabled/disabled
+#[derive(Clone)]
 pub enum SystemState {
 	Enabled(f32),
 	Disabled(f32)
 }
 
 // A system that can write/read component data, every frame, or at the start of the game
+#[derive(Clone)]
 pub struct System {
 	pub name: String,
 	pub component_bitfield: u16,
 	pub state: SystemState,
-	pub entity_loop: fn(&mut Entity),
+	pub entity_loop: fn(&Box<Entity>),
 	pub entities: Vec<usize>
 }
 
@@ -100,10 +102,10 @@ impl System {
 		self.state = SystemState::Disabled(0.0);
 	}
 	// Update the system
-	pub fn update_system(&mut self, world: &World, entities: &mut Vec<Box<Entity>>) {
+	pub fn update_system(&mut self, world: &World) {
 		// Loop over all the entities and update their components
 		for entity in self.entities.iter() {		
-			(self.entity_loop)(entities.get_mut(*entity).unwrap());
+			(self.entity_loop)(world.entities.get(*entity).unwrap());
 		}
 	}
 	// Add a component to this system's component bitfield id
@@ -117,9 +119,10 @@ impl System {
 	}
 }
 
+
 impl System {
 	pub fn new(name: String) -> Self {
-		let empty_entity_loop = |_entity: &mut Entity| {};
+		let empty_entity_loop = |_entity: &Box<Entity>| {};
 		Self {
 			name,
 			component_bitfield: 0,

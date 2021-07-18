@@ -15,10 +15,10 @@ impl World {
 	}
 	// When we want to draw a new frame onto the screen
  	pub fn update_world(&mut self) {
-		for system in self.systems.iter() {				
-			let immutable_borrow: &Self = self;
-			let test = &(*system);
-			//.update_system(immutable_borrow);
+		let mut za_clone = self.systems.clone();
+		let immutable_borrow: &Self = self;
+		for system in za_clone.iter_mut() {				
+			system.update_system(immutable_borrow);
 		}		
 	}
  	// When we want to close the application

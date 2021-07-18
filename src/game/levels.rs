@@ -12,7 +12,7 @@ pub fn load_default_level(world: &mut World) {
 	camera.link_component::<Rotation, Rotation>(world, Rotation::default());	
 
 	let mut system: System = System::new(String::from("Camera system"));
-	system.entity_loop = |entity: &mut Entity| {
+	system.entity_loop = |entity: &Box<Entity>| {
 		println!("This is a test for entity '{}'", entity.name);
 	};
 	system.link_component::<Position>(world);
