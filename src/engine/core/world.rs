@@ -6,7 +6,7 @@ pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentID,
 	pub entities: Vec<Entity>,
-	pub systems: Vec<Box<dyn System>>,
+	pub systems: Vec<System>,
 } 
 impl World {
 	// When the world started initializing
@@ -22,6 +22,10 @@ impl World {
 	// Add an entity to the world 
 	pub fn add_entity(&mut self, mut entity: Entity) {
 		entity.entity_id = self.entities.len();
+		println!("Add entity '{}' with entityid: {}", entity.name, entity.entity_id);
+
+		//Check if there are any systems that could use this entity
+
 		self.entities.push(entity);
 	}
 	// Removes an entity from the world 
@@ -29,12 +33,11 @@ impl World {
 		self.entities.remove(entity.entity_id);
 	}
 	// Adds a system to the world and enables it 
-	pub fn add_system<T>(&mut self, mut system: impl System + 'static) {
+	pub fn add_system(&mut self, mut system: System) {
 		system.system_addded();
-		system.system_enabled();
-		self.systems.push(Box::new(system));
-
-		// TODO: Fix this sheit
+		system.enable_system();
+		println!("Add system with componentbitfieldid: {}", system.component_bitfield_id);
+		self.systems.push(system);
 	}
 }
 

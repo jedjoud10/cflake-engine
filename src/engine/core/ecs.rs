@@ -15,6 +15,7 @@ pub trait ComponentNames {
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentID {
 	pub components: HashMap<String, u16>,	
+	pub current_component_id: u16
 }
 
 // Implement default values
@@ -22,6 +23,7 @@ impl Default for ComponentID {
 	fn default() -> Self { 
 		Self {
 			components: HashMap::new(),
+			current_component_id: 1,
 		}
 	}
 }
@@ -31,40 +33,96 @@ impl ComponentID {
 	// Get the component id for a specific entity
 	pub fn get_component_id<T: ComponentNames>(&mut self) -> u16 {
 		let name: String = T::get_component_name();
+		
 		// It found the component, so just return it's id
 		if self.components.contains_key(&name) {
 			let value = self.components[&name];
 			return value;
 		}
-		
-		// It did not find the component, so create a new one
-		self.components.insert(name, self.components.len() as u16);
-		self.components.len() as u16
+		// It did not find the component, so create a new "id binding" for one
+		self.components.insert(name, self.current_component_id);
+
+		// Make a copy of the id before the bit shift
+		let component_id = self.current_component_id;		
+		// Bit shift to the left
+		self.current_component_id = self.current_component_id << 1;
+		// Return the component id before the bit shift
+		component_id
 	}
 
 	// Get the component id for a specific entity
-	pub fn get_component_id_by_name(&mut self, name: String) -> u16 {
+	pub fn get_component_id_by_name(&mut self, name: &String) -> u16 {
 		// It found the component, so just return it's id
-		if self.components.contains_key(&name) {
-			let value = self.components[&name];
+		if self.components.contains_key(name) {
+			let value = self.components[name];
 			return value;
 		}
 		
-		// It did not find the component, so create a new one
-		self.components.insert(name, self.components.len() as u16);
-		self.components.len() as u16
+		// It did not find the component, so create a new "id binding" for one
+		let name_val = String::from(name);
+		self.components.insert(name_val, self.current_component_id);
+
+		// Make a copy of the id before the bit shift
+		let component_id = self.current_component_id;		
+		// Bit shift to the left
+		self.current_component_id = self.current_component_id << 1;
+		// Return the component id before the bit shift
+		component_id
 	}
 }
 
-// A system that can write/read component data, every frame, or at the start of the game
-pub trait System {
+// Tells you the state of the system, and for how long it's been enabled/disabled
+pub enum SystemState {
+	Enabled(f32),
+	Disabled(f32)
+}
 
+// A system that can write/read component data, every frame, or at the start of the game
+pub struct System {
+	pub name: String,
+	pub component_bitfield_id: u16,
+	pub state: SystemState,
+	pub entity_loop: fn(&mut Entity),
+	pub entities: Vec<Entity>
+}
+
+impl System {
 	// Basic control code
-	fn system_addded(&mut self);
-	fn system_enabled(&mut self);
-	fn system_disabled(&mut self);
-	fn update_system(&mut self);
-	fn add_component(&mut self, id: u16);
+	pub fn system_addded(&mut self) {
+
+	}
+	// Enable this current system
+	pub fn enable_system(&mut self) {
+		self.state = SystemState::Enabled(0.0);
+	}
+	// Disable the system and stop it from updating
+	pub fn disable_system(&mut self) {
+		self.state = SystemState::Disabled(0.0);
+	}
+	// Update the system
+	pub fn update_system(&mut self, world: World) {
+		// Loop over all the entities and update their components
+		for entity in self.entities.iter_mut() {			
+			(self.entity_loop)(entity);
+		}
+	}
+	// Add a component to this system's component bitfield id
+	pub fn link_component<T: ComponentNames>(&mut self, world: &mut World) {
+		self.component_bitfield_id = self.component_bitfield_id | world.component_manager.get_component_id::<T>();
+	}
+}
+
+impl Default for System {
+	fn default() -> Self {
+		let empty_entity_loop = |_entity: &mut Entity| {};
+		Self {
+			name: String::from("Unnamed System"),
+			component_bitfield_id: 0,
+			state: SystemState::Disabled(0.0),
+			entity_loop: empty_entity_loop,
+			entities: Vec::new()
+		}
+	}
 }
 
 // A simple entity in the world
@@ -79,14 +137,16 @@ pub struct Entity {
 impl Entity {
 	// Link a component to this entity
 	pub fn link_component<T: ComponentNames, U: Component + 'static>(&mut self, world: &mut World, component: U) {
-		let component_id = world.component_manager.get_component_id::<T>();
+		let component_name = T::get_component_name();
+		let component_id = world.component_manager.get_component_id_by_name(&component_name);
 		self.components_id = self.components_id | component_id;
 		self.components.insert(component_id, Box::new(component));
+		println!("Link component '{}' to entity '{}', with ID {}", component_name, self.name, component_id);
 	}
 	// Unlink a component from this entity
 	pub fn unlink_component<T: ComponentNames>(&mut self, world: &mut World) {
 		let name = T::get_component_name();
-		let id = world.component_manager.get_component_id_by_name(name);
+		let id = world.component_manager.get_component_id_by_name(&name);
 		// Take the bit, invert it, then AND it to the bitfield
 		self.components_id = (!id) & self.components_id;
 		self.components.remove(&id);
@@ -94,7 +154,7 @@ impl Entity {
 	// Gets a specific component
 	pub fn get_component<T: ComponentNames, U: Component>(&mut self, world: &mut World) -> &Box<dyn Component> {
 		let name = T::get_component_name();
-		let id = world.component_manager.get_component_id_by_name(name);
+		let id = world.component_manager.get_component_id_by_name(&name);
 		let value = &self.components[&id];
 		value
 	}
