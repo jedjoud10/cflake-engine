@@ -19,6 +19,6 @@ pub fn load_default_level(world: &mut World) {
 	system.link_component::<Scale>(world);
 	system.link_component::<Rotation>(world);
 
-	world.add_system(system);
-	world.add_entity(camera);
+	world.add_system(Box::new(system));
+	world.add_entity(Box::new(camera));
 }

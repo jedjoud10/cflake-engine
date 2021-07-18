@@ -100,10 +100,10 @@ impl System {
 		self.state = SystemState::Disabled(0.0);
 	}
 	// Update the system
-	pub fn update_system(&mut self, world: &mut World) {
+	pub fn update_system(&mut self, world: &World, entities: &mut Vec<Box<Entity>>) {
 		// Loop over all the entities and update their components
-		for entity in self.entities.iter() {			
-			(self.entity_loop)(world.entities.get_mut(*entity).unwrap());
+		for entity in self.entities.iter() {		
+			(self.entity_loop)(entities.get_mut(*entity).unwrap());
 		}
 	}
 	// Add a component to this system's component bitfield id

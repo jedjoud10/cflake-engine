@@ -5,8 +5,8 @@ use crate::game::levels::load_default_level;
 pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentID,
-	pub entities: Vec<Entity>,
-	pub systems: Vec<System>,
+	pub entities: Vec<Box<Entity>>,
+	pub systems: Vec<Box<System>>,
 } 
 impl World {
 	// When the world started initializing
@@ -15,16 +15,17 @@ impl World {
 	}
 	// When we want to draw a new frame onto the screen
  	pub fn update_world(&mut self) {
-		// Update all the enabled systems
-		for system in self.systems.iter_mut() {
-			system.update_system(self);
+		for system in self.systems.iter() {				
+			let immutable_borrow: &Self = self;
+			let test = &(*system);
+			//.update_system(immutable_borrow);
 		}		
 	}
  	// When we want to close the application
 	pub fn stop_world(&mut self) {
 	}
 	// Add an entity to the world 
-	pub fn add_entity(&mut self, mut entity: Entity) {
+	pub fn add_entity(&mut self, mut entity: Box<Entity>) {
 		entity.entity_id = self.entities.len();
 		println!("Add entity '{}' with entityid: {} and componentbitfieldid: {}", entity.name, entity.entity_id, entity.components_bitfield);
 
@@ -44,7 +45,7 @@ impl World {
 		self.entities.remove(entity.entity_id);
 	}
 	// Adds a system to the world and enables it 
-	pub fn add_system(&mut self, mut system: System) {
+	pub fn add_system(&mut self, mut system: Box<System>) {
 		system.system_addded();
 		system.enable_system();
 		println!("Add system with componentbitfieldid: {}", system.component_bitfield);
