@@ -11,7 +11,10 @@ pub fn load_default_level(world: &mut World) {
 	camera.link_component::<Scale, Scale>(world, Scale::default());	
 	camera.link_component::<Rotation, Rotation>(world, Rotation::default());	
 
-	let mut system: System = System::default();
+	let mut system: System = System::new(String::from("Camera system"));
+	system.entity_loop = |entity: &mut Entity| {
+		println!("This is a test for entity '{}'", entity.name);
+	};
 	system.link_component::<Position>(world);
 	system.link_component::<Scale>(world);
 	system.link_component::<Rotation>(world);

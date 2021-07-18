@@ -14,7 +14,11 @@ impl World {
 		load_default_level(self);
 	}
 	// When we want to draw a new frame onto the screen
- 	pub fn update_world(&mut self) {		
+ 	pub fn update_world(&mut self) {
+		// Update all the enabled systems
+		for system in self.systems.iter_mut() {
+			system.update_system(self);
+		}		
 	}
  	// When we want to close the application
 	pub fn stop_world(&mut self) {
@@ -22,16 +26,17 @@ impl World {
 	// Add an entity to the world 
 	pub fn add_entity(&mut self, mut entity: Entity) {
 		entity.entity_id = self.entities.len();
-		println!("Add entity '{}' with entityid: {}", entity.name, entity.entity_id);
+		println!("Add entity '{}' with entityid: {} and componentbitfieldid: {}", entity.name, entity.entity_id, entity.components_bitfield);
 
 		//Check if there are any systems that could use this entity
 		for system in self.systems.iter_mut() {
 			// Check if the system matches the component ID of the entity
-			if entity.components_bitfield > system.component_bitfield {
+			if entity.components_bitfield >= system.component_bitfield {
 				system.add_entity(&entity);
 			}
 		}
 
+		// Add the entity to the world
 		self.entities.push(entity);
 	}
 	// Removes an entity from the world 

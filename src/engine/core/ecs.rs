@@ -100,7 +100,7 @@ impl System {
 		self.state = SystemState::Disabled(0.0);
 	}
 	// Update the system
-	pub fn update_system(&mut self, mut world: World) {
+	pub fn update_system(&mut self, world: &mut World) {
 		// Loop over all the entities and update their components
 		for entity in self.entities.iter() {			
 			(self.entity_loop)(world.entities.get_mut(*entity).unwrap());
@@ -112,16 +112,16 @@ impl System {
 	}
 	// Adds an entity to the system
 	pub fn add_entity(&mut self, entity: &Entity) {
-		println!("Added entity {}, with ID {} to the system {}", entity.name, entity.entity_id, self.name);
+		println!("Added entity '{}', with ID {} to the system '{}'", entity.name, entity.entity_id, self.name);
 		self.entities.push(entity.entity_id);
 	}
 }
 
-impl Default for System {
-	fn default() -> Self {
+impl System {
+	pub fn new(name: String) -> Self {
 		let empty_entity_loop = |_entity: &mut Entity| {};
 		Self {
-			name: String::from("Unnamed System"),
+			name,
 			component_bitfield: 0,
 			state: SystemState::Disabled(0.0),
 			entity_loop: empty_entity_loop,
