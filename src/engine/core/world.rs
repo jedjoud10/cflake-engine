@@ -25,6 +25,12 @@ impl World {
 		println!("Add entity '{}' with entityid: {}", entity.name, entity.entity_id);
 
 		//Check if there are any systems that could use this entity
+		for system in self.systems.iter_mut() {
+			// Check if the system matches the component ID of the entity
+			if entity.components_bitfield > system.component_bitfield {
+				system.add_entity(&entity);
+			}
+		}
 
 		self.entities.push(entity);
 	}
@@ -36,7 +42,7 @@ impl World {
 	pub fn add_system(&mut self, mut system: System) {
 		system.system_addded();
 		system.enable_system();
-		println!("Add system with componentbitfieldid: {}", system.component_bitfield_id);
+		println!("Add system with componentbitfieldid: {}", system.component_bitfield);
 		self.systems.push(system);
 	}
 }

@@ -80,10 +80,10 @@ pub enum SystemState {
 // A system that can write/read component data, every frame, or at the start of the game
 pub struct System {
 	pub name: String,
-	pub component_bitfield_id: u16,
+	pub component_bitfield: u16,
 	pub state: SystemState,
 	pub entity_loop: fn(&mut Entity),
-	pub entities: Vec<Entity>
+	pub entities: Vec<usize>
 }
 
 impl System {
@@ -100,15 +100,20 @@ impl System {
 		self.state = SystemState::Disabled(0.0);
 	}
 	// Update the system
-	pub fn update_system(&mut self, world: World) {
+	pub fn update_system(&mut self, mut world: World) {
 		// Loop over all the entities and update their components
-		for entity in self.entities.iter_mut() {			
-			(self.entity_loop)(entity);
+		for entity in self.entities.iter() {			
+			(self.entity_loop)(world.entities.get_mut(*entity).unwrap());
 		}
 	}
 	// Add a component to this system's component bitfield id
 	pub fn link_component<T: ComponentNames>(&mut self, world: &mut World) {
-		self.component_bitfield_id = self.component_bitfield_id | world.component_manager.get_component_id::<T>();
+		self.component_bitfield = self.component_bitfield | world.component_manager.get_component_id::<T>();
+	}
+	// Adds an entity to the system
+	pub fn add_entity(&mut self, entity: &Entity) {
+		println!("Added entity {}, with ID {} to the system {}", entity.name, entity.entity_id, self.name);
+		self.entities.push(entity.entity_id);
 	}
 }
 
@@ -117,7 +122,7 @@ impl Default for System {
 		let empty_entity_loop = |_entity: &mut Entity| {};
 		Self {
 			name: String::from("Unnamed System"),
-			component_bitfield_id: 0,
+			component_bitfield: 0,
 			state: SystemState::Disabled(0.0),
 			entity_loop: empty_entity_loop,
 			entities: Vec::new()
@@ -129,7 +134,7 @@ impl Default for System {
 pub struct Entity {
 	pub name: String,
 	pub entity_id: usize,
-	pub components_id: u16,
+	pub components_bitfield: u16,
 	components: HashMap<u16, Box<dyn Component>>,
 }
 
@@ -139,7 +144,7 @@ impl Entity {
 	pub fn link_component<T: ComponentNames, U: Component + 'static>(&mut self, world: &mut World, component: U) {
 		let component_name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&component_name);
-		self.components_id = self.components_id | component_id;
+		self.components_bitfield = self.components_bitfield | component_id;
 		self.components.insert(component_id, Box::new(component));
 		println!("Link component '{}' to entity '{}', with ID {}", component_name, self.name, component_id);
 	}
@@ -148,7 +153,7 @@ impl Entity {
 		let name = T::get_component_name();
 		let id = world.component_manager.get_component_id_by_name(&name);
 		// Take the bit, invert it, then AND it to the bitfield
-		self.components_id = (!id) & self.components_id;
+		self.components_bitfield = (!id) & self.components_bitfield;
 		self.components.remove(&id);
 	}
 	// Gets a specific component
@@ -166,7 +171,7 @@ impl Default for Entity {
 		Self {
 			name: String::from("Unnamed Entity"),
 			entity_id: 0,
-			components_id: 0,
+			components_bitfield: 0,
 			components: HashMap::new(),
 		}
 	}
