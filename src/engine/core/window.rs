@@ -1,5 +1,6 @@
 extern crate glfw;
 use crate::engine::core::world::World;
+use crate::gl;
 use glfw::{Action, Context, Key};
 
 pub fn setup_window() {
@@ -8,8 +9,14 @@ pub fn setup_window() {
     let (mut window, events) = glfw.create_window(300, 300, "Hypothermia", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 
+	gl::load_with(|s| window.get_proc_address(s) as *const _);
+
     window.set_key_polling(true);
     window.make_current();
+
+	if gl::Viewport::is_loaded() {
+		println!("OpenGL viewport has loaded");
+	}
 
 	// Create the world
 	let mut world: World = World::default();
@@ -27,9 +34,10 @@ pub fn setup_window() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             handle_window_event(&mut window, event);
-        }		
-    } 
+        }	
 
+		window.swap_buffers();
+    }	
 	// When the window closes and we exit from the game
 	world.stop_world();
 }

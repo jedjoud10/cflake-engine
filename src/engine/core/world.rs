@@ -12,6 +12,9 @@ impl World {
 	// When the world started initializing
  	pub fn start_world(&mut self) {
 		load_default_level(self);
+		unsafe {
+			gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+		}
 	}
 	// When we want to draw a new frame onto the screen
  	pub fn update_world(&mut self) {
@@ -20,6 +23,11 @@ impl World {
 		for system in za_clone.iter_mut() {				
 			system.update_system(immutable_borrow);
 		}		
+
+		unsafe {
+			gl::Clear(gl::COLOR_BUFFER_BIT);
+		}
+
 	}
  	// When we want to close the application
 	pub fn stop_world(&mut self) {
