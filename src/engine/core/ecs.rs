@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 use crate::engine::core::world::World;
 
 // Maximum amount of components allowed on an entity
@@ -13,13 +13,13 @@ pub trait ComponentNames {
 }
 
 // Struct used to get the component ID of specific components, entities, and systems
-pub struct ComponentID {
-	pub components: HashMap<String, u16>,	
-	pub current_component_id: u16
+pub struct ComponentManager {
+	pub components: HashMap<String, u8>,	
+	pub current_component_id: u8
 }
 
 // Implement default values
-impl Default for ComponentID {
+impl Default for ComponentManager {
 	fn default() -> Self { 
 		Self {
 			components: HashMap::new(),
@@ -29,9 +29,9 @@ impl Default for ComponentID {
 }
 
 // Implement all the functions
-impl ComponentID {
+impl ComponentManager {
 	// Get the component id for a specific entity
-	pub fn get_component_id<T: ComponentNames>(&mut self) -> u16 {
+	pub fn get_component_id<T: ComponentNames>(&mut self) -> u8 {
 		let name: String = T::get_component_name();
 		
 		// It found the component, so just return it's id
@@ -51,7 +51,7 @@ impl ComponentID {
 	}
 
 	// Get the component id for a specific entity
-	pub fn get_component_id_by_name(&mut self, name: &String) -> u16 {
+	pub fn get_component_id_by_name(&mut self, name: &String) -> u8 {
 		// It found the component, so just return it's id
 		if self.components.contains_key(name) {
 			let value = self.components[name];
@@ -71,6 +71,11 @@ impl ComponentID {
 	}
 }
 
+// A trait used to identify each component by their name
+trait ComponentID {	
+	fn get_component_name() -> String;
+}
+
 // Tells you the state of the system, and for how long it's been enabled/disabled
 #[derive(Clone)]
 pub enum SystemState {
@@ -78,17 +83,41 @@ pub enum SystemState {
 	Disabled(f32)
 }
 
-// A system that can write/read component data, every frame, or at the start of the game
-#[derive(Clone)]
-pub struct System {
-	pub name: String,
-	pub component_bitfield: u16,
-	pub state: SystemState,
-	pub entity_loop: fn(&Box<Entity>),
-	pub entities: Vec<usize>
+// A trait that will be implemented on all systems
+pub trait System {
+	fn get_system_data(&self) -> SystemData;
+	fn set_system_data(&self, system: SystemData);
 }
 
-impl System {
+// A system that "ticks" it's entities at a specified rate per second
+pub trait TickSystem {
+	fn tick_entity(&self, entity: &Box<Entity>);
+	fn get_system_id(&self) -> u8;
+}
+
+// A system that updates it's entities each frame
+pub trait UpdateSystem {
+	fn update_entity(&self, entity: &Box<Entity>);
+	fn get_system_id(&self) -> u8;
+}
+// A separate update loop, fired right after the main update loop to render it's entities
+pub trait RenderSystem {
+	fn render_entity(&self, entity: &Box<Entity>);
+	fn get_system_id(&self) -> u8;
+}
+
+// A system that can write/read component data, every frame, or at the start of the game
+#[derive(Clone)]
+pub struct SystemData {
+	pub name: String,
+	pub component_bitfield: u8,
+	pub system_id: u8,
+	pub state: SystemState,
+	pub entity_loop: fn(&Box<Entity>),
+	pub entities: Vec<u16>
+}
+
+impl SystemData {
 	// Basic control code
 	pub fn system_addded(&mut self) {
 
@@ -105,7 +134,7 @@ impl System {
 	pub fn update_system(&mut self, world: &World) {
 		// Loop over all the entities and update their components
 		for entity in self.entities.iter() {		
-			(self.entity_loop)(world.entities.get(*entity).unwrap());
+			(self.entity_loop)(world.entities.get(*entity as usize).unwrap());
 		}
 	}
 	// Add a component to this system's component bitfield id
@@ -113,32 +142,19 @@ impl System {
 		self.component_bitfield = self.component_bitfield | world.component_manager.get_component_id::<T>();
 	}
 	// Adds an entity to the system
-	pub fn add_entity(&mut self, entity: &Entity) {
+	pub fn add_entity(&mut self, entity_id: u16, world: &World) {
+		let entity = world.get_entity(entity_id);
 		println!("Added entity '{}', with ID {} to the system '{}'", entity.name, entity.entity_id, self.name);
 		self.entities.push(entity.entity_id);
-	}
-}
-
-
-impl System {
-	pub fn new(name: String) -> Self {
-		let empty_entity_loop = |_entity: &Box<Entity>| {};
-		Self {
-			name,
-			component_bitfield: 0,
-			state: SystemState::Disabled(0.0),
-			entity_loop: empty_entity_loop,
-			entities: Vec::new()
-		}
 	}
 }
 
 // A simple entity in the world
 pub struct Entity {
 	pub name: String,
-	pub entity_id: usize,
-	pub components_bitfield: u16,
-	components: HashMap<u16, Box<dyn Component>>,
+	pub entity_id: u16,
+	pub components_bitfield: u8,
+	components: HashMap<u8, Box<dyn Component>>,
 }
 
 // ECS time bois
@@ -177,5 +193,51 @@ impl Default for Entity {
 			components_bitfield: 0,
 			components: HashMap::new(),
 		}
+	}
+}
+
+// A component that will be linked to entities that could be ticked
+struct TickComponent {
+	last_tick_time: f32,
+	last_tick_id: u32,
+}
+
+// Main traits implemented
+impl Component for TickComponent { }
+impl ComponentID for TickComponent {
+	fn get_component_name() -> String {
+		String::from("Tick Component")
+	}
+}
+
+// A component that will be linked to entities that could be update each single frame
+struct UpdatableComponent {
+	priority: u16
+}
+
+// Main traits implemented
+impl Component for UpdatableComponent { }
+impl ComponentID for UpdatableComponent {
+	fn get_component_name() -> String {
+		String::from("Updatable Component")
+	}
+}
+
+// The current render state of the entity
+enum EntityRenderState {
+	Visible,
+	Invisible,
+}
+
+// A component that will be linked to entities that are renderable
+struct RenderableComponent {
+	render_state: EntityRenderState,
+}
+
+// Main traits implemented
+impl Component for RenderableComponent { }
+impl ComponentID for RenderableComponent {
+	fn get_component_name() -> String {
+		String::from("Renderable Component")
 	}
 }
