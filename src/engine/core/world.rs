@@ -31,7 +31,7 @@ impl World {
 			
 			// Update the entities
 			for entity in system.get_system_data().entities {
-				update_system.update_entity(self.get_entity(entity));
+				update_system.update_entity(&entity);
 			}
 		}		
 
@@ -51,8 +51,9 @@ impl World {
 		//Check if there are any systems that could use this entity
 		for system in self.systems.iter_mut() {
 			// Check if the system matches the component ID of the entity
-			if entity.components_bitfield >= system.get_system_data().component_bitfield {
-				system.get_system_data().add_entity(entity.entity_id as u16, self);
+			if entity.components_bitfield >= system.get_system_data().component_bitfield {		
+				let pointer_copy = entity.clone();		
+				system.get_system_data().add_entity(pointer_copy);
 			}
 		}
 
