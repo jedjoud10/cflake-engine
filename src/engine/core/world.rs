@@ -65,7 +65,7 @@ impl World {
 		self.entities.remove(entity_id as usize);
 	}
 	// Adds a system to the world and enables it 
-	pub fn add_system(&mut self, mut system: Box<System>) {
+	pub fn add_system(&mut self, mut system: Box<dyn System>) {
 		let mut system_data = system.get_system_data();
 		system_data.system_addded();
 		system_data.enable_system();

@@ -94,18 +94,15 @@ pub trait System {
 // A system that "ticks" it's entities at a specified rate per second
 pub trait TickSystem {
 	fn tick_entity(&self, entity: &Box<Entity>);
-	fn get_system_id(&self) -> u8;
 }
 
 // A system that updates it's entities each frame
 pub trait UpdateSystem {
 	fn update_entity(&self, entity: &Box<Entity>);
-	fn get_system_id(&self) -> u8;
 }
 // A separate update loop, fired right after the main update loop to render it's entities
 pub trait RenderSystem {
 	fn render_entity(&self, entity: &Box<Entity>);
-	fn get_system_id(&self) -> u8;
 }
 
 // A system that can write/read component data, every frame, or at the start of the game
@@ -117,6 +114,20 @@ pub struct SystemData {
 	pub state: SystemState,
 	pub entity_loop: fn(&Box<Entity>),
 	pub entities: Vec<Box<Entity>>,
+}
+
+impl Default for SystemData {
+	fn default() -> Self {
+		let function = |entity: &Box<Entity>| {};
+		Self {
+			name: String::from("Unnamed system"),
+			component_bitfield: 0,
+			system_id: 0,
+			state: SystemState::Disabled(0.0),
+			entity_loop: function,
+			entities: Vec::new(),
+		}
+	}
 }
 
 impl SystemData {
