@@ -1,5 +1,5 @@
 use crate::engine::core::ecs::Component;
-use crate::engine::core::ecs::ComponentNames;
+use crate::engine::core::ecs::ComponentID;
 
 pub struct Position {
 	x: f32, y: f32, z: f32
@@ -8,7 +8,7 @@ pub struct Position {
 impl Component for Position {
 }
 
-impl ComponentNames for Position {
+impl ComponentID for Position {
 	fn get_component_name() -> String {
 		String::from("Position")
 	}
@@ -31,7 +31,7 @@ pub struct Scale {
 impl Component for Scale {
 }
 
-impl ComponentNames for Scale {
+impl ComponentID for Scale {
 	fn get_component_name() -> String {
 		String::from("Scale")
 	}
@@ -55,7 +55,7 @@ pub struct Rotation {
 impl Component for Rotation {
 }
 
-impl ComponentNames for Rotation {
+impl ComponentID for Rotation {
 	fn get_component_name() -> String {
 		String::from("Rotation")
 	}

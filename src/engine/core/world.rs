@@ -6,10 +6,7 @@ pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentManager,
 	pub entities: Vec<Box<Entity>>,
-	pub systems: Vec<Box<dyn System>>,
-	pub update_systems: Vec<Box<dyn UpdateSystem>>,
-	pub render_systems: Vec<Box<dyn RenderSystem>>,
-	pub tick_systems: Vec<Box<dyn TickSystem>>,
+	pub systems: Vec<Box<System>>,
 } 
 impl World {
 	// When the world started initializing
@@ -25,18 +22,31 @@ impl World {
 	// 3. We render the entities onto the screen using the RenderSystem
  	pub fn update_world(&mut self) {
 		// update the entities, then render them
-		for update_system in self.update_systems.iter_mut() {
-			// Get the main system trait
-			let system = self.systems.get(update_system.get_system_id() as usize).unwrap();	
+		for update_system in self.systems.iter_mut().filter(|sys| 
+			match sys.system_data.stype {
+				SystemType::Update => true,
+				_ => false
+		} ) {
 			
 			// Update the entities
-			for entity in system.get_system_data().entities {
-				update_system.update_entity(&entity);
+			for entity in (&update_system.system_data).entities.iter() {
+				(update_system.call_entity_event)(&entity);
 			}
 		}		
 
 		unsafe {
+			// Clear the screen first
 			gl::Clear(gl::COLOR_BUFFER_BIT);
+			for render_system in self.systems.iter_mut().filter(|sys| 
+				match sys.system_data.stype {
+					SystemType::Render => true,
+					_ => false
+			} ) { 
+				// Render each entity in the system
+				for entity in (&render_system.system_data).entities.iter() {
+					(render_system.call_entity_event)(&entity);
+				}
+			}
 		}
 
 	}
@@ -46,32 +56,52 @@ impl World {
 	// Add an entity to the world 
 	pub fn add_entity(&mut self, mut entity: Box<Entity>) {
 		entity.entity_id = self.entities.len() as u16;
-		println!("Add entity '{}' with entityid: {} and componentbitfieldid: {}", entity.name, entity.entity_id, entity.components_bitfield);
+		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.components_bitfield);
 
-		//Check if there are any systems that could use this entity
+		// Check if there are systems that need this entity
 		for system in self.systems.iter_mut() {
-			// Check if the system matches the component ID of the entity
-			if entity.components_bitfield >= system.get_system_data().component_bitfield {		
-				let pointer_copy = entity.clone();		
-				system.get_system_data().add_entity(pointer_copy);
-			}
+			let mut system_data = &mut system.system_data;
+			if Self::is_entity_valid_for_system(&entity, system_data) {
+				let clone = entity.clone();
+				// Add the entity to the update system
+				system_data.add_entity(clone);
+			}		
 		}
-
 		// Add the entity to the world
 		self.entities.push(entity);
 	}
+	// Check if a specified entity fits the criteria to be in a specific system
+	fn is_entity_valid_for_system(entity: &Box<Entity>, system_data: &mut SystemData) -> bool {
+		// Check if the system matches the component ID of the entity
+		if entity.components_bitfield >= system_data.component_bitfield {		
+			let pointer_copy = entity.clone();		
+			system_data.add_entity(pointer_copy);
+		}
+		false
+	}
 	// Removes an entity from the world 
 	pub fn remove_entity(&mut self, entity_id: u16) {
-		self.entities.remove(entity_id as usize);
+		let removed_entity = self.entities.remove(entity_id as usize);
+		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.components_bitfield);
+
+		// Remove the entity from all the systems it was in
+		for system in self.systems.iter_mut() {
+			let mut system_data = &mut system.system_data;
+			// Search for the entity with the matching entity_id
+			let index = system_data.entities.iter_mut().position(|entity| entity.entity_id == entity_id).unwrap();
+			system_data.entities.remove(index);	
+		}
 	}
-	// Adds a system to the world and enables it 
-	pub fn add_system(&mut self, mut system: Box<dyn System>) {
-		let mut system_data = system.get_system_data();
+	
+	// Adds a system to the world
+	pub fn add_system(&mut self, mut system: Box<System>) {
+		let mut system_data = &mut system.system_data;
 		system_data.system_addded();
 		system_data.enable_system();
-		println!("Add system with componentbitfieldid: {}", system_data.component_bitfield);
+		println!("Add system with cBitfield: {}", system_data.component_bitfield);
 		self.systems.push(system);
 	}
+
 	// Get an entity using the entities vector
 	pub fn get_entity(&self, entity_id: u16) -> &Box<Entity> {
 		self.entities.get(entity_id as usize).unwrap()
@@ -87,9 +117,6 @@ impl Default for World {
 			component_manager: ComponentManager::default(),
 			entities: Vec::new(),
 			systems: Vec::new(),
-			render_systems: Vec::new(),
-			tick_systems: Vec::new(),
-			update_systems: Vec::new()
 	 	}
 	} 
 }
