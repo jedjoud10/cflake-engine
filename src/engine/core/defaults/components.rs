@@ -35,13 +35,13 @@ enum EntityRenderState {
 }
 
 // A component that will be linked to entities that are renderable
-pub struct RenderableComponent {
+pub struct RenderComponent {
 	render_state: EntityRenderState,
 }
 
 // Main traits implemented
-impl Component for RenderableComponent { }
-impl ComponentID for RenderableComponent {
+impl Component for RenderComponent { }
+impl ComponentID for RenderComponent {
 	fn get_component_name() -> String {
 		String::from("Renderable Component")
 	}

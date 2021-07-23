@@ -1,10 +1,13 @@
 use crate::engine::core::ecs::*;
+use crate::engine::core::input::*;
 use crate::game::levels::load_default_level;
+
 
 //  The actual world
 pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentManager,
+	pub input_manager: InputManager,
 	pub entities: Vec<Box<Entity>>,
 	pub systems: Vec<Box<System>>,
 } 
@@ -21,34 +24,28 @@ impl World {
 	// 2. We tick the entities of each TickSystem (Only if the framecount is valid)
 	// 3. We render the entities onto the screen using the RenderSystem
  	pub fn update_world(&mut self) {
-		// update the entities, then render them
-		for update_system in self.systems.iter_mut().filter(|sys| 
-			match sys.system_data.stype {
-				SystemType::Update => true,
-				_ => false
-		} ) {
-			
-			// Update the entities
-			for entity in (&update_system.system_data).entities.iter() {
-				(update_system.call_entity_event)(&entity);
-			}
-		}		
+		// Update the entities
+		self.run_entity_loop_on_system_type(SystemType::Update);
 
+		// Render the entities
 		unsafe {
 			// Clear the screen first
 			gl::Clear(gl::COLOR_BUFFER_BIT);
-			for render_system in self.systems.iter_mut().filter(|sys| 
-				match sys.system_data.stype {
-					SystemType::Render => true,
-					_ => false
-			} ) { 
-				// Render each entity in the system
-				for entity in (&render_system.system_data).entities.iter() {
-					(render_system.call_entity_event)(&entity);
-				}
-			}
+			self.run_entity_loop_on_system_type(SystemType::Render);
 		}
 
+		// Update the inputs
+		self.input_manager.update(self.time_manager.delta_time as f32);
+	}
+	// Triggers the "run_entity_loop" event on a specific type of system
+	fn run_entity_loop_on_system_type(&mut self, system_type: SystemType) {
+		for system in self.systems.clone().iter_mut().filter(|sys| 
+			match &sys.system_data.stype {
+				system_type => true,
+				_ => false
+		} ) {
+			system.system_data.run_entity_loops(self);
+		}	
 	}
  	// When we want to close the application
 	pub fn stop_world(&mut self) {
@@ -56,15 +53,15 @@ impl World {
 	// Add an entity to the world 
 	pub fn add_entity(&mut self, mut entity: Box<Entity>) {
 		entity.entity_id = self.entities.len() as u16;
-		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.components_bitfield);
+		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.c_bitfield);
 
 		// Check if there are systems that need this entity
-		for system in self.systems.iter_mut() {
+		for system in self.systems.clone().iter_mut() {
 			let mut system_data = &mut system.system_data;
 			if Self::is_entity_valid_for_system(&entity, system_data) {
 				let clone = entity.clone();
 				// Add the entity to the update system
-				system_data.add_entity(clone);
+				system_data.add_entity(clone, self);
 			}		
 		}
 		// Add the entity to the world
@@ -73,23 +70,21 @@ impl World {
 	// Check if a specified entity fits the criteria to be in a specific system
 	fn is_entity_valid_for_system(entity: &Box<Entity>, system_data: &mut SystemData) -> bool {
 		// Check if the system matches the component ID of the entity
-		if entity.components_bitfield >= system_data.component_bitfield {		
-			let pointer_copy = entity.clone();		
-			system_data.add_entity(pointer_copy);
-		}
-		false
+		entity.c_bitfield >= system_data.c_bitfield
 	}
 	// Removes an entity from the world 
 	pub fn remove_entity(&mut self, entity_id: u16) {
 		let removed_entity = self.entities.remove(entity_id as usize);
-		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.components_bitfield);
+		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield);
 
 		// Remove the entity from all the systems it was in
-		for system in self.systems.iter_mut() {
+		for system in self.systems.clone().iter_mut() {
 			let mut system_data = &mut system.system_data;
-			// Search for the entity with the matching entity_id
-			let index = system_data.entities.iter_mut().position(|entity| entity.entity_id == entity_id).unwrap();
-			system_data.entities.remove(index);	
+
+			// Only remove the entity from the systems that it was in
+			if removed_entity.c_bitfield >= system_data.c_bitfield {
+				system_data.remove_entity(entity_id, self);				
+			}			
 		}
 	}
 	
@@ -98,7 +93,7 @@ impl World {
 		let mut system_data = &mut system.system_data;
 		system_data.system_addded();
 		system_data.enable_system();
-		println!("Add system with cBitfield: {}", system_data.component_bitfield);
+		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
 	}
 
@@ -115,6 +110,7 @@ impl Default for World {
 			// Setup the time manager
 	 		time_manager: Time::default(),
 			component_manager: ComponentManager::default(),
+			input_manager: InputManager::default(),
 			entities: Vec::new(),
 			systems: Vec::new(),
 	 	}

@@ -33,7 +33,7 @@ pub fn setup_window() {
 
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event);
+            handle_window_event(&mut window, &mut world, event);
         }	
 
 		window.swap_buffers();
@@ -42,10 +42,10 @@ pub fn setup_window() {
 	world.stop_world();
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+fn handle_window_event(window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
     match event {
-        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-            window.set_should_close(true)
+        glfw::WindowEvent::Key(key, _, action_type, _) => {
+            world.input_manager.receive_key_event(key, action_type);
         }
         _ => {}
     }
