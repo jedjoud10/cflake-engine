@@ -34,10 +34,19 @@ pub fn load_systems(world: &mut World) {
 	// When an entity gets added to the render system
 	rs.system_data.entity_added_event = |entity, world| {
 		let rc = entity.get_component::<RenderComponent>(world);
+		unsafe {
+			// Create the vao
+			gl::GenVertexArrays(1, rc.vertex_vao);
+			gl::BindVertexArray(*rc.vertex_vao);
+		}
 	};
 	// When an entity gets removed from the render system
 	rs.system_data.entity_removed_event = |entity, world| {
-
+		let rc = entity.get_component::<RenderComponent>(world);
+		unsafe {
+			// Delete the vertex array
+			gl::DeleteVertexArrays(1, rc.vertex_vao);
+		}
 	};
 	rs.system_data.stype = SystemType::Render;
 	rs.system_data.link_component::<RenderComponent>(world);

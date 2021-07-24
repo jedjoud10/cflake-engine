@@ -8,8 +8,8 @@ pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentManager,
 	pub input_manager: InputManager,
-	pub entities: Vec<Box<Entity>>,
-	pub systems: Vec<Box<System>>,
+	entities: Vec<Box<Entity>>,
+	systems: Vec<Box<System>>,
 } 
 impl World {
 	// When the world started initializing
@@ -40,21 +40,37 @@ impl World {
 			self.run_entity_loop_on_system_type(SystemType::Render);
 		}
 
+		// Update the up-time of every system
+		for system in self.systems.iter_mut() {
+			match system.system_data.state {
+    			SystemState::Enabled(time) => { system.system_data.state = SystemState::Enabled(time + self.time_manager.delta_time as f32); },
+    			SystemState::Disabled(time) => { system.system_data.state = SystemState::Disabled(time + self.time_manager.delta_time as f32); },
+			}
+		}
+ 
 		// Update the inputs
 		self.input_manager.late_update(self.time_manager.delta_time as f32);
 	}
 	// Triggers the "run_entity_loop" event on a specific type of system
 	fn run_entity_loop_on_system_type(&mut self, system_type: SystemType) {
-		for system in self.systems.clone().iter_mut().filter(|sys| 
+		for system in self.systems.clone().iter_mut().filter(|sys| 			
 			match &sys.system_data.stype {
 				system_type => true,
 				_ => false
 		} ) {
-			system.system_data.run_entity_loops(self);
+			match &system.system_data.state {
+    			SystemState::Enabled(_) => {
+					system.system_data.run_entity_loops(self);
+				},
+    			_ => {	}
+			}
 		}	
 	}
  	// When we want to close the application
 	pub fn stop_world(&mut self) {
+		for system in self.systems.clone().iter_mut() {
+			system.system_data.end_system(self);
+		}
 	}
 	// Add an entity to the world 
 	pub fn add_entity(&mut self, mut entity: Box<Entity>) {
@@ -92,8 +108,7 @@ impl World {
 				system_data.remove_entity(entity_id, self);				
 			}			
 		}
-	}
-	
+	}	
 	// Adds a system to the world
 	pub fn add_system(&mut self, mut system: Box<System>) {
 		let mut system_data = &mut system.system_data;
@@ -102,7 +117,6 @@ impl World {
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
 	}
-
 	// Get an entity using the entities vector
 	pub fn get_entity(&self, entity_id: u16) -> &Box<Entity> {
 		self.entities.get(entity_id as usize).unwrap()

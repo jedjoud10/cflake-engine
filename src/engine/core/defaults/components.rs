@@ -45,14 +45,15 @@ pub enum EntityRenderState {
 // A component that will be linked to entities that are renderable
 pub struct RenderComponent {
 	pub render_state: EntityRenderState,
-	pub vertex_vao: u16,
+	pub vertex_vao: *mut u32,
 }
 
 impl Default for RenderComponent {
 	fn default() -> Self {
+		let mut num = 0;
 		Self {
 			render_state: EntityRenderState::Visible,
-			vertex_vao: 0,
+			vertex_vao: &mut num,
 		}
 	}
 }

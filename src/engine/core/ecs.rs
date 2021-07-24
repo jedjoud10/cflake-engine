@@ -155,6 +155,13 @@ impl SystemData {
 	pub fn disable_system(&mut self) {
 		self.state = SystemState::Disabled(0.0);
 	}
+	// End the system since the world is stopping
+	pub fn end_system(&mut self, world: &World) {
+		// Loop over all the entities and fire the entity removed event
+		for entity in self.entities.iter() {		
+			(self.entity_removed_event)(entity, world);
+		}
+	}
 	// Fire the "entity_loop" event
 	pub fn run_entity_loops(&mut self, world: &World) {
 		// Loop over all the entities and update their components
