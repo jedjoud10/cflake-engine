@@ -1,13 +1,11 @@
 use std::{any::Any, collections::HashMap};
 use crate::engine::core::world::World;
 
-use super::defaults::transforms::Position;
-
 // Maximum amount of components allowed on an entity
 const MAX_COMPONENTS: u16 = 16;
 
 // A component trait that can be added to other components
-pub trait Component {
+pub trait Component {	
 	fn as_any(&self) -> &dyn Any;
 }
 
@@ -219,15 +217,13 @@ impl Entity {
 		self.components.remove(&id);
 	}
 	// Gets a specific component
-	pub fn get_component<'a, T: ComponentID + 'a>(&'a self, world: &'a World) -> &'a T {
+	pub fn get_component<'a, T: ComponentID + 'static>(&'a self, world: &'a World) -> &'a T {
 		let name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&name);
 		let entity_component_id = self.components[&component_id];
 		let final_component = &world.component_manager.components[entity_component_id as usize];
-		// Cast the trait as a gneeric type struct
-		// Yea no I'm going to sleep
 		let output_component = final_component.as_any().downcast_ref::<T>().unwrap();
-		output_component
+		&output_component
 	}
 }
 
