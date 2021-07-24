@@ -113,6 +113,8 @@ pub struct SystemData {
 	pub system_id: u8,
 	pub state: SystemState,
 	pub stype: SystemType,
+	// System events
+	pub loop_event: fn(&World),
 	// Entity events
 	pub entity_loop_event: fn(&Box<Entity>, &World),
 	pub entity_added_event: fn(&Box<Entity>, &World),
@@ -130,6 +132,7 @@ impl Default for SystemData {
 			system_id: 0,
 			state: SystemState::Disabled(0.0),
 			stype: SystemType::Update,
+			loop_event:  |world| {},
 			entity_loop_event: |entity, world| {},
 			entity_added_event: |entity, world|  {},
 			entity_removed_event: |entity, world|  {},
@@ -213,12 +216,12 @@ impl Entity {
 		self.components.remove(&id);
 	}
 	// Gets a specific component
-	pub fn get_component<'a, T: ComponentID>(&'a self, world: &'a World) -> &Box<dyn Component> {
+	pub fn get_component<'a, T: ComponentID>(&'a self, world: &'a World) -> &T {
 		let name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&name);
 		let entity_component_id = self.components[&component_id];
 		let final_component = &world.component_manager.components[entity_component_id as usize];
-		final_component
+		final_component as T
 	}
 }
 

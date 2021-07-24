@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 glfw = "0.41.0"
 gl = "0.14.0"
+nalgebra = "0.25.4"

@@ -29,14 +29,24 @@ impl ComponentID for UpdatableComponent {
 }
 
 // The current render state of the entity
-enum EntityRenderState {
+pub enum EntityRenderState {
 	Visible,
 	Invisible,
 }
 
 // A component that will be linked to entities that are renderable
 pub struct RenderComponent {
-	render_state: EntityRenderState,
+	pub render_state: EntityRenderState,
+	pub vertex_vao: u16,
+}
+
+impl Default for RenderComponent {
+	fn default() -> Self {
+		Self {
+			render_state: EntityRenderState::Visible,
+			vertex_vao: 0,
+		}
+	}
 }
 
 // Main traits implemented

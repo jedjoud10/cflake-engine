@@ -1,6 +1,6 @@
 use crate::engine::core::ecs::*;
 use crate::engine::core::input::*;
-use crate::game::levels::load_default_level;
+use crate::game::level::*;
 
 
 //  The actual world
@@ -16,7 +16,9 @@ impl World {
  	pub fn start_world(&mut self) {
 		// Load all the default things
 		self.input_manager.setup_default_bindings();
-		load_default_level(self);
+		register_components(self);
+		load_systems(self);
+		load_entities(self);
 		unsafe {
 			gl::ClearColor(0.0, 0.0, 0.0, 1.0);
 		}

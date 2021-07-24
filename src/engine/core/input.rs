@@ -63,10 +63,8 @@ impl InputManager {
 					*key.1 = MapStatus::Held(0.0);
 				},
     			MapStatus::Nothing => {},
-			}
-			
+			}			
 		}
-
 	}
 	// Update the maps using the keys
 	fn update_mappings(&mut self) {
