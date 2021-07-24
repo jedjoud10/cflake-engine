@@ -14,6 +14,8 @@ pub struct World {
 impl World {
 	// When the world started initializing
  	pub fn start_world(&mut self) {
+		// Load all the default things
+		self.input_manager.setup_default_bindings();
 		load_default_level(self);
 		unsafe {
 			gl::ClearColor(0.0, 0.0, 0.0, 1.0);
@@ -23,7 +25,9 @@ impl World {
 	// 1. We update the entities of each UpdateSystem
 	// 2. We tick the entities of each TickSystem (Only if the framecount is valid)
 	// 3. We render the entities onto the screen using the RenderSystem
- 	pub fn update_world(&mut self) {
+ 	pub fn update_world(&mut self, window: &mut glfw::Window) {
+		// Check for input events
+		self.input_manager.update(window);
 		// Update the entities
 		self.run_entity_loop_on_system_type(SystemType::Update);
 
@@ -35,7 +39,7 @@ impl World {
 		}
 
 		// Update the inputs
-		self.input_manager.update(self.time_manager.delta_time as f32);
+		self.input_manager.late_update(self.time_manager.delta_time as f32);
 	}
 	// Triggers the "run_entity_loop" event on a specific type of system
 	fn run_entity_loop_on_system_type(&mut self, system_type: SystemType) {
