@@ -14,6 +14,9 @@ pub struct Position {
 }
 
 impl Component for Position {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl ComponentID for Position {
@@ -36,6 +39,9 @@ pub struct Scale {
 }
 
 impl Component for Scale {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl ComponentID for Scale {
@@ -58,6 +64,9 @@ pub struct Rotation {
 }
 
 impl Component for Rotation {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl ComponentID for Rotation {

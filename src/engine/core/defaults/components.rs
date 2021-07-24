@@ -7,7 +7,11 @@ pub struct TickComponent {
 }
 
 // Main traits implemented
-impl Component for TickComponent { }
+impl Component for TickComponent {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
 impl ComponentID for TickComponent {
 	fn get_component_name() -> String {
 		String::from("Tick Component")
@@ -21,7 +25,11 @@ pub struct UpdatableComponent {
 }
 
 // Main traits implemented
-impl Component for UpdatableComponent { }
+impl Component for UpdatableComponent {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
 impl ComponentID for UpdatableComponent {
 	fn get_component_name() -> String {
 		String::from("Updatable Component")
@@ -50,7 +58,11 @@ impl Default for RenderComponent {
 }
 
 // Main traits implemented
-impl Component for RenderComponent { }
+impl Component for RenderComponent {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
 impl ComponentID for RenderComponent {
 	fn get_component_name() -> String {
 		String::from("Renderable Component")
