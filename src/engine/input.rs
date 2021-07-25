@@ -20,6 +20,7 @@ impl fmt::Display for MapStatus {
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Key -> Map  
+#[derive(Default)]
 pub struct InputManager {
 	pub bindings: HashMap<Key, String>,
 	pub keys: HashMap<Key, MapStatus>,
@@ -143,15 +144,5 @@ impl InputManager {
 	pub fn get_map_status(&self, name: String) -> MapStatus {
 		if self.mappings.contains_key(&name) { self.mappings[&name] }
 		else { MapStatus::Nothing }
-	}
-}
-
-impl Default for InputManager {
-	fn default() -> Self {
-		Self {
-			bindings: HashMap::new(),
-			mappings: HashMap::new(),
-			keys: HashMap::new(),
-		}
 	}
 }

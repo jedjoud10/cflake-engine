@@ -10,21 +10,11 @@ pub trait Component {
 }
 
 // Struct used to get the component ID of specific components, entities, and systems
+#[derive(Default)]
 pub struct ComponentManager {
 	pub component_ids: HashMap<String, u8>,	
 	pub components: Vec<Box<dyn Component>>,
 	pub current_component_id: u8
-}
-
-// Implement default values
-impl Default for ComponentManager {
-	fn default() -> Self { 
-		Self {
-			component_ids: HashMap::new(),
-			components: Vec::new(),
-			current_component_id: 1,
-		}
-	}
 }
 
 // Implement all the functions
@@ -194,7 +184,7 @@ impl SystemData {
 }
 
 // A simple entity in the world
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Entity {
 	pub name: String,
 	pub entity_id: u16,
@@ -231,17 +221,5 @@ impl Entity {
 		let final_component = &mut world.component_manager.components[entity_component_id as usize];
 		let output_component = final_component.as_any().downcast_mut::<T>().unwrap();
 		output_component
-	}
-}
-
-// Default
-impl Default for Entity {
-	fn default() -> Self {
-		Self {
-			name: String::from("Unnamed Entity"),
-			entity_id: 0,
-			c_bitfield: 0,
-			components: HashMap::new(),
-		}
 	}
 }

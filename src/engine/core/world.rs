@@ -5,6 +5,7 @@ use crate::game::level::*;
 
 
 //  The actual world
+#[derive(Default)]
 pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentManager,
@@ -124,32 +125,9 @@ impl World {
 	}
 }
 
-// Default values for world
-impl Default for World {
-	fn default() -> Self {		
-	 	Self {
-			// Setup the time manager
-	 		time_manager: Time::default(),
-			component_manager: ComponentManager::default(),
-			input_manager: InputManager::default(),
-			entities: Vec::new(),
-			systems: Vec::new(),
-	 	}
-	} 
-}
-
 // Static time variables
+#[derive(Default)]
 pub struct Time {
 	pub time_since_start: f64,
 	pub delta_time: f64,
-}
-
-// Default
-impl Default for Time {
-	fn default() -> Self {		
-		Self {
-			time_since_start: 0.0,
-			delta_time: 0.0
-		}
-   } 
 }
