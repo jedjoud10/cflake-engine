@@ -1,3 +1,5 @@
+use std::ptr::null_mut;
+
 use crate::engine::core::ecs::*;
 use nalgebra::Point3;
 
@@ -70,11 +72,22 @@ pub enum EntityRenderState {
 	Invisible,
 }
 
+impl Default for EntityRenderState {
+	fn default() -> Self { Self::Visible }
+}
+
 // A component that will be linked to entities that are renderable
+#[derive(Default)]
 pub struct RenderComponent {
 	pub render_state: EntityRenderState,
-	pub vertex_buffer: *mut u32,
+	pub gpu_data: ModelDataGPU,	
 	model: Model,
+}
+
+// Struct that hold the model's information from OpenGL
+#[derive(Default)]
+pub struct ModelDataGPU {
+	pub vertex_buf: u32,
 }
 
 impl RenderComponent {
@@ -82,8 +95,8 @@ impl RenderComponent {
 	pub fn refresh_model(&mut self) {
 		unsafe {
 			// Create the vertex buffer and populate it
-			gl::GenBuffers(1, self.vertex_buffer);
-			gl::BindBuffer(gl::ARRAY_BUFFER, *self.vertex_buffer);
+			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
 		}
 	}
 
@@ -91,7 +104,7 @@ impl RenderComponent {
 	pub fn dispose_model(&mut self) {
 		unsafe {
 			// Delete the vertex array
-			gl::DeleteBuffers(1, self.vertex_buffer);
+			gl::DeleteBuffers(1, &mut self.gpu_data.vertex_buf);
 		}
 	}
 
@@ -102,17 +115,6 @@ impl RenderComponent {
 	// Get the model
 	pub fn get_model(&mut self) -> &mut Model {
 		&mut self.model
-	}
-}
-
-impl Default for RenderComponent {
-	fn default() -> Self {
-		let mut num = 0;
-		Self {
-			render_state: EntityRenderState::Visible,
-			vertex_buffer: &mut num,
-			model: Model::default(),
-		}
 	}
 }
 
