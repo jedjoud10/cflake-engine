@@ -20,7 +20,7 @@ pub fn load_systems(world: &mut World) {
 		system_data: SystemData::default(),
 	};
 	rs.system_data.link_component::<RenderComponent>(world);
-
+	rs.system_data.name = String::from("Rendering system");
 	// When the render system gets updated
 	rs.system_data.loop_event = |world| {
 		unsafe {

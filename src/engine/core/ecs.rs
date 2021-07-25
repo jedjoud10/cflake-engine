@@ -214,12 +214,12 @@ impl Entity {
 		self.components.remove(&id);
 	}
 	// Gets a specific component
-	pub fn get_component<'a, T: ComponentID + 'static>(&'a self, world: &'a mut World) -> &'a mut T {
+	pub fn get_component<'a, T: ComponentID + Component + 'static>(&'a self, world: &'a mut World) -> &'a mut T {
 		let name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&name);
 		let entity_component_id = self.components[&component_id];
 		let final_component = &mut world.component_manager.components[entity_component_id as usize];
-		let output_component = final_component.as_any().downcast_mut::<T>().unwrap();
+		let output_component = final_component.as_any().downcast_mut::<T>().expect("Component mismatch!");
 		output_component
 	}
 }
