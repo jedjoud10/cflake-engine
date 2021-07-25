@@ -5,7 +5,6 @@ use crate::game::level::*;
 
 
 //  The actual world
-#[derive(Default)]
 pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentManager,
@@ -13,6 +12,20 @@ pub struct World {
 	entities: Vec<Box<Entity>>,
 	systems: Vec<Box<System>>,
 } 
+
+// Default world values
+impl Default for World {
+	fn default() -> Self {
+		Self {
+			time_manager: Time::default(),
+			component_manager: ComponentManager { current_component_id: 1, ..ComponentManager::default() },
+			input_manager: InputManager::default(),
+			entities: Vec::new(),
+			systems: Vec::new(),
+		}
+	}
+}
+
 impl World {
 	// When the world started initializing
  	pub fn start_world(&mut self) {
