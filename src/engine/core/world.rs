@@ -1,5 +1,6 @@
 use crate::engine::core::ecs::*;
-use crate::engine::core::input::*;
+use crate::engine::input::*;
+use crate::engine::rendering::*;
 use crate::game::level::*;
 
 

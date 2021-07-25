@@ -6,7 +6,7 @@ const MAX_COMPONENTS: u16 = 16;
 
 // A component trait that can be added to other components
 pub trait Component {	
-	fn as_any(&self) -> &dyn Any;
+	fn as_any(&mut self) -> &mut dyn Any;
 }
 
 // Struct used to get the component ID of specific components, entities, and systems
@@ -117,9 +117,9 @@ pub struct SystemData {
 	// System events
 	pub loop_event: fn(&World),
 	// Entity events
-	pub entity_loop_event: fn(&Box<Entity>, &World),
-	pub entity_added_event: fn(&Box<Entity>, &World),
-	pub entity_removed_event: fn(&Box<Entity>, &World),
+	pub entity_loop_event: fn(&Box<Entity>, &mut World),
+	pub entity_added_event: fn(&Box<Entity>, &mut World),
+	pub entity_removed_event: fn(&Box<Entity>, &mut World),
 
 	pub entities: Vec<Box<Entity>>,
 }
@@ -156,14 +156,14 @@ impl SystemData {
 		self.state = SystemState::Disabled(0.0);
 	}
 	// End the system since the world is stopping
-	pub fn end_system(&mut self, world: &World) {
+	pub fn end_system(&mut self, world: &mut World) {
 		// Loop over all the entities and fire the entity removed event
 		for entity in self.entities.iter() {		
 			(self.entity_removed_event)(entity, world);
 		}
 	}
 	// Fire the "entity_loop" event
-	pub fn run_entity_loops(&mut self, world: &World) {
+	pub fn run_entity_loops(&mut self, world: &mut World) {
 		// Loop over all the entities and update their components
 		for entity in self.entities.iter() {		
 			(self.entity_loop_event)(entity, world);
@@ -184,7 +184,7 @@ impl SystemData {
 		self.entities.push(entity_clone);
 	}
 	// Removes an entity from the system
-	pub fn remove_entity(&mut self, entity_id: u16, world: &World) -> Box<Entity> {
+	pub fn remove_entity(&mut self, entity_id: u16, world: &mut World) -> Box<Entity> {
 		// Search for the entity with the matching entity_id
 		let system_entity_id = self.entities.iter_mut().position(|entity| entity.entity_id == entity_id).unwrap();
 		let removed_entity = self.entities.remove(system_entity_id);
@@ -224,13 +224,13 @@ impl Entity {
 		self.components.remove(&id);
 	}
 	// Gets a specific component
-	pub fn get_component<'a, T: ComponentID + 'static>(&'a self, world: &'a World) -> &'a T {
+	pub fn get_component<'a, T: ComponentID + 'static>(&'a self, world: &'a mut World) -> &'a mut T {
 		let name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&name);
 		let entity_component_id = self.components[&component_id];
-		let final_component = &world.component_manager.components[entity_component_id as usize];
-		let output_component = final_component.as_any().downcast_ref::<T>().unwrap();
-		&output_component
+		let final_component = &mut world.component_manager.components[entity_component_id as usize];
+		let output_component = final_component.as_any().downcast_mut::<T>().unwrap();
+		output_component
 	}
 }
 
