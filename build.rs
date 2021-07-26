@@ -1,6 +1,7 @@
 use core::panic;
-use std::process::Command;
+use std::{env, process::Command};
 
 fn main() {
-	let command = Command::new("target\\debug\\hypothermia").args(&["--pack-resources"]).output().unwrap();
+	Command::new("pack-resources.bat").spawn().expect("OH NO");
+	//panic!("Test");
 }
