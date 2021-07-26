@@ -33,8 +33,6 @@ impl Default for World {
 impl World {
 	// When the world started initializing
  	pub fn start_world(&mut self) {
-		// Test, pack all the assets
-		let subshader = self.resource_manager.load_resource(String::from("default.frsh.resource"), String::from("shaders\\"));
 		// Load all the default things
 		self.input_manager.setup_default_bindings();
 		register_components(self);

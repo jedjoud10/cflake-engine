@@ -10,7 +10,20 @@ pub struct ShaderManager {
 }
 
 impl ShaderManager {
+	// Create a new shader
+	pub fn create_shader() -> Shader {
+		let mut shader = Shader {
+			name: "Unnamed Shader",
+    		vertex_subshader: (),
+    		fragment_subshader: (),
+    		program: (),			
+		}
+		shader
+	}
+	// Loads a subshader
+	pub fn load_subshader() -> SubShader {
 
+	}
 }
 
 // Default
@@ -26,11 +39,20 @@ impl Default for ShaderManager {
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
 	pub name: String,
-	pub vertex_subshader: u16,
-	pub fragment_subshader: u16,
+	pub Vec
+	pub program: u32,
+}
+
+impl Shader {
+	pub fn use_shader(&self) {
+		unsafe {
+			gl::UseProgram(program)
+		}
+	} 
 }
 
 // Sub shader type
+#[derive(Debug, Clone)]
 pub enum SubShaderType {
 	Vertex,
 	Fragment,

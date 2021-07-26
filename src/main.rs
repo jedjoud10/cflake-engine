@@ -1,3 +1,4 @@
+//#![windows_subsystem = "windows"]
 mod engine;
 mod game;
 use std::env;
@@ -7,11 +8,12 @@ extern crate gl;
 // include the OpenGL type aliases
 use gl::types::*;
 
+
 fn main() {
 	let args: Vec<String> = env::args().collect();
 	// Check if we want to pack the resourcess
 	let mut open_window = true;
-	if args.len() > 0 {
+	if args.len() > 1 {
 		if args[1] == String::from("--pack-resources") {
 			open_window = false;
 			engine::resources::ResourceManager::pack_resources();
