@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::{File, read_dir}, io::{BufReader, BufWriter, Read, Write}, path::PathBuf};
+use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, read_dir}, io::{BufReader, BufWriter, Read, Write}, path::{Path, PathBuf}, str, thread::current};
 use crate::engine::rendering::SubShaderType;
 
 // A resource manager that will load structs from binary files
@@ -11,14 +11,27 @@ pub struct ResourceManager {
 impl ResourceManager {
 	// Loads a specific resource and caches it so we can use it next time
 	pub fn load_resource(&mut self, name: String, path: String) -> Option<&Resource> {
+		let dir_original = env::current_exe().unwrap();
+		let dir_split_temp = dir_original.to_str().unwrap().split("\\");
+		let dir_split_len = dir_split_temp.clone().count();
+		let exe_dir = dir_split_temp
+			.enumerate()
+			.filter(|&(i, _)| i < dir_split_len - 1)
+			.map(|(i, s)| s.to_string())
+			.into_iter()
+			.collect::<Vec<String>>()
+			.join(char::to_string(&'\\').as_str());
+		let final_path = format!("{}\\packed-resources\\{}", exe_dir.as_str(), path);
 		// First of all, check if we have that resource cached
 		if self.cached_resources.contains_key(&name) {
 			// Return the cached resource
-			println!("Load cached resource {} from path {}", name, path);
+			println!("Load cached resource {} from path {}", name, final_path);
 			Some(self.cached_resources.get(&name).unwrap())
 		} else {
 			// If not, load a new resource
-			let file = File::open(format!("{}{}", path, name)).expect("The resource file did not load properly!");
+			let file_path = format!("{}{}", final_path, name);
+			println!("{}", file_path);
+			let file = File::open(file_path).expect("The resource file did not load properly!");
 			let mut reader = BufReader::new(file);
 
 			// The bytes that will be turned into the resource
@@ -66,20 +79,32 @@ impl ResourceManager {
 		}
 	}
 	// Unloads a resource to save on memory
-	pub fn unload_resouce() {
+	pub fn unload_resouce(&mut self) {
 
 	}
 	// Saves all the resources from the "resources" folder into the "packed-resources" folder
-	pub fn save_resources() {
+	pub fn pack_resources() {
+		println!("Packing resources...");
+		// Go up by two folders, so we're in the main project folder
+		let path = env::current_dir().unwrap().clone();
+		let path = path
+			.parent()
+			.unwrap()
+			.parent()
+			.unwrap();
+		let path = path.as_os_str().to_str().unwrap();
+		let resources_dir = format!("{}\\src\\resources\\", path);
+		let packed_resources_dir = format!("{}\\packed-resources\\", env::current_dir().unwrap().to_str().unwrap());
+		println!("Resources directory: {}", &resources_dir);
+		println!("Packed-Resources directory: {}", &packed_resources_dir);
 		// Get all the resource files from the resources folder
-		let files = read_dir("../resources/").expect("Failed to read the resources directory!");
-		let packaged_resource_path = "../packaged-resources/";
-
+		let files = read_dir(resources_dir).expect("Failed to read the resources directory!");
 		// Now, pack every resource
 		for file in files {
 			let path = file.unwrap().path();
 			let extension = path.extension().unwrap();
-			let name = path.file_name().unwrap();
+			let name: String = path.file_name().unwrap().to_str().unwrap().split('.').nth(0).unwrap().to_string();
+			println!("Packing resource {}", name.as_str());
 			let opened_file = File::open(&path).unwrap();
 			let mut reader = BufReader::new(opened_file);
 			let mut bytes: Vec<u8> = Vec::new();
@@ -88,13 +113,13 @@ impl ResourceManager {
 			reader.read_exact(&mut bytes);
 
 			match extension.to_str().unwrap() {
-				"vrtsh" => {
+				"vrsh" => {
 					// This is a vertex shader
 					let mut string_source: String = String::new();
 					reader.read_to_string(&mut string_source);
 					resource = Resource::Shader(LoadedSubShader { source: string_source, shader_type: SubShaderType::Vertex });					
 				}
-				"frtsh" => {
+				"frsh" => {
 					// This is a fragment shader
 					let mut string_source: String = String::new();
 					reader.read_to_string(&mut string_source);
@@ -109,14 +134,22 @@ impl ResourceManager {
 				"obj" => {
 					// This is a model
 				}
-				_ => println!("File type not supported!")
+				_ => { 
+					println!("File type not supported!");
+					continue;
+				}
 			}
 			
+			// Make sure the packed resources directory exists
+			let temp_path = Path::new(&packed_resources_dir);
+			if !temp_path.exists() {
+				create_dir(&temp_path);
+			}
+
 			// Create the packaged file
-			let new_file = File::create(format!("{}/{}", &packaged_resource_path, name.to_str().unwrap())).expect("failed to create the packaged file!");
+			let new_file = File::create(format!("{}\\{}.{}.resource", &packed_resources_dir, name.as_str(), extension.to_str().unwrap())).expect("Failed to create the packaged file!");
 			// These are the bytes that we are going to write to the file
-			let mut bytes_to_write: Vec<u8> = Vec::new();
-			
+			let mut bytes_to_write: Vec<u8> = Vec::new();			
 			// The first byte is the type of resource that we will be loading in
 			let mut resource_type: u8 = 0;
 
@@ -149,7 +182,6 @@ impl ResourceManager {
 					resource_type = 4
 				},
 			}
-
 			// Now we can actually write the bytes
 			bytes_to_write.append(&mut vec![resource_type]);
 			let mut writer = BufWriter::new(new_file);

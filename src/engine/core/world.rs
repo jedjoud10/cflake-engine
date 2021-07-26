@@ -1,6 +1,8 @@
 use crate::engine::core::ecs::*;
 use crate::engine::input::*;
 use crate::engine::rendering::*;
+use crate::engine::resources::Resource;
+use crate::engine::resources::ResourceManager;
 use crate::game::level::*;
 
 
@@ -9,6 +11,7 @@ pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentManager,
 	pub input_manager: InputManager,
+	pub resource_manager: ResourceManager,
 	entities: Vec<Box<Entity>>,
 	systems: Vec<Box<System>>,
 } 
@@ -16,10 +19,11 @@ pub struct World {
 // Default world values
 impl Default for World {
 	fn default() -> Self {
-		Self {
-			time_manager: Time::default(),
+		Self {			
 			component_manager: ComponentManager { current_component_id: 1, ..ComponentManager::default() },
+			time_manager: Time::default(),
 			input_manager: InputManager::default(),
+			resource_manager: ResourceManager::default(),
 			entities: Vec::new(),
 			systems: Vec::new(),
 		}
@@ -29,6 +33,8 @@ impl Default for World {
 impl World {
 	// When the world started initializing
  	pub fn start_world(&mut self) {
+		// Test, pack all the assets
+		let subshader = self.resource_manager.load_resource(String::from("default.frsh.resource"), String::from("shaders\\"));
 		// Load all the default things
 		self.input_manager.setup_default_bindings();
 		register_components(self);
