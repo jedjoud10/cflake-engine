@@ -22,23 +22,35 @@ pub fn load_systems(world: &mut World) {
 	rs.system_data.link_component::<RenderComponent>(world);
 	rs.system_data.name = String::from("Rendering system");
 	// Load the default shader
-	let mut default_shader = ShaderManager::create_shader();
+	//let mut default_shader = Shader::default();
 	{
 		{
 			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.pkg"), String::from("shaders\\")).unwrap();
 			// Link the vertex and fragment shaders
-			let frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
+			let mut frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
+			// Compile the subshader
+			frag_subshader.compile_subshader();
+			// Then cache it
+			world.shader_manager.cache_subshader(&frag_subshader, String::from("default.frsh.pkg"));
 			// Then read from the shader cache
-			default_shader.link_subshader(String::from("default.frsh.pkg"));
+			//default_shader.link_subshader(&frag_subshader);
 		}
 		{
 			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.pkg"), String::from("shaders\\")).unwrap();
 			// Link the vertex and fragment shaders
-			let vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
+			let mut vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
+			// Compile the subshader
+			vert_subshader.compile_subshader();
+			// Then cache it
+			world.shader_manager.cache_subshader(&vert_subshader, String::from("default.vrsh.pkg"));
 			// Then read from the shader cache
-			default_shader.link_subshader(String::from("default.vrsh.pkg"));
+			//default_shader.link_subshader(&vert_subshader);
 		}
-	}
+	}	
+
+	// Use it for the default rendering of everything
+	//default_shader.use_shader();
+
 	// When the render system gets updated
 	rs.system_data.loop_event = |world| {
 		unsafe {

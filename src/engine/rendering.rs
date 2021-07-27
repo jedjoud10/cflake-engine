@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ffi::CString, ptr::null};
 use crate::engine::core::ecs::*;
 use nalgebra::Point3;
 use crate::engine::resources::Resource;
@@ -19,67 +19,74 @@ impl Default for ShaderManager {
 	}
 }
 
-impl ShaderManager {
-	// Create a new shader
-	pub fn create_shader() -> Shader {
-		let mut shader = Shader {
-			name: String::from("Unnamed Shader"),
-    		linked_subshaders: Vec::new(),
-    		program: 0,			
-		};
-		shader
-	}
+impl ShaderManager {	
 	// Create a subshader from a loaded subshader resource, then immediatly cache it
 	pub fn create_subshader_from_resource(&mut self, resource: &Resource) -> Option<SubShader> {
 		match resource {    		
     		Resource::Shader(shader) => {
 				// Turn the loaded sub shader into a normal sub shader
-				let subshader = SubShader {
+				let mut subshader = SubShader {
 					name: shader.name.clone(),
         			program: 0,
         			source: shader.source.clone(),
         			subshader_type: shader.subshader_type.clone(),
     			};
-				// Cache the subshader, then load it back from the cache because uh, rust
-				self.cache_subshader(&subshader, shader.name.clone());
 				return Some(subshader);
 			},
     		_ => return None,
 		}
 	}
 	// Caches a specific shader
-	fn cache_subshader(&mut self, subshader: &SubShader, subshader_name: String) {
+	pub fn cache_subshader(&mut self, subshader: &SubShader, subshader_name: String) {
 		if !self.subshaders.contains_key(&subshader_name) {
 			let mut clone = subshader.clone();
 			// Cache the subshader for later use
 			self.subshaders.insert(subshader_name, clone);
 		} else {
-			// Get the cached subshader id
+			// Well the subshader is already cached so don't do anything
 		}
-	}
-	// Gets a specific subshader from it's name
-	pub fn get_subshader(&self, subshader_name: String) -> &SubShader{
-		self.subshaders.get(&subshader_name).unwrap()
 	}
 }
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
 	pub name: String,
-	pub linked_subshaders: Vec<String>,
 	pub program: u32,
+	pub finalized: bool,
+}
+
+impl Default for Shader {
+	fn default() -> Self {
+		unsafe {
+			Self {
+					name: String::from("Undefined"),
+					program: gl::CreateProgram(),
+					finalized: false
+				}
+			}
+		}
 }
 
 impl Shader {
 	// Use this shader for rendering a specific entity
-	pub fn use_shader(&self) {
-		unsafe {
-			gl::UseProgram(self.program);
+	pub fn use_shader(&mut self) {
+		// Check if the program even was finalized and ready for use
+		if self.finalized {
+			unsafe {
+				gl::UseProgram(self.program);
+			}
+		} else {
+			unsafe {
+				gl::LinkProgram(self.program);
+				self.finalized = true;
+			}
 		}
 	} 
 	// Link a specific subshader to this shader
-	pub fn link_subshader(&mut self, subshader_name: String) { 
-		self.linked_subshaders.push(subshader_name);
+	pub fn link_subshader(&mut self, subshader: &SubShader) { 
+		unsafe {
+			gl::AttachShader(self.program, subshader.program);
+		}
 	}
 }
 
@@ -103,7 +110,42 @@ pub struct SubShader {
 impl SubShader {
 	// Compile the current subshader's source code
 	pub fn compile_subshader(&mut self) {
+		let mut shader_type: u32 = 0;
+		match self.subshader_type {
+    		SubShaderType::Vertex => shader_type = gl::VERTEX_SHADER,
+    		SubShaderType::Fragment => shader_type = gl::FRAGMENT_SHADER,
+    		SubShaderType::Geometry => shader_type = gl::GEOMETRY_SHADER,
+		}
+		unsafe {
+			self.program = gl::CreateShader(shader_type);
+			println!("Step 1 subshader creation: Done");
+			// Compile the shader
+			let cstring = CString::new(self.source.clone()).unwrap();
+			let shader_source: *const i8 = cstring.as_ptr();
+			gl::ShaderSource(self.program, 1, &shader_source, null());
+			gl::CompileShader(self.program);
+			println!("Step 2 subshader creation: Done");
 
+			// Check for any errors
+			let mut info_log_length: i32 = 0;
+			let info_log_length_ptr: *mut i32 = &mut info_log_length;
+			let mut result: i32 = 0;		
+			let result_ptr: *mut i32 = &mut result;	
+			gl::GetShaderiv(self.program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+			gl::GetShaderiv(self.program, gl::INFO_LOG_LENGTH, result_ptr);
+			println!("Step 3 subshader creation: Done");
+			// Print any errors that might've happened while compiling this subshader
+			if info_log_length > 0 {
+				let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+				gl::GetProgramInfoLog(self.program, info_log_length, 0 as *mut i32, log.as_mut_ptr());
+				println!("Error while compiling shader {}!:", self.name);
+				let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect(); 
+				let string = String::from_utf8(printable_log).unwrap();
+				println!("{}", string.len());
+				panic!("Error: \n{}", string.get(0..5).unwrap());
+			}
+			println!("Step 4 subshader creation: Done");
+		}
 	}	
 }
 
