@@ -53,18 +53,29 @@ impl ResourceManager {
 				3 => {
 					// Temp shader type
 					let mut shader_type = SubShaderType::Fragment;
+					let mut shader_name: String = String::new();
 					// This is a shader
 					match bytes[1] {
-						0 => shader_type = SubShaderType::Vertex,
-						1 => shader_type = SubShaderType::Fragment,
-						2 => shader_type = SubShaderType::Geometry,
+						0 => {
+							shader_type = SubShaderType::Vertex;
+							shader_name = format!("{}_{}", &name, "vertex");
+						},
+						1 => { 
+							shader_type = SubShaderType::Fragment;
+							shader_name = format!("{}_{}", &name, "fragment");
+						},
+						2 => { 
+							shader_type = SubShaderType::Geometry;
+							shader_name = format!("{}_{}", &name, "geometry");
+						},
 						_ => {	}
 					}
 					// This is a vertex subshader
 					let shader_source = String::from_utf8(bytes[2..].to_vec()).unwrap();
 					loaded_resource = Resource::Shader(LoadedSubShader {
+						name: shader_name,
 						source: shader_source.clone(),
-						shader_type: shader_type.clone(),
+						subshader_type: shader_type.clone(),
 					});
 					println!("{:?}", shader_type);
 				}
@@ -132,14 +143,14 @@ impl ResourceManager {
 							// This is a vertex shader
 							let mut string_source: String = String::new();
 							reader.read_to_string(&mut string_source);
-							resource = Resource::Shader(LoadedSubShader { source: string_source, shader_type: SubShaderType::Vertex });	
+							resource = Resource::Shader(LoadedSubShader { name: String::from("Undefined"), source: string_source, subshader_type: SubShaderType::Vertex });	
 							resource_type = 3;				
 						}
 						"frsh" => {
 							// This is a fragment shader
 							let mut string_source: String = String::new();
 							reader.read_to_string(&mut string_source);
-							resource = Resource::Shader(LoadedSubShader { source: string_source, shader_type: SubShaderType::Fragment });
+							resource = Resource::Shader(LoadedSubShader { name: String::from("Undefined"), source: string_source, subshader_type: SubShaderType::Fragment });
 							resource_type = 3;
 						}
 						"png" => {
@@ -188,7 +199,7 @@ impl ResourceManager {
 							let mut string_bytes = shader.source.into_bytes().to_vec();
 							let mut shader_type_byte: u8 = 0;
 							// Save the type of subshader
-							match shader.shader_type {
+							match shader.subshader_type {
 								SubShaderType::Vertex => shader_type_byte = 0,
         						SubShaderType::Fragment => shader_type_byte = 1,
         						SubShaderType::Geometry => shader_type_byte = 2,
@@ -239,8 +250,9 @@ pub struct LoadedTexture {
 }
 // A loaded sub shader
 pub struct LoadedSubShader {
+	pub name: String,
 	pub source: String,
-	pub shader_type: SubShaderType,
+	pub subshader_type: SubShaderType,
 }
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {	}

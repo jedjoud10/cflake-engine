@@ -21,6 +21,9 @@ pub fn load_systems(world: &mut World) {
 	};
 	rs.system_data.link_component::<RenderComponent>(world);
 	rs.system_data.name = String::from("Rendering system");
+	let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.pkg"), String::from("shaders\\")).unwrap();
+	let default_shader = ShaderManager::create_shader();
+	default_shader.link_subshader(&mut world.shader_manager, SubShader::new_from_resource(default_frag_subshader_resource).unwrap());
 	// When the render system gets updated
 	rs.system_data.loop_event = |world| {
 		unsafe {

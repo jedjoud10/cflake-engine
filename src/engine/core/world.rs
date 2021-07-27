@@ -12,6 +12,7 @@ pub struct World {
 	pub component_manager: ComponentManager,
 	pub input_manager: InputManager,
 	pub resource_manager: ResourceManager,
+	pub shader_manager: ShaderManager,
 	entities: Vec<Box<Entity>>,
 	systems: Vec<Box<System>>,
 } 
@@ -24,6 +25,7 @@ impl Default for World {
 			time_manager: Time::default(),
 			input_manager: InputManager::default(),
 			resource_manager: ResourceManager::default(),
+			shader_manager: ShaderManager::default(),
 			entities: Vec::new(),
 			systems: Vec::new(),
 		}
