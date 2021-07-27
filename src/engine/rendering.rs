@@ -29,27 +29,44 @@ impl ShaderManager {
 		};
 		shader
 	}
-	// Get the ID of a specific subshader
-	pub fn generate_subshader_id_cache(&mut self, subshader: SubShader) -> u16 {
-		if !self.subshaders.contains_key(&subshader.name) {
-			let mut clone = subshader.clone();
-			// Cache the subshader for later use
-			let id = self.subshaders.len() as u16;
-			clone.id = id;
-			self.subshaders.insert(subshader.name, clone);
-			return id;	
-		} else {
-			// Get the cached subshader id
-			return self.subshaders.get(&subshader.name).unwrap().id;
+	// Create a subshader from a loaded subshader resource, then immediatly cache it
+	pub fn create_subshader_from_resource(&mut self, resource: &Resource) -> Option<SubShader> {
+		match resource {    		
+    		Resource::Shader(shader) => {
+				// Turn the loaded sub shader into a normal sub shader
+				let subshader = SubShader {
+					name: shader.name.clone(),
+        			program: 0,
+        			source: shader.source.clone(),
+        			subshader_type: shader.subshader_type.clone(),
+    			};
+				// Cache the subshader, then load it back from the cache because uh, rust
+				self.cache_subshader(&subshader, shader.name.clone());
+				return Some(subshader);
+			},
+    		_ => return None,
 		}
 	}
-	
+	// Caches a specific shader
+	fn cache_subshader(&mut self, subshader: &SubShader, subshader_name: String) {
+		if !self.subshaders.contains_key(&subshader_name) {
+			let mut clone = subshader.clone();
+			// Cache the subshader for later use
+			self.subshaders.insert(subshader_name, clone);
+		} else {
+			// Get the cached subshader id
+		}
+	}
+	// Gets a specific subshader from it's name
+	pub fn get_subshader(&self, subshader_name: String) -> &SubShader{
+		self.subshaders.get(&subshader_name).unwrap()
+	}
 }
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
 	pub name: String,
-	pub linked_subshaders: Vec<u16>,
+	pub linked_subshaders: Vec<String>,
 	pub program: u32,
 }
 
@@ -60,9 +77,9 @@ impl Shader {
 			gl::UseProgram(self.program);
 		}
 	} 
-	// Link a specific subshader to this shader, but first cache it
-	pub fn link_subshader(&mut self, shader_manager: &mut ShaderManager, subshader: SubShader) { 
-		self.linked_subshaders.push(shader_manager.generate_subshader_id_cache(subshader));
+	// Link a specific subshader to this shader
+	pub fn link_subshader(&mut self, subshader_name: String) { 
+		self.linked_subshaders.push(subshader_name);
 	}
 }
 
@@ -81,31 +98,13 @@ pub struct SubShader {
 	pub name: String,
 	pub source: String,
 	pub subshader_type: SubShaderType,
-	pub id: u16,
 }
 
 impl SubShader {
 	// Compile the current subshader's source code
 	pub fn compile_subshader(&mut self) {
 
-	}
-	// Create a subshader from a loaded subshader resource
-	pub fn new_from_resource(resource: Resource) -> Option<SubShader> {
-		match resource {    		
-    		Resource::Shader(shader) => {
-				// Turn the loaded sub shader into a normal sub shader
-				let subshader = SubShader {
-					name: shader.name,
-        			program: 0,
-					id: 0,
-        			source: shader.source,
-        			subshader_type: shader.subshader_type,
-    			};
-				return Some(subshader);
-			},
-    		_ => return None,
-		}
-	}
+	}	
 }
 
 // A simple model that holds vertex, normal, and color data
@@ -138,7 +137,7 @@ impl Default for EntityRenderState {
 pub struct RenderComponent {
 	pub render_state: EntityRenderState,
 	pub gpu_data: ModelDataGPU,	
-	pub shader_id: u16,
+	pub shader_name: String,
 	model: Model,
 }
 

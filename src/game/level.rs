@@ -21,9 +21,24 @@ pub fn load_systems(world: &mut World) {
 	};
 	rs.system_data.link_component::<RenderComponent>(world);
 	rs.system_data.name = String::from("Rendering system");
-	let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.pkg"), String::from("shaders\\")).unwrap();
-	let default_shader = ShaderManager::create_shader();
-	default_shader.link_subshader(&mut world.shader_manager, SubShader::new_from_resource(default_frag_subshader_resource).unwrap());
+	// Load the default shader
+	let mut default_shader = ShaderManager::create_shader();
+	{
+		{
+			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.pkg"), String::from("shaders\\")).unwrap();
+			// Link the vertex and fragment shaders
+			let frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
+			// Then read from the shader cache
+			default_shader.link_subshader(String::from("default.frsh.pkg"));
+		}
+		{
+			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.pkg"), String::from("shaders\\")).unwrap();
+			// Link the vertex and fragment shaders
+			let vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
+			// Then read from the shader cache
+			default_shader.link_subshader(String::from("default.vrsh.pkg"));
+		}
+	}
 	// When the render system gets updated
 	rs.system_data.loop_event = |world| {
 		unsafe {
@@ -41,6 +56,7 @@ pub fn load_systems(world: &mut World) {
 	// When an entity gets added to the render system
 	rs.system_data.entity_added_event = |entity, world| {
 		let rc = entity.get_component::<RenderComponent>(world);
+		// Use the default shader for this entity renderer
 		// Make sure we create the OpenGL data for this entity's model
 		rc.refresh_model();
 	};

@@ -29,7 +29,7 @@ impl ResourceManager {
 		if self.cached_resources.contains_key(&name) {
 			// Return the cached resource
 			println!("Load cached resource {} from path {}", name, final_path);
-			Some(self.cached_resources.get(&name).unwrap())
+			return Some(self.cached_resources.get(&name).unwrap());
 		} else {
 			// If not, load a new resource
 			let file_path = format!("{}{}", final_path, name);
@@ -88,7 +88,7 @@ impl ResourceManager {
 			// Cache the resource so we can use it later without the need to reload
 			println!("Cache resource {}", name);
 			self.cached_resources.insert(name.clone(), loaded_resource);
-			Some(self.cached_resources.get(&name).unwrap())
+			return Some(self.cached_resources.get(&name).unwrap());
 		}
 	}
 	// Unloads a resource to save on memory
@@ -249,6 +249,7 @@ pub struct LoadedTexture {
 	pub raw_pixels: Vec<(u8, u8, u8)>
 }
 // A loaded sub shader
+#[derive(Clone)]
 pub struct LoadedSubShader {
 	pub name: String,
 	pub source: String,
