@@ -129,19 +129,22 @@ impl World {
 			system.system_data.end_system(self);
 		}
 		self.systems = clone;
-	}	
-	// Check if a specified entity fits the criteria to be in a specific system
-	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
-		// Check if the system matches the component ID of the entity
-		entity.c_bitfield >= system_data.c_bitfield
-	}		
+	}			
 	// Adds a system to the world
 	pub fn add_system(&mut self, mut system: Box<System>) {
 		let mut system_data = &mut system.system_data;
 		system_data.system_addded();
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
+	}	
+	// Get the default width and height of the starting window
+	pub fn get_default_window_size() -> (u32, u32) {
+		(1280, 720)
 	}
+}
+
+// Impl block for the entity stuff
+impl World {
 	// Wrapper function around the entity manager's add_entity
 	pub fn add_entity(&mut self, entity: Entity) -> u16 {
 		let id = self.entity_manager.add_entity(entity.clone());
@@ -167,7 +170,7 @@ impl World {
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
 			let mut system_data = &mut system.system_data;
-
+		
 			// Only remove the entity from the systems that it was in
 			if removed_entity.c_bitfield >= system_data.c_bitfield {
 				system_data.remove_entity(entity_id, &removed_entity, self);				
@@ -179,10 +182,11 @@ impl World {
 	pub fn get_entity(&mut self, entity_id: u16) -> &mut Entity {
 		self.entity_manager.get_entity(entity_id)
 	}
-	// Get the default width and height of the starting window
-	pub fn get_default_window_size() -> (u32, u32) {
-		(1280, 720)
-	}
+	// Check if a specified entity fits the criteria to be in a specific system
+	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
+		// Check if the system matches the component ID of the entity
+		entity.c_bitfield >= system_data.c_bitfield
+	}	
 }
 
 // An entity manager that handles entities
