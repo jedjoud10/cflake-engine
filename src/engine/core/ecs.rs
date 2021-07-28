@@ -173,7 +173,7 @@ impl SystemData {
 	}
 	// Adds an entity to the system
 	pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
-		println!("Add entity '{}' with entity ID {}, to the system '{}'", entity.name, entity.entity_id, self.name);
+		println!("\x1b[32mAdd entity '{}' with entity ID {}, to the system '{}'\x1b[0m", entity.name, entity.entity_id, self.name);
 		self.entities.push(entity.entity_id);
 		(self.entity_added_event)(&entity, world);
 	}
@@ -183,7 +183,7 @@ impl SystemData {
 		let system_entity_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
 		self.entities.remove(system_entity_id);
 		(self.entity_removed_event)(&removed_entity, world);
-		println!("Removed entity '{}' with entity ID {}, from the system '{}'", removed_entity.name, removed_entity.entity_id, self.name);
+		println!("\x1b[33mRemoved entity '{}' with entity ID {}, from the system '{}'\x1b[0m", removed_entity.name, removed_entity.entity_id, self.name);
 	}
 }
 

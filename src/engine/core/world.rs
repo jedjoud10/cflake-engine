@@ -107,8 +107,8 @@ impl World {
 	}
 	// Wrapper function around the entity manager's add_entity
 	pub fn add_entity(&mut self, entity: Entity) -> u16 {
-		let result = self.entity_manager.add_entity(entity.clone());
-		let id = entity.entity_id;
+		let id = self.entity_manager.add_entity(entity.clone());
+		let mut entity = self.entity_manager.get_entity(id).clone();
 		// Check if there are systems that need this entity
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
@@ -119,9 +119,9 @@ impl World {
 			}		
 		}
 		// Since we cloned the entity variable we gotta update the entity manager with the new one
-		*self.entity_manager.get_entity(result) = entity;
+		*self.entity_manager.get_entity(id) = entity;
 		self.systems = clone;
-		return result;
+		return id;
 	} 
 	// Wrapper function around the entity manager remove_entity
 	pub fn remove_entity(&mut self, entity_id: u16) {
@@ -154,7 +154,7 @@ impl EntityManager {
 	// Add an entity to the world 
 	pub fn add_entity(&mut self, mut entity: Entity) -> u16 {
 		entity.entity_id = self.entities.len() as u16;
-		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.c_bitfield);		
+		println!("\x1b[32mAdd entity '{}' with entity ID: {} and cBitfield: {}\x1b[0m", entity.name, entity.entity_id, entity.c_bitfield);		
 		// Add the entity to the world
 		let id = entity.entity_id;
 		self.entities.insert(entity.entity_id, entity);
@@ -167,9 +167,8 @@ impl EntityManager {
 	// Removes an entity from the world 
 	pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
 		//println!("{:?}", self.entities);
-		println!("{}", entity_id);
 		let removed_entity = self.entities.remove(&entity_id).expect("Entity does not exist, so it could not be removed!");
-		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield);	
+		println!("\x1b[33mRemove entity '{}' with entity ID: {} and cBitfield: {}\x1b[0m", removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield);	
 		return removed_entity;
 	}	
 }
