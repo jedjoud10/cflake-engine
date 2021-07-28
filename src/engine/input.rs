@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::{self, Display, Formatter}, hash::Hash};
 extern crate glfw;
-use glfw::{Key, Action};
+use glfw::{Action, Glfw, Key};
 use crate::engine::core::world::*;
 
 // Status of a map
@@ -35,17 +35,9 @@ impl InputManager {
 		self.bind_key(Key::F2, String::from("Capture FPS"));
 	}
 	// Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
-	pub fn update(&mut self, window: &mut glfw::Window) {
+	pub fn update(&mut self) {
 		// Update mappings first
-		self.update_mappings();
-
-		// Then we can check for default mapping events
-		if self.map_pressed(String::from("Quit")) {
-			window.set_should_close(true);			
-		}
-
-		if self.map_pressed(String::from("Fullscreen")) {
-		}
+		self.update_mappings();		
 	}
 	// Update event fired from the world (fired after everything happens)
 	pub fn late_update(&mut self, delta_time: f32) {

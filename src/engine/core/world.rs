@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use crate::engine::core::ecs::*;
 use crate::engine::input::*;
 use crate::engine::rendering::*;
@@ -17,6 +16,7 @@ pub struct World {
 	pub shader_manager: ShaderManager,
 	pub entity_manager: EntityManager,
 	pub systems: Vec<Box<System>>,
+	pub fullscreen: bool
 } 
 
 // Default world values
@@ -30,6 +30,7 @@ impl Default for World {
 			shader_manager: ShaderManager::default(),
 			entity_manager: EntityManager::default(),
 			systems: Vec::new(),
+			fullscreen: false,
 		}
 	}
 }
@@ -47,9 +48,12 @@ impl World {
 	// 1. We update the entities of each UpdateSystem
 	// 2. We tick the entities of each TickSystem (Only if the framecount is valid)
 	// 3. We render the entities onto the screen using the RenderSystem
- 	pub fn update_world(&mut self, window: &mut glfw::Window) {
+ 	pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
 		// Check for input events
-		self.input_manager.update(window);
+		self.input_manager.update();		
+
+		// Check for default input events
+		self.check_default_input_events(window, glfw);
 		// Update the entities
 		self.run_entity_loop_on_system_type(SystemType::Update);
 
@@ -67,6 +71,39 @@ impl World {
  
 		// Update the inputs
 		self.input_manager.late_update(self.time_manager.delta_time as f32);
+	}
+	// Check for default key map events
+	fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+		// Check for default mapping events
+		if self.input_manager.map_pressed(String::from("Quit")) {
+			window.set_should_close(true);			
+		}
+		// Toggle the fullscreen
+		if self.input_manager.map_pressed(String::from("Fullscreen")) {
+			self.fullscreen = !self.fullscreen;
+			if self.fullscreen {
+				// Set the glfw window as a fullscreen window
+				glfw.with_primary_monitor_mut(|glfw2, monitor| {
+					let videomode = monitor.unwrap().get_video_mode().unwrap();	
+					window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, Some(videomode.refresh_rate));
+					unsafe {
+						// Update the OpenGL viewport
+						gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+					}
+				});
+			} else {
+				// Set the glfw window as a windowed window
+				glfw.with_primary_monitor_mut(|glfw2, monitor| {
+					let videomode = monitor.unwrap().get_video_mode().unwrap();	
+					let default_window_size = Self::get_default_window_size();
+					window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0, default_window_size.1, Some(videomode.refresh_rate));
+					unsafe {
+						// Update the OpenGL viewport
+						gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
+					}
+				});
+			}
+		}
 	}
 	// Triggers the "run_entity_loop" event on a specific type of system
 	fn run_entity_loop_on_system_type(&mut self, system_type: SystemType) {
@@ -138,9 +175,13 @@ impl World {
 		}
 		self.systems = clone;
 	}
-	//
+	// Get a mutable reference to an entity from the entity manager
 	pub fn get_entity(&mut self, entity_id: u16) -> &mut Entity {
 		self.entity_manager.get_entity(entity_id)
+	}
+	// Get the default width and height of the starting window
+	pub fn get_default_window_size() -> (u32, u32) {
+		(1280, 720)
 	}
 }
 

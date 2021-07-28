@@ -5,12 +5,11 @@ use glfw::{Action, Context, Key};
 
 pub fn setup_window() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-
-    let (mut window, events) = glfw.create_window(300, 300, "Hypothermia", glfw::WindowMode::Windowed)
+	let default_size = World::get_default_window_size();
+    let (mut window, events) = glfw.create_window(default_size.0, default_size.1, "Hypothermia", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 
 	gl::load_with(|s| window.get_proc_address(s) as *const _);
-
     window.set_key_polling(true);
     window.make_current();
 
@@ -38,7 +37,7 @@ pub fn setup_window() {
 		world.time_manager.delta_time = new_time - world.time_manager.time_since_start;
 		world.time_manager.time_since_start = new_time;
 		// Update the world
-		world.update_world(&mut window);
+		world.update_world(&mut window, &mut glfw);
 
 
 		window.swap_buffers();

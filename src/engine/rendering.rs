@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::{CString, c_void}, ptr::null};
+use std::{collections::HashMap, ffi::{CString, c_void}, mem::size_of, ptr::null};
 use crate::engine::core::ecs::*;
 use nalgebra::Point3;
 use crate::engine::resources::Resource;
@@ -244,6 +244,7 @@ pub struct RenderComponent {
 #[derive(Default)]
 pub struct ModelDataGPU {
 	pub vertex_buf: u32,
+	pub initialized: bool
 }
 
 impl RenderComponent {
@@ -251,18 +252,15 @@ impl RenderComponent {
 	pub fn refresh_model(&mut self) {
 		unsafe {
 			// Create the vertex buffer and populate it
-			let temp_array = vec![
-				-1.0, -1.0, 0.0,
-				1.0, -1.0, 0.0,
-				0.0,  1.0, 0.0];
 			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
-			gl::BufferData(self.gpu_data.vertex_buf, 1, self.model.vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
+			gl::BufferData(gl::ARRAY_BUFFER, self.model.vertices.len() as isize * 4 * 3, self.model.vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
 			// Create the vertex attrib arrays
+			gl::EnableVertexAttribArray(0);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
 			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());			
-			gl::EnableVertexAttribArray(0);
+			self.gpu_data.initialized = true;
 		}
 	}
 

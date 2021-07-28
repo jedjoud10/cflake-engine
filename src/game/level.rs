@@ -50,8 +50,10 @@ pub fn load_systems(world: &mut World) {
 		unsafe {
 			// Actually draw the array
 			let rc = entity.get_component::<RenderComponent>(world);
-			//gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
-			//gl::DrawArrays(gl::TRIANGLES, 0, 3);
+			if rc.gpu_data.initialized {
+				gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
+				gl::DrawArrays(gl::TRIANGLES, 0, 3);
+			}
 		}
 	};
 	// When an entity gets added to the render system
@@ -125,12 +127,5 @@ pub fn load_entities(world: &mut World) {
 	cube.link_component::<RenderComponent>(world, rc);
 
 	world.add_entity(camera);
-	let eid1 = world.add_entity(cube.clone());
-	let eid2 = world.add_entity(cube.clone());
-	let eid3 = world.add_entity(cube.clone());
 	world.add_entity(cube);
-	// Test out removing the entity
-	world.remove_entity(eid1);
-	world.remove_entity(eid2);
-	world.remove_entity(eid3);
 }
