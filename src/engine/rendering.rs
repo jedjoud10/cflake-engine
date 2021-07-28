@@ -36,14 +36,44 @@ impl ShaderManager {
     		_ => return None,
 		}
 	}
-	// Caches a specific shader
-	pub fn cache_subshader(&mut self, subshader: &SubShader, subshader_name: String) {
-		if !self.subshaders.contains_key(&subshader_name) {
-			let mut clone = subshader.clone();
-			// Cache the subshader for later use
-			self.subshaders.insert(subshader_name, clone);
+	// Caches a specific subshader
+	pub fn cache_subshader(&mut self, subshader: SubShader) -> Option<&mut SubShader> {
+		if !self.subshaders.contains_key(&subshader.name) {
+			// Cache the shader for later use
+			let name_clone = subshader.name.clone();
+			self.subshaders.insert(name_clone.clone(), subshader);
+			return self.subshaders.get_mut(&name_clone);
 		} else {
-			// Well the subshader is already cached so don't do anything
+			return None;
+		}
+	}
+	// Cached a specific shader (An actual runnable shader with uniforms and all) 
+	pub fn cache_shader(&mut self, shader: Shader) -> Option<&mut Shader> {
+		if !self.shaders.contains_key(&shader.name) {
+			// Cache the shader for later use
+			let name_clone = shader.name.clone();
+			self.shaders.insert(name_clone.clone(), shader);
+			return self.shaders.get_mut(&name_clone);
+		} else {
+			return None;
+		}
+	}
+	// Gets a specific subshader from cache
+	pub fn get_subshader(&mut self, subshader_name: &String) -> Option<&mut SubShader> {
+		// Make sure it exists
+		if self.subshaders.contains_key(subshader_name) {
+			return self.subshaders.get_mut(subshader_name);
+		} else {
+			return None;
+		}
+	}
+	// Gets a specific shader from cache
+	pub fn get_shader(&mut self, shader_name: &String) -> Option<&mut Shader> {
+		// Make sure it exists
+		if self.shaders.contains_key(shader_name) {
+			return self.shaders.get_mut(shader_name);
+		} else {
+			return None;
 		}
 	}
 }

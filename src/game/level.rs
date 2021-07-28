@@ -45,7 +45,7 @@ pub fn load_systems(world: &mut World) {
 				let rc = entity.get_component::<RenderComponent>(world);
 				name = rc.shader_name.clone();
 			}
-			shader = world.shader_manager.shaders.get_mut(&name).unwrap();
+			shader = world.shader_manager.get_shader(&name).unwrap();
 		}
 		shader.use_shader();
 		unsafe {
@@ -88,9 +88,8 @@ pub fn load_entities(world: &mut World) {
 			let mut frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
 			// Compile the subshader
 			frag_subshader.compile_subshader();
-			// Then cache it
-			world.shader_manager.cache_subshader(&frag_subshader, String::from("default.frsh.pkg"));
-			// Then read from the shader cache
+			// Cache it, and link it
+			let mut frag_subshader = world.shader_manager.cache_subshader(frag_subshader).unwrap();
 			default_shader.link_subshader(&frag_subshader);
 		}
 		{
@@ -99,13 +98,13 @@ pub fn load_entities(world: &mut World) {
 			let mut vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
 			// Compile the subshader
 			vert_subshader.compile_subshader();
-			// Then cache it
-			world.shader_manager.cache_subshader(&vert_subshader, String::from("default.vrsh.pkg"));
-			// Then read from the shader cache
+			// Cache it, and link it
+			let mut vert_subshader = world.shader_manager.cache_subshader(vert_subshader).unwrap();
 			default_shader.link_subshader(&vert_subshader);
 		}
 	}	
-
+	let default_shader_name = default_shader.name.clone();
+	let mut default_shader = world.shader_manager.cache_shader(default_shader).unwrap();
 	// Use it for the default rendering of everything
 	default_shader.use_shader();
 
@@ -121,7 +120,7 @@ pub fn load_entities(world: &mut World) {
 	let rc = RenderComponent {
     	render_state: EntityRenderState::Visible,
     	gpu_data: ModelDataGPU::default(),
-    	shader_name: default_shader.name,   
+    	shader_name: default_shader_name,   
 		model	
 	};
 	cube.link_component::<RenderComponent>(world, rc);
