@@ -50,7 +50,7 @@ pub fn load_systems(world: &mut World) {
 		shader.use_shader();
 		let loc = shader.get_uniform_location(String::from("test"));
 		shader.set_scalar_1_uniform(loc, world.time_manager.time_since_start.sin() as f32);
-		
+
 		unsafe {
 			// Actually draw the array
 			let rc = entity.get_component::<RenderComponent>(world);
@@ -88,7 +88,7 @@ pub fn load_entities(world: &mut World) {
 	let mut default_shader = Shader::default();
 	{
 		{
-			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.pkg"), String::from("shaders\\")).unwrap();
+			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.glsl.pkg"), String::from("shaders\\")).unwrap();
 			// Link the vertex and fragment shaders
 			let mut frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
 			// Compile the subshader
@@ -98,7 +98,7 @@ pub fn load_entities(world: &mut World) {
 			default_shader.link_subshader(&frag_subshader);
 		}
 		{
-			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.pkg"), String::from("shaders\\")).unwrap();
+			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.glsl.pkg"), String::from("shaders\\")).unwrap();
 			// Link the vertex and fragment shaders
 			let mut vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
 			// Compile the subshader

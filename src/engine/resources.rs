@@ -121,7 +121,9 @@ impl ResourceManager {
 				for sub_file in sub_dir_files {		
 					let sub_file = sub_file.as_ref().unwrap();		
 					let path = sub_file.path();
-					let extension = path.extension().unwrap();
+					// This extension is anything after the first dot
+					let extension: Vec<&str> = path.file_name().unwrap().to_str().unwrap().split('.').collect();
+					let extension = &extension[1..].join(".");
 					let name: String = path.file_name().unwrap().to_str().unwrap().split('.').nth(0).unwrap().to_string();
 					let sub_dir_name = sub_directory.file_name();
 					println!("File name: {}", sub_dir_name.to_str().unwrap());
@@ -137,15 +139,15 @@ impl ResourceManager {
 					// The type of resource that we will be saving
 					let mut resource_type = 0;
 					
-					match extension.to_str().unwrap() {
-						"vrsh" => {
+					match extension.as_str() {
+						"vrsh.glsl" => {
 							// This is a vertex shader
 							let mut string_source: String = String::new();
 							reader.read_to_string(&mut string_source);
 							resource = Resource::Shader(LoadedSubShader { name: String::from("Undefined"), source: string_source, subshader_type: SubShaderType::Vertex });	
 							resource_type = 3;				
 						}
-						"frsh" => {
+						"frsh.glsl" => {
 							// This is a fragment shader
 							let mut string_source: String = String::new();
 							reader.read_to_string(&mut string_source);
@@ -177,7 +179,7 @@ impl ResourceManager {
 						create_dir_all(&temp_path);
 					}
 					
-					let packed_file_path = format!("{}\\{}.{}.pkg", &packed_resources_dir, name.as_str(), extension.to_str().unwrap());
+					let packed_file_path = format!("{}\\{}.{}.pkg", &packed_resources_dir, name.as_str(), extension.as_str());
 					println!("{}", packed_file_path);
 					// Create the new file
 					let new_file = File::create(packed_file_path).expect("Failed to create the packaged file!");
