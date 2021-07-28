@@ -35,8 +35,7 @@ pub fn load_systems(world: &mut World) {
 		}
 	};
 	// Render the entitites
-	rs.system_data.entity_loop_event = |entity, world| {				
-		println!("ELDRAW");
+	rs.system_data.entity_loop_event = |entity, world| {	
 		let mut shader: &mut Shader;
 		// Render the entity
 		{
@@ -51,8 +50,8 @@ pub fn load_systems(world: &mut World) {
 		unsafe {
 			// Actually draw the array
 			let rc = entity.get_component::<RenderComponent>(world);
-			gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
-			gl::DrawArrays(gl::TRIANGLES, 0, 3);
+			//gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
+			//gl::DrawArrays(gl::TRIANGLES, 0, 3);
 		}
 	};
 	// When an entity gets added to the render system

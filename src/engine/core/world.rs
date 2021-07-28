@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::engine::core::ecs::*;
 use crate::engine::input::*;
 use crate::engine::rendering::*;
@@ -13,7 +15,7 @@ pub struct World {
 	pub input_manager: InputManager,
 	pub resource_manager: ResourceManager,
 	pub shader_manager: ShaderManager,
-	pub entities: Vec<Entity>,
+	pub entity_manager: EntityManager,
 	pub systems: Vec<Box<System>>,
 } 
 
@@ -26,7 +28,7 @@ impl Default for World {
 			input_manager: InputManager::default(),
 			resource_manager: ResourceManager::default(),
 			shader_manager: ShaderManager::default(),
-			entities: Vec::new(),
+			entity_manager: EntityManager::default(),
 			systems: Vec::new(),
 		}
 	}
@@ -90,12 +92,23 @@ impl World {
 			system.system_data.end_system(self);
 		}
 		self.systems = clone;
+	}	
+	// Check if a specified entity fits the criteria to be in a specific system
+	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
+		// Check if the system matches the component ID of the entity
+		entity.c_bitfield >= system_data.c_bitfield
+	}		
+	// Adds a system to the world
+	pub fn add_system(&mut self, mut system: Box<System>) {
+		let mut system_data = &mut system.system_data;
+		system_data.system_addded();
+		println!("Add system with cBitfield: {}", system_data.c_bitfield);
+		self.systems.push(system);
 	}
-	// Add an entity to the world 
-	pub fn add_entity(&mut self, mut entity: Entity) -> u16 {
-		entity.entity_id = self.entities.len() as u16;
-		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.c_bitfield);
-
+	// Wrapper function around the entity manager's add_entity
+	pub fn add_entity(&mut self, entity: Entity) -> u16 {
+		let result = self.entity_manager.add_entity(entity.clone());
+		let id = entity.entity_id;
 		// Check if there are systems that need this entity
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
@@ -105,24 +118,14 @@ impl World {
 				system_data.add_entity(&entity, self);
 			}		
 		}
+		// Since we cloned the entity variable we gotta update the entity manager with the new one
+		*self.entity_manager.get_entity(result) = entity;
 		self.systems = clone;
-		// Add the entity to the world
-		let id = entity.entity_id;
-		self.entities.push(entity);
-		return id;
-	}
-	// Check if a specified entity fits the criteria to be in a specific system
-	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
-		// Check if the system matches the component ID of the entity
-		entity.c_bitfield >= system_data.c_bitfield
-	}
-	// Removes an entity from the world 
-	pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
-		//println!("{:?}", self.entities);
-		println!("{}", entity_id);
-		let removed_entity = self.entities.remove(self.entities.iter().position(|x| x.entity_id == entity_id).expect("Entity does not exist, so it could not be removed!"));
-		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield);
-		
+		return result;
+	} 
+	// Wrapper function around the entity manager remove_entity
+	pub fn remove_entity(&mut self, entity_id: u16) {
+		let removed_entity = self.entity_manager.remove_entity(entity_id);
 		// Remove the entity from all the systems it was in
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
@@ -134,20 +137,41 @@ impl World {
 			}			
 		}
 		self.systems = clone;
-		return removed_entity;
-	}	
-	// Adds a system to the world
-	pub fn add_system(&mut self, mut system: Box<System>) {
-		let mut system_data = &mut system.system_data;
-		system_data.system_addded();
-		println!("Add system with cBitfield: {}", system_data.c_bitfield);
-		self.systems.push(system);
+	}
+	//
+	pub fn get_entity(&mut self, entity_id: u16) -> &mut Entity {
+		self.entity_manager.get_entity(entity_id)
+	}
+}
+
+// An entity manager that handles entities
+#[derive(Default)]
+pub struct EntityManager {
+	pub entities: HashMap<u16, Entity>,
+}
+
+impl EntityManager {
+	// Add an entity to the world 
+	pub fn add_entity(&mut self, mut entity: Entity) -> u16 {
+		entity.entity_id = self.entities.len() as u16;
+		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.c_bitfield);		
+		// Add the entity to the world
+		let id = entity.entity_id;
+		self.entities.insert(entity.entity_id, entity);
+		return id;
 	}
 	// Get an entity using the entities vector and the "mapper (WIP)"
 	pub fn get_entity(&mut self, entity_id: u16) -> &mut Entity {
-		let actual_id = self.entities.iter().position(|x| x.entity_id == entity_id).unwrap();
-		self.entities.get_mut(actual_id).unwrap()
+		self.entities.get_mut(&entity_id).unwrap()
 	}
+	// Removes an entity from the world 
+	pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
+		//println!("{:?}", self.entities);
+		println!("{}", entity_id);
+		let removed_entity = self.entities.remove(&entity_id).expect("Entity does not exist, so it could not be removed!");
+		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield);	
+		return removed_entity;
+	}	
 }
 
 // Static time variables

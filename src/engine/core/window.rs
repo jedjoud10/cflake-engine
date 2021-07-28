@@ -17,7 +17,7 @@ pub fn setup_window() {
 	if gl::Viewport::is_loaded() {
 		println!("OpenGL viewport has loaded");
 		unsafe {
-			gl::Viewport(0, 0, 400, 400);
+			gl::Viewport(0, 0, 300, 300);
 		}
 	}
 
