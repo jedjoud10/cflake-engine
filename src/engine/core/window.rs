@@ -8,18 +8,17 @@ pub fn setup_window() {
 	let default_size = World::get_default_window_size();
     let (mut window, events) = glfw.create_window(default_size.0, default_size.1, "Hypothermia", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
-
 	gl::load_with(|s| window.get_proc_address(s) as *const _);
-    window.set_key_polling(true);
-    window.make_current();
-
+	window.set_key_polling(true);
+	window.make_current();
 	if gl::Viewport::is_loaded() {
 		println!("OpenGL viewport has loaded");
 		unsafe {
 			gl::Viewport(0, 0, 300, 300);
 		}
 	}
-
+	glfw.set_swap_interval(glfw::SwapInterval::None);
+	
 	// Create the world
 	let mut world: World = World::default();
 	world.start_world();
@@ -38,9 +37,6 @@ pub fn setup_window() {
 		world.time_manager.time_since_start = new_time;
 		// Update the world
 		world.update_world(&mut window, &mut glfw);
-
-
-		window.swap_buffers();
     }	
 	// When the window closes and we exit from the game
 	world.stop_world();

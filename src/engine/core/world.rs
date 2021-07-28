@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use glfw::Context;
+
 use crate::engine::core::ecs::*;
 use crate::engine::input::*;
 use crate::engine::rendering::*;
@@ -59,6 +61,7 @@ impl World {
 
 		// and render them
 		self.run_entity_loop_on_system_type(SystemType::Render);
+		window.swap_buffers();
 		
 
 		// Update the up-time of every system
@@ -85,7 +88,7 @@ impl World {
 				// Set the glfw window as a fullscreen window
 				glfw.with_primary_monitor_mut(|glfw2, monitor| {
 					let videomode = monitor.unwrap().get_video_mode().unwrap();	
-					window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, Some(videomode.refresh_rate));
+					window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
 					unsafe {
 						// Update the OpenGL viewport
 						gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
@@ -96,7 +99,7 @@ impl World {
 				glfw.with_primary_monitor_mut(|glfw2, monitor| {
 					let videomode = monitor.unwrap().get_video_mode().unwrap();	
 					let default_window_size = Self::get_default_window_size();
-					window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0, default_window_size.1, Some(videomode.refresh_rate));
+					window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0, default_window_size.1, None);
 					unsafe {
 						// Update the OpenGL viewport
 						gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);

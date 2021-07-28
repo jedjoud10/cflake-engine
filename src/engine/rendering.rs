@@ -148,6 +148,35 @@ impl Shader {
 	}
 }
 
+// Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh 
+impl Shader {
+	// Get the location of a specific uniform, using it's name
+	pub fn get_uniform_location(&self, name: String) -> i32 {
+		unsafe {
+			let name: Vec<i8> = name.as_bytes().iter().map(|&x| x as i8).collect();
+			return gl::GetUniformLocation(self.program, name.as_ptr());
+		}
+	}
+	// Set a scalar uniform
+	pub fn set_scalar_1_uniform(&self, location: i32, value: f32) {
+		unsafe {
+			gl::Uniform1f(location, value);
+		}
+	}
+	// Set a scalar x2 uniform
+	pub fn set_scalar_2_uniform(&self, location: i32, values: (f32, f32)) {
+		unsafe {
+			gl::Uniform2f(location, values.0, values.1);
+		}
+	}
+	// Set a scalar x3 uniform
+	pub fn set_scalar_3_uniform(&self, location: i32, values: (f32, f32, f32)) {
+		unsafe {
+			gl::Uniform3f(location, values.0, values.1, values.2);
+		}
+	}
+}
+
 // Sub shader type
 #[derive(Debug, Clone)]
 pub enum SubShaderType {

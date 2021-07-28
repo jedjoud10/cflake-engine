@@ -46,7 +46,11 @@ pub fn load_systems(world: &mut World) {
 			}
 			shader = world.shader_manager.get_shader(&name).unwrap();
 		}
+		// Use the shader, and update any uniforms
 		shader.use_shader();
+		let loc = shader.get_uniform_location(String::from("test"));
+		shader.set_scalar_1_uniform(loc, world.time_manager.time_since_start.sin() as f32);
+		
 		unsafe {
 			// Actually draw the array
 			let rc = entity.get_component::<RenderComponent>(world);
