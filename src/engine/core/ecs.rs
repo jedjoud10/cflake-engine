@@ -107,11 +107,11 @@ pub struct SystemData {
 	// System events
 	pub loop_event: fn(&World),
 	// Entity events
-	pub entity_loop_event: fn(&Box<Entity>, &mut World),
-	pub entity_added_event: fn(&Box<Entity>, &mut World),
-	pub entity_removed_event: fn(&Box<Entity>, &mut World),
+	pub entity_loop_event: fn(&Entity, &mut World),
+	pub entity_added_event: fn(&Entity, &mut World),
+	pub entity_removed_event: fn(&Entity, &mut World),
 
-	pub entities: Vec<Box<Entity>>,
+	pub entities: Vec<u16>,
 }
 
 // Default for system data
@@ -121,7 +121,7 @@ impl Default for SystemData {
 			name: String::from("Unnamed system"),
 			c_bitfield: 0,
 			system_id: 0,
-			state: SystemState::Disabled(0.0),
+			state: SystemState::Enabled(0.0),
 			stype: SystemType::Update,
 			loop_event:  |world| {},
 			entity_loop_event: |entity, world| {},
@@ -148,15 +148,19 @@ impl SystemData {
 	// End the system since the world is stopping
 	pub fn end_system(&mut self, world: &mut World) {
 		// Loop over all the entities and fire the entity removed event
-		for entity in self.entities.iter() {		
-			(self.entity_removed_event)(entity, world);
+		for &entity_id in self.entities.iter() {		
+			let entity_clone = &mut world.get_entity(entity_id).clone();
+			(self.entity_removed_event)(entity_clone, world);
+			*world.get_entity(entity_id) = entity_clone.clone();
 		}
 	}
 	// Fire the "entity_loop" event
 	pub fn run_entity_loops(&mut self, world: &mut World) {
 		// Loop over all the entities and update their components
-		for entity in self.entities.iter() {		
-			(self.entity_loop_event)(entity, world);
+		for &entity_id in self.entities.iter() {		
+			let entity_clone = &mut world.get_entity(entity_id).clone();
+			(self.entity_loop_event)(entity_clone, world);
+			*world.get_entity(entity_id) = entity_clone.clone();
 		}
 	}
 	// Add a component to this system's component bitfield id
@@ -168,16 +172,17 @@ impl SystemData {
 		}		
 	}
 	// Adds an entity to the system
-	pub fn add_entity(&mut self, entity_clone: Box<Entity>, world: &mut World) {
-		println!("Add entity '{}' with ID {}, to the system '{}'", entity_clone.name, entity_clone.entity_id, self.name);
-		(self.entity_added_event)(&entity_clone, world);
-		self.entities.push(entity_clone);
+	pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
+		println!("Add entity '{}' with entity ID {}, to the system '{}'", entity.name, entity.entity_id, self.name);
+		(self.entity_added_event)(&entity, world);
+		self.entities.push(entity.entity_id);
 	}
 	// Removes an entity from the system
-	pub fn remove_entity(&mut self, entity_id: u16, world: &mut World) -> Box<Entity> {
+	pub fn remove_entity(&mut self, entity_id: u16, world: &mut World) -> Entity {
 		// Search for the entity with the matching entity_id
-		let system_entity_id = self.entities.iter_mut().position(|entity| entity.entity_id == entity_id).unwrap();
-		let removed_entity = self.entities.remove(system_entity_id);
+		let system_entity_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
+		self.entities.remove(system_entity_id);
+		let removed_entity = world.remove_entity(entity_id);
 		(self.entity_removed_event)(&removed_entity, world);
 		removed_entity
 	}

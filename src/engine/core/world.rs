@@ -13,7 +13,7 @@ pub struct World {
 	pub input_manager: InputManager,
 	pub resource_manager: ResourceManager,
 	pub shader_manager: ShaderManager,
-	entities: Vec<Box<Entity>>,
+	entities: Vec<Entity>,
 	systems: Vec<Box<System>>,
 } 
 
@@ -40,9 +40,6 @@ impl World {
 		register_components(self);
 		load_systems(self);
 		load_entities(self);
-		unsafe {
-			gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-		}
 	}
 	// We do the following in this function
 	// 1. We update the entities of each UpdateSystem
@@ -54,12 +51,9 @@ impl World {
 		// Update the entities
 		self.run_entity_loop_on_system_type(SystemType::Update);
 
-		// Render the entities
-		unsafe {
-			// Clear the screen first
-			gl::Clear(gl::COLOR_BUFFER_BIT);
-			self.run_entity_loop_on_system_type(SystemType::Render);
-		}
+		// and render them
+		self.run_entity_loop_on_system_type(SystemType::Render);
+		
 
 		// Update the up-time of every system
 		for system in self.systems.iter_mut() {
@@ -94,7 +88,7 @@ impl World {
 		}
 	}
 	// Add an entity to the world 
-	pub fn add_entity(&mut self, mut entity: Box<Entity>) {
+	pub fn add_entity(&mut self, mut entity: Entity) {
 		entity.entity_id = self.entities.len() as u16;
 		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.c_bitfield);
 
@@ -102,22 +96,21 @@ impl World {
 		for system in self.systems.clone().iter_mut() {
 			let mut system_data = &mut system.system_data;
 			if Self::is_entity_valid_for_system(&entity, system_data) {
-				let clone = entity.clone();
-				// Add the entity to the update system
-				system_data.add_entity(clone, self);
+				// Add the entity to the system
+				system_data.add_entity(&entity, self);
 			}		
 		}
 		// Add the entity to the world
 		self.entities.push(entity);
 	}
 	// Check if a specified entity fits the criteria to be in a specific system
-	fn is_entity_valid_for_system(entity: &Box<Entity>, system_data: &mut SystemData) -> bool {
+	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
 		// Check if the system matches the component ID of the entity
 		entity.c_bitfield >= system_data.c_bitfield
 	}
 	// Removes an entity from the world 
-	pub fn remove_entity(&mut self, entity_id: u16) {
-		let removed_entity = self.entities.remove(entity_id as usize);
+	pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
+		let removed_entity = self.entities.remove(self.entities.iter().position(|x| x.entity_id == entity_id).unwrap());
 		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield);
 
 		// Remove the entity from all the systems it was in
@@ -129,18 +122,19 @@ impl World {
 				system_data.remove_entity(entity_id, self);				
 			}			
 		}
+		removed_entity
 	}	
 	// Adds a system to the world
 	pub fn add_system(&mut self, mut system: Box<System>) {
 		let mut system_data = &mut system.system_data;
 		system_data.system_addded();
-		system_data.enable_system();
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
 	}
-	// Get an entity using the entities vector
-	pub fn get_entity(&self, entity_id: u16) -> &Box<Entity> {
-		self.entities.get(entity_id as usize).unwrap()
+	// Get an entity using the entities vector and the "mapper (WIP)"
+	pub fn get_entity(&mut self, entity_id: u16) -> &mut Entity {
+		let actual_id = self.entities.iter().position(|x| x.entity_id == entity_id).unwrap();
+		self.entities.get_mut(actual_id).unwrap()
 	}
 }
 

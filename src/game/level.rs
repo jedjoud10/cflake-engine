@@ -25,6 +25,9 @@ pub fn load_systems(world: &mut World) {
 	rs.system_data.name = String::from("Rendering system");	
 
 	// When the render system gets updated
+	unsafe { 
+		gl::ClearColor(1.0, 1.0, 1.0, 1.0);
+	}
 	rs.system_data.loop_event = |world| {
 		unsafe {
 			// Clear the window
@@ -33,6 +36,7 @@ pub fn load_systems(world: &mut World) {
 	};
 	// Render the entitites
 	rs.system_data.entity_loop_event = |entity, world| {				
+		println!("ELDRAW");
 		let mut shader: &mut Shader;
 		// Render the entity
 		{
@@ -49,7 +53,6 @@ pub fn load_systems(world: &mut World) {
 			let rc = entity.get_component::<RenderComponent>(world);
 			gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
 			gl::DrawArrays(gl::TRIANGLES, 0, 3);
-			println!("ELDRAW");
 		}
 	};
 	// When an entity gets added to the render system
@@ -123,6 +126,9 @@ pub fn load_entities(world: &mut World) {
 	};
 	cube.link_component::<RenderComponent>(world, rc);
 
-	world.add_entity(Box::new(camera));
-	world.add_entity(Box::new(cube));
+	world.add_entity(camera);
+	world.add_entity(cube.clone());
+	world.add_entity(cube.clone());
+	world.add_entity(cube.clone());
+	world.add_entity(cube);
 }
