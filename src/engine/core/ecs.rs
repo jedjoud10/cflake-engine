@@ -174,22 +174,21 @@ impl SystemData {
 	// Adds an entity to the system
 	pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
 		println!("Add entity '{}' with entity ID {}, to the system '{}'", entity.name, entity.entity_id, self.name);
-		(self.entity_added_event)(&entity, world);
 		self.entities.push(entity.entity_id);
+		(self.entity_added_event)(&entity, world);
 	}
 	// Removes an entity from the system
-	pub fn remove_entity(&mut self, entity_id: u16, world: &mut World) -> Entity {
+	pub fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, world: &mut World) {
 		// Search for the entity with the matching entity_id
 		let system_entity_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
 		self.entities.remove(system_entity_id);
-		let removed_entity = world.remove_entity(entity_id);
 		(self.entity_removed_event)(&removed_entity, world);
-		removed_entity
+		println!("Removed entity '{}' with entity ID {}, from the system '{}'", removed_entity.name, removed_entity.entity_id, self.name);
 	}
 }
 
 // A simple entity in the world
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Entity {
 	pub name: String,
 	pub entity_id: u16,

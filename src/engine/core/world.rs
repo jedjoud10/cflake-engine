@@ -13,8 +13,8 @@ pub struct World {
 	pub input_manager: InputManager,
 	pub resource_manager: ResourceManager,
 	pub shader_manager: ShaderManager,
-	entities: Vec<Entity>,
-	systems: Vec<Box<System>>,
+	pub entities: Vec<Entity>,
+	pub systems: Vec<Box<System>>,
 } 
 
 // Default world values
@@ -68,7 +68,8 @@ impl World {
 	}
 	// Triggers the "run_entity_loop" event on a specific type of system
 	fn run_entity_loop_on_system_type(&mut self, system_type: SystemType) {
-		for system in self.systems.clone().iter_mut().filter(|sys| 			
+		let mut clone = self.systems.clone();
+		for system in clone.iter_mut().filter(|sys| 			
 			match &sys.system_data.stype {
 				system_type => true,
 				_ => false
@@ -80,28 +81,35 @@ impl World {
     			_ => {	}
 			}
 		}	
+		self.systems = clone;
 	}
  	// When we want to close the application
 	pub fn stop_world(&mut self) {
-		for system in self.systems.clone().iter_mut() {
+		let mut clone = self.systems.clone();
+		for system in clone.iter_mut() {
 			system.system_data.end_system(self);
 		}
+		self.systems = clone;
 	}
 	// Add an entity to the world 
-	pub fn add_entity(&mut self, mut entity: Entity) {
+	pub fn add_entity(&mut self, mut entity: Entity) -> u16 {
 		entity.entity_id = self.entities.len() as u16;
 		println!("Add entity '{}' with entity ID: {} and cBitfield: {}", entity.name, entity.entity_id, entity.c_bitfield);
 
 		// Check if there are systems that need this entity
-		for system in self.systems.clone().iter_mut() {
+		let mut clone = self.systems.clone();
+		for system in clone.iter_mut() {
 			let mut system_data = &mut system.system_data;
 			if Self::is_entity_valid_for_system(&entity, system_data) {
 				// Add the entity to the system
 				system_data.add_entity(&entity, self);
 			}		
 		}
+		self.systems = clone;
 		// Add the entity to the world
+		let id = entity.entity_id;
 		self.entities.push(entity);
+		return id;
 	}
 	// Check if a specified entity fits the criteria to be in a specific system
 	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
@@ -110,19 +118,23 @@ impl World {
 	}
 	// Removes an entity from the world 
 	pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
-		let removed_entity = self.entities.remove(self.entities.iter().position(|x| x.entity_id == entity_id).unwrap());
+		//println!("{:?}", self.entities);
+		println!("{}", entity_id);
+		let removed_entity = self.entities.remove(self.entities.iter().position(|x| x.entity_id == entity_id).expect("Entity does not exist, so it could not be removed!"));
 		println!("Remove entity '{}' with entity ID: {} and cBitfield: {}", removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield);
-
+		
 		// Remove the entity from all the systems it was in
-		for system in self.systems.clone().iter_mut() {
+		let mut clone = self.systems.clone();
+		for system in clone.iter_mut() {
 			let mut system_data = &mut system.system_data;
 
 			// Only remove the entity from the systems that it was in
 			if removed_entity.c_bitfield >= system_data.c_bitfield {
-				system_data.remove_entity(entity_id, self);				
+				system_data.remove_entity(entity_id, &removed_entity, self);				
 			}			
 		}
-		removed_entity
+		self.systems = clone;
+		return removed_entity;
 	}	
 	// Adds a system to the world
 	pub fn add_system(&mut self, mut system: Box<System>) {

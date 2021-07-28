@@ -118,7 +118,7 @@ pub fn load_entities(world: &mut World) {
     	triangles: vec![0, 1, 2],
 	};
 	// Link the component
-	let mut rc = RenderComponent {
+	let rc = RenderComponent {
     	render_state: EntityRenderState::Visible,
     	gpu_data: ModelDataGPU::default(),
     	shader_name: default_shader.name,   
@@ -127,8 +127,12 @@ pub fn load_entities(world: &mut World) {
 	cube.link_component::<RenderComponent>(world, rc);
 
 	world.add_entity(camera);
-	world.add_entity(cube.clone());
-	world.add_entity(cube.clone());
-	world.add_entity(cube.clone());
+	let eid1 = world.add_entity(cube.clone());
+	let eid2 = world.add_entity(cube.clone());
+	let eid3 = world.add_entity(cube.clone());
 	world.add_entity(cube);
+	// Test out removing the entity
+	world.remove_entity(eid1);
+	world.remove_entity(eid2);
+	world.remove_entity(eid3);
 }
