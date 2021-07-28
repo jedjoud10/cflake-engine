@@ -9,7 +9,10 @@ pub fn setup_window() {
     let (mut window, events) = glfw.create_window(default_size.0, default_size.1, "Hypothermia", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 	gl::load_with(|s| window.get_proc_address(s) as *const _);
+	// Set the type of events that we want to listen to
 	window.set_key_polling(true);
+	window.set_cursor_pos_polling(true);
+	window.set_size_polling(true);
 	window.make_current();
 	if gl::Viewport::is_loaded() {
 		println!("OpenGL viewport has loaded");
@@ -18,10 +21,9 @@ pub fn setup_window() {
 		}
 	}
 	glfw.set_swap_interval(glfw::SwapInterval::None);
-	
 	// Create the world
 	let mut world: World = World::default();
-	world.start_world();
+	world.start_world(&mut window);
 
     while !window.should_close() {
 
@@ -42,11 +44,16 @@ pub fn setup_window() {
 	world.stop_world();
 }
 
+// When the window receives a new event
 fn handle_window_event(window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
+	println!("{:?}", event);
     match event {
         glfw::WindowEvent::Key(key, _, action_type, _) => {
             world.input_manager.receive_key_event(key, action_type);
-        }
+        },
+		glfw::WindowEvent::Size(x, y) => {
+			world.resize_window_event((x, y));
+		}
         _ => {}
     }
 }

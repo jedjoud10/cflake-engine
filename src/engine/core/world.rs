@@ -39,7 +39,7 @@ impl Default for World {
 
 impl World {
 	// When the world started initializing
- 	pub fn start_world(&mut self) {
+ 	pub fn start_world(&mut self, window: &mut glfw::Window) {
 		// Load all the default things
 		self.input_manager.setup_default_bindings();
 		register_components(self);
@@ -52,8 +52,7 @@ impl World {
 	// 3. We render the entities onto the screen using the RenderSystem
  	pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
 		// Check for input events
-		self.input_manager.update();		
-
+		self.input_manager.update(window);		
 		// Check for default input events
 		self.check_default_input_events(window, glfw);
 		// Update the entities
@@ -140,10 +139,7 @@ impl World {
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
 	}	
-	// Get the default width and height of the starting window
-	pub fn get_default_window_size() -> (u32, u32) {
-		(1280, 720)
-	}
+	
 }
 
 // Impl block for the entity stuff
@@ -192,6 +188,19 @@ impl World {
 	}	
 }
 
+// Impl block related to the windowing / rendering stuff
+impl World {
+	// Get the default width and height of the starting window
+	pub fn get_default_window_size() -> (u32, u32) {
+		(1280, 720)
+	}
+	// When we resize the window
+	pub fn resize_window_event(&mut self, size: (i32, i32)) {
+		unsafe {
+			gl::Viewport(0, 0, size.0, size.1);
+		}
+	}
+}
 // An entity manager that handles entities
 #[derive(Default)]
 pub struct EntityManager {

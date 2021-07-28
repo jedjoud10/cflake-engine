@@ -3,6 +3,6 @@ out vec3 color;
 uniform float test;
 
 void main(){
-	vec2 position = gl_FragCoord.xy;
-  	color = vec3(position.x, position.y, 0);
+	vec3 position = gl_FragCoord.xyz;
+  	color = position;
 }
