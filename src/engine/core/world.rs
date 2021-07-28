@@ -6,7 +6,9 @@ use crate::engine::input::*;
 use crate::engine::rendering::*;
 use crate::engine::resources::Resource;
 use crate::engine::resources::ResourceManager;
+use crate::engine::core::defaults::components::components::Camera;
 use crate::game::level::*;
+
 
 
 //  The actual world
@@ -18,7 +20,8 @@ pub struct World {
 	pub shader_manager: ShaderManager,
 	pub entity_manager: EntityManager,
 	pub systems: Vec<Box<System>>,
-	pub fullscreen: bool
+	pub fullscreen: bool,
+	pub default_camera_id: u16
 } 
 
 // Default world values
@@ -32,6 +35,7 @@ impl Default for World {
 			shader_manager: ShaderManager::default(),
 			entity_manager: EntityManager::default(),
 			systems: Vec::new(),
+			default_camera_id: 0,
 			fullscreen: false,
 		}
 	}
@@ -98,7 +102,7 @@ impl World {
 				glfw.with_primary_monitor_mut(|glfw2, monitor| {
 					let videomode = monitor.unwrap().get_video_mode().unwrap();	
 					let default_window_size = Self::get_default_window_size();
-					window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0, default_window_size.1, None);
+					window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
 					unsafe {
 						// Update the OpenGL viewport
 						gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
@@ -191,13 +195,21 @@ impl World {
 // Impl block related to the windowing / rendering stuff
 impl World {
 	// Get the default width and height of the starting window
-	pub fn get_default_window_size() -> (u32, u32) {
+	pub fn get_default_window_size() -> (i32, i32) {
 		(1280, 720)
 	}
 	// When we resize the window
 	pub fn resize_window_event(&mut self, size: (i32, i32)) {
 		unsafe {
 			gl::Viewport(0, 0, size.0, size.1);
+			let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
+			let entity_clone_id = camera_entity_clone.entity_id;
+			let camera_component = camera_entity_clone.get_component::<Camera>(self);
+			camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
+			camera_component.window_size = size;
+			camera_component.update_projection_matrix();
+			// Update the original entity
+			*self.get_entity(entity_clone_id) = camera_entity_clone;
 		}
 	}
 }

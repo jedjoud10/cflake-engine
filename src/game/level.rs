@@ -1,6 +1,5 @@
-use nalgebra::Point3;
-
 use crate::engine::core::defaults::components::components::*;
+extern crate nalgebra_glm as glm;
 use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::transforms::*;
 use crate::engine::core::ecs::System;
@@ -27,6 +26,8 @@ pub fn load_systems(world: &mut World) {
 	// When the render system gets updated
 	unsafe { 
 		gl::ClearColor(1.0, 1.0, 1.0, 1.0);
+		let default_size = World::get_default_window_size();
+		gl::Viewport(0, 0, default_size.0, default_size.1)
 	}
 	rs.system_data.loop_event = |world| {
 		unsafe {
@@ -36,6 +37,7 @@ pub fn load_systems(world: &mut World) {
 	};
 	// Render the entitites
 	rs.system_data.entity_loop_event = |entity, world| {	
+		let camera_data = world.get_entity(world.default_camera_id).clone();
 		let mut shader: &mut Shader;
 		// Render the entity
 		{
@@ -59,6 +61,7 @@ pub fn load_systems(world: &mut World) {
 				gl::DrawArrays(gl::TRIANGLES, 0, 3);
 			}
 		}
+		// Since we cloned the default camera you want to reset it
 	};
 	// When an entity gets added to the render system
 	rs.system_data.entity_added_event = |entity, world| {
@@ -83,6 +86,7 @@ pub fn load_entities(world: &mut World) {
 	camera.name = String::from("Default Camera");	
 	camera.link_component::<Position>(world, Position::default());	
 	camera.link_component::<Rotation>(world, Rotation::default());	
+	camera.link_component::<Camera>(world, Camera::default());
 	
 	// Load the default shader
 	let mut default_shader = Shader::default();
@@ -118,8 +122,8 @@ pub fn load_entities(world: &mut World) {
 	cube.name = String::from("Cube");
 	// Create the model
 	let model = Model {
-    	vertices: vec![Point3::new(-1.0, -1.0, 0.0), Point3::new(1.0, -1.0, 0.0), Point3::new(0.0, 1.0, 0.0)],
-    	triangles: vec![0, 1, 2],
+		vertices: vec![glm::Vec3::new(-1.0, -1.0, 0.0), glm::Vec3::new(1.0, -1.0, 0.0), glm::Vec3::new(0.0, 1.0, 0.0)],
+		triangles: vec![0, 1, 2],
 	};
 	// Link the component
 	let rc = RenderComponent {
@@ -130,6 +134,7 @@ pub fn load_entities(world: &mut World) {
 	};
 	cube.link_component::<RenderComponent>(world, rc);
 
-	world.add_entity(camera);
+	// Make it the default camera
+	world.default_camera_id = world.add_entity(camera);
 	world.add_entity(cube);
 }

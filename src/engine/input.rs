@@ -35,9 +35,10 @@ impl InputManager {
 		self.bind_key(Key::F2, String::from("Capture FPS"));
 	}
 	// Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
-	pub fn update(&mut self) {
+	pub fn update(&mut self, window: &mut glfw::Window) {
 		// Update mappings first
 		self.update_mappings();		
+		// Calculate the mouse delta
 	}
 	// Update event fired from the world (fired after everything happens)
 	pub fn late_update(&mut self, delta_time: f32) {

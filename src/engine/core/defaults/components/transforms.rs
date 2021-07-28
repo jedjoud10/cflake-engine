@@ -3,14 +3,12 @@ use core::f64;
 // Transforms components
 use crate::engine::core::ecs::Component;
 use crate::engine::core::ecs::ComponentID;
-extern crate nalgebra;
-use nalgebra::Point3;
-use nalgebra::Quaternion;
+use nalgebra_glm as glm;
 
 
 // A position component telling us where the entity is in the world
 pub struct Position {
-	val: Point3<f64>
+	val: glm::Vec3
 }
 
 impl Component for Position {
@@ -28,7 +26,7 @@ impl ComponentID for Position {
 impl Default for Position {
 	fn default() -> Self {
 		Self {
-			val: Point3::new(0.0, 0.0, 0.0),
+			val: glm::vec3(0.0, 0.0, 0.0),
 		}
 	}
 }
@@ -60,7 +58,7 @@ impl Default for Scale {
 
 // Rotation component
 pub struct Rotation {
-	val: Quaternion<f64>
+	val: glm::Quat
 }
 
 impl Component for Rotation {
@@ -78,7 +76,7 @@ impl ComponentID for Rotation {
 impl Default for Rotation {
 	fn default() -> Self {
 		Self {
-			val: Quaternion::new(0.0, 0.0, 0.0, 0.0),
+			val: glm::Quat::identity(),
 		}
 	}
 }
