@@ -58,15 +58,15 @@ impl ResourceManager {
 					match bytes[1] {
 						0 => {
 							shader_type = SubShaderType::Vertex;
-							shader_name = format!("{}_{}", &name, "vertex");
+							shader_name = format!("{}.{}", &name, "vertex");
 						},
 						1 => { 
 							shader_type = SubShaderType::Fragment;
-							shader_name = format!("{}_{}", &name, "fragment");
+							shader_name = format!("{}.{}", &name, "fragment");
 						},
 						2 => { 
 							shader_type = SubShaderType::Geometry;
-							shader_name = format!("{}_{}", &name, "geometry");
+							shader_name = format!("{}.{}", &name, "geometry");
 						},
 						_ => {	}
 					}
@@ -77,7 +77,6 @@ impl ResourceManager {
 						source: shader_source.clone(),
 						subshader_type: shader_type.clone(),
 					});
-					println!("{:?}", shader_type);
 				}
 				4 => {
 					// This is a sound effect

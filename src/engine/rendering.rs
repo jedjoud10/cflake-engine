@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::CString, ptr::null};
+use std::{collections::HashMap, ffi::{CString, c_void}, ptr::null};
 use crate::engine::core::ecs::*;
 use nalgebra::Point3;
 use crate::engine::resources::Resource;
@@ -53,18 +53,20 @@ pub struct Shader {
 	pub name: String,
 	pub program: u32,
 	pub finalized: bool,
+	pub linked_subshaders_programs: Vec<u32>,
 }
 
 impl Default for Shader {
 	fn default() -> Self {
 		unsafe {
 			Self {
-					name: String::from("Undefined"),
-					program: gl::CreateProgram(),
-					finalized: false
-				}
+				name: String::from("Undefined"),
+				program: gl::CreateProgram(),
+				finalized: false,
+				linked_subshaders_programs: Vec::new()
 			}
 		}
+	}
 }
 
 impl Shader {
@@ -77,13 +79,39 @@ impl Shader {
 			}
 		} else {
 			unsafe {
+				// Finalize the shader and stuff
 				gl::LinkProgram(self.program);
+
+				// Check for errors
+				// Check for any errors
+				let mut info_log_length: i32 = 0;
+				let info_log_length_ptr: *mut i32 = &mut info_log_length;
+				let mut result: i32 = 0;		
+				let result_ptr: *mut i32 = &mut result;	
+				gl::GetProgramiv(self.program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+				gl::GetProgramiv(self.program, gl::LINK_STATUS, result_ptr);
+				// Print any errors that might've happened while finalizing this shader
+				if info_log_length > 0 {
+					let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+					gl::GetProgramInfoLog(self.program, info_log_length, 0 as *mut i32, log.as_mut_ptr());
+					println!("Error while finalizing shader {}!:", self.name);
+					let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect(); 
+					let string = String::from_utf8(printable_log).unwrap();
+					println!("Error: \n\x1b[31m{}", string);
+					println!("\x1b[0m");
+					panic!();
+				}
+
+				for subshader_program in self.linked_subshaders_programs.iter() {
+					gl::DetachShader(self.program, subshader_program.clone());
+				}
 				self.finalized = true;
 			}
 		}
 	} 
 	// Link a specific subshader to this shader
 	pub fn link_subshader(&mut self, subshader: &SubShader) { 
+		self.linked_subshaders_programs.push(subshader.program);
 		unsafe {
 			gl::AttachShader(self.program, subshader.program);
 		}
@@ -118,13 +146,11 @@ impl SubShader {
 		}
 		unsafe {
 			self.program = gl::CreateShader(shader_type);
-			println!("Step 1 subshader creation: Done");
 			// Compile the shader
 			let cstring = CString::new(self.source.clone()).unwrap();
 			let shader_source: *const i8 = cstring.as_ptr();
 			gl::ShaderSource(self.program, 1, &shader_source, null());
 			gl::CompileShader(self.program);
-			println!("Step 2 subshader creation: Done");
 
 			// Check for any errors
 			let mut info_log_length: i32 = 0;
@@ -132,25 +158,26 @@ impl SubShader {
 			let mut result: i32 = 0;		
 			let result_ptr: *mut i32 = &mut result;	
 			gl::GetShaderiv(self.program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-			gl::GetShaderiv(self.program, gl::INFO_LOG_LENGTH, result_ptr);
-			println!("Step 3 subshader creation: Done");
+			gl::GetShaderiv(self.program, gl::LINK_STATUS, result_ptr);
 			// Print any errors that might've happened while compiling this subshader
 			if info_log_length > 0 {
 				let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-				gl::GetProgramInfoLog(self.program, info_log_length, 0 as *mut i32, log.as_mut_ptr());
-				println!("Error while compiling shader {}!:", self.name);
+				gl::GetShaderInfoLog(self.program, info_log_length, 0 as *mut i32, log.as_mut_ptr());
+				println!("Error while compiling sub-shader {}!:", self.name);
 				let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect(); 
 				let string = String::from_utf8(printable_log).unwrap();
-				println!("{}", string.len());
-				panic!("Error: \n{}", string.get(0..5).unwrap());
+				println!("Error: \n\x1b[31m{}", string);
+				println!("\x1b[0m");
+				panic!();
 			}
-			println!("Step 4 subshader creation: Done");
+
+			println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", self.name);
 		}
 	}	
 }
 
 // A simple model that holds vertex, normal, and color data
-struct Model {
+pub struct Model {
 	pub vertices: Vec<Point3<f32>>,
 	pub triangles: Vec<u32>,
 }
@@ -180,7 +207,7 @@ pub struct RenderComponent {
 	pub render_state: EntityRenderState,
 	pub gpu_data: ModelDataGPU,	
 	pub shader_name: String,
-	model: Model,
+	pub model: Model,
 }
 
 // Struct that hold the model's information from OpenGL
@@ -194,8 +221,18 @@ impl RenderComponent {
 	pub fn refresh_model(&mut self) {
 		unsafe {
 			// Create the vertex buffer and populate it
+			let temp_array = vec![
+				-1.0, -1.0, 0.0,
+				1.0, -1.0, 0.0,
+				0.0,  1.0, 0.0];
 			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
+			gl::BufferData(self.gpu_data.vertex_buf, 1, self.model.vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
+
+			// Create the vertex attrib arrays
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
+			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());			
+			gl::EnableVertexAttribArray(0);
 		}
 	}
 
@@ -205,15 +242,6 @@ impl RenderComponent {
 			// Delete the vertex array
 			gl::DeleteBuffers(1, &mut self.gpu_data.vertex_buf);
 		}
-	}
-
-	// Set the model
-	pub fn set_model(&mut self, model: Model) {
-		self.refresh_model();
-	}
-	// Get the model
-	pub fn get_model(&mut self) -> &mut Model {
-		&mut self.model
 	}
 }
 

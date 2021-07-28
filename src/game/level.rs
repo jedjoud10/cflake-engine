@@ -1,3 +1,5 @@
+use nalgebra::Point3;
+
 use crate::engine::core::defaults::components::components::*;
 use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::transforms::*;
@@ -20,49 +22,34 @@ pub fn load_systems(world: &mut World) {
 		system_data: SystemData::default(),
 	};
 	rs.system_data.link_component::<RenderComponent>(world);
-	rs.system_data.name = String::from("Rendering system");
-	// Load the default shader
-	//let mut default_shader = Shader::default();
-	{
-		{
-			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.pkg"), String::from("shaders\\")).unwrap();
-			// Link the vertex and fragment shaders
-			let mut frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
-			// Compile the subshader
-			frag_subshader.compile_subshader();
-			// Then cache it
-			world.shader_manager.cache_subshader(&frag_subshader, String::from("default.frsh.pkg"));
-			// Then read from the shader cache
-			//default_shader.link_subshader(&frag_subshader);
-		}
-		{
-			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.pkg"), String::from("shaders\\")).unwrap();
-			// Link the vertex and fragment shaders
-			let mut vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
-			// Compile the subshader
-			vert_subshader.compile_subshader();
-			// Then cache it
-			world.shader_manager.cache_subshader(&vert_subshader, String::from("default.vrsh.pkg"));
-			// Then read from the shader cache
-			//default_shader.link_subshader(&vert_subshader);
-		}
-	}	
-
-	// Use it for the default rendering of everything
-	//default_shader.use_shader();
+	rs.system_data.name = String::from("Rendering system");	
 
 	// When the render system gets updated
 	rs.system_data.loop_event = |world| {
 		unsafe {
 			// Clear the window
-			gl::Clear(gl::COLOR_BUFFER_BIT);
+			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 		}
 	};
 	// Render the entitites
-	rs.system_data.entity_loop_event = |entity, world| {
-		let rc = entity.get_component::<RenderComponent>(world);
+	rs.system_data.entity_loop_event = |entity, world| {				
+		let mut shader: &mut Shader;
+		// Render the entity
+		{
+			let mut name= String::new();
+			{
+				let rc = entity.get_component::<RenderComponent>(world);
+				name = rc.shader_name.clone();
+			}
+			shader = world.shader_manager.shaders.get_mut(&name).unwrap();
+		}
+		shader.use_shader();
 		unsafe {
-			// Render the entity
+			// Actually draw the array
+			let rc = entity.get_component::<RenderComponent>(world);
+			gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
+			gl::DrawArrays(gl::TRIANGLES, 0, 3);
+			println!("ELDRAW");
 		}
 	};
 	// When an entity gets added to the render system
@@ -89,10 +76,52 @@ pub fn load_entities(world: &mut World) {
 	camera.link_component::<Position>(world, Position::default());	
 	camera.link_component::<Rotation>(world, Rotation::default());	
 	
+	// Load the default shader
+	let mut default_shader = Shader::default();
+	{
+		{
+			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.pkg"), String::from("shaders\\")).unwrap();
+			// Link the vertex and fragment shaders
+			let mut frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
+			// Compile the subshader
+			frag_subshader.compile_subshader();
+			// Then cache it
+			world.shader_manager.cache_subshader(&frag_subshader, String::from("default.frsh.pkg"));
+			// Then read from the shader cache
+			default_shader.link_subshader(&frag_subshader);
+		}
+		{
+			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.pkg"), String::from("shaders\\")).unwrap();
+			// Link the vertex and fragment shaders
+			let mut vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
+			// Compile the subshader
+			vert_subshader.compile_subshader();
+			// Then cache it
+			world.shader_manager.cache_subshader(&vert_subshader, String::from("default.vrsh.pkg"));
+			// Then read from the shader cache
+			default_shader.link_subshader(&vert_subshader);
+		}
+	}	
+
+	// Use it for the default rendering of everything
+	default_shader.use_shader();
+
 	// Simple cube to render
 	let mut cube = Entity::default();
 	cube.name = String::from("Cube");
-	cube.link_component::<RenderComponent>(world, RenderComponent::default());
+	// Create the model
+	let model = Model {
+    	vertices: vec![Point3::new(-1.0, -1.0, 0.0), Point3::new(1.0, -1.0, 0.0), Point3::new(0.0, 1.0, 0.0)],
+    	triangles: vec![0, 1, 2],
+	};
+	// Link the component
+	let mut rc = RenderComponent {
+    	render_state: EntityRenderState::Visible,
+    	gpu_data: ModelDataGPU::default(),
+    	shader_name: default_shader.name,   
+		model	
+	};
+	cube.link_component::<RenderComponent>(world, rc);
 
 	world.add_entity(Box::new(camera));
 	world.add_entity(Box::new(cube));
