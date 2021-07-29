@@ -36,14 +36,26 @@ pub fn load_systems(world: &mut World) {
 	};
 	// Render the entitites
 	rs.system_data.entity_loop_event = |entity, world| {	
+		let id = entity.entity_id;
 		let mut shader: &mut Shader;
 		let mut model_matrix: glm::Mat4;
 		let mut view_project_matrix: glm::Mat4;
 		// Get the projection * view matrix
 		{
 			let camera_entity = world.get_entity(world.default_camera_id).clone();
+			let mut rotation: glm::Quat;
+			{
+				rotation = camera_entity.get_component::<Rotation>(world).rotation;
+			}
 			let camera_data = camera_entity.get_component::<Camera>(world);
+			let position = camera_entity.get_component::<Position>(world);
+			// Just a simple lookat test
+			rotation = glm::quat_look_at(&glm::normalize(&-position.position), &glm::vec3(0.0, 1.0, 0.0));
 			view_project_matrix = camera_data.view_matrix * camera_data.projection_matrix;
+
+			// Update the entity internally
+			*camera_entity.get_component_mut::<Rotation>(world).rotation = *rotation;
+			*world.get_entity(id) = camera_entity;
 		}
 		// Render the entity
 		{
@@ -76,14 +88,14 @@ pub fn load_systems(world: &mut World) {
 	};
 	// When an entity gets added to the render system
 	rs.system_data.entity_added_event = |entity, world| {
-		let rc = entity.get_component::<RenderComponent>(world);
+		let rc = entity.get_component_mut::<RenderComponent>(world);
 		// Use the default shader for this entity renderer
 		// Make sure we create the OpenGL data for this entity's model
 		rc.refresh_model();
 	};
 	// When an entity gets removed from the render system
 	rs.system_data.entity_removed_event = |entity, world| {
-		let rc = entity.get_component::<RenderComponent>(world);
+		let rc = entity.get_component_mut::<RenderComponent>(world);
 		rc.dispose_model();
 	};
 	rs.system_data.stype = SystemType::Render;
@@ -97,7 +109,6 @@ pub fn load_systems(world: &mut World) {
 	cs.system_data.link_component::<Position>(world);
 	cs.system_data.link_component::<Rotation>(world);
 
-	// The system loop
 	cs.system_data.entity_loop_event = |entity, world| {
 		let mut position: glm::Vec3;
 		let mut rotation: glm::Quat;
@@ -106,7 +117,7 @@ pub fn load_systems(world: &mut World) {
 			rotation = entity.get_component::<Rotation>(world).rotation;
 			position = entity.get_component::<Position>(world).position;
 		}
-		let mut camera_data = entity.get_component::<Camera>(world);
+		let mut camera_data = entity.get_component_mut::<Camera>(world);
 		// Update the view matrix every time we make a change
 		camera_data.update_view_matrix(&position, &rotation);
 	};

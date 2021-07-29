@@ -206,7 +206,7 @@ impl World {
 			gl::Viewport(0, 0, size.0, size.1);
 			let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
 			let entity_clone_id = camera_entity_clone.entity_id;
-			let camera_component = camera_entity_clone.get_component::<Camera>(self);
+			let camera_component = camera_entity_clone.get_component_mut::<Camera>(self);
 			camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
 			camera_component.window_size = size;
 			camera_component.update_projection_matrix();
