@@ -295,6 +295,10 @@ impl Render {
 	// When we update the model and want to refresh it's OpenGL data
 	pub fn refresh_model(&mut self) {
 		unsafe {
+			// Create the vao	
+			gl::GenVertexArrays(1, &mut self.gpu_data.vertex_array_object);
+			gl::BindVertexArray(self.gpu_data.vertex_array_object);
+			
 			// Create the vertex buffer and populate it
 			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
@@ -304,7 +308,6 @@ impl Render {
 			gl::EnableVertexAttribArray(0);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
 			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());	
-			gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 			self.gpu_data.initialized = true;
 		}
 	}

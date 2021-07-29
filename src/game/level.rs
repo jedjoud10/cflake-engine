@@ -77,7 +77,7 @@ pub fn load_systems(world: &mut World) {
 			// Actually draw the array
 			let rc = entity.get_component::<components::Render>(world);
 			if rc.gpu_data.initialized {
-				gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
+				gl::BindVertexArray(rc.gpu_data.vertex_array_object);
 				gl::DrawArrays(gl::TRIANGLES, 0, 3);
 			}
 		}
