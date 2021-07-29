@@ -152,7 +152,7 @@ impl SystemData {
 		for &entity_id in self.entities.iter() {		
 			let entity_clone = &mut world.get_entity(entity_id).clone();
 			(self.entity_removed_event)(entity_clone, world);
-			*world.get_entity(entity_id) = entity_clone.clone();
+			*world.get_entity_mut(entity_id) = entity_clone.clone();
 		}
 	}
 	// Fire the "entity_loop" event
@@ -161,7 +161,7 @@ impl SystemData {
 		for &entity_id in self.entities.iter() {		
 			let entity_clone = &mut world.get_entity(entity_id).clone();
 			(self.entity_loop_event)(entity_clone, world);
-			*world.get_entity(entity_id) = entity_clone.clone();
+			*world.get_entity_mut(entity_id) = entity_clone.clone();
 		}
 	}
 	// Add a component to this system's component bitfield id
@@ -186,7 +186,7 @@ impl SystemData {
 		let system_entity_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
 		self.entities.remove(system_entity_id);
 		(self.entity_removed_event)(&removed_entity, world);
-		println!("\x1b[33mRemoved entity '{}' with entity ID {}, from the system '{}'\x1b[0m", removed_entity.name, removed_entity.entity_id, self.name);
+		println!("\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m", removed_entity.name, removed_entity.entity_id, self.name);
 	}
 }
 
@@ -210,7 +210,7 @@ impl Entity {
 		let world_component_id = world.component_manager.components.len() - 1;
 		self.c_bitfield = self.c_bitfield | component_id;
 		self.components.insert(component_id, world_component_id as u16);
-		println!("Link component '{}' to entity '{}', with ID {}", component_name, self.name, component_id);
+		println!("Link component '{}' to entity '{}', with ID: {}", component_name, self.name, component_id);
 	}
 	// Unlink a component from this entity
 	pub fn unlink_component<T: ComponentID>(&mut self, world: &mut World) {

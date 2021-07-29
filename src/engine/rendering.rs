@@ -286,7 +286,7 @@ impl Default for ModelDataGPU {
 impl Render {
 	// Updates the model matrix using a position and a rotation
 	pub fn update_model_matrix(&mut self, position: &glm::Vec3, rotation: &glm::Quat) {
-		self.gpu_data.model_matrix = glm::Mat4::identity();
+		self.gpu_data.model_matrix = glm::quat_to_mat4(rotation) * glm::translate(&glm::identity(), position);
 	}
 	// When we update the model and want to refresh it's OpenGL data
 	pub fn refresh_model(&mut self) {

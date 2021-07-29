@@ -13,10 +13,10 @@ pub fn register_components(world: &mut World) {
 pub fn load_systems(world: &mut World) {
 	// Default render system
 	let mut rs = System::default();
+	rs.system_data.name = String::from("Rendering system");	
 	rs.system_data.link_component::<components::Render>(world);
 	rs.system_data.link_component::<transforms::Position>(world);
 	rs.system_data.link_component::<transforms::Position>(world);
-	rs.system_data.name = String::from("Rendering system");	
 
 	// When the render system gets updated
 	unsafe { 
@@ -34,25 +34,14 @@ pub fn load_systems(world: &mut World) {
 	rs.system_data.entity_loop_event = |entity, world| {	
 		let id = entity.entity_id;
 		let mut shader: &mut Shader;
-		let mut model_matrix: glm::Mat4;
-		let mut view_project_matrix: glm::Mat4;
+		let mut projection_view_matrix: glm::Mat4;
 		// Get the projection * view matrix
 		{
-			let camera_entity = world.get_entity(world.default_camera_id).clone();
-			let mut rotation: glm::Quat;
-			{
-				rotation = camera_entity.get_component::<transforms::Rotation>(world).rotation;
-			}
+			let camera_entity = world.get_entity(world.default_camera_id);
 			let camera_data = camera_entity.get_component::<components::Camera>(world);
-			let position = camera_entity.get_component::<transforms::Position>(world);
-			// Just a simple lookat test
-			rotation = glm::quat_look_at(&glm::normalize(&position.position), &glm::vec3(0.0, 1.0, 0.0));
-			view_project_matrix = camera_data.view_matrix * camera_data.projection_matrix;
-
-			// Update the entity internally
-			*camera_entity.get_component_mut::<transforms::Rotation>(world).rotation = *rotation;
-			*world.get_entity(id) = camera_entity;
+			projection_view_matrix = camera_data.projection_matrix * camera_data.view_matrix;
 		}
+		let mut model_matrix: glm::Mat4;
 		// Render the entity
 		{
 			let mut name= String::new();
@@ -61,6 +50,7 @@ pub fn load_systems(world: &mut World) {
 				let position: glm::Vec3;
 				let rotation: glm::Quat;
 				{
+					*entity.get_component_mut::<transforms::Position>(world).position = *glm::vec3(world.time_manager.time_since_start.sin() as f32, 0.0, 0.0);
 					position= entity.get_component::<transforms::Position>(world).position;
 					rotation = entity.get_component::<transforms::Rotation>(world).rotation;
 				}
@@ -76,9 +66,9 @@ pub fn load_systems(world: &mut World) {
 		let loc = shader.get_uniform_location(String::from("mvp_matrix"));
 		
 		// Calculate the mvp matrix		
-		let mvp_matrix: glm::Mat4 = view_project_matrix * model_matrix;
+		let mvp_matrix: glm::Mat4 = projection_view_matrix * model_matrix;
 		// Pass the MVP to the shader
-		shader.set_matrix_44_uniform(loc, model_matrix);
+		shader.set_matrix_44_uniform(loc, mvp_matrix);
 
 		unsafe {
 			// Actually draw the array
@@ -147,7 +137,7 @@ pub fn load_entities(world: &mut World) {
 	let mut camera= Entity::default();	
 	camera.name = String::from("Default Camera");	
 	camera.link_component::<transforms::Position>(world, transforms::Position {
-		position: glm::vec3(-1.0, -1.0, -1.0),
+		position: glm::vec3(10.0, 10.0, 0.0),
 	});	
 	camera.link_component::<transforms::Rotation>(world, transforms::Rotation::default());	
 	camera.link_component::<components::Camera>(world, components::Camera::default());

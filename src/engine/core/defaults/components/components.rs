@@ -19,7 +19,7 @@ impl Camera {
 	// Update the projection matrix of this camera
 	pub fn update_projection_matrix(&mut self) {
 		// Turn the horizontal fov into a vertical one
-		let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (self.window_size.1 * self.window_size.0) as f32).atan();
+		let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (self.window_size.1 as f32 / self.window_size.0 as f32)).atan();
 		self.projection_matrix = glm::Mat4::new_perspective(self.aspect_ratio, vertical_fov, self.clip_planes.0, self.clip_planes.1);
 	}
 	// Update the view matrix using a rotation and a position
@@ -27,7 +27,7 @@ impl Camera {
 		let forward_vector: glm::Vec3 =  glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 0.0, 1.0));
 		let up_vector: glm::Vec3 = glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 1.0, 0.0));
 		let new_view_matrix = glm::look_at(&position, &forward_vector, &up_vector);
-		self.view_matrix = new_view_matrix; 
+		self.view_matrix = glm::look_at(&position, &glm::vec3(0.0, 0.0, 0.0), &glm::vec3(0.0, 1.0, 0.0)); 
 	}
 }
 

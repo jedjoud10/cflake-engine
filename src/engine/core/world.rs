@@ -162,7 +162,7 @@ impl World {
 			}		
 		}
 		// Since we cloned the entity variable we gotta update the entity manager with the new one
-		*self.entity_manager.get_entity(id) = entity;
+		*self.entity_manager.get_entity_mut(id) = entity;
 		self.systems = clone;
 		return id;
 	} 
@@ -182,7 +182,10 @@ impl World {
 		self.systems = clone;
 	}
 	// Get a mutable reference to an entity from the entity manager
-	pub fn get_entity(&mut self, entity_id: u16) -> &mut Entity {
+	pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
+		self.entity_manager.get_entity_mut(entity_id)
+	}
+	pub fn get_entity(&self, entity_id: u16) -> &Entity {
 		self.entity_manager.get_entity(entity_id)
 	}
 	// Check if a specified entity fits the criteria to be in a specific system
@@ -211,7 +214,7 @@ impl World {
 			camera_component.window_size = size;
 			camera_component.update_projection_matrix();
 			// Update the original entity
-			*self.get_entity(entity_clone_id) = camera_entity_clone;
+			*self.get_entity_mut(entity_clone_id) = camera_entity_clone;
 		}
 	}
 }
@@ -231,9 +234,13 @@ impl EntityManager {
 		self.entities.insert(entity.entity_id, entity);
 		return id;
 	}
-	// Get an entity using the entities vector and the "mapper (WIP)"
-	pub fn get_entity(&mut self, entity_id: u16) -> &mut Entity {
+	// Get a mutable reference to a stored entity
+	pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
 		self.entities.get_mut(&entity_id).unwrap()
+	}
+	// Get an entity using the entities vector and the "mapper (WIP)"
+	pub fn get_entity(&self, entity_id: u16) -> &Entity {
+		self.entities.get(&entity_id).unwrap()
 	}
 	// Removes an entity from the world 
 	pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
