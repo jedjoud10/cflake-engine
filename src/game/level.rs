@@ -1,5 +1,6 @@
 use crate::engine::core::defaults::components::components::*;
 extern crate nalgebra_glm as glm;
+use crate::engine::core::ecs::SystemState;
 use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::transforms::*;
 use crate::engine::core::ecs::System;
@@ -109,7 +110,7 @@ pub fn load_systems(world: &mut World) {
 		// Update the view matrix every time we make a change
 		camera_data.update_view_matrix(&position, &rotation);
 	};
-
+	//cs.system_data.state = SystemState::Disabled(0.0);
 	world.add_system(cs);
 }
 // Load the entities
@@ -120,6 +121,9 @@ pub fn load_entities(world: &mut World) {
 	camera.link_component::<Position>(world, Position::default());	
 	camera.link_component::<Rotation>(world, Rotation::default());	
 	camera.link_component::<Camera>(world, Camera::default());
+
+	// Make it the default camera
+	world.default_camera_id = world.add_entity(camera);
 	
 	// Load the default shader
 	let mut default_shader = Shader::default();
@@ -166,8 +170,5 @@ pub fn load_entities(world: &mut World) {
 		model	
 	};
 	cube.link_component::<RenderComponent>(world, rc);
-
-	// Make it the default camera
-	world.default_camera_id = world.add_entity(camera);
 	world.add_entity(cube);
 }

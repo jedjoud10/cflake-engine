@@ -330,6 +330,6 @@ impl Component for RenderComponent {
 }
 impl ComponentID for RenderComponent {
 	fn get_component_name() -> String {
-		String::from("Renderable Component")
+		String::from("Render Component")
 	}
 }

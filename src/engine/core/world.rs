@@ -188,7 +188,9 @@ impl World {
 	// Check if a specified entity fits the criteria to be in a specific system
 	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
 		// Check if the system matches the component ID of the entity
-		entity.c_bitfield >= system_data.c_bitfield
+		let bitfield: u8 = system_data.c_bitfield & !entity.c_bitfield;
+		// If the entity is valid, all the bits would be 0
+		return bitfield == 0;
 	}	
 }
 

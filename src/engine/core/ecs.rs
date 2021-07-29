@@ -173,7 +173,7 @@ impl SystemData {
 	}
 	// Adds an entity to the system
 	pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
-		println!("\x1b[32mAdd entity '{}' with entity ID {}, to the system '{}'\x1b[0m", entity.name, entity.entity_id, self.name);
+		println!("\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m", entity.name, entity.entity_id, self.name);
 		self.entities.push(entity.entity_id);
 		(self.entity_added_event)(&entity, world);
 	}
@@ -221,6 +221,7 @@ impl Entity {
 	pub fn get_component<'a, T: ComponentID + Component + 'static>(&'a self, world: &'a mut World) -> &'a mut T {
 		let name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&name);
+
 		let entity_component_id = self.components[&component_id];
 		let final_component = &mut world.component_manager.components[entity_component_id as usize];
 		let output_component = final_component.as_any().downcast_mut::<T>().expect("Component mismatch!");
