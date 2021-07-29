@@ -1,3 +1,5 @@
+use glam::Vec4Swizzles;
+
 use crate::engine::core::{ecs::*, world::World};
 use crate::engine::core::defaults::components::transforms::{Position, Rotation};
 use crate::engine::rendering::{EntityRenderState, Model, ModelDataGPU};
@@ -23,7 +25,10 @@ impl Camera {
 	}
 	// Update the view matrix using a rotation and a position
 	pub fn update_view_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat) {
-		self.view_matrix = glam::Mat4::look_at_rh(position, glam::Vec3::ZERO, glam::vec3(0.0, 1.0, 0.0));
+		let rotation_matrix = glam::Mat4::from_quat(rotation);
+		let forward_vector = rotation_matrix.mul_vec4(glam::vec4(0.0, 0.0, -1.0, 1.0)).xyz();
+		let up_vector = rotation_matrix.mul_vec4(glam::vec4(0.0, 1.0, 0.0, 1.0)).xyz();
+		self.view_matrix = glam::Mat4::look_at_rh(position, forward_vector + position, up_vector);
 	}
 }
 
