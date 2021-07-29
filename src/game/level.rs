@@ -50,7 +50,6 @@ pub fn load_systems(world: &mut World) {
 				let position: glm::Vec3;
 				let rotation: glm::Quat;
 				{
-					*entity.get_component_mut::<transforms::Position>(world).position = *glm::vec3(world.time_manager.time_since_start.sin() as f32, 0.0, 0.0);
 					position= entity.get_component::<transforms::Position>(world).position;
 					rotation = entity.get_component::<transforms::Rotation>(world).rotation;
 				}
@@ -137,7 +136,7 @@ pub fn load_entities(world: &mut World) {
 	let mut camera= Entity::default();	
 	camera.name = String::from("Default Camera");	
 	camera.link_component::<transforms::Position>(world, transforms::Position {
-		position: glm::vec3(10.0, 10.0, 0.0),
+		position: glm::vec3(0.0, 0.0, 10.0),
 	});	
 	camera.link_component::<transforms::Rotation>(world, transforms::Rotation::default());	
 	camera.link_component::<components::Camera>(world, components::Camera::default());
