@@ -1,6 +1,7 @@
 use std::ffi::CString;
+use glam::Vec4Swizzles;
+
 use crate::engine::core::defaults::components::{components, *};
-extern crate nalgebra_glm as glm;
 use crate::engine::rendering::*;
 use crate::engine::core::ecs::{SystemType, SystemData, SystemState, System, Entity};
 use crate::engine::core::world::World;
@@ -35,8 +36,8 @@ pub fn load_systems(world: &mut World) {
 	rs.system_data.entity_loop_event = |entity, world| {	
 		let id = entity.entity_id;
 		let mut shader: &mut Shader;
-		let mut view_matrix: glm::Mat4;
-		let mut projection_matrix: glm::Mat4;
+		let mut view_matrix: glam::Mat4;
+		let mut projection_matrix: glam::Mat4;
 		// Get the projection * view matrix
 		{
 			let camera_entity = world.get_entity(world.default_camera_id);
@@ -44,20 +45,20 @@ pub fn load_systems(world: &mut World) {
 			projection_matrix = camera_data.projection_matrix;
 			view_matrix = camera_data.view_matrix;
 		}
-		let mut model_matrix: glm::Mat4;
+		let mut model_matrix: glam::Mat4;
 		// Render the entity
 		{
 			let mut name= String::new();
 			// Get the model matrix
 			{
-				let position: glm::Vec3;
-				let rotation: glm::Quat;
+				let position: glam::Vec3;
+				let rotation: glam::Quat;
 				{
 					position = entity.get_component::<transforms::Position>(world).position;
 					rotation = entity.get_component::<transforms::Rotation>(world).rotation;
 				}
 				let rc = entity.get_component_mut::<components::Render>(world);
-				rc.update_model_matrix(&position, &rotation);
+				rc.update_model_matrix(position.clone(), rotation.clone());
 				name = rc.shader_name.clone();
 				model_matrix = rc.gpu_data.model_matrix.clone();
 			}
@@ -68,7 +69,7 @@ pub fn load_systems(world: &mut World) {
 		
 		let mut loc = shader.get_uniform_location(CString::new("mvp_matrix").unwrap());
 		// Calculate the mvp matrix		
-		let mvp_matrix: glm::Mat4 = projection_matrix * view_matrix * model_matrix;
+		let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
 		// Pass the MVP to the shader
 		shader.set_matrix_44_uniform(loc, mvp_matrix);
 
@@ -106,8 +107,8 @@ pub fn load_systems(world: &mut World) {
 
 	cs.system_data.entity_added_event = |entity, world| {
 		// First time we initialize the camera, setup the matrices
-		let mut position: glm::Vec3;
-		let mut rotation: glm::Quat;
+		let mut position: glam::Vec3;
+		let mut rotation: glam::Quat;
 		{
 			// Set the variables since we can't have two mutable references at once
 			rotation = entity.get_component::<transforms::Rotation>(world).rotation;
@@ -115,7 +116,7 @@ pub fn load_systems(world: &mut World) {
 		}
 		let mut camera_component = entity.get_component_mut::<components::Camera>(world);
 		camera_component.update_projection_matrix();
-		camera_component.update_view_matrix(&position, &rotation);
+		camera_component.update_view_matrix(position, rotation);
 		world.input_manager.bind_key(glfw::Key::W, String::from("camera_forward"));
 		world.input_manager.bind_key(glfw::Key::S, String::from("camera_backwards"));
 		world.input_manager.bind_key(glfw::Key::D, String::from("camera_right"));
@@ -125,30 +126,32 @@ pub fn load_systems(world: &mut World) {
 	};
 
 	cs.system_data.entity_loop_event = |entity, world| {
-		let mut position: glm::Vec3;
-		let mut rotation: glm::Quat;
+		let mut position: glam::Vec3;
+		let mut rotation: glam::Quat;
 		{
 			// Set the variables since we can't have two mutable references at once
 			{
 				let delta_time = world.time_manager.delta_time as f32;
 				rotation = entity.get_component_mut::<transforms::Rotation>(world).rotation.clone();
-				let rotation_matrix = glm::quat_to_mat4(rotation);
+				let forward_vector = glam::Mat4::from_quat(rotation).mul_vec4(glam::vec4(0.0, 0.0, 1.0, 1.0)).xyz();
+				let up_vector = glam::Mat4::from_quat(rotation).mul_vec4(glam::vec4(0.0, 1.0, 0.0, 1.0)).xyz();
+				let right_vector = glam::Mat4::from_quat(rotation).mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0)).xyz();
 				// Create some movement using keyboard input, only changing position for now
 				let changed_position = &mut entity.get_component::<transforms::Position>(world).position.clone();
 				if world.input_manager.map_held(String::from("camera_forward")).0 {
-					*changed_position += glm::vec3(0.0, 0.0, 1.0 * delta_time) * rotation_matrix;
+					*changed_position += forward_vector * world.time_manager.delta_time as f32;
 				} else if world.input_manager.map_held(String::from("camera_backwards")).0 {
-					*changed_position += glm::vec3(0.0, 0.0, -1.0 * delta_time) * rotation_matrix;
+					*changed_position += -forward_vector * world.time_manager.delta_time as f32;
 				}
 				if world.input_manager.map_held(String::from("camera_right")).0 {
-					*changed_position += glm::vec3(1.0 * delta_time, 0.0, 0.0) * rotation_matrix;
+					*changed_position += right_vector * world.time_manager.delta_time as f32;
 				} else if world.input_manager.map_held(String::from("camera_left")).0 {
-					*changed_position += glm::vec3(-1.0 * delta_time, 0.0, 0.0) * rotation_matrix;
+					*changed_position += -right_vector * world.time_manager.delta_time as f32;
 				}
 				if world.input_manager.map_held(String::from("camera_up")).0 {
-					*changed_position += glm::vec3(0.0, 1.0 * delta_time, 0.0) * rotation_matrix;
+					*changed_position += up_vector * world.time_manager.delta_time as f32;
 				} else if world.input_manager.map_held(String::from("camera_down")).0 {
-					*changed_position += glm::vec3(0.0, -1.0 * delta_time, 0.0) * rotation_matrix;
+					*changed_position += up_vector * world.time_manager.delta_time as f32;
 				}
 				// Update the main position
 				*entity.get_component_mut::<transforms::Position>(world).position = **changed_position;
@@ -158,7 +161,7 @@ pub fn load_systems(world: &mut World) {
 		}
 		let mut camera_component = entity.get_component_mut::<components::Camera>(world);
 		// Update the view matrix every time we make a change
-		camera_component.update_view_matrix(&position, &rotation);
+		camera_component.update_view_matrix(position, rotation);
 	};
 
 	world.add_system(cs);
@@ -169,7 +172,7 @@ pub fn load_entities(world: &mut World) {
 	let mut camera= Entity::default();	
 	camera.name = String::from("Default Camera");	
 	camera.link_component::<transforms::Position>(world, transforms::Position {
-		position: glm::vec3(5.0, 5.0, 5.0),
+		position: glam::vec3(5.0, 5.0, 5.0),
 	});	
 	camera.link_component::<transforms::Rotation>(world, transforms::Rotation::default());	
 	camera.link_component::<components::Camera>(world, components::Camera::default());
@@ -211,7 +214,7 @@ pub fn load_entities(world: &mut World) {
 	cube.name = String::from("Cube");
 	// Create the model
 	let model = Model {
-		vertices: vec![glm::Vec3::new(-1.0, -1.0, 0.0), glm::Vec3::new(1.0, -1.0, 0.0), glm::Vec3::new(0.0, 1.0, 0.0)],
+		vertices: vec![glam::vec3(-1.0, -1.0, 0.0), glam::vec3(1.0, -1.0, 0.0), glam::vec3(0.0, 1.0, 0.0)],
 		triangles: vec![0, 1, 2],
 	};
 	// Link the component
@@ -230,7 +233,7 @@ pub fn load_entities(world: &mut World) {
 	cube.name = String::from("Cube 2");
 	// Create the model
 	let model = Model {
-		vertices: vec![glm::Vec3::new(0.0, -1.0, -1.0), glm::Vec3::new(0.0, 1.0, -1.0), glm::Vec3::new(0.0, 0.0, 1.0)],
+		vertices: vec![glam::vec3(0.0, -1.0, -1.0), glam::vec3(0.0, 1.0, -1.0), glam::vec3(0.0, 0.0, 1.0)],
 		triangles: vec![0, 1, 2],
 	};
 	// Link the component
@@ -242,7 +245,7 @@ pub fn load_entities(world: &mut World) {
 	};
 	cube.link_component::<components::Render>(world, rc);
 	cube.link_component::<transforms::Position>(world, transforms::Position {
-		position: glm::vec3(5.0, 0.0, 0.0),
+		position: glam::vec3(5.0, 0.0, 0.0),
 	});
 	cube.link_component::<transforms::Rotation>(world, transforms::Rotation::default());
 	//world.add_entity(cube);

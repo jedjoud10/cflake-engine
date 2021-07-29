@@ -1,12 +1,11 @@
 // Transforms components
 use crate::engine::core::ecs::Component;
 use crate::engine::core::ecs::ComponentID;
-use nalgebra_glm as glm;
 
 
 // A position component telling us where the entity is in the world
 pub struct Position {
-	pub position: glm::Vec3
+	pub position: glam::Vec3
 }
 
 impl Component for Position {
@@ -28,7 +27,7 @@ impl ComponentID for Position {
 impl Default for Position {
 	fn default() -> Self {
 		Self {
-			position: glm::vec3(0.0, 0.0, 0.0),
+			position: glam::Vec3::ZERO,
 		}
 	}
 }
@@ -64,7 +63,7 @@ impl Default for Scale {
 
 // Rotation component
 pub struct Rotation {
-	pub rotation: glm::Quat
+	pub rotation: glam::Quat
 }
 
 impl Component for Rotation {
@@ -86,7 +85,7 @@ impl ComponentID for Rotation {
 impl Default for Rotation {
 	fn default() -> Self {
 		Self {
-			rotation: glm::Quat::identity(),
+			rotation: glam::Quat::IDENTITY,
 		}
 	}
 }

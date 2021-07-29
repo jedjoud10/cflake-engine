@@ -9,5 +9,4 @@ build = "build.rs"
 [dependencies]
 glfw = "0.41.0"
 gl = "0.14.0"
-nalgebra = "0.25.4"
-nalgebra-glm = "0.3"
+glam = "0.17.3"

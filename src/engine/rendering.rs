@@ -1,6 +1,5 @@
 use std::{collections::HashMap, ffi::{CString, c_void}, ptr::null};
 use crate::engine::core::defaults::components::components::Render;
-use nalgebra_glm as glm;
 use crate::engine::resources::Resource;
 
 // Shader manager
@@ -175,9 +174,10 @@ impl Shader {
 		}
 	}
 	// Set a matrix 4x4
-	pub fn set_matrix_44_uniform(&self, location: i32, matrix: glm::Mat4) {
+	pub fn set_matrix_44_uniform(&self, location: i32, matrix: glam::Mat4) {
 		unsafe {
-			gl::UniformMatrix4fv(location, 1, gl::FALSE, matrix.as_ptr());
+			let ptr: *const f32 = &matrix.as_ref()[0];
+			gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
 		}
 	}
 }
@@ -243,7 +243,7 @@ impl SubShader {
 // A simple model that holds vertex, normal, and color data
 #[derive(Debug)]
 pub struct Model {
-	pub vertices: Vec<glm::Vec3>,
+	pub vertices: Vec<glam::Vec3>,
 	pub triangles: Vec<u32>,
 }
 
@@ -270,7 +270,7 @@ impl Default for EntityRenderState {
 pub struct ModelDataGPU {
 	pub vertex_buf: u32,
 	pub initialized: bool,
-	pub model_matrix: glm::Mat4,
+	pub model_matrix: glam::Mat4,
 }
 
 impl Default for ModelDataGPU {
@@ -278,15 +278,16 @@ impl Default for ModelDataGPU {
 		Self {
 			vertex_buf: 0,
 			initialized: false,
-			model_matrix: glm::Mat4::identity()
+			model_matrix: glam::Mat4::IDENTITY
 		}
 	}
 }
 
 impl Render {
 	// Updates the model matrix using a position and a rotation
-	pub fn update_model_matrix(&mut self, position: &glm::Vec3, rotation: &glm::Quat) {
-		self.gpu_data.model_matrix = glm::quat_to_mat4(rotation) * glm::translate(&glm::identity(), position);
+	pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat) {
+		let model_matrix = glam::Mat4::from_quat(rotation) * glam::Mat4::from_translation(position);
+		self.gpu_data.model_matrix = model_matrix;
 	}
 	// When we update the model and want to refresh it's OpenGL data
 	pub fn refresh_model(&mut self) {

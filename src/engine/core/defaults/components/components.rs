@@ -1,13 +1,12 @@
 use crate::engine::core::{ecs::*, world::World};
 use crate::engine::core::defaults::components::transforms::{Position, Rotation};
 use crate::engine::rendering::{EntityRenderState, Model, ModelDataGPU};
-extern crate nalgebra_glm as glm;
 
 
 // A simple camera component
 pub struct Camera {
-	pub view_matrix: glm::Mat4,
-	pub projection_matrix: glm::Mat4,
+	pub view_matrix: glam::Mat4,
+	pub projection_matrix: glam::Mat4,
 	pub horizontal_fov: f32, 
 	pub aspect_ratio: f32,
 	pub clip_planes: (f32, f32), // Near, far
@@ -20,14 +19,11 @@ impl Camera {
 	pub fn update_projection_matrix(&mut self) {
 		// Turn the horizontal fov into a vertical one
 		let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (self.window_size.1 as f32 / self.window_size.0 as f32)).atan();
-		self.projection_matrix = glm::Mat4::new_perspective(self.aspect_ratio, vertical_fov, self.clip_planes.0, self.clip_planes.1);
+		self.projection_matrix = glam::Mat4::perspective_rh(vertical_fov, self.aspect_ratio, self.clip_planes.0, self.clip_planes.1);
 	}
 	// Update the view matrix using a rotation and a position
-	pub fn update_view_matrix(&mut self, position: &glm::Vec3, rotation: &glm::Quat) {
-		let forward_vector: glm::Vec3 =  glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 0.0, -1.0));
-		let up_vector: glm::Vec3 = glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 1.0, 0.0));
-		let new_view_matrix = glm::look_at(&position, &(forward_vector + position), &up_vector);
-		self.view_matrix = glm::look_at(&position, &glm::zero(), &glm::vec3(0.0, 1.0, 0.0));
+	pub fn update_view_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat) {
+		self.view_matrix = glam::Mat4::look_at_rh(position, glam::Vec3::ZERO, glam::vec3(0.0, 1.0, 0.0));
 	}
 }
 
@@ -50,8 +46,8 @@ impl ComponentID for Camera {
 impl Default for Camera {
 	fn default() -> Self {
 		Self {
-			view_matrix: glm::Mat4::identity(),
-			projection_matrix: glm::Mat4::identity(),
+			view_matrix: glam::Mat4::IDENTITY,
+			projection_matrix: glam::Mat4::IDENTITY,
 			horizontal_fov: 150.0,
     		aspect_ratio: 16.0 / 9.0,
     		clip_planes: (0.1, 1000.0),
