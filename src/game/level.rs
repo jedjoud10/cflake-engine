@@ -131,30 +131,30 @@ pub fn load_systems(world: &mut World) {
 			// Set the variables since we can't have two mutable references at once
 			{
 				let delta_time = world.time_manager.delta_time as f32;
+				rotation = entity.get_component_mut::<transforms::Rotation>(world).rotation.clone();
+				let rotation_matrix = glm::quat_to_mat4(rotation);
 				// Create some movement using keyboard input, only changing position for now
 				let changed_position = &mut entity.get_component::<transforms::Position>(world).position.clone();
 				if world.input_manager.map_held(String::from("camera_forward")).0 {
-					*changed_position += glm::vec3(0.0, 0.0, 1.0 * delta_time);
+					*changed_position += glm::vec3(0.0, 0.0, 1.0 * delta_time) * rotation_matrix;
 				} else if world.input_manager.map_held(String::from("camera_backwards")).0 {
-					*changed_position += glm::vec3(0.0, 0.0, -1.0 * delta_time);
+					*changed_position += glm::vec3(0.0, 0.0, -1.0 * delta_time) * rotation_matrix;
 				}
 				if world.input_manager.map_held(String::from("camera_right")).0 {
-					*changed_position += glm::vec3(1.0 * delta_time, 0.0, 0.0);
+					*changed_position += glm::vec3(1.0 * delta_time, 0.0, 0.0) * rotation_matrix;
 				} else if world.input_manager.map_held(String::from("camera_left")).0 {
-					*changed_position += glm::vec3(-1.0 * delta_time, 0.0, 0.0);
+					*changed_position += glm::vec3(-1.0 * delta_time, 0.0, 0.0) * rotation_matrix;
 				}
 				if world.input_manager.map_held(String::from("camera_up")).0 {
-					*changed_position += glm::vec3(0.0, 1.0 * delta_time, 0.0);
+					*changed_position += glm::vec3(0.0, 1.0 * delta_time, 0.0) * rotation_matrix;
 				} else if world.input_manager.map_held(String::from("camera_down")).0 {
-					*changed_position += glm::vec3(0.0, -1.0 * delta_time, 0.0);
+					*changed_position += glm::vec3(0.0, -1.0 * delta_time, 0.0) * rotation_matrix;
 				}
 				// Update the main position
 				*entity.get_component_mut::<transforms::Position>(world).position = **changed_position;
 				position = *changed_position;
 			}
-			rotation = entity.get_component_mut::<transforms::Rotation>(world).rotation;
 			let mouse_pos = world.input_manager.get_accumulated_mouse_position();
-			//*rotation = *glm::quat_angle_axis(0.1, &glm::vec3(mouse_pos.0 as f32, mouse_pos.1 as f32, 0.0));
 		}
 		let mut camera_component = entity.get_component_mut::<components::Camera>(world);
 		// Update the view matrix every time we make a change
@@ -169,7 +169,7 @@ pub fn load_entities(world: &mut World) {
 	let mut camera= Entity::default();	
 	camera.name = String::from("Default Camera");	
 	camera.link_component::<transforms::Position>(world, transforms::Position {
-		position: glm::vec3(0.0, 0.0, 10.0),
+		position: glm::vec3(5.0, 5.0, 5.0),
 	});	
 	camera.link_component::<transforms::Rotation>(world, transforms::Rotation::default());	
 	camera.link_component::<components::Camera>(world, components::Camera::default());

@@ -27,7 +27,7 @@ impl Camera {
 		let forward_vector: glm::Vec3 =  glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 0.0, -1.0));
 		let up_vector: glm::Vec3 = glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 1.0, 0.0));
 		let new_view_matrix = glm::look_at(&position, &(forward_vector + position), &up_vector);
-		self.view_matrix = new_view_matrix; 
+		self.view_matrix = glm::look_at(&position, &glm::zero(), &glm::vec3(0.0, 1.0, 0.0));
 	}
 }
 
@@ -52,9 +52,9 @@ impl Default for Camera {
 		Self {
 			view_matrix: glm::Mat4::identity(),
 			projection_matrix: glm::Mat4::identity(),
-			horizontal_fov: 90.0,
+			horizontal_fov: 150.0,
     		aspect_ratio: 16.0 / 9.0,
-    		clip_planes: (0.0, 1000.0),
+    		clip_planes: (0.1, 1000.0),
     		window_size: World::get_default_window_size(),
 		}
 	}
