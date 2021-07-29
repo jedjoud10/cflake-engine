@@ -8,7 +8,7 @@ use nalgebra_glm as glm;
 
 // A position component telling us where the entity is in the world
 pub struct Position {
-	val: glm::Vec3
+	pub position: glm::Vec3
 }
 
 impl Component for Position {
@@ -26,14 +26,14 @@ impl ComponentID for Position {
 impl Default for Position {
 	fn default() -> Self {
 		Self {
-			val: glm::vec3(0.0, 0.0, 0.0),
+			position: glm::vec3(0.0, 0.0, 0.0),
 		}
 	}
 }
 
 // Scale component
 pub struct Scale {
-	val: f32
+	pub scale: f32
 }
 
 impl Component for Scale {
@@ -51,14 +51,14 @@ impl ComponentID for Scale {
 impl Default for Scale {
 	fn default() -> Self {
 		Self {
-			val: 1.0,
+			scale: 1.0,
 		}
 	}
 }
 
 // Rotation component
 pub struct Rotation {
-	val: glm::Quat
+	pub rotation: glm::Quat
 }
 
 impl Component for Rotation {
@@ -76,7 +76,7 @@ impl ComponentID for Rotation {
 impl Default for Rotation {
 	fn default() -> Self {
 		Self {
-			val: glm::Quat::identity(),
+			rotation: glm::Quat::identity(),
 		}
 	}
 }

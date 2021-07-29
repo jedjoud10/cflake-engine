@@ -91,7 +91,7 @@ pub enum SystemType {
 }
 
 // A generic system that can be used in 3 different ways (Tick system, Update system, Render system)
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct System {
 	pub system_data: SystemData,
 }

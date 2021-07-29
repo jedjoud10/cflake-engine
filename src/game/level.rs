@@ -17,9 +17,7 @@ pub fn register_components(world: &mut World) {
 // Load the systems
 pub fn load_systems(world: &mut World) {
 	// Default render system
-	let mut rs = System {
-		system_data: SystemData::default(),
-	};
+	let mut rs = System::default();
 	rs.system_data.link_component::<RenderComponent>(world);
 	rs.system_data.name = String::from("Rendering system");	
 
@@ -61,7 +59,6 @@ pub fn load_systems(world: &mut World) {
 				gl::DrawArrays(gl::TRIANGLES, 0, 3);
 			}
 		}
-		// Since we cloned the default camera you want to reset it
 	};
 	// When an entity gets added to the render system
 	rs.system_data.entity_added_event = |entity, world| {
@@ -78,6 +75,29 @@ pub fn load_systems(world: &mut World) {
 	rs.system_data.stype = SystemType::Render;
 	rs.system_data.link_component::<RenderComponent>(world);
 	world.add_system(Box::new(rs));
+
+	// Create the default camera system
+	let mut cs = System::default();
+	cs.system_data.name = String::from("Camera System");
+	cs.system_data.link_component::<Camera>(world);
+	cs.system_data.link_component::<Position>(world);
+	cs.system_data.link_component::<Rotation>(world);
+
+	// The system loop
+	cs.system_data.entity_loop_event = |entity, world| {
+		let mut position: glm::Vec3;
+		let mut rotation: glm::Quat;
+		{
+			// Set the variables since we can't have two mutable references at once
+			rotation = entity.get_component::<Rotation>(world).rotation;
+			position = entity.get_component::<Position>(world).position;
+		}
+		let mut camera_data = entity.get_component::<Camera>(world);
+		// Update the view matrix every time we make a change
+		camera_data.update_view_matrix(&position, &rotation);
+	};
+
+	world.add_system(Box::new(cs));
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {	
