@@ -170,7 +170,9 @@ impl SystemData {
 			self.c_bitfield = self.c_bitfield | world.component_manager.get_component_id::<T>();			
 		} else {
 			world.component_manager.register_component::<T>();
+			self.c_bitfield = self.c_bitfield | world.component_manager.get_component_id::<T>();
 		}		
+		println!("Link component '{}' to system '{}', with ID: {}", T::get_component_name(), self.name, world.component_manager.get_component_id::<T>());
 	}
 	// Adds an entity to the system
 	pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
@@ -223,7 +225,7 @@ impl Entity {
 		let name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&name);
 
-		let entity_component_id = *self.components.get(&component_id).expect("Component not linked to");
+		let entity_component_id = *self.components.get(&component_id).expect("Component not linked to entity!");
 		let final_component = &world.component_manager.components[entity_component_id as usize];
 		let output_component = final_component.as_any().downcast_ref::<T>().expect("Component mismatch!");
 		output_component
@@ -232,8 +234,7 @@ impl Entity {
 	pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(&'a self, world: &'a mut World) -> &'a mut T {
 		let name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&name);
-
-		let entity_component_id = *self.components.get(&component_id).expect("Component not linked to");
+		let entity_component_id = *self.components.get(&component_id).expect("Component not linked to entity!");
 		let final_component = &mut world.component_manager.components[entity_component_id as usize];
 		let output_component = final_component.as_any_mut().downcast_mut::<T>().expect("Component mismatch!");
 		output_component
