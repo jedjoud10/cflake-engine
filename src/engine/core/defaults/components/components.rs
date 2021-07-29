@@ -53,7 +53,7 @@ impl Default for Camera {
 		Self {
 			view_matrix: glam::Mat4::IDENTITY,
 			projection_matrix: glam::Mat4::IDENTITY,
-			horizontal_fov: 150.0,
+			horizontal_fov: 90.0,
     		aspect_ratio: 16.0 / 9.0,
     		clip_planes: (0.1, 1000.0),
     		window_size: World::get_default_window_size(),

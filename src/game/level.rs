@@ -137,7 +137,7 @@ pub fn load_systems(world: &mut World) {
 				// Rotate the camera around
 				let mouse_pos = world.input_manager.get_accumulated_mouse_position();
 				let sensitivity = 0.001_f32;
-				changed_rotation = glam::Quat::from_euler(glam::EulerRot::XYZ, -mouse_pos.1 as f32 * sensitivity, -mouse_pos.0 as f32 * sensitivity, 0.0);
+				changed_rotation = glam::Quat::from_euler(glam::EulerRot::YXZ, -mouse_pos.0 as f32 * sensitivity, -mouse_pos.1 as f32 * sensitivity, 0.0);
 			
 				// Keyboard input
 				let forward_vector = glam::Mat4::from_quat(changed_rotation).mul_vec4(glam::vec4(0.0, 0.0, 1.0, 1.0)).xyz();
@@ -244,17 +244,18 @@ pub fn load_entities(world: &mut World) {
 		triangles: vec![0, 1, 2],
 	};
 	// Link the component
-	let mut rc = components::Render {
+	let mut rc2 = components::Render {
     	render_state: EntityRenderState::Visible,
     	gpu_data: ModelDataGPU::default(),
     	shader_name: default_shader_name.clone(),   
 		model	
 	};
-	cube.link_component::<components::Render>(world, rc);
+	rc2.refresh_model();
+	cube.link_component::<components::Render>(world, rc2);
 	cube.link_component::<transforms::Position>(world, transforms::Position {
 		position: glam::vec3(5.0, 0.0, 0.0),
 	});
 	cube.link_component::<transforms::Rotation>(world, transforms::Rotation::default());
-	//world.add_entity(cube);
+	world.add_entity(cube);
 	
 }

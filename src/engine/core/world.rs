@@ -88,29 +88,33 @@ impl World {
 		}
 		// Toggle the fullscreen
 		if self.input_manager.map_pressed(String::from("Fullscreen")) {
-			self.fullscreen = !self.fullscreen;
-			if self.fullscreen {
-				// Set the glfw window as a fullscreen window
-				glfw.with_primary_monitor_mut(|glfw2, monitor| {
-					let videomode = monitor.unwrap().get_video_mode().unwrap();	
-					window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
-					unsafe {
-						// Update the OpenGL viewport
-						gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-					}
-				});
-			} else {
-				// Set the glfw window as a windowed window
-				glfw.with_primary_monitor_mut(|glfw2, monitor| {
-					let videomode = monitor.unwrap().get_video_mode().unwrap();	
-					let default_window_size = Self::get_default_window_size();
-					window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
-					unsafe {
-						// Update the OpenGL viewport
-						gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
-					}
-				});
-			}
+			self.toggle_fullscreen(glfw, window);
+		}
+	}
+	// Toggle fullscreen
+	pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+		self.fullscreen = !self.fullscreen;
+		if self.fullscreen {
+			// Set the glfw window as a fullscreen window
+			glfw.with_primary_monitor_mut(|glfw2, monitor| {
+				let videomode = monitor.unwrap().get_video_mode().unwrap();	
+				window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
+				unsafe {
+					// Update the OpenGL viewport
+					gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+				}
+			});
+		} else {
+			// Set the glfw window as a windowed window
+			glfw.with_primary_monitor_mut(|glfw2, monitor| {
+				let videomode = monitor.unwrap().get_video_mode().unwrap();	
+				let default_window_size = Self::get_default_window_size();
+				window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
+				unsafe {
+					// Update the OpenGL viewport
+					gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
+				}
+			});
 		}
 	}
 	// Triggers the "run_entity_loop" event on a specific type of system

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, ffi::{CString, c_void}, ptr::null};
 use crate::engine::core::defaults::components::components::Render;
 use crate::engine::resources::Resource;
+use gl;
 
 // Shader manager
 pub struct ShaderManager {
@@ -269,6 +270,7 @@ impl Default for EntityRenderState {
 // Struct that hold the model's information from OpenGL
 pub struct ModelDataGPU {
 	pub vertex_buf: u32,
+	pub vertex_array_object: u32,
 	pub initialized: bool,
 	pub model_matrix: glam::Mat4,
 }
@@ -277,6 +279,7 @@ impl Default for ModelDataGPU {
 	fn default() -> Self {
 		Self {
 			vertex_buf: 0,
+			vertex_array_object: 0,
 			initialized: false,
 			model_matrix: glam::Mat4::IDENTITY
 		}
@@ -301,6 +304,7 @@ impl Render {
 			gl::EnableVertexAttribArray(0);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
 			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());	
+			gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 			self.gpu_data.initialized = true;
 		}
 	}
