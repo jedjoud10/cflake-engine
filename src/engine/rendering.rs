@@ -241,6 +241,7 @@ impl SubShader {
 }
 
 // A simple model that holds vertex, normal, and color data
+#[derive(Debug)]
 pub struct Model {
 	pub vertices: Vec<glm::Vec3>,
 	pub triangles: Vec<u32>,
@@ -298,7 +299,7 @@ impl Render {
 			// Create the vertex attrib arrays
 			gl::EnableVertexAttribArray(0);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
-			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());			
+			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());	
 			self.gpu_data.initialized = true;
 		}
 	}

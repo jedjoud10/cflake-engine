@@ -24,10 +24,10 @@ impl Camera {
 	}
 	// Update the view matrix using a rotation and a position
 	pub fn update_view_matrix(&mut self, position: &glm::Vec3, rotation: &glm::Quat) {
-		let forward_vector: glm::Vec3 =  glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 0.0, 1.0));
+		let forward_vector: glm::Vec3 =  glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 0.0, -1.0));
 		let up_vector: glm::Vec3 = glm::quat_rotate_vec3(&rotation, &glm::vec3(0.0, 1.0, 0.0));
-		let new_view_matrix = glm::look_at(&position, &forward_vector, &up_vector);
-		self.view_matrix = glm::look_at(&position, &glm::vec3(0.0, 0.0, 0.0), &glm::vec3(0.0, 1.0, 0.0)); 
+		let new_view_matrix = glm::look_at(&position, &(forward_vector + position), &up_vector);
+		self.view_matrix = new_view_matrix; 
 	}
 }
 

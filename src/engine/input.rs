@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::{self, Display, Formatter}, hash::Hash};
 extern crate glfw;
-use glfw::{Action, Glfw, Key};
+use glfw::{Action, Cursor, Glfw, Key};
 use crate::engine::core::world::*;
 
 // Status of a map
@@ -24,7 +24,8 @@ impl fmt::Display for MapStatus {
 pub struct InputManager {
 	pub bindings: HashMap<Key, String>,
 	pub keys: HashMap<Key, MapStatus>,
-	pub mappings: HashMap<String, MapStatus>
+	pub mappings: HashMap<String, MapStatus>,
+	last_mouse_pos: (i32, i32)
 }
 
 impl InputManager {
@@ -39,6 +40,9 @@ impl InputManager {
 		// Update mappings first
 		self.update_mappings();		
 		// Calculate the mouse delta
+		let mouse_pos = (window.get_cursor_pos().0 as i32, window.get_cursor_pos().1 as i32);
+		self.last_mouse_pos = mouse_pos;
+
 	}
 	// Update event fired from the world (fired after everything happens)
 	pub fn late_update(&mut self, delta_time: f32) {
@@ -59,6 +63,10 @@ impl InputManager {
     			MapStatus::Nothing => {},
 			}			
 		}
+	}
+	// Get the accumulated mouse position
+	pub fn get_accumulated_mouse_position(&self) -> (i32, i32) {
+		self.last_mouse_pos
 	}
 	// Update the maps using the keys
 	fn update_mappings(&mut self) {

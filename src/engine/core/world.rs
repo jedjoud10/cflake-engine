@@ -46,6 +46,8 @@ impl World {
  	pub fn start_world(&mut self, window: &mut glfw::Window) {
 		// Load all the default things
 		self.input_manager.setup_default_bindings();
+		window.set_cursor_mode(glfw::CursorMode::Disabled);
+		window.set_cursor_pos(0.0, 0.0);
 		register_components(self);
 		load_systems(self);
 		load_entities(self);

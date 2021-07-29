@@ -212,7 +212,7 @@ impl Entity {
 		let world_component_id = world.component_manager.components.len() - 1;
 		self.c_bitfield = self.c_bitfield | component_id;
 		self.components.insert(component_id, world_component_id as u16);
-		println!("Link component '{}' to entity '{}', with ID: {}", component_name, self.name, component_id);
+		println!("Link component '{}' to entity '{}', with ID: {} and global ID: '{}'", component_name, self.name, component_id, world_component_id);
 	}
 	// Unlink a component from this entity
 	pub fn unlink_component<T: ComponentID>(&mut self, world: &mut World) {
