@@ -1,6 +1,6 @@
-#version 330 core
+#version 430 core
 out vec3 color;
-
+uniform vec3 rgb;
 void main() {
 	color = vec3(1, 1, 1);
 }

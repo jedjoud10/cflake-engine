@@ -26,19 +26,19 @@ pub fn setup_window() {
 	world.start_world(&mut window);
 
     while !window.should_close() {
-
-		// Read the events at the start of the frame
-        glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, &mut world, event);
-        }	
-
 		// Update the delta_time
 		let new_time = glfw.get_time();
 		world.time_manager.delta_time = new_time - world.time_manager.time_since_start;
 		world.time_manager.time_since_start = new_time;
 		// Update the world
 		world.update_world(&mut window, &mut glfw);
+
+		
+		// Read the events at the start of the frame
+        glfw.poll_events();
+        for (_, event) in glfw::flush_messages(&events) {
+            handle_window_event(&mut window, &mut world, event);
+        }	
     }	
 	// When the window closes and we exit from the game
 	world.stop_world();

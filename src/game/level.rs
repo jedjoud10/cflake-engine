@@ -20,9 +20,9 @@ pub fn load_systems(world: &mut World) {
 
 	// When the render system gets updated
 	unsafe { 
-		gl::ClearColor(1.0, 1.0, 1.0, 1.0);
+		gl::ClearColor(0.0, 0.0, 0.0, 0.0);
 		let default_size = World::get_default_window_size();
-		gl::Viewport(0, 0, default_size.0, default_size.1)
+		gl::Viewport(0, 0, default_size.0, default_size.1);
 	}
 	rs.system_data.loop_event = |world| {
 		unsafe {
@@ -50,7 +50,7 @@ pub fn load_systems(world: &mut World) {
 				let position: glm::Vec3;
 				let rotation: glm::Quat;
 				{
-					position= entity.get_component::<transforms::Position>(world).position;
+					position = entity.get_component::<transforms::Position>(world).position;
 					rotation = entity.get_component::<transforms::Rotation>(world).rotation;
 				}
 				let rc = entity.get_component_mut::<components::Render>(world);
@@ -62,12 +62,12 @@ pub fn load_systems(world: &mut World) {
 		}
 		// Use the shader, and update any uniforms
 		shader.use_shader();
-		let loc = shader.get_uniform_location(String::from("mvp_matrix"));
 		
+		let mut loc = shader.get_uniform_location(String::from("mvp_matrix"));
 		// Calculate the mvp matrix		
 		let mvp_matrix: glm::Mat4 = projection_view_matrix * model_matrix;
 		// Pass the MVP to the shader
-		shader.set_matrix_44_uniform(loc, mvp_matrix);
+		shader.set_matrix_44_uniform(1, projection_view_matrix);
 
 		unsafe {
 			// Actually draw the array
@@ -119,6 +119,7 @@ pub fn load_systems(world: &mut World) {
 		let mut position: glm::Vec3;
 		let mut rotation: glm::Quat;
 		{
+			*entity.get_component_mut::<transforms::Position>(world).position = *glm::vec3(world.time_manager.time_since_start.sin() as f32 * 10.0, 0.0, 10.0);
 			// Set the variables since we can't have two mutable references at once
 			rotation = entity.get_component::<transforms::Rotation>(world).rotation;
 			position = entity.get_component::<transforms::Position>(world).position;
