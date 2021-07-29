@@ -1,5 +1,6 @@
 use crate::engine::core::{ecs::*, world::World};
 use crate::engine::core::defaults::components::transforms::{Position, Rotation};
+use crate::engine::rendering::{EntityRenderState, Model, ModelDataGPU};
 extern crate nalgebra_glm as glm;
 
 
@@ -56,5 +57,31 @@ impl Default for Camera {
     		clip_planes: (0.0, 1000.0),
     		window_size: World::get_default_window_size(),
 		}
+	}
+}
+
+// A component that will be linked to entities that are renderable
+#[derive(Default)]
+pub struct Render {
+	pub render_state: EntityRenderState,
+	pub gpu_data: ModelDataGPU,	
+	pub shader_name: String,
+	pub model: Model,
+}
+
+// Main traits implemented
+impl Component for Render {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+	
+}
+impl ComponentID for Render {
+	fn get_component_name() -> String {
+		String::from("Render Component")
 	}
 }

@@ -1,25 +1,21 @@
-use crate::engine::core::defaults::components::components::*;
+use crate::engine::core::defaults::components::{components, *};
 extern crate nalgebra_glm as glm;
-use crate::engine::core::ecs::SystemState;
 use crate::engine::rendering::*;
-use crate::engine::core::defaults::components::transforms::*;
-use crate::engine::core::ecs::System;
-use crate::engine::core::ecs::SystemData;
-use crate::engine::core::ecs::SystemType;
+use crate::engine::core::ecs::{SystemType, SystemData, SystemState, System, Entity};
 use crate::engine::core::world::World;
-use crate::engine::core::ecs::Entity;
-use crate::engine::core::defaults::*;
 use crate::gl;
 // Pre-register unused components
 pub fn register_components(world: &mut World) {
-	world.component_manager.register_component::<Position>();
-	world.component_manager.register_component::<Rotation>();
+	world.component_manager.register_component::<transforms::Position>();
+	world.component_manager.register_component::<transforms::Rotation>();
 }
 // Load the systems
 pub fn load_systems(world: &mut World) {
 	// Default render system
 	let mut rs = System::default();
-	rs.system_data.link_component::<RenderComponent>(world);
+	rs.system_data.link_component::<components::Render>(world);
+	rs.system_data.link_component::<transforms::Position>(world);
+	rs.system_data.link_component::<transforms::Position>(world);
 	rs.system_data.name = String::from("Rendering system");	
 
 	// When the render system gets updated
@@ -45,29 +41,36 @@ pub fn load_systems(world: &mut World) {
 			let camera_entity = world.get_entity(world.default_camera_id).clone();
 			let mut rotation: glm::Quat;
 			{
-				rotation = camera_entity.get_component::<Rotation>(world).rotation;
+				rotation = camera_entity.get_component::<transforms::Rotation>(world).rotation;
 			}
-			let camera_data = camera_entity.get_component::<Camera>(world);
-			let position = camera_entity.get_component::<Position>(world);
+			let camera_data = camera_entity.get_component::<components::Camera>(world);
+			let position = camera_entity.get_component::<transforms::Position>(world);
 			// Just a simple lookat test
-			rotation = glm::quat_look_at(&glm::normalize(&-position.position), &glm::vec3(0.0, 1.0, 0.0));
+			rotation = glm::quat_look_at(&glm::normalize(&position.position), &glm::vec3(0.0, 1.0, 0.0));
 			view_project_matrix = camera_data.view_matrix * camera_data.projection_matrix;
 
 			// Update the entity internally
-			*camera_entity.get_component_mut::<Rotation>(world).rotation = *rotation;
+			*camera_entity.get_component_mut::<transforms::Rotation>(world).rotation = *rotation;
 			*world.get_entity(id) = camera_entity;
 		}
 		// Render the entity
 		{
 			let mut name= String::new();
+			// Get the model matrix
 			{
-				let rc = entity.get_component::<RenderComponent>(world);
+				let position: glm::Vec3;
+				let rotation: glm::Quat;
+				{
+					position= entity.get_component::<transforms::Position>(world).position;
+					rotation = entity.get_component::<transforms::Rotation>(world).rotation;
+				}
+				let rc = entity.get_component_mut::<components::Render>(world);
+				rc.update_model_matrix(&position, &rotation);
 				name = rc.shader_name.clone();
 				model_matrix = rc.gpu_data.model_matrix.clone();
 			}
 			shader = world.shader_manager.get_shader(&name).unwrap();
 		}
-		// Get the model matrix
 		// Use the shader, and update any uniforms
 		shader.use_shader();
 		let loc = shader.get_uniform_location(String::from("mvp_matrix"));
@@ -75,11 +78,11 @@ pub fn load_systems(world: &mut World) {
 		// Calculate the mvp matrix		
 		let mvp_matrix: glm::Mat4 = view_project_matrix * model_matrix;
 		// Pass the MVP to the shader
-		shader.set_matrix_44_uniform(loc, mvp_matrix);
+		shader.set_matrix_44_uniform(loc, model_matrix);
 
 		unsafe {
 			// Actually draw the array
-			let rc = entity.get_component::<RenderComponent>(world);
+			let rc = entity.get_component::<components::Render>(world);
 			if rc.gpu_data.initialized {
 				gl::BindBuffer(gl::ARRAY_BUFFER, rc.gpu_data.vertex_buf);
 				gl::DrawArrays(gl::TRIANGLES, 0, 3);
@@ -88,40 +91,54 @@ pub fn load_systems(world: &mut World) {
 	};
 	// When an entity gets added to the render system
 	rs.system_data.entity_added_event = |entity, world| {
-		let rc = entity.get_component_mut::<RenderComponent>(world);
+		let rc = entity.get_component_mut::<components::Render>(world);
 		// Use the default shader for this entity renderer
 		// Make sure we create the OpenGL data for this entity's model
 		rc.refresh_model();
 	};
 	// When an entity gets removed from the render system
 	rs.system_data.entity_removed_event = |entity, world| {
-		let rc = entity.get_component_mut::<RenderComponent>(world);
+		let rc = entity.get_component_mut::<components::Render>(world);
 		rc.dispose_model();
 	};
 	rs.system_data.stype = SystemType::Render;
-	rs.system_data.link_component::<RenderComponent>(world);
+	rs.system_data.link_component::<components::Render>(world);
 	world.add_system(rs);
 
 	// Create the default camera system
 	let mut cs = System::default();
 	cs.system_data.name = String::from("Camera System");
-	cs.system_data.link_component::<Camera>(world);
-	cs.system_data.link_component::<Position>(world);
-	cs.system_data.link_component::<Rotation>(world);
+	cs.system_data.link_component::<components::Camera>(world);
+	cs.system_data.link_component::<transforms::Position>(world);
+	cs.system_data.link_component::<transforms::Rotation>(world);
+
+	cs.system_data.entity_added_event = |entity, world| {
+		// First time we initialize the camera, setup the matrices
+		let mut position: glm::Vec3;
+		let mut rotation: glm::Quat;
+		{
+			// Set the variables since we can't have two mutable references at once
+			rotation = entity.get_component::<transforms::Rotation>(world).rotation;
+			position = entity.get_component::<transforms::Position>(world).position;
+		}
+		let mut camera_component = entity.get_component_mut::<components::Camera>(world);
+		camera_component.update_projection_matrix();
+		camera_component.update_view_matrix(&position, &rotation);
+	};
 
 	cs.system_data.entity_loop_event = |entity, world| {
 		let mut position: glm::Vec3;
 		let mut rotation: glm::Quat;
 		{
 			// Set the variables since we can't have two mutable references at once
-			rotation = entity.get_component::<Rotation>(world).rotation;
-			position = entity.get_component::<Position>(world).position;
+			rotation = entity.get_component::<transforms::Rotation>(world).rotation;
+			position = entity.get_component::<transforms::Position>(world).position;
 		}
-		let mut camera_data = entity.get_component_mut::<Camera>(world);
+		let mut camera_component = entity.get_component_mut::<components::Camera>(world);
 		// Update the view matrix every time we make a change
-		camera_data.update_view_matrix(&position, &rotation);
+		camera_component.update_view_matrix(&position, &rotation);
 	};
-	//cs.system_data.state = SystemState::Disabled(0.0);
+
 	world.add_system(cs);
 }
 // Load the entities
@@ -129,9 +146,11 @@ pub fn load_entities(world: &mut World) {
 	// Create a camera entity
 	let mut camera= Entity::default();	
 	camera.name = String::from("Default Camera");	
-	camera.link_component::<Position>(world, Position::default());	
-	camera.link_component::<Rotation>(world, Rotation::default());	
-	camera.link_component::<Camera>(world, Camera::default());
+	camera.link_component::<transforms::Position>(world, transforms::Position {
+		position: glm::vec3(-1.0, -1.0, -1.0),
+	});	
+	camera.link_component::<transforms::Rotation>(world, transforms::Rotation::default());	
+	camera.link_component::<components::Camera>(world, components::Camera::default());
 
 	// Make it the default camera
 	world.default_camera_id = world.add_entity(camera);
@@ -174,12 +193,14 @@ pub fn load_entities(world: &mut World) {
 		triangles: vec![0, 1, 2],
 	};
 	// Link the component
-	let rc = RenderComponent {
+	let rc = components::Render {
     	render_state: EntityRenderState::Visible,
     	gpu_data: ModelDataGPU::default(),
     	shader_name: default_shader_name,   
 		model	
 	};
-	cube.link_component::<RenderComponent>(world, rc);
+	cube.link_component::<components::Render>(world, rc);
+	cube.link_component::<transforms::Position>(world, transforms::Position::default());
+	cube.link_component::<transforms::Rotation>(world, transforms::Rotation::default());
 	world.add_entity(cube);
 }

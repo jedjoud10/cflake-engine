@@ -1,5 +1,5 @@
-use std::{collections::HashMap, ffi::{CString, c_void}, mem::size_of, ptr::null};
-use crate::engine::core::ecs::*;
+use std::{collections::HashMap, ffi::{CString, c_void}, ptr::null};
+use crate::engine::core::defaults::components::components::Render;
 use nalgebra_glm as glm;
 use crate::engine::resources::Resource;
 
@@ -266,15 +266,6 @@ impl Default for EntityRenderState {
 	fn default() -> Self { Self::Visible }
 }
 
-// A component that will be linked to entities that are renderable
-#[derive(Default)]
-pub struct RenderComponent {
-	pub render_state: EntityRenderState,
-	pub gpu_data: ModelDataGPU,	
-	pub shader_name: String,
-	pub model: Model,
-}
-
 // Struct that hold the model's information from OpenGL
 pub struct ModelDataGPU {
 	pub vertex_buf: u32,
@@ -292,9 +283,9 @@ impl Default for ModelDataGPU {
 	}
 }
 
-impl RenderComponent {
+impl Render {
 	// Updates the model matrix using a position and a rotation
-	pub fn update_model_matrix(&mut self, position: glm::Vec3, rotation: glm::Quat) {
+	pub fn update_model_matrix(&mut self, position: &glm::Vec3, rotation: &glm::Quat) {
 		self.gpu_data.model_matrix = glm::Mat4::identity();
 	}
 	// When we update the model and want to refresh it's OpenGL data
@@ -319,22 +310,5 @@ impl RenderComponent {
 			// Delete the vertex array
 			gl::DeleteBuffers(1, &mut self.gpu_data.vertex_buf);
 		}
-	}
-}
-
-// Main traits implemented
-impl Component for RenderComponent {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-	
-}
-impl ComponentID for RenderComponent {
-	fn get_component_name() -> String {
-		String::from("Render Component")
 	}
 }
