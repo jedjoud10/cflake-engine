@@ -157,6 +157,8 @@ impl SystemData {
 	}
 	// Fire the "entity_loop" event
 	pub fn run_entity_loops(&mut self, world: &mut World) {
+		// Run the loop event that only updates the system
+		(self.loop_event)(world);
 		// Loop over all the entities and update their components
 		for &entity_id in self.entities.iter() {		
 			let entity_clone = &mut world.get_entity(entity_id).clone();

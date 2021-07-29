@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 use crate::engine::core::defaults::components::{components, *};
 extern crate nalgebra_glm as glm;
 use crate::engine::rendering::*;
@@ -63,11 +65,11 @@ pub fn load_systems(world: &mut World) {
 		// Use the shader, and update any uniforms
 		shader.use_shader();
 		
-		let mut loc = shader.get_uniform_location(String::from("mvp_matrix"));
+		let mut loc = shader.get_uniform_location(CString::new("mvp_matrix").unwrap());
 		// Calculate the mvp matrix		
 		let mvp_matrix: glm::Mat4 = projection_view_matrix * model_matrix;
 		// Pass the MVP to the shader
-		shader.set_matrix_44_uniform(1, projection_view_matrix);
+		shader.set_matrix_44_uniform(loc, projection_view_matrix);
 
 		unsafe {
 			// Actually draw the array
