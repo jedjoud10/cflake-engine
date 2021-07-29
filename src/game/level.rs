@@ -35,21 +35,34 @@ pub fn load_systems(world: &mut World) {
 	};
 	// Render the entitites
 	rs.system_data.entity_loop_event = |entity, world| {	
-		let camera_data = world.get_entity(world.default_camera_id).clone();
 		let mut shader: &mut Shader;
+		let mut model_matrix: glm::Mat4;
+		let mut view_project_matrix: glm::Mat4;
+		// Get the projection * view matrix
+		{
+			let camera_entity = world.get_entity(world.default_camera_id).clone();
+			let camera_data = camera_entity.get_component::<Camera>(world);
+			view_project_matrix = camera_data.view_matrix * camera_data.projection_matrix;
+		}
 		// Render the entity
 		{
 			let mut name= String::new();
 			{
 				let rc = entity.get_component::<RenderComponent>(world);
 				name = rc.shader_name.clone();
+				model_matrix = rc.gpu_data.model_matrix.clone();
 			}
 			shader = world.shader_manager.get_shader(&name).unwrap();
 		}
+		// Get the model matrix
 		// Use the shader, and update any uniforms
 		shader.use_shader();
-		let loc = shader.get_uniform_location(String::from("test"));
-		shader.set_scalar_1_uniform(loc, world.time_manager.time_since_start.sin() as f32);
+		let loc = shader.get_uniform_location(String::from("mvp_matrix"));
+		
+		// Calculate the mvp matrix		
+		let mvp_matrix: glm::Mat4 = view_project_matrix * model_matrix;
+		// Pass the MVP to the shader
+		shader.set_matrix_44_uniform(loc, mvp_matrix);
 
 		unsafe {
 			// Actually draw the array
@@ -74,7 +87,7 @@ pub fn load_systems(world: &mut World) {
 	};
 	rs.system_data.stype = SystemType::Render;
 	rs.system_data.link_component::<RenderComponent>(world);
-	world.add_system(Box::new(rs));
+	world.add_system(rs);
 
 	// Create the default camera system
 	let mut cs = System::default();
@@ -97,7 +110,7 @@ pub fn load_systems(world: &mut World) {
 		camera_data.update_view_matrix(&position, &rotation);
 	};
 
-	world.add_system(Box::new(cs));
+	world.add_system(cs);
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {	

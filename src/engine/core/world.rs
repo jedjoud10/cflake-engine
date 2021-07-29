@@ -19,7 +19,7 @@ pub struct World {
 	pub resource_manager: ResourceManager,
 	pub shader_manager: ShaderManager,
 	pub entity_manager: EntityManager,
-	pub systems: Vec<Box<System>>,
+	pub systems: Vec<System>,
 	pub fullscreen: bool,
 	pub default_camera_id: u16
 } 
@@ -137,7 +137,7 @@ impl World {
 		self.systems = clone;
 	}			
 	// Adds a system to the world
-	pub fn add_system(&mut self, mut system: Box<System>) {
+	pub fn add_system(&mut self, mut system: System) {
 		let mut system_data = &mut system.system_data;
 		system_data.system_addded();
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
