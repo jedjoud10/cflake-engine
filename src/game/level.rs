@@ -193,7 +193,7 @@ pub fn load_entities(world: &mut World) {
 		{
 			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.glsl.pkg"), String::from("shaders\\")).unwrap();
 			// Link the vertex and fragment shaders
-			let mut frag_subshader = world.shader_manager.create_subshader_from_resource(default_frag_subshader_resource).unwrap();
+			let mut frag_subshader = SubShader::from_resource(default_frag_subshader_resource).unwrap();
 			// Compile the subshader
 			frag_subshader.compile_subshader();
 			// Cache it, and link it
@@ -203,7 +203,7 @@ pub fn load_entities(world: &mut World) {
 		{
 			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.glsl.pkg"), String::from("shaders\\")).unwrap();
 			// Link the vertex and fragment shaders
-			let mut vert_subshader = world.shader_manager.create_subshader_from_resource(default_vert_subshader_resource).unwrap();
+			let mut vert_subshader = SubShader::from_resource(default_vert_subshader_resource).unwrap();
 			// Compile the subshader
 			vert_subshader.compile_subshader();
 			// Cache it, and link it
@@ -220,10 +220,7 @@ pub fn load_entities(world: &mut World) {
 	let mut cube = Entity::default();
 	cube.name = String::from("Cube");
 	// Create the model
-	let model = Model {
-		vertices: vec![glam::vec3(-1.0, -1.0, 0.0), glam::vec3(1.0, -1.0, 0.0), glam::vec3(0.0, 1.0, 0.0)],
-		triangles: vec![0, 1, 2],
-	};
+	let model = Model::from_resource(world.resource_manager.load_resource(String::from("cube.obj.pkg"), String::from("models\\")).unwrap()).unwrap();
 	// Link the component
 	let rc = components::Render {
     	render_state: EntityRenderState::Visible,
@@ -233,28 +230,6 @@ pub fn load_entities(world: &mut World) {
 	};
 	cube.link_component::<components::Render>(world, rc);
 	cube.link_component::<transforms::Position>(world, transforms::Position::default());
-	cube.link_component::<transforms::Rotation>(world, transforms::Rotation::default());
-	world.add_entity(cube);
-	// Create another cube
-	let mut cube = Entity::default();
-	cube.name = String::from("Cube 2");
-	// Create the model
-	let model = Model {
-		vertices: vec![glam::vec3(0.0, -1.0, -1.0), glam::vec3(0.0, 1.0, -1.0), glam::vec3(0.0, 0.0, 1.0)],
-		triangles: vec![0, 1, 2],
-	};
-	// Link the component
-	let mut rc2 = components::Render {
-    	render_state: EntityRenderState::Visible,
-    	gpu_data: ModelDataGPU::default(),
-    	shader_name: default_shader_name.clone(),   
-		model	
-	};
-	rc2.refresh_model();
-	cube.link_component::<components::Render>(world, rc2);
-	cube.link_component::<transforms::Position>(world, transforms::Position {
-		position: glam::vec3(5.0, 0.0, 0.0),
-	});
 	cube.link_component::<transforms::Rotation>(world, transforms::Rotation::default());
 	world.add_entity(cube);
 	

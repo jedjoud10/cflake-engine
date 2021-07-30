@@ -19,23 +19,7 @@ impl Default for ShaderManager {
 	}
 }
 
-impl ShaderManager {	
-	// Create a subshader from a loaded subshader resource, then immediatly cache it
-	pub fn create_subshader_from_resource(&mut self, resource: &Resource) -> Option<SubShader> {
-		match resource {    		
-    		Resource::Shader(shader) => {
-				// Turn the loaded sub shader into a normal sub shader
-				let mut subshader = SubShader {
-					name: shader.name.clone(),
-        			program: 0,
-        			source: shader.source.clone(),
-        			subshader_type: shader.subshader_type.clone(),
-    			};
-				return Some(subshader);
-			},
-    		_ => return None,
-		}
-	}
+impl ShaderManager {		
 	// Caches a specific subshader
 	pub fn cache_subshader(&mut self, subshader: SubShader) -> Option<&mut SubShader> {
 		if !self.subshaders.contains_key(&subshader.name) {
@@ -201,6 +185,22 @@ pub struct SubShader {
 }
 
 impl SubShader {
+	// Create a subshader from a loaded subshader resource
+	pub fn from_resource(resource: &Resource) -> Option<Self> {
+		match resource {    		
+    		Resource::Shader(shader) => {
+				// Turn the loaded sub shader into a normal sub shader
+				let mut subshader = Self {
+					name: shader.name.clone(),
+        			program: 0,
+        			source: shader.source.clone(),
+        			subshader_type: shader.subshader_type.clone(),
+    			};
+				return Some(subshader);
+			},
+    		_ => return None,
+		}
+	}
 	// Compile the current subshader's source code
 	pub fn compile_subshader(&mut self) {
 		let mut shader_type: u32 = 0;
@@ -253,6 +253,23 @@ impl Default for Model {
 		Self {
 			vertices: Vec::new(),
 			triangles: Vec::new(),
+		}
+	}
+}
+
+impl Model {
+	// Turns a loaded resource model into an actual model
+	pub fn from_resource(resource: &Resource) -> Option<Self> {
+		match resource {    		
+    		Resource::Model(model) => {
+				// Turn the loaded model into a normal model
+				let mut new_model = Self {
+        			vertices: Vec::new(),
+        			triangles: Vec::new(),
+   				};
+				return Some(new_model);
+			},
+    		_ => return None,
 		}
 	}
 }

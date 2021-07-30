@@ -1,5 +1,6 @@
-use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, io::{BufReader, BufWriter, Read, Write}, path::{Path, PathBuf}, str, thread::current};
+use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Write}, path::{Path, PathBuf}, str, thread::current};
 use crate::engine::rendering::SubShaderType;
+use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian, LittleEndian};
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]
@@ -122,13 +123,13 @@ impl ResourceManager {
 					let sub_file = sub_file.as_ref().unwrap();		
 					let path = sub_file.path();
 					// This extension is anything after the first dot
-					let extension: Vec<&str> = path.file_name().unwrap().to_str().unwrap().split('.').collect();
+					let extension: Vec<&str> = path.file_name().unwrap().to_str().unwrap().split(".").collect();
 					let extension = &extension[1..].join(".");
-					let name: String = path.file_name().unwrap().to_str().unwrap().split('.').nth(0).unwrap().to_string();
+					let name: String = path.file_name().unwrap().to_str().unwrap().split(".").nth(0).unwrap().to_string();
 					let sub_dir_name = sub_directory.file_name();
-					println!("File name: {}", sub_dir_name.to_str().unwrap());
+					println!("Directory name: '{}'", sub_dir_name.to_str().unwrap());
 					let packed_resources_dir = format!("{}{}", packed_resources_dir, sub_dir_name.to_str().unwrap());
-					println!("Packing resource {}", name.as_str());
+					println!("Packing resource :'{}'", name.as_str());
 					let opened_file = File::open(&path).unwrap();
 					let mut reader = BufReader::new(opened_file);
 					let mut bytes: Vec<u8> = Vec::new();
@@ -165,12 +166,53 @@ impl ResourceManager {
 						"obj" => {
 							resource_type = 1;
 							// This is a model
+							// Parse the obj model
+							let mut vertices: Vec<glam::Vec3> = Vec::new(); 
+							let mut triangles: Vec<u16> = Vec::new();
+							for line in reader.lines() {
+								let line = line.unwrap();
+								let start = line.split_once(" ").unwrap().0;
+								let other = line.split_once(" ").unwrap().1;
+								match start {
+									"v" => {
+										let coords: Vec<f32> = other.split(" ").map(|coord| coord.parse::<f32>().unwrap()).collect();
+										vertices.push(glam::vec3(coords[0], coords[1], coords[2]));
+										println!("{:?}", coords);
+									}
+									"f" => {
+										// Get only the index part of the main triangle
+										let triangle_string: Vec<String> = other.split(" ").map(|x| x.to_string()).collect();
+										let mut indices: Vec<u16> = Vec::new();
+										for data_strip in triangle_string.iter() {
+											let split_data_strip: Vec<u16> = data_strip.split("/").map(|x| x.parse::<u16>().unwrap()).collect();
+											indices.push(split_data_strip[0]);
+										}
+
+										println!("{:?}", indices);
+										triangles.append(&mut indices);
+									}
+									_ => {	}
+								}
+							}
+							// Turn the Vec3 vector into an f32 vector
+							let mut vertices_floats: Vec<f32> = Vec::new();
+							for vertex in vertices {
+								vertices_floats.push(vertex.x);
+								vertices_floats.push(vertex.y);
+								vertices_floats.push(vertex.z);
+							}
+							resource = Resource::Model(LoadedModel {
+    							vertices: vertices_floats,
+    							triangles: triangles,
+							});				
 						}
 						_ => { 
 							println!("File type not supported!");
 							continue;
 						}
 					}
+					
+					// Now we actually write to the file
 					
 					// Make sure the packed resources directory exists
 					let temp_path = format!("{}\\", &packed_resources_dir);
@@ -187,11 +229,21 @@ impl ResourceManager {
 					let mut bytes_to_write: Vec<u8> = Vec::new();								
 					// Write the resource type first
 					bytes_to_write.append(&mut vec![resource_type]);
+					let mut writer = BufWriter::new(new_file);
 					
 					// Now we can serialize each type of resource and pack them
 					match resource {
 						Resource::None => {	},
-    					Resource::Model(_) => {
+    					Resource::Model(model) => {
+							// Write to the strem
+							writer.write_u16::<LittleEndian>(model.vertices.len() as u16);
+							writer.write_u16::<LittleEndian>(model.triangles.len() as u16);
+							for &float_value in model.vertices.iter() {
+								writer.write_f32::<LittleEndian>(float_value);
+							}
+							for &index in model.triangles.iter() {
+								writer.write_u16::<LittleEndian>(index);
+							}
 						},
     					Resource::Texture(_) => {
 						},
@@ -216,7 +268,6 @@ impl ResourceManager {
 					
 					// Create the packaged file
 					//panic!("{}", packed_file_path);
-					let mut writer = BufWriter::new(new_file);
 					writer.write(bytes_to_write.as_slice());
 				}
 			}
@@ -242,8 +293,8 @@ impl Default for Resource {
 
 // A loaded model resource
 pub struct LoadedModel {
-	pub vertices: Vec<(f32, f32, f32)>,
-	pub triangles: Vec<u32>,
+	pub vertices: Vec<f32>,
+	pub triangles: Vec<u16>,
 }
 // A loaded texture resource
 pub struct LoadedTexture {
