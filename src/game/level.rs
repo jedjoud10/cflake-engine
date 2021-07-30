@@ -44,13 +44,14 @@ pub fn load_entities(world: &mut World) {
 		let mut cube = Entity::default();
 		cube.name = String::from("Cube");
 		// Create the model
-		let model = Model::from_resource(world.resource_manager.load_resource("cube.obj.pkg", "models\\").unwrap()).unwrap();
+		let model = Model::from_resource(world.resource_manager.load_resource("cube.obj.pkg", "models\\").unwrap()).unwrap();		
 		// Link the component
-		let rc = components::Render {
+		let mut rc = components::Render {
 			model,
 			shader_name: default_shader_name.clone(),
     		..components::Render::default()
 		};
+		rc.refresh_model();
 		cube.link_component::<components::Render>(world, rc);
 		cube.link_default_component::<transforms::Position>(world);
 		cube.link_default_component::<transforms::Rotation>(world);
@@ -76,7 +77,7 @@ pub fn load_entities(world: &mut World) {
 		});
 		bunny.link_default_component::<transforms::Rotation>(world);
 		bunny.link_default_component::<transforms::Scale>(world);
-		//world.add_entity(bunny);
+		world.add_entity(bunny);
 	}
 
 	{

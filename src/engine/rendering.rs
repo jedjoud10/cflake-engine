@@ -362,6 +362,10 @@ impl Render {
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
 			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());	
 			self.gpu_data.initialized = true;
+
+			// Unbind
+			gl::BindVertexArray(0);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
 		}
 	}
 
