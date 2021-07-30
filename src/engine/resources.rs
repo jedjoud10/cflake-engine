@@ -34,7 +34,7 @@ impl ResourceManager {
 		} else {
 			// If not, load a new resource
 			let file_path = format!("{}{}", final_path, name);
-			let file = File::open(file_path).expect("The resource file did not load properly!");
+			let file = File::open(file_path).expect("The resource file could not open!");
 			let mut reader = BufReader::new(file);
 
 			// The bytes that will be turned into the resource
@@ -48,8 +48,8 @@ impl ResourceManager {
 			match reader.read_u8().unwrap() {
 				1 => {
 					// This is a model
-					let vertices_size: u16 = reader.read_u16::<LittleEndian>().unwrap();
-					let triangles_size: u16 = reader.read_u16::<LittleEndian>().unwrap();
+					let vertices_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
+					let triangles_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
 					let mut vertices: Vec<glam::Vec3> = Vec::new();
 					let mut triangles: Vec<u32> = Vec::new();
 					for i in 0..vertices_size {
@@ -247,8 +247,8 @@ impl ResourceManager {
 						Resource::None => {	},
     					Resource::Model(model) => {
 							// Write to the strem
-							writer.write_u16::<LittleEndian>(model.vertices.len() as u16);
-							writer.write_u16::<LittleEndian>(model.indices.len() as u16);
+							writer.write_u32::<LittleEndian>(model.vertices.len() as u32);
+							writer.write_u32::<LittleEndian>(model.indices.len() as u32);
 							for &vertex in model.vertices.iter() {
 								writer.write_f32::<LittleEndian>(vertex.x);
 								writer.write_f32::<LittleEndian>(vertex.y);
