@@ -41,6 +41,7 @@ impl ShaderManager {
 			self.shaders.insert(name_clone.clone(), shader);
 			return self.shaders.get_mut(&name_clone);
 		} else {
+			panic!("Cannot cache shader twice!");
 			return None;
 		}
 	}
@@ -89,6 +90,7 @@ impl Shader {
 	// Creates a shader from a vertex subshader file and a fragment subshader file
 	pub fn from_vr_fr_subshader_files(vertex_file: &str, fragment_file: &str, world: &mut World) -> Self {
 		let mut shader = Self::default();
+		shader.name = format!("{}_{}", vertex_file, fragment_file);
 		{
 			{
 				let default_vert_subshader_resource = world.resource_manager.load_resource(vertex_file, "shaders\\").unwrap();
@@ -301,7 +303,7 @@ impl Model {
     		_ => return None,
 		}
 	}
-	// Flip all the triangles in the mesh, basically making it look inside out
+	// Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
 	pub fn flip_triangles(&mut self) {
 		for i in (0..self.indices.len()).step_by(3) {
 			// Swap the first and last index of each triangle
@@ -334,8 +336,8 @@ pub struct ModelDataGPU {
 
 impl Render {
 	// Updates the model matrix using a position and a rotation
-	pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat) {
-		let model_matrix = glam::Mat4::from_quat(rotation) * glam::Mat4::from_translation(position);
+	pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat, scale: f32) {
+		let model_matrix = glam::Mat4::from_quat(rotation) * glam::Mat4::from_translation(position) * glam::Mat4::from_scale(glam::vec3(scale, scale, scale));
 		self.gpu_data.model_matrix = model_matrix;
 	}
 	// When we update the model and want to refresh it's OpenGL data

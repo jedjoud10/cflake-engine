@@ -13,7 +13,8 @@ pub fn create_system(world: &mut World) {
 	rs.system_data.name = String::from("Rendering System");	
 	rs.system_data.link_component::<components::Render>(world);
 	rs.system_data.link_component::<transforms::Position>(world);
-	rs.system_data.link_component::<transforms::Position>(world);
+	rs.system_data.link_component::<transforms::Rotation>(world);
+	rs.system_data.link_component::<transforms::Scale>(world);
 
 	// When the render system gets updated
 	unsafe { 
@@ -45,12 +46,14 @@ pub fn create_system(world: &mut World) {
 			{
 				let position: glam::Vec3;
 				let rotation: glam::Quat;
+				let scale: f32;
 				{
 					position = entity.get_component::<transforms::Position>(world).position;
 					rotation = entity.get_component::<transforms::Rotation>(world).rotation;
+					scale = entity.get_component::<transforms::Scale>(world).scale;
 				}
 				let rc = entity.get_component_mut::<components::Render>(world);
-				rc.update_model_matrix(position.clone(), rotation.clone());
+				rc.update_model_matrix(position.clone(), rotation.clone(), scale);
 				name = rc.shader_name.clone();
 				model_matrix = rc.gpu_data.model_matrix.clone();
 			}

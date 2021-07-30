@@ -12,9 +12,10 @@ pub fn register_components(world: &mut World) {
 // Load the systems
 pub fn load_systems(world: &mut World) {
 	// Load the default systems
+	// NOTE: The order of the systems actually matters
 	camera_system::create_system(world);
-	rendering_system::create_system(world);	
 	skysphere_system::create_system(world);
+	rendering_system::create_system(world);	
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {	
@@ -38,36 +39,72 @@ pub fn load_entities(world: &mut World) {
 		default_shader_name = default_shader.name.clone();
 	}
 
-	// Simple cube to render
-	let mut cube = Entity::default();
-	cube.name = String::from("Cube");
-	// Create the model
-	let model = Model::from_resource(world.resource_manager.load_resource("cube.obj.pkg", "models\\").unwrap()).unwrap();
-	// Link the component
-	let rc = components::Render {
-		model,
-		shader_name: default_shader_name.clone(),
-    	..components::Render::default()
-	};
-	cube.link_component::<components::Render>(world, rc);
-	cube.link_default_component::<transforms::Position>(world);
-	cube.link_default_component::<transforms::Rotation>(world);
-	world.add_entity(cube);
-	
-	// Create the skysphere entity
-	let mut skysphere = Entity::default();
-	skysphere.name = String::from("Skysphere");
-	let mut skysphere_model = Model::from_resource(world.resource_manager.load_resource("sphere.obj.pkg", "models\\").unwrap()).unwrap();
-	skysphere_model.flip_triangles();
-	let rc = components::Render {
-		model: skysphere_model,
-		shader_name: default_shader_name.clone(),
-		..components::Render::default()
-	};	
-	skysphere.link_component::<components::Render>(world, rc);
-	skysphere.link_default_component::<transforms::Position>(world);
-	skysphere.link_default_component::<transforms::Rotation>(world);
-	skysphere.link_default_component::<transforms::Scale>(world);
-	skysphere.link_default_component::<components::Skysphere>(world);
-	world.add_entity(skysphere);
+	{
+		// Simple cube to render
+		let mut cube = Entity::default();
+		cube.name = String::from("Cube");
+		// Create the model
+		let model = Model::from_resource(world.resource_manager.load_resource("cube.obj.pkg", "models\\").unwrap()).unwrap();
+		// Link the component
+		let rc = components::Render {
+			model,
+			shader_name: default_shader_name.clone(),
+    		..components::Render::default()
+		};
+		cube.link_component::<components::Render>(world, rc);
+		cube.link_default_component::<transforms::Position>(world);
+		cube.link_default_component::<transforms::Rotation>(world);
+		cube.link_default_component::<transforms::Scale>(world);
+		world.add_entity(cube);
+	}
+
+	{
+		// Load a bunny model
+		let mut bunny = Entity::default();
+		bunny.name = String::from("Bunny");
+		// Create the model
+		let model2 = Model::from_resource(world.resource_manager.load_resource("bunny.obj.pkg", "models\\").unwrap()).unwrap();
+		// Link the component
+		let rc = components::Render {
+			model: model2,
+			shader_name: default_shader_name.clone(),
+    		..components::Render::default()
+		};
+		bunny.link_component::<components::Render>(world, rc);
+		bunny.link_component::<transforms::Position>(world, transforms::Position {
+			position: glam::vec3(10.0, 0.0, 0.0)
+		});
+		bunny.link_default_component::<transforms::Rotation>(world);
+		bunny.link_default_component::<transforms::Scale>(world);
+		//world.add_entity(bunny);
+	}
+
+	{
+		// Create the skysphere entity
+		let mut skysphere = Entity::default();
+		skysphere.name = String::from("Skysphere");
+		let mut skysphere_model = Model::from_resource(world.resource_manager.load_resource("sphere.obj.pkg", "models\\").unwrap()).unwrap();
+		skysphere_model.flip_triangles();
+		// Use a custom shader
+		let mut skysphere_shader_name: String;
+		{
+			let mut shader = Shader::from_vr_fr_subshader_files("skysphere.vrsh.glsl.pkg", "skysphere.frsh.glsl.pkg", world);	
+			let cached_shader = world.shader_manager.cache_shader(shader).unwrap();
+			skysphere_shader_name = cached_shader.name.clone();
+		}
+
+		let rc = components::Render {
+			model: skysphere_model,
+			shader_name: skysphere_shader_name.clone(),
+			..components::Render::default()
+		};	
+		skysphere.link_component::<components::Render>(world, rc);
+		skysphere.link_default_component::<transforms::Position>(world);
+		skysphere.link_default_component::<transforms::Rotation>(world);
+		skysphere.link_component::<transforms::Scale>(world, transforms::Scale {
+			scale: 90.0
+		});
+		skysphere.link_default_component::<components::Skysphere>(world);
+		world.add_entity(skysphere);
+	}
 }
