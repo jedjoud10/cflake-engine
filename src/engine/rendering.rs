@@ -264,8 +264,8 @@ impl Model {
     		Resource::Model(model) => {
 				// Turn the loaded model into a normal model
 				let mut new_model = Self {
-        			vertices: Vec::new(),
-        			indices: Vec::new(),
+        			vertices: model.vertices.clone(),
+        			indices: model.indices.clone(),
    				};
 				return Some(new_model);
 			},
@@ -306,6 +306,7 @@ impl Render {
 			// Create the VAO
 			gl::GenVertexArrays(1, &mut self.gpu_data.vertex_array_object);
 			gl::BindVertexArray(self.gpu_data.vertex_array_object);
+
 			// Create the EBO
 			gl::GenBuffers(1, &mut self.gpu_data.element_buffer_object);
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.gpu_data.element_buffer_object);
@@ -314,7 +315,7 @@ impl Render {
 			// Create the vertex buffer and populate it
 			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
-			gl::BufferData(gl::ARRAY_BUFFER, self.model.vertices.len() as isize * 4 * 3, self.model.vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
+			gl::BufferData(gl::ARRAY_BUFFER, (self.model.vertices.len() * size_of::<f32>() * 3) as isize, self.model.vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
 			// Create the vertex attrib arrays
 			gl::EnableVertexAttribArray(0);

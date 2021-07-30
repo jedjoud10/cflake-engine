@@ -61,7 +61,7 @@ impl ResourceManager {
 					// Convert the bytes into a loaded model
 					loaded_resource = Resource::Model(LoadedModel {
 						vertices: vertices,
-						triangles: triangles
+						indices: triangles
 					});
 				}
 				2 => {
@@ -201,7 +201,7 @@ impl ResourceManager {
 										let mut indices: Vec<u16> = Vec::new();
 										for data_strip in triangle_string.iter() {
 											let split_data_strip: Vec<u16> = data_strip.split("/").map(|x| x.parse::<u16>().unwrap()).collect();
-											indices.push(split_data_strip[0]);
+											indices.push(split_data_strip[0] - 1);
 										}
 
 										println!("{:?}", indices);
@@ -212,7 +212,7 @@ impl ResourceManager {
 							}
 							resource = Resource::Model(LoadedModel {
     							vertices: vertices,
-    							triangles: triangles,
+    							indices: triangles,
 							});				
 						}
 						_ => { 
@@ -246,13 +246,13 @@ impl ResourceManager {
     					Resource::Model(model) => {
 							// Write to the strem
 							writer.write_u16::<LittleEndian>(model.vertices.len() as u16);
-							writer.write_u16::<LittleEndian>(model.triangles.len() as u16);
+							writer.write_u16::<LittleEndian>(model.indices.len() as u16);
 							for &vertex in model.vertices.iter() {
 								writer.write_f32::<LittleEndian>(vertex.x);
 								writer.write_f32::<LittleEndian>(vertex.y);
 								writer.write_f32::<LittleEndian>(vertex.z);
 							}
-							for &index in model.triangles.iter() {
+							for &index in model.indices.iter() {
 								writer.write_u16::<LittleEndian>(index);
 							}
 						},
@@ -305,7 +305,7 @@ impl Default for Resource {
 // A loaded model resource
 pub struct LoadedModel {
 	pub vertices: Vec<glam::Vec3>,
-	pub triangles: Vec<u16>,
+	pub indices: Vec<u16>,
 }
 // A loaded texture resource
 pub struct LoadedTexture {

@@ -79,7 +79,7 @@ pub fn load_systems(world: &mut World) {
 			let rc = entity.get_component::<components::Render>(world);
 			if rc.gpu_data.initialized {
 				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
-				gl::DrawElements(gl::TRIANGLES, rc.model.indices.len() as i32, gl::UNSIGNED_BYTE, null());
+				gl::DrawElements(gl::TRIANGLES, rc.model.indices.len() as i32, gl::UNSIGNED_SHORT, null());
 			}
 		}
 	};
