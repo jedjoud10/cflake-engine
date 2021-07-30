@@ -1,4 +1,5 @@
 use std::ffi::CString;
+use std::ptr::null;
 use glam::Vec4Swizzles;
 
 use crate::engine::core::defaults::components::{components, *};
@@ -77,8 +78,8 @@ pub fn load_systems(world: &mut World) {
 			// Actually draw the array
 			let rc = entity.get_component::<components::Render>(world);
 			if rc.gpu_data.initialized {
-				gl::BindVertexArray(rc.gpu_data.vertex_array_object);
-				gl::DrawArrays(gl::TRIANGLES, 0, 3);
+				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
+				gl::DrawElements(gl::TRIANGLES, rc.model.indices.len() as i32, gl::UNSIGNED_BYTE, null());
 			}
 		}
 	};

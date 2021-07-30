@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Write}, path::{Path, PathBuf}, str, thread::current};
+use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str, thread::current};
 use crate::engine::rendering::SubShaderType;
 use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian, LittleEndian};
 
@@ -42,11 +42,27 @@ impl ResourceManager {
 			// Read each byte
 			let bytes_read = reader.read_to_end(&mut bytes).unwrap();
 			// Temp variable
+			reader.seek(SeekFrom::Start(0));
 			let mut loaded_resource = Resource::None;
 
-			match bytes[0] {
+			match reader.read_u8().unwrap() {
 				1 => {
 					// This is a model
+					let vertices_size: u16 = reader.read_u16::<LittleEndian>().unwrap();
+					let triangles_size: u16 = reader.read_u16::<LittleEndian>().unwrap();
+					let mut vertices: Vec<glam::Vec3> = Vec::new();
+					let mut triangles: Vec<u16> = Vec::new();
+					for i in 0..vertices_size {
+						vertices.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+					}
+					for i in 0..triangles_size {
+						triangles.push(reader.read_u16::<LittleEndian>().unwrap());
+					}
+					// Convert the bytes into a loaded model
+					loaded_resource = Resource::Model(LoadedModel {
+						vertices: vertices,
+						triangles: triangles
+					});
 				}
 				2 => {
 					// This is a texture
@@ -194,15 +210,8 @@ impl ResourceManager {
 									_ => {	}
 								}
 							}
-							// Turn the Vec3 vector into an f32 vector
-							let mut vertices_floats: Vec<f32> = Vec::new();
-							for vertex in vertices {
-								vertices_floats.push(vertex.x);
-								vertices_floats.push(vertex.y);
-								vertices_floats.push(vertex.z);
-							}
 							resource = Resource::Model(LoadedModel {
-    							vertices: vertices_floats,
+    							vertices: vertices,
     							triangles: triangles,
 							});				
 						}
@@ -228,8 +237,8 @@ impl ResourceManager {
 					// These are the bytes that we are going to write to the file
 					let mut bytes_to_write: Vec<u8> = Vec::new();								
 					// Write the resource type first
-					bytes_to_write.append(&mut vec![resource_type]);
 					let mut writer = BufWriter::new(new_file);
+					writer.write_u8(resource_type);
 					
 					// Now we can serialize each type of resource and pack them
 					match resource {
@@ -238,8 +247,10 @@ impl ResourceManager {
 							// Write to the strem
 							writer.write_u16::<LittleEndian>(model.vertices.len() as u16);
 							writer.write_u16::<LittleEndian>(model.triangles.len() as u16);
-							for &float_value in model.vertices.iter() {
-								writer.write_f32::<LittleEndian>(float_value);
+							for &vertex in model.vertices.iter() {
+								writer.write_f32::<LittleEndian>(vertex.x);
+								writer.write_f32::<LittleEndian>(vertex.y);
+								writer.write_f32::<LittleEndian>(vertex.z);
 							}
 							for &index in model.triangles.iter() {
 								writer.write_u16::<LittleEndian>(index);
@@ -293,7 +304,7 @@ impl Default for Resource {
 
 // A loaded model resource
 pub struct LoadedModel {
-	pub vertices: Vec<f32>,
+	pub vertices: Vec<glam::Vec3>,
 	pub triangles: Vec<u16>,
 }
 // A loaded texture resource

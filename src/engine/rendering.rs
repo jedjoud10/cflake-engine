@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::{CString, c_void}, ptr::null};
+use std::{collections::HashMap, ffi::{CString, c_void}, mem::size_of, ptr::null};
 use crate::engine::core::defaults::components::components::Render;
 use crate::engine::resources::Resource;
 use gl;
@@ -245,14 +245,14 @@ impl SubShader {
 #[derive(Debug)]
 pub struct Model {
 	pub vertices: Vec<glam::Vec3>,
-	pub triangles: Vec<u32>,
+	pub indices: Vec<u16>,
 }
 
 impl Default for Model {
 	fn default() -> Self {
 		Self {
 			vertices: Vec::new(),
-			triangles: Vec::new(),
+			indices: Vec::new(),
 		}
 	}
 }
@@ -265,7 +265,7 @@ impl Model {
 				// Turn the loaded model into a normal model
 				let mut new_model = Self {
         			vertices: Vec::new(),
-        			triangles: Vec::new(),
+        			indices: Vec::new(),
    				};
 				return Some(new_model);
 			},
@@ -285,22 +285,13 @@ impl Default for EntityRenderState {
 }
 
 // Struct that hold the model's information from OpenGL
+#[derive(Default)]
 pub struct ModelDataGPU {
 	pub vertex_buf: u32,
 	pub vertex_array_object: u32,
+	pub element_buffer_object: u32,
 	pub initialized: bool,
 	pub model_matrix: glam::Mat4,
-}
-
-impl Default for ModelDataGPU {
-	fn default() -> Self {
-		Self {
-			vertex_buf: 0,
-			vertex_array_object: 0,
-			initialized: false,
-			model_matrix: glam::Mat4::IDENTITY
-		}
-	}
 }
 
 impl Render {
@@ -312,10 +303,14 @@ impl Render {
 	// When we update the model and want to refresh it's OpenGL data
 	pub fn refresh_model(&mut self) {
 		unsafe {
-			// Create the vao	
+			// Create the VAO
 			gl::GenVertexArrays(1, &mut self.gpu_data.vertex_array_object);
 			gl::BindVertexArray(self.gpu_data.vertex_array_object);
-			
+			// Create the EBO
+			gl::GenBuffers(1, &mut self.gpu_data.element_buffer_object);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.gpu_data.element_buffer_object);
+			gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (self.model.indices.len() * size_of::<u16>()) as isize, self.model.indices.as_ptr() as *const c_void, gl::STATIC_DRAW);
+
 			// Create the vertex buffer and populate it
 			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
