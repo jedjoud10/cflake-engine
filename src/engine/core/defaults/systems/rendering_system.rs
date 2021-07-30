@@ -10,7 +10,7 @@ use crate::gl;
 pub fn create_system(world: &mut World) {
 	// Default render system
 	let mut rs = System::default();
-	rs.system_data.name = String::from("Rendering system");	
+	rs.system_data.name = String::from("Rendering System");	
 	rs.system_data.link_component::<components::Render>(world);
 	rs.system_data.link_component::<transforms::Position>(world);
 	rs.system_data.link_component::<transforms::Position>(world);
@@ -26,10 +26,10 @@ pub fn create_system(world: &mut World) {
 	}
 	// Render the entitites
 	rs.system_data.entity_loop_event = |entity, world| {	
-		let id = entity.entity_id;
-		let mut shader: &mut Shader;
-		let mut view_matrix: glam::Mat4;
-		let mut projection_matrix: glam::Mat4;
+		let _id = entity.entity_id;
+		let shader: &mut Shader;
+		let view_matrix: glam::Mat4;
+		let projection_matrix: glam::Mat4;
 		// Get the projection * view matrix
 		{
 			let camera_entity = world.get_entity(world.default_camera_id);
@@ -37,7 +37,7 @@ pub fn create_system(world: &mut World) {
 			projection_matrix = camera_data.projection_matrix;
 			view_matrix = camera_data.view_matrix;
 		}
-		let mut model_matrix: glam::Mat4;
+		let model_matrix: glam::Mat4;
 		// Render the entity
 		{
 			let mut name= String::new();
@@ -59,7 +59,7 @@ pub fn create_system(world: &mut World) {
 		// Use the shader, and update any uniforms
 		shader.use_shader();
 
-		let mut loc = shader.get_uniform_location(CString::new("mvp_matrix").unwrap());
+		let loc = shader.get_uniform_location(CString::new("mvp_matrix").unwrap());
 		// Calculate the mvp matrix		
 		let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
 		// Pass the MVP to the shader
@@ -70,7 +70,7 @@ pub fn create_system(world: &mut World) {
 			let rc = entity.get_component::<components::Render>(world);
 			if rc.gpu_data.initialized {
 				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
-				gl::DrawElements(gl::POINTS, rc.model.indices.len() as i32, gl::UNSIGNED_INT, null());
+				gl::DrawElements(gl::TRIANGLES, rc.model.indices.len() as i32, gl::UNSIGNED_INT, null());
 			}
 		}
 	};

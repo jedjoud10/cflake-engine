@@ -4,7 +4,7 @@ use glfw::Context;
 use crate::engine::core::ecs::*;
 use crate::engine::input::*;
 use crate::engine::rendering::*;
-use crate::engine::resources::Resource;
+
 use crate::engine::resources::ResourceManager;
 use crate::engine::core::defaults::components::components::Camera;
 use crate::game::level::*;
@@ -99,7 +99,7 @@ impl World {
 		self.fullscreen = !self.fullscreen;
 		if self.fullscreen {
 			// Set the glfw window as a fullscreen window
-			glfw.with_primary_monitor_mut(|glfw2, monitor| {
+			glfw.with_primary_monitor_mut(|_glfw2, monitor| {
 				let videomode = monitor.unwrap().get_video_mode().unwrap();	
 				window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
 				unsafe {
@@ -109,8 +109,8 @@ impl World {
 			});
 		} else {
 			// Set the glfw window as a windowed window
-			glfw.with_primary_monitor_mut(|glfw2, monitor| {
-				let videomode = monitor.unwrap().get_video_mode().unwrap();	
+			glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+				let _videomode = monitor.unwrap().get_video_mode().unwrap();	
 				let default_window_size = Self::get_default_window_size();
 				window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
 				unsafe {
@@ -121,11 +121,11 @@ impl World {
 		}
 	}
 	// Triggers the "run_entity_loop" event on a specific type of system
-	fn run_entity_loop_on_system_type(&mut self, system_type: SystemType) {
+	fn run_entity_loop_on_system_type(&mut self, _system_type: SystemType) {
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut().filter(|sys| 			
 			match &sys.system_data.stype {
-				system_type => true,
+				_system_type => true,
 				_ => false
 		} ) {
 			match &system.system_data.state {
@@ -147,7 +147,7 @@ impl World {
 	}			
 	// Adds a system to the world
 	pub fn add_system(&mut self, mut system: System) {
-		let mut system_data = &mut system.system_data;
+		let system_data = &mut system.system_data;
 		system_data.system_addded();
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
@@ -160,11 +160,11 @@ impl World {
 	// Wrapper function around the entity manager's add_entity
 	pub fn add_entity(&mut self, entity: Entity) -> u16 {
 		let id = self.entity_manager.add_entity(entity.clone());
-		let mut entity = self.entity_manager.get_entity(id).clone();
+		let entity = self.entity_manager.get_entity(id).clone();
 		// Check if there are systems that need this entity
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
-			let mut system_data = &mut system.system_data;
+			let system_data = &mut system.system_data;
 			if Self::is_entity_valid_for_system(&entity, system_data) {
 				// Add the entity to the system
 				system_data.add_entity(&entity, self);
@@ -181,7 +181,7 @@ impl World {
 		// Remove the entity from all the systems it was in
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
-			let mut system_data = &mut system.system_data;
+			let system_data = &mut system.system_data;
 		
 			// Only remove the entity from the systems that it was in
 			if removed_entity.c_bitfield >= system_data.c_bitfield {

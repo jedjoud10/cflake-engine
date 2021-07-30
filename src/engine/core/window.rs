@@ -45,7 +45,7 @@ pub fn setup_window() {
 }
 
 // When the window receives a new event
-fn handle_window_event(window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
+fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
     match event {
         glfw::WindowEvent::Key(key, _, action_type, _) => {
             world.input_manager.receive_key_event(key, action_type);

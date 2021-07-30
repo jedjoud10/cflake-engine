@@ -122,9 +122,9 @@ impl Default for SystemData {
 			system_id: 0,
 			state: SystemState::Enabled(0.0),
 			stype: SystemType::Update,
-			entity_loop_event: |entity, world| {},
-			entity_added_event: |entity, world|  {},
-			entity_removed_event: |entity, world|  {},
+			entity_loop_event: |_entity, _world| {},
+			entity_added_event: |_entity, _world|  {},
+			entity_removed_event: |_entity, _world|  {},
 			entities: Vec::new(),
 		}
 	}
@@ -199,11 +199,21 @@ pub struct Entity {
 
 // ECS time bois
 impl Entity {
-	// Link a component to this entity
-	pub fn link_component<T: ComponentID + Component + 'static>(&mut self, world: &mut World, component: T) {
+	// Link a component to this entity and automatically set it to the default variable
+	pub fn link_default_component<T: ComponentID + Default + Component + 'static>(&mut self, world: &mut World) {
 		let component_name = T::get_component_name();
 		let component_id = world.component_manager.get_component_id_by_name(&component_name);
-		world.component_manager.components.push(Box::new(component));
+		world.component_manager.components.push(Box::new(T::default()));
+		let world_component_id = world.component_manager.components.len() - 1;
+		self.c_bitfield = self.c_bitfield | component_id;
+		self.components.insert(component_id, world_component_id as u16);
+		println!("Link component '{}' to entity '{}', with ID: {} and global ID: '{}'", component_name, self.name, component_id, world_component_id);
+	}
+	// Link a component to this entity and use the gived default state parameter
+	pub fn link_component<T: ComponentID + Component + 'static>(&mut self, world: &mut World, default_state: T) {
+		let component_name = T::get_component_name();
+		let component_id = world.component_manager.get_component_id_by_name(&component_name);
+		world.component_manager.components.push(Box::new(default_state));
 		let world_component_id = world.component_manager.components.len() - 1;
 		self.c_bitfield = self.c_bitfield | component_id;
 		self.components.insert(component_id, world_component_id as u16);

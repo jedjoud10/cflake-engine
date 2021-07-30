@@ -1,7 +1,9 @@
 use std::{collections::HashMap, ffi::{CString, c_void}, mem::size_of, ptr::null};
 use crate::engine::core::defaults::components::components::Render;
 use crate::engine::resources::Resource;
+use crate::engine::core::world::World;
 use gl;
+
 
 // Shader manager
 pub struct ShaderManager {
@@ -84,6 +86,33 @@ impl Default for Shader {
 }
 
 impl Shader {
+	// Creates a shader from a vertex subshader file and a fragment subshader file
+	pub fn from_vr_fr_subshader_files(vertex_file: &str, fragment_file: &str, world: &mut World) -> Self {
+		let mut shader = Self::default();
+		{
+			{
+				let default_vert_subshader_resource = world.resource_manager.load_resource(vertex_file, "shaders\\").unwrap();
+				// Link the vertex and fragment shaders
+				let mut vert_subshader = SubShader::from_resource(default_vert_subshader_resource).unwrap();
+				// Compile the subshader
+				vert_subshader.compile_subshader();
+				// Cache it, and link it
+				let vert_subshader = world.shader_manager.cache_subshader(vert_subshader).unwrap();
+				shader.link_subshader(&vert_subshader);
+			}
+			{
+				let default_frag_subshader_resource = world.resource_manager.load_resource(fragment_file, "shaders\\").unwrap();
+				// Link the vertex and fragment shaders
+				let mut frag_subshader = SubShader::from_resource(default_frag_subshader_resource).unwrap();
+				// Compile the subshader
+				frag_subshader.compile_subshader();
+				// Cache it, and link it
+				let frag_subshader = world.shader_manager.cache_subshader(frag_subshader).unwrap();
+				shader.link_subshader(&frag_subshader);
+			}
+		}	
+		return shader;
+	}
 	// Use this shader for rendering a specific entity
 	pub fn use_shader(&mut self) {
 		// Check if the program even was finalized and ready for use
@@ -190,7 +219,7 @@ impl SubShader {
 		match resource {    		
     		Resource::Shader(shader) => {
 				// Turn the loaded sub shader into a normal sub shader
-				let mut subshader = Self {
+				let subshader = Self {
 					name: shader.name.clone(),
         			program: 0,
         			source: shader.source.clone(),
@@ -263,13 +292,22 @@ impl Model {
 		match resource {    		
     		Resource::Model(model) => {
 				// Turn the loaded model into a normal model
-				let mut new_model = Self {
+				let new_model = Self {
         			vertices: model.vertices.clone(),
         			indices: model.indices.clone(),
    				};
 				return Some(new_model);
 			},
     		_ => return None,
+		}
+	}
+	// Flip all the triangles in the mesh, basically making it look inside out
+	pub fn flip_triangles(&mut self) {
+		for i in (0..self.indices.len()).step_by(3) {
+			// Swap the first and last index of each triangle
+			let copy = self.indices[i];
+			self.indices[i] = self.indices[i + 2];
+			self.indices[i + 2] = copy;			
 		}
 	}
 }

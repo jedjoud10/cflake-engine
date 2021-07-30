@@ -1,7 +1,5 @@
 use glam::Vec4Swizzles;
-
 use crate::engine::core::{ecs::*, world::World};
-use crate::engine::core::defaults::components::transforms::{Position, Rotation};
 use crate::engine::rendering::{EntityRenderState, Model, ModelDataGPU};
 
 
@@ -44,7 +42,7 @@ impl Component for Camera {
 
 impl ComponentID for Camera {
     fn get_component_name() -> String {
-        String::from("Camera Data")
+        String::from("Camera")
     }
 }
 
@@ -83,6 +81,33 @@ impl Component for Render {
 }
 impl ComponentID for Render {
 	fn get_component_name() -> String {
-		String::from("Render Component")
+		String::from("Render")
 	}
 }
+
+// A component that will be linked to the skysphere
+#[derive(Default)]
+pub struct Skysphere {
+	pub render_state: EntityRenderState,
+	pub gpu_data: ModelDataGPU,	
+	pub shader_name: String,
+	pub model: Model,
+}
+
+// Main traits implemented
+impl Component for Skysphere {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+	
+}
+impl ComponentID for Skysphere {
+	fn get_component_name() -> String {
+		String::from("Skyshpere")
+	}
+}
+

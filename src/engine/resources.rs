@@ -1,6 +1,6 @@
 use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str, thread::current};
 use crate::engine::rendering::SubShaderType;
-use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian, LittleEndian};
+use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]
@@ -11,7 +11,9 @@ pub struct ResourceManager {
 // Da code
 impl ResourceManager {
 	// Loads a specific resource and caches it so we can use it next time
-	pub fn load_resource(&mut self, name: String, path: String) -> Option<&Resource> {
+	pub fn load_resource(&mut self, name: &str, path: &str) -> Option<&Resource> {
+		let name = String::from(name);
+		let path = String::from(path);
 		let mut final_path: String = String::new();
 		{
 			let dir_original = env::current_exe().unwrap();
@@ -20,7 +22,7 @@ impl ResourceManager {
 			let exe_dir = dir_split_temp
 				.enumerate()
 				.filter(|&(i, _)| i < dir_split_len - 1)
-				.map(|(i, s)| s.to_string())
+				.map(|(_i, s)| s.to_string())
 				.into_iter()
 				.collect::<Vec<String>>()
 				.join(char::to_string(&'\\').as_str());
@@ -40,7 +42,7 @@ impl ResourceManager {
 			// The bytes that will be turned into the resource
 			let mut bytes: Vec<u8> = Vec::new();
 			// Read each byte
-			let bytes_read = reader.read_to_end(&mut bytes).unwrap();
+			let _bytes_read = reader.read_to_end(&mut bytes).unwrap();
 			// Temp variable
 			reader.seek(SeekFrom::Start(0));
 			let mut loaded_resource = Resource::None;
@@ -52,10 +54,10 @@ impl ResourceManager {
 					let triangles_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
 					let mut vertices: Vec<glam::Vec3> = Vec::new();
 					let mut triangles: Vec<u32> = Vec::new();
-					for i in 0..vertices_size {
+					for _i in 0..vertices_size {
 						vertices.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
 					}
-					for i in 0..triangles_size {
+					for _i in 0..triangles_size {
 						triangles.push(reader.read_u32::<LittleEndian>().unwrap());
 					}
 					// Convert the bytes into a loaded model
@@ -202,7 +204,7 @@ impl ResourceManager {
 										for data_strip in triangle_string.iter() {
 											let first_slash = data_strip.find("/").unwrap();
 											// Use the first slash's location to find the second one
-											let second_slash = data_strip[first_slash..].find("/").unwrap();
+											let _second_slash = data_strip[first_slash..].find("/").unwrap();
 											let index = data_strip[..first_slash].to_string().parse::<u32>().unwrap();
 											indices.push(index-1);
 										}

@@ -1,14 +1,11 @@
 use glam::Vec4Swizzles;
-
-use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::ecs::{SystemType, SystemData, SystemState, System, Entity};
 use crate::engine::core::world::World;
-use crate::gl;
 
 // Create the camera system
 pub fn create_system(world: &mut World) {
-	// Create the default camera system
+	// Default camera system
 	let mut cs = System::default();
 	cs.system_data.name = String::from("Camera System");
 	cs.system_data.link_component::<components::Camera>(world);
@@ -17,14 +14,14 @@ pub fn create_system(world: &mut World) {
 
 	cs.system_data.entity_added_event = |entity, world| {
 		// First time we initialize the camera, setup the matrices
-		let mut position: glam::Vec3;
-		let mut rotation: glam::Quat;
+		let position: glam::Vec3;
+		let rotation: glam::Quat;
 		{
 			// Set the variables since we can't have two mutable references at once
 			rotation = entity.get_component::<transforms::Rotation>(world).rotation;
 			position = entity.get_component::<transforms::Position>(world).position;
 		}
-		let mut camera_component = entity.get_component_mut::<components::Camera>(world);
+		let camera_component = entity.get_component_mut::<components::Camera>(world);
 		camera_component.update_projection_matrix();
 		camera_component.update_view_matrix(position, rotation);
 		world.input_manager.bind_key(glfw::Key::W, String::from("camera_forward"));
@@ -36,12 +33,12 @@ pub fn create_system(world: &mut World) {
 	};
 
 	cs.system_data.entity_loop_event = |entity, world| {
-		let mut position: glam::Vec3;
-		let mut rotation: glam::Quat;
+		let position: glam::Vec3;
+		let rotation: glam::Quat;
 		{
 			// Create some movement using user input
 			{
-				let delta_time = world.time_manager.delta_time as f32;
+				let _delta_time = world.time_manager.delta_time as f32;
 				let mut changed_rotation = entity.get_component_mut::<transforms::Rotation>(world).rotation.clone();
 
 				// Rotate the camera around
@@ -76,7 +73,7 @@ pub fn create_system(world: &mut World) {
 				rotation = changed_rotation.clone();
 			}
 		}
-		let mut camera_component = entity.get_component_mut::<components::Camera>(world);
+		let camera_component = entity.get_component_mut::<components::Camera>(world);
 		// Update the view matrix every time we make a change
 		camera_component.update_view_matrix(position, rotation);
 	};

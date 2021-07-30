@@ -1,9 +1,9 @@
 use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::defaults::systems::*;
-use crate::engine::core::ecs::{SystemType, SystemData, SystemState, System, Entity};
+use crate::engine::core::ecs::{Entity};
 use crate::engine::core::world::World;
-use crate::gl;
+
 // Pre-register unused components
 pub fn register_components(world: &mut World) {
 	world.component_manager.register_component::<transforms::Position>();
@@ -14,6 +14,7 @@ pub fn load_systems(world: &mut World) {
 	// Load the default systems
 	camera_system::create_system(world);
 	rendering_system::create_system(world);	
+	skysphere_system::create_system(world);
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {	
@@ -23,56 +24,50 @@ pub fn load_entities(world: &mut World) {
 	camera.link_component::<transforms::Position>(world, transforms::Position {
 		position: glam::vec3(5.0, 5.0, 5.0),
 	});	
-	camera.link_component::<transforms::Rotation>(world, transforms::Rotation::default());	
-	camera.link_component::<components::Camera>(world, components::Camera::default());
+	camera.link_default_component::<transforms::Rotation>(world);	
+	camera.link_default_component::<components::Camera>(world);
 
 	// Make it the default camera
 	world.default_camera_id = world.add_entity(camera);
 	
 	// Load the default shader
-	let mut default_shader = Shader::default();
+	let mut default_shader_name: String;
 	{
-		{
-			let default_frag_subshader_resource = world.resource_manager.load_resource(String::from("default.frsh.glsl.pkg"), String::from("shaders\\")).unwrap();
-			// Link the vertex and fragment shaders
-			let mut frag_subshader = SubShader::from_resource(default_frag_subshader_resource).unwrap();
-			// Compile the subshader
-			frag_subshader.compile_subshader();
-			// Cache it, and link it
-			let mut frag_subshader = world.shader_manager.cache_subshader(frag_subshader).unwrap();
-			default_shader.link_subshader(&frag_subshader);
-		}
-		{
-			let default_vert_subshader_resource = world.resource_manager.load_resource(String::from("default.vrsh.glsl.pkg"), String::from("shaders\\")).unwrap();
-			// Link the vertex and fragment shaders
-			let mut vert_subshader = SubShader::from_resource(default_vert_subshader_resource).unwrap();
-			// Compile the subshader
-			vert_subshader.compile_subshader();
-			// Cache it, and link it
-			let mut vert_subshader = world.shader_manager.cache_subshader(vert_subshader).unwrap();
-			default_shader.link_subshader(&vert_subshader);
-		}
-	}	
-	let default_shader_name = default_shader.name.clone();
-	let mut default_shader = world.shader_manager.cache_shader(default_shader).unwrap();
-	// Use it for the default rendering of everything
-	default_shader.use_shader();
+		let mut default_shader = Shader::from_vr_fr_subshader_files("default.vrsh.glsl.pkg", "default.frsh.glsl.pkg", world);	
+		let default_shader = world.shader_manager.cache_shader(default_shader).unwrap();
+		default_shader_name = default_shader.name.clone();
+	}
 
 	// Simple cube to render
 	let mut cube = Entity::default();
 	cube.name = String::from("Cube");
 	// Create the model
-	let model = Model::from_resource(world.resource_manager.load_resource(String::from("bunny.obj.pkg"), String::from("models\\")).unwrap()).unwrap();
+	let model = Model::from_resource(world.resource_manager.load_resource("cube.obj.pkg", "models\\").unwrap()).unwrap();
 	// Link the component
 	let rc = components::Render {
-    	render_state: EntityRenderState::Visible,
-    	gpu_data: ModelDataGPU::default(),
-    	shader_name: default_shader_name.clone(),   
-		model	
+		model,
+		shader_name: default_shader_name.clone(),
+    	..components::Render::default()
 	};
 	cube.link_component::<components::Render>(world, rc);
-	cube.link_component::<transforms::Position>(world, transforms::Position::default());
-	cube.link_component::<transforms::Rotation>(world, transforms::Rotation::default());
+	cube.link_default_component::<transforms::Position>(world);
+	cube.link_default_component::<transforms::Rotation>(world);
 	world.add_entity(cube);
 	
+	// Create the skysphere entity
+	let mut skysphere = Entity::default();
+	skysphere.name = String::from("Skysphere");
+	let mut skysphere_model = Model::from_resource(world.resource_manager.load_resource("sphere.obj.pkg", "models\\").unwrap()).unwrap();
+	skysphere_model.flip_triangles();
+	let rc = components::Render {
+		model: skysphere_model,
+		shader_name: default_shader_name.clone(),
+		..components::Render::default()
+	};	
+	skysphere.link_component::<components::Render>(world, rc);
+	skysphere.link_default_component::<transforms::Position>(world);
+	skysphere.link_default_component::<transforms::Rotation>(world);
+	skysphere.link_default_component::<transforms::Scale>(world);
+	skysphere.link_default_component::<components::Skysphere>(world);
+	world.add_entity(skysphere);
 }

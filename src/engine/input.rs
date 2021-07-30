@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::{self, Display, Formatter}, hash::Hash};
 extern crate glfw;
-use glfw::{Action, Cursor, Glfw, Key};
-use crate::engine::core::world::*;
+use glfw::{Action, Key};
+
 
 // Status of a map
 #[derive(Clone, Copy, Debug)]
