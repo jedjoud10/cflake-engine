@@ -29,7 +29,7 @@ impl ResourceManager {
 		// First of all, check if we have that resource cached
 		if self.cached_resources.contains_key(&name) {
 			// Return the cached resource
-			println!("Load cached resource {} from path {}", name, final_path);
+			println!("Load cached resource '{}' from path {}", name, final_path);
 			return Some(self.cached_resources.get(&name).unwrap());
 		} else {
 			// If not, load a new resource
@@ -51,12 +51,12 @@ impl ResourceManager {
 					let vertices_size: u16 = reader.read_u16::<LittleEndian>().unwrap();
 					let triangles_size: u16 = reader.read_u16::<LittleEndian>().unwrap();
 					let mut vertices: Vec<glam::Vec3> = Vec::new();
-					let mut triangles: Vec<u16> = Vec::new();
+					let mut triangles: Vec<u32> = Vec::new();
 					for i in 0..vertices_size {
 						vertices.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
 					}
 					for i in 0..triangles_size {
-						triangles.push(reader.read_u16::<LittleEndian>().unwrap());
+						triangles.push(reader.read_u32::<LittleEndian>().unwrap());
 					}
 					// Convert the bytes into a loaded model
 					loaded_resource = Resource::Model(LoadedModel {
@@ -102,7 +102,7 @@ impl ResourceManager {
 			}
 			
 			// Cache the resource so we can use it later without the need to reload
-			println!("Cache resource {}", name);
+			println!("Cache resource: '{}'", name);
 			self.cached_resources.insert(name.clone(), loaded_resource);
 			return Some(self.cached_resources.get(&name).unwrap());
 		}
@@ -145,7 +145,7 @@ impl ResourceManager {
 					let sub_dir_name = sub_directory.file_name();
 					println!("Directory name: '{}'", sub_dir_name.to_str().unwrap());
 					let packed_resources_dir = format!("{}{}", packed_resources_dir, sub_dir_name.to_str().unwrap());
-					println!("Packing resource :'{}'", name.as_str());
+					println!("Packing resource: '{}'", name.as_str());
 					let opened_file = File::open(&path).unwrap();
 					let mut reader = BufReader::new(opened_file);
 					let mut bytes: Vec<u8> = Vec::new();
@@ -184,7 +184,7 @@ impl ResourceManager {
 							// This is a model
 							// Parse the obj model
 							let mut vertices: Vec<glam::Vec3> = Vec::new(); 
-							let mut triangles: Vec<u16> = Vec::new();
+							let mut triangles: Vec<u32> = Vec::new();
 							for line in reader.lines() {
 								let line = line.unwrap();
 								let start = line.split_once(" ").unwrap().0;
@@ -193,18 +193,20 @@ impl ResourceManager {
 									"v" => {
 										let coords: Vec<f32> = other.split(" ").map(|coord| coord.parse::<f32>().unwrap()).collect();
 										vertices.push(glam::vec3(coords[0], coords[1], coords[2]));
-										println!("{:?}", coords);
 									}
 									"f" => {
 										// Get only the index part of the main triangle
 										let triangle_string: Vec<String> = other.split(" ").map(|x| x.to_string()).collect();
-										let mut indices: Vec<u16> = Vec::new();
+										let mut indices: Vec<u32> = Vec::new();
+										// Repeats 3 times, for each triangle in the model
 										for data_strip in triangle_string.iter() {
-											let split_data_strip: Vec<u16> = data_strip.split("/").map(|x| x.parse::<u16>().unwrap()).collect();
-											indices.push(split_data_strip[0] - 1);
+											let first_slash = data_strip.find("/").unwrap();
+											// Use the first slash's location to find the second one
+											let second_slash = data_strip[first_slash..].find("/").unwrap();
+											let index = data_strip[..first_slash].to_string().parse::<u32>().unwrap();
+											indices.push(index-1);
 										}
 
-										println!("{:?}", indices);
 										triangles.append(&mut indices);
 									}
 									_ => {	}
@@ -253,7 +255,7 @@ impl ResourceManager {
 								writer.write_f32::<LittleEndian>(vertex.z);
 							}
 							for &index in model.indices.iter() {
-								writer.write_u16::<LittleEndian>(index);
+								writer.write_u32::<LittleEndian>(index);
 							}
 						},
     					Resource::Texture(_) => {
@@ -305,7 +307,7 @@ impl Default for Resource {
 // A loaded model resource
 pub struct LoadedModel {
 	pub vertices: Vec<glam::Vec3>,
-	pub indices: Vec<u16>,
+	pub indices: Vec<u32>,
 }
 // A loaded texture resource
 pub struct LoadedTexture {

@@ -26,13 +26,10 @@ pub fn load_systems(world: &mut World) {
 		gl::ClearColor(0.0, 0.0, 0.0, 0.0);
 		let default_size = World::get_default_window_size();
 		gl::Viewport(0, 0, default_size.0, default_size.1);
+		gl::Enable(gl::DEPTH_TEST);
+		gl::Enable(gl::CULL_FACE);	
+		gl::CullFace(gl::BACK);
 	}
-	rs.system_data.loop_event = |world| {
-		unsafe {
-			// Clear the window
-			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-		}
-	};
 	// Render the entitites
 	rs.system_data.entity_loop_event = |entity, world| {	
 		let id = entity.entity_id;
@@ -79,7 +76,7 @@ pub fn load_systems(world: &mut World) {
 			let rc = entity.get_component::<components::Render>(world);
 			if rc.gpu_data.initialized {
 				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
-				gl::DrawElements(gl::TRIANGLES, rc.model.indices.len() as i32, gl::UNSIGNED_SHORT, null());
+				gl::DrawElements(gl::TRIANGLES, rc.model.indices.len() as i32, gl::UNSIGNED_INT, null());
 			}
 		}
 	};
@@ -221,7 +218,7 @@ pub fn load_entities(world: &mut World) {
 	let mut cube = Entity::default();
 	cube.name = String::from("Cube");
 	// Create the model
-	let model = Model::from_resource(world.resource_manager.load_resource(String::from("cube.obj.pkg"), String::from("models\\")).unwrap()).unwrap();
+	let model = Model::from_resource(world.resource_manager.load_resource(String::from("sphere.obj.pkg"), String::from("models\\")).unwrap()).unwrap();
 	// Link the component
 	let rc = components::Render {
     	render_state: EntityRenderState::Visible,

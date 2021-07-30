@@ -64,7 +64,10 @@ impl World {
 		// Update the entities
 		self.run_entity_loop_on_system_type(SystemType::Update);
 
-		// and render them
+		// And render them
+		unsafe {
+			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+		}
 		self.run_entity_loop_on_system_type(SystemType::Render);
 		window.swap_buffers();
 		

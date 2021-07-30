@@ -105,8 +105,6 @@ pub struct SystemData {
 	pub system_id: u8,
 	pub state: SystemState,
 	pub stype: SystemType,
-	// System events
-	pub loop_event: fn(&World),
 	// Entity events
 	pub entity_loop_event: fn(&Entity, &mut World),
 	pub entity_added_event: fn(&Entity, &mut World),
@@ -124,7 +122,6 @@ impl Default for SystemData {
 			system_id: 0,
 			state: SystemState::Enabled(0.0),
 			stype: SystemType::Update,
-			loop_event:  |world| {},
 			entity_loop_event: |entity, world| {},
 			entity_added_event: |entity, world|  {},
 			entity_removed_event: |entity, world|  {},
@@ -157,8 +154,6 @@ impl SystemData {
 	}
 	// Fire the "entity_loop" event
 	pub fn run_entity_loops(&mut self, world: &mut World) {
-		// Run the loop event that only updates the system
-		(self.loop_event)(world);
 		// Loop over all the entities and update their components
 		for &entity_id in self.entities.iter() {		
 			let entity_clone = &mut world.get_entity(entity_id).clone();

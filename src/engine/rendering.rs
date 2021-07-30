@@ -245,7 +245,7 @@ impl SubShader {
 #[derive(Debug)]
 pub struct Model {
 	pub vertices: Vec<glam::Vec3>,
-	pub indices: Vec<u16>,
+	pub indices: Vec<u32>,
 }
 
 impl Default for Model {
@@ -310,7 +310,7 @@ impl Render {
 			// Create the EBO
 			gl::GenBuffers(1, &mut self.gpu_data.element_buffer_object);
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.gpu_data.element_buffer_object);
-			gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (self.model.indices.len() * size_of::<u16>()) as isize, self.model.indices.as_ptr() as *const c_void, gl::STATIC_DRAW);
+			gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (self.model.indices.len() * size_of::<u32>()) as isize, self.model.indices.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
 			// Create the vertex buffer and populate it
 			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
