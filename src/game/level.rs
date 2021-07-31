@@ -109,7 +109,7 @@ pub fn load_entities(world: &mut World) {
 	sky.link_default_component::<transforms::Position>(world);
 	sky.link_default_component::<transforms::Rotation>(world);
 	sky.link_component::<transforms::Scale>(world, transforms::Scale {
-		scale: 90.0
+		scale: 900.0
 	});
 	sky.link_default_component::<components::Sky>(world);
 	world.add_entity(sky);

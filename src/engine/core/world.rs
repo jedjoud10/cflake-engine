@@ -7,6 +7,7 @@ use crate::engine::rendering::*;
 
 use crate::engine::resources::ResourceManager;
 use crate::engine::core::defaults::components::components::Camera;
+use crate::engine::rendering::Window;
 use crate::game::level::*;
 
 
@@ -21,7 +22,7 @@ pub struct World {
 	pub entity_manager: EntityManager,
 	pub systems: Vec<System>,
 	pub system_components: Vec<Box<dyn SystemComponent>>,
-	pub fullscreen: bool,
+	pub window: Window,
 	pub default_camera_id: u16
 } 
 
@@ -37,7 +38,7 @@ impl Default for World {
 			entity_manager: EntityManager::default(),
 			systems: Vec::new(),
 			default_camera_id: 0,
-			fullscreen: false,
+			window: Window::default(),
 			system_components: Vec::new()
 		}
 	}
@@ -48,6 +49,7 @@ impl World {
  	pub fn start_world(&mut self, window: &mut glfw::Window) {
 		// Load all the default things
 		self.input_manager.setup_default_bindings();
+		self.window.size = Self::get_default_window_size();
 		window.set_cursor_mode(glfw::CursorMode::Disabled);
 		window.set_cursor_pos(0.0, 0.0);
 		register_components(self);
@@ -98,8 +100,8 @@ impl World {
 	}
 	// Toggle fullscreen
 	pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-		self.fullscreen = !self.fullscreen;
-		if self.fullscreen {
+		self.window.fullscreen = !self.window.fullscreen;
+		if self.window.fullscreen {
 			// Set the glfw window as a fullscreen window
 			glfw.with_primary_monitor_mut(|_glfw2, monitor| {
 				let videomode = monitor.unwrap().get_video_mode().unwrap();	
@@ -120,7 +122,7 @@ impl World {
 					gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
 				}
 			});
-		}
+		}		
 	}
 	// Triggers the "run_entity_loop" event on a specific type of system
 	fn run_entity_loop_on_system_type(&mut self, _system_type: SystemType) {
@@ -218,15 +220,16 @@ impl World {
 	pub fn resize_window_event(&mut self, size: (i32, i32)) {
 		unsafe {
 			gl::Viewport(0, 0, size.0, size.1);
-			let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
-			let entity_clone_id = camera_entity_clone.entity_id;
-			let camera_component = camera_entity_clone.get_component_mut::<Camera>(self);
-			camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
-			camera_component.window_size = size;
-			camera_component.update_projection_matrix();
-			// Update the original entity
-			*self.get_entity_mut(entity_clone_id) = camera_entity_clone;
 		}
+		let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
+		let entity_clone_id = camera_entity_clone.entity_id;
+		let camera_component = camera_entity_clone.get_component_mut::<Camera>(self);
+		camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
+		camera_component.window_size = size;
+		camera_component.update_projection_matrix();
+		// Update the original entity
+		*self.get_entity_mut(entity_clone_id) = camera_entity_clone;
+		self.window.size = size;
 	}
 }
 // An entity manager that handles entities

@@ -4,6 +4,12 @@ use crate::engine::resources::Resource;
 use crate::engine::core::world::World;
 use gl;
 
+// A window class to organize things
+#[derive(Default)]
+pub struct Window {
+	pub fullscreen: bool,
+	pub size: (i32, i32),
+}
 
 // Shader manager
 pub struct ShaderManager {
@@ -166,9 +172,9 @@ impl Shader {
 // Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh 
 impl Shader {
 	// Get the location of a specific uniform, using it's name
-	pub fn get_uniform_location(&self, name: CString) -> i32 {
+	pub fn get_uniform_location(&self, name: &str) -> i32 {
 		unsafe {
-			return gl::GetUniformLocation(self.program, name.as_ptr());
+			return gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
 		}
 	}
 	// Set a scalar uniform
