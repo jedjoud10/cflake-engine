@@ -22,7 +22,7 @@ impl Default for ShaderManager {
 }
 
 impl ShaderManager {		
-	// Caches a specific subshader
+	// Caches a specific subshader, if it already exists then give back a reference
 	pub fn cache_subshader(&mut self, subshader: SubShader) -> Option<&mut SubShader> {
 		if !self.subshaders.contains_key(&subshader.name) {
 			// Cache the shader for later use
@@ -30,7 +30,7 @@ impl ShaderManager {
 			self.subshaders.insert(name_clone.clone(), subshader);
 			return self.subshaders.get_mut(&name_clone);
 		} else {
-			return None;
+			return self.subshaders.get_mut(&subshader.name);
 		}
 	}
 	// Cached a specific shader (An actual runnable shader with uniforms and all) 

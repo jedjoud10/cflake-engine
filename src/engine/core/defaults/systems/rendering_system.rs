@@ -62,11 +62,11 @@ pub fn create_system(world: &mut World) {
 		// Use the shader, and update any uniforms
 		shader.use_shader();
 
-		let loc = shader.get_uniform_location(CString::new("mvp_matrix").unwrap());
 		// Calculate the mvp matrix		
 		let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
-		// Pass the MVP to the shader
-		shader.set_matrix_44_uniform(loc, mvp_matrix);
+		// Pass the MVP and the model matrix to the shader
+		shader.set_matrix_44_uniform(shader.get_uniform_location(CString::new("mvp_matrix").unwrap()), mvp_matrix);
+		shader.set_matrix_44_uniform(shader.get_uniform_location(CString::new("model_matrix").unwrap()), model_matrix);
 
 		unsafe {
 			// Actually draw the array
