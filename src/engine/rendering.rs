@@ -317,6 +317,33 @@ impl Model {
 	}
 }
 
+// A texture
+pub struct Texture {
+	pub x: u32,
+	pub y: u32,
+	pub id: u32,
+}
+
+impl Texture {	
+	// Creates a new empty texture from a specified size
+	pub fn create_new_texture(xsize: u32, ysize: u32) -> Self {
+		let mut texture = Self {
+			x: xsize,
+			y: ysize,
+			id: 0,
+		};
+
+		// Create the OpenGL texture and set it's data to null since it's empty
+		unsafe {
+			gl::GenTextures(1, &mut texture.id as *mut u32);
+			gl::BindTexture(gl::TEXTURE_2D, texture.id);
+			gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, xsize as i32, ysize as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, null());
+		}
+
+		return texture;
+	}
+}
+
 // The current render state of the entity
 pub enum EntityRenderState {
 	Visible,

@@ -7,8 +7,9 @@ use crate::engine::core::world::World;
 use crate::gl;
 
 // Create the rendering system component
+#[derive(Default)]
 pub struct RendererS {
-
+	pub framebuffer: u32
 }
 
 impl SystemComponent for RendererS {
@@ -36,6 +37,7 @@ pub fn create_system(world: &mut World) {
 	rs.link_component::<transforms::Position>(world);
 	rs.link_component::<transforms::Rotation>(world);
 	rs.link_component::<transforms::Scale>(world);
+	rs.link_system_component::<RendererS>(world);
 
 	// When the render system gets updated
 	unsafe { 
@@ -45,6 +47,13 @@ pub fn create_system(world: &mut World) {
 		gl::Enable(gl::DEPTH_TEST);
 		gl::Enable(gl::CULL_FACE);	
 		gl::CullFace(gl::BACK);
+		let mut system_component = rs.get_system_component_mut::<RendererS>(world);
+		gl::GenFramebuffers(1, &mut system_component.framebuffer);
+		gl::BindFramebuffer(gl::FRAMEBUFFER, system_component.framebuffer);
+		// Check if the frame buffer is alright
+		if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
+
+		}
 	}
 	// Render the entitites
 	rs.entity_loop_event = |entity, world| {	

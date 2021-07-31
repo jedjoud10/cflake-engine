@@ -168,7 +168,7 @@ impl System {
 		println!("Link component '{}' to system '{}', with ID: {}", T::get_component_name(), self.name, world.component_manager.get_component_id::<T>());
 	}
 	// Add a SystemComponent; a custom type of component that is just for systems
-	pub fn add_system_component<T: SystemComponent + ComponentID + Default + 'static>(&mut self, world: &mut World) {
+	pub fn link_system_component<T: SystemComponent + ComponentID + Default + 'static>(&mut self, world: &mut World) {
 		// Check if we have the component already added
 		let component_id = world.component_manager.get_component_id::<T>(); 
 		if !self.system_components.contains_key(&component_id) {
