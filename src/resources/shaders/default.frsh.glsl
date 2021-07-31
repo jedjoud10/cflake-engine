@@ -1,6 +1,7 @@
 #version 460 core
 out vec3 color;
 uniform vec3 rgb;
+in vec3 debug_color;
 void main() {
-	color = vec3(1, 1, 1);
+	color = debug_color;
 }

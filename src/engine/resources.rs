@@ -54,15 +54,36 @@ impl ResourceManager {
 					let triangles_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
 					let mut vertices: Vec<glam::Vec3> = Vec::new();
 					let mut triangles: Vec<u32> = Vec::new();
+					let mut normals: Vec<glam::Vec3> = Vec::new();
+					let mut uvs: Vec<glam::Vec2> = Vec::new();
+					let mut tangents: Vec<glam::Vec3> = Vec::new();
+					// Load the vertices
 					for _i in 0..vertices_size {
 						vertices.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
 					}
+					// Load the normals
+					for _i in 0..vertices_size {
+						normals.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+					}
+					// Load the tangents
+					for _i in 0..vertices_size {
+						tangents.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+					}
+					// Load the uvs
+					for _i in 0..vertices_size {
+						uvs.push(glam::vec2(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+					}
+
+					// Load the triangles
 					for _i in 0..triangles_size {
 						triangles.push(reader.read_u32::<LittleEndian>().unwrap());
 					}
 					// Convert the bytes into a loaded model
 					loaded_resource = Resource::Model(LoadedModel {
-						vertices: vertices,
+						vertices,
+						normals,
+						tangents,
+						uvs,
 						indices: triangles
 					});
 				}
@@ -181,11 +202,14 @@ impl ResourceManager {
 							resource_type = 4;
 							// This is a sound effect
 						}
-						"obj" => {
+						"mdl3d" => {
 							resource_type = 1;
 							// This is a model
 							// Parse the obj model
 							let mut vertices: Vec<glam::Vec3> = Vec::new(); 
+							let mut normals: Vec<glam::Vec3> = Vec::new(); 
+							let mut tangents: Vec<glam::Vec3> = Vec::new(); 
+							let mut uvs: Vec<glam::Vec2> = Vec::new(); 
 							let mut triangles: Vec<u32> = Vec::new();
 							for line in reader.lines() {
 								let line = line.unwrap();
@@ -193,30 +217,36 @@ impl ResourceManager {
 								let other = line.split_once(" ").unwrap().1;
 								match start {
 									"v" => {
-										let coords: Vec<f32> = other.split(" ").map(|coord| coord.parse::<f32>().unwrap()).collect();
+										let coords: Vec<f32> = other.split("/").map(|coord| coord.parse::<f32>().unwrap()).collect();
 										vertices.push(glam::vec3(coords[0], coords[1], coords[2]));
 									}
-									"f" => {
-										// Get only the index part of the main triangle
-										let triangle_string: Vec<String> = other.split(" ").map(|x| x.to_string()).collect();
-										let mut indices: Vec<u32> = Vec::new();
-										// Repeats 3 times, for each triangle in the model
-										for data_strip in triangle_string.iter() {
-											let first_slash = data_strip.find("/").unwrap();
-											// Use the first slash's location to find the second one
-											let _second_slash = data_strip[first_slash..].find("/").unwrap();
-											let index = data_strip[..first_slash].to_string().parse::<u32>().unwrap();
-											indices.push(index-1);
-										}
-
+									"n" => {
+										let coords: Vec<f32> = other.split("/").map(|coord| coord.parse::<f32>().unwrap()).collect();
+										normals.push(glam::vec3(coords[0], coords[1], coords[2]));
+									}
+									"u" => {
+										let coords: Vec<f32> = other.split("/").map(|coord| coord.parse::<f32>().unwrap()).collect();
+										uvs.push(glam::vec2(coords[0], coords[1]));
+									}
+									"t" => {
+										let coords: Vec<f32> = other.split("/").map(|coord| coord.parse::<f32>().unwrap()).collect();
+										tangents.push(glam::vec3(coords[0], coords[1], coords[2]));
+									}
+									// Load the triangle indices
+									"i" => {
+										// Split the triangle into 3 indices
+										let mut indices = other.split("/").map(|x| x.to_string().parse::<u32>().unwrap()).collect();
 										triangles.append(&mut indices);
 									}
 									_ => {	}
 								}
 							}
 							resource = Resource::Model(LoadedModel {
-    							vertices: vertices,
+    							vertices,
     							indices: triangles,
+								normals,
+								uvs,
+								tangents,
 							});				
 						}
 						_ => { 
@@ -251,11 +281,30 @@ impl ResourceManager {
 							// Write to the strem
 							writer.write_u32::<LittleEndian>(model.vertices.len() as u32);
 							writer.write_u32::<LittleEndian>(model.indices.len() as u32);
+							// Write the vertices
 							for &vertex in model.vertices.iter() {
 								writer.write_f32::<LittleEndian>(vertex.x);
 								writer.write_f32::<LittleEndian>(vertex.y);
 								writer.write_f32::<LittleEndian>(vertex.z);
 							}
+							// Write the normals
+							for &normal in model.normals.iter() {
+								writer.write_f32::<LittleEndian>(normal.x);
+								writer.write_f32::<LittleEndian>(normal.y);
+								writer.write_f32::<LittleEndian>(normal.z);
+							}
+							// Write the tangents
+							for &tangent in model.tangents.iter() {
+								writer.write_f32::<LittleEndian>(tangent.x);
+								writer.write_f32::<LittleEndian>(tangent.y);
+								writer.write_f32::<LittleEndian>(tangent.z);
+							}
+							// Write the uvs
+							for &uv in model.uvs.iter() {
+								writer.write_f32::<LittleEndian>(uv.x);
+								writer.write_f32::<LittleEndian>(uv.y);
+							}
+							// Write the indices
 							for &index in model.indices.iter() {
 								writer.write_u32::<LittleEndian>(index);
 							}
@@ -307,8 +356,12 @@ impl Default for Resource {
 }
 
 // A loaded model resource
+#[derive(Debug)]
 pub struct LoadedModel {
 	pub vertices: Vec<glam::Vec3>,
+	pub normals: Vec<glam::Vec3>,
+	pub tangents: Vec<glam::Vec3>,
+	pub uvs: Vec<glam::Vec2>,
 	pub indices: Vec<u32>,
 }
 // A loaded texture resource

@@ -44,7 +44,7 @@ pub fn load_entities(world: &mut World) {
 		let mut cube = Entity::default();
 		cube.name = String::from("Cube");
 		// Create the model
-		let model = Model::from_resource(world.resource_manager.load_resource("cube.obj.pkg", "models\\").unwrap()).unwrap();		
+		let model = Model::from_resource(world.resource_manager.load_resource("sphere.mdl3d.pkg", "models\\").unwrap()).unwrap();		
 		// Link the component
 		let mut rc = components::Render {
 			model,
@@ -64,7 +64,7 @@ pub fn load_entities(world: &mut World) {
 		let mut bunny = Entity::default();
 		bunny.name = String::from("Bunny");
 		// Create the model
-		let model2 = Model::from_resource(world.resource_manager.load_resource("bunny.obj.pkg", "models\\").unwrap()).unwrap();
+		let model2 = Model::from_resource(world.resource_manager.load_resource("bunny.mdl3d.pkg", "models\\").unwrap()).unwrap();
 		// Link the component
 		let rc = components::Render {
 			model: model2,
@@ -84,7 +84,7 @@ pub fn load_entities(world: &mut World) {
 		// Create the skysphere entity
 		let mut skysphere = Entity::default();
 		skysphere.name = String::from("Skysphere");
-		let mut skysphere_model = Model::from_resource(world.resource_manager.load_resource("sphere.obj.pkg", "models\\").unwrap()).unwrap();
+		let mut skysphere_model = Model::from_resource(world.resource_manager.load_resource("sphere.mdl3d.pkg", "models\\").unwrap()).unwrap();
 		skysphere_model.flip_triangles();
 		// Use a custom shader
 		let mut skysphere_shader_name: String;

@@ -273,19 +273,13 @@ impl SubShader {
 }
 
 // A simple model that holds vertex, normal, and color data
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Model {
 	pub vertices: Vec<glam::Vec3>,
+	pub normals: Vec<glam::Vec3>,
+	pub tangents: Vec<glam::Vec3>,
+	pub uvs: Vec<glam::Vec2>,
 	pub indices: Vec<u32>,
-}
-
-impl Default for Model {
-	fn default() -> Self {
-		Self {
-			vertices: Vec::new(),
-			indices: Vec::new(),
-		}
-	}
 }
 
 impl Model {
@@ -296,6 +290,9 @@ impl Model {
 				// Turn the loaded model into a normal model
 				let new_model = Self {
         			vertices: model.vertices.clone(),
+					normals: model.normals.clone(),
+					tangents: model.tangents.clone(),
+					uvs: model.uvs.clone(),
         			indices: model.indices.clone(),
    				};
 				return Some(new_model);
@@ -328,6 +325,9 @@ impl Default for EntityRenderState {
 #[derive(Default)]
 pub struct ModelDataGPU {
 	pub vertex_buf: u32,
+	pub normal_buf: u32,
+	pub uv_buf: u32,
+	pub tangent_buf: u32,
 	pub vertex_array_object: u32,
 	pub element_buffer_object: u32,
 	pub initialized: bool,
@@ -357,12 +357,43 @@ impl Render {
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
 			gl::BufferData(gl::ARRAY_BUFFER, (self.model.vertices.len() * size_of::<f32>() * 3) as isize, self.model.vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
+			// Create the normals buffer
+			gl::GenBuffers(1, &mut self.gpu_data.normal_buf);
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.normal_buf);
+			gl::BufferData(gl::ARRAY_BUFFER, (self.model.normals.len() * size_of::<f32>() * 3) as isize, self.model.normals.as_ptr() as *const c_void, gl::STATIC_DRAW);
+
+			// And it's brother, the tangent buffer			
+			gl::GenBuffers(1, &mut self.gpu_data.tangent_buf);
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.tangent_buf);
+			gl::BufferData(gl::ARRAY_BUFFER, (self.model.tangents.len() * size_of::<f32>() * 3) as isize, self.model.tangents.as_ptr() as *const c_void, gl::STATIC_DRAW);
+
+			// Finally, the texture coordinates buffer
+			gl::GenBuffers(1, &mut self.gpu_data.uv_buf);
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.uv_buf);
+			gl::BufferData(gl::ARRAY_BUFFER, (self.model.uvs.len() * size_of::<f32>() * 2) as isize, self.model.uvs.as_ptr() as *const c_void, gl::STATIC_DRAW);
+
+
 			// Create the vertex attrib arrays
 			gl::EnableVertexAttribArray(0);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.vertex_buf);
 			gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());	
-			self.gpu_data.initialized = true;
 
+			// Normal attribute
+			gl::EnableVertexAttribArray(1);
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.normal_buf);
+			gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());		
+
+			// Tangent attribute
+			gl::EnableVertexAttribArray(2);
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.tangent_buf);
+			gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE, 0, null());	
+
+			// UV attribute
+			gl::EnableVertexAttribArray(3);
+			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.uv_buf);
+			gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());	
+
+			self.gpu_data.initialized = true;
 			// Unbind
 			gl::BindVertexArray(0);
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
