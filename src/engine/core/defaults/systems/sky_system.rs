@@ -6,8 +6,8 @@ use crate::engine::core::world::World;
 // Create the skysphere system
 pub fn create_system(world: &mut World) {
 	let mut system = System::default();
-	system.name = String::from("Skybox System");
-	system.link_component::<components::Skysphere>(world);
+	system.name = String::from("Sky System");
+	system.link_component::<components::Sky>(world);
 	system.link_component::<transforms::Position>(world);
 	system.link_component::<transforms::Scale>(world);
 	system.entity_loop_event = |entity, world| {

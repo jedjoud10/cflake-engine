@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap};
+use std::{any::Any, collections::HashMap, hash::Hash};
 use crate::engine::core::world::World;
 
 // Maximum amount of components allowed on an entity
@@ -105,6 +105,7 @@ pub struct System {
 	pub entity_removed_event: fn(&Entity, &mut World),
 
 	pub entities: Vec<u16>,
+	pub system_components: HashMap<u8, u16>,
 }
 
 // Default for system data
@@ -120,6 +121,7 @@ impl Default for System {
 			entity_added_event: |_entity, _world|  {},
 			entity_removed_event: |_entity, _world|  {},
 			entities: Vec::new(),
+			system_components: HashMap::new()
 		}
 	}
 }
@@ -165,6 +167,40 @@ impl System {
 		}		
 		println!("Link component '{}' to system '{}', with ID: {}", T::get_component_name(), self.name, world.component_manager.get_component_id::<T>());
 	}
+	// Add a SystemComponent; a custom type of component that is just for systems
+	pub fn add_system_component<T: SystemComponent + ComponentID + Default + 'static>(&mut self, world: &mut World) {
+		// Check if we have the component already added
+		let component_id = world.component_manager.get_component_id::<T>(); 
+		if !self.system_components.contains_key(&component_id) {
+			world.system_components.push(Box::new(T::default()));
+			let global_component_id: u16 = world.system_components.len() as u16 - 1;
+			self.system_components.insert(component_id, global_component_id);
+		}
+	}
+	// Gets a reference to a system component
+	pub fn get_system_component<'a, T: SystemComponent + ComponentID + 'static>(&self, world: &'a World) -> &'a T {
+		let component_id = world.component_manager.get_component_id::<T>();
+		// Check if we even have the component
+		if self.system_components.contains_key(&component_id) {
+			let component_any: &dyn Any = world.system_components.get(self.system_components[&component_id] as usize).unwrap().as_any();
+			let final_component = component_any.downcast_ref::<T>().unwrap();
+			return final_component;
+		} else {
+			panic!(format!("Component '{}' does not exist on entity '{}'!", T::get_component_name(), self.name));
+		}
+	}
+	// Gets a mutable reference ot a system component
+	pub fn get_system_component_mut<'a, T: SystemComponent + ComponentID + 'static>(&self, world: &'a mut World) -> &'a mut T {
+		let component_id = world.component_manager.get_component_id::<T>();
+		// Check if we even have the component
+		if self.system_components.contains_key(&component_id) {
+			let component_any: &mut dyn Any = world.system_components.get_mut(self.system_components[&component_id] as usize).unwrap().as_any_mut();
+			let final_component = component_any.downcast_mut::<T>().unwrap();
+			return final_component;
+		} else {
+			panic!(format!("Component '{}' does not exist on entity '{}'!", T::get_component_name(), self.name));
+		}
+	}
 	// Adds an entity to the system
 	pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
 		println!("\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m", entity.name, entity.entity_id, self.name);
@@ -179,6 +215,12 @@ impl System {
 		(self.entity_removed_event)(&removed_entity, world);
 		println!("\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m", removed_entity.name, removed_entity.entity_id, self.name);
 	}
+}
+
+// A custom component type for systems
+pub trait SystemComponent {
+	fn as_any(&self) -> &dyn Any;
+	fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 // A simple entity in the world
@@ -221,23 +263,30 @@ impl Entity {
 		self.c_bitfield = (!id) & self.c_bitfield;
 		self.components.remove(&id);
 	}
-	// Gets a specific component
-	pub fn get_component<'a, T: ComponentID + Component + 'static>(&'a self, world: &'a  World) -> &'a T {
-		let name = T::get_component_name();
-		let component_id = world.component_manager.get_component_id_by_name(&name);
-
-		let entity_component_id = *self.components.get(&component_id).expect("Component not linked to entity!");
-		let final_component = &world.component_manager.components[entity_component_id as usize];
-		let output_component = final_component.as_any().downcast_ref::<T>().expect("Component mismatch!");
-		output_component
+	// Gets a reference to a component
+	pub fn get_component<'a, T: ComponentID + Component + 'static>(&self, world: &'a World) -> &'a T {		
+		let component_id = world.component_manager.get_component_id::<T>();
+		// Check if we even have the component
+		if self.components.contains_key(&component_id) {
+			let component_any: &dyn Any = world.component_manager.components.get(self.components[&component_id] as usize).unwrap().as_any();
+			let final_component = component_any.downcast_ref::<T>().unwrap();
+			return final_component;
+		} else {
+			panic!(format!("Component '{}' does not exist on entity '{}'!", T::get_component_name(), self.name));
+		}
+		
 	}
 	// Gets a specific component, mutably
-	pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(&'a self, world: &'a mut World) -> &'a mut T {
-		let name = T::get_component_name();
-		let component_id = world.component_manager.get_component_id_by_name(&name);
-		let entity_component_id = *self.components.get(&component_id).expect("Component not linked to entity!");
-		let final_component = &mut world.component_manager.components[entity_component_id as usize];
-		let output_component = final_component.as_any_mut().downcast_mut::<T>().expect("Component mismatch!");
-		output_component
+	pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(&self, world: &'a mut World) -> &'a mut T {
+		let component_id = world.component_manager.get_component_id::<T>();
+		// Check if we 
+		// Check if we even have the component
+		if self.components.contains_key(&component_id) {
+			let component_any: &mut dyn Any = world.component_manager.components.get_mut(self.components[&component_id] as usize).unwrap().as_any_mut();
+			let final_component = component_any.downcast_mut::<T>().unwrap();
+			return final_component;
+		} else {
+			panic!(format!("Component '{}' does not exist on entity '{}'!", T::get_component_name(), self.name));
+		}
 	}
 }

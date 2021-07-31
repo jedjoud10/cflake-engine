@@ -2,16 +2,37 @@ use std::ffi::CString;
 use std::ptr::null;
 use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::{components, *};
-use crate::engine::core::ecs::{SystemType, System, SystemState, Entity};
+use crate::engine::core::ecs::{SystemType, System, SystemState, SystemComponent, ComponentID, Entity};
 use crate::engine::core::world::World;
 use crate::gl;
+
+// Create the rendering system component
+pub struct RendererS {
+
+}
+
+impl SystemComponent for RendererS {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+}
+
+impl ComponentID for RendererS {
+    fn get_component_name() -> String {
+        String::from("Renderer System Component")
+    }
+}
 
 // Create the rendering system
 pub fn create_system(world: &mut World) {
 	// Default render system
 	let mut rs = System::default();
 	rs.name = String::from("Rendering System");	
-	rs.link_component::<components::Render>(world);
+	rs.link_component::<components::Renderer>(world);
 	rs.link_component::<transforms::Position>(world);
 	rs.link_component::<transforms::Rotation>(world);
 	rs.link_component::<transforms::Scale>(world);
@@ -52,7 +73,7 @@ pub fn create_system(world: &mut World) {
 					rotation = entity.get_component::<transforms::Rotation>(world).rotation;
 					scale = entity.get_component::<transforms::Scale>(world).scale;
 				}
-				let rc = entity.get_component_mut::<components::Render>(world);
+				let rc = entity.get_component_mut::<components::Renderer>(world);
 				rc.update_model_matrix(position.clone(), rotation.clone(), scale);
 				name = rc.shader_name.clone();
 				model_matrix = rc.gpu_data.model_matrix.clone();
@@ -70,7 +91,7 @@ pub fn create_system(world: &mut World) {
 
 		unsafe {
 			// Actually draw the array
-			let rc = entity.get_component::<components::Render>(world);
+			let rc = entity.get_component::<components::Renderer>(world);
 			if rc.gpu_data.initialized {
 				gl::BindVertexArray(rc.gpu_data.vertex_array_object);
 				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
@@ -80,17 +101,17 @@ pub fn create_system(world: &mut World) {
 	};
 	// When an entity gets added to the render system
 	rs.entity_added_event = |entity, world| {
-		let rc = entity.get_component_mut::<components::Render>(world);
+		let rc = entity.get_component_mut::<components::Renderer>(world);
 		// Use the default shader for this entity renderer
 		// Make sure we create the OpenGL data for this entity's model
 		rc.refresh_model();
 	};
 	// When an entity gets removed from the render system
 	rs.entity_removed_event = |entity, world| {
-		let rc = entity.get_component_mut::<components::Render>(world);
+		let rc = entity.get_component_mut::<components::Renderer>(world);
 		rc.dispose_model();
 	};
 	rs.stype = SystemType::Render;
-	rs.link_component::<components::Render>(world);
+	rs.link_component::<components::Renderer>(world);
 	world.add_system(rs);
 }

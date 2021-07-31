@@ -1,5 +1,5 @@
 use std::{collections::HashMap, ffi::{CString, c_void}, mem::size_of, ptr::null};
-use crate::engine::core::defaults::components::components::Render;
+use crate::engine::core::defaults::components::components::Renderer;
 use crate::engine::resources::Resource;
 use crate::engine::core::world::World;
 use gl;
@@ -334,7 +334,7 @@ pub struct ModelDataGPU {
 	pub model_matrix: glam::Mat4,
 }
 
-impl Render {
+impl Renderer {
 	// Updates the model matrix using a position and a rotation
 	pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat, scale: f32) {
 		let model_matrix = glam::Mat4::from_quat(rotation) * glam::Mat4::from_translation(position) * glam::Mat4::from_scale(glam::vec3(scale, scale, scale));

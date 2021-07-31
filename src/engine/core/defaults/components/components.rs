@@ -42,7 +42,7 @@ impl Component for Camera {
 
 impl ComponentID for Camera {
     fn get_component_name() -> String {
-        String::from("Camera")
+        String::from("Camera Component")
     }
 }
 
@@ -61,7 +61,7 @@ impl Default for Camera {
 
 // A component that will be linked to entities that are renderable
 #[derive(Default)]
-pub struct Render {
+pub struct Renderer {
 	pub render_state: EntityRenderState,
 	pub gpu_data: ModelDataGPU,	
 	pub shader_name: String,
@@ -69,7 +69,7 @@ pub struct Render {
 }
 
 // Main traits implemented
-impl Component for Render {
+impl Component for Renderer {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -79,7 +79,7 @@ impl Component for Render {
     }
 	
 }
-impl ComponentID for Render {
+impl ComponentID for Renderer {
 	fn get_component_name() -> String {
 		String::from("Render")
 	}
@@ -87,7 +87,7 @@ impl ComponentID for Render {
 
 // A component that will be linked to the skysphere
 #[derive(Default)]
-pub struct Skysphere {
+pub struct Sky {
 	pub render_state: EntityRenderState,
 	pub gpu_data: ModelDataGPU,	
 	pub shader_name: String,
@@ -95,7 +95,7 @@ pub struct Skysphere {
 }
 
 // Main traits implemented
-impl Component for Skysphere {
+impl Component for Sky {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -105,7 +105,7 @@ impl Component for Skysphere {
     }
 	
 }
-impl ComponentID for Skysphere {
+impl ComponentID for Sky {
 	fn get_component_name() -> String {
 		String::from("Skyshpere")
 	}

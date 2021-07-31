@@ -20,6 +20,7 @@ pub struct World {
 	pub shader_manager: ShaderManager,
 	pub entity_manager: EntityManager,
 	pub systems: Vec<System>,
+	pub system_components: Vec<Box<dyn SystemComponent>>,
 	pub fullscreen: bool,
 	pub default_camera_id: u16
 } 
@@ -37,6 +38,7 @@ impl Default for World {
 			systems: Vec::new(),
 			default_camera_id: 0,
 			fullscreen: false,
+			system_components: Vec::new()
 		}
 	}
 }
