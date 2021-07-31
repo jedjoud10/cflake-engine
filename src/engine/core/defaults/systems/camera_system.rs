@@ -12,7 +12,7 @@ pub fn create_system(world: &mut World) {
 	cs.link_component::<transforms::Position>(world);
 	cs.link_component::<transforms::Rotation>(world);
 
-	cs.entity_added_event = |entity, world| {
+	cs.entity_added_event = |entity, world, _| {
 		// First time we initialize the camera, setup the matrices
 		let position: glam::Vec3;
 		let rotation: glam::Quat;
@@ -32,7 +32,7 @@ pub fn create_system(world: &mut World) {
 		world.input_manager.bind_key(glfw::Key::LeftShift, String::from("camera_down"));
 	};
 
-	cs.entity_loop_event = |entity, world| {
+	cs.entity_loop_event = |entity, world, _| {
 		let position: glam::Vec3;
 		let rotation: glam::Quat;
 		{

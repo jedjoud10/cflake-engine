@@ -10,7 +10,7 @@ pub fn create_system(world: &mut World) {
 	system.link_component::<components::Sky>(world);
 	system.link_component::<transforms::Position>(world);
 	system.link_component::<transforms::Scale>(world);
-	system.entity_loop_event = |entity, world| {
+	system.entity_loop_event = |entity, world, _| {
 		// Set the position of the sky sphere to always be the camera
 		let position = world.get_entity(world.default_camera_id).get_component::<transforms::Position>(world).position.clone();
 		*entity.get_component_mut::<transforms::Position>(world).position = *position;

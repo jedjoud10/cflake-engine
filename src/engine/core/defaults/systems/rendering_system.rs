@@ -12,7 +12,7 @@ pub struct RendererS {
 	pub framebuffer: u32,
 	pub color_texture: Texture,
 	pub depth_stencil_texture: Texture,
-	pub quad_renderer_id: u16,
+	pub quad_renderer_index: u16,
 }
 
 impl SystemComponent for RendererS {
@@ -42,13 +42,26 @@ pub fn create_system(world: &mut World) {
 	rs.link_component::<transforms::Scale>(world);
 	rs.link_system_component::<RendererS>(world);
 
+	let mut quad_renderer_component = components::Renderer::default();
+	quad_renderer_component.model = Model::from_resource(world.resource_manager.load_resource("screen_quad.mdl3d.pkg", "models\\").unwrap()).unwrap();;
+	quad_renderer_component.shader_name = {
+		// Load the shader that will draw the quad
+		let shader = Shader::from_vr_fr_subshader_files("passthrough.vrsh.glsl.pkg", "screen_quad.frsh.glsl.pkg", world);
+		let shader = world.shader_manager.cache_shader(shader).unwrap();
+		shader.name.clone()
+	};
+	// Add the discrete component
+	quad_renderer_component.refresh_model();
+	let index = world.add_discrete_component(quad_renderer_component);
+	rs.get_system_component_mut::<RendererS>(world).quad_renderer_index = index;
+
 	// When the render system gets updated
 	unsafe { 
 		gl::ClearColor(0.0, 0.0, 0.0, 0.0);
 		let default_size = World::get_default_window_size();
 		gl::Viewport(0, 0, default_size.0, default_size.1);
 		gl::Enable(gl::DEPTH_TEST);
-		gl::Enable(gl::CULL_FACE);	
+		//gl::Enable(gl::CULL_FACE);	
 		gl::CullFace(gl::BACK);
 		let mut sc = rs.get_system_component_mut::<RendererS>(world);
 		gl::GenFramebuffers(1, &mut sc.framebuffer);
@@ -68,17 +81,24 @@ pub fn create_system(world: &mut World) {
 		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 	}
 	// Before we render the scene
-	rs.system_pre_loop_event = |world| {
+	rs.system_pre_loop_event = |world, _| {
 		unsafe {
 			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 		}
 	};
 	// After we render the scene
-	rs.system_post_loop_event = |world| {
-		
+	rs.system_post_loop_event = |world, system| {
+		let quad_renderer = world.get_dicrete_component::<components::Renderer>(system.get_system_component::<RendererS>(world).quad_renderer_index);
+
+		// Render the screen quad
+		unsafe {
+			gl::BindVertexArray(quad_renderer.gpu_data.vertex_array_object);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_renderer.gpu_data.element_buffer_object);
+			gl::DrawElements(gl::TRIANGLES, quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
+		}
 	};
 	// Render the entitites
-	rs.entity_loop_event = |entity, world| {	
+	rs.entity_loop_event = |entity, world, _| {	
 		let _id = entity.entity_id;
 		let shader: &mut Shader;
 		let view_matrix: glam::Mat4;
@@ -134,14 +154,14 @@ pub fn create_system(world: &mut World) {
 		}
 	};
 	// When an entity gets added to the render system
-	rs.entity_added_event = |entity, world| {
+	rs.entity_added_event = |entity, world, _| {
 		let rc = entity.get_component_mut::<components::Renderer>(world);
 		// Use the default shader for this entity renderer
 		// Make sure we create the OpenGL data for this entity's model
 		rc.refresh_model();
 	};
 	// When an entity gets removed from the render system
-	rs.entity_removed_event = |entity, world| {
+	rs.entity_removed_event = |entity, world, _| {
 		let rc = entity.get_component_mut::<components::Renderer>(world);
 		rc.dispose_model();
 	};

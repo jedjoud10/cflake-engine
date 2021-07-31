@@ -158,15 +158,14 @@ impl World {
 			self.component_manager.register_component::<T>();
 		}
 		// Add the component, and return it's id
-		self.component_manager.discrete_components.insert(self.component_manager.get_component_id::<T>(), Box::new(component));
-		let id = self.component_manager.discrete_components.len() as u16 - 1;
-		return id;
+		self.component_manager.discrete_components.push(Box::new(component));
+		let index = self.component_manager.discrete_components.len() as u16 - 1;
+		return index;
 		
 	}
 	// Get a reference to a specific discrete component from the world, without the need of an entity
-	pub fn get_dicrete_component<'a, T: ComponentID + Component + 'static>(&mut self, ) -> &T {
-		let id = self.component_manager.discrete_components.len() as u16 - 1;
-		let component_any = self.component_manager.discrete_components.get(&id).unwrap().as_any();
+	pub fn get_dicrete_component<'a, T: ComponentID + Component + 'static>(&mut self, index: u16) -> &T {
+		let component_any = self.component_manager.discrete_components.get(index as usize).unwrap().as_any();
 		let component: &T = component_any.downcast_ref().unwrap();
 		return component;
 	}

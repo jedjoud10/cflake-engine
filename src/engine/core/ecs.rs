@@ -15,7 +15,7 @@ pub trait Component {
 pub struct ComponentManager {
 	pub component_ids: HashMap<String, u16>,	
 	pub components: Vec<Box<dyn Component>>,
-	pub discrete_components: HashMap<u16, Box<dyn Component>>,
+	pub discrete_components: Vec<Box<dyn Component>>,
 	pub system_components: Vec<Box<dyn SystemComponent>>,
 	pub current_component_id: u16
 }
@@ -102,12 +102,12 @@ pub struct System {
 	pub state: SystemState,
 	pub stype: SystemType,
 	// System events
-	pub system_pre_loop_event: fn(&mut World),
-	pub system_post_loop_event: fn(&mut World),
+	pub system_pre_loop_event: fn(&mut World, &Self),
+	pub system_post_loop_event: fn(&mut World, &Self),
 	// Entity events
-	pub entity_loop_event: fn(&Entity, &mut World),
-	pub entity_added_event: fn(&Entity, &mut World),
-	pub entity_removed_event: fn(&Entity, &mut World),
+	pub entity_loop_event: fn(&Entity, &mut World, &Self),
+	pub entity_added_event: fn(&Entity, &mut World, &Self),
+	pub entity_removed_event: fn(&Entity, &mut World, &Self),
 
 	pub entities: Vec<u16>,
 	pub system_components: HashMap<u16, u16>,
@@ -122,11 +122,11 @@ impl Default for System {
 			system_id: 0,
 			state: SystemState::Enabled(0.0),
 			stype: SystemType::Update,
-			system_pre_loop_event: |_world| {},
-			system_post_loop_event: |_world| {},
-			entity_loop_event: |_entity, _world| {},
-			entity_added_event: |_entity, _world|  {},
-			entity_removed_event: |_entity, _world|  {},
+			system_pre_loop_event: |_world, _system| {},
+			system_post_loop_event: |_world, _system| {},
+			entity_loop_event: |_entity, _world, _system| {},
+			entity_added_event: |_entity, _world, _system|  {},
+			entity_removed_event: |_entity, _world, _system|  {},
 			entities: Vec::new(),
 			system_components: HashMap::new()
 		}
@@ -151,20 +151,20 @@ impl System {
 		// Loop over all the entities and fire the entity removed event
 		for &entity_id in self.entities.iter() {		
 			let entity_clone = &mut world.get_entity(entity_id).clone();
-			(self.entity_removed_event)(entity_clone, world);
+			(self.entity_removed_event)(entity_clone, world, self);
 			*world.get_entity_mut(entity_id) = entity_clone.clone();
 		}
 	}
 	// Fire the "entity_loop" event
 	pub fn run_entity_loops(&mut self, world: &mut World) {
-		(self.system_pre_loop_event)(world);
+		(self.system_pre_loop_event)(world, self);
 		// Loop over all the entities and update their components
 		for &entity_id in self.entities.iter() {		
 			let entity_clone = &mut world.get_entity(entity_id).clone();
-			(self.entity_loop_event)(entity_clone, world);
+			(self.entity_loop_event)(entity_clone, world, self);
 			*world.get_entity_mut(entity_id) = entity_clone.clone();
 		}
-		(self.system_post_loop_event)(world);
+		(self.system_post_loop_event)(world, self);
 	}
 	// Add a component to this system's component bitfield id
 	pub fn link_component<T: ComponentID>(&mut self, world: &mut World) {
@@ -218,14 +218,14 @@ impl System {
 	pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
 		println!("\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m", entity.name, entity.entity_id, self.name);
 		self.entities.push(entity.entity_id);
-		(self.entity_added_event)(&entity, world);
+		(self.entity_added_event)(&entity, world, self);
 	}
 	// Removes an entity from the system
 	pub fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, world: &mut World) {
 		// Search for the entity with the matching entity_id
 		let system_entity_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
 		self.entities.remove(system_entity_id);
-		(self.entity_removed_event)(&removed_entity, world);
+		(self.entity_removed_event)(&removed_entity, world, self);
 		println!("\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m", removed_entity.name, removed_entity.entity_id, self.name);
 	}
 }
