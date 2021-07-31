@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::ptr::null;
 use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::{components, *};
-use crate::engine::core::ecs::{SystemType, SystemData, SystemState, System, Entity};
+use crate::engine::core::ecs::{SystemType, System, SystemState, Entity};
 use crate::engine::core::world::World;
 use crate::gl;
 
@@ -10,11 +10,11 @@ use crate::gl;
 pub fn create_system(world: &mut World) {
 	// Default render system
 	let mut rs = System::default();
-	rs.system_data.name = String::from("Rendering System");	
-	rs.system_data.link_component::<components::Render>(world);
-	rs.system_data.link_component::<transforms::Position>(world);
-	rs.system_data.link_component::<transforms::Rotation>(world);
-	rs.system_data.link_component::<transforms::Scale>(world);
+	rs.name = String::from("Rendering System");	
+	rs.link_component::<components::Render>(world);
+	rs.link_component::<transforms::Position>(world);
+	rs.link_component::<transforms::Rotation>(world);
+	rs.link_component::<transforms::Scale>(world);
 
 	// When the render system gets updated
 	unsafe { 
@@ -26,7 +26,7 @@ pub fn create_system(world: &mut World) {
 		gl::CullFace(gl::BACK);
 	}
 	// Render the entitites
-	rs.system_data.entity_loop_event = |entity, world| {	
+	rs.entity_loop_event = |entity, world| {	
 		let _id = entity.entity_id;
 		let shader: &mut Shader;
 		let view_matrix: glam::Mat4;
@@ -79,18 +79,18 @@ pub fn create_system(world: &mut World) {
 		}
 	};
 	// When an entity gets added to the render system
-	rs.system_data.entity_added_event = |entity, world| {
+	rs.entity_added_event = |entity, world| {
 		let rc = entity.get_component_mut::<components::Render>(world);
 		// Use the default shader for this entity renderer
 		// Make sure we create the OpenGL data for this entity's model
 		rc.refresh_model();
 	};
 	// When an entity gets removed from the render system
-	rs.system_data.entity_removed_event = |entity, world| {
+	rs.entity_removed_event = |entity, world| {
 		let rc = entity.get_component_mut::<components::Render>(world);
 		rc.dispose_model();
 	};
-	rs.system_data.stype = SystemType::Render;
-	rs.system_data.link_component::<components::Render>(world);
+	rs.stype = SystemType::Render;
+	rs.link_component::<components::Render>(world);
 	world.add_system(rs);
 }

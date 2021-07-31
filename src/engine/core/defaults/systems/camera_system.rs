@@ -1,18 +1,18 @@
 use glam::Vec4Swizzles;
 use crate::engine::core::defaults::components::{components, *};
-use crate::engine::core::ecs::{SystemType, SystemData, SystemState, System, Entity};
+use crate::engine::core::ecs::{SystemType, System, SystemState, Entity};
 use crate::engine::core::world::World;
 
 // Create the camera system
 pub fn create_system(world: &mut World) {
 	// Default camera system
 	let mut cs = System::default();
-	cs.system_data.name = String::from("Camera System");
-	cs.system_data.link_component::<components::Camera>(world);
-	cs.system_data.link_component::<transforms::Position>(world);
-	cs.system_data.link_component::<transforms::Rotation>(world);
+	cs.name = String::from("Camera System");
+	cs.link_component::<components::Camera>(world);
+	cs.link_component::<transforms::Position>(world);
+	cs.link_component::<transforms::Rotation>(world);
 
-	cs.system_data.entity_added_event = |entity, world| {
+	cs.entity_added_event = |entity, world| {
 		// First time we initialize the camera, setup the matrices
 		let position: glam::Vec3;
 		let rotation: glam::Quat;
@@ -32,7 +32,7 @@ pub fn create_system(world: &mut World) {
 		world.input_manager.bind_key(glfw::Key::LeftShift, String::from("camera_down"));
 	};
 
-	cs.system_data.entity_loop_event = |entity, world| {
+	cs.entity_loop_event = |entity, world| {
 		let position: glam::Vec3;
 		let rotation: glam::Quat;
 		{

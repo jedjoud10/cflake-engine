@@ -74,9 +74,9 @@ impl World {
 
 		// Update the up-time of every system
 		for system in self.systems.iter_mut() {
-			match system.system_data.state {
-    			SystemState::Enabled(time) => { system.system_data.state = SystemState::Enabled(time + self.time_manager.delta_time as f32); },
-    			SystemState::Disabled(time) => { system.system_data.state = SystemState::Disabled(time + self.time_manager.delta_time as f32); },
+			match system.state {
+    			SystemState::Enabled(time) => { system.state = SystemState::Enabled(time + self.time_manager.delta_time as f32); },
+    			SystemState::Disabled(time) => { system.state = SystemState::Disabled(time + self.time_manager.delta_time as f32); },
 			}
 		}
  
@@ -124,13 +124,13 @@ impl World {
 	fn run_entity_loop_on_system_type(&mut self, _system_type: SystemType) {
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut().filter(|sys| 			
-			match &sys.system_data.stype {
+			match &sys.stype {
 				_system_type => true,
 				_ => false
 		} ) {
-			match &system.system_data.state {
+			match &system.state {
     			SystemState::Enabled(_) => {
-					system.system_data.run_entity_loops(self);
+					system.run_entity_loops(self);
 				},
     			_ => {	}
 			}
@@ -141,13 +141,13 @@ impl World {
 	pub fn stop_world(&mut self) {
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
-			system.system_data.end_system(self);
+			system.end_system(self);
 		}
 		self.systems = clone;
 	}			
 	// Adds a system to the world
 	pub fn add_system(&mut self, mut system: System) {
-		let system_data = &mut system.system_data;
+		let system_data = &mut system;
 		system_data.system_addded();
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
@@ -164,10 +164,10 @@ impl World {
 		// Check if there are systems that need this entity
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
-			let system_data = &mut system.system_data;
-			if Self::is_entity_valid_for_system(&entity, system_data) {
+			let system = system;
+			if Self::is_entity_valid_for_system(&entity, system) {
 				// Add the entity to the system
-				system_data.add_entity(&entity, self);
+				system.add_entity(&entity, self);
 			}		
 		}
 		// Since we cloned the entity variable we gotta update the entity manager with the new one
@@ -181,11 +181,11 @@ impl World {
 		// Remove the entity from all the systems it was in
 		let mut clone = self.systems.clone();
 		for system in clone.iter_mut() {
-			let system_data = &mut system.system_data;
+			let system = system;
 		
 			// Only remove the entity from the systems that it was in
-			if removed_entity.c_bitfield >= system_data.c_bitfield {
-				system_data.remove_entity(entity_id, &removed_entity, self);				
+			if removed_entity.c_bitfield >= system.c_bitfield {
+				system.remove_entity(entity_id, &removed_entity, self);				
 			}			
 		}
 		self.systems = clone;
@@ -198,7 +198,7 @@ impl World {
 		self.entity_manager.get_entity(entity_id)
 	}
 	// Check if a specified entity fits the criteria to be in a specific system
-	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut SystemData) -> bool {
+	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut System) -> bool {
 		// Check if the system matches the component ID of the entity
 		let bitfield: u8 = system_data.c_bitfield & !entity.c_bitfield;
 		// If the entity is valid, all the bits would be 0

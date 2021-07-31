@@ -5,5 +5,5 @@ in vec3 debug_color;
 in vec3 normal;
 void main() {
 	float val = dot(normal, vec3(0, 1, 0));
-	color = debug_color;
+	color = vec3(val, val, val);
 }

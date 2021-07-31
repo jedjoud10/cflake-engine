@@ -92,14 +92,8 @@ pub enum SystemType {
 }
 
 // A generic system that can be used in 3 different ways (Tick system, Update system, Render system)
-#[derive(Default, Clone)]
-pub struct System {
-	pub system_data: SystemData,
-}
-
-// A system that can write/read component data, every frame, or at the start of the game
 #[derive(Clone)]
-pub struct SystemData {
+pub struct System {
 	pub name: String,
 	pub c_bitfield: u8,
 	pub system_id: u8,
@@ -114,7 +108,7 @@ pub struct SystemData {
 }
 
 // Default for system data
-impl Default for SystemData {
+impl Default for System {
 	fn default() -> Self {
 		Self {
 			name: String::from("Unnamed system"),
@@ -130,7 +124,7 @@ impl Default for SystemData {
 	}
 }
 
-impl SystemData {
+impl System {
 	// Basic control code
 	pub fn system_addded(&mut self) {
 
