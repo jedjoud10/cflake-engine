@@ -9,7 +9,10 @@ use crate::gl;
 // Create the rendering system component
 #[derive(Default)]
 pub struct RendererS {
-	pub framebuffer: u32
+	pub framebuffer: u32,
+	pub color_texture: Texture,
+	pub depth_stencil_texture: Texture,
+	pub quad_renderer_id: u16,
 }
 
 impl SystemComponent for RendererS {
@@ -47,14 +50,33 @@ pub fn create_system(world: &mut World) {
 		gl::Enable(gl::DEPTH_TEST);
 		gl::Enable(gl::CULL_FACE);	
 		gl::CullFace(gl::BACK);
-		let mut system_component = rs.get_system_component_mut::<RendererS>(world);
-		gl::GenFramebuffers(1, &mut system_component.framebuffer);
-		gl::BindFramebuffer(gl::FRAMEBUFFER, system_component.framebuffer);
+		let mut sc = rs.get_system_component_mut::<RendererS>(world);
+		gl::GenFramebuffers(1, &mut sc.framebuffer);
+		gl::BindFramebuffer(gl::FRAMEBUFFER, sc.framebuffer);
 		// Check if the frame buffer is alright
+		sc.color_texture = Texture::create_new_texture(default_size.0 as u32, default_size.1 as u32, gl::RGB, gl::RGB, gl::UNSIGNED_BYTE);
+		sc.depth_stencil_texture = Texture::create_new_texture(default_size.0 as u32, default_size.1 as u32, gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8);
+		gl::BindTexture(gl::TEXTURE_2D, sc.color_texture.id);
+		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, sc.color_texture.id, 0);
+		gl::BindTexture(gl::TEXTURE_2D, sc.depth_stencil_texture.id);
+		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::TEXTURE_2D, sc.depth_stencil_texture.id, 0);
 		if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
-
+			println!("Framebuffer is okay :)");
+		} else {
+			panic!("Framebuffer has failed initialization");
 		}
+		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 	}
+	// Before we render the scene
+	rs.system_pre_loop_event = |world| {
+		unsafe {
+			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+		}
+	};
+	// After we render the scene
+	rs.system_post_loop_event = |world| {
+		
+	};
 	// Render the entitites
 	rs.entity_loop_event = |entity, world| {	
 		let _id = entity.entity_id;

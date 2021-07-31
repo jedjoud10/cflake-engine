@@ -13,16 +13,18 @@ pub trait Component {
 // Struct used to get the component ID of specific components, entities, and systems
 #[derive(Default)]
 pub struct ComponentManager {
-	pub component_ids: HashMap<String, u8>,	
+	pub component_ids: HashMap<String, u16>,	
 	pub components: Vec<Box<dyn Component>>,
-	pub current_component_id: u8
+	pub discrete_components: HashMap<u16, Box<dyn Component>>,
+	pub system_components: Vec<Box<dyn SystemComponent>>,
+	pub current_component_id: u16
 }
 
 // Implement all the functions
 impl ComponentManager {
 
 	// Registers a specific component
-	pub fn register_component<T: ComponentID>(&mut self) -> u8 {
+	pub fn register_component<T: ComponentID>(&mut self) -> u16 {
 		let name: String = T::get_component_name();	
 		// Register the component
 		self.component_ids.insert(name.clone(), self.current_component_id);
@@ -36,7 +38,7 @@ impl ComponentManager {
 	}
 
 	// Get the component id for a specific entity
-	pub fn get_component_id<T: ComponentID>(&self) -> u8 {
+	pub fn get_component_id<T: ComponentID>(&self) -> u16 {
 		let name: String = T::get_component_name();
 		// It found the component, so just return it's id
 		if self.component_ids.contains_key(&name) {
@@ -53,7 +55,7 @@ impl ComponentManager {
 	}
 
 	// Get the component id for a specific entity
-	pub fn get_component_id_by_name(&self, name: &String) -> u8 {
+	pub fn get_component_id_by_name(&self, name: &String) -> u16 {
 		// It found the component, so just return it's id
 		if self.component_ids.contains_key(name) {
 			let value = self.component_ids[name];
@@ -95,17 +97,20 @@ pub enum SystemType {
 #[derive(Clone)]
 pub struct System {
 	pub name: String,
-	pub c_bitfield: u8,
+	pub c_bitfield: u16,
 	pub system_id: u8,
 	pub state: SystemState,
 	pub stype: SystemType,
+	// System events
+	pub system_pre_loop_event: fn(&mut World),
+	pub system_post_loop_event: fn(&mut World),
 	// Entity events
 	pub entity_loop_event: fn(&Entity, &mut World),
 	pub entity_added_event: fn(&Entity, &mut World),
 	pub entity_removed_event: fn(&Entity, &mut World),
 
 	pub entities: Vec<u16>,
-	pub system_components: HashMap<u8, u16>,
+	pub system_components: HashMap<u16, u16>,
 }
 
 // Default for system data
@@ -117,6 +122,8 @@ impl Default for System {
 			system_id: 0,
 			state: SystemState::Enabled(0.0),
 			stype: SystemType::Update,
+			system_pre_loop_event: |_world| {},
+			system_post_loop_event: |_world| {},
 			entity_loop_event: |_entity, _world| {},
 			entity_added_event: |_entity, _world|  {},
 			entity_removed_event: |_entity, _world|  {},
@@ -150,12 +157,14 @@ impl System {
 	}
 	// Fire the "entity_loop" event
 	pub fn run_entity_loops(&mut self, world: &mut World) {
+		(self.system_pre_loop_event)(world);
 		// Loop over all the entities and update their components
 		for &entity_id in self.entities.iter() {		
 			let entity_clone = &mut world.get_entity(entity_id).clone();
 			(self.entity_loop_event)(entity_clone, world);
 			*world.get_entity_mut(entity_id) = entity_clone.clone();
 		}
+		(self.system_post_loop_event)(world);
 	}
 	// Add a component to this system's component bitfield id
 	pub fn link_component<T: ComponentID>(&mut self, world: &mut World) {
@@ -169,11 +178,15 @@ impl System {
 	}
 	// Add a SystemComponent; a custom type of component that is just for systems
 	pub fn link_system_component<T: SystemComponent + ComponentID + Default + 'static>(&mut self, world: &mut World) {
+		// Regsiter da system component
+		if !world.component_manager.is_component_registered::<T>() {
+			world.component_manager.register_component::<T>();
+		}
 		// Check if we have the component already added
 		let component_id = world.component_manager.get_component_id::<T>(); 
 		if !self.system_components.contains_key(&component_id) {
-			world.system_components.push(Box::new(T::default()));
-			let global_component_id: u16 = world.system_components.len() as u16 - 1;
+			world.component_manager.system_components.push(Box::new(T::default()));
+			let global_component_id: u16 = world.component_manager.system_components.len() as u16 - 1;
 			self.system_components.insert(component_id, global_component_id);
 		}
 	}
@@ -182,11 +195,11 @@ impl System {
 		let component_id = world.component_manager.get_component_id::<T>();
 		// Check if we even have the component
 		if self.system_components.contains_key(&component_id) {
-			let component_any: &dyn Any = world.system_components.get(self.system_components[&component_id] as usize).unwrap().as_any();
+			let component_any: &dyn Any = world.component_manager.system_components.get(self.system_components[&component_id] as usize).unwrap().as_any();
 			let final_component = component_any.downcast_ref::<T>().unwrap();
 			return final_component;
 		} else {
-			panic!(format!("Component '{}' does not exist on entity '{}'!", T::get_component_name(), self.name));
+			panic!(format!("System Component '{}' does not exist on system '{}'!", T::get_component_name(), self.name));
 		}
 	}
 	// Gets a mutable reference ot a system component
@@ -194,11 +207,11 @@ impl System {
 		let component_id = world.component_manager.get_component_id::<T>();
 		// Check if we even have the component
 		if self.system_components.contains_key(&component_id) {
-			let component_any: &mut dyn Any = world.system_components.get_mut(self.system_components[&component_id] as usize).unwrap().as_any_mut();
+			let component_any: &mut dyn Any = world.component_manager.system_components.get_mut(self.system_components[&component_id] as usize).unwrap().as_any_mut();
 			let final_component = component_any.downcast_mut::<T>().unwrap();
 			return final_component;
 		} else {
-			panic!(format!("Component '{}' does not exist on entity '{}'!", T::get_component_name(), self.name));
+			panic!(format!("System Component '{}' does not exist on system '{}'!", T::get_component_name(), self.name));
 		}
 	}
 	// Adds an entity to the system
@@ -228,9 +241,9 @@ pub trait SystemComponent {
 pub struct Entity {
 	pub name: String,
 	pub entity_id: u16,
-	pub c_bitfield: u8,
+	pub c_bitfield: u16,
 	// The actual components are stored in the world, this allows for two objects to share a single component if we want to have duplicate entities
-	components: HashMap<u8, u16>,
+	components: HashMap<u16, u16>,
 }
 
 // ECS time bois
@@ -279,7 +292,6 @@ impl Entity {
 	// Gets a specific component, mutably
 	pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(&self, world: &'a mut World) -> &'a mut T {
 		let component_id = world.component_manager.get_component_id::<T>();
-		// Check if we 
 		// Check if we even have the component
 		if self.components.contains_key(&component_id) {
 			let component_any: &mut dyn Any = world.component_manager.components.get_mut(self.components[&component_id] as usize).unwrap().as_any_mut();

@@ -21,7 +21,6 @@ pub struct World {
 	pub shader_manager: ShaderManager,
 	pub entity_manager: EntityManager,
 	pub systems: Vec<System>,
-	pub system_components: Vec<Box<dyn SystemComponent>>,
 	pub window: Window,
 	pub default_camera_id: u16
 } 
@@ -38,8 +37,7 @@ impl Default for World {
 			entity_manager: EntityManager::default(),
 			systems: Vec::new(),
 			default_camera_id: 0,
-			window: Window::default(),
-			system_components: Vec::new()
+			window: Window::default()
 		}
 	}
 }
@@ -69,9 +67,6 @@ impl World {
 		self.run_entity_loop_on_system_type(SystemType::Update);
 
 		// And render them
-		unsafe {
-			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-		}
 		self.run_entity_loop_on_system_type(SystemType::Render);
 		window.swap_buffers();
 		
@@ -156,7 +151,25 @@ impl World {
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
 		self.systems.push(system);
 	}	
-	
+	// Add a discrete component to the world, that isn't linked to any entity
+	pub fn add_discrete_component<'a, T: ComponentID + Component + 'static>(&mut self, component: T) -> u16 {
+		// Make sure the component is registered first
+		if !self.component_manager.is_component_registered::<T>() {
+			self.component_manager.register_component::<T>();
+		}
+		// Add the component, and return it's id
+		self.component_manager.discrete_components.insert(self.component_manager.get_component_id::<T>(), Box::new(component));
+		let id = self.component_manager.discrete_components.len() as u16 - 1;
+		return id;
+		
+	}
+	// Get a reference to a specific discrete component from the world, without the need of an entity
+	pub fn get_dicrete_component<'a, T: ComponentID + Component + 'static>(&mut self, ) -> &T {
+		let id = self.component_manager.discrete_components.len() as u16 - 1;
+		let component_any = self.component_manager.discrete_components.get(&id).unwrap().as_any();
+		let component: &T = component_any.downcast_ref().unwrap();
+		return component;
+	}
 }
 
 // Impl block for the entity stuff
@@ -204,7 +217,7 @@ impl World {
 	// Check if a specified entity fits the criteria to be in a specific system
 	fn is_entity_valid_for_system(entity: &Entity, system_data: &mut System) -> bool {
 		// Check if the system matches the component ID of the entity
-		let bitfield: u8 = system_data.c_bitfield & !entity.c_bitfield;
+		let bitfield: u16 = system_data.c_bitfield & !entity.c_bitfield;
 		// If the entity is valid, all the bits would be 0
 		return bitfield == 0;
 	}	

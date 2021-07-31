@@ -318,26 +318,37 @@ impl Model {
 }
 
 // A texture
+#[derive(Default)]
 pub struct Texture {
 	pub x: u32,
 	pub y: u32,
 	pub id: u32,
+	pub internal_format: u32,
+	pub format: u32,
+	pub data_type: u32,
 }
 
 impl Texture {	
 	// Creates a new empty texture from a specified size
-	pub fn create_new_texture(xsize: u32, ysize: u32) -> Self {
+	pub fn create_new_texture(xsize: u32, ysize: u32, internal_format: u32, format: u32, data_type: u32) -> Self {
 		let mut texture = Self {
 			x: xsize,
 			y: ysize,
 			id: 0,
+			internal_format,
+			format,
+			data_type,
 		};
 
 		// Create the OpenGL texture and set it's data to null since it's empty
 		unsafe {
 			gl::GenTextures(1, &mut texture.id as *mut u32);
 			gl::BindTexture(gl::TEXTURE_2D, texture.id);
-			gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, xsize as i32, ysize as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, null());
+			gl::TexImage2D(gl::TEXTURE_2D, 0, texture.internal_format as i32, xsize as i32, ysize as i32, 0, texture.format, texture.data_type, null());
+		
+			// Mag and min filters
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 		}
 
 		return texture;

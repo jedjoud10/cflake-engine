@@ -112,6 +112,5 @@ pub fn load_entities(world: &mut World) {
 		scale: 900.0
 	});
 	sky.link_default_component::<components::Sky>(world);
-	world.add_entity(sky);
-	
+	world.add_entity(sky);	
 }
