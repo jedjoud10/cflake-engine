@@ -74,7 +74,7 @@ pub fn create_system(world: &mut World) {
 			if rc.gpu_data.initialized {
 				gl::BindVertexArray(rc.gpu_data.vertex_array_object);
 				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
-				gl::DrawElements(gl::TRIANGLES, rc.model.indices.len() as i32, gl::UNSIGNED_INT, null());
+				gl::DrawElements(gl::TRIANGLES, rc.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
 			}
 		}
 	};

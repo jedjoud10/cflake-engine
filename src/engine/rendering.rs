@@ -279,7 +279,7 @@ pub struct Model {
 	pub normals: Vec<glam::Vec3>,
 	pub tangents: Vec<glam::Vec3>,
 	pub uvs: Vec<glam::Vec2>,
-	pub indices: Vec<u32>,
+	pub triangles: Vec<u32>,
 }
 
 impl Model {
@@ -293,7 +293,7 @@ impl Model {
 					normals: model.normals.clone(),
 					tangents: model.tangents.clone(),
 					uvs: model.uvs.clone(),
-        			indices: model.indices.clone(),
+        			triangles: model.indices.clone(),
    				};
 				return Some(new_model);
 			},
@@ -302,11 +302,11 @@ impl Model {
 	}
 	// Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
 	pub fn flip_triangles(&mut self) {
-		for i in (0..self.indices.len()).step_by(3) {
+		for i in (0..self.triangles.len()).step_by(3) {
 			// Swap the first and last index of each triangle
-			let copy = self.indices[i];
-			self.indices[i] = self.indices[i + 2];
-			self.indices[i + 2] = copy;			
+			let copy = self.triangles[i];
+			self.triangles[i] = self.triangles[i + 2];
+			self.triangles[i + 2] = copy;			
 		}
 	}
 }
@@ -350,7 +350,7 @@ impl Render {
 			// Create the EBO
 			gl::GenBuffers(1, &mut self.gpu_data.element_buffer_object);
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.gpu_data.element_buffer_object);
-			gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (self.model.indices.len() * size_of::<u32>()) as isize, self.model.indices.as_ptr() as *const c_void, gl::STATIC_DRAW);
+			gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (self.model.triangles.len() * size_of::<u32>()) as isize, self.model.triangles.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
 			// Create the vertex buffer and populate it
 			gl::GenBuffers(1, &mut self.gpu_data.vertex_buf);
@@ -394,6 +394,7 @@ impl Render {
 			gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());	
 
 			self.gpu_data.initialized = true;
+			println!("Initialized model with '{}' vertices and '{}' triangles", self.model.vertices.len(), self.model.triangles.len());
 			// Unbind
 			gl::BindVertexArray(0);
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
