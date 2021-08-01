@@ -8,5 +8,5 @@ uniform sampler2D uvs_texture;
 in vec2 uv_coordinates;
 
 void main() {
-	color = texture(normals_texture, uv_coordinates).xyz;
+	color = texture(tangents_texture, uv_coordinates).xyz;
 }

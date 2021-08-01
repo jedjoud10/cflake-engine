@@ -82,21 +82,21 @@ pub fn create_system(world: &mut World) {
 		sc.normals_texture = Texture::create_new_texture(
 			default_size.0 as u32,
 			default_size.1 as u32,
-			gl::RGB8_SNORM,
+			gl::RGB16_SNORM,
 			gl::RGB,
 			gl::UNSIGNED_BYTE);
 		// Create the tangents render texture
 		sc.tangents_texture = Texture::create_new_texture(
 			default_size.0 as u32,
 			default_size.1 as u32,
-			gl::RGB8_SNORM,
+			gl::RGB16_SNORM,
 			gl::RGB,
 			gl::UNSIGNED_BYTE);
 		// Create the uvs render texture
 		sc.uvs_texture = Texture::create_new_texture(
 			default_size.0 as u32,
 			default_size.1 as u32,
-			gl::RG8_SNORM,
+			gl::RG16_SNORM,
 			gl::RG,
 			gl::UNSIGNED_BYTE);
 		// Create the depth-stencil render texture
