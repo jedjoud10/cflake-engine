@@ -177,7 +177,7 @@ impl System {
 		println!("Link component '{}' to system '{}', with ID: {}", T::get_component_name(), self.name, world.component_manager.get_component_id::<T>());
 	}
 	// Add a SystemComponent; a custom type of component that is just for systems
-	pub fn link_system_component<T: SystemComponent + ComponentID + Default + 'static>(&mut self, world: &mut World) {
+	pub fn link_system_component<T: SystemComponent + ComponentID + Default + 'static>(&mut self, world: &mut World) -> u16 {
 		// Regsiter da system component
 		if !world.component_manager.is_component_registered::<T>() {
 			world.component_manager.register_component::<T>();
@@ -188,7 +188,10 @@ impl System {
 			world.component_manager.system_components.push(Box::new(T::default()));
 			let global_component_id: u16 = world.component_manager.system_components.len() as u16 - 1;
 			self.system_components.insert(component_id, global_component_id);
-		}
+			return global_component_id;
+		} else {
+			panic!(format!("System '{}' does not have system component '{}'", self.name, T::get_component_name()));
+		}		
 	}
 	// Gets a reference to a system component
 	pub fn get_system_component<'a, T: SystemComponent + ComponentID + 'static>(&self, world: &'a World) -> &'a T {

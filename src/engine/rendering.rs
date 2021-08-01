@@ -9,6 +9,7 @@ use gl;
 pub struct Window {
 	pub fullscreen: bool,
 	pub size: (i32, i32),
+	pub system_renderer_component_index: u16,
 }
 
 // Shader manager
@@ -207,11 +208,11 @@ impl Shader {
 		}
 	}
 	// Set a texture basically
-	pub fn set_texture2d(&self, location: i32, texture_id: u32) {
+	pub fn set_texture2d(&self, location: i32, texture_id: u32, active_texture_id: u32) {
 		unsafe {
-			gl::ActiveTexture(gl::TEXTURE0);
+			gl::ActiveTexture(active_texture_id);
 			gl::BindTexture(gl::TEXTURE_2D, texture_id);
-			gl::Uniform1i(location, 0);
+			gl::Uniform1i(location, active_texture_id as i32 - 33984);
 		}
 	}
 }
@@ -365,6 +366,13 @@ impl Texture {
 
 		return texture;
 	}
+	// Update the size of this specific texture
+	pub fn update_size(&mut self, xsize: u32, ysize: u32) {
+		unsafe {
+			gl::BindTexture(gl::TEXTURE_2D, self.id);
+			gl::TexImage2D(gl::TEXTURE_2D, 0, self.internal_format as i32, xsize as i32, ysize as i32, 0, self.format, self.data_type, null());
+		}
+	} 
 }
 
 // The current render state of the entity

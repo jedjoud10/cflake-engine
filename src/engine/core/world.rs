@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ptr::null;
 use glfw::Context;
 
 use crate::engine::core::ecs::*;
@@ -9,6 +10,8 @@ use crate::engine::resources::ResourceManager;
 use crate::engine::core::defaults::components::components::Camera;
 use crate::engine::rendering::Window;
 use crate::game::level::*;
+
+use super::defaults::systems::rendering_system::RendererS;
 
 
 
@@ -22,7 +25,7 @@ pub struct World {
 	pub entity_manager: EntityManager,
 	pub systems: Vec<System>,
 	pub window: Window,
-	pub default_camera_id: u16
+	pub default_camera_id: u16,
 } 
 
 // Default world values
@@ -232,6 +235,18 @@ impl World {
 	pub fn resize_window_event(&mut self, size: (i32, i32)) {
 		unsafe {
 			gl::Viewport(0, 0, size.0, size.1);
+			let system_component: &mut RendererS = self.component_manager.system_components
+				.get_mut(self.window.system_renderer_component_index as usize)
+				.unwrap()
+				.as_any_mut()
+				.downcast_mut()
+				.unwrap();
+			// Update the size of each texture that is bound to the framebuffer
+			system_component.color_texture.update_size(size.0 as u32, size.1 as u32);
+			system_component.depth_stencil_texture.update_size(size.0 as u32, size.1 as u32);
+			system_component.normals_texture.update_size(size.0 as u32, size.1 as u32);
+			system_component.tangents_texture.update_size(size.0 as u32, size.1 as u32);
+			system_component.uvs_texture.update_size(size.0 as u32, size.1 as u32);
 		}
 		let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
 		let entity_clone_id = camera_entity_clone.entity_id;
