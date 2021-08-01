@@ -61,10 +61,10 @@ impl ShaderManager {
 		}
 	}
 	// Gets a specific shader from cache
-	pub fn get_shader(&mut self, shader_name: &String) -> Option<&mut Shader> {
+	pub fn get_shader(&self, shader_name: &String) -> Option<&Shader> {
 		// Make sure it exists
 		if self.shaders.contains_key(shader_name) {
-			return self.shaders.get_mut(shader_name);
+			return self.shaders.get(shader_name);
 		} else {
 			return None;
 		}
@@ -121,43 +121,47 @@ impl Shader {
 		}	
 		return shader;
 	}
+	// Finalizes a vert/frag shader by compiling it
+	pub fn finalize_shader(&mut self) {
+		unsafe {
+			// Finalize the shader and stuff
+			gl::LinkProgram(self.program);
+
+			// Check for errors
+			// Check for any errors
+			let mut info_log_length: i32 = 0;
+			let info_log_length_ptr: *mut i32 = &mut info_log_length;
+			let mut result: i32 = 0;		
+			let result_ptr: *mut i32 = &mut result;	
+			gl::GetProgramiv(self.program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+			gl::GetProgramiv(self.program, gl::LINK_STATUS, result_ptr);
+			// Print any errors that might've happened while finalizing this shader
+			if info_log_length > 0 {
+				let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+				gl::GetProgramInfoLog(self.program, info_log_length, 0 as *mut i32, log.as_mut_ptr());
+				println!("Error while finalizing shader {}!:", self.name);
+				let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect(); 
+				let string = String::from_utf8(printable_log).unwrap();
+				println!("Error: \n\x1b[31m{}", string);
+				println!("\x1b[0m");
+				panic!();
+			}
+
+			for subshader_program in self.linked_subshaders_programs.iter() {
+				gl::DetachShader(self.program, subshader_program.clone());
+			}
+			self.finalized = true;
+		}
+	}
 	// Use this shader for rendering a specific entity
-	pub fn use_shader(&mut self) {
+	pub fn use_shader(&self) {
 		// Check if the program even was finalized and ready for use
 		if self.finalized {
 			unsafe {
 				gl::UseProgram(self.program);
 			}
 		} else {
-			unsafe {
-				// Finalize the shader and stuff
-				gl::LinkProgram(self.program);
-
-				// Check for errors
-				// Check for any errors
-				let mut info_log_length: i32 = 0;
-				let info_log_length_ptr: *mut i32 = &mut info_log_length;
-				let mut result: i32 = 0;		
-				let result_ptr: *mut i32 = &mut result;	
-				gl::GetProgramiv(self.program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-				gl::GetProgramiv(self.program, gl::LINK_STATUS, result_ptr);
-				// Print any errors that might've happened while finalizing this shader
-				if info_log_length > 0 {
-					let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-					gl::GetProgramInfoLog(self.program, info_log_length, 0 as *mut i32, log.as_mut_ptr());
-					println!("Error while finalizing shader {}!:", self.name);
-					let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect(); 
-					let string = String::from_utf8(printable_log).unwrap();
-					println!("Error: \n\x1b[31m{}", string);
-					println!("\x1b[0m");
-					panic!();
-				}
-
-				for subshader_program in self.linked_subshaders_programs.iter() {
-					gl::DetachShader(self.program, subshader_program.clone());
-				}
-				self.finalized = true;
-			}
+			println!("Shader '{}' not finalized!", self.name);
 		}
 	} 
 	// Link a specific subshader to this shader
@@ -200,6 +204,14 @@ impl Shader {
 		unsafe {
 			let ptr: *const f32 = &matrix.as_ref()[0];
 			gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
+		}
+	}
+	// Set a texture basically
+	pub fn set_texture2d(&self, location: i32, texture_id: u32) {
+		unsafe {
+			gl::ActiveTexture(gl::TEXTURE0);
+			gl::BindTexture(gl::TEXTURE_2D, texture_id);
+			gl::Uniform1i(location, 0);
 		}
 	}
 }

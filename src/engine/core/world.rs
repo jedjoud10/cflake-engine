@@ -164,7 +164,7 @@ impl World {
 		
 	}
 	// Get a reference to a specific discrete component from the world, without the need of an entity
-	pub fn get_dicrete_component<'a, T: ComponentID + Component + 'static>(&mut self, index: u16) -> &T {
+	pub fn get_dicrete_component<'a, T: ComponentID + Component + 'static>(&self, index: u16) -> &T {
 		let component_any = self.component_manager.discrete_components.get(index as usize).unwrap().as_any();
 		let component: &T = component_any.downcast_ref().unwrap();
 		return component;

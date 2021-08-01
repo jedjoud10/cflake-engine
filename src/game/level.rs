@@ -35,6 +35,7 @@ pub fn load_entities(world: &mut World) {
 	let mut default_shader_name: String;
 	{
 		let mut default_shader = Shader::from_vr_fr_subshader_files("default.vrsh.glsl.pkg", "default.frsh.glsl.pkg", world);	
+		default_shader.finalize_shader();
 		let default_shader = world.shader_manager.cache_shader(default_shader).unwrap();
 		default_shader_name = default_shader.name.clone();
 	}
@@ -49,6 +50,7 @@ pub fn load_entities(world: &mut World) {
 		model,
 		shader_name: {
 			let mut checkerboard_shader = Shader::from_vr_fr_subshader_files("default.vrsh.glsl.pkg", "checkerboard.frsh.glsl.pkg", world);	
+			checkerboard_shader.finalize_shader();
 			let checkerboard_shader = world.shader_manager.cache_shader(checkerboard_shader).unwrap();
 			checkerboard_shader.name.clone()
 		},
@@ -96,6 +98,7 @@ pub fn load_entities(world: &mut World) {
 	let mut sky_shader_name: String = 
 	{
 		let mut shader = Shader::from_vr_fr_subshader_files("default.vrsh.glsl.pkg", "sky.frsh.glsl.pkg", world);	
+		shader.finalize_shader();
 		let cached_shader = world.shader_manager.cache_shader(shader).unwrap();
 		cached_shader.name.clone()
 	};

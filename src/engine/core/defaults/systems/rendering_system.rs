@@ -43,10 +43,11 @@ pub fn create_system(world: &mut World) {
 	rs.link_system_component::<RendererS>(world);
 
 	let mut quad_renderer_component = components::Renderer::default();
-	quad_renderer_component.model = Model::from_resource(world.resource_manager.load_resource("screen_quad.mdl3d.pkg", "models\\").unwrap()).unwrap();;
+	quad_renderer_component.model = Model::from_resource(world.resource_manager.load_resource("screen_quad.mdl3d.pkg", "models\\").unwrap()).unwrap();
 	quad_renderer_component.shader_name = {
 		// Load the shader that will draw the quad
-		let shader = Shader::from_vr_fr_subshader_files("passthrough.vrsh.glsl.pkg", "screen_quad.frsh.glsl.pkg", world);
+		let mut shader = Shader::from_vr_fr_subshader_files("passthrough.vrsh.glsl.pkg", "screen_quad.frsh.glsl.pkg", world);
+		shader.finalize_shader();
 		let shader = world.shader_manager.cache_shader(shader).unwrap();
 		shader.name.clone()
 	};
@@ -62,7 +63,7 @@ pub fn create_system(world: &mut World) {
 		gl::Viewport(0, 0, default_size.0, default_size.1);
 		gl::Enable(gl::DEPTH_TEST);
 		//gl::Enable(gl::CULL_FACE);	
-		gl::CullFace(gl::BACK);
+		//gl::CullFace(gl::BACK);
 		let mut sc = rs.get_system_component_mut::<RendererS>(world);
 		gl::GenFramebuffers(1, &mut sc.framebuffer);
 		gl::BindFramebuffer(gl::FRAMEBUFFER, sc.framebuffer);
@@ -81,26 +82,32 @@ pub fn create_system(world: &mut World) {
 		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 	}
 	// Before we render the scene
-	rs.system_pre_loop_event = |world, _| {
+	rs.system_pre_loop_event = |world, system| {
 		unsafe {
+			gl::BindFramebuffer(gl::FRAMEBUFFER, system.get_system_component::<RendererS>(world).framebuffer);
 			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 		}
 	};
 	// After we render the scene
 	rs.system_post_loop_event = |world, system| {
-		let quad_renderer = world.get_dicrete_component::<components::Renderer>(system.get_system_component::<RendererS>(world).quad_renderer_index);
-
+		let system_component = system.get_system_component::<RendererS>(world);
+		let quad_renderer = world.get_dicrete_component::<components::Renderer>(system_component.quad_renderer_index);
+		let shader = world.shader_manager.get_shader(&quad_renderer.shader_name).unwrap();
+		shader.use_shader();
+		shader.set_texture2d(shader.get_uniform_location("color_texture"), system_component.color_texture.id);
 		// Render the screen quad
-		unsafe {
+		unsafe {			
+			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 			gl::BindVertexArray(quad_renderer.gpu_data.vertex_array_object);
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_renderer.gpu_data.element_buffer_object);
 			gl::DrawElements(gl::TRIANGLES, quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
-		}
+		}		
 	};
 	// Render the entitites
 	rs.entity_loop_event = |entity, world, _| {	
 		let _id = entity.entity_id;
-		let shader: &mut Shader;
+		let shader: &Shader;
 		let view_matrix: glam::Mat4;
 		let projection_matrix: glam::Mat4;
 		let camera_position: glam::Vec3;
@@ -146,11 +153,13 @@ pub fn create_system(world: &mut World) {
 		unsafe {
 			// Actually draw the array
 			let rc = entity.get_component::<components::Renderer>(world);
+			
 			if rc.gpu_data.initialized {
 				gl::BindVertexArray(rc.gpu_data.vertex_array_object);
 				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
 				gl::DrawElements(gl::TRIANGLES, rc.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
 			}
+			
 		}
 	};
 	// When an entity gets added to the render system
