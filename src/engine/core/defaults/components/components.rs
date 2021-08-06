@@ -66,6 +66,8 @@ pub struct Renderer {
 	pub gpu_data: ModelDataGPU,	
 	pub shader_name: String,
 	pub model: Model,
+	// Rendering stuff
+	pub diffuse_texture_id: u16,
 }
 
 // Main traits implemented

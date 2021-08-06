@@ -66,28 +66,30 @@ pub fn load_entities(world: &mut World) {
 		scale: 100.0,
 	});
 	world.add_entity(quad);
-
-	for bunny_index in 0..10 {
-		// Load a bunny model
-		let mut bunny = Entity::default();
-		bunny.name = String::from("Bunny");
-		// Create the model
-		let model2 = Model::from_resource(world.resource_manager.load_resource("bunny.mdl3d.pkg", "models\\").unwrap()).unwrap();
-		// Link the component
-		let rc = components::Renderer {
-			model: model2,
-			shader_name: default_shader_name.clone(),
-			..components::Renderer::default()
-		};
-		bunny.link_component::<components::Renderer>(world, rc);
-		bunny.link_component::<transforms::Position>(world, transforms::Position {
-			position: glam::vec3(10.0 + 5.0 * bunny_index as f32, 0.0, 0.0)
-		});
-		bunny.link_default_component::<transforms::Rotation>(world);
-		bunny.link_default_component::<transforms::Scale>(world);
-		world.add_entity(bunny);
+	for bunny_x in 0..3 {	
+		for bunny_y in 0..3 {
+				for bunny_z in 0..3 {
+					// Load a bunny model
+					let mut bunny = Entity::default();
+					bunny.name = String::from("Bunny");
+					// Create the model
+					let model2 = Model::from_resource(world.resource_manager.load_resource("bunny.mdl3d.pkg", "models\\").unwrap()).unwrap();
+					// Link the component
+					let rc = components::Renderer {
+						model: model2,
+					shader_name: default_shader_name.clone(),
+					..components::Renderer::default()
+				};
+				bunny.link_component::<components::Renderer>(world, rc);
+				bunny.link_component::<transforms::Position>(world, transforms::Position {
+					position: glam::vec3(2.0 * bunny_x as f32, 2.0 * bunny_y as f32, 2.0 * bunny_z as f32)
+				});
+				bunny.link_default_component::<transforms::Rotation>(world);
+				bunny.link_default_component::<transforms::Scale>(world);
+				world.add_entity(bunny);
+			}
+		}
 	}
-
 	
 	// Create the sky entity
 	let mut sky = Entity::default();

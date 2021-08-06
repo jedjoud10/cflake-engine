@@ -1,6 +1,7 @@
 use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str, thread::current};
 use crate::engine::rendering::SubShaderType;
 use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
+use image::{GenericImageView, io::Reader as ImageReader};
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]
@@ -89,6 +90,21 @@ impl ResourceManager {
 				}
 				2 => {
 					// This is a texture
+					let texture_width = reader.read_u16::<LittleEndian>().unwrap();
+					let texture_height = reader.read_u16::<LittleEndian>().unwrap();
+					let mut bytes: Vec<u8> = Vec::new();
+					for x in 0..texture_width {
+						for y in 0..texture_height {
+							bytes.push(reader.read_u8().unwrap());
+						}
+					}
+
+					// Load the bytes into the resource
+					loaded_resource = Resource::Texture(LoadedTexture {
+        				width: texture_width,
+        				height: texture_height,
+        				raw_pixels: bytes,
+    				})
 				}
 				3 => {
 					// Temp shader type
@@ -195,8 +211,17 @@ impl ResourceManager {
 							resource_type = 3;
 						}
 						"png" => {
-							resource_type = 2;
 							// This is a texture
+							let image_bytes = bytes;
+							let image = ImageReader::open(path).unwrap().decode().unwrap();
+							let dimensions = image.dimensions();
+							println!("{:?}", dimensions);
+							resource = Resource::Texture(LoadedTexture {
+								width: dimensions.0 as u16,
+								height: dimensions.1 as u16,
+								raw_pixels: image.to_bytes(),
+							});
+							resource_type = 2;
 						}
 						"wav" => {
 							resource_type = 4;
@@ -309,7 +334,15 @@ impl ResourceManager {
 								writer.write_u32::<LittleEndian>(index);
 							}
 						},
-    					Resource::Texture(_) => {
+    					Resource::Texture(texture) => {
+							// Write the dimensions of the texture
+							writer.write_u16::<LittleEndian>(texture.width);
+							writer.write_u16::<LittleEndian>(texture.height);
+
+							// Now write all the bytes
+							for byte in texture.raw_pixels {
+								writer.write_u8(byte);
+							}
 						},
     					Resource::Shader(shader) => {
 							// Turn the source string into bytes, and write them into the resource file
@@ -366,7 +399,9 @@ pub struct LoadedModel {
 }
 // A loaded texture resource
 pub struct LoadedTexture {
-	pub raw_pixels: Vec<(u8, u8, u8)>
+	pub width: u16,
+	pub height: u16,
+	pub raw_pixels: Vec<u8>
 }
 // A loaded sub shader
 #[derive(Clone)]
