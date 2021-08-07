@@ -330,20 +330,22 @@ impl Model {
 	}
 }
 
+// A texture manager
+
 // A texture
 #[derive(Default)]
 pub struct Texture {
-	pub x: u32,
-	pub y: u32,
+	pub x: u16,
+	pub y: u16,
 	pub id: u32,
 	pub internal_format: u32,
 	pub format: u32,
 	pub data_type: u32,
 }
 
-impl Texture {	
+impl Texture {
 	// Creates a new empty texture from a specified size
-	pub fn create_new_texture(xsize: u32, ysize: u32, internal_format: u32, format: u32, data_type: u32) -> Self {
+	pub fn create_new_texture(xsize: u16, ysize: u16, internal_format: u32, format: u32, data_type: u32) -> Self {
 		let mut texture = Self {
 			x: xsize,
 			y: ysize,
@@ -373,6 +375,26 @@ impl Texture {
 			gl::TexImage2D(gl::TEXTURE_2D, 0, self.internal_format as i32, xsize as i32, ysize as i32, 0, self.format, self.data_type, null());
 		}
 	} 
+}
+
+// We can now turn a texture resource into a normal texture
+impl Texture {
+	// Convert the resource to a texture
+    fn from_resource(resource: &Resource) -> Option<&Self> {
+		match resource {
+			Resource::Texture(texture) => {
+				let width = texture.width;
+				let height = texture.height;
+				let new_texture = Self::create_new_texture(width,
+					height,
+					gl::RGB,
+					gl::RGB,
+					gl::UNSIGNED_BYTE);
+				return Some(new_texture);
+			}
+			_ => { return None }
+		}
+    }
 }
 
 // The current render state of the entity
