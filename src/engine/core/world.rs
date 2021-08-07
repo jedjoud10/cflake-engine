@@ -90,11 +90,11 @@ impl World {
 	// Check for default key map events
 	fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
 		// Check for default mapping events
-		if self.input_manager.map_pressed(String::from("Quit")) {
+		if self.input_manager.map_pressed("Quit") {
 			window.set_should_close(true);			
 		}
 		// Toggle the fullscreen
-		if self.input_manager.map_pressed(String::from("Fullscreen")) {
+		if self.input_manager.map_pressed("Fullscreen") {
 			self.toggle_fullscreen(glfw, window);
 		}
 	}

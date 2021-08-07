@@ -188,11 +188,17 @@ pub fn create_system(world: &mut World) {
 		shader.set_matrix_44_uniform(shader.get_uniform_location("model_matrix"), model_matrix);
 		shader.set_matrix_44_uniform(shader.get_uniform_location("view_matrix"), view_matrix);
 		shader.set_scalar_2_uniform(shader.get_uniform_location("resolution"), (world.window.size.0 as f32, world.window.size.1 as f32));
-		// Check if we even have a diffse texture
+		// Check if we even have a diffuse texture
 		if rc.diffuse_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
 			let diffuse_texture = world.texture_manager.get_texture(rc.diffuse_texture_id);
 			shader.set_texture2d(shader.get_uniform_location("diffuse_tex"), diffuse_texture.id, gl::TEXTURE0);
+		}
+		// Check if we even have a normal texture
+		if rc.normal_texture_id != -1 {
+			// Convert the texture id into a texture, and then into a OpenGL texture id
+			let normal_texture = world.texture_manager.get_texture(rc.normal_texture_id);
+			shader.set_texture2d(shader.get_uniform_location("normal_tex"), normal_texture.id, gl::TEXTURE1);
 		}
 		unsafe {
 			// Actually draw the array

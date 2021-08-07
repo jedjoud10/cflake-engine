@@ -31,9 +31,9 @@ pub struct InputManager {
 impl InputManager {
 	// Setup the default input bindings
 	pub fn setup_default_bindings(&mut self) { 
-		self.bind_key(Key::Escape, String::from("Quit"));
-		self.bind_key(Key::F1, String::from("Fullscreen"));
-		self.bind_key(Key::F2, String::from("Capture FPS"));
+		self.bind_key(Key::Escape, "Quit");
+		self.bind_key(Key::F1, "Fullscreen");
+		self.bind_key(Key::F2, "Capture FPS");
 	}
 	// Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
 	pub fn update(&mut self, window: &mut glfw::Window) {
@@ -98,22 +98,22 @@ impl InputManager {
 		}
 	}
 	// Binds a key to a specific mapping
-	pub fn bind_key(&mut self, key: Key, map_name: String) {
+	pub fn bind_key(&mut self, key: Key, map_name: &str) {
 		// Check if the binding exists
 		if self.bindings.contains_key(&key) {
 			// Nein.
 		} else {
 			// The binding does not exist yet, so create a new one
-			self.bindings.insert(key.clone(), map_name.clone());
-			self.mappings.insert(map_name.clone(), MapStatus::Nothing);
+			self.bindings.insert(key.clone(), map_name.to_string().clone());
+			self.mappings.insert(map_name.to_string().clone(), MapStatus::Nothing);
 			println!("Create a new binding with mapping name '{}'", map_name);
 		}
 	}
 	// Returns true when the map is pressed
-	pub fn map_pressed(&self, name: String) -> bool {
+	pub fn map_pressed(&self, name: &str) -> bool {
 		// Make sure that mapping actually exists
-		if self.mappings.contains_key(&name) {
-			match self.mappings[&name] {
+		if self.mappings.contains_key(&name.to_string()) {
+			match self.mappings[&name.to_string()] {
 				MapStatus::Pressed => true,
 				_ => false,
 			}
@@ -121,10 +121,10 @@ impl InputManager {
 		else { false }
 	}
 	// Returns true when the map is being held
-	pub fn map_held(&self, name: String) -> (bool, f32) {
+	pub fn map_held(&self, name: &str) -> (bool, f32) {
 		// Make sure that mapping actually exists
-		if self.mappings.contains_key(&name) {
-			match self.mappings[&name] {
+		if self.mappings.contains_key(&name.to_string()) {
+			match self.mappings[&name.to_string()] {
 				MapStatus::Held(held_seconds) => (true, held_seconds),
 				_ => (false, 0.0),
 			}
@@ -133,9 +133,9 @@ impl InputManager {
 		}
 	}
 	// Returns true when the map has been released
-	pub fn map_released(&self, name: String) -> bool {
-		if self.mappings.contains_key(&name) {
-			match self.mappings[&name] {
+	pub fn map_released(&self, name: &str) -> bool {
+		if self.mappings.contains_key(&name.to_string()) {
+			match self.mappings[&name.to_string()] {
 				MapStatus::Released => true,
 				_ => false,
 			}

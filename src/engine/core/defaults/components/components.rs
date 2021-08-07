@@ -67,6 +67,7 @@ pub struct Renderer {
 	pub model: Model,
 	// Rendering stuff
 	pub diffuse_texture_id: i16,
+	pub normal_texture_id: i16,
 }
 
 impl Default for Renderer {
@@ -77,6 +78,7 @@ impl Default for Renderer {
 			shader_name: String::default(),
 			model: Model::default(),
 			diffuse_texture_id: -1,
+			normal_texture_id: -1,
 		}
 	}
 }

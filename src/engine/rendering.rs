@@ -391,7 +391,7 @@ impl Texture {
 			Resource::Texture(texture) => {
 				let width = texture.width;
 				let height = texture.height;
-				let mut new_texture = Self::create_rgba_texture(texture.name.clone(), width, height, &texture.raw_pixels);
+				let mut new_texture = Self::create_rgb_texture(texture.name.clone(), width, height, &texture.raw_pixels);
 				new_texture.name = texture.name.clone();
 				return Some(new_texture);
 			}
@@ -417,14 +417,14 @@ impl Texture {
 			gl::TexImage2D(gl::TEXTURE_2D, 0, texture.internal_format as i32, width as i32, height as i32, 0, texture.format, texture.data_type, null());
 		
 			// Mag and min filters
-			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
 		}
 
 		return texture;
 	}
 	// Creates a rgb texture from a vector filled with bytes
-	pub fn create_rgba_texture(name: String, width: u16, height: u16, pixels: &Vec<u8>) -> Self {
+	pub fn create_rgb_texture(name: String, width: u16, height: u16, pixels: &Vec<u8>) -> Self {
 		let mut texture = Self {
 			width,
 			height,

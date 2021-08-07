@@ -19,10 +19,12 @@ pub fn load_systems(world: &mut World) {
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {	
-	// This is what programming is used for (Please forgive me, gods of programming)
-	let cute_saber_pic_resource = world.resource_manager.load_resource("cute_saber_pic.png.pkg", "textures\\").unwrap();
-	let cute_saber_pic_texture = Texture::from_resource(cute_saber_pic_resource).unwrap();
-	world.texture_manager.cache_texture(cute_saber_pic_texture);
+	let diffuse = world.resource_manager.load_resource("diffuse.png.pkg", "textures\\").unwrap();
+	let diffuse = Texture::from_resource(diffuse).unwrap();
+	world.texture_manager.cache_texture(diffuse);
+	let normal = world.resource_manager.load_resource("normal.png.pkg", "textures\\").unwrap();
+	let normal = Texture::from_resource(normal).unwrap();
+	world.texture_manager.cache_texture(normal);
 
 	// Create a camera entity
 	let mut camera= Entity::default();	
@@ -52,8 +54,7 @@ pub fn load_entities(world: &mut World) {
 	let model = Model::from_resource(world.resource_manager.load_resource("quad.mdl3d.pkg", "models\\").unwrap()).unwrap();		
 	// Link the component
 	let mut rc = components::Renderer {
-		model,
-		diffuse_texture_id: world.texture_manager.get_texture_id("cute_saber_pic.png.pkg"),
+		model,		
 		shader_name: {
 			let mut checkerboard_shader = Shader::from_vr_fr_subshader_files("default.vrsh.glsl.pkg", "checkerboard.frsh.glsl.pkg", world);	
 			checkerboard_shader.finalize_shader();
@@ -83,9 +84,11 @@ pub fn load_entities(world: &mut World) {
 					// Link the component
 					let rc = components::Renderer {
 						model: model2,
-					shader_name: default_shader_name.clone(),
-					..components::Renderer::default()
-				};
+						diffuse_texture_id: world.texture_manager.get_texture_id("diffuse.png.pkg"),
+						normal_texture_id: world.texture_manager.get_texture_id("normal.png.pkg"),
+						shader_name: default_shader_name.clone(),
+						..components::Renderer::default()
+					};
 				bunny.link_component::<components::Renderer>(world, rc);
 				bunny.link_component::<transforms::Position>(world, transforms::Position {
 					position: glam::vec3(2.0 * bunny_x as f32, 2.0 * bunny_y as f32, 2.0 * bunny_z as f32)
