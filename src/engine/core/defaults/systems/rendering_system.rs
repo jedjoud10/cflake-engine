@@ -12,8 +12,6 @@ pub struct RendererS {
 	pub framebuffer: u32,
 	pub color_texture: Texture,
 	pub normals_texture: Texture,
-	pub uvs_texture: Texture,
-	pub tangents_texture: Texture,
 	pub depth_stencil_texture: Texture,
 	pub quad_renderer_index: u16,
 }
@@ -85,20 +83,6 @@ pub fn create_system(world: &mut World) {
 			gl::RGB16_SNORM,
 			gl::RGB,
 			gl::UNSIGNED_BYTE);
-		// Create the tangents render texture
-		sc.tangents_texture = Texture::create_new_texture(
-			default_size.0 as u16,
-			default_size.1 as u16,
-			gl::RGB16_SNORM,
-			gl::RGB,
-			gl::UNSIGNED_BYTE);
-		// Create the uvs render texture
-		sc.uvs_texture = Texture::create_new_texture(
-			default_size.0 as u16,
-			default_size.1 as u16,
-			gl::RG16_SNORM,
-			gl::RG,
-			gl::UNSIGNED_BYTE);
 		// Create the depth-stencil render texture
 		sc.depth_stencil_texture = Texture::create_new_texture(
 			default_size.0 as u16,
@@ -113,18 +97,12 @@ pub fn create_system(world: &mut World) {
 		// Bind the normal texture to the color attachement 1 of the frame buffer
 		gl::BindTexture(gl::TEXTURE_2D, sc.normals_texture.id);
 		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT1, gl::TEXTURE_2D, sc.normals_texture.id, 0);
-		// Bind the tangent texture to the color attachement 2 of the frame buffer
-		gl::BindTexture(gl::TEXTURE_2D, sc.tangents_texture.id);
-		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT2, gl::TEXTURE_2D, sc.tangents_texture.id, 0);
-		// Bind the uv coordinates texture to the color attachement 3 of the frame buffer
-		gl::BindTexture(gl::TEXTURE_2D, sc.uvs_texture.id);
-		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT3, gl::TEXTURE_2D, sc.uvs_texture.id, 0);				
 		// Bind depth-stencil render texture
 		gl::BindTexture(gl::TEXTURE_2D, sc.depth_stencil_texture.id);
 		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::TEXTURE_2D, sc.depth_stencil_texture.id, 0);
 		
 		// Hehe boii
-		let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
+		let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1];
 		gl::DrawBuffers(attachements.len() as i32,  attachements.as_ptr() as *const u32);
 		
 		if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
@@ -220,8 +198,6 @@ pub fn create_system(world: &mut World) {
 		shader.use_shader();
 		shader.set_texture2d(shader.get_uniform_location("color_texture"), system_component.color_texture.id, gl::TEXTURE0);
 		shader.set_texture2d(shader.get_uniform_location("normals_texture"), system_component.normals_texture.id, gl::TEXTURE1);
-		shader.set_texture2d(shader.get_uniform_location("tangents_texture"), system_component.tangents_texture.id, gl::TEXTURE2);
-		shader.set_texture2d(shader.get_uniform_location("uvs_texture"), system_component.uvs_texture.id, gl::TEXTURE3);
 		
 		// Render the screen quad
 		unsafe {			

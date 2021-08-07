@@ -42,8 +42,7 @@ def write_some_data(context, filepath, skeletal_animation):
 		if not (vertex_tuple in vertex_dict):
 			f.write(f'v {vertex_new[0]}/{vertex_new[1]}/{vertex_new[2]}\n')   
 			f.write(f'n {normal_new[0]}/{normal_new[1]}/{normal_new[2]}\n')   
-			f.write(f't {tangent_new[0]}/{tangent_new[1]}/{tangent_new[2]}\n')
-			f.write(f'bs {bitangent_sign}\n')   
+			f.write(f't {tangent_new[0]}/{tangent_new[1]}/{tangent_new[2]}/{bitangent_sign}\n')
 			f.write(f'u {uv_new[0]}/{uv_new[1]}\n')   
 			vertex_dict[vertex_tuple] = len(vertex_dict)
 			vertex_map[loop.vertex_index] = len(vertex_dict) - 1

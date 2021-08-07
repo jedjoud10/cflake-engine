@@ -2,11 +2,12 @@
 out vec3 color;
 uniform sampler2D color_texture;
 uniform sampler2D normals_texture;
-uniform sampler2D tangents_texture;
-uniform sampler2D uvs_texture;
 
 in vec2 uv_coordinates;
 
 void main() {
-	color = texture(color_texture, uv_coordinates).xyz;
+	vec3 normals = texture(normals_texture, uv_coordinates).xyz;
+	float val = dot(normals, vec3(0.0, 1.0, 0.0));
+	color = texture(normals_texture, uv_coordinates).xyz;
+	color = vec3(val, val, val);
 }

@@ -296,7 +296,7 @@ impl SubShader {
 pub struct Model {
 	pub vertices: Vec<glam::Vec3>,
 	pub normals: Vec<glam::Vec3>,
-	pub tangents: Vec<glam::Vec3>,
+	pub tangents: Vec<glam::Vec4>,
 	pub uvs: Vec<glam::Vec2>,
 	pub triangles: Vec<u32>,
 }
@@ -424,8 +424,8 @@ impl Texture {
 			gl::TexImage2D(gl::TEXTURE_2D, 0, texture.internal_format as i32, width as i32, height as i32, 0, texture.format, texture.data_type, null());
 		
 			// Mag and min filters
-			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 		}
 
 		return texture;
@@ -524,7 +524,7 @@ impl Renderer {
 			// And it's brother, the tangent buffer			
 			gl::GenBuffers(1, &mut self.gpu_data.tangent_buf);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.tangent_buf);
-			gl::BufferData(gl::ARRAY_BUFFER, (self.model.tangents.len() * size_of::<f32>() * 3) as isize, self.model.tangents.as_ptr() as *const c_void, gl::STATIC_DRAW);
+			gl::BufferData(gl::ARRAY_BUFFER, (self.model.tangents.len() * size_of::<f32>() * 4) as isize, self.model.tangents.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
 			// Finally, the texture coordinates buffer
 			gl::GenBuffers(1, &mut self.gpu_data.uv_buf);
@@ -545,7 +545,7 @@ impl Renderer {
 			// Tangent attribute
 			gl::EnableVertexAttribArray(2);
 			gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.tangent_buf);
-			gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE, 0, null());	
+			gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());	
 
 			// UV attribute
 			gl::EnableVertexAttribArray(3);

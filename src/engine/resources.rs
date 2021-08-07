@@ -57,22 +57,32 @@ impl ResourceManager {
 					let mut triangles: Vec<u32> = Vec::new();
 					let mut normals: Vec<glam::Vec3> = Vec::new();
 					let mut uvs: Vec<glam::Vec2> = Vec::new();
-					let mut tangents: Vec<glam::Vec3> = Vec::new();
+					let mut tangents: Vec<glam::Vec4> = Vec::new();
 					// Load the vertices
 					for _i in 0..vertices_size {
-						vertices.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+						vertices.push(glam::vec3(
+						reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap()));
 					}
 					// Load the normals
 					for _i in 0..vertices_size {
-						normals.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+						normals.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap()));
 					}
 					// Load the tangents
 					for _i in 0..vertices_size {
-						tangents.push(glam::vec3(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+						tangents.push(glam::vec4(reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap()));
 					}
 					// Load the uvs
 					for _i in 0..vertices_size {
-						uvs.push(glam::vec2(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()));
+						uvs.push(glam::vec2(
+						reader.read_f32::<LittleEndian>().unwrap(),
+						reader.read_f32::<LittleEndian>().unwrap()));
 					}
 
 					// Load the triangles
@@ -241,7 +251,7 @@ impl ResourceManager {
 							// Parse the obj model
 							let mut vertices: Vec<glam::Vec3> = Vec::new(); 
 							let mut normals: Vec<glam::Vec3> = Vec::new(); 
-							let mut tangents: Vec<glam::Vec3> = Vec::new(); 
+							let mut tangents: Vec<glam::Vec4> = Vec::new(); 
 							let mut uvs: Vec<glam::Vec2> = Vec::new(); 
 							let mut triangles: Vec<u32> = Vec::new();
 							for line in reader.lines() {
@@ -263,7 +273,7 @@ impl ResourceManager {
 									}
 									"t" => {
 										let coords: Vec<f32> = other.split("/").map(|coord| coord.parse::<f32>().unwrap()).collect();
-										tangents.push(glam::vec3(coords[0], coords[1], coords[2]));
+										tangents.push(glam::vec4(coords[0], coords[1], coords[2], coords[3]));
 									}
 									// Load the triangle indices
 									"i" => {
@@ -331,6 +341,7 @@ impl ResourceManager {
 								writer.write_f32::<LittleEndian>(tangent.x);
 								writer.write_f32::<LittleEndian>(tangent.y);
 								writer.write_f32::<LittleEndian>(tangent.z);
+								writer.write_f32::<LittleEndian>(tangent.w);
 							}
 							// Write the uvs
 							for &uv in model.uvs.iter() {
@@ -401,7 +412,7 @@ impl Default for Resource {
 pub struct LoadedModel {
 	pub vertices: Vec<glam::Vec3>,
 	pub normals: Vec<glam::Vec3>,
-	pub tangents: Vec<glam::Vec3>,
+	pub tangents: Vec<glam::Vec4>,
 	pub uvs: Vec<glam::Vec2>,
 	pub indices: Vec<u32>,
 }

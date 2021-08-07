@@ -12,6 +12,6 @@ mkdir .\target\debug\packed-resources\
 rmdir .\target\release\packed-resources\ /q / s
 mkdir .\target\release\packed-resources\
 
-xcopy .\src\packed-resources\ target\debug\packed-resources\ /E /Y
-xcopy .\src\packed-resources\ target\release\packed-resources\ /E /Y
+xcopy .\src\packed-resources\ target\debug\packed-resources\ /E /Y /D
+xcopy .\src\packed-resources\ target\release\packed-resources\ /E /Y /D
 pause

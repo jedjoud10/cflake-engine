@@ -73,12 +73,12 @@ pub fn load_entities(world: &mut World) {
 					let mut bunny = Entity::default();
 					bunny.name = String::from("Bunny");
 					// Create the model
-					let model2 = Model::from_resource(world.resource_manager.load_resource("bunny.mdl3d.pkg", "models\\").unwrap()).unwrap();
+					let model2 = Model::from_resource(world.resource_manager.load_resource("cube.mdl3d.pkg", "models\\").unwrap()).unwrap();
 					// Link the component
 					let rc = components::Renderer {
 						model: model2,
-						diffuse_texture_id: Texture::load_from_file("cute_saber_pic.png.pkg", world).unwrap(),
-						normal_texture_id: Texture::load_from_file("cute_saber_pic.png.pkg", world).unwrap(),
+						diffuse_texture_id: Texture::load_from_file("diffuse.png.pkg", world).unwrap(),
+						normal_texture_id: Texture::load_from_file("normal.png.pkg", world).unwrap(),
 						shader_name: default_shader_name.clone(),
 						..components::Renderer::default()
 					};

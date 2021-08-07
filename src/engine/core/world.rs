@@ -247,8 +247,6 @@ impl World {
 			system_component.color_texture.update_size(size.0 as u32, size.1 as u32);
 			system_component.depth_stencil_texture.update_size(size.0 as u32, size.1 as u32);
 			system_component.normals_texture.update_size(size.0 as u32, size.1 as u32);
-			system_component.tangents_texture.update_size(size.0 as u32, size.1 as u32);
-			system_component.uvs_texture.update_size(size.0 as u32, size.1 as u32);
 		}
 		let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
 		let entity_clone_id = camera_entity_clone.entity_id;
