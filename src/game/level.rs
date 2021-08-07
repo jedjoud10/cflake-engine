@@ -20,7 +20,7 @@ pub fn load_systems(world: &mut World) {
 // Load the entities
 pub fn load_entities(world: &mut World) {	
 	// This is what programming is used for (Please forgive me, gods of programming)
-	let cute_saber_pic_resource = world.resource_manager.load_resource("cute_saber_pic.png", "textures\\").unwrap();
+	let cute_saber_pic_resource = world.resource_manager.load_resource("cute_saber_pic.png.pkg", "textures\\").unwrap();
 	let cute_saber_pic_texture = Texture::from_resource(cute_saber_pic_resource).unwrap();
 	world.texture_manager.cache_texture(cute_saber_pic_texture);
 
@@ -53,7 +53,7 @@ pub fn load_entities(world: &mut World) {
 	// Link the component
 	let mut rc = components::Renderer {
 		model,
-		diffuse_texture_id: world.texture_manager.get_texture_id("cute_saber_pic"),
+		diffuse_texture_id: world.texture_manager.get_texture_id("cute_saber_pic.png.pkg"),
 		shader_name: {
 			let mut checkerboard_shader = Shader::from_vr_fr_subshader_files("default.vrsh.glsl.pkg", "checkerboard.frsh.glsl.pkg", world);	
 			checkerboard_shader.finalize_shader();
@@ -72,9 +72,9 @@ pub fn load_entities(world: &mut World) {
 		scale: 100.0,
 	});
 	world.add_entity(quad);
-	for bunny_x in 0..3 {	
-		for bunny_y in 0..3 {
-				for bunny_z in 0..3 {
+	for bunny_x in 0..6 {	
+		for bunny_y in 0..1 {
+				for bunny_z in 0..6 {
 					// Load a bunny model
 					let mut bunny = Entity::default();
 					bunny.name = String::from("Bunny");

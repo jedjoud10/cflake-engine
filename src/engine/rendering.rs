@@ -339,19 +339,22 @@ pub struct TextureManager {
 
 impl TextureManager {
 	// Get a reference to a texture from the texture manager's cache
-	pub fn get_texture(&self, id: u16) -> &Texture {
+	pub fn get_texture(&self, id: i16) -> &Texture {
 		return self.cached_textures.get(id as usize).unwrap();
 	}
 	// Get a mutable reference to a texture from the texture manager's cache
-	pub fn get_texture_mut(&mut self, id: u16) -> &mut Texture {
+	pub fn get_texture_mut(&mut self, id: i16) -> &mut Texture {
 		return self.cached_textures.get_mut(id as usize).unwrap();
 	}
 	// Add a texture to the manager
-	pub fn cache_texture(&mut self, texture: Texture) -> u16 {
+	pub fn cache_texture(&mut self, texture: Texture) -> i16 {
+		let name_clone = texture.name.clone();
 		// Make sure the texture isn't cached already
-		if !self.texture_ids.contains_key(&texture.name) {
+		if !self.texture_ids.contains_key(&name_clone) {
 			self.cached_textures.push(texture);
-			let texture_id = self.cached_textures.len() as u16;
+			let texture_id = self.cached_textures.len() as i16 - 1;
+			println!("Cache texture: '{}' with texture id '{}'", &name_clone, &texture_id);
+			self.texture_ids.insert(name_clone, texture_id as u16);
 			return texture_id;
 		} else {
 			panic!("Cannot cache the same texture twice!");
@@ -359,10 +362,10 @@ impl TextureManager {
 
 	}
 	// Get the texture id of a specific texture using it's name
-	pub fn get_texture_id(&self, name: &str) -> u16 {
+	pub fn get_texture_id(&self, name: &str) -> i16 {
 		// Check if the texture even exists
 		if self.texture_ids.contains_key(&name.to_string()) {
-			return self.texture_ids.get(name).unwrap().clone();
+			return self.texture_ids.get(name).unwrap().clone() as i16;
 		} else {
 			panic!("Texture was not cached!");
 		}
@@ -372,8 +375,8 @@ impl TextureManager {
 // A texture
 #[derive(Default)]
 pub struct Texture {
-	pub x: u16,
-	pub y: u16,
+	pub width: u16,
+	pub height: u16,
 	pub id: u32,
 	pub name: String,
 	pub internal_format: u32,
@@ -388,33 +391,18 @@ impl Texture {
 			Resource::Texture(texture) => {
 				let width = texture.width;
 				let height = texture.height;
-				let new_texture = Self::create_new_texture(width,
-					height,
-					gl::RGB,
-					gl::RGB,
-					gl::UNSIGNED_BYTE);
-				unsafe {
-					gl::BindTexture(gl::TEXTURE_2D, new_texture.id);
-					gl::TexSubImage2D(gl::TEXTURE_2D,
-						0,
-						0,
-						0,
-						width as i32,
-						height as i32,
-						gl::RGB,
-						gl::UNSIGNED_BYTE,
-						texture.raw_pixels.as_ptr() as *const c_void);
-				}
+				let mut new_texture = Self::create_rgba_texture(texture.name.clone(), width, height, &texture.raw_pixels);
+				new_texture.name = texture.name.clone();
 				return Some(new_texture);
 			}
 			_ => { return None }
 		}
     }
 	// Creates a new empty texture from a specified size
-	pub fn create_new_texture(xsize: u16, ysize: u16, internal_format: u32, format: u32, data_type: u32) -> Self {
+	pub fn create_new_texture(width: u16, height: u16, internal_format: u32, format: u32, data_type: u32) -> Self {
 		let mut texture = Self {
-			x: xsize,
-			y: ysize,
+			width,
+			height,
 			id: 0,
 			internal_format,
 			name: String::from("Untitled"),
@@ -426,8 +414,39 @@ impl Texture {
 		unsafe {
 			gl::GenTextures(1, &mut texture.id as *mut u32);
 			gl::BindTexture(gl::TEXTURE_2D, texture.id);
-			gl::TexImage2D(gl::TEXTURE_2D, 0, texture.internal_format as i32, xsize as i32, ysize as i32, 0, texture.format, texture.data_type, null());
+			gl::TexImage2D(gl::TEXTURE_2D, 0, texture.internal_format as i32, width as i32, height as i32, 0, texture.format, texture.data_type, null());
 		
+			// Mag and min filters
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+		}
+
+		return texture;
+	}
+	// Creates a rgb texture from a vector filled with bytes
+	pub fn create_rgba_texture(name: String, width: u16, height: u16, pixels: &Vec<u8>) -> Self {
+		let mut texture = Self {
+			width,
+			height,
+			id: 0,
+			internal_format: gl::RGB,
+			name,
+			format: gl::RGB,
+			data_type: gl::UNSIGNED_BYTE,
+		};
+		// Create the OpenGL texture and set it's data to null since it's empty
+		unsafe {
+			gl::GenTextures(1, &mut texture.id as *mut u32);
+			gl::BindTexture(gl::TEXTURE_2D, texture.id);
+			gl::TexImage2D(gl::TEXTURE_2D,
+				0,
+				texture.internal_format as i32,
+				width as i32,
+				height as i32,
+				0,				
+				texture.format,
+				texture.data_type,
+				pixels.as_ptr() as *const c_void);
 			// Mag and min filters
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);

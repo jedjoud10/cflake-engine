@@ -95,12 +95,15 @@ impl ResourceManager {
 					let mut bytes: Vec<u8> = Vec::new();
 					for x in 0..texture_width {
 						for y in 0..texture_height {
-							bytes.push(reader.read_u8().unwrap());
+							for color in 0..3 {
+								bytes.push(reader.read_u8().unwrap());
+							}
 						}
 					}
 
 					// Load the bytes into the resource
 					loaded_resource = Resource::Texture(LoadedTexture {
+						name: name.clone(),
         				width: texture_width,
         				height: texture_height,
         				raw_pixels: bytes,
@@ -213,10 +216,15 @@ impl ResourceManager {
 						"png" => {
 							// This is a texture
 							let image_bytes = bytes;
-							let image = ImageReader::open(path).unwrap().decode().unwrap();
+							let image = ImageReader::open(path)
+								.unwrap()
+								.with_guessed_format()
+								.unwrap()
+								.decode()
+								.unwrap();
 							let dimensions = image.dimensions();
-							println!("{:?}", dimensions);
 							resource = Resource::Texture(LoadedTexture {
+								name: String::from("Undefined"),
 								width: dimensions.0 as u16,
 								height: dimensions.1 as u16,
 								raw_pixels: image.to_bytes(),
@@ -399,6 +407,7 @@ pub struct LoadedModel {
 }
 // A loaded texture resource
 pub struct LoadedTexture {
+	pub name: String,
 	pub width: u16,
 	pub height: u16,
 	pub raw_pixels: Vec<u8>

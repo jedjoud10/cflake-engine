@@ -60,14 +60,25 @@ impl Default for Camera {
 }
 
 // A component that will be linked to entities that are renderable
-#[derive(Default)]
 pub struct Renderer {
 	pub render_state: EntityRenderState,
 	pub gpu_data: ModelDataGPU,	
 	pub shader_name: String,
 	pub model: Model,
 	// Rendering stuff
-	pub diffuse_texture_id: u16,
+	pub diffuse_texture_id: i16,
+}
+
+impl Default for Renderer {
+	fn default() -> Self {
+		Self {
+			render_state: EntityRenderState::Visible,
+			gpu_data: ModelDataGPU::default(),
+			shader_name: String::default(),
+			model: Model::default(),
+			diffuse_texture_id: -1,
+		}
+	}
 }
 
 // Main traits implemented
@@ -78,8 +89,7 @@ impl Component for Renderer {
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
-    }
-	
+    }	
 }
 impl ComponentID for Renderer {
 	fn get_component_name() -> String {

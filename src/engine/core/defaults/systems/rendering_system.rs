@@ -65,8 +65,8 @@ pub fn create_system(world: &mut World) {
 		let default_size = World::get_default_window_size();
 		gl::Viewport(0, 0, default_size.0, default_size.1);
 		gl::Enable(gl::DEPTH_TEST);
-		//gl::Enable(gl::CULL_FACE);	
-		//gl::CullFace(gl::BACK);
+		gl::Enable(gl::CULL_FACE);	
+		gl::CullFace(gl::BACK);
 		let mut sc = rs.get_system_component_mut::<RendererS>(world);
 		gl::GenFramebuffers(1, &mut sc.framebuffer);
 		gl::BindFramebuffer(gl::FRAMEBUFFER, sc.framebuffer);
@@ -141,25 +141,6 @@ pub fn create_system(world: &mut World) {
 			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 		}
 	};
-	// After we render the scene
-	rs.system_post_loop_event = |world, system| {
-		let system_component = system.get_system_component::<RendererS>(world);
-		let quad_renderer = world.get_dicrete_component::<components::Renderer>(system_component.quad_renderer_index);
-		let shader = world.shader_manager.get_shader(&quad_renderer.shader_name).unwrap();
-		shader.use_shader();
-		shader.set_texture2d(shader.get_uniform_location("color_texture"), system_component.color_texture.id, gl::TEXTURE0);
-		shader.set_texture2d(shader.get_uniform_location("normals_texture"), system_component.normals_texture.id, gl::TEXTURE1);
-		shader.set_texture2d(shader.get_uniform_location("tangents_texture"), system_component.tangents_texture.id, gl::TEXTURE2);
-		shader.set_texture2d(shader.get_uniform_location("uvs_texture"), system_component.uvs_texture.id, gl::TEXTURE3);
-		// Render the screen quad
-		unsafe {			
-			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-			gl::BindVertexArray(quad_renderer.gpu_data.vertex_array_object);
-			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_renderer.gpu_data.element_buffer_object);
-			gl::DrawElements(gl::TRIANGLES, quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
-		}		
-	};
 	// Render the entitites
 	rs.entity_loop_event = |entity, world, _| {	
 		let _id = entity.entity_id;
@@ -199,6 +180,7 @@ pub fn create_system(world: &mut World) {
 		// Use the shader, and update any uniforms
 		shader.use_shader();
 
+		let rc = entity.get_component::<components::Renderer>(world);
 		// Calculate the mvp matrix		
 		let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
 		// Pass the MVP and the model matrix to the shader
@@ -206,9 +188,14 @@ pub fn create_system(world: &mut World) {
 		shader.set_matrix_44_uniform(shader.get_uniform_location("model_matrix"), model_matrix);
 		shader.set_matrix_44_uniform(shader.get_uniform_location("view_matrix"), view_matrix);
 		shader.set_scalar_2_uniform(shader.get_uniform_location("resolution"), (world.window.size.0 as f32, world.window.size.1 as f32));
+		// Check if we even have a diffse texture
+		if rc.diffuse_texture_id != -1 {
+			// Convert the texture id into a texture, and then into a OpenGL texture id
+			let diffuse_texture = world.texture_manager.get_texture(rc.diffuse_texture_id);
+			shader.set_texture2d(shader.get_uniform_location("diffuse_tex"), diffuse_texture.id, gl::TEXTURE0);
+		}
 		unsafe {
 			// Actually draw the array
-			let rc = entity.get_component::<components::Renderer>(world);
 			
 			if rc.gpu_data.initialized {
 				gl::BindVertexArray(rc.gpu_data.vertex_array_object);
@@ -218,6 +205,28 @@ pub fn create_system(world: &mut World) {
 			
 		}
 	};
+
+	// After we render the scene
+	rs.system_post_loop_event = |world, system| {
+		let system_component = system.get_system_component::<RendererS>(world);
+		let quad_renderer = world.get_dicrete_component::<components::Renderer>(system_component.quad_renderer_index);
+		let shader = world.shader_manager.get_shader(&quad_renderer.shader_name).unwrap();
+		shader.use_shader();
+		shader.set_texture2d(shader.get_uniform_location("color_texture"), system_component.color_texture.id, gl::TEXTURE0);
+		shader.set_texture2d(shader.get_uniform_location("normals_texture"), system_component.normals_texture.id, gl::TEXTURE1);
+		shader.set_texture2d(shader.get_uniform_location("tangents_texture"), system_component.tangents_texture.id, gl::TEXTURE2);
+		shader.set_texture2d(shader.get_uniform_location("uvs_texture"), system_component.uvs_texture.id, gl::TEXTURE3);
+		
+		// Render the screen quad
+		unsafe {			
+			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+			gl::BindVertexArray(quad_renderer.gpu_data.vertex_array_object);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_renderer.gpu_data.element_buffer_object);
+			gl::DrawElements(gl::TRIANGLES, quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
+		}		
+	};
+
 	// When an entity gets added to the render system
 	rs.entity_added_event = |entity, world, _| {
 		let rc = entity.get_component_mut::<components::Renderer>(world);
