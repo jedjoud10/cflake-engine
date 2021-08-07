@@ -19,13 +19,6 @@ pub fn load_systems(world: &mut World) {
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {	
-	let diffuse = world.resource_manager.load_resource("diffuse.png.pkg", "textures\\").unwrap();
-	let diffuse = Texture::from_resource(diffuse).unwrap();
-	world.texture_manager.cache_texture(diffuse);
-	let normal = world.resource_manager.load_resource("normal.png.pkg", "textures\\").unwrap();
-	let normal = Texture::from_resource(normal).unwrap();
-	world.texture_manager.cache_texture(normal);
-
 	// Create a camera entity
 	let mut camera= Entity::default();	
 	camera.name = String::from("Default Camera");	
@@ -84,8 +77,8 @@ pub fn load_entities(world: &mut World) {
 					// Link the component
 					let rc = components::Renderer {
 						model: model2,
-						diffuse_texture_id: world.texture_manager.get_texture_id("diffuse.png.pkg"),
-						normal_texture_id: world.texture_manager.get_texture_id("normal.png.pkg"),
+						diffuse_texture_id: Texture::load_from_file("cute_saber_pic.png.pkg", world).unwrap(),
+						normal_texture_id: Texture::load_from_file("cute_saber_pic.png.pkg", world).unwrap(),
 						shader_name: default_shader_name.clone(),
 						..components::Renderer::default()
 					};

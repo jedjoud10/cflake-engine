@@ -357,7 +357,7 @@ impl TextureManager {
 			self.texture_ids.insert(name_clone, texture_id as u16);
 			return texture_id;
 		} else {
-			panic!("Cannot cache the same texture twice!");
+			return self.texture_ids.get(&name_clone).unwrap().clone() as i16;
 		}
 
 	}
@@ -385,6 +385,13 @@ pub struct Texture {
 }
 
 impl Texture {
+	// Loads a texture and caches it, then returns the texture id
+	pub fn load_from_file(file: &str, world: &mut World) -> Option<i16> {
+		let texture_resource = world.resource_manager.load_resource(file, "textures\\")?;
+		let texture = Texture::from_resource(texture_resource)?;
+		let id = world.texture_manager.cache_texture(texture);
+		return Some(id);
+	}
 	// Convert the resource to a texture
     pub fn from_resource(resource: &Resource) -> Option<Self> {
 		match resource {
