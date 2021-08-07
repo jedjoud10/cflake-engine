@@ -48,7 +48,7 @@ impl ShaderManager {
 			self.shaders.insert(name_clone.clone(), shader);
 			return self.shaders.get_mut(&name_clone);
 		} else {
-			panic!("Cannot cache shader twice!");
+			panic!("Cannot cache the same shader twice!");
 			return None;
 		}
 	}
@@ -331,6 +331,43 @@ impl Model {
 }
 
 // A texture manager
+#[derive(Default)]
+pub struct TextureManager {
+	pub texture_ids: HashMap<String, u16>,
+	pub cached_textures: Vec<Texture>,
+}
+
+impl TextureManager {
+	// Get a reference to a texture from the texture manager's cache
+	pub fn get_texture(&self, id: u16) -> &Texture {
+		return self.cached_textures.get(id as usize).unwrap();
+	}
+	// Get a mutable reference to a texture from the texture manager's cache
+	pub fn get_texture_mut(&mut self, id: u16) -> &mut Texture {
+		return self.cached_textures.get_mut(id as usize).unwrap();
+	}
+	// Add a texture to the manager
+	pub fn cache_texture(&mut self, texture: Texture) -> u16 {
+		// Make sure the texture isn't cached already
+		if !self.texture_ids.contains_key(&texture.name) {
+			self.cached_textures.push(texture);
+			let texture_id = self.cached_textures.len() as u16;
+			return texture_id;
+		} else {
+			panic!("Cannot cache the same texture twice!");
+		}
+
+	}
+	// Get the texture id of a specific texture using it's name
+	pub fn get_texture_id(&self, name: &str) -> u16 {
+		// Check if the texture even exists
+		if self.texture_ids.contains_key(&name.to_string()) {
+			return self.texture_ids.get(name).unwrap().clone();
+		} else {
+			panic!("Texture was not cached!");
+		}
+	}
+}
 
 // A texture
 #[derive(Default)]
@@ -338,12 +375,41 @@ pub struct Texture {
 	pub x: u16,
 	pub y: u16,
 	pub id: u32,
+	pub name: String,
 	pub internal_format: u32,
 	pub format: u32,
 	pub data_type: u32,
 }
 
 impl Texture {
+	// Convert the resource to a texture
+    pub fn from_resource(resource: &Resource) -> Option<Self> {
+		match resource {
+			Resource::Texture(texture) => {
+				let width = texture.width;
+				let height = texture.height;
+				let new_texture = Self::create_new_texture(width,
+					height,
+					gl::RGB,
+					gl::RGB,
+					gl::UNSIGNED_BYTE);
+				unsafe {
+					gl::BindTexture(gl::TEXTURE_2D, new_texture.id);
+					gl::TexSubImage2D(gl::TEXTURE_2D,
+						0,
+						0,
+						0,
+						width as i32,
+						height as i32,
+						gl::RGB,
+						gl::UNSIGNED_BYTE,
+						texture.raw_pixels.as_ptr() as *const c_void);
+				}
+				return Some(new_texture);
+			}
+			_ => { return None }
+		}
+    }
 	// Creates a new empty texture from a specified size
 	pub fn create_new_texture(xsize: u16, ysize: u16, internal_format: u32, format: u32, data_type: u32) -> Self {
 		let mut texture = Self {
@@ -351,6 +417,7 @@ impl Texture {
 			y: ysize,
 			id: 0,
 			internal_format,
+			name: String::from("Untitled"),
 			format,
 			data_type,
 		};
@@ -375,26 +442,6 @@ impl Texture {
 			gl::TexImage2D(gl::TEXTURE_2D, 0, self.internal_format as i32, xsize as i32, ysize as i32, 0, self.format, self.data_type, null());
 		}
 	} 
-}
-
-// We can now turn a texture resource into a normal texture
-impl Texture {
-	// Convert the resource to a texture
-    fn from_resource(resource: &Resource) -> Option<&Self> {
-		match resource {
-			Resource::Texture(texture) => {
-				let width = texture.width;
-				let height = texture.height;
-				let new_texture = Self::create_new_texture(width,
-					height,
-					gl::RGB,
-					gl::RGB,
-					gl::UNSIGNED_BYTE);
-				return Some(new_texture);
-			}
-			_ => { return None }
-		}
-    }
 }
 
 // The current render state of the entity

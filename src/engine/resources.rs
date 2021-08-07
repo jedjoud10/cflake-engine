@@ -37,7 +37,7 @@ impl ResourceManager {
 		} else {
 			// If not, load a new resource
 			let file_path = format!("{}{}", final_path, name);
-			let file = File::open(file_path).expect(format!("The resource file '{}' could not open!", &name).as_str());
+			let file = File::open(file_path).expect(format!("The resource file '{}' could not be read!", &name).as_str());
 			let mut reader = BufReader::new(file);
 
 			// The bytes that will be turned into the resource

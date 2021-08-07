@@ -22,6 +22,7 @@ pub struct World {
 	pub input_manager: InputManager,
 	pub resource_manager: ResourceManager,
 	pub shader_manager: ShaderManager,
+	pub texture_manager: TextureManager,
 	pub entity_manager: EntityManager,
 	pub systems: Vec<System>,
 	pub window: Window,
@@ -38,6 +39,7 @@ impl Default for World {
 			resource_manager: ResourceManager::default(),
 			shader_manager: ShaderManager::default(),
 			entity_manager: EntityManager::default(),
+			texture_manager: TextureManager::default(),
 			systems: Vec::new(),
 			default_camera_id: 0,
 			window: Window::default()

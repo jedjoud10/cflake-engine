@@ -73,34 +73,40 @@ pub fn create_system(world: &mut World) {
 		// Check if the frame buffer is alright
 		// Create the color render texture
 		sc.color_texture = Texture::create_new_texture(
-			default_size.0 as u32,
-			default_size.1 as u32,
+			default_size.0 as u16,
+			default_size.1 as u16,
 			gl::RGB,
 			gl::RGB,
 			gl::UNSIGNED_BYTE);
 		// Create the normals render texture
 		sc.normals_texture = Texture::create_new_texture(
-			default_size.0 as u32,
-			default_size.1 as u32,
+			default_size.0 as u16,
+			default_size.1 as u16,
 			gl::RGB16_SNORM,
 			gl::RGB,
 			gl::UNSIGNED_BYTE);
 		// Create the tangents render texture
 		sc.tangents_texture = Texture::create_new_texture(
-			default_size.0 as u32,
-			default_size.1 as u32,
+			default_size.0 as u16,
+			default_size.1 as u16,
 			gl::RGB16_SNORM,
 			gl::RGB,
 			gl::UNSIGNED_BYTE);
 		// Create the uvs render texture
 		sc.uvs_texture = Texture::create_new_texture(
-			default_size.0 as u32,
-			default_size.1 as u32,
+			default_size.0 as u16,
+			default_size.1 as u16,
 			gl::RG16_SNORM,
 			gl::RG,
 			gl::UNSIGNED_BYTE);
 		// Create the depth-stencil render texture
-		sc.depth_stencil_texture = Texture::create_new_texture(default_size.0 as u32, default_size.1 as u32, gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8);
+		sc.depth_stencil_texture = Texture::create_new_texture(
+			default_size.0 as u16,
+			default_size.1 as u16,
+			gl::DEPTH24_STENCIL8,
+			gl::DEPTH_STENCIL,
+			gl::UNSIGNED_INT_24_8
+			);
 		// Bind the color texture to the color attachement 0 of the frame buffer
 		gl::BindTexture(gl::TEXTURE_2D, sc.color_texture.id);
 		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, sc.color_texture.id, 0);
