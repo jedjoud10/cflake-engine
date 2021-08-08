@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str, thread::current};
+use std::{collections::{HashMap, hash_map::DefaultHasher}, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
 use crate::engine::rendering::SubShaderType;
 use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
 use image::{GenericImageView, io::Reader as ImageReader};
@@ -178,6 +178,32 @@ impl ResourceManager {
 		let packed_resources_dir = format!("{}\\src\\packed-resources\\", path);
 		println!("Resources directory: {}", &resources_dir);
 		println!("Packed-Resources directory: {}", &packed_resources_dir);
+		// Get a writer to the log file
+		let mut log_reader = BufReader::new(File::open(format!("{}\\log.log", resources_dir)).unwrap());
+		// Keep track of the names-timestamp relation
+		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
+		{
+			let num = 0;
+			let mut last_hashed_name= 0_u64;
+			loop {
+				match log_reader.read_u64::<LittleEndian>() {
+					Ok(val) => {
+						// Check if this is a hashed name or a timestamp
+						if num % 2 == 0 {
+							// This is a hashed name
+							last_hashed_name = val;
+						} else {
+							// This is a timestamp
+							hashed_names_timestamps.insert(last_hashed_name.clone(), val);
+						}
+					},
+					Err(_) => {
+						// End of the log file
+						break;
+					},
+				}
+			}
+		}
 		// Get all the resource files from the resources folder
 		let files = read_dir(resources_dir).expect("Failed to read the resources directory!");
 		// Now, pack every resource in each sub-directory
@@ -199,6 +225,35 @@ impl ResourceManager {
 					let packed_resources_dir = format!("{}{}", packed_resources_dir, sub_dir_name.to_str().unwrap());
 					println!("Packing resource: '{}'", name.as_str());
 					let opened_file = File::open(&path).unwrap();
+					// Check the logged timestamp of this resource, if it does not exist, then pack this resource
+					{
+						// Hash the name
+						let mut hasher = DefaultHasher::new();
+						name.hash(&mut hasher);
+						let hashed_name = hasher.finish();
+						// The timestamp of the current resource
+						let resource_timestamp = opened_file
+						.metadata().unwrap()
+						.modified().unwrap()
+						.duration_since(std::time::UNIX_EPOCH).unwrap()
+						.as_secs();
+						if hashed_names_timestamps.contains_key(&hashed_name) {
+							// Check if the timestamp changed drastically (Margin of 20 seconds)
+							let packed_resource_timestamp = hashed_names_timestamps.get(&hashed_name).unwrap().clone();
+							// Did we update the resource?
+							if resource_timestamp > packed_resource_timestamp {
+								// We did update
+							} else {
+								// We did not update, no need to pack this resource
+								continue;
+							}
+						} else {
+							// The resource just got added, so we pack it
+						}
+
+					}
+
+					// Write the extension to the file
 					let mut reader = BufReader::new(opened_file);
 					let mut bytes: Vec<u8> = Vec::new();
 					let mut resource: Resource = Resource::None;
