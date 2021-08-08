@@ -175,14 +175,15 @@ impl ResourceManager {
 			.unwrap();
 		let path = path.as_os_str().to_str().unwrap();
 		let resources_dir = format!("{}\\src\\resources\\", path);
-		let packed_resources_dir = format!("{}\\src\\resources-cache\\", path);
+		let packed_resources_dir = format!("{}\\src\\packed-resources\\", path);
 		println!("Resources directory: {}", &resources_dir);
 		println!("Packed-Resources directory: {}", &packed_resources_dir);
 		// Get a writer to the log file
 		// Keep track of the names-timestamp relation
+		let log_file_path = format!("{}\\src\\packed-resources\\log.log", path);
 		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
 		{
-			let mut log_reader = BufReader::new(OpenOptions::new().write(true).read(true).create(true).open(format!("{}\\log.log", resources_dir)).unwrap());
+			let mut log_reader = BufReader::new(OpenOptions::new().write(true).read(true).create(true).open(log_file_path.clone()).unwrap());
 			let mut num = 0;
 			let mut last_hashed_name= 0_u64;
 			// Make an infinite loop, and at each iteration, read 8 bytes
@@ -234,7 +235,7 @@ impl ResourceManager {
 					{
 						// Hash the name
 						let mut hasher = DefaultHasher::new();
-						name.hash(&mut hasher);
+						format!("{}\\{}", sub_dir_name.to_str().unwrap(), name).hash(&mut hasher);
 						let hashed_name = hasher.finish();
 						// The timestamp of the current resource
 						let resource_timestamp = opened_file
@@ -450,13 +451,13 @@ impl ResourceManager {
 					writer.write(bytes_to_write.as_slice());
 					// Save the name and timestamp creation date of this packed resource in the log file
 					{
-						let log_file = OpenOptions::new().append(true).open(format!("{}\\log.log", resources_dir)).unwrap();
+						let log_file = OpenOptions::new().append(true).open(log_file_path.clone()).unwrap();
 						let mut log_writer = BufWriter::new(log_file);
 						let mut hashed_name: u64 = 0;
 						{
 							// Hash the name
 							let mut hasher = DefaultHasher::new();
-							name.hash(&mut hasher);
+							format!("{}\\{}", sub_dir_name.to_str().unwrap(), name).hash(&mut hasher);
 							hashed_name = hasher.finish();
 						}
 						log_writer.write_u64::<LittleEndian>(hashed_name);
