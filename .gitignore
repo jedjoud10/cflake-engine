@@ -1,4 +1,5 @@
 /target
 /src/packed-resources
+/src/resources-cache
 .VSCodeCounter
 
