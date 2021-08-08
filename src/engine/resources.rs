@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, hash_map::DefaultHasher}, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
+use std::{collections::{HashMap, hash_map::DefaultHasher}, env, ffi::OsStr, fs::{File, OpenOptions, create_dir, create_dir_all, read_dir}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
 use crate::engine::rendering::SubShaderType;
 use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
 use image::{GenericImageView, io::Reader as ImageReader};
@@ -243,14 +243,16 @@ impl ResourceManager {
 							// Did we update the resource?
 							if resource_timestamp > packed_resource_timestamp {
 								// We did update
+								println!("Resource file did change!");
 							} else {
 								// We did not update, no need to pack this resource
+								println!("Resource file did not change...");
 								continue;
 							}
 						} else {
 							// The resource just got added, so we pack it
+							println!("Could not find packed-resource data in log file...");
 						}
-
 					}
 
 					// Write the extension to the file
@@ -443,7 +445,7 @@ impl ResourceManager {
 					writer.write(bytes_to_write.as_slice());
 					// Save the name and timestamp creation date of this packed resource in the log file
 					{
-						let mut log_writer = BufWriter::new(File::open(format!("{}\\log.log", resources_dir)).unwrap());
+						let mut log_writer = BufWriter::new(OpenOptions::new().write(true).open(format!("{}\\log.log", resources_dir)).unwrap());
 						let mut hashed_name: u64 = 0;
 						{
 							// Hash the name
