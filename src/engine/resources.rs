@@ -175,14 +175,14 @@ impl ResourceManager {
 			.unwrap();
 		let path = path.as_os_str().to_str().unwrap();
 		let resources_dir = format!("{}\\src\\resources\\", path);
-		let packed_resources_dir = format!("{}\\src\\packed-resources\\", path);
+		let packed_resources_dir = format!("{}\\src\\resources-cache\\", path);
 		println!("Resources directory: {}", &resources_dir);
 		println!("Packed-Resources directory: {}", &packed_resources_dir);
 		// Get a writer to the log file
 		// Keep track of the names-timestamp relation
 		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
 		{
-			let mut log_reader = BufReader::new(OpenOptions::new().read(true).open(format!("{}\\log.log", resources_dir)).unwrap());
+			let mut log_reader = BufReader::new(OpenOptions::new().write(true).read(true).create(true).open(format!("{}\\log.log", resources_dir)).unwrap());
 			let mut num = 0;
 			let mut last_hashed_name= 0_u64;
 			// Make an infinite loop, and at each iteration, read 8 bytes
@@ -450,7 +450,8 @@ impl ResourceManager {
 					writer.write(bytes_to_write.as_slice());
 					// Save the name and timestamp creation date of this packed resource in the log file
 					{
-						let mut log_writer = BufWriter::new(OpenOptions::new().write(true).open(format!("{}\\log.log", resources_dir)).unwrap());
+						let log_file = OpenOptions::new().append(true).open(format!("{}\\log.log", resources_dir)).unwrap();
+						let mut log_writer = BufWriter::new(log_file);
 						let mut hashed_name: u64 = 0;
 						{
 							// Hash the name
@@ -458,7 +459,6 @@ impl ResourceManager {
 							name.hash(&mut hasher);
 							hashed_name = hasher.finish();
 						}
-						log_writer.seek(SeekFrom::End(0));
 						log_writer.write_u64::<LittleEndian>(hashed_name);
 						log_writer.write_u64::<LittleEndian>(packed_resource_timestamp);
 					}
