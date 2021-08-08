@@ -12,7 +12,7 @@ in vec2 m_uv;
 in mat3 tbn;
 void main() {
 	float val = dot(m_normal, vec3(0, 1, 0));
-	frag_color = texture(diffuse_tex, m_uv * 1).xyz;
+	frag_color = texture(diffuse_tex, m_uv * 5.0).xyz;
 	vec3 tangent_space_normals = texture(normal_tex, m_uv * 1).xyz * 2.0 - 1.0;
 	frag_normal = normalize(tbn * tangent_space_normals);
 	frag_pos = m_position;
