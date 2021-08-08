@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, hash_map::DefaultHasher}, env, ffi::OsStr, fs::{File, OpenOptions, create_dir, create_dir_all, read_dir}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
+use std::{collections::{HashMap, hash_map::DefaultHasher}, env, ffi::OsStr, fs::{File, OpenOptions, create_dir, create_dir_all, read_dir, remove_file}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
 use crate::engine::rendering::SubShaderType;
 use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
 use image::{GenericImageView, io::Reader as ImageReader};
@@ -9,7 +9,8 @@ pub struct ResourceManager {
 	cached_resources: HashMap<String, Resource>,
 }
 
-// Da code
+// Da code.
+// Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
 impl ResourceManager {
 	// Loads a specific resource and caches it so we can use it next time
 	pub fn load_resource(&mut self, name: &str, path: &str) -> Option<&Resource> {
@@ -182,8 +183,6 @@ impl ResourceManager {
 		// Keep track of the names-timestamp relation
 		let log_file_path = format!("{}\\src\\packed-resources\\log.log", path);
 		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
-		// Keep track of the files that where packed
-		let mut files_packed: Vec<String> = Vec::new();
 		{
 			let mut log_reader = BufReader::new(OpenOptions::new().write(true).read(true).create(true).open(log_file_path.clone()).unwrap());
 			let mut num = 0;
@@ -214,6 +213,7 @@ impl ResourceManager {
 		println!("{:?}", hashed_names_timestamps);
 		// Get all the resource files from the resources folder
 		let files = read_dir(resources_dir.clone()).expect("Failed to read the resources directory!");
+		let mut files_that_could_possibly_get_packed: Vec<String> = Vec::new();
 		// Now, pack every resource in each sub-directory
 		for sub_directory in files {
 			let sub_directory = sub_directory.as_ref().unwrap();
@@ -233,6 +233,7 @@ impl ResourceManager {
 					let packed_resources_dir = format!("{}{}", packed_resources_dir, sub_dir_name.to_str().unwrap());
 					println!("Packing resource: '{}'", name.as_str());
 					let opened_file = File::open(&path).unwrap();
+					files_that_could_possibly_get_packed.push(format!("{}\\{}", sub_dir_name.to_str().unwrap(), name));
 					// Check the logged timestamp of this resource, if it does not exist, then pack this resource
 					{
 						// Hash the name
@@ -451,7 +452,6 @@ impl ResourceManager {
 					// Create the packaged file
 					//panic!("{}", packed_file_path);
 					writer.write(bytes_to_write.as_slice());
-					files_packed.push(packed_file_path);
 					// Save the name and timestamp creation date of this packed resource in the log file
 					{
 						let log_file = OpenOptions::new().append(true).open(log_file_path.clone()).unwrap();
@@ -463,6 +463,7 @@ impl ResourceManager {
 							format!("{}\\{}", sub_dir_name.to_str().unwrap(), name).hash(&mut hasher);
 							hashed_name = hasher.finish();
 						}
+						hashed_names_timestamps.insert(hashed_name, packed_resource_timestamp);
 						log_writer.write_u64::<LittleEndian>(hashed_name);
 						log_writer.write_u64::<LittleEndian>(packed_resource_timestamp);
 					}
@@ -471,6 +472,7 @@ impl ResourceManager {
 		}
 		// Now loop through all the packed files and delete the ones that are not present in the log file
 		let packed_files = read_dir(packed_resources_dir).unwrap();
+		println!("{:?}", hashed_names_timestamps);
 		for sub_directory in packed_files {
 			let sub_directory = sub_directory.unwrap();
 			let sub_dir_name = sub_directory.file_name();
@@ -482,10 +484,13 @@ impl ResourceManager {
 					let packed_file_path = packed_file_path.to_str();
 					let name =  packed_file.file_name();
 					let name = name.to_str().unwrap();
-					if files_packed.contains(&format!("{}\\{}", sub_dir_name, name)) {
+					let split_name_vec: Vec<&str> = name.split(".").collect();
+					let split_name = split_name_vec[0];
+					if files_that_could_possibly_get_packed.contains(&format!("{}\\{}", sub_dir_name, split_name)) {
 						// This file exists in the resources folder
 					} else {
 						// This file does not exist, so delete it
+						remove_file(packed_file_path.unwrap());
 					}
 				}
 			}

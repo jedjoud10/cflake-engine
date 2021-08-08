@@ -9,6 +9,6 @@ cd..
 :: rmdir .\target\release\packed-resources\ /q / s
 :: mkdir .\target\release\packed-resources\
 
-robocopy .\src\packed-resources\ target\debug\packed-resources\ /mir
-robocopy .\src\packed-resources\ target\release\packed-resources\ /mir
+robocopy .\src\packed-resources\ target\debug\packed-resources\ /mir /njh /njs /ndl /nc /ns
+robocopy .\src\packed-resources\ target\release\packed-resources\ /mir /njh /njs /ndl /nc /ns
 pause
