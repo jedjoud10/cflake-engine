@@ -14,15 +14,14 @@ void main() {
 	vec3 light_dir = vec3(0, 1, 0);
 	vec3 view_dir = normalize(view_pos - position);
 	vec3 reflect_dir = reflect(-light_dir, normal);
-	float specular = pow(max(dot(view_dir, reflect_dir), 0), 32);
+	float specular = pow(max(dot(view_dir, reflect_dir), 0), 64);
 	float light_val = dot(normal, normalize(light_dir));
 	vec3 final_color = vec3(specular, specular, specular) + light_val * diffuse;
-
 	if (debug_view == 0) {
 		color = final_color;
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
 		color = diffuse;
-	} 
+	}
 }

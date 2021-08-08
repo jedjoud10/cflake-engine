@@ -73,9 +73,9 @@ pub fn create_system(world: &mut World) {
 				let mut current_fov = entity.get_component_mut::<components::Camera>(world).horizontal_fov.clone();
 				// Change the fov
 				if world.input_manager.map_held("zoom").0 {
-					current_fov += 5.0 * delta; 
+					current_fov += 10.0 * delta; 
 				} else if world.input_manager.map_held("unzoom").0 {
-					current_fov -= 5.0 * delta;
+					current_fov -= 10.0 * delta;
 				}
 				new_fov = current_fov;
 

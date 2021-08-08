@@ -73,7 +73,7 @@ pub fn load_entities(world: &mut World) {
 					let mut bunny = Entity::default();
 					bunny.name = String::from("Bunny");
 					// Create the model
-					let model2 = Model::from_resource(world.resource_manager.load_resource("cube.mdl3d.pkg", "models\\").unwrap()).unwrap();
+					let model2 = Model::from_resource(world.resource_manager.load_resource("bunny.mdl3d.pkg", "models\\").unwrap()).unwrap();
 					// Link the component
 					let rc = components::Renderer {
 						model: model2,
