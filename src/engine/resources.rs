@@ -182,6 +182,8 @@ impl ResourceManager {
 		// Keep track of the names-timestamp relation
 		let log_file_path = format!("{}\\src\\packed-resources\\log.log", path);
 		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
+		// Keep track of the files that where packed
+		let mut files_packed: Vec<String> = Vec::new();
 		{
 			let mut log_reader = BufReader::new(OpenOptions::new().write(true).read(true).create(true).open(log_file_path.clone()).unwrap());
 			let mut num = 0;
@@ -373,7 +375,7 @@ impl ResourceManager {
 					let packed_file_path = format!("{}\\{}.{}.pkg", &packed_resources_dir, name.as_str(), extension.as_str());
 					println!("{}", packed_file_path);
 					// Create the new file
-					let new_file = File::create(packed_file_path).expect("Failed to create the packaged file!");
+					let new_file = File::create(packed_file_path.clone()).expect("Failed to create the packaged file!");
 					// These are the bytes that we are going to write to the file
 					let mut bytes_to_write: Vec<u8> = Vec::new();
 					let packed_resource_timestamp = new_file.metadata().unwrap().modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();								
@@ -449,6 +451,7 @@ impl ResourceManager {
 					// Create the packaged file
 					//panic!("{}", packed_file_path);
 					writer.write(bytes_to_write.as_slice());
+					files_packed.push(packed_file_path);
 					// Save the name and timestamp creation date of this packed resource in the log file
 					{
 						let log_file = OpenOptions::new().append(true).open(log_file_path.clone()).unwrap();
@@ -462,6 +465,27 @@ impl ResourceManager {
 						}
 						log_writer.write_u64::<LittleEndian>(hashed_name);
 						log_writer.write_u64::<LittleEndian>(packed_resource_timestamp);
+					}
+				}
+			}
+		}
+		// Now loop through all the packed files and delete the ones that are not present in the log file
+		let packed_files = read_dir(packed_resources_dir).unwrap();
+		for sub_directory in packed_files {
+			let sub_directory = sub_directory.unwrap();
+			let sub_dir_name = sub_directory.file_name();
+			let sub_dir_name = sub_dir_name.to_str().unwrap();
+			if sub_directory.metadata().unwrap().is_dir() {
+				for packed_file_dir_entry in read_dir(sub_directory.path()).unwrap() {
+					let packed_file = packed_file_dir_entry.as_ref().unwrap();
+					let packed_file_path = packed_file.path();
+					let packed_file_path = packed_file_path.to_str();
+					let name =  packed_file.file_name();
+					let name = name.to_str().unwrap();
+					if files_packed.contains(&format!("{}\\{}", sub_dir_name, name)) {
+						// This file exists in the resources folder
+					} else {
+						// This file does not exist, so delete it
 					}
 				}
 			}

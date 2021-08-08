@@ -22,6 +22,6 @@ void main() {
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
-		color = diffuse * 1.0;
+		color = diffuse;
 	}
 }
