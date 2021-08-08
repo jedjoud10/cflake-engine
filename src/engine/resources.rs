@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, hash_map::DefaultHasher}, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
+use std::{collections::{HashMap, hash_map::DefaultHasher}, env, ffi::OsStr, fs::{File, create_dir, create_dir_all, read_dir}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
 use crate::engine::rendering::SubShaderType;
 use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
 use image::{GenericImageView, io::Reader as ImageReader};
@@ -179,10 +179,10 @@ impl ResourceManager {
 		println!("Resources directory: {}", &resources_dir);
 		println!("Packed-Resources directory: {}", &packed_resources_dir);
 		// Get a writer to the log file
-		let mut log_reader = BufReader::new(File::open(format!("{}\\log.log", resources_dir)).unwrap());
 		// Keep track of the names-timestamp relation
 		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
 		{
+			let mut log_reader = BufReader::new(File::open(format!("{}\\log.log", resources_dir)).unwrap());
 			let num = 0;
 			let mut last_hashed_name= 0_u64;
 			loop {
@@ -205,7 +205,7 @@ impl ResourceManager {
 			}
 		}
 		// Get all the resource files from the resources folder
-		let files = read_dir(resources_dir).expect("Failed to read the resources directory!");
+		let files = read_dir(resources_dir.clone()).expect("Failed to read the resources directory!");
 		// Now, pack every resource in each sub-directory
 		for sub_directory in files {
 			let sub_directory = sub_directory.as_ref().unwrap();
@@ -367,7 +367,8 @@ impl ResourceManager {
 					// Create the new file
 					let new_file = File::create(packed_file_path).expect("Failed to create the packaged file!");
 					// These are the bytes that we are going to write to the file
-					let mut bytes_to_write: Vec<u8> = Vec::new();								
+					let mut bytes_to_write: Vec<u8> = Vec::new();
+					let packed_resource_timestamp = new_file.metadata().unwrap().modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();								
 					// Write the resource type first
 					let mut writer = BufWriter::new(new_file);
 					writer.write_u8(resource_type);
@@ -440,6 +441,19 @@ impl ResourceManager {
 					// Create the packaged file
 					//panic!("{}", packed_file_path);
 					writer.write(bytes_to_write.as_slice());
+					// Save the name and timestamp creation date of this packed resource in the log file
+					{
+						let mut log_writer = BufWriter::new(File::open(format!("{}\\log.log", resources_dir)).unwrap());
+						let mut hashed_name: u64 = 0;
+						{
+							// Hash the name
+							let mut hasher = DefaultHasher::new();
+							name.hash(&mut hasher);
+							hashed_name = hasher.finish();
+						}
+						log_writer.write_u64::<LittleEndian>(hashed_name);
+						log_writer.write_u64::<LittleEndian>(packed_resource_timestamp);
+					}
 				}
 			}
 		}
