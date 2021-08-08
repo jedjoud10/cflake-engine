@@ -110,11 +110,14 @@ pub fn load_entities(world: &mut World) {
 	let rc = components::Renderer {
 		model: sky_model,
 		shader_name: sky_shader_name.clone(),
+		diffuse_texture_id: Texture::load_from_file("skytexture.png.pkg", world).unwrap(),
 		..components::Renderer::default()
 	};	
 	sky.link_component::<components::Renderer>(world, rc);
 	sky.link_default_component::<transforms::Position>(world);
-	sky.link_default_component::<transforms::Rotation>(world);
+	sky.link_component::<transforms::Rotation>(world, transforms::Rotation {
+		rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, 90.0_f32.to_radians(), 0.0, 0.0),
+	});
 	sky.link_component::<transforms::Scale>(world, transforms::Scale {
 		scale: 900.0
 	});

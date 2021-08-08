@@ -25,6 +25,7 @@ pub struct World {
 	pub texture_manager: TextureManager,
 	pub entity_manager: EntityManager,
 	pub systems: Vec<System>,
+	pub systems_map: HashMap<String, u16>,
 	pub window: Window,
 	pub default_camera_id: u16,
 } 
@@ -41,6 +42,7 @@ impl Default for World {
 			entity_manager: EntityManager::default(),
 			texture_manager: TextureManager::default(),
 			systems: Vec::new(),
+			systems_map: HashMap::new(),
 			default_camera_id: 0,
 			window: Window::default()
 		}
@@ -90,13 +92,25 @@ impl World {
 	// Check for default key map events
 	fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
 		// Check for default mapping events
-		if self.input_manager.map_pressed("Quit") {
+		if self.input_manager.map_pressed("quit") {
 			window.set_should_close(true);			
 		}
 		// Toggle the fullscreen
-		if self.input_manager.map_pressed("Fullscreen") {
+		if self.input_manager.map_pressed("fullscreen") {
 			self.toggle_fullscreen(glfw, window);
 		}
+		// Change the debug view
+		if self.input_manager.map_pressed("change_debug_view") {
+			let render_system = self.get_system_by_name("Render System");
+			let cloned_hashmap = render_system.system_components.clone();
+			let renderers_component_id = self.component_manager.get_component_id::<RendererS>(); 
+			let renderer_system_component = self.component_manager.system_components[cloned_hashmap[&renderers_component_id] as usize].as_any_mut().downcast_mut::<RendererS>().unwrap();
+			renderer_system_component.debug_view += 1; renderer_system_component.debug_view = renderer_system_component.debug_view % 3;
+		}
+	}
+	// Gets a reference to a system by it's name
+	pub fn get_system_by_name(&self, name: &str) -> &System {
+		return self.systems.get(self.systems_map["Rendering System"] as usize).unwrap();
 	}
 	// Toggle fullscreen
 	pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -154,6 +168,7 @@ impl World {
 		let system_data = &mut system;
 		system_data.system_addded();
 		println!("Add system with cBitfield: {}", system_data.c_bitfield);
+		self.systems_map.insert(system.name.clone(), self.systems.len() as u16);
 		self.systems.push(system);
 	}	
 	// Add a discrete component to the world, that isn't linked to any entity
@@ -247,6 +262,7 @@ impl World {
 			system_component.color_texture.update_size(size.0 as u32, size.1 as u32);
 			system_component.depth_stencil_texture.update_size(size.0 as u32, size.1 as u32);
 			system_component.normals_texture.update_size(size.0 as u32, size.1 as u32);
+			system_component.position_texture.update_size(size.0 as u32, size.1 as u32);
 		}
 		let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
 		let entity_clone_id = camera_entity_clone.entity_id;

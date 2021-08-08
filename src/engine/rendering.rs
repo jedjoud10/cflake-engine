@@ -215,6 +215,12 @@ impl Shader {
 			gl::Uniform1i(location, active_texture_id as i32 - 33984);
 		}
 	}
+	// Set a int
+	pub fn set_int_uniform(&self, location: i32, value: i32) {
+		unsafe {
+			gl::Uniform1i(location, value);
+		}
+	}
 }
 
 // Sub shader type

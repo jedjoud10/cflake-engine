@@ -31,9 +31,10 @@ pub struct InputManager {
 impl InputManager {
 	// Setup the default input bindings
 	pub fn setup_default_bindings(&mut self) { 
-		self.bind_key(Key::Escape, "Quit");
-		self.bind_key(Key::F1, "Fullscreen");
-		self.bind_key(Key::F2, "Capture FPS");
+		self.bind_key(Key::Escape, "quit");
+		self.bind_key(Key::F1, "fullscreen");
+		self.bind_key(Key::F2, "capture_fps");
+		self.bind_key(Key::F3, "change_debug_view");
 	}
 	// Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
 	pub fn update(&mut self, window: &mut glfw::Window) {
@@ -42,7 +43,6 @@ impl InputManager {
 		// Calculate the mouse delta
 		let mouse_pos = (window.get_cursor_pos().0 as i32, window.get_cursor_pos().1 as i32);
 		self.last_mouse_pos = mouse_pos;
-
 	}
 	// Update event fired from the world (fired after everything happens)
 	pub fn late_update(&mut self, delta_time: f32) {

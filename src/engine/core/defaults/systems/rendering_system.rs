@@ -12,8 +12,10 @@ pub struct RendererS {
 	pub framebuffer: u32,
 	pub color_texture: Texture,
 	pub normals_texture: Texture,
+	pub position_texture: Texture,
 	pub depth_stencil_texture: Texture,
 	pub quad_renderer_index: u16,
+	pub debug_view: u16,
 }
 
 impl SystemComponent for RendererS {
@@ -83,6 +85,13 @@ pub fn create_system(world: &mut World) {
 			gl::RGB16_SNORM,
 			gl::RGB,
 			gl::UNSIGNED_BYTE);
+		// Create the position render texture
+		sc.position_texture = Texture::create_new_texture(
+			default_size.0 as u16,
+			default_size.1 as u16,
+			gl::RGB32F,
+			gl::RGB,
+			gl::UNSIGNED_BYTE);
 		// Create the depth-stencil render texture
 		sc.depth_stencil_texture = Texture::create_new_texture(
 			default_size.0 as u16,
@@ -97,12 +106,16 @@ pub fn create_system(world: &mut World) {
 		// Bind the normal texture to the color attachement 1 of the frame buffer
 		gl::BindTexture(gl::TEXTURE_2D, sc.normals_texture.id);
 		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT1, gl::TEXTURE_2D, sc.normals_texture.id, 0);
+		// Bind the position texture to the color attachement 2 of the frame buffer
+		gl::BindTexture(gl::TEXTURE_2D, sc.position_texture.id);
+		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT2, gl::TEXTURE_2D, sc.position_texture.id, 0);
+
 		// Bind depth-stencil render texture
 		gl::BindTexture(gl::TEXTURE_2D, sc.depth_stencil_texture.id);
 		gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::TEXTURE_2D, sc.depth_stencil_texture.id, 0);
 		
 		// Hehe boii
-		let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1];
+		let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2];
 		gl::DrawBuffers(attachements.len() as i32,  attachements.as_ptr() as *const u32);
 		
 		if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
@@ -166,6 +179,7 @@ pub fn create_system(world: &mut World) {
 		shader.set_matrix_44_uniform(shader.get_uniform_location("model_matrix"), model_matrix);
 		shader.set_matrix_44_uniform(shader.get_uniform_location("view_matrix"), view_matrix);
 		shader.set_scalar_2_uniform(shader.get_uniform_location("resolution"), (world.window.size.0 as f32, world.window.size.1 as f32));
+		shader.set_scalar_3_uniform(shader.get_uniform_location("view_pos"), (camera_position.x, camera_position.y, camera_position.z));
 		// Check if we even have a diffuse texture
 		if rc.diffuse_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
@@ -195,10 +209,13 @@ pub fn create_system(world: &mut World) {
 		let system_component = system.get_system_component::<RendererS>(world);
 		let quad_renderer = world.get_dicrete_component::<components::Renderer>(system_component.quad_renderer_index);
 		let shader = world.shader_manager.get_shader(&quad_renderer.shader_name).unwrap();
+		let camera_position = world.get_entity(world.default_camera_id).get_component::<transforms::Position>(world).position;
 		shader.use_shader();
 		shader.set_texture2d(shader.get_uniform_location("color_texture"), system_component.color_texture.id, gl::TEXTURE0);
 		shader.set_texture2d(shader.get_uniform_location("normals_texture"), system_component.normals_texture.id, gl::TEXTURE1);
-		
+		shader.set_texture2d(shader.get_uniform_location("position_texture"), system_component.position_texture.id, gl::TEXTURE2);
+		shader.set_scalar_3_uniform(shader.get_uniform_location("view_pos"), (camera_position.x, camera_position.y, camera_position.z));
+		shader.set_int_uniform(shader.get_uniform_location("debug_view"), system_component.debug_view as i32);
 		// Render the screen quad
 		unsafe {			
 			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
