@@ -182,9 +182,12 @@ impl ResourceManager {
 		// Keep track of the names-timestamp relation
 		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
 		{
-			let mut log_reader = BufReader::new(File::open(format!("{}\\log.log", resources_dir)).unwrap());
-			let num = 0;
+			let mut log_reader = BufReader::new(OpenOptions::new().read(true).open(format!("{}\\log.log", resources_dir)).unwrap());
+			let mut num = 0;
 			let mut last_hashed_name= 0_u64;
+			// Make an infinite loop, and at each iteration, read 8 bytes
+			// Those 8 bytes will either be a hashed-name that we will store for the next iteration or
+			// A timestamp, if it's a timestamp then get the hashed-name we got from the last iteration and insert both of them into the hashmap
 			loop {
 				match log_reader.read_u64::<LittleEndian>() {
 					Ok(val) => {
@@ -196,6 +199,7 @@ impl ResourceManager {
 							// This is a timestamp
 							hashed_names_timestamps.insert(last_hashed_name.clone(), val);
 						}
+						num += 1;
 					},
 					Err(_) => {
 						// End of the log file
@@ -204,6 +208,7 @@ impl ResourceManager {
 				}
 			}
 		}
+		println!("{:?}", hashed_names_timestamps);
 		// Get all the resource files from the resources folder
 		let files = read_dir(resources_dir.clone()).expect("Failed to read the resources directory!");
 		// Now, pack every resource in each sub-directory
@@ -453,6 +458,7 @@ impl ResourceManager {
 							name.hash(&mut hasher);
 							hashed_name = hasher.finish();
 						}
+						log_writer.seek(SeekFrom::End(0));
 						log_writer.write_u64::<LittleEndian>(hashed_name);
 						log_writer.write_u64::<LittleEndian>(packed_resource_timestamp);
 					}
