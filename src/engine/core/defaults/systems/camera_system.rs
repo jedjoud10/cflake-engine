@@ -1,58 +1,59 @@
-use crate::engine::core::defaults::components::{components, *};
-use crate::engine::core::ecs::{Entity, System, SystemState, SystemType};
-use crate::engine::core::world::World;
 use glam::Vec4Swizzles;
 
-// Create the camera system
-pub fn create_system(world: &mut World) {
-    // Default camera system
-    let mut cs = System::default();
-    cs.name = String::from("Camera System");
-    cs.link_component::<components::Camera>(world);
-    cs.link_component::<transforms::Position>(world);
-    cs.link_component::<transforms::Rotation>(world);
+use crate::engine::core::{defaults::components::{components, transforms}, ecs::{
+    entity::Entity,
+    system::System,
+    system_data::{FireData, FireDataFragment, SystemData},
+}};
 
-    cs.entity_added_event = |entity, world, _| {
-        // First time we initialize the camera, setup the matrices
-        let position: glam::Vec3;
-        let rotation: glam::Quat;
-        {
-            // Set the variables since we can't have two mutable references at once
-            rotation = entity.get_component::<transforms::Rotation>(world).rotation;
-            position = entity.get_component::<transforms::Position>(world).position;
-        }
-        let camera_component = entity.get_component_mut::<components::Camera>(world);
-        camera_component.update_projection_matrix();
-        camera_component.update_view_matrix(position, rotation);
-        world.input_manager.bind_key(glfw::Key::W, "camera_forward");
-        world
-            .input_manager
-            .bind_key(glfw::Key::S, "camera_backwards");
-        world.input_manager.bind_key(glfw::Key::D, "camera_right");
-        world.input_manager.bind_key(glfw::Key::A, "camera_left");
-        world.input_manager.bind_key(glfw::Key::Space, "camera_up");
-        world
-            .input_manager
-            .bind_key(glfw::Key::LeftShift, "camera_down");
-        world.input_manager.bind_key(glfw::Key::G, "zoom");
-        world.input_manager.bind_key(glfw::Key::H, "unzoom");
-    };
+#[derive(Default)]
+pub struct CameraSystem {
+    pub system_data: SystemData,
+}
 
-    cs.entity_loop_event = |entity, world, _| {
-        let position: glam::Vec3;
+impl System for CameraSystem {
+    // Wrappers around system data
+    fn get_system_data(&self) -> &SystemData {
+        return &self.system_data;
+    }
+
+    fn get_system_data_mut(&mut self) -> &mut SystemData {
+        return &mut self.system_data;
+    }
+
+    // Setup the system
+    fn setup_system(&mut self, data: &mut FireData) {
+		let mut system_data = self.get_system_data_mut();
+		system_data.link_component::<components::Camera>(data.component_manager);
+    	system_data.link_component::<transforms::Position>(data.component_manager);
+    	system_data.link_component::<transforms::Rotation>(data.component_manager);
+
+		data.input_manager.bind_key(glfw::Key::W, "camera_forward");
+        data.input_manager.bind_key(glfw::Key::S, "camera_backwards");
+        data.input_manager.bind_key(glfw::Key::D, "camera_right");
+        data.input_manager.bind_key(glfw::Key::A, "camera_left");
+        data.input_manager.bind_key(glfw::Key::Space, "camera_up");
+        data.input_manager.bind_key(glfw::Key::LeftShift, "camera_down");
+        data.input_manager.bind_key(glfw::Key::G, "zoom");
+        data.input_manager.bind_key(glfw::Key::H, "unzoom");
+    }
+
+    // Called for each entity in the system
+    fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {
+		let position: glam::Vec3;
         let rotation: glam::Quat;
         let new_fov: f32;
         {
             // Create some movement using user input
             {
-                let _delta_time = world.time_manager.delta_time as f32;
+                let _delta_time = data.time_manager.delta_time as f32;
                 let mut changed_rotation = entity
-                    .get_component_mut::<transforms::Rotation>(world)
+                    .get_component_mut::<transforms::Rotation>(data.component_manager)
                     .rotation
                     .clone();
 
                 // Rotate the camera around
-                let mouse_pos = world.input_manager.get_accumulated_mouse_position();
+                let mouse_pos = data.input_manager.get_accumulated_mouse_position();
                 let sensitivity = 0.001_f32;
                 changed_rotation = glam::Quat::from_euler(
                     glam::EulerRot::YXZ,
@@ -72,54 +73,67 @@ pub fn create_system(world: &mut World) {
                     .mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0))
                     .xyz();
                 let changed_position = &mut entity
-                    .get_component::<transforms::Position>(world)
+                    .get_component::<transforms::Position>(data.component_manager)
                     .position
                     .clone();
-                let delta = world.time_manager.delta_time as f32;
-                if world.input_manager.map_held("camera_forward").0 {
+                let delta = data.time_manager.delta_time as f32;
+                if data.input_manager.map_held("camera_forward").0 {
                     *changed_position -= forward_vector * delta;
-                } else if world.input_manager.map_held("camera_backwards").0 {
+                } else if data.input_manager.map_held("camera_backwards").0 {
                     *changed_position += forward_vector * delta;
                 }
-                if world.input_manager.map_held("camera_right").0 {
+                if data.input_manager.map_held("camera_right").0 {
                     *changed_position += right_vector * delta;
-                } else if world.input_manager.map_held("camera_left").0 {
+                } else if data.input_manager.map_held("camera_left").0 {
                     *changed_position -= right_vector * delta;
                 }
-                if world.input_manager.map_held("camera_up").0 {
+                if data.input_manager.map_held("camera_up").0 {
                     *changed_position += up_vector * delta;
-                } else if world.input_manager.map_held("camera_down").0 {
+                } else if data.input_manager.map_held("camera_down").0 {
                     *changed_position -= up_vector * delta;
                 }
                 let mut current_fov = entity
-                    .get_component_mut::<components::Camera>(world)
+                    .get_component_mut::<components::Camera>(data.component_manager)
                     .horizontal_fov
                     .clone();
                 // Change the fov
-                if world.input_manager.map_held("zoom").0 {
+                if data.input_manager.map_held("zoom").0 {
                     current_fov += 10.0 * delta;
-                } else if world.input_manager.map_held("unzoom").0 {
+                } else if data.input_manager.map_held("unzoom").0 {
                     current_fov -= 10.0 * delta;
                 }
                 new_fov = current_fov;
 
                 // Update the variables
                 *entity
-                    .get_component_mut::<transforms::Position>(world)
+                    .get_component_mut::<transforms::Position>(data.component_manager)
                     .position = **changed_position;
                 entity
-                    .get_component_mut::<transforms::Rotation>(world)
+                    .get_component_mut::<transforms::Rotation>(data.component_manager)
                     .rotation = changed_rotation;
                 position = *changed_position;
                 rotation = changed_rotation.clone();
             }
         }
-        let camera_component = entity.get_component_mut::<components::Camera>(world);
+        let camera_component = entity.get_component_mut::<components::Camera>(data.component_manager);
         camera_component.horizontal_fov = new_fov;
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix();
-    };
+    }
 
-    world.add_system(cs);
+    // When an entity gets added to this system
+    fn entity_added(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+		// First time we initialize the camera, setup the matrices
+        let position: glam::Vec3;
+        let rotation: glam::Quat;
+        {
+            // Set the variables since we can't have two mutable references at once
+            rotation = entity.get_component::<transforms::Rotation>(data.component_manager).rotation;
+            position = entity.get_component::<transforms::Position>(data.component_manager).position;
+        }
+        let camera_component = entity.get_component_mut::<components::Camera>(data.component_manager);
+        camera_component.update_projection_matrix();
+        camera_component.update_view_matrix(position, rotation);        
+    }
 }

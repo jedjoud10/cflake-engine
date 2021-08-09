@@ -162,6 +162,6 @@ pub trait System {
 
     // System control functions
     fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData);
-    fn pre_fire(&mut self, data: &mut FireData);
-    fn post_fire(&mut self, data: &mut FireData);
+    fn pre_fire(&mut self, data: &mut FireData) {}
+    fn post_fire(&mut self, data: &mut FireData) {}
 }
