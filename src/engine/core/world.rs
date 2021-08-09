@@ -9,11 +9,13 @@ use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::components::Camera;
 use crate::engine::rendering::Window;
 use crate::engine::resources::ResourceManager;
-use crate::game::level::*;
+//use crate::game::level::*;
 
 // Import stuff from the rendering module
 use crate::engine::rendering::shader::ShaderManager;
 use crate::engine::rendering::texture::TextureManager;
+
+use super::defaults::components::transforms::Position;
 
 //  The actual world
 pub struct World {
@@ -24,9 +26,9 @@ pub struct World {
     pub shader_manager: ShaderManager,
     pub texture_manager: TextureManager,
     pub entity_manager: EntityManager,
-	pub system_manager: SystemManager,
+    pub system_manager: SystemManager,
     pub window: Window,
-	pub default_camera_id: u16,
+    pub default_camera_id: u16,
 }
 
 // Default world values
@@ -43,8 +45,8 @@ impl Default for World {
             shader_manager: ShaderManager::default(),
             entity_manager: EntityManager::default(),
             texture_manager: TextureManager::default(),
-			system_manager: SystemManager::default(),
-			default_camera_id: 0,
+            system_manager: SystemManager::default(),
+            default_camera_id: 0,
             window: Window::default(),
         }
     }
@@ -58,9 +60,15 @@ impl World {
         self.window.size = Self::get_default_window_size();
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
-        register_components(self);
-        load_systems(self);
-        load_entities(self);
+        // Test stuff
+        self.component_manager.register_component::<Position>();
+        let mut test_entity = Entity::new("Test Entity");
+        test_entity.link_default_component::<Position>(&mut self.component_manager);
+        let entity_id = self.add_entity(test_entity);
+
+        //register_components(self);
+        //load_systems(self);
+        //load_entities(self);
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -71,14 +79,26 @@ impl World {
         self.input_manager.update(window);
         // Check for default input events
         self.check_default_input_events(window, glfw);
+        // Create the data for the systems
+        let mut data: FireData = FireData {
+            entity_manager: &mut self.entity_manager,
+            component_manager: &mut self.component_manager,
+            input_manager: &mut self.input_manager,
+            shader_manager: &mut self.shader_manager,
+            texture_manager: &mut self.texture_manager,
+            time_manager: &mut self.time_manager,
+        };
+
         // Update the entities
-		//self.system_manager.run_system_type(SystemType::Update, self);
+        self.system_manager
+            .run_system_type(SystemType::Update, &mut data);
         // And render them
-		//self.system_manager.run_system_type(SystemType::Render, self);
+        self.system_manager
+            .run_system_type(SystemType::Render, &mut data);
         window.swap_buffers();
 
-        // Update the timings of every system        
-		self.system_manager.update_systems(&self.time_manager);
+        // Update the timings of every system
+        self.system_manager.update_systems(&self.time_manager);
 
         // Update the inputs
         self.input_manager
@@ -95,8 +115,7 @@ impl World {
             self.toggle_fullscreen(glfw, window);
         }
         // Change the debug view
-        if self.input_manager.map_pressed("change_debug_view") {
-        }
+        if self.input_manager.map_pressed("change_debug_view") {}
     }
     // Toggle fullscreen
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -145,17 +164,16 @@ impl World {
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {
-		let mut data: FireDataFragment = FireDataFragment {
-    		entity_manager: &mut self.entity_manager,
-    		component_manager: &mut self.component_manager,
-		};
+        let mut data: FireDataFragment = FireDataFragment {
+            entity_manager: &mut self.entity_manager,
+            component_manager: &mut self.component_manager,
+        };
         self.system_manager.kill_systems(&mut data);
     }
     // Adds a system to the world
     pub fn add_system(&mut self, system: Box<dyn System>) {
-		self.system_manager.add_system(system);
-    }   
-	 
+        self.system_manager.add_system(system);
+    }
 }
 
 // Impl block for the entity stuff
@@ -170,17 +188,17 @@ impl World {
     }
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(&mut self, entity_id: u16) {
-		// Remove the entity from the world first
-        let removed_entity = self.entity_manager.remove_entity(entity_id);        
+        // Remove the entity from the world first
+        let removed_entity = self.entity_manager.remove_entity(entity_id);
     }
     // Get a mutable reference to an entity from the entity manager
     pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
         self.entity_manager.get_entity_mut(entity_id)
     }
-	// Get a reference to an entity from the entity manager
+    // Get a reference to an entity from the entity manager
     pub fn get_entity(&self, entity_id: u16) -> &Entity {
         self.entity_manager.get_entity(entity_id)
-    }    
+    }
 }
 
 // Impl block related to the windowing / rendering stuff
@@ -194,7 +212,7 @@ impl World {
         unsafe {
             gl::Viewport(0, 0, size.0, size.1);
             /*
-			let system_component: &mut RendererS = self
+            let system_component: &mut RendererS = self
                 .component_manager
                 .system_components
                 .get_mut(self.window.system_renderer_component_index as usize)
@@ -215,11 +233,12 @@ impl World {
             system_component
                 .position_texture
                 .update_size(size.0 as u32, size.1 as u32);
-			*/
+            */
         }
         let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
         let entity_clone_id = camera_entity_clone.entity_id;
-        let camera_component = camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager);
+        let camera_component =
+            camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager);
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.window_size = size;
         camera_component.update_projection_matrix();

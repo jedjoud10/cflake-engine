@@ -29,7 +29,7 @@ pub fn load_entities(world: &mut World) {
     let mut camera = Entity::default();
     camera.name = String::from("Default Camera");
     camera.link_component::<transforms::Position>(
-        world,
+        world.component_manager,
         transforms::Position {
             position: glam::vec3(5.0, 5.0, 5.0),
         },
