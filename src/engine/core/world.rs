@@ -11,6 +11,10 @@ use crate::engine::rendering::Window;
 use crate::engine::resources::ResourceManager;
 use crate::game::level::*;
 
+// Import stuff from the rendering module
+use crate::engine::rendering::shader::ShaderManager;
+use crate::engine::rendering::texture::TextureManager;
+
 use super::defaults::systems::rendering_system::RendererS;
 
 //  The actual world

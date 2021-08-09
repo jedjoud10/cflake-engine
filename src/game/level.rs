@@ -4,6 +4,10 @@ use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::defaults::systems::*;
 use crate::engine::core::ecs::Entity;
 use crate::engine::core::world::World;
+use crate::engine::rendering::model::Model;
+use crate::engine::rendering::renderer::Renderer;
+use crate::engine::rendering::shader::Shader;
+use crate::engine::rendering::texture::Texture;
 use crate::engine::rendering::*;
 
 // Pre-register unused components
@@ -65,7 +69,7 @@ pub fn load_entities(world: &mut World) {
     )
     .unwrap();
     // Link the component
-    let mut rc = components::Renderer {
+    let mut rc = Renderer {
         model,
         shader_name: {
             let mut checkerboard_shader = Shader::from_vr_fr_subshader_files(
@@ -80,10 +84,10 @@ pub fn load_entities(world: &mut World) {
                 .unwrap();
             checkerboard_shader.name.clone()
         },
-        ..components::Renderer::default()
+        ..Renderer::default()
     };
     rc.refresh_model();
-    quad.link_component::<components::Renderer>(world, rc);
+    quad.link_component::<Renderer>(world, rc);
     quad.link_default_component::<transforms::Position>(world);
     quad.link_component::<transforms::Rotation>(
         world,
@@ -108,14 +112,15 @@ pub fn load_entities(world: &mut World) {
                 )
                 .unwrap();
                 // Link the component
-                let rc = components::Renderer {
+                let rc = Renderer {
                     model: model2,
-                    diffuse_texture_id: Texture::load_from_file("cute_saber_pic.png.pkg", world).unwrap(),
+                    diffuse_texture_id: Texture::load_from_file("cute_saber_pic.png.pkg", world)
+                        .unwrap(),
                     normal_texture_id: Texture::load_from_file("normal.png.pkg", world).unwrap(),
                     shader_name: default_shader_name.clone(),
-                    ..components::Renderer::default()
+                    ..Renderer::default()
                 };
-                bunny.link_component::<components::Renderer>(world, rc);
+                bunny.link_component::<Renderer>(world, rc);
                 bunny.link_component::<transforms::Position>(
                     world,
                     transforms::Position {
@@ -153,13 +158,13 @@ pub fn load_entities(world: &mut World) {
         cached_shader.name.clone()
     };
 
-    let rc = components::Renderer {
+    let rc = Renderer {
         model: sky_model,
         shader_name: sky_shader_name.clone(),
         diffuse_texture_id: Texture::load_from_file("skytexture.png.pkg", world).unwrap(),
-        ..components::Renderer::default()
+        ..Renderer::default()
     };
-    sky.link_component::<components::Renderer>(world, rc);
+    sky.link_component::<Renderer>(world, rc);
     sky.link_default_component::<transforms::Position>(world);
     sky.link_component::<transforms::Rotation>(
         world,

@@ -1,5 +1,6 @@
 use crate::engine::core::{ecs::*, world::World};
-use crate::engine::rendering::{EntityRenderState, Model, ModelDataGPU};
+use crate::engine::rendering::model::{Model, ModelDataGPU};
+use crate::engine::rendering::renderer::{EntityRenderState, Renderer};
 use glam::Vec4Swizzles;
 
 // A simple camera component
@@ -67,46 +68,6 @@ impl Default for Camera {
             clip_planes: (0.1, 1000.0),
             window_size: World::get_default_window_size(),
         }
-    }
-}
-
-// A component that will be linked to entities that are renderable
-pub struct Renderer {
-    pub render_state: EntityRenderState,
-    pub gpu_data: ModelDataGPU,
-    pub shader_name: String,
-    pub model: Model,
-    // Rendering stuff
-    pub diffuse_texture_id: i16,
-    pub normal_texture_id: i16,
-}
-
-impl Default for Renderer {
-    fn default() -> Self {
-        Self {
-            render_state: EntityRenderState::Visible,
-            gpu_data: ModelDataGPU::default(),
-            shader_name: String::default(),
-            model: Model::default(),
-            diffuse_texture_id: -1,
-            normal_texture_id: -1,
-        }
-    }
-}
-
-// Main traits implemented
-impl Component for Renderer {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-impl ComponentID for Renderer {
-    fn get_component_name() -> String {
-        String::from("Render")
     }
 }
 

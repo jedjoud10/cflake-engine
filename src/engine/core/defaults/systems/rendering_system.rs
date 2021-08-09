@@ -3,6 +3,10 @@ use crate::engine::core::ecs::{
     ComponentID, Entity, System, SystemComponent, SystemState, SystemType,
 };
 use crate::engine::core::world::World;
+use crate::engine::rendering::model::Model;
+use crate::engine::rendering::renderer::Renderer;
+use crate::engine::rendering::shader::Shader;
+use crate::engine::rendering::texture::Texture;
 use crate::engine::rendering::*;
 use crate::gl;
 use std::ffi::CString;
@@ -41,13 +45,13 @@ pub fn create_system(world: &mut World) {
     // Default render system
     let mut rs = System::default();
     rs.name = String::from("Rendering System");
-    rs.link_component::<components::Renderer>(world);
+    rs.link_component::<Renderer>(world);
     rs.link_component::<transforms::Position>(world);
     rs.link_component::<transforms::Rotation>(world);
     rs.link_component::<transforms::Scale>(world);
     world.window.system_renderer_component_index = rs.link_system_component::<RendererS>(world);
 
-    let mut quad_renderer_component = components::Renderer::default();
+    let mut quad_renderer_component = Renderer::default();
     quad_renderer_component.model = Model::from_resource(
         world
             .resource_manager
@@ -211,7 +215,7 @@ pub fn create_system(world: &mut World) {
                     rotation = entity.get_component::<transforms::Rotation>(world).rotation;
                     scale = entity.get_component::<transforms::Scale>(world).scale;
                 }
-                let rc = entity.get_component_mut::<components::Renderer>(world);
+                let rc = entity.get_component_mut::<Renderer>(world);
                 rc.update_model_matrix(position.clone(), rotation.clone(), scale);
                 name = rc.shader_name.clone();
                 model_matrix = rc.gpu_data.model_matrix.clone();
@@ -221,7 +225,7 @@ pub fn create_system(world: &mut World) {
         // Use the shader, and update any uniforms
         shader.use_shader();
 
-        let rc = entity.get_component::<components::Renderer>(world);
+        let rc = entity.get_component::<Renderer>(world);
         // Calculate the mvp matrix
         let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
         // Pass the MVP and the model matrix to the shader
@@ -275,8 +279,8 @@ pub fn create_system(world: &mut World) {
     // After we render the scene
     rs.system_post_loop_event = |world, system| {
         let system_component = system.get_system_component::<RendererS>(world);
-        let quad_renderer = world
-            .get_dicrete_component::<components::Renderer>(system_component.quad_renderer_index);
+        let quad_renderer =
+            world.get_dicrete_component::<Renderer>(system_component.quad_renderer_index);
         let shader = world
             .shader_manager
             .get_shader(&quad_renderer.shader_name)
@@ -329,17 +333,17 @@ pub fn create_system(world: &mut World) {
 
     // When an entity gets added to the render system
     rs.entity_added_event = |entity, world, _| {
-        let rc = entity.get_component_mut::<components::Renderer>(world);
+        let rc = entity.get_component_mut::<Renderer>(world);
         // Use the default shader for this entity renderer
         // Make sure we create the OpenGL data for this entity's model
         rc.refresh_model();
     };
     // When an entity gets removed from the render system
     rs.entity_removed_event = |entity, world, _| {
-        let rc = entity.get_component_mut::<components::Renderer>(world);
+        let rc = entity.get_component_mut::<Renderer>(world);
         rc.dispose_model();
     };
     rs.stype = SystemType::Render;
-    rs.link_component::<components::Renderer>(world);
+    rs.link_component::<Renderer>(world);
     world.add_system(rs);
 }

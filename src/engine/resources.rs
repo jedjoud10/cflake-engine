@@ -1,4 +1,4 @@
-use crate::engine::rendering::SubShaderType;
+use crate::engine::rendering::shader::SubShaderType;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use image::{io::Reader as ImageReader, GenericImageView};
 use std::{
