@@ -134,61 +134,15 @@ impl SystemData {
     }
 }
 
+pub struct SystemWrapper {
+	
+}
+
 
 pub trait System {	
 	// Setup the system, link all the components and create default data 
 	fn setup_system(&mut self, world: &mut World);
-	// Add an entity to the current system
-	fn add_entity(&mut self, entity: &Entity, world: &mut World) {
-		let system_data = self.get_system_data_mut();
-        println!(
-            "\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m",
-            entity.name, entity.entity_id, system_data.system_id
-        );
-        system_data.entities.push(entity.entity_id);
-	}
-	// Remove an entity from the current system
-	// NOTE: The entity was already removed in the world global entities, so the "removed_entity" argument is just the clone of that removed entity
-	fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, world: &mut World) {
-		let system_data = self.get_system_data_mut();
-		// Search for the entity with the matching entity_id
-        let system_entity_id = system_data
-            .entities
-            .iter()
-            .position(|&entity_id_in_vec| entity_id_in_vec == entity_id)
-            .unwrap();
-		system_data.entities.remove(system_entity_id);
-        println!(
-            "\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m",
-            removed_entity.name, removed_entity.entity_id, system_data.system_id
-        );
-	}
-	// Stop the system permanently
-	fn end_system(&mut self, world: &mut World) {
-		let system_data_clone = self.get_system_data().clone();
-        // Loop over all the entities and fire the entity removed event
-        for &entity_id in system_data_clone.entities.iter() {
-            let entity_clone = &mut world.get_entity(entity_id).clone();
-            self.entity_removed(entity_clone, world);
-			*world.get_entity_mut(entity_id) = entity_clone.clone();
-        }
-		*self.get_system_data_mut() = system_data_clone;
-    }
-	// Run the system for a single iteration
-	fn run_system(&mut self, world: &mut World) {
-		let system_data_clone = self.get_system_data().clone();
-		self.pre_fire(world);
-        // Loop over all the entities and update their components
-        for &entity_id in system_data_clone.entities.iter() {
-            let mut entity_clone = &mut world.get_entity(entity_id).clone();
-            self.fire_entity(&mut entity_clone, world);
-            *world.get_entity_mut(entity_id) = entity_clone.clone();						
-        }
-		*self.get_system_data_mut() = system_data_clone;
-        self.post_fire(world);
-	}
-
-    // Getters for the system data
+	// Getters for the system data
 	fn get_system_data(&self) -> &SystemData;
 	fn get_system_data_mut(&mut self) -> &mut SystemData;
 
