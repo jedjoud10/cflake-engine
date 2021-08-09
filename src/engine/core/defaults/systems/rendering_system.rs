@@ -1,7 +1,9 @@
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::ecs::{
-    ComponentID, ComponentManager, Entity, FireData, FireDataFragment, System, SystemData,
-    SystemState, SystemType,
+    component::{Component, ComponentID, ComponentManager},
+    entity::Entity,
+    system::{System, SystemManager},
+    system_data::{FireData, FireDataFragment, SystemData},
 };
 use crate::engine::core::world::{EntityManager, World};
 use crate::engine::rendering::model::Model;
@@ -13,6 +15,7 @@ use crate::gl;
 use std::ffi::CString;
 use std::ptr::null;
 
+#[derive(Default)]
 pub struct RenderingSystem {
     pub system_data: SystemData,
     pub framebuffer: u32,
@@ -22,6 +25,7 @@ pub struct RenderingSystem {
     pub depth_stencil_texture: Texture,
     pub quad_renderer_index: u16,
     pub debug_view: u16,
+	quad_renderer: Renderer,
     default_camera_id: u16,
     window: Window,
 }
@@ -37,17 +41,16 @@ impl System for RenderingSystem {
     }
 
     // Setup the system
-    fn setup_system(&mut self, world: &mut World) {
+    fn setup_system(&mut self, data: &mut FireData) {
         let mut system_data = &mut self.system_data;
-        system_data.link_component::<Renderer>(world);
-        system_data.link_component::<transforms::Position>(world);
-        system_data.link_component::<transforms::Rotation>(world);
-        system_data.link_component::<transforms::Scale>(world);
+        system_data.link_component::<Renderer>(&mut data.component_manager);
+        system_data.link_component::<transforms::Position>(&mut data.component_manager);
+        system_data.link_component::<transforms::Rotation>(&mut data.component_manager);
+        system_data.link_component::<transforms::Scale>(&mut data.component_manager);
 
         let mut quad_renderer_component = Renderer::default();
         quad_renderer_component.model = Model::from_resource(
-            world
-                .resource_manager
+            data.resource_manager
                 .load_resource("screen_quad.mdl3d.pkg", "models\\")
                 .unwrap(),
         )
@@ -57,13 +60,14 @@ impl System for RenderingSystem {
             let mut shader = Shader::from_vr_fr_subshader_files(
                 "passthrough.vrsh.glsl.pkg",
                 "screen_quad.frsh.glsl.pkg",
-                world,
+                &mut data.resource_manager, &mut data.shader_manager
             );
             shader.finalize_shader();
-            let shader = world.shader_manager.cache_shader(shader).unwrap();
+            let shader = data.shader_manager.cache_shader(shader).unwrap();
             shader.name.clone()
         };
         quad_renderer_component.refresh_model();
+		self.quad_renderer = quad_renderer_component;
 
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
@@ -274,12 +278,9 @@ impl System for RenderingSystem {
 
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut FireData) {
-        let quad_renderer = data
-            .component_manager
-            .get_dicrete_component::<Renderer>(self.quad_renderer_index);
         let shader = data
             .shader_manager
-            .get_shader(&quad_renderer.shader_name)
+            .get_shader(&self.quad_renderer.shader_name)
             .unwrap();
         let camera_position = data
             .entity_manager
@@ -314,14 +315,14 @@ impl System for RenderingSystem {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(quad_renderer.gpu_data.vertex_array_object);
+            gl::BindVertexArray(self.quad_renderer.gpu_data.vertex_array_object);
             gl::BindBuffer(
                 gl::ELEMENT_ARRAY_BUFFER,
-                quad_renderer.gpu_data.element_buffer_object,
+                self.quad_renderer.gpu_data.element_buffer_object,
             );
             gl::DrawElements(
                 gl::TRIANGLES,
-                quad_renderer.model.triangles.len() as i32,
+                self.quad_renderer.model.triangles.len() as i32,
                 gl::UNSIGNED_INT,
                 null(),
             );

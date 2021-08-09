@@ -5,8 +5,8 @@ uniform sampler2D normals_texture;
 uniform sampler2D position_texture;
 uniform vec3 view_pos;
 uniform int debug_view;
-
 in vec2 uv_coordinates;
+
 void main() {
 	vec3 normal = texture(normals_texture, uv_coordinates).xyz;
 	vec3 diffuse = texture(color_texture, uv_coordinates).xyz;
@@ -24,4 +24,5 @@ void main() {
 	} else if (debug_view == 2) {
 		color = diffuse;
 	}
+	color = vec3(uv_coordinates, 1);
 }

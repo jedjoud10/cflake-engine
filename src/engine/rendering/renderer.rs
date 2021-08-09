@@ -1,7 +1,7 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use super::{model::Model, model::ModelDataGPU};
-use crate::engine::core::ecs::{Component, ComponentID};
+use crate::engine::core::ecs::component::{Component, ComponentID};
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {

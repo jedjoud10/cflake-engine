@@ -1,6 +1,5 @@
 // Transforms components
-use crate::engine::core::ecs::Component;
-use crate::engine::core::ecs::ComponentID;
+use crate::engine::core::ecs::component::{Component, ComponentID};
 
 // A position component telling us where the entity is in the world
 pub struct Position {

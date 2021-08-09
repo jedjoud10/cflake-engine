@@ -2,14 +2,16 @@ use glfw::Context;
 use std::collections::HashMap;
 use std::ptr::null;
 
-use crate::engine::core::ecs::*;
+use crate::engine::core::ecs::component::*;
+use crate::engine::core::ecs::entity::*;
+use crate::engine::core::ecs::system::*;
+use crate::engine::core::ecs::system_data::*;
 use crate::engine::input::*;
 use crate::engine::rendering::*;
 
 use crate::engine::core::defaults::components::components::Camera;
-use crate::engine::rendering::Window;
 use crate::engine::resources::ResourceManager;
-//use crate::game::level::*;
+use crate::game::level::*;
 
 // Import stuff from the rendering module
 use crate::engine::rendering::shader::ShaderManager;
@@ -61,14 +63,15 @@ impl World {
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
         // Test stuff
+        /*
         self.component_manager.register_component::<Position>();
         let mut test_entity = Entity::new("Test Entity");
         test_entity.link_default_component::<Position>(&mut self.component_manager);
         let entity_id = self.add_entity(test_entity);
-
-        //register_components(self);
-        //load_systems(self);
-        //load_entities(self);
+        */
+        register_components(self);
+        load_systems(self);
+        load_entities(self);
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -80,13 +83,14 @@ impl World {
         // Check for default input events
         self.check_default_input_events(window, glfw);
         // Create the data for the systems
-        let mut data: FireData = FireData {
+		let mut data: FireData = FireData {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             input_manager: &mut self.input_manager,
             shader_manager: &mut self.shader_manager,
             texture_manager: &mut self.texture_manager,
             time_manager: &mut self.time_manager,
+			resource_manager: &mut self.resource_manager,
         };
 
         // Update the entities
@@ -169,10 +173,6 @@ impl World {
             component_manager: &mut self.component_manager,
         };
         self.system_manager.kill_systems(&mut data);
-    }
-    // Adds a system to the world
-    pub fn add_system(&mut self, system: Box<dyn System>) {
-        self.system_manager.add_system(system);
     }
 }
 

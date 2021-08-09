@@ -1,4 +1,4 @@
-use crate::engine::core::world::World;
+use crate::engine::{core::world::World, resources::ResourceManager};
 use crate::engine::resources::Resource;
 use gl;
 use std::{
@@ -94,14 +94,14 @@ impl Shader {
     pub fn from_vr_fr_subshader_files(
         vertex_file: &str,
         fragment_file: &str,
-        world: &mut World,
+        resource_manager: &mut ResourceManager,
+		shader_manager: &mut ShaderManager	
     ) -> Self {
         let mut shader = Self::default();
         shader.name = format!("{}_{}", vertex_file, fragment_file);
         {
             {
-                let default_vert_subshader_resource = world
-                    .resource_manager
+                let default_vert_subshader_resource = resource_manager
                     .load_resource(vertex_file, "shaders\\")
                     .unwrap();
                 // Link the vertex and fragment shaders
@@ -110,15 +110,13 @@ impl Shader {
                 // Compile the subshader
                 vert_subshader.compile_subshader();
                 // Cache it, and link it
-                let vert_subshader = world
-                    .shader_manager
+                let vert_subshader = shader_manager
                     .cache_subshader(vert_subshader)
                     .unwrap();
                 shader.link_subshader(&vert_subshader);
             }
             {
-                let default_frag_subshader_resource = world
-                    .resource_manager
+                let default_frag_subshader_resource = resource_manager
                     .load_resource(fragment_file, "shaders\\")
                     .unwrap();
                 // Link the vertex and fragment shaders
@@ -127,8 +125,7 @@ impl Shader {
                 // Compile the subshader
                 frag_subshader.compile_subshader();
                 // Cache it, and link it
-                let frag_subshader = world
-                    .shader_manager
+                let frag_subshader = shader_manager
                     .cache_subshader(frag_subshader)
                     .unwrap();
                 shader.link_subshader(&frag_subshader);

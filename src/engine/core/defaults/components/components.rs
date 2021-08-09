@@ -1,3 +1,4 @@
+use crate::engine::core::ecs::component::{Component, ComponentID};
 use crate::engine::core::{ecs::*, world::World};
 use crate::engine::rendering::model::{Model, ModelDataGPU};
 use crate::engine::rendering::renderer::{EntityRenderState, Renderer};
