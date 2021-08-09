@@ -26,7 +26,7 @@ pub struct World {
     pub entity_manager: EntityManager,
     pub systems: Vec<Box<dyn System>>,
     pub window: Window,
-    pub default_camera_id: u16,
+	pub default_camera_id: u16,
 }
 
 // Default world values
@@ -43,8 +43,8 @@ impl Default for World {
             shader_manager: ShaderManager::default(),
             entity_manager: EntityManager::default(),
             texture_manager: TextureManager::default(),
+			default_camera_id: 0,
             systems: Vec::new(),
-            default_camera_id: 0,
             window: Window::default(),
         }
     }
