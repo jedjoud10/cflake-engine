@@ -1,6 +1,8 @@
 use crate::engine::core::world::World;
 use std::{any::Any, collections::HashMap, hash::Hash};
 
+use super::world::Time;
+
 // Maximum amount of components allowed on an entity
 const MAX_COMPONENTS: u16 = 16;
 
@@ -71,14 +73,14 @@ pub trait ComponentID {
 }
 
 // Tells you the state of the system, and for how long it's been enabled/disabled
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum SystemState {
     Enabled(f32),
     Disabled(f32),
 }
 
 // All of the systems that are implement by default
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum SystemType {
     // Main System Types: Used for scripting
     Update,
@@ -203,6 +205,96 @@ pub trait System {
 	fn fire_entity(&mut self, entity: &mut Entity, world: &mut World);
 	fn pre_fire(&mut self, world: &mut World);
 	fn post_fire(&mut self, world: &mut World);
+}
+
+#[derive(Default)]
+// Manages the systems
+pub struct SystemManager {
+	systems: Vec<Box<dyn System>>,
+}
+
+impl SystemManager {
+	// Check if a specified entity fits the criteria to be in a specific system
+    fn is_entity_valid_for_system(entity: &Entity, system_data: &SystemData) -> bool {
+        // Check if the system matches the component ID of the entity
+        let bitfield: u16 = system_data.c_bitfield & !entity.c_bitfield;
+        // If the entity is valid, all the bits would be 0
+        return bitfield == 0;
+    }
+	// Remove an entity from it's corresponding systems
+	pub fn remove_entity_from_systems(&mut self, world: &mut World, removed_entity: Entity, entity_id: u16) {
+		// Remove the entity from all the systems it was in
+        for system in self.systems.iter_mut() {
+            let system_data = system.get_system_data_mut();
+
+            // Only remove the entity from the systems that it was in
+            if Self::is_entity_valid_for_system(&removed_entity, system_data) {
+                system.remove_entity(entity_id, &removed_entity, world);
+            }
+        }
+	}
+	// Add an entity to it's corresponding systems
+	pub fn add_entity_to_systems(&mut self, entity: &Entity, world: &mut World) {
+		// Check if there are systems that need this entity
+        for system in self.systems.iter_mut() {
+            let system_data = system.get_system_data_mut();
+            if Self::is_entity_valid_for_system(&entity, system_data) {
+                // Add the entity to the system
+                system.add_entity(&entity, world);
+            }
+        }
+	}
+	// Add a system to the world, and returns it's system ID
+	pub fn add_system(&mut self, system: Box<dyn System>) -> u16 {
+		let id = self.systems.len() as u16;
+		let system_data = system.get_system_data();
+		println!("Add system with cBitfield: {}", system_data.c_bitfield);
+		self.systems.push(system);
+		return id;
+	}
+	// Kill all the systems
+	pub fn kill_systems(&mut self, world: &mut World) {
+		for system in self.systems.iter_mut() {
+			system.end_system(world);
+		}
+	}
+	// Runs a specific type of system
+	pub fn run_system_type(&mut self, system_type: SystemType, world: &mut World) {
+		for system in self.systems.iter_mut().filter(|x| 
+			match x.get_system_data().stype {
+    			SystemType::Update => return true,
+				_ => return false
+			}
+		) {
+			system.run_system(world);
+		}
+	}
+	// Update system timings
+	pub fn update_systems(&mut self, time: &Time) {
+		for system in self.systems.iter_mut() {
+			let system_state = &mut system.get_system_data_mut().state; 
+            match system_state {
+				// Keep track of how many seconds the system's been enabled/disabled
+                SystemState::Enabled(old_time) => {
+                    *system_state = SystemState::Enabled(*old_time + time.delta_time as f32);
+                }
+                SystemState::Disabled(old_time) => {
+                    *system_state =
+                        SystemState::Disabled(*old_time + time.delta_time as f32);
+                }
+            }
+        }
+	}
+	// Run a specific system, firing off the pre-fire, entity-fire, and post-fire events
+	pub fn run_system(&mut self, system_id: u16, world: &mut World) {
+		let system = self.systems.get_mut(system_id as usize).unwrap();
+		system.run_system(world);
+	}
+	// Gets a reference to a system
+	pub fn get_system(&self, system_id: u16) -> &Box<dyn System> {
+		let system = self.systems.get(system_id as usize).unwrap();
+		return system;
+	}
 }
 
 // A simple entity in the world

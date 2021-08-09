@@ -46,7 +46,7 @@ pub fn setup_window() {
         }
     }
     // When the window closes and we exit from the game
-    world.stop_world();
+    world.kill_world();
 }
 
 // When the window receives a new event

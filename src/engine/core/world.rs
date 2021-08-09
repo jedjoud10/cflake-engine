@@ -24,7 +24,7 @@ pub struct World {
     pub shader_manager: ShaderManager,
     pub texture_manager: TextureManager,
     pub entity_manager: EntityManager,
-    pub systems: Vec<Box<dyn System>>,
+	pub system_manager: SystemManager,
     pub window: Window,
 	pub default_camera_id: u16,
 }
@@ -43,8 +43,8 @@ impl Default for World {
             shader_manager: ShaderManager::default(),
             entity_manager: EntityManager::default(),
             texture_manager: TextureManager::default(),
+			system_manager: SystemManager::default(),
 			default_camera_id: 0,
-            systems: Vec::new(),
             window: Window::default(),
         }
     }
@@ -72,39 +72,13 @@ impl World {
         // Check for default input events
         self.check_default_input_events(window, glfw);
         // Update the entities
-		for update_system in self.systems.iter().filter(|&x| 
-			match x.get_system_data().stype {
-    			SystemType::Update => return true,
-				_ => return false
-			}
-		) {
-			update_system.run_system(self);
-		}
-
+		self.system_manager.run_system_type(SystemType::Update, self);
         // And render them
-        for update_system in self.systems.iter().filter(|&x| 
-			match x.get_system_data().stype {
-    			SystemType::Render => return true,
-				_ => return false
-			}
-		) {
-			update_system.run_system(self);
-		}
+		self.system_manager.run_system_type(SystemType::Render, self);
         window.swap_buffers();
 
-        // Update the up-time of every system
-        for system in self.systems.iter_mut() {
-			let system_state = system.get_system_data_mut().state; 
-            match system_state {
-                SystemState::Enabled(time) => {
-                    system_state = SystemState::Enabled(time + self.time_manager.delta_time as f32);
-                }
-                SystemState::Disabled(time) => {
-                    system_state =
-                        SystemState::Disabled(time + self.time_manager.delta_time as f32);
-                }
-            }
-        }
+        // Update the timings of every system        
+		self.system_manager.update_systems(&self.time_manager);
 
         // Update the inputs
         self.input_manager
@@ -170,16 +144,12 @@ impl World {
         }
     }
     // When we want to close the application
-    pub fn stop_world(&mut self) {
-        for system in self.systems.iter_mut() {
-            system.end_system(self);
-        }
+    pub fn kill_world(&mut self) {
+        self.system_manager.kill_systems(self);
     }
     // Adds a system to the world
     pub fn add_system(&mut self, system: Box<dyn System>) {
-        let system_data = system.get_system_data_mut();
-        println!("Add system with cBitfield: {}", system_data.c_bitfield);
-        self.systems.push(system);
+		self.system_manager.add_system(system);
     }
     // Add a discrete component to the world, that isn't linked to any entity
     pub fn add_discrete_component<'a, T: ComponentID + Component + 'static>(
@@ -219,14 +189,6 @@ impl World {
     pub fn add_entity(&mut self, entity: Entity) -> u16 {
         let id = self.entity_manager.add_entity(entity.clone());
         let entity = self.entity_manager.get_entity(id).clone();
-        // Check if there are systems that need this entity
-        for system in self.systems.iter_mut() {
-            let system_data = system.get_system_data_mut();
-            if Self::is_entity_valid_for_system(&entity, system_data) {
-                // Add the entity to the system
-                system.add_entity(&entity, self);
-            }
-        }
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         *self.entity_manager.get_entity_mut(id) = entity;
         return id;
@@ -234,16 +196,7 @@ impl World {
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(&mut self, entity_id: u16) {
 		// Remove the entity from the world first
-        let removed_entity = self.entity_manager.remove_entity(entity_id);
-        // Remove the entity from all the systems it was in
-        for system in self.systems.iter_mut() {
-            let system_data = system.get_system_data_mut();
-
-            // Only remove the entity from the systems that it was in
-            if Self::is_entity_valid_for_system(&removed_entity, system_data) {
-                system.remove_entity(entity_id, &removed_entity, self);
-            }
-        }
+        let removed_entity = self.entity_manager.remove_entity(entity_id);        
     }
     // Get a mutable reference to an entity from the entity manager
     pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
@@ -252,14 +205,7 @@ impl World {
 	// Get a reference to an entity from the entity manager
     pub fn get_entity(&self, entity_id: u16) -> &Entity {
         self.entity_manager.get_entity(entity_id)
-    }
-    // Check if a specified entity fits the criteria to be in a specific system
-    fn is_entity_valid_for_system(entity: &Entity, system_data: &SystemData) -> bool {
-        // Check if the system matches the component ID of the entity
-        let bitfield: u16 = system_data.c_bitfield & !entity.c_bitfield;
-        // If the entity is valid, all the bits would be 0
-        return bitfield == 0;
-    }
+    }    
 }
 
 // Impl block related to the windowing / rendering stuff
