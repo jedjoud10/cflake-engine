@@ -1,7 +1,7 @@
-use crate::engine::core::world::World;
+use crate::engine::{core::world::World, input::InputManager, rendering::{shader::ShaderManager, texture::TextureManager}};
 use std::{any::Any, collections::HashMap, hash::Hash};
 
-use super::world::Time;
+use super::world::{EntityManager, Time};
 
 // Maximum amount of components allowed on an entity
 const MAX_COMPONENTS: u16 = 16;
@@ -23,6 +23,7 @@ pub struct ComponentManager {
 
 // Implement all the functions
 impl ComponentManager {
+	// Gets a mutable reference to a component using it's component ID
     // Registers a specific component
     pub fn register_component<T: ComponentID>(&mut self) -> u16 {
         let name: String = T::get_component_name();
@@ -64,6 +65,36 @@ impl ComponentManager {
         } else {
             panic!("Component {} not registered!", name);
         }
+    }
+
+	// Add a discrete component to the world, that isn't linked to any entity
+    pub fn add_discrete_component<'a, T: ComponentID + Component + 'static>(
+        &mut self,
+        component: T,
+    ) -> u16 {
+        // Make sure the component is registered first
+        if !self.is_component_registered::<T>() {
+            self.register_component::<T>();
+        }
+        // Add the component, and return it's id
+        self
+            .discrete_components
+            .push(Box::new(component));
+        let index = self.discrete_components.len() as u16 - 1;
+        return index;
+    }
+    // Get a reference to a specific discrete component from the world, without the need of an entity
+    pub fn get_dicrete_component<'a, T: ComponentID + Component + 'static>(
+        &self,
+        index: u16,
+    ) -> &T {
+        let component_any = self
+            .discrete_components
+            .get(index as usize)
+            .unwrap()
+            .as_any();
+        let component: &T = component_any.downcast_ref().unwrap();
+        return component;
     }
 }
 
@@ -136,6 +167,21 @@ impl SystemData {
     }
 }
 
+// Data that will be passed to the fire events in systems
+pub struct FireData<'a> {
+	pub entity_manager: &'a mut EntityManager,
+	pub component_manager: &'a mut ComponentManager,
+	pub input_manager: &'a mut InputManager,
+	pub shader_manager: &'a mut ShaderManager,
+	pub texture_manager: &'a mut TextureManager,
+	pub time_manager: &'a mut Time,
+}
+// Data that will be passed some events in the systems that don't need all the world data
+pub struct FireDataFragment<'a> {
+	pub entity_manager: &'a mut EntityManager,
+	pub component_manager: &'a mut ComponentManager
+}
+
 pub trait System {	
 	// Setup the system, link all the components and create default data 
 	fn setup_system(&mut self, world: &mut World);
@@ -165,28 +211,27 @@ pub trait System {
         );
 	}
 	// Stop the system permanently
-	fn end_system(&mut self, world: &mut World) {
+	fn end_system(&mut self, data: &mut FireDataFragment) {
 		let system_data_clone = self.get_system_data().clone();
         // Loop over all the entities and fire the entity removed event
         for &entity_id in system_data_clone.entities.iter() {
-            let entity_clone = &mut world.get_entity(entity_id).clone();
-            self.entity_removed(entity_clone, world);
-			*world.get_entity_mut(entity_id) = entity_clone.clone();
+            let entity_clone = &mut data.entity_manager.get_entity(entity_id).clone();
+            self.entity_removed(entity_clone, data);
+			*data.entity_manager.get_entity_mut(entity_id) = entity_clone.clone();
         }
 		*self.get_system_data_mut() = system_data_clone;
     }
 	// Run the system for a single iteration
-	fn run_system(&mut self, world: &mut World) {
+	fn run_system(&mut self, data: &mut FireData) {
 		let system_data_clone = self.get_system_data().clone();
-		self.pre_fire(world);
+		self.pre_fire(data);
         // Loop over all the entities and update their components
         for &entity_id in system_data_clone.entities.iter() {
-            let mut entity_clone = &mut world.get_entity(entity_id).clone();
-            self.fire_entity(&mut entity_clone, world);
-            *world.get_entity_mut(entity_id) = entity_clone.clone();						
+            let mut entity_clone = data.entity_manager.get_entity_mut(entity_id).clone();
+            self.fire_entity(&mut entity_clone, data);					
         }
 		*self.get_system_data_mut() = system_data_clone;
-        self.post_fire(world);
+        self.post_fire(data);
 	}
 
     // Getters for the system data
@@ -194,17 +239,17 @@ pub trait System {
 	fn get_system_data_mut(&mut self) -> &mut SystemData;
 
 	// System Events
-	fn entity_added(&mut self, entity: &Entity, world: &mut World) {
+	fn entity_added(&mut self, entity: &Entity, data: &mut FireDataFragment) {
 
 	}
-	fn entity_removed(&mut self, entity: &Entity, world: &mut World) {
+	fn entity_removed(&mut self, entity: &Entity, data: &mut FireDataFragment) {
 
 	}
 
 	// System control functions
-	fn fire_entity(&mut self, entity: &mut Entity, world: &mut World);
-	fn pre_fire(&mut self, world: &mut World);
-	fn post_fire(&mut self, world: &mut World);
+	fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData);
+	fn pre_fire(&mut self, data: &mut FireData);
+	fn post_fire(&mut self, data: &mut FireData);
 }
 
 #[derive(Default)]
@@ -253,20 +298,20 @@ impl SystemManager {
 		return id;
 	}
 	// Kill all the systems
-	pub fn kill_systems(&mut self, world: &mut World) {
+	pub fn kill_systems(&mut self, data: &mut FireDataFragment) {		
 		for system in self.systems.iter_mut() {
-			system.end_system(world);
-		}
+			system.end_system(data);
+		}		
 	}
 	// Runs a specific type of system
-	pub fn run_system_type(&mut self, system_type: SystemType, world: &mut World) {
+	pub fn run_system_type(&mut self, system_type: SystemType, data: &mut FireData) {
 		for system in self.systems.iter_mut().filter(|x| 
 			match x.get_system_data().stype {
     			SystemType::Update => return true,
 				_ => return false
 			}
 		) {
-			system.run_system(world);
+			system.run_system(data);
 		}
 	}
 	// Update system timings
@@ -286,9 +331,9 @@ impl SystemManager {
         }
 	}
 	// Run a specific system, firing off the pre-fire, entity-fire, and post-fire events
-	pub fn run_system(&mut self, system_id: u16, world: &mut World) {
+	pub fn run_system(&mut self, system_id: u16, data: &mut FireData) {
 		let system = self.systems.get_mut(system_id as usize).unwrap();
-		system.run_system(world);
+		system.run_system(data);
 	}
 	// Gets a reference to a system
 	pub fn get_system(&self, system_id: u16) -> &Box<dyn System> {
@@ -365,13 +410,12 @@ impl Entity {
     // Gets a reference to a component
     pub fn get_component<'a, T: ComponentID + Component + 'static>(
         &self,
-        world: &'a World,
+        component_manager: &'a ComponentManager,
     ) -> &'a T {
-        let component_id = world.component_manager.get_component_id::<T>();
+        let component_id = component_manager.get_component_id::<T>();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
-            let component_any: &dyn Any = world
-                .component_manager
+            let component_any: &dyn Any = component_manager
                 .components
                 .get(self.components[&component_id] as usize)
                 .unwrap()
@@ -389,13 +433,12 @@ impl Entity {
     // Gets a specific component, mutably
     pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(
         &self,
-        world: &'a mut World,
+        component_manager: &'a mut ComponentManager,
     ) -> &'a mut T {
-        let component_id = world.component_manager.get_component_id::<T>();
+        let component_id = component_manager.get_component_id::<T>();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
-            let component_any: &mut dyn Any = world
-                .component_manager
+            let component_any: &mut dyn Any = component_manager
                 .components
                 .get_mut(self.components[&component_id] as usize)
                 .unwrap()

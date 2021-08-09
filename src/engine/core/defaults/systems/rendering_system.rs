@@ -1,6 +1,6 @@
 use crate::engine::core::defaults::components::{components, *};
-use crate::engine::core::ecs::{ComponentID, Entity, System, SystemData, SystemState, SystemType};
-use crate::engine::core::world::World;
+use crate::engine::core::ecs::{ComponentID, ComponentManager, Entity, FireData, FireDataFragment, System, SystemData, SystemState, SystemType};
+use crate::engine::core::world::{EntityManager, World};
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;
@@ -19,6 +19,8 @@ pub struct RenderingSystem {
 	pub depth_stencil_texture: Texture,
 	pub quad_renderer_index: u16,
 	pub debug_view: u16,
+	default_camera_id: u16,
+	window: Window,
 }
 
 impl System for RenderingSystem {
@@ -161,7 +163,7 @@ impl System for RenderingSystem {
 		}
 		
 		// Called for each entity in the system
-		fn fire_entity(&mut self, entity: &mut Entity, world: &mut World) {
+		fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {
 			let _id = entity.entity_id;
 			let shader: &Shader;
 			let view_matrix: glam::Mat4;
@@ -169,12 +171,12 @@ impl System for RenderingSystem {
 			let camera_position: glam::Vec3;
 			// Get the projection * view matrix
         {
-			let camera_entity = world.get_entity(world.default_camera_id);
-            let camera_data = camera_entity.get_component::<components::Camera>(world);
+			let camera_entity = data.entity_manager.get_entity(self.default_camera_id);
+            let camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager);
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
             camera_position = camera_entity
-			.get_component::<transforms::Position>(world)
+			.get_component::<transforms::Position>(&mut data.component_manager)
 			.position;
         }
         let model_matrix: glam::Mat4;
@@ -187,21 +189,21 @@ impl System for RenderingSystem {
                 let rotation: glam::Quat;
                 let scale: f32;
                 {
-					position = entity.get_component::<transforms::Position>(world).position;
-                    rotation = entity.get_component::<transforms::Rotation>(world).rotation;
-                    scale = entity.get_component::<transforms::Scale>(world).scale;
+					position = entity.get_component::<transforms::Position>(&mut data.component_manager).position;
+                    rotation = entity.get_component::<transforms::Rotation>(&mut data.component_manager).rotation;
+                    scale = entity.get_component::<transforms::Scale>(&mut data.component_manager).scale;
                 }
-                let rc = entity.get_component_mut::<Renderer>(world);
+                let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager);
                 rc.update_model_matrix(position.clone(), rotation.clone(), scale);
                 name = rc.shader_name.clone();
                 model_matrix = rc.gpu_data.model_matrix.clone();
             }
-            shader = world.shader_manager.get_shader(&name).unwrap();
+            shader = data.shader_manager.get_shader(&name).unwrap();
         }
         // Use the shader, and update any uniforms
         shader.use_shader();
 		
-        let rc = entity.get_component::<Renderer>(world);
+        let rc = entity.get_component::<Renderer>(&mut data.component_manager);
         // Calculate the mvp matrix
         let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
         // Pass the MVP and the model matrix to the shader
@@ -210,7 +212,7 @@ impl System for RenderingSystem {
         shader.set_matrix_44_uniform(shader.get_uniform_location("view_matrix"), view_matrix);
         shader.set_scalar_2_uniform(
 			shader.get_uniform_location("resolution"),
-            (world.window.size.0 as f32, world.window.size.1 as f32),
+            (self.window.size.0 as f32, self.window.size.1 as f32),
         );
         shader.set_scalar_3_uniform(
 			shader.get_uniform_location("view_pos"),
@@ -219,7 +221,7 @@ impl System for RenderingSystem {
         // Check if we even have a diffuse texture
         if rc.diffuse_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
-            let diffuse_texture = world.texture_manager.get_texture(rc.diffuse_texture_id);
+            let diffuse_texture = data.texture_manager.get_texture(rc.diffuse_texture_id);
             shader.set_texture2d(
 				shader.get_uniform_location("diffuse_tex"),
                 diffuse_texture.id,
@@ -229,7 +231,7 @@ impl System for RenderingSystem {
         // Check if we even have a normal texture
         if rc.normal_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
-            let normal_texture = world.texture_manager.get_texture(rc.normal_texture_id);
+            let normal_texture = data.texture_manager.get_texture(rc.normal_texture_id);
             shader.set_texture2d(
 				shader.get_uniform_location("normal_tex"),
                 normal_texture.id,
@@ -253,7 +255,7 @@ impl System for RenderingSystem {
     }
 	
 	// Called before each fire_entity event is fired
-    fn pre_fire(&mut self, world: &mut World) {
+    fn pre_fire(&mut self, data: &mut FireData) {
 		unsafe {
 			gl::BindFramebuffer(
 				gl::FRAMEBUFFER,
@@ -264,16 +266,15 @@ impl System for RenderingSystem {
     }
 
 	// Called after each fire_entity event has been fired
-    fn post_fire(&mut self, world: &mut World) {
-        let quad_renderer =
-		world.get_dicrete_component::<Renderer>(self.quad_renderer_index);
-        let shader = world
+    fn post_fire(&mut self, data: &mut FireData) {
+        let quad_renderer = data.component_manager.get_dicrete_component::<Renderer>(self.quad_renderer_index);
+        let shader = data
             .shader_manager
             .get_shader(&quad_renderer.shader_name)
             .unwrap();
-			let camera_position = world
-            .get_entity(world.default_camera_id)
-            .get_component::<transforms::Position>(world)
+			let camera_position = data.entity_manager
+            .get_entity(self.default_camera_id)
+            .get_component::<transforms::Position>(&mut data.component_manager)
             .position;
 			shader.use_shader();
         shader.set_texture2d(
@@ -318,15 +319,15 @@ impl System for RenderingSystem {
     }
 	
 	// When an entity gets added to this system
-	fn entity_added(&mut self, entity: &Entity, world: &mut World) {
-		let rc = entity.get_component_mut::<Renderer>(world);
+	fn entity_added(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+		let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager);
         // Make sure we create the OpenGL data for this entity's model
         rc.refresh_model();
 	}
 	
 	// When an entity gets removed from this system
-	fn entity_removed(&mut self, entity: &Entity, world: &mut World) {
-		let rc = entity.get_component_mut::<Renderer>(world);
+	fn entity_removed(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+		let rc = entity.get_component::<Renderer>(&mut data.component_manager);
 		// Dispose the model when the entity gets destroyed
         rc.dispose_model();
 	}

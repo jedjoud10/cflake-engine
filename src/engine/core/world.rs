@@ -72,9 +72,9 @@ impl World {
         // Check for default input events
         self.check_default_input_events(window, glfw);
         // Update the entities
-		self.system_manager.run_system_type(SystemType::Update, self);
+		//self.system_manager.run_system_type(SystemType::Update, self);
         // And render them
-		self.system_manager.run_system_type(SystemType::Render, self);
+		//self.system_manager.run_system_type(SystemType::Render, self);
         window.swap_buffers();
 
         // Update the timings of every system        
@@ -145,42 +145,17 @@ impl World {
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {
-        self.system_manager.kill_systems(self);
+		let mut data: FireDataFragment = FireDataFragment {
+    		entity_manager: &mut self.entity_manager,
+    		component_manager: &mut self.component_manager,
+		};
+        self.system_manager.kill_systems(&mut data);
     }
     // Adds a system to the world
     pub fn add_system(&mut self, system: Box<dyn System>) {
 		self.system_manager.add_system(system);
-    }
-    // Add a discrete component to the world, that isn't linked to any entity
-    pub fn add_discrete_component<'a, T: ComponentID + Component + 'static>(
-        &mut self,
-        component: T,
-    ) -> u16 {
-        // Make sure the component is registered first
-        if !self.component_manager.is_component_registered::<T>() {
-            self.component_manager.register_component::<T>();
-        }
-        // Add the component, and return it's id
-        self.component_manager
-            .discrete_components
-            .push(Box::new(component));
-        let index = self.component_manager.discrete_components.len() as u16 - 1;
-        return index;
-    }
-    // Get a reference to a specific discrete component from the world, without the need of an entity
-    pub fn get_dicrete_component<'a, T: ComponentID + Component + 'static>(
-        &self,
-        index: u16,
-    ) -> &T {
-        let component_any = self
-            .component_manager
-            .discrete_components
-            .get(index as usize)
-            .unwrap()
-            .as_any();
-        let component: &T = component_any.downcast_ref().unwrap();
-        return component;
-    }
+    }   
+	 
 }
 
 // Impl block for the entity stuff
@@ -244,7 +219,7 @@ impl World {
         }
         let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
         let entity_clone_id = camera_entity_clone.entity_id;
-        let camera_component = camera_entity_clone.get_component_mut::<Camera>(self);
+        let camera_component = camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager);
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.window_size = size;
         camera_component.update_projection_matrix();
