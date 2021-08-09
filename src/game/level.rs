@@ -22,10 +22,6 @@ pub fn register_components(world: &mut World) {
 // Load the systems
 pub fn load_systems(world: &mut World) {
     // Load the default systems
-    // NOTE: The order of the systems actually matters
-    camera_system::create_system(world);
-    sky_system::create_system(world);
-    rendering_system::create_system(world);
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {

@@ -15,8 +15,6 @@ use crate::game::level::*;
 use crate::engine::rendering::shader::ShaderManager;
 use crate::engine::rendering::texture::TextureManager;
 
-use super::defaults::systems::rendering_system::RendererS;
-
 //  The actual world
 pub struct World {
     pub time_manager: Time,
@@ -26,8 +24,7 @@ pub struct World {
     pub shader_manager: ShaderManager,
     pub texture_manager: TextureManager,
     pub entity_manager: EntityManager,
-    pub systems: Vec<System>,
-    pub systems_map: HashMap<String, u16>,
+    pub systems: Vec<Box<dyn System>>,
     pub window: Window,
     pub default_camera_id: u16,
 }
@@ -47,7 +44,6 @@ impl Default for World {
             entity_manager: EntityManager::default(),
             texture_manager: TextureManager::default(),
             systems: Vec::new(),
-            systems_map: HashMap::new(),
             default_camera_id: 0,
             window: Window::default(),
         }
@@ -76,20 +72,35 @@ impl World {
         // Check for default input events
         self.check_default_input_events(window, glfw);
         // Update the entities
-        self.run_entity_loop_on_system_type(SystemType::Update);
+		for update_system in self.systems.iter().filter(|&x| 
+			match x.get_system_data().stype {
+    			SystemType::Update => return true,
+				_ => return false
+			}
+		) {
+			update_system.run_system(self);
+		}
 
         // And render them
-        self.run_entity_loop_on_system_type(SystemType::Render);
+        for update_system in self.systems.iter().filter(|&x| 
+			match x.get_system_data().stype {
+    			SystemType::Render => return true,
+				_ => return false
+			}
+		) {
+			update_system.run_system(self);
+		}
         window.swap_buffers();
 
         // Update the up-time of every system
         for system in self.systems.iter_mut() {
-            match system.state {
+			let system_state = system.get_system_data_mut().state; 
+            match system_state {
                 SystemState::Enabled(time) => {
-                    system.state = SystemState::Enabled(time + self.time_manager.delta_time as f32);
+                    system_state = SystemState::Enabled(time + self.time_manager.delta_time as f32);
                 }
                 SystemState::Disabled(time) => {
-                    system.state =
+                    system_state =
                         SystemState::Disabled(time + self.time_manager.delta_time as f32);
                 }
             }
@@ -111,24 +122,7 @@ impl World {
         }
         // Change the debug view
         if self.input_manager.map_pressed("change_debug_view") {
-            let render_system = self.get_system_by_name("Render System");
-            let cloned_hashmap = render_system.system_components.clone();
-            let renderers_component_id = self.component_manager.get_component_id::<RendererS>();
-            let renderer_system_component = self.component_manager.system_components
-                [cloned_hashmap[&renderers_component_id] as usize]
-                .as_any_mut()
-                .downcast_mut::<RendererS>()
-                .unwrap();
-            renderer_system_component.debug_view += 1;
-            renderer_system_component.debug_view = renderer_system_component.debug_view % 3;
         }
-    }
-    // Gets a reference to a system by it's name
-    pub fn get_system_by_name(&self, name: &str) -> &System {
-        return self
-            .systems
-            .get(self.systems_map["Rendering System"] as usize)
-            .unwrap();
     }
     // Toggle fullscreen
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -175,37 +169,16 @@ impl World {
             });
         }
     }
-    // Triggers the "run_entity_loop" event on a specific type of system
-    fn run_entity_loop_on_system_type(&mut self, _system_type: SystemType) {
-        let mut clone = self.systems.clone();
-        for system in clone.iter_mut().filter(|sys| match &sys.stype {
-            _system_type => true,
-            _ => false,
-        }) {
-            match &system.state {
-                SystemState::Enabled(_) => {
-                    system.run_entity_loops(self);
-                }
-                _ => {}
-            }
-        }
-        self.systems = clone;
-    }
     // When we want to close the application
     pub fn stop_world(&mut self) {
-        let mut clone = self.systems.clone();
-        for system in clone.iter_mut() {
+        for system in self.systems.iter_mut() {
             system.end_system(self);
         }
-        self.systems = clone;
     }
     // Adds a system to the world
-    pub fn add_system(&mut self, mut system: System) {
-        let system_data = &mut system;
-        system_data.system_addded();
+    pub fn add_system(&mut self, system: Box<dyn System>) {
+        let system_data = system.get_system_data_mut();
         println!("Add system with cBitfield: {}", system_data.c_bitfield);
-        self.systems_map
-            .insert(system.name.clone(), self.systems.len() as u16);
         self.systems.push(system);
     }
     // Add a discrete component to the world, that isn't linked to any entity
@@ -247,43 +220,41 @@ impl World {
         let id = self.entity_manager.add_entity(entity.clone());
         let entity = self.entity_manager.get_entity(id).clone();
         // Check if there are systems that need this entity
-        let mut clone = self.systems.clone();
-        for system in clone.iter_mut() {
-            let system = system;
-            if Self::is_entity_valid_for_system(&entity, system) {
+        for system in self.systems.iter_mut() {
+            let system_data = system.get_system_data_mut();
+            if Self::is_entity_valid_for_system(&entity, system_data) {
                 // Add the entity to the system
                 system.add_entity(&entity, self);
             }
         }
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         *self.entity_manager.get_entity_mut(id) = entity;
-        self.systems = clone;
         return id;
     }
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(&mut self, entity_id: u16) {
+		// Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id);
         // Remove the entity from all the systems it was in
-        let mut clone = self.systems.clone();
-        for system in clone.iter_mut() {
-            let system = system;
+        for system in self.systems.iter_mut() {
+            let system_data = system.get_system_data_mut();
 
             // Only remove the entity from the systems that it was in
-            if removed_entity.c_bitfield >= system.c_bitfield {
+            if Self::is_entity_valid_for_system(&removed_entity, system_data) {
                 system.remove_entity(entity_id, &removed_entity, self);
             }
         }
-        self.systems = clone;
     }
     // Get a mutable reference to an entity from the entity manager
     pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
         self.entity_manager.get_entity_mut(entity_id)
     }
+	// Get a reference to an entity from the entity manager
     pub fn get_entity(&self, entity_id: u16) -> &Entity {
         self.entity_manager.get_entity(entity_id)
     }
     // Check if a specified entity fits the criteria to be in a specific system
-    fn is_entity_valid_for_system(entity: &Entity, system_data: &mut System) -> bool {
+    fn is_entity_valid_for_system(entity: &Entity, system_data: &SystemData) -> bool {
         // Check if the system matches the component ID of the entity
         let bitfield: u16 = system_data.c_bitfield & !entity.c_bitfield;
         // If the entity is valid, all the bits would be 0
@@ -301,7 +272,8 @@ impl World {
     pub fn resize_window_event(&mut self, size: (i32, i32)) {
         unsafe {
             gl::Viewport(0, 0, size.0, size.1);
-            let system_component: &mut RendererS = self
+            /*
+			let system_component: &mut RendererS = self
                 .component_manager
                 .system_components
                 .get_mut(self.window.system_renderer_component_index as usize)
@@ -322,6 +294,7 @@ impl World {
             system_component
                 .position_texture
                 .update_size(size.0 as u32, size.1 as u32);
+			*/
         }
         let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
         let entity_clone_id = camera_entity_clone.entity_id;

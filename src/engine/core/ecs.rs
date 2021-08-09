@@ -16,7 +16,6 @@ pub struct ComponentManager {
     pub component_ids: HashMap<String, u16>,
     pub components: Vec<Box<dyn Component>>,
     pub discrete_components: Vec<Box<dyn Component>>,
-    pub system_components: Vec<Box<dyn SystemComponent>>,
     pub current_component_id: u16,
 }
 
@@ -92,77 +91,32 @@ pub enum SystemType {
     Terrain,
 }
 
-// A generic system that can be used in 3 different ways (Tick system, Update system, Render system)
+// Some system data that is part of a system and wrapped around System trait getter functions
 #[derive(Clone)]
-pub struct System {
-    pub name: String,
+pub struct SystemData {
     pub c_bitfield: u16,
     pub system_id: u8,
     pub state: SystemState,
     pub stype: SystemType,
-    // System events
-    pub system_pre_loop_event: fn(&mut World, &Self),
-    pub system_post_loop_event: fn(&mut World, &Self),
-    // Entity events
-    pub entity_loop_event: fn(&Entity, &mut World, &Self),
-    pub entity_added_event: fn(&Entity, &mut World, &Self),
-    pub entity_removed_event: fn(&Entity, &mut World, &Self),
-
     pub entities: Vec<u16>,
     pub system_components: HashMap<u16, u16>,
 }
 
 // Default for system data
-impl Default for System {
+impl Default for SystemData {
     fn default() -> Self {
         Self {
-            name: String::from("Unnamed system"),
             c_bitfield: 0,
             system_id: 0,
             state: SystemState::Enabled(0.0),
             stype: SystemType::Update,
-            system_pre_loop_event: |_world, _system| {},
-            system_post_loop_event: |_world, _system| {},
-            entity_loop_event: |_entity, _world, _system| {},
-            entity_added_event: |_entity, _world, _system| {},
-            entity_removed_event: |_entity, _world, _system| {},
             entities: Vec::new(),
             system_components: HashMap::new(),
         }
     }
 }
 
-impl System {
-    // Basic control code
-    pub fn system_addded(&mut self) {}
-    // Enable this current system
-    pub fn enable_system(&mut self) {
-        self.state = SystemState::Enabled(0.0);
-    }
-    // Disable the system and stop it from updating
-    pub fn disable_system(&mut self) {
-        self.state = SystemState::Disabled(0.0);
-    }
-    // End the system since the world is stopping
-    pub fn end_system(&mut self, world: &mut World) {
-        // Loop over all the entities and fire the entity removed event
-        for &entity_id in self.entities.iter() {
-            let entity_clone = &mut world.get_entity(entity_id).clone();
-            (self.entity_removed_event)(entity_clone, world, self);
-            *world.get_entity_mut(entity_id) = entity_clone.clone();
-        }
-    }
-    // Fire the "entity_loop" event
-    pub fn run_entity_loops(&mut self, world: &mut World) {
-        (self.system_pre_loop_event)(world, self);
-        // Loop over all the entities and update their components
-        for &entity_id in self.entities.iter() {
-            let entity_clone = &mut world.get_entity(entity_id).clone();
-            (self.entity_loop_event)(entity_clone, world, self);
-            *world.get_entity_mut(entity_id) = entity_clone.clone();
-        }
-        (self.system_post_loop_event)(world, self);
-    }
+impl SystemData {
     // Add a component to this system's component bitfield id
     pub fn link_component<T: ComponentID>(&mut self, world: &mut World) {
         if world.component_manager.is_component_registered::<T>() {
@@ -174,117 +128,82 @@ impl System {
         println!(
             "Link component '{}' to system '{}', with ID: {}",
             T::get_component_name(),
-            self.name,
+            self.system_id,
             world.component_manager.get_component_id::<T>()
-        );
-    }
-    // Add a SystemComponent; a custom type of component that is just for systems
-    pub fn link_system_component<T: SystemComponent + ComponentID + Default + 'static>(
-        &mut self,
-        world: &mut World,
-    ) -> u16 {
-        // Regsiter da system component
-        if !world.component_manager.is_component_registered::<T>() {
-            world.component_manager.register_component::<T>();
-        }
-        // Check if we have the component already added
-        let component_id = world.component_manager.get_component_id::<T>();
-        if !self.system_components.contains_key(&component_id) {
-            world
-                .component_manager
-                .system_components
-                .push(Box::new(T::default()));
-            let global_component_id: u16 =
-                world.component_manager.system_components.len() as u16 - 1;
-            self.system_components
-                .insert(component_id, global_component_id);
-            return global_component_id;
-        } else {
-            panic!(format!(
-                "System '{}' does not have system component '{}'",
-                self.name,
-                T::get_component_name()
-            ));
-        }
-    }
-    // Gets a reference to a system component
-    pub fn get_system_component<'a, T: SystemComponent + ComponentID + 'static>(
-        &self,
-        world: &'a World,
-    ) -> &'a T {
-        let component_id = world.component_manager.get_component_id::<T>();
-        // Check if we even have the component
-        if self.system_components.contains_key(&component_id) {
-            let component_any: &dyn Any = world
-                .component_manager
-                .system_components
-                .get(self.system_components[&component_id] as usize)
-                .unwrap()
-                .as_any();
-            let final_component = component_any.downcast_ref::<T>().unwrap();
-            return final_component;
-        } else {
-            panic!(format!(
-                "System Component '{}' does not exist on system '{}'!",
-                T::get_component_name(),
-                self.name
-            ));
-        }
-    }
-    // Gets a mutable reference ot a system component
-    pub fn get_system_component_mut<'a, T: SystemComponent + ComponentID + 'static>(
-        &self,
-        world: &'a mut World,
-    ) -> &'a mut T {
-        let component_id = world.component_manager.get_component_id::<T>();
-        // Check if we even have the component
-        if self.system_components.contains_key(&component_id) {
-            let component_any: &mut dyn Any = world
-                .component_manager
-                .system_components
-                .get_mut(self.system_components[&component_id] as usize)
-                .unwrap()
-                .as_any_mut();
-            let final_component = component_any.downcast_mut::<T>().unwrap();
-            return final_component;
-        } else {
-            panic!(format!(
-                "System Component '{}' does not exist on system '{}'!",
-                T::get_component_name(),
-                self.name
-            ));
-        }
-    }
-    // Adds an entity to the system
-    pub fn add_entity(&mut self, entity: &Entity, world: &mut World) {
-        println!(
-            "\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m",
-            entity.name, entity.entity_id, self.name
-        );
-        self.entities.push(entity.entity_id);
-        (self.entity_added_event)(&entity, world, self);
-    }
-    // Removes an entity from the system
-    pub fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, world: &mut World) {
-        // Search for the entity with the matching entity_id
-        let system_entity_id = self
-            .entities
-            .iter()
-            .position(|&entity_id_in_vec| entity_id_in_vec == entity_id)
-            .unwrap();
-        self.entities.remove(system_entity_id);
-        (self.entity_removed_event)(&removed_entity, world, self);
-        println!(
-            "\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m",
-            removed_entity.name, removed_entity.entity_id, self.name
         );
     }
 }
 
-// A custom component type for systems
-pub trait SystemComponent {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
+
+pub trait System {	
+	// Setup the system, link all the components and create default data 
+	fn setup_system(&mut self, world: &mut World);
+	// Add an entity to the current system
+	fn add_entity(&mut self, entity: &Entity, world: &mut World) {
+		let system_data = self.get_system_data_mut();
+        println!(
+            "\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m",
+            entity.name, entity.entity_id, system_data.system_id
+        );
+        system_data.entities.push(entity.entity_id);
+	}
+	// Remove an entity from the current system
+	// NOTE: The entity was already removed in the world global entities, so the "removed_entity" argument is just the clone of that removed entity
+	fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, world: &mut World) {
+		let system_data = self.get_system_data_mut();
+		// Search for the entity with the matching entity_id
+        let system_entity_id = system_data
+            .entities
+            .iter()
+            .position(|&entity_id_in_vec| entity_id_in_vec == entity_id)
+            .unwrap();
+		system_data.entities.remove(system_entity_id);
+        println!(
+            "\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m",
+            removed_entity.name, removed_entity.entity_id, system_data.system_id
+        );
+	}
+	// Stop the system permanently
+	fn end_system(&mut self, world: &mut World) {
+		let system_data_clone = self.get_system_data().clone();
+        // Loop over all the entities and fire the entity removed event
+        for &entity_id in system_data_clone.entities.iter() {
+            let entity_clone = &mut world.get_entity(entity_id).clone();
+            self.entity_removed(entity_clone, world);
+			*world.get_entity_mut(entity_id) = entity_clone.clone();
+        }
+		*self.get_system_data_mut() = system_data_clone;
+    }
+	// Run the system for a single iteration
+	fn run_system(&mut self, world: &mut World) {
+		let system_data_clone = self.get_system_data().clone();
+		self.pre_fire(world);
+        // Loop over all the entities and update their components
+        for &entity_id in system_data_clone.entities.iter() {
+            let mut entity_clone = &mut world.get_entity(entity_id).clone();
+            self.fire_entity(&mut entity_clone, world);
+            *world.get_entity_mut(entity_id) = entity_clone.clone();						
+        }
+		*self.get_system_data_mut() = system_data_clone;
+        self.post_fire(world);
+	}
+
+    // Getters for the system data
+	fn get_system_data(&self) -> &SystemData;
+	fn get_system_data_mut(&mut self) -> &mut SystemData;
+
+	// System Events
+	fn entity_added(&mut self, entity: &Entity, world: &mut World) {
+
+	}
+	fn entity_removed(&mut self, entity: &Entity, world: &mut World) {
+
+	}
+
+	// System control functions
+	fn fire_entity(&mut self, entity: &mut Entity, world: &mut World);
+	fn pre_fire(&mut self, world: &mut World);
+	fn post_fire(&mut self, world: &mut World);
 }
 
 // A simple entity in the world
