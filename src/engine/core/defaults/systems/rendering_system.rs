@@ -162,7 +162,7 @@ impl RenderingSystem {
 				gl::COLOR_ATTACHMENT1,
 				gl::COLOR_ATTACHMENT2,
 				gl::COLOR_ATTACHMENT3,
-				gl::COLOR_ATTACHMENT4
+				gl::COLOR_ATTACHMENT4,
 			];
 			// Set the frame buffer attachements
 			gl::DrawBuffers(

@@ -122,21 +122,16 @@ impl ResourceManager {
 					// This is a texture
 					let texture_width = reader.read_u16::<LittleEndian>().unwrap();
 					let texture_height = reader.read_u16::<LittleEndian>().unwrap();
-					let mut bytes: Vec<u8> = Vec::new();
-					for x in 0..texture_width {
-						for y in 0..texture_height {
-							for color in 0..3 {
-								bytes.push(reader.read_u8().unwrap());
-							}
-						}
-					}
+					let mut compressed_bytes: Vec<u8> = Vec::new();
+					reader.seek(SeekFrom::Start(5)).unwrap();
+					reader.read_to_end(&mut compressed_bytes);
 
 					// Load the bytes into the resource
 					loaded_resource = Resource::Texture(LoadedTexture {
 						name: name.clone(),
 						width: texture_width,
 						height: texture_height,
-						raw_pixels: bytes,
+						compressed_bytes,
 					})
 				}
 				3 => {
@@ -314,7 +309,9 @@ impl ResourceManager {
 					let mut bytes: Vec<u8> = Vec::new();
 					let mut resource: Resource = Resource::None;
 					// Read the file bytes into the vector
-					reader.read_exact(&mut bytes);
+					let bytes_read = reader.read_to_end(&mut bytes).unwrap();
+					reader.seek(SeekFrom::Start(0));
+					println!("Bytes read: {}", bytes_read);
 
 					// The type of resource that we will be saving
 					let mut resource_type = 0;
@@ -344,19 +341,14 @@ impl ResourceManager {
 						}
 						"png" => {
 							// This is a texture
-							let image_bytes = bytes;
-							let image = ImageReader::open(path)
-								.unwrap()
-								.with_guessed_format()
-								.unwrap()
-								.decode()
-								.unwrap();
+							let image = ImageReader::open(path.clone()).unwrap().with_guessed_format().unwrap().decode().unwrap(); 
 							let dimensions = image.dimensions();
+							println!("{:?}", dimensions);
 							resource = Resource::Texture(LoadedTexture {
 								name: String::from("Undefined"),
 								width: dimensions.0 as u16,
 								height: dimensions.1 as u16,
-								raw_pixels: image.to_bytes(),
+								compressed_bytes: bytes,
 							});
 							resource_type = 2;
 						}
@@ -505,11 +497,11 @@ impl ResourceManager {
 						}
 						Resource::Texture(texture) => {
 							// Write the dimensions of the texture
-							writer.write_u16::<LittleEndian>(texture.width);
-							writer.write_u16::<LittleEndian>(texture.height);
+							writer.write_u16::<LittleEndian>(texture.width).unwrap();
+							writer.write_u16::<LittleEndian>(texture.height).unwrap();
 
 							// Now write all the bytes
-							for byte in texture.raw_pixels {
+							for byte in texture.compressed_bytes {
 								writer.write_u8(byte);
 							}
 						}
@@ -616,7 +608,7 @@ pub struct LoadedTexture {
 	pub name: String,
 	pub width: u16,
 	pub height: u16,
-	pub raw_pixels: Vec<u8>,
+	pub compressed_bytes: Vec<u8>,
 }
 // A loaded sub shader
 #[derive(Clone)]
