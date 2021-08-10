@@ -26,7 +26,6 @@ pub struct RenderingSystem {
     pub quad_renderer_index: u16,
     pub debug_view: u16,
 	quad_renderer: Renderer,
-    default_camera_id: u16,
     window: Window,
 }
 
@@ -39,6 +38,11 @@ impl System for RenderingSystem {
     fn get_system_data_mut(&mut self) -> &mut SystemData {
         return &mut self.system_data;
     }
+
+	// When the system gets added to the world
+	fn system_added(&mut self, data: &mut FireData, system_id: u8) {
+		data.custom_data.render_system_id = system_id;
+	}
 
     // Setup the system
     fn setup_system(&mut self, data: &mut FireData) {
@@ -178,7 +182,7 @@ impl System for RenderingSystem {
         let camera_position: glam::Vec3;
         // Get the projection * view matrix
         {
-            let camera_entity = data.entity_manager.get_entity(self.default_camera_id);
+            let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id);
             let camera_data =
                 camera_entity.get_component::<components::Camera>(&mut data.component_manager);
             projection_matrix = camera_data.projection_matrix;
@@ -254,7 +258,6 @@ impl System for RenderingSystem {
         }
         unsafe {
             // Actually draw the array
-
             if rc.gpu_data.initialized {
                 gl::BindVertexArray(rc.gpu_data.vertex_array_object);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
@@ -284,7 +287,7 @@ impl System for RenderingSystem {
             .unwrap();
         let camera_position = data
             .entity_manager
-            .get_entity(self.default_camera_id)
+            .get_entity(data.custom_data.main_camera_entity_id)
             .get_component::<transforms::Position>(data.component_manager)
             .position;
         shader.use_shader();

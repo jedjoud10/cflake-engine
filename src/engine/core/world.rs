@@ -121,7 +121,10 @@ impl World {
             self.toggle_fullscreen(glfw, window);
         }
         // Change the debug view
-        if self.input_manager.map_pressed("change_debug_view") {}
+        if self.input_manager.map_pressed("change_debug_view") {
+			let render_system = self.system_manager.get_system_mut(self.custom_data.render_system_id).as_any_mut().downcast_mut::<RenderingSystem>().unwrap();
+			render_system.debug_view += 1; render_system.debug_view = render_system.debug_view % 3;
+		}
     }
     // Toggle fullscreen
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -185,7 +188,10 @@ impl World {
         let id = self.entity_manager.add_entity(entity.clone());
         let entity = self.entity_manager.get_entity(id).clone();
         // Since we cloned the entity variable we gotta update the entity manager with the new one
-		self.system_manager.add_entity_to_systems(&entity);
+		self.system_manager.add_entity_to_systems(&entity, &mut FireDataFragment {
+    		entity_manager: &mut self.entity_manager,
+    		component_manager: &mut self.component_manager,
+		});
         *self.entity_manager.get_entity_mut(id) = entity;
         return id;
     }
@@ -247,7 +253,8 @@ impl World {
 // Some custom data that will be passed to systems
 #[derive(Default)]
 pub struct CustomWorldData {
-	pub main_camera_entity_id: u16
+	pub main_camera_entity_id: u16,
+	pub render_system_id: u8,
 }
 // Static time variables
 #[derive(Default)]

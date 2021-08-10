@@ -41,15 +41,15 @@ pub fn load_systems(world: &mut World) {
 	};
 	let mut rendering_system = RenderingSystem::default();
 	rendering_system.setup_system(&mut data);
-	world.system_manager.add_system(Box::new(rendering_system));
+	world.system_manager.add_system(rendering_system);
 
 	let mut camera_system = CameraSystem::default();
 	camera_system.setup_system(&mut data);
-	world.system_manager.add_system(Box::new(camera_system));
+	world.system_manager.add_system(camera_system);
 	
 	let mut sky_system = SkySystem::default();
 	sky_system.setup_system(&mut data);
-	world.system_manager.add_system(Box::new(sky_system));
+	world.system_manager.add_system(sky_system);
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {
@@ -108,7 +108,6 @@ pub fn load_entities(world: &mut World) {
         },
         ..Renderer::default()
     };
-    rc.refresh_model();
     quad.link_component::<Renderer>(&mut world.component_manager, rc);
     quad.link_default_component::<transforms::Position>(&mut world.component_manager);
     quad.link_component::<transforms::Rotation>(
@@ -122,9 +121,9 @@ pub fn load_entities(world: &mut World) {
         transforms::Scale { scale: 100.0 },
     );
     world.add_entity(quad);
-    for bunny_x in 0..6 {
+    for bunny_x in 0..1 {
         for bunny_y in 0..1 {
-            for bunny_z in 0..6 {
+            for bunny_z in 0..1 {
                 // Load a bunny model
                 let mut bunny = Entity::new("Bunny");
                 // Create the model
@@ -161,7 +160,7 @@ pub fn load_entities(world: &mut World) {
             }
         }
     }
-	/*
+	
     // Create the sky entity
     let mut sky = Entity::new("Sky");
     let mut sky_model = Model::from_resource(
@@ -173,7 +172,7 @@ pub fn load_entities(world: &mut World) {
     .unwrap();
     sky_model.flip_triangles();
     // Use a custom shader
-    let mut sky_shader_name: String = {
+    let sky_shader_name: String = {
 		let mut shader = Shader::from_vr_fr_subshader_files("default.vrsh.glsl.pkg", "sky.frsh.glsl.pkg", &mut world.resource_manager, &mut world.shader_manager);
         shader.finalize_shader();
         let cached_shader = world.shader_manager.cache_shader(shader).unwrap();
@@ -200,5 +199,5 @@ pub fn load_entities(world: &mut World) {
     );
     sky.link_default_component::<components::Sky>(&mut world.component_manager);
     world.add_entity(sky);
-	*/
+	
 }

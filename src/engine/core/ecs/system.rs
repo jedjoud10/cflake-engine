@@ -23,9 +23,9 @@ impl SystemManager {
     // Remove an entity from it's corresponding systems
     pub fn remove_entity_from_systems(
         &mut self,
-        world: &mut World,
         removed_entity: Entity,
         entity_id: u16,
+		data: &mut FireDataFragment
     ) {
         // Remove the entity from all the systems it was in
         for system in self.systems.iter_mut() {
@@ -33,27 +33,28 @@ impl SystemManager {
 
             // Only remove the entity from the systems that it was in
             if Self::is_entity_valid_for_system(&removed_entity, system_data) {
-                system.remove_entity(entity_id, &removed_entity);
+                system.remove_entity(entity_id, &removed_entity, data);
             }
         }
     }
     // Add an entity to it's corresponding systems
-    pub fn add_entity_to_systems(&mut self, entity: &Entity) {
+    pub fn add_entity_to_systems(&mut self, entity: &Entity, data: &mut FireDataFragment) {
         // Check if there are systems that need this entity
         for system in self.systems.iter_mut() {
-            let system_data = system.get_system_data_mut();
+			let system_data = system.get_system_data_mut();
             if Self::is_entity_valid_for_system(&entity, system_data) {
                 // Add the entity to the system
-                system.add_entity(&entity);
+                system.add_entity(&entity, data);
             }
         }
     }
     // Add a system to the world, and returns it's system ID
-    pub fn add_system(&mut self, system: Box<dyn System>) -> u16 {
-        let id = self.systems.len() as u16;
-        let system_data = system.get_system_data();
+    pub fn add_system<T: 'static + System>(&mut self, mut system: T) -> u8 {		
+        let id = self.systems.len() as u8;
+		let system_data = system.get_system_data_mut();
+		system_data.system_id = id;
         println!("Add system with cBitfield: {}", system_data.c_bitfield);
-        self.systems.push(system);
+        self.systems.push(Box::new(system));		
         return id;
     }
     // Kill all the systems
@@ -92,12 +93,12 @@ impl SystemManager {
         }
     }
     // Gets a reference to a system
-    pub fn get_system(&self, system_id: u16) -> &Box<dyn System> {
+    pub fn get_system(&self, system_id: u8) -> &Box<dyn System> {
         let system = self.systems.get(system_id as usize).unwrap();
         return system;
     }
 	// Gets a mutable reference to a system
-    pub fn get_system_mut(&mut self, system_id: u16) -> &mut Box<dyn System> {
+    pub fn get_system_mut(&mut self, system_id: u8) -> &mut Box<dyn System> {
         let system = self.systems.get_mut(system_id as usize).unwrap();
         return system;
     }
@@ -106,30 +107,36 @@ impl SystemManager {
 pub trait System {
     // Setup the system, link all the components and create default data
     fn setup_system(&mut self, data: &mut FireData);
+	// When the system gets added the world
+	fn system_added(&mut self, data: &mut FireData, system_id: u8) {}
     // Add an entity to the current system
-    fn add_entity(&mut self, entity: &Entity) {
-        let system_data = self.get_system_data_mut();
-        println!(
-            "\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m",
-            entity.name, entity.entity_id, system_data.system_id
-        );
-        system_data.entities.push(entity.entity_id);
+    fn add_entity(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+        {
+			let system_data = self.get_system_data_mut();
+        	println!(
+        	    "\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m",
+        	    entity.name, entity.entity_id, system_data.system_id
+        	);
+			system_data.entities.push(entity.entity_id);
+		}
+		self.entity_added(entity, data);
     }
     // Remove an entity from the current system
     // NOTE: The entity was already removed in the world global entities, so the "removed_entity" argument is just the clone of that removed entity
-    fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity) {
+    fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, data: &mut FireDataFragment) {
         let system_data = self.get_system_data_mut();
         // Search for the entity with the matching entity_id
         let system_entity_id = system_data
-            .entities
-            .iter()
-            .position(|&entity_id_in_vec| entity_id_in_vec == entity_id)
-            .unwrap();
+		.entities
+		.iter()
+		.position(|&entity_id_in_vec| entity_id_in_vec == entity_id)
+		.unwrap();
         system_data.entities.remove(system_entity_id);
         println!(
-            "\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m",
+			"\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m",
             removed_entity.name, removed_entity.entity_id, system_data.system_id
         );
+		self.entity_removed(removed_entity, data);
     }
     // Stop the system permanently
     fn end_system(&mut self, data: &mut FireDataFragment) {
@@ -144,7 +151,6 @@ pub trait System {
     }
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut FireData) {
-		println!("TEST");
         let system_data_clone = self.get_system_data().clone();
         self.pre_fire(data);
         // Loop over all the entities and update their components
@@ -161,13 +167,13 @@ pub trait System {
     fn get_system_data_mut(&mut self) -> &mut SystemData;
 
     // System Events
-    fn entity_added(&mut self, entity: &Entity, data: &mut FireDataFragment) {}
-    fn entity_removed(&mut self, entity: &Entity, data: &mut FireDataFragment) {}
+    fn entity_added(&mut self, _entity: &Entity, _data: &mut FireDataFragment) {}
+    fn entity_removed(&mut self, _entity: &Entity, _data: &mut FireDataFragment) {}
 
     // System control functions
     fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData);
-    fn pre_fire(&mut self, data: &mut FireData) {}
-    fn post_fire(&mut self, data: &mut FireData) {}
+    fn pre_fire(&mut self, _data: &mut FireData) {}
+    fn post_fire(&mut self, _data: &mut FireData) {}
 
 	// As any
 	fn as_any(&self) -> &dyn Any;
