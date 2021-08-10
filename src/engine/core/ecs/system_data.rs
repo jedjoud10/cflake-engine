@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::engine::{core::world::{EntityManager, Time, World}, input::InputManager, rendering::{shader::ShaderManager, texture::TextureManager}, resources::ResourceManager};
+use crate::engine::{core::world::{CustomWorldData, Time, World}, input::InputManager, rendering::{shader::ShaderManager, texture::TextureManager}, resources::ResourceManager};
 
-use super::component::{ComponentID, ComponentManager};
+use super::{component::{ComponentID, ComponentManager}, entity::EntityManager};
 
 // Data that will be passed to the fire events in systems
 pub struct FireData<'a> {
@@ -13,6 +13,7 @@ pub struct FireData<'a> {
     pub texture_manager: &'a mut TextureManager,
 	pub resource_manager: &'a mut ResourceManager,
     pub time_manager: &'a mut Time,
+	pub custom_data: &'a mut CustomWorldData,
 }
 // Data that will be passed some events in the systems that don't need all the world data
 pub struct FireDataFragment<'a> {

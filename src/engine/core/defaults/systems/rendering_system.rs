@@ -5,7 +5,7 @@ use crate::engine::core::ecs::{
     system::{System, SystemManager},
     system_data::{FireData, FireDataFragment, SystemData},
 };
-use crate::engine::core::world::{EntityManager, World};
+use crate::engine::core::world::{World};
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;

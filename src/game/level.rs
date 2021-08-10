@@ -3,6 +3,8 @@ use rand::prelude::SliceRandom;
 use crate::engine::core::defaults::components::components::Camera;
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::defaults::systems::*;
+use crate::engine::core::defaults::systems::camera_system::CameraSystem;
+use crate::engine::core::defaults::systems::sky_system::SkySystem;
 use crate::engine::core::ecs::entity::Entity;
 use crate::engine::core::ecs::system::System;
 use crate::engine::core::ecs::system_data::FireData;
@@ -22,7 +24,6 @@ pub fn register_components(world: &mut World) {
     world
         .component_manager
         .register_component::<transforms::Rotation>();
-    world.component_manager.register_component::<Camera>();
 }
 // Load the systems
 pub fn load_systems(world: &mut World) {
@@ -36,10 +37,19 @@ pub fn load_systems(world: &mut World) {
 		texture_manager: &mut world.texture_manager,
 		time_manager: &mut world.time_manager,
 		resource_manager: &mut world.resource_manager,
+		custom_data: &mut world.custom_data
 	};
 	let mut rendering_system = RenderingSystem::default();
 	rendering_system.setup_system(&mut data);
 	world.system_manager.add_system(Box::new(rendering_system));
+
+	let mut camera_system = CameraSystem::default();
+	camera_system.setup_system(&mut data);
+	world.system_manager.add_system(Box::new(camera_system));
+	
+	let mut sky_system = SkySystem::default();
+	sky_system.setup_system(&mut data);
+	world.system_manager.add_system(Box::new(sky_system));
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {

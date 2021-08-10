@@ -34,7 +34,7 @@ impl System for SkySystem {
     // Called for each entity in the system
     fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {
 		// Set the position of the sky sphere to always be the camera
-        let position = data.entity_manager.get_entity()
+        let position = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).get_component::<transforms::Position>(data.component_manager).position;
         *entity.get_component_mut::<transforms::Position>(data.component_manager).position = *position;
     }
 }
