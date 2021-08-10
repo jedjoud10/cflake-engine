@@ -3,7 +3,7 @@ use crate::engine::core::ecs::{
 	component::{Component, ComponentID, ComponentManager},
 	entity::Entity,
 	system::{System, SystemManager},
-	system_data::{FireData, FireDataFragment, SystemData},
+	system_data::{SystemData, SystemEventData, SystemEventDataLite},
 };
 use crate::engine::core::world::World;
 use crate::engine::rendering::model::Model;
@@ -29,29 +29,9 @@ pub struct RenderingSystem {
 	window: Window,
 }
 
-impl System for RenderingSystem {
-	// Wrappers around system data
-	fn get_system_data(&self) -> &SystemData {
-		return &self.system_data;
-	}
-
-	fn get_system_data_mut(&mut self) -> &mut SystemData {
-		return &mut self.system_data;
-	}
-
-	// When the system gets added to the world
-	fn system_added(&mut self, data: &mut FireData, system_id: u8) {
-		data.custom_data.render_system_id = system_id;
-	}
-
-	// Setup the system
-	fn setup_system(&mut self, data: &mut FireData) {
-		let mut system_data = &mut self.system_data;
-		system_data.link_component::<Renderer>(&mut data.component_manager);
-		system_data.link_component::<transforms::Position>(&mut data.component_manager);
-		system_data.link_component::<transforms::Rotation>(&mut data.component_manager);
-		system_data.link_component::<transforms::Scale>(&mut data.component_manager);
-
+impl RenderingSystem {
+	// Create the quad that will render the render buffer
+	fn create_screen_quad(&mut self, data: &mut SystemEventData) {
 		let mut quad_renderer_component = Renderer::default();
 		quad_renderer_component.model = Model::from_resource(
 			data.resource_manager
@@ -61,29 +41,35 @@ impl System for RenderingSystem {
 		.unwrap();
 		quad_renderer_component.shader_name = {
 			// Load the shader that will draw the quad
-			let mut shader = Shader::from_vr_fr_subshader_files(
+			let shader = Shader::from_vr_fr_subshader_files(
 				"passthrough.vrsh.glsl.pkg",
 				"screen_quad.frsh.glsl.pkg",
 				&mut data.resource_manager,
 				&mut data.shader_manager,
 			);
-			shader.finalize_shader();
-			let shader = data.shader_manager.cache_shader(shader).unwrap();
 			shader.name.clone()
 		};
 		quad_renderer_component.refresh_model();
 		self.quad_renderer = quad_renderer_component;
+	}
 
+	// Setup all the settings for opengl like culling and the clear color
+	fn setup_opengl(&mut self, default_size: (i32, i32)) {
 		unsafe {
 			gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-			let default_size = World::get_default_window_size();
 			gl::Viewport(0, 0, default_size.0, default_size.1);
 			gl::Enable(gl::DEPTH_TEST);
 			gl::Enable(gl::CULL_FACE);
 			gl::CullFace(gl::BACK);
+		}
+	}
+
+	// Setup the render buffer
+	fn setup_render_buffer(&mut self, default_size: (i32, i32)) {
+		unsafe {
+			let default_size: (u16, u16) = (default_size.0 as u16, default_size.1 as u16);
 			gl::GenFramebuffers(1, &mut self.framebuffer);
 			gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-			// Check if the frame buffer is alright
 			// Create the color render texture
 			self.color_texture = Texture::create_new_texture(
 				default_size.0 as u16,
@@ -173,9 +159,42 @@ impl System for RenderingSystem {
 			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 		}
 	}
+}
+
+impl System for RenderingSystem {
+	// Wrappers around system data
+	fn get_system_data(&self) -> &SystemData {
+		return &self.system_data;
+	}
+
+	fn get_system_data_mut(&mut self) -> &mut SystemData {
+		return &mut self.system_data;
+	}
+
+	// When the system gets added to the world
+	fn system_added(&mut self, data: &mut SystemEventData, system_id: u8) {
+		data.custom_data.render_system_id = system_id;
+	}
+
+	// Setup the system
+	fn setup_system(&mut self, data: &mut SystemEventData) {
+		let system_data = &mut self.system_data;
+		system_data.link_component::<Renderer>(&mut data.component_manager);
+		system_data.link_component::<transforms::Position>(&mut data.component_manager);
+		system_data.link_component::<transforms::Rotation>(&mut data.component_manager);
+		system_data.link_component::<transforms::Scale>(&mut data.component_manager);
+
+		// Create the screen quad
+		self.create_screen_quad(data);
+
+		// Then setup opengl and the render buffer
+		let default_size = World::get_default_window_size();
+		self.setup_opengl(default_size);
+		self.setup_render_buffer(default_size);
+	}
 
 	// Called for each entity in the system
-	fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {
+	fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
 		let _id = entity.entity_id;
 		let shader: &Shader;
 		let view_matrix: glam::Mat4;
@@ -197,7 +216,7 @@ impl System for RenderingSystem {
 		let model_matrix: glam::Mat4;
 		// Render the entity
 		{
-			let mut name = String::new();
+			let name: String;
 			// Get the model matrix
 			{
 				let position: glam::Vec3;
@@ -275,7 +294,7 @@ impl System for RenderingSystem {
 	}
 
 	// Called before each fire_entity event is fired
-	fn pre_fire(&mut self, data: &mut FireData) {
+	fn pre_fire(&mut self, data: &mut SystemEventData) {
 		unsafe {
 			gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
 			gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -283,7 +302,7 @@ impl System for RenderingSystem {
 	}
 
 	// Called after each fire_entity event has been fired
-	fn post_fire(&mut self, data: &mut FireData) {
+	fn post_fire(&mut self, data: &mut SystemEventData) {
 		let shader = data
 			.shader_manager
 			.get_shader(&self.quad_renderer.shader_name)
@@ -294,6 +313,8 @@ impl System for RenderingSystem {
 			.get_component::<transforms::Position>(data.component_manager)
 			.position;
 		shader.use_shader();
+
+		// Assign the render buffer textures to the screen shader so it could do deffered rendering
 		shader.set_texture2d(
 			shader.get_uniform_location("color_texture"),
 			self.color_texture.id,
@@ -336,14 +357,14 @@ impl System for RenderingSystem {
 	}
 
 	// When an entity gets added to this system
-	fn entity_added(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+	fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
 		let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager);
 		// Make sure we create the OpenGL data for this entity's model
 		rc.refresh_model();
 	}
 
 	// When an entity gets removed from this system
-	fn entity_removed(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+	fn entity_removed(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
 		let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager);
 		// Dispose the model when the entity gets destroyed
 		rc.dispose_model();

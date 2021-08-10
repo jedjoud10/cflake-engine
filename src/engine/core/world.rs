@@ -84,7 +84,7 @@ impl World {
 		// Check for default input events
 		self.check_default_input_events(window, glfw);
 		// Create the data for the systems
-		let mut data: FireData = FireData {
+		let mut data: SystemEventData = SystemEventData {
 			entity_manager: &mut self.entity_manager,
 			component_manager: &mut self.component_manager,
 			input_manager: &mut self.input_manager,
@@ -119,6 +119,10 @@ impl World {
 		// Toggle the fullscreen
 		if self.input_manager.map_pressed("fullscreen") {
 			self.toggle_fullscreen(glfw, window);
+		}
+		// Capture the fps
+		if self.input_manager.map_pressed("caputre_fps") {
+			println!("Current FPS: '{}', Delta: '{}'", self.time_manager.seconds_since_game_start, self.time_manager.delta_time);
 		}
 		// Change the debug view
 		if self.input_manager.map_pressed("change_debug_view") {
@@ -179,7 +183,7 @@ impl World {
 	}
 	// When we want to close the application
 	pub fn kill_world(&mut self) {
-		let mut data: FireDataFragment = FireDataFragment {
+		let mut data: SystemEventDataLite = SystemEventDataLite {
 			entity_manager: &mut self.entity_manager,
 			component_manager: &mut self.component_manager,
 		};
@@ -196,7 +200,7 @@ impl World {
 		// Since we cloned the entity variable we gotta update the entity manager with the new one
 		self.system_manager.add_entity_to_systems(
 			&entity,
-			&mut FireDataFragment {
+			&mut SystemEventDataLite {
 				entity_manager: &mut self.entity_manager,
 				component_manager: &mut self.component_manager,
 			},
@@ -274,6 +278,6 @@ pub struct CustomWorldData {
 // Static time variables
 #[derive(Default)]
 pub struct Time {
-	pub time_since_start: f64,
+	pub seconds_since_game_start: f64,
 	pub delta_time: f64,
 }

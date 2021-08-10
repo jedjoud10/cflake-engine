@@ -5,7 +5,7 @@ use crate::engine::core::{
 	ecs::{
 		entity::Entity,
 		system::System,
-		system_data::{FireData, FireDataFragment, SystemData},
+		system_data::{SystemData, SystemEventData, SystemEventDataLite},
 	},
 };
 
@@ -25,7 +25,7 @@ impl System for CameraSystem {
 	}
 
 	// Setup the system
-	fn setup_system(&mut self, data: &mut FireData) {
+	fn setup_system(&mut self, data: &mut SystemEventData) {
 		let mut system_data = self.get_system_data_mut();
 		system_data.link_component::<components::Camera>(data.component_manager);
 		system_data.link_component::<transforms::Position>(data.component_manager);
@@ -44,7 +44,7 @@ impl System for CameraSystem {
 	}
 
 	// Called for each entity in the system
-	fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {
+	fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
 		let position: glam::Vec3;
 		let rotation: glam::Quat;
 		let new_fov: f32;
@@ -129,7 +129,7 @@ impl System for CameraSystem {
 	}
 
 	// When an entity gets added to this system
-	fn entity_added(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+	fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
 		// First time we initialize the camera, setup the matrices
 		let position: glam::Vec3;
 		let rotation: glam::Quat;

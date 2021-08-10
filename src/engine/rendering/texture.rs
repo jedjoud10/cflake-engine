@@ -1,5 +1,5 @@
-use crate::engine::core::world::World;
 use crate::engine::resources::Resource;
+use crate::engine::{core::world::World, resources::ResourceManager};
 use gl;
 use std::{
 	collections::HashMap,
@@ -66,10 +66,14 @@ pub struct Texture {
 
 impl Texture {
 	// Loads a texture and caches it, then returns the texture id
-	pub fn load_from_file(file: &str, world: &mut World) -> Option<i16> {
-		let texture_resource = world.resource_manager.load_resource(file, "textures\\")?;
+	pub fn load_from_file(
+		file: &str,
+		resource_manager: &mut ResourceManager,
+		texture_manager: &mut TextureManager,
+	) -> Option<i16> {
+		let texture_resource = resource_manager.load_resource(file, "textures\\")?;
 		let texture = Texture::from_resource(texture_resource)?;
-		let id = world.texture_manager.cache_texture(texture);
+		let id = texture_manager.cache_texture(texture);
 		return Some(id);
 	}
 	// Convert the resource to a texture

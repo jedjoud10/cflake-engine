@@ -13,7 +13,7 @@ use super::{
 };
 
 // Data that will be passed to the fire events in systems
-pub struct FireData<'a> {
+pub struct SystemEventData<'a> {
 	pub entity_manager: &'a mut EntityManager,
 	pub component_manager: &'a mut ComponentManager,
 	pub input_manager: &'a mut InputManager,
@@ -24,7 +24,7 @@ pub struct FireData<'a> {
 	pub custom_data: &'a mut CustomWorldData,
 }
 // Data that will be passed some events in the systems that don't need all the world data
-pub struct FireDataFragment<'a> {
+pub struct SystemEventDataLite<'a> {
 	pub entity_manager: &'a mut EntityManager,
 	pub component_manager: &'a mut ComponentManager,
 }

@@ -2,7 +2,7 @@ use std::any::Any;
 
 use super::{
 	entity::Entity,
-	system_data::{FireData, FireDataFragment, SystemData, SystemState, SystemType},
+	system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
 };
 use crate::engine::core::world::{Time, World};
 
@@ -25,7 +25,7 @@ impl SystemManager {
 		&mut self,
 		removed_entity: Entity,
 		entity_id: u16,
-		data: &mut FireDataFragment,
+		data: &mut SystemEventDataLite,
 	) {
 		// Remove the entity from all the systems it was in
 		for system in self.systems.iter_mut() {
@@ -38,7 +38,7 @@ impl SystemManager {
 		}
 	}
 	// Add an entity to it's corresponding systems
-	pub fn add_entity_to_systems(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+	pub fn add_entity_to_systems(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
 		// Check if there are systems that need this entity
 		for system in self.systems.iter_mut() {
 			let system_data = system.get_system_data_mut();
@@ -58,13 +58,13 @@ impl SystemManager {
 		return id;
 	}
 	// Kill all the systems
-	pub fn kill_systems(&mut self, data: &mut FireDataFragment) {
+	pub fn kill_systems(&mut self, data: &mut SystemEventDataLite) {
 		for system in self.systems.iter_mut() {
 			system.end_system(data);
 		}
 	}
 	// Runs a specific type of system
-	pub fn run_system_type(&mut self, _system_type: SystemType, data: &mut FireData) {
+	pub fn run_system_type(&mut self, _system_type: SystemType, data: &mut SystemEventData) {
 		for system in self
 			.systems
 			.iter_mut()
@@ -109,11 +109,11 @@ impl SystemManager {
 
 pub trait System {
 	// Setup the system, link all the components and create default data
-	fn setup_system(&mut self, data: &mut FireData);
+	fn setup_system(&mut self, data: &mut SystemEventData);
 	// When the system gets added the world
-	fn system_added(&mut self, data: &mut FireData, system_id: u8) {}
+	fn system_added(&mut self, data: &mut SystemEventData, system_id: u8) {}
 	// Add an entity to the current system
-	fn add_entity(&mut self, entity: &Entity, data: &mut FireDataFragment) {
+	fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
 		{
 			let system_data = self.get_system_data_mut();
 			println!(
@@ -130,7 +130,7 @@ pub trait System {
 		&mut self,
 		entity_id: u16,
 		removed_entity: &Entity,
-		data: &mut FireDataFragment,
+		data: &mut SystemEventDataLite,
 	) {
 		let system_data = self.get_system_data_mut();
 		// Search for the entity with the matching entity_id
@@ -147,7 +147,7 @@ pub trait System {
 		self.entity_removed(removed_entity, data);
 	}
 	// Stop the system permanently
-	fn end_system(&mut self, data: &mut FireDataFragment) {
+	fn end_system(&mut self, data: &mut SystemEventDataLite) {
 		let system_data_clone = self.get_system_data().clone();
 		// Loop over all the entities and fire the entity removed event
 		for &entity_id in system_data_clone.entities.iter() {
@@ -158,7 +158,7 @@ pub trait System {
 		*self.get_system_data_mut() = system_data_clone;
 	}
 	// Run the system for a single iteration
-	fn run_system(&mut self, data: &mut FireData) {
+	fn run_system(&mut self, data: &mut SystemEventData) {
 		let system_data_clone = self.get_system_data().clone();
 		self.pre_fire(data);
 		// Loop over all the entities and update their components
@@ -175,13 +175,13 @@ pub trait System {
 	fn get_system_data_mut(&mut self) -> &mut SystemData;
 
 	// System Events
-	fn entity_added(&mut self, _entity: &Entity, _data: &mut FireDataFragment) {}
-	fn entity_removed(&mut self, _entity: &Entity, _data: &mut FireDataFragment) {}
+	fn entity_added(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
+	fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 
 	// System control functions
-	fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData);
-	fn pre_fire(&mut self, _data: &mut FireData) {}
-	fn post_fire(&mut self, _data: &mut FireData) {}
+	fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData);
+	fn pre_fire(&mut self, _data: &mut SystemEventData) {}
+	fn post_fire(&mut self, _data: &mut SystemEventData) {}
 
 	// As any
 	fn as_any(&self) -> &dyn Any;

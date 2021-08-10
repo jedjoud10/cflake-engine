@@ -1,7 +1,7 @@
 use crate::engine::core::ecs::{
 	entity::Entity,
 	system::System,
-	system_data::{FireData, SystemData},
+	system_data::{SystemData, SystemEventData},
 };
 
 #[derive(Default)]
@@ -20,10 +20,10 @@ impl System for TemplateSystem {
 	}
 
 	// Setup the system
-	fn setup_system(&mut self, data: &mut FireData) {}
+	fn setup_system(&mut self, data: &mut SystemEventData) {}
 
 	// Called for each entity in the system
-	fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {}
+	fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {}
 
 	// Turn this into "Any" so we can cast into child systems
 	fn as_any(&self) -> &dyn std::any::Any {

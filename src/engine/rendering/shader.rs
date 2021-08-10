@@ -91,12 +91,12 @@ impl Default for Shader {
 
 impl Shader {
 	// Creates a shader from a vertex subshader file and a fragment subshader file
-	pub fn from_vr_fr_subshader_files(
+	pub fn from_vr_fr_subshader_files<'a>(
 		vertex_file: &str,
 		fragment_file: &str,
-		resource_manager: &mut ResourceManager,
-		shader_manager: &mut ShaderManager,
-	) -> Self {
+		resource_manager: &'a mut ResourceManager,
+		shader_manager: &'a mut ShaderManager,
+	) -> &'a mut Self {
 		let mut shader = Self::default();
 		shader.name = format!("{}_{}", vertex_file, fragment_file);
 		{
@@ -127,7 +127,10 @@ impl Shader {
 				shader.link_subshader(&frag_subshader);
 			}
 		}
-		return shader;
+
+		shader.finalize_shader();
+		let cached_shader = shader_manager.cache_shader(shader).unwrap();
+		return cached_shader;
 	}
 	// Finalizes a vert/frag shader by compiling it
 	pub fn finalize_shader(&mut self) {

@@ -5,7 +5,7 @@ use glam::Vec4Swizzles;
 use crate::engine::core::ecs::{
 	entity::Entity,
 	system::System,
-	system_data::{FireData, SystemData},
+	system_data::{SystemData, SystemEventData},
 };
 
 #[derive(Default)]
@@ -24,7 +24,7 @@ impl System for SkySystem {
 	}
 
 	// Setup the system
-	fn setup_system(&mut self, data: &mut FireData) {
+	fn setup_system(&mut self, data: &mut SystemEventData) {
 		let system_data = self.get_system_data_mut();
 		system_data.link_component::<components::Sky>(data.component_manager);
 		system_data.link_component::<transforms::Position>(data.component_manager);
@@ -32,7 +32,7 @@ impl System for SkySystem {
 	}
 
 	// Called for each entity in the system
-	fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {
+	fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
 		// Set the position of the sky sphere to always be the camera
 		let position = data
 			.entity_manager
