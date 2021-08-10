@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use super::{
     entity::Entity,
     system_data::{FireData, FireDataFragment, SystemData, SystemState, SystemType},
@@ -31,18 +33,18 @@ impl SystemManager {
 
             // Only remove the entity from the systems that it was in
             if Self::is_entity_valid_for_system(&removed_entity, system_data) {
-                system.remove_entity(entity_id, &removed_entity, world);
+                system.remove_entity(entity_id, &removed_entity);
             }
         }
     }
     // Add an entity to it's corresponding systems
-    pub fn add_entity_to_systems(&mut self, entity: &Entity, world: &mut World) {
+    pub fn add_entity_to_systems(&mut self, entity: &Entity) {
         // Check if there are systems that need this entity
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
             if Self::is_entity_valid_for_system(&entity, system_data) {
                 // Add the entity to the system
-                system.add_entity(&entity, world);
+                system.add_entity(&entity);
             }
         }
     }
@@ -61,16 +63,17 @@ impl SystemManager {
         }
     }
     // Runs a specific type of system
-    pub fn run_system_type(&mut self, system_type: SystemType, data: &mut FireData) {
-        for system in self
-            .systems
-            .iter_mut()
-            .filter(|x| match x.get_system_data().stype {
-                SystemType::Update => return true,
-                _ => return false,
-            })
-        {
-            system.run_system(data);
+    pub fn run_system_type(&mut self, _system_type: SystemType, data: &mut FireData) {
+        for system in self.systems.iter_mut().filter(|x| match x.get_system_data().stype {
+				_system_type => true,
+                _ => false,
+            }) {
+				match system.get_system_data().state {
+					SystemState::Enabled(f) => {
+						system.run_system(data);
+					}
+					_ => { }
+				}            
         }
     }
     // Update system timings
@@ -88,14 +91,14 @@ impl SystemManager {
             }
         }
     }
-    // Run a specific system, firing off the pre-fire, entity-fire, and post-fire events
-    pub fn run_system(&mut self, system_id: u16, data: &mut FireData) {
-        let system = self.systems.get_mut(system_id as usize).unwrap();
-        system.run_system(data);
-    }
     // Gets a reference to a system
     pub fn get_system(&self, system_id: u16) -> &Box<dyn System> {
         let system = self.systems.get(system_id as usize).unwrap();
+        return system;
+    }
+	// Gets a mutable reference to a system
+    pub fn get_system_mut(&mut self, system_id: u16) -> &mut Box<dyn System> {
+        let system = self.systems.get_mut(system_id as usize).unwrap();
         return system;
     }
 }
@@ -104,7 +107,7 @@ pub trait System {
     // Setup the system, link all the components and create default data
     fn setup_system(&mut self, data: &mut FireData);
     // Add an entity to the current system
-    fn add_entity(&mut self, entity: &Entity, world: &mut World) {
+    fn add_entity(&mut self, entity: &Entity) {
         let system_data = self.get_system_data_mut();
         println!(
             "\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m",
@@ -114,7 +117,7 @@ pub trait System {
     }
     // Remove an entity from the current system
     // NOTE: The entity was already removed in the world global entities, so the "removed_entity" argument is just the clone of that removed entity
-    fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, world: &mut World) {
+    fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity) {
         let system_data = self.get_system_data_mut();
         // Search for the entity with the matching entity_id
         let system_entity_id = system_data
@@ -141,6 +144,7 @@ pub trait System {
     }
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut FireData) {
+		println!("TEST");
         let system_data_clone = self.get_system_data().clone();
         self.pre_fire(data);
         // Loop over all the entities and update their components
@@ -164,4 +168,8 @@ pub trait System {
     fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData);
     fn pre_fire(&mut self, data: &mut FireData) {}
     fn post_fire(&mut self, data: &mut FireData) {}
+
+	// As any
+	fn as_any(&self) -> &dyn Any;
+	fn as_any_mut(&mut self) -> &mut dyn Any;
 }

@@ -65,7 +65,7 @@ pub fn load_entities(world: &mut World) {
     camera.link_default_component::<components::Camera>(&mut world.component_manager);
 
     // Make it the default camera
-    world.default_camera_id = world.add_entity(camera);
+    world.custom_data.main_camera_entity_id = world.add_entity(camera);
 
     // Load the default shader
     let mut default_shader_name: String;

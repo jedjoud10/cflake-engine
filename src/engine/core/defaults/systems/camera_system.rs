@@ -134,6 +134,15 @@ impl System for CameraSystem {
         }
         let camera_component = entity.get_component_mut::<components::Camera>(data.component_manager);
         camera_component.update_projection_matrix();
-        camera_component.update_view_matrix(position, rotation);        
+        camera_component.update_view_matrix(position, rotation);
     }
+
+	// Turn this into "Any" so we can cast into child systems
+	fn as_any(&self) -> &dyn std::any::Any {
+		return self;
+	}
+
+	fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+		return self;
+	}
 }

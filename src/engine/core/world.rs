@@ -18,6 +18,7 @@ use crate::engine::rendering::shader::ShaderManager;
 use crate::engine::rendering::texture::TextureManager;
 
 use super::defaults::components::transforms::Position;
+use super::defaults::systems::rendering_system::RenderingSystem;
 
 //  The actual world
 pub struct World {
@@ -31,7 +32,6 @@ pub struct World {
     pub system_manager: SystemManager,
 	pub custom_data: CustomWorldData,
     pub window: Window,
-    pub default_camera_id: u16,
 }
 
 // Default world values
@@ -50,7 +50,6 @@ impl Default for World {
             texture_manager: TextureManager::default(),
             system_manager: SystemManager::default(),
 			custom_data: CustomWorldData::default(),
-            default_camera_id: 0,
             window: Window::default(),
         }
     }
@@ -186,6 +185,7 @@ impl World {
         let id = self.entity_manager.add_entity(entity.clone());
         let entity = self.entity_manager.get_entity(id).clone();
         // Since we cloned the entity variable we gotta update the entity manager with the new one
+		self.system_manager.add_entity_to_systems(&entity);
         *self.entity_manager.get_entity_mut(id) = entity;
         return id;
     }
@@ -214,31 +214,24 @@ impl World {
     pub fn resize_window_event(&mut self, size: (i32, i32)) {
         unsafe {
             gl::Viewport(0, 0, size.0, size.1);
-            /*
-            let system_component: &mut RendererS = self
-                .component_manager
-                .system_components
-                .get_mut(self.window.system_renderer_component_index as usize)
-                .unwrap()
-                .as_any_mut()
-                .downcast_mut()
-                .unwrap();
+            
+            let render_system= self.system_manager.get_system_mut(0).as_any_mut().downcast_mut::<RenderingSystem>().unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            system_component
+            render_system
                 .color_texture
                 .update_size(size.0 as u32, size.1 as u32);
-            system_component
+			render_system
                 .depth_stencil_texture
                 .update_size(size.0 as u32, size.1 as u32);
-            system_component
+			render_system
                 .normals_texture
                 .update_size(size.0 as u32, size.1 as u32);
-            system_component
+			render_system
                 .position_texture
                 .update_size(size.0 as u32, size.1 as u32);
-            */
+            
         }
-        let camera_entity_clone = self.get_entity(self.default_camera_id).clone();
+        let camera_entity_clone = self.get_entity(self.custom_data.main_camera_entity_id).clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component =
             camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager);

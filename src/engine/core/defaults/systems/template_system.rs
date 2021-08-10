@@ -26,4 +26,13 @@ impl System for TemplateSystem {
     // Called for each entity in the system
     fn fire_entity(&mut self, entity: &mut Entity, data: &mut FireData) {
     }
+
+	// Turn this into "Any" so we can cast into child systems
+    fn as_any(&self) -> &dyn std::any::Any {
+        return self;
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        return self;
+    }
 }

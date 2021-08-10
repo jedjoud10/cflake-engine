@@ -24,5 +24,4 @@ void main() {
 	} else if (debug_view == 2) {
 		color = diffuse;
 	}
-	color = vec3(uv_coordinates, 1);
 }
