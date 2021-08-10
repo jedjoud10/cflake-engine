@@ -247,36 +247,29 @@ impl System for RenderingSystem {
 		// Calculate the mvp matrix
 		let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
 		// Pass the MVP and the model matrix to the shader
-		shader.set_matrix_44_uniform(shader.get_uniform_location("mvp_matrix"), mvp_matrix);
-		shader.set_matrix_44_uniform(shader.get_uniform_location("model_matrix"), model_matrix);
-		shader.set_matrix_44_uniform(shader.get_uniform_location("view_matrix"), view_matrix);
+		shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
+		shader.set_matrix_44_uniform("model_matrix", model_matrix);
+		shader.set_matrix_44_uniform("view_matrix", view_matrix);
 		shader.set_scalar_2_uniform(
-			shader.get_uniform_location("resolution"),
+			"resolution",
 			(self.window.size.0 as f32, self.window.size.1 as f32),
 		);
 		shader.set_scalar_3_uniform(
-			shader.get_uniform_location("view_pos"),
+			"view_pos",
 			(camera_position.x, camera_position.y, camera_position.z),
 		);
+		shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
 		// Check if we even have a diffuse texture
 		if rc.diffuse_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
 			let diffuse_texture = data.texture_manager.get_texture(rc.diffuse_texture_id);
-			shader.set_texture2d(
-				shader.get_uniform_location("diffuse_tex"),
-				diffuse_texture.id,
-				gl::TEXTURE0,
-			);
+			shader.set_texture2d("diffuse_tex", diffuse_texture.id, gl::TEXTURE0);
 		}
 		// Check if we even have a normal texture
 		if rc.normal_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
 			let normal_texture = data.texture_manager.get_texture(rc.normal_texture_id);
-			shader.set_texture2d(
-				shader.get_uniform_location("normal_tex"),
-				normal_texture.id,
-				gl::TEXTURE1,
-			);
+			shader.set_texture2d("normal_tex", normal_texture.id, gl::TEXTURE1);
 		}
 		unsafe {
 			// Actually draw the array
@@ -315,29 +308,14 @@ impl System for RenderingSystem {
 		shader.use_shader();
 
 		// Assign the render buffer textures to the screen shader so it could do deffered rendering
-		shader.set_texture2d(
-			shader.get_uniform_location("color_texture"),
-			self.color_texture.id,
-			gl::TEXTURE0,
-		);
-		shader.set_texture2d(
-			shader.get_uniform_location("normals_texture"),
-			self.normals_texture.id,
-			gl::TEXTURE1,
-		);
-		shader.set_texture2d(
-			shader.get_uniform_location("position_texture"),
-			self.position_texture.id,
-			gl::TEXTURE2,
-		);
+		shader.set_texture2d("color_texture", self.color_texture.id, gl::TEXTURE0);
+		shader.set_texture2d("normals_texture", self.normals_texture.id, gl::TEXTURE1);
+		shader.set_texture2d("position_texture", self.position_texture.id, gl::TEXTURE2);
 		shader.set_scalar_3_uniform(
-			shader.get_uniform_location("view_pos"),
+			"view_pos",
 			(camera_position.x, camera_position.y, camera_position.z),
 		);
-		shader.set_int_uniform(
-			shader.get_uniform_location("debug_view"),
-			self.debug_view as i32,
-		);
+		shader.set_int_uniform("debug_view", self.debug_view as i32);
 		// Render the screen quad
 		unsafe {
 			gl::BindFramebuffer(gl::FRAMEBUFFER, 0);

@@ -122,7 +122,10 @@ impl World {
 		}
 		// Capture the fps
 		if self.input_manager.map_pressed("caputre_fps") {
-			println!("Current FPS: '{}', Delta: '{}'", self.time_manager.seconds_since_game_start, self.time_manager.delta_time);
+			println!(
+				"Current FPS: '{}', Delta: '{}'",
+				self.time_manager.seconds_since_game_start, self.time_manager.delta_time
+			);
 		}
 		// Change the debug view
 		if self.input_manager.map_pressed("change_debug_view") {

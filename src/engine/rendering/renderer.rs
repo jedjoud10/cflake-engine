@@ -23,6 +23,8 @@ pub struct Renderer {
 	// Rendering stuff
 	pub diffuse_texture_id: i16,
 	pub normal_texture_id: i16,
+	// Default parameters for the shader
+	pub uv_scale: glam::Vec2,
 }
 
 impl Default for Renderer {
@@ -34,6 +36,7 @@ impl Default for Renderer {
 			model: Model::default(),
 			diffuse_texture_id: -1,
 			normal_texture_id: -1,
+			uv_scale: glam::Vec2::ONE,
 		}
 	}
 }
@@ -69,7 +72,7 @@ impl Renderer {
 		let diffuse_texture_id =
 			Texture::load_from_file(diffuse_name, resource_manager, texture_manager).unwrap();
 		let normal_texture_id =
-			Texture::load_from_file(diffuse_name, resource_manager, texture_manager).unwrap();
+			Texture::load_from_file(normal_name, resource_manager, texture_manager).unwrap();
 		// Load the model resource
 		let model_resource = resource_manager
 			.load_resource(model_name, "models\\")
@@ -89,7 +92,7 @@ impl Renderer {
 		shader_manager: &mut ShaderManager,
 		shader_name: &str,
 		model_name: &str,
-	) -> Self {		
+	) -> Self {
 		// Load the model resource
 		let model_resource = resource_manager
 			.load_resource(model_name, "models\\")

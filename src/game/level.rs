@@ -96,7 +96,7 @@ pub fn load_entities(world: &mut World) {
 	let rc = Renderer::new(
 		&mut world.resource_manager,
 		&mut world.shader_manager,
-		&default_shader_name,
+		&shader_name,
 		"quad.mdl3d.pkg",
 	);
 	quad.link_component::<Renderer>(&mut world.component_manager, rc);
@@ -116,15 +116,16 @@ pub fn load_entities(world: &mut World) {
 	let mut cube = Entity::new("Cube");
 
 	// Link the component
-	let rc = Renderer::new_with_textures(
+	let mut rc = Renderer::new_with_textures(
 		&mut world.resource_manager,
 		&mut world.texture_manager,
 		&mut world.shader_manager,
 		&default_shader_name,
 		"cube.mdl3d.pkg",
-		"cute_saber_pic.png.pkg",
+		"diffuse.png.pkg",
 		"normal.png.pkg",
 	);
+	rc.uv_scale *= 10.0;
 	cube.link_component::<Renderer>(&mut world.component_manager, rc);
 	cube.link_default_component::<transforms::Position>(&mut world.component_manager);
 	cube.link_default_component::<transforms::Rotation>(&mut world.component_manager);

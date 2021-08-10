@@ -198,42 +198,50 @@ impl Shader {
 		}
 	}
 	// Set a scalar uniform
-	pub fn set_scalar_1_uniform(&self, location: i32, value: f32) {
+	pub fn set_scalar_1_uniform(&self, name: &str, value: f32) {
 		unsafe {
-			gl::Uniform1f(location, value);
+			gl::Uniform1f(self.get_uniform_location(name), value);
 		}
 	}
 	// Set a scalar x2 uniform
-	pub fn set_scalar_2_uniform(&self, location: i32, values: (f32, f32)) {
+	pub fn set_scalar_2_uniform(&self, name: &str, values: (f32, f32)) {
 		unsafe {
-			gl::Uniform2f(location, values.0, values.1);
+			gl::Uniform2f(self.get_uniform_location(name), values.0, values.1);
 		}
 	}
 	// Set a scalar x3 uniform
-	pub fn set_scalar_3_uniform(&self, location: i32, values: (f32, f32, f32)) {
+	pub fn set_scalar_3_uniform(&self, name: &str, values: (f32, f32, f32)) {
 		unsafe {
-			gl::Uniform3f(location, values.0, values.1, values.2);
+			gl::Uniform3f(
+				self.get_uniform_location(name),
+				values.0,
+				values.1,
+				values.2,
+			);
 		}
 	}
 	// Set a matrix 4x4
-	pub fn set_matrix_44_uniform(&self, location: i32, matrix: glam::Mat4) {
+	pub fn set_matrix_44_uniform(&self, name: &str, matrix: glam::Mat4) {
 		unsafe {
 			let ptr: *const f32 = &matrix.as_ref()[0];
-			gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
+			gl::UniformMatrix4fv(self.get_uniform_location(name), 1, gl::FALSE, ptr);
 		}
 	}
 	// Set a texture basically
-	pub fn set_texture2d(&self, location: i32, texture_id: u32, active_texture_id: u32) {
+	pub fn set_texture2d(&self, name: &str, texture_id: u32, active_texture_id: u32) {
 		unsafe {
 			gl::ActiveTexture(active_texture_id);
 			gl::BindTexture(gl::TEXTURE_2D, texture_id);
-			gl::Uniform1i(location, active_texture_id as i32 - 33984);
+			gl::Uniform1i(
+				self.get_uniform_location(name),
+				active_texture_id as i32 - 33984,
+			);
 		}
 	}
 	// Set a int
-	pub fn set_int_uniform(&self, location: i32, value: i32) {
+	pub fn set_int_uniform(&self, name: &str, value: i32) {
 		unsafe {
-			gl::Uniform1i(location, value);
+			gl::Uniform1i(self.get_uniform_location(name), value);
 		}
 	}
 }
