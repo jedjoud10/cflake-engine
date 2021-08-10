@@ -136,7 +136,7 @@ impl World {
 				.downcast_mut::<RenderingSystem>()
 				.unwrap();
 			render_system.debug_view += 1;
-			render_system.debug_view = render_system.debug_view % 3;
+			render_system.debug_view = render_system.debug_view % 4;
 		}
 	}
 	// Toggle fullscreen
@@ -244,18 +244,21 @@ impl World {
 				.downcast_mut::<RenderingSystem>()
 				.unwrap();
 			// Update the size of each texture that is bound to the framebuffer
+			let size: (u32, u32) = (size.0 as u32, size.1 as u32);
 			render_system
-				.color_texture
-				.update_size(size.0 as u32, size.1 as u32);
+				.diffuse_texture
+				.update_size(size.0, size.1);
 			render_system
 				.depth_stencil_texture
-				.update_size(size.0 as u32, size.1 as u32);
+				.update_size(size.0, size.1);
 			render_system
 				.normals_texture
-				.update_size(size.0 as u32, size.1 as u32);
+				.update_size(size.0, size.1);
 			render_system
 				.position_texture
-				.update_size(size.0 as u32, size.1 as u32);
+				.update_size(size.0, size.1);
+			render_system
+				.emissive_texture.update_size(size.0, size.1);
 		}
 		let camera_entity_clone = self
 			.get_entity(self.custom_data.main_camera_entity_id)

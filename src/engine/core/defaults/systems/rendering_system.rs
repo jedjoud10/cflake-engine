@@ -19,9 +19,10 @@ use std::ptr::null;
 pub struct RenderingSystem {
 	pub system_data: SystemData,
 	pub framebuffer: u32,
-	pub color_texture: Texture,
+	pub diffuse_texture: Texture,
 	pub normals_texture: Texture,
 	pub position_texture: Texture,
+	pub emissive_texture: Texture,
 	pub depth_stencil_texture: Texture,
 	pub quad_renderer_index: u16,
 	pub debug_view: u16,
@@ -70,8 +71,8 @@ impl RenderingSystem {
 			let default_size: (u16, u16) = (default_size.0 as u16, default_size.1 as u16);
 			gl::GenFramebuffers(1, &mut self.framebuffer);
 			gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-			// Create the color render texture
-			self.color_texture = Texture::create_new_texture(
+			// Create the diffuse render texture
+			self.diffuse_texture = Texture::create_new_texture(
 				default_size.0 as u16,
 				default_size.1 as u16,
 				gl::RGB,
@@ -94,6 +95,14 @@ impl RenderingSystem {
 				gl::RGB,
 				gl::UNSIGNED_BYTE,
 			);
+			// Create the emissive render texture
+			self.emissive_texture = Texture::create_new_texture(
+				default_size.0 as u16,
+				default_size.1 as u16,
+				gl::RGB32F,
+				gl::RGB,
+				gl::UNSIGNED_BYTE,
+			);
 			// Create the depth-stencil render texture
 			self.depth_stencil_texture = Texture::create_new_texture(
 				default_size.0 as u16,
@@ -103,12 +112,12 @@ impl RenderingSystem {
 				gl::UNSIGNED_INT_24_8,
 			);
 			// Bind the color texture to the color attachement 0 of the frame buffer
-			gl::BindTexture(gl::TEXTURE_2D, self.color_texture.id);
+			gl::BindTexture(gl::TEXTURE_2D, self.diffuse_texture.id);
 			gl::FramebufferTexture2D(
 				gl::FRAMEBUFFER,
 				gl::COLOR_ATTACHMENT0,
 				gl::TEXTURE_2D,
-				self.color_texture.id,
+				self.diffuse_texture.id,
 				0,
 			);
 			// Bind the normal texture to the color attachement 1 of the frame buffer
@@ -129,7 +138,15 @@ impl RenderingSystem {
 				self.position_texture.id,
 				0,
 			);
-
+			// Bind the emissive texture to the color attachement 3 of the frame buffer
+			gl::BindTexture(gl::TEXTURE_2D, self.emissive_texture.id);
+			gl::FramebufferTexture2D(
+				gl::FRAMEBUFFER,
+				gl::COLOR_ATTACHMENT3,
+				gl::TEXTURE_2D,
+				self.emissive_texture.id,
+				0,
+			);
 			// Bind depth-stencil render texture
 			gl::BindTexture(gl::TEXTURE_2D, self.depth_stencil_texture.id);
 			gl::FramebufferTexture2D(
@@ -140,17 +157,20 @@ impl RenderingSystem {
 				0,
 			);
 
-			// Hehe boii
 			let attachements = vec![
 				gl::COLOR_ATTACHMENT0,
 				gl::COLOR_ATTACHMENT1,
 				gl::COLOR_ATTACHMENT2,
+				gl::COLOR_ATTACHMENT3,
+				gl::COLOR_ATTACHMENT4
 			];
+			// Set the frame buffer attachements
 			gl::DrawBuffers(
 				attachements.len() as i32,
 				attachements.as_ptr() as *const u32,
 			);
 
+			// Check if the frame buffer is okay
 			if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
 				println!("Framebuffer is okay :)");
 			} else {
@@ -308,9 +328,10 @@ impl System for RenderingSystem {
 		shader.use_shader();
 
 		// Assign the render buffer textures to the screen shader so it could do deffered rendering
-		shader.set_texture2d("color_texture", self.color_texture.id, gl::TEXTURE0);
+		shader.set_texture2d("diffuse_texture", self.diffuse_texture.id, gl::TEXTURE0);
 		shader.set_texture2d("normals_texture", self.normals_texture.id, gl::TEXTURE1);
 		shader.set_texture2d("position_texture", self.position_texture.id, gl::TEXTURE2);
+		shader.set_texture2d("emissive_texture", self.emissive_texture.id, gl::TEXTURE3);
 		shader.set_scalar_3_uniform(
 			"view_pos",
 			(camera_position.x, camera_position.y, camera_position.z),
