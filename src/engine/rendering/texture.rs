@@ -1,6 +1,7 @@
 use crate::engine::resources::Resource;
 use crate::engine::{core::world::World, resources::ResourceManager};
 use gl;
+use image::EncodableLayout;
 use std::{
 	collections::HashMap,
 	ffi::{c_void, CString},
@@ -84,18 +85,12 @@ impl Texture {
 				let height = texture.height;
 
 				// Turn the compressed png bytes into their raw form
-				let image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes))
-					.with_guessed_format()
-					.unwrap();
-				let raw_bytes = image
-					.with_guessed_format()
-					.unwrap()
-					.decode()
-					.unwrap()
-					.into_bytes();
+				let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
+				image.set_format(image::ImageFormat::Png);
+				let decoded = image.with_guessed_format().unwrap().decode().unwrap();
+				let test = decoded.to_rgb8();
 
-				let mut new_texture =
-					Self::create_rgb_texture(texture.name.clone(), width, height, &raw_bytes);
+				let mut new_texture = Self::create_rgb_texture(texture.name.clone(), width, height, &test.as_bytes().to_owned());
 				new_texture.name = texture.name.clone();
 				return Some(new_texture);
 			}

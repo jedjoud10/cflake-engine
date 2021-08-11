@@ -110,7 +110,7 @@ pub fn load_entities(world: &mut World) {
 		&mut world.shader_manager,
 		world.shader_defaults.default_shader_name.as_str().clone(),
 		"cube.mdl3d.pkg",
-		vec!["diffuse.png.pkg", "normals.png.pkg"],
+		vec!["peko.png.pkg", "normals.png.pkg"],
 	);
 	rc.uv_scale *= 10.0;
 	cube.link_component::<Renderer>(&mut world.component_manager, rc);
