@@ -65,7 +65,7 @@ impl Renderer {
 		shader_manager: &mut ShaderManager,
 		shader_name: &str,
 		model_name: &str,
-		texture_names: Vec<&str>
+		texture_names: Vec<&str>,
 	) -> Self {
 		// Temp variables holding the global IDs of the textures
 		let mut diffuse_texture_id = -1;
@@ -75,11 +75,15 @@ impl Renderer {
 			match i {
 				0 => {
 					// Diffuse texture
-					diffuse_texture_id = Texture::load_from_file(shader_name, resource_manager, texture_manager).unwrap();		
+					diffuse_texture_id =
+						Texture::load_from_file(shader_name, resource_manager, texture_manager)
+							.unwrap();
 				}
 				1 => {
 					// Normals texture
-					normals_texture_id = Texture::load_from_file(shader_name, resource_manager, texture_manager).unwrap();		
+					normals_texture_id =
+						Texture::load_from_file(shader_name, resource_manager, texture_manager)
+							.unwrap();
 				}
 				2 => {
 					// AO texture

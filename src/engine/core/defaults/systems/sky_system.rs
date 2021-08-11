@@ -66,7 +66,7 @@ impl System for SkySystem {
 			&sky_shader_name,
 			"sphere.mdl3d.pkg",
 		);
-		
+
 		// Make the skysphere inside out, so we can see the insides only
 		rc.model.flip_triangles();
 		sky.link_component::<Renderer>(&mut data.component_manager, rc);
@@ -74,7 +74,12 @@ impl System for SkySystem {
 		sky.link_component::<transforms::Rotation>(
 			&mut data.component_manager,
 			transforms::Rotation {
-				rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, 90.0_f32.to_radians(), 0.0, 0.0),
+				rotation: glam::Quat::from_euler(
+					glam::EulerRot::XYZ,
+					90.0_f32.to_radians(),
+					0.0,
+					0.0,
+				),
 			},
 		);
 		sky.link_component::<transforms::Scale>(

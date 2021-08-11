@@ -177,7 +177,7 @@ pub trait System {
 		}
 		*self.get_system_data_mut() = system_data_clone;
 		self.post_fire(data);
-	}	
+	}
 
 	// Getters for the system data
 	fn get_system_data(&self) -> &SystemData;
@@ -185,7 +185,9 @@ pub trait System {
 
 	// System Events
 	// This one is when we have a single entity in a system, like the sky system
-	fn additional_entities(&mut self, _data: &mut SystemEventData) -> Vec<Entity> { Vec::new() }
+	fn additional_entities(&mut self, _data: &mut SystemEventData) -> Vec<Entity> {
+		Vec::new()
+	}
 
 	fn entity_added(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 	fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}

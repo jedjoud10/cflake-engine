@@ -341,7 +341,12 @@ impl ResourceManager {
 						}
 						"png" => {
 							// This is a texture
-							let image = ImageReader::open(path.clone()).unwrap().with_guessed_format().unwrap().decode().unwrap(); 
+							let image = ImageReader::open(path.clone())
+								.unwrap()
+								.with_guessed_format()
+								.unwrap()
+								.decode()
+								.unwrap();
 							let dimensions = image.dimensions();
 							println!("{:?}", dimensions);
 							resource = Resource::Texture(LoadedTexture {

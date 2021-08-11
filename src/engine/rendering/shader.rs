@@ -12,7 +12,7 @@ use std::{
 #[derive(Default)]
 pub struct ShaderManager {
 	pub shaders: HashMap<String, Shader>,
-	pub subshaders: HashMap<String, SubShader>,	
+	pub subshaders: HashMap<String, SubShader>,
 }
 
 // Struct holding the names of the default shaders
@@ -62,12 +62,16 @@ impl ShaderManager {
 		} else {
 			return None;
 		}
-	}	
+	}
 }
 
 impl ShaderDefaults {
 	// Load all the default shaders
-	pub fn load_default_shaders(&mut self, resource_manager: &mut ResourceManager, shader_manager: &mut ShaderManager) {
+	pub fn load_default_shaders(
+		&mut self,
+		resource_manager: &mut ResourceManager,
+		shader_manager: &mut ShaderManager,
+	) {
 		// Load the default shader
 		self.default_shader_name = {
 			let default_shader = Shader::from_vr_fr_subshader_files(

@@ -45,7 +45,8 @@ impl World {
 		self.window.size = Self::get_default_window_size();
 		window.set_cursor_mode(glfw::CursorMode::Disabled);
 		window.set_cursor_pos(0.0, 0.0);
-		self.shader_defaults.load_default_shaders(&mut self.resource_manager, &mut self.shader_manager);
+		self.shader_defaults
+			.load_default_shaders(&mut self.resource_manager, &mut self.shader_manager);
 		// Test stuff
 		/*
 		self.component_manager.register_component::<Position>();
@@ -66,7 +67,10 @@ impl World {
 			resource_manager: &mut self.resource_manager,
 			custom_data: &mut self.custom_data,
 		};
-		let new_entities = self.system_manager.add_additional_entities(&mut data).clone();
+		let new_entities = self
+			.system_manager
+			.add_additional_entities(&mut data)
+			.clone();
 		self.add_entities(new_entities);
 	}
 	// We do the following in this function

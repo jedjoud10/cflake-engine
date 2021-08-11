@@ -84,15 +84,18 @@ impl Texture {
 				let height = texture.height;
 
 				// Turn the compressed png bytes into their raw form
-				let image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes)).with_guessed_format().unwrap();
-				let raw_bytes = image.with_guessed_format().unwrap().decode().unwrap().into_bytes();
+				let image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes))
+					.with_guessed_format()
+					.unwrap();
+				let raw_bytes = image
+					.with_guessed_format()
+					.unwrap()
+					.decode()
+					.unwrap()
+					.into_bytes();
 
-				let mut new_texture = Self::create_rgb_texture(
-					texture.name.clone(),
-					width,
-					height,
-					&raw_bytes,
-				);
+				let mut new_texture =
+					Self::create_rgb_texture(texture.name.clone(), width, height, &raw_bytes);
 				new_texture.name = texture.name.clone();
 				return Some(new_texture);
 			}

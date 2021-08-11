@@ -1,4 +1,8 @@
-use crate::engine::core::ecs::{entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}};
+use crate::engine::core::ecs::{
+	entity::Entity,
+	system::System,
+	system_data::{SystemData, SystemEventData, SystemEventDataLite},
+};
 
 #[derive(Default)]
 pub struct TemplateSystem {
@@ -22,7 +26,9 @@ impl System for TemplateSystem {
 	fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {}
 
 	// Add additional entities related to this system
-	fn additional_entities(&mut self, _data: &mut SystemEventData) -> Vec<Entity> { Vec::new() }
+	fn additional_entities(&mut self, _data: &mut SystemEventData) -> Vec<Entity> {
+		Vec::new()
+	}
 
 	// Turn this into "Any" so we can cast into child systems
 	fn as_any(&self) -> &dyn std::any::Any {

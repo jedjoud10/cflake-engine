@@ -68,7 +68,7 @@ pub fn load_entities(world: &mut World) {
 	camera.link_default_component::<transforms::Rotation>(&mut world.component_manager);
 	camera.link_default_component::<components::Camera>(&mut world.component_manager);
 	// Make it the default camera
-	world.custom_data.main_camera_entity_id = world.add_entity(camera);	
+	world.custom_data.main_camera_entity_id = world.add_entity(camera);
 
 	// Simple quad
 	let mut quad = Entity::new("Quad");
@@ -110,12 +110,13 @@ pub fn load_entities(world: &mut World) {
 		&mut world.texture_manager,
 		&mut world.shader_manager,
 		world.shader_defaults.default_shader_name.as_str().clone(),
-		"cube.mdl3d.pkg",vec!["diffuse.png.pkg", "normals.png.pkg"]
+		"cube.mdl3d.pkg",
+		vec!["diffuse.png.pkg", "normals.png.pkg"],
 	);
 	rc.uv_scale *= 10.0;
 	cube.link_component::<Renderer>(&mut world.component_manager, rc);
 	cube.link_default_component::<transforms::Position>(&mut world.component_manager);
 	cube.link_default_component::<transforms::Rotation>(&mut world.component_manager);
 	cube.link_default_component::<transforms::Scale>(&mut world.component_manager);
-	world.add_entity(cube);		
+	world.add_entity(cube);
 }
