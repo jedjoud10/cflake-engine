@@ -33,6 +33,11 @@ impl System for SkySystem {
 		system_data.link_component::<transforms::Scale>(data.component_manager);
 	}
 
+	// Update the sun rotation
+	fn pre_fire(&mut self, data: &mut SystemEventData) {
+		data.custom_data.sun_rotation = glam::Quat::from_euler(glam::EulerRot::XYZ, data.time_manager.seconds_since_game_start as f32 / 4.0, 0.0, 0.0);
+	}
+
 	// Called for each entity in the system
 	fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
 		// Set the position of the sky sphere to always be the camera

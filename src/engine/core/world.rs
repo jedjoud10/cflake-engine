@@ -281,6 +281,7 @@ impl World {
 pub struct CustomWorldData {
 	pub main_camera_entity_id: u16,
 	pub render_system_id: u8,
+	pub sun_rotation: glam::Quat,
 }
 // Static time variables
 #[derive(Default)]

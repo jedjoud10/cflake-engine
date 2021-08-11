@@ -4,6 +4,7 @@ uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D position_texture;
 uniform sampler2D emissive_texture;
+uniform vec3 directional_light_dir;
 uniform vec3 view_pos;
 uniform int debug_view;
 in vec2 uv_coordinates;
@@ -25,21 +26,18 @@ void main() {
 	vec3 position = texture(position_texture, uv_coordinates).xyz;
 	vec3 emissive = texture(emissive_texture, uv_coordinates).xyz;
 
-	// Light direction
-	vec3 light_dir = vec3(0, 1, 0);
-
 	// Calculate specular
 	vec3 view_dir = normalize(view_pos - position);
-	vec3 reflect_dir = reflect(-light_dir, normal);
+	vec3 reflect_dir = reflect(-directional_light_dir, normal);
 	float specular = pow(max(dot(view_dir, reflect_dir), 0), 64);
 	
 	// Calculate the diffuse lighting
-	float light_val = max(dot(normal, normalize(light_dir)), 0);
+	float light_val = max(dot(normal, normalize(directional_light_dir)), 0);
 
 	// Used for ambient lighting
 	vec3 ambient_lighting_color = vec3(0, 112, 204) / 255.0;
-	float ambient_lighting_strengh = 0.1;
-	float light_val_inverted = max(-dot(normal, normalize(light_dir)), 0) * ambient_lighting_strengh;
+	float ambient_lighting_strengh = 0.04;
+	float light_val_inverted = max(-dot(normal, normalize(directional_light_dir)), 0) * ambient_lighting_strengh;
 
 	// Add everything
 	vec3 final_color = light_val_inverted * diffuse * ambient_lighting_color;
