@@ -274,7 +274,8 @@ impl ResourceManager {
 					{
 						// Hash the name
 						let mut hasher = DefaultHasher::new();
-						format!("{}\\{}", sub_dir_name.to_str().unwrap(), name).hash(&mut hasher);
+						format!("{}\\{}", sub_dir_name.to_str().unwrap(), format!("{}.{}", name, extension)).hash(&mut hasher);
+						println!("{}", format!("{}\\{}", sub_dir_name.to_str().unwrap(), format!("{}.{}", name, extension)));
 						let hashed_name = hasher.finish();
 						// The timestamp of the current resource
 						let resource_timestamp = opened_file
@@ -542,7 +543,7 @@ impl ResourceManager {
 						{
 							// Hash the name
 							let mut hasher = DefaultHasher::new();
-							format!("{}\\{}", sub_dir_name.to_str().unwrap(), name)
+							format!("{}\\{}", sub_dir_name.to_str().unwrap(), format!("{}.{}", name, extension))
 								.hash(&mut hasher);
 							hashed_name = hasher.finish();
 						}
@@ -553,6 +554,12 @@ impl ResourceManager {
 				}
 			}
 		}
+		let mut log_file = OpenOptions::new()
+			.write(true)
+			.open(log_file_path.clone())
+			.unwrap();
+		log_file.set_len(0);
+		let mut log_writer = BufWriter::new(log_file);
 		// Now loop through all the packed files and delete the ones that are not present in the log file
 		let packed_files = read_dir(packed_resources_dir).unwrap();
 		println!("{:?}", hashed_names_timestamps);
@@ -576,9 +583,29 @@ impl ResourceManager {
 					} else {
 						// This file does not exist, so delete it
 						remove_file(packed_file_path.unwrap());
+						// And also remove it from the logs file
+
+						// Hash the name
+						let mut hashed_name: u64 = 0;
+						{
+							let mut hasher = DefaultHasher::new();
+							let new_name_split = name.split(".pkg").collect::<Vec<&str>>()[..1].join(".");
+							format!("{}\\{}", sub_dir_name, new_name_split).hash(&mut hasher);
+							println!("{}", format!("{}\\{}", sub_dir_name, new_name_split));
+							hashed_name = hasher.finish();
+						}
+						println!("{}", hashed_name);
+						println!("{}", hashed_names_timestamps.len());
+						hashed_names_timestamps.remove(&hashed_name);
+						println!("{}", hashed_names_timestamps.len());
 					}
 				}
 			}
+		}
+		// Rewrite the log file
+		for (name, timestamp) in hashed_names_timestamps {
+			log_writer.write_u64::<LittleEndian>(name);
+			log_writer.write_u64::<LittleEndian>(timestamp);
 		}
 	}
 }

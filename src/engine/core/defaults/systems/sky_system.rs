@@ -35,7 +35,7 @@ impl System for SkySystem {
 
 	// Update the sun rotation
 	fn pre_fire(&mut self, data: &mut SystemEventData) {
-		data.custom_data.sun_rotation = glam::Quat::from_euler(glam::EulerRot::XYZ, data.time_manager.seconds_since_game_start as f32 / 4.0, 0.0, 0.0);
+		data.custom_data.sun_rotation = glam::Quat::from_euler(glam::EulerRot::XYZ, data.time_manager.seconds_since_game_start as f32 / 4.0, data.time_manager.seconds_since_game_start as f32 / 4.0, data.time_manager.seconds_since_game_start as f32 / 4.0);
 	}
 
 	// Called for each entity in the system
@@ -65,11 +65,13 @@ impl System for SkySystem {
 			);
 			shader.name.clone()
 		};
-		let mut rc = Renderer::new(
+		let mut rc = Renderer::new_with_textures(
 			&mut data.resource_manager,
+			&mut data.texture_manager,
 			&mut data.shader_manager,
 			&sky_shader_name,
 			"sphere.mdl3d.pkg",
+			vec!["peko.png.pkg"]
 		);
 
 		// Make the skysphere inside out, so we can see the insides only

@@ -7,6 +7,9 @@ in vec4 gl_FragCoord;
 in vec3 m_normal;
 in vec2 m_uv;
 void main() {
-	frag_emissive = vec3(0.95, 0.95, 0.95);
+	// Use the diffuse texture as the sky gradient
+	float light_dir = dot(m_normal, vec3(0, 1, 0)) / 2 + 1;
+	vec3 color = texture(diffuse_tex, vec2(0, light_dir)).xyz;
+	frag_emissive = color;
 	frag_normal = vec3(0, 0, 0);
 }

@@ -4,6 +4,7 @@ uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D position_texture;
 uniform sampler2D emissive_texture;
+uniform sampler2D depth_stencil_texture;
 uniform vec3 directional_light_dir;
 uniform vec3 view_pos;
 uniform int debug_view;
@@ -44,12 +45,16 @@ void main() {
 	final_color += light_val * diffuse;
 	final_color + specular;
 
+	vec3 depth_stencil = texture(depth_stencil_texture, uv_coordinates).xyz;
+	depth_stencil.x = depth_stencil.x;
+	vec3 depth = vec3(depth_stencil.x, 0, 0);
+
 	if (debug_view == 0) {
 		color = max(final_color, emissive);
 		//color = aces(color);
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
-		color = diffuse;
+		color = depth;
 	}
 }

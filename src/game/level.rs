@@ -84,7 +84,6 @@ pub fn load_entities(world: &mut World) {
 	// Link the component
 	let rc = Renderer::new(
 		&mut world.resource_manager,
-		&mut world.shader_manager,
 		&shader_name,
 		"quad.mdl3d.pkg",
 	);

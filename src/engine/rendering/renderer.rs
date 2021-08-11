@@ -113,7 +113,6 @@ impl Renderer {
 	// Create a new renderer using the name of a model, name of a shader, but this time without the textures
 	pub fn new(
 		resource_manager: &mut ResourceManager,
-		shader_manager: &mut ShaderManager,
 		shader_name: &str,
 		model_name: &str,
 	) -> Self {

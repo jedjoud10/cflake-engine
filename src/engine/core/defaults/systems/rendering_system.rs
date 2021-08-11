@@ -332,6 +332,7 @@ impl System for RenderingSystem {
 		shader.set_texture2d("normals_texture", self.normals_texture.id, gl::TEXTURE1);
 		shader.set_texture2d("position_texture", self.position_texture.id, gl::TEXTURE2);
 		shader.set_texture2d("emissive_texture", self.emissive_texture.id, gl::TEXTURE3);
+		shader.set_texture2d("depth_stencil_texture", self.depth_stencil_texture.id, gl::TEXTURE4);
 		let light_dir = data.custom_data.sun_rotation.mul_vec3(glam::vec3(0.0, 1.0, 0.0));
 		shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
 		shader.set_scalar_3_uniform(
