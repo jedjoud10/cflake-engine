@@ -286,9 +286,9 @@ impl System for RenderingSystem {
 			shader.set_texture2d("diffuse_tex", diffuse_texture.id, gl::TEXTURE0);
 		}
 		// Check if we even have a normal texture
-		if rc.normal_texture_id != -1 {
+		if rc.normals_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
-			let normal_texture = data.texture_manager.get_texture(rc.normal_texture_id);
+			let normal_texture = data.texture_manager.get_texture(rc.normals_texture_id);
 			shader.set_texture2d("normal_tex", normal_texture.id, gl::TEXTURE1);
 		}
 		unsafe {

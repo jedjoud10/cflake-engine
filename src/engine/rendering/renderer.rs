@@ -22,7 +22,7 @@ pub struct Renderer {
 	pub model: Model,
 	// Rendering stuff
 	pub diffuse_texture_id: i16,
-	pub normal_texture_id: i16,
+	pub normals_texture_id: i16,
 	// Default parameters for the shader
 	pub uv_scale: glam::Vec2,
 }
@@ -35,7 +35,7 @@ impl Default for Renderer {
 			shader_name: String::default(),
 			model: Model::default(),
 			diffuse_texture_id: -1,
-			normal_texture_id: -1,
+			normals_texture_id: -1,
 			uv_scale: glam::Vec2::ONE,
 		}
 	}
@@ -65,14 +65,34 @@ impl Renderer {
 		shader_manager: &mut ShaderManager,
 		shader_name: &str,
 		model_name: &str,
-		diffuse_name: &str,
-		normal_name: &str,
+		texture_names: Vec<&str>
 	) -> Self {
+		// Temp variables holding the global IDs of the textures
+		let mut diffuse_texture_id = -1;
+		let mut normals_texture_id = -1;
 		// Load the textures
-		let diffuse_texture_id =
-			Texture::load_from_file(diffuse_name, resource_manager, texture_manager).unwrap();
-		let normal_texture_id =
-			Texture::load_from_file(normal_name, resource_manager, texture_manager).unwrap();
+		for (i, shader_name) in texture_names.iter().enumerate() {
+			match i {
+				0 => {
+					// Diffuse texture
+					diffuse_texture_id = Texture::load_from_file(shader_name, resource_manager, texture_manager).unwrap();		
+				}
+				1 => {
+					// Normals texture
+					normals_texture_id = Texture::load_from_file(shader_name, resource_manager, texture_manager).unwrap();		
+				}
+				2 => {
+					// AO texture
+				}
+				3 => {
+					// Roughness texture
+				}
+				3 => {
+					// Metallic texture
+				}
+				_ => {}
+			}
+		}
 		// Load the model resource
 		let model_resource = resource_manager
 			.load_resource(model_name, "models\\")
@@ -82,7 +102,7 @@ impl Renderer {
 			shader_name: shader_name.to_string(),
 			model,
 			diffuse_texture_id,
-			normal_texture_id,
+			normals_texture_id,
 			..Self::default()
 		};
 	}

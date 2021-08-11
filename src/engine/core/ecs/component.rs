@@ -10,12 +10,22 @@ pub trait Component {
 }
 
 // Struct used to get the component ID of specific components, entities, and systems
-#[derive(Default)]
 pub struct ComponentManager {
 	pub component_ids: HashMap<String, u16>,
 	pub components: Vec<Box<dyn Component>>,
 	pub discrete_components: Vec<Box<dyn Component>>,
 	pub current_component_id: u16,
+}
+
+impl Default for ComponentManager {
+    fn default() -> Self {
+        Self {
+			component_ids: HashMap::new(),
+			components: Vec::new(),
+			discrete_components: Vec::new(),
+			current_component_id: 1,
+		}
+    }
 }
 
 // Implement all the functions

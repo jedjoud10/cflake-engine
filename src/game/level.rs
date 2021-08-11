@@ -68,18 +68,7 @@ pub fn load_entities(world: &mut World) {
 	camera.link_default_component::<transforms::Rotation>(&mut world.component_manager);
 	camera.link_default_component::<components::Camera>(&mut world.component_manager);
 	// Make it the default camera
-	world.custom_data.main_camera_entity_id = world.add_entity(camera);
-
-	// Load the default shader
-	let default_shader_name: String = {
-		let default_shader = Shader::from_vr_fr_subshader_files(
-			"default.vrsh.glsl.pkg",
-			"default.frsh.glsl.pkg",
-			&mut world.resource_manager,
-			&mut world.shader_manager,
-		);
-		default_shader.name.clone()
-	};
+	world.custom_data.main_camera_entity_id = world.add_entity(camera);	
 
 	// Simple quad
 	let mut quad = Entity::new("Quad");
@@ -120,50 +109,13 @@ pub fn load_entities(world: &mut World) {
 		&mut world.resource_manager,
 		&mut world.texture_manager,
 		&mut world.shader_manager,
-		&default_shader_name,
-		"cube.mdl3d.pkg",
-		"diffuse.png.pkg",
-		"normal.png.pkg",
+		world.shader_defaults.default_shader_name.as_str().clone(),
+		"cube.mdl3d.pkg",vec!["diffuse.png.pkg", "normals.png.pkg"]
 	);
 	rc.uv_scale *= 10.0;
 	cube.link_component::<Renderer>(&mut world.component_manager, rc);
 	cube.link_default_component::<transforms::Position>(&mut world.component_manager);
 	cube.link_default_component::<transforms::Rotation>(&mut world.component_manager);
 	cube.link_default_component::<transforms::Scale>(&mut world.component_manager);
-	world.add_entity(cube);
-
-	// Create the sky entity
-	let mut sky = Entity::new("Sky");
-	// Use a custom shader
-	let sky_shader_name: String = {
-		let mut shader = Shader::from_vr_fr_subshader_files(
-			"default.vrsh.glsl.pkg",
-			"sky.frsh.glsl.pkg",
-			&mut world.resource_manager,
-			&mut world.shader_manager,
-		);
-		shader.name.clone()
-	};
-	let mut rc = Renderer::new(
-		&mut world.resource_manager,
-		&mut world.shader_manager,
-		&sky_shader_name,
-		"sphere.mdl3d.pkg",
-	);
-	// Make the skysphere inside out, so we can see the insides only
-	rc.model.flip_triangles();
-	sky.link_component::<Renderer>(&mut world.component_manager, rc);
-	sky.link_default_component::<transforms::Position>(&mut world.component_manager);
-	sky.link_component::<transforms::Rotation>(
-		&mut world.component_manager,
-		transforms::Rotation {
-			rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, 90.0_f32.to_radians(), 0.0, 0.0),
-		},
-	);
-	sky.link_component::<transforms::Scale>(
-		&mut world.component_manager,
-		transforms::Scale { scale: 900.0 },
-	);
-	sky.link_default_component::<components::Sky>(&mut world.component_manager);
-	world.add_entity(sky);
+	world.add_entity(cube);		
 }

@@ -1,5 +1,7 @@
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::world::World;
+use crate::engine::rendering::renderer::Renderer;
+use crate::engine::rendering::shader::Shader;
 use glam::Vec4Swizzles;
 
 use crate::engine::core::ecs::{
@@ -42,6 +44,45 @@ impl System for SkySystem {
 		*entity
 			.get_component_mut::<transforms::Position>(data.component_manager)
 			.position = *position;
+	}
+
+	// Add additional entities related to this system
+	fn additional_entities(&mut self, data: &mut SystemEventData) -> Vec<Entity> {
+		// Create the sky entity
+		let mut sky = Entity::new("Sky");
+		// Use a custom shader
+		let sky_shader_name: String = {
+			let mut shader = Shader::from_vr_fr_subshader_files(
+				"default.vrsh.glsl.pkg",
+				"sky.frsh.glsl.pkg",
+				&mut data.resource_manager,
+				&mut data.shader_manager,
+			);
+			shader.name.clone()
+		};
+		let mut rc = Renderer::new(
+			&mut data.resource_manager,
+			&mut data.shader_manager,
+			&sky_shader_name,
+			"sphere.mdl3d.pkg",
+		);
+		
+		// Make the skysphere inside out, so we can see the insides only
+		rc.model.flip_triangles();
+		sky.link_component::<Renderer>(&mut data.component_manager, rc);
+		sky.link_default_component::<transforms::Position>(&mut data.component_manager);
+		sky.link_component::<transforms::Rotation>(
+			&mut data.component_manager,
+			transforms::Rotation {
+				rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, 90.0_f32.to_radians(), 0.0, 0.0),
+			},
+		);
+		sky.link_component::<transforms::Scale>(
+			&mut data.component_manager,
+			transforms::Scale { scale: 900.0 },
+		);
+		sky.link_default_component::<components::Sky>(&mut data.component_manager);
+		vec![sky]
 	}
 
 	// Turn this into "Any" so we can cast into child systems

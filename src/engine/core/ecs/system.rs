@@ -48,6 +48,15 @@ impl SystemManager {
 			}
 		}
 	}
+	// Add the additional entities in all the systems
+	pub fn add_additional_entities(&mut self, data: &mut SystemEventData) -> Vec<Entity> {
+		let mut entities: Vec<Entity> = Vec::new();
+		for system in self.systems.iter_mut() {
+			entities.append(&mut system.additional_entities(data));
+		}
+		return entities;
+	}
+
 	// Add a system to the world, and returns it's system ID
 	pub fn add_system<T: 'static + System>(&mut self, mut system: T) -> u8 {
 		let id = self.systems.len() as u8;
@@ -168,13 +177,16 @@ pub trait System {
 		}
 		*self.get_system_data_mut() = system_data_clone;
 		self.post_fire(data);
-	}
+	}	
 
 	// Getters for the system data
 	fn get_system_data(&self) -> &SystemData;
 	fn get_system_data_mut(&mut self) -> &mut SystemData;
 
 	// System Events
+	// This one is when we have a single entity in a system, like the sky system
+	fn additional_entities(&mut self, _data: &mut SystemEventData) -> Vec<Entity> { Vec::new() }
+
 	fn entity_added(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 	fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 

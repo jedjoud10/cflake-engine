@@ -10,6 +10,7 @@ use crate::engine::input::*;
 use crate::engine::rendering::*;
 
 use crate::engine::core::defaults::components::components::Camera;
+use crate::engine::rendering::shader::ShaderDefaults;
 use crate::engine::resources::ResourceManager;
 use crate::game::level::*;
 
@@ -21,38 +22,19 @@ use super::defaults::components::transforms::Position;
 use super::defaults::systems::rendering_system::RenderingSystem;
 
 //  The actual world
+#[derive(Default)]
 pub struct World {
 	pub time_manager: Time,
 	pub component_manager: ComponentManager,
 	pub input_manager: InputManager,
 	pub resource_manager: ResourceManager,
 	pub shader_manager: ShaderManager,
+	pub shader_defaults: ShaderDefaults,
 	pub texture_manager: TextureManager,
 	pub entity_manager: EntityManager,
 	pub system_manager: SystemManager,
 	pub custom_data: CustomWorldData,
 	pub window: Window,
-}
-
-// Default world values
-impl Default for World {
-	fn default() -> Self {
-		Self {
-			component_manager: ComponentManager {
-				current_component_id: 1,
-				..ComponentManager::default()
-			},
-			time_manager: Time::default(),
-			input_manager: InputManager::default(),
-			resource_manager: ResourceManager::default(),
-			shader_manager: ShaderManager::default(),
-			entity_manager: EntityManager::default(),
-			texture_manager: TextureManager::default(),
-			system_manager: SystemManager::default(),
-			custom_data: CustomWorldData::default(),
-			window: Window::default(),
-		}
-	}
 }
 
 impl World {
@@ -63,6 +45,7 @@ impl World {
 		self.window.size = Self::get_default_window_size();
 		window.set_cursor_mode(glfw::CursorMode::Disabled);
 		window.set_cursor_pos(0.0, 0.0);
+		self.shader_defaults.load_default_shaders(&mut self.resource_manager, &mut self.shader_manager);
 		// Test stuff
 		/*
 		self.component_manager.register_component::<Position>();
@@ -73,6 +56,18 @@ impl World {
 		register_components(self);
 		load_systems(self);
 		load_entities(self);
+		let mut data: SystemEventData = SystemEventData {
+			entity_manager: &mut self.entity_manager,
+			component_manager: &mut self.component_manager,
+			input_manager: &mut self.input_manager,
+			shader_manager: &mut self.shader_manager,
+			texture_manager: &mut self.texture_manager,
+			time_manager: &mut self.time_manager,
+			resource_manager: &mut self.resource_manager,
+			custom_data: &mut self.custom_data,
+		};
+		let new_entities = self.system_manager.add_additional_entities(&mut data).clone();
+		self.add_entities(new_entities);
 	}
 	// We do the following in this function
 	// 1. We update the entities of each UpdateSystem
@@ -210,6 +205,15 @@ impl World {
 		);
 		*self.entity_manager.get_entity_mut(id) = entity;
 		return id;
+	}
+	// Add multiple entities at once
+	pub fn add_entities(&mut self, entities: Vec<Entity>) -> Vec<u16> {
+		let mut result: Vec<u16> = Vec::new();
+		// Add all the entities
+		for entity in entities {
+			result.push(self.add_entity(entity));
+		}
+		return result;
 	}
 	// Wrapper function around the entity manager remove_entity
 	pub fn remove_entity(&mut self, entity_id: u16) {
