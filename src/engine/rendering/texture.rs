@@ -18,7 +18,7 @@ pub struct TextureManager {
 
 impl TextureManager {
 	// Get a reference to a texture from the texture manager's cache
-	pub fn get_texture(&self, id: i16) -> &Texture {
+	pub fn get_texture(&self, id: u16) -> &Texture {
 		return self.cached_textures.get(id as usize).unwrap();
 	}
 	// Get a mutable reference to a texture from the texture manager's cache
@@ -26,7 +26,7 @@ impl TextureManager {
 		return self.cached_textures.get_mut(id as usize).unwrap();
 	}
 	// Add a texture to the manager
-	pub fn cache_texture(&mut self, texture: Texture) -> i16 {
+	pub fn cache_texture(&mut self, texture: Texture) -> u16 {
 		let name_clone = texture.name.clone();
 		// Make sure the texture isn't cached already
 		if !self.texture_ids.contains_key(&name_clone) {
@@ -37,16 +37,16 @@ impl TextureManager {
 				&name_clone, &texture_id
 			);
 			self.texture_ids.insert(name_clone, texture_id as u16);
-			return texture_id;
+			return texture_id as u16;
 		} else {
-			return self.texture_ids.get(&name_clone).unwrap().clone() as i16;
+			return self.texture_ids.get(&name_clone).unwrap().clone();
 		}
 	}
 	// Get the texture id of a specific texture using it's name
-	pub fn get_texture_id(&self, name: &str) -> i16 {
+	pub fn get_texture_id(&self, name: &str) -> u16 {
 		// Check if the texture even exists
 		if self.texture_ids.contains_key(&name.to_string()) {
-			return self.texture_ids.get(name).unwrap().clone() as i16;
+			return self.texture_ids.get(name).unwrap().clone();
 		} else {
 			panic!("Texture was not cached!");
 		}
@@ -71,10 +71,22 @@ impl Texture {
 		file: &str,
 		resource_manager: &mut ResourceManager,
 		texture_manager: &mut TextureManager,
-	) -> Option<i16> {
-		let texture_resource = resource_manager.load_resource(file, "textures\\")?;
-		let texture = Texture::from_resource(texture_resource)?;
-		let id = texture_manager.cache_texture(texture);
+	) -> Option<u16> {
+		let mut id = 0_u16;
+		// Check if the texture was cached
+		
+		if texture_manager.texture_ids.contains_key(file) {
+			// Texture was already cached
+			println!("Load cached texture '{}'", file);
+			let cached_texture_id = texture_manager.get_texture_id(file);
+			id = cached_texture_id;
+			let cached_texture = texture_manager.get_texture(id);
+		} else {
+			// First time loading this texture
+			let texture_resource = resource_manager.load_resource(file, "textures\\")?;
+			let texture = Texture::from_resource(texture_resource)?;
+			id = texture_manager.cache_texture(texture);
+		}
 		return Some(id);
 	}
 	// Convert the resource to a texture
@@ -88,9 +100,9 @@ impl Texture {
 				let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
 				image.set_format(image::ImageFormat::Png);
 				let decoded = image.with_guessed_format().unwrap().decode().unwrap();
-				let test = decoded.to_rgb8();
+				let test = decoded.to_rgba8();
 
-				let mut new_texture = Self::create_rgb_texture(texture.name.clone(), width, height, &test.as_bytes().to_owned());
+				let mut new_texture = Self::create_rgba_texture(texture.name.clone(), width, height, &test.as_bytes().to_owned());
 				new_texture.name = texture.name.clone();
 				return Some(new_texture);
 			}
@@ -139,14 +151,14 @@ impl Texture {
 		return texture;
 	}
 	// Creates a rgb texture from a vector filled with bytes
-	pub fn create_rgb_texture(name: String, width: u16, height: u16, pixels: &Vec<u8>) -> Self {
+	pub fn create_rgba_texture(name: String, width: u16, height: u16, pixels: &Vec<u8>) -> Self {
 		let mut texture = Self {
 			width,
 			height,
 			id: 0,
-			internal_format: gl::RGB,
+			internal_format: gl::RGBA,
 			name,
-			format: gl::RGB,
+			format: gl::RGBA,
 			data_type: gl::UNSIGNED_BYTE,
 		};
 		// Create the OpenGL texture and set it's data to null since it's empty

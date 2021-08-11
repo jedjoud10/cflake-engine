@@ -307,12 +307,7 @@ impl ResourceManager {
 
 					// Write the extension to the file
 					let mut reader = BufReader::new(opened_file);
-					let mut bytes: Vec<u8> = Vec::new();
 					let mut resource: Resource = Resource::None;
-					// Read the file bytes into the vector
-					let bytes_read = reader.read_to_end(&mut bytes).unwrap();
-					reader.seek(SeekFrom::Start(0));
-					println!("Bytes read: {}", bytes_read);
 
 					// The type of resource that we will be saving
 					let mut resource_type = 0;
@@ -348,8 +343,9 @@ impl ResourceManager {
 								.unwrap()
 								.decode()
 								.unwrap();
-							let dimensions = image.dimensions();
-							println!("{:?}", dimensions);
+							let mut dimensions = image.dimensions();	
+							let mut bytes: Vec<u8> = Vec::new();
+							reader.read_to_end(&mut bytes);
 							resource = Resource::Texture(LoadedTexture {
 								name: String::from("Undefined"),
 								width: dimensions.0 as u16,

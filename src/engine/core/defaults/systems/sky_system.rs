@@ -2,6 +2,7 @@ use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::world::World;
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;
+use crate::engine::rendering::texture::TextureManager;
 use glam::Vec4Swizzles;
 
 use crate::engine::core::ecs::{
@@ -71,8 +72,10 @@ impl System for SkySystem {
 			&mut data.shader_manager,
 			&sky_shader_name,
 			"sphere.mdl3d.pkg",
-			vec!["peko.png.pkg"]
+			vec!["sky_gradient2.png.pkg"]
 		);
+		let id = data.texture_manager.get_texture_id("sky_gradient2.png.pkg");
+		data.custom_data.sky_gradient_global_id = id;
 
 		// Make the skysphere inside out, so we can see the insides only
 		rc.model.flip_triangles();

@@ -68,22 +68,22 @@ impl Renderer {
 		texture_names: Vec<&str>,
 	) -> Self {
 		// Temp variables holding the global IDs of the textures
-		let mut diffuse_texture_id = -1;
-		let mut normals_texture_id = -1;
+		let mut diffuse_texture_id: i16 = -1;
+		let mut normals_texture_id: i16 = -1;
 		// Load the textures
-		for (i, shader_name) in texture_names.iter().enumerate() {
+		for (i, texture_name) in texture_names.iter().enumerate() {
 			match i {
 				0 => {
 					// Diffuse texture
 					diffuse_texture_id =
-						Texture::load_from_file(shader_name, resource_manager, texture_manager)
-							.unwrap();
+						Texture::load_from_file(texture_name, resource_manager, texture_manager)
+							.unwrap() as i16;
 				}
 				1 => {
 					// Normals texture
 					normals_texture_id =
-						Texture::load_from_file(shader_name, resource_manager, texture_manager)
-							.unwrap();
+						Texture::load_from_file(texture_name, resource_manager, texture_manager)
+							.unwrap() as i16;
 				}
 				2 => {
 					// AO texture

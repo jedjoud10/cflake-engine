@@ -282,13 +282,13 @@ impl System for RenderingSystem {
 		// Check if we even have a diffuse texture
 		if rc.diffuse_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
-			let diffuse_texture = data.texture_manager.get_texture(rc.diffuse_texture_id);
+			let diffuse_texture = data.texture_manager.get_texture(rc.diffuse_texture_id as u16);
 			shader.set_texture2d("diffuse_tex", diffuse_texture.id, gl::TEXTURE0);
 		}
 		// Check if we even have a normal texture
 		if rc.normals_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
-			let normal_texture = data.texture_manager.get_texture(rc.normals_texture_id);
+			let normal_texture = data.texture_manager.get_texture(rc.normals_texture_id as u16);
 			shader.set_texture2d("normal_tex", normal_texture.id, gl::TEXTURE1);
 		}
 		unsafe {
@@ -328,13 +328,21 @@ impl System for RenderingSystem {
 		shader.use_shader();
 
 		// Assign the render buffer textures to the screen shader so it could do deffered rendering
+		// Frame buffer textures
 		shader.set_texture2d("diffuse_texture", self.diffuse_texture.id, gl::TEXTURE0);
 		shader.set_texture2d("normals_texture", self.normals_texture.id, gl::TEXTURE1);
 		shader.set_texture2d("position_texture", self.position_texture.id, gl::TEXTURE2);
 		shader.set_texture2d("emissive_texture", self.emissive_texture.id, gl::TEXTURE3);
 		shader.set_texture2d("depth_stencil_texture", self.depth_stencil_texture.id, gl::TEXTURE4);
+
 		let light_dir = data.custom_data.sun_rotation.mul_vec3(glam::vec3(0.0, 1.0, 0.0));
-		shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
+
+		// Sky params
+		shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
+		//shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
+		shader.set_texture2d("default_sky_gradient",  data.texture_manager.get_texture(data.custom_data.sky_gradient_global_id).id, gl::TEXTURE5);
+
+		// Other params
 		shader.set_scalar_3_uniform(
 			"view_pos",
 			(camera_position.x, camera_position.y, camera_position.z),

@@ -101,16 +101,16 @@ pub fn load_entities(world: &mut World) {
 	);
 	world.add_entity(quad);
 
+	// Anime moment
 	let mut cube = Entity::new("Cube");
-
 	// Link the component
 	let mut rc = Renderer::new_with_textures(
 		&mut world.resource_manager,
 		&mut world.texture_manager,
 		&mut world.shader_manager,
 		world.shader_defaults.default_shader_name.as_str().clone(),
-		"cube.mdl3d.pkg",
-		vec!["peko.png.pkg", "normals.png.pkg"],
+		"cube.mdl3d.pkg",				
+		vec!["diffuse.png.pkg", "normals.png.pkg"],
 	);
 	rc.uv_scale *= 10.0;
 	cube.link_component::<Renderer>(&mut world.component_manager, rc);
