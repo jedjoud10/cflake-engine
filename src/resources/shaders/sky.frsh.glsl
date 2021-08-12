@@ -9,7 +9,7 @@ in vec2 m_uv;
 void main() {
 	// Use the diffuse texture as the sky gradient
 	float light_dir = (dot(m_normal, vec3(0, 1, 0)) + 1) / 2.0;
-	vec3 color = texture(diffuse_tex, vec2(0, 1 - light_dir)).xyz;
+	vec3 color = texture(diffuse_tex, vec2(0, (1 - light_dir))).xyz;
 	frag_emissive = color;
 	frag_normal = vec3(0, 0, 0);
 }

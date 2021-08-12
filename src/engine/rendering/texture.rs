@@ -14,6 +14,8 @@ use std::{
 pub struct TextureManager {
 	pub texture_ids: HashMap<String, u16>,
 	pub cached_textures: Vec<Texture>,
+	pub white_texture_id: u16,
+	pub black_texture_id: u16,
 }
 
 impl TextureManager {
@@ -42,14 +44,30 @@ impl TextureManager {
 			return self.texture_ids.get(&name_clone).unwrap().clone();
 		}
 	}
+	// Gets a reference to a texture using only it's name
+	pub fn get_texture_with_name(&self, name: &str) -> &Texture {
+		if self.texture_ids.contains_key(name) {
+			let id = self.texture_ids.get(name).unwrap();
+			return self.get_texture(*id);
+		} else {
+			// We don't even have the texture
+			panic!(format!("Texture: '{}' was not cached!", name));
+		}
+	}
 	// Get the texture id of a specific texture using it's name
 	pub fn get_texture_id(&self, name: &str) -> u16 {
 		// Check if the texture even exists
+		let name = format!("{}.pkg", name);
 		if self.texture_ids.contains_key(&name.to_string()) {
-			return self.texture_ids.get(name).unwrap().clone();
+			return self.texture_ids.get(&name).unwrap().clone();
 		} else {
-			panic!("Texture was not cached!");
+			panic!(format!("Texture: '{}' was not cached!", name));
 		}
+	}
+	// Load the default textures like white and black textures
+	pub fn load_default_texture(&mut self, resource_manager: &mut ResourceManager) {
+		self.black_texture_id = Texture::load_from_file("black.png", resource_manager, self).unwrap();
+		self.white_texture_id = Texture::load_from_file("white.png", resource_manager, self).unwrap();
 	}
 }
 
@@ -83,7 +101,7 @@ impl Texture {
 			let cached_texture = texture_manager.get_texture(id);
 		} else {
 			// First time loading this texture
-			let texture_resource = resource_manager.load_resource(file, "textures\\")?;
+			let texture_resource = resource_manager.load_packed_resource(file, "textures\\")?;
 			let texture = Texture::from_resource(texture_resource)?;
 			id = texture_manager.cache_texture(texture);
 		}

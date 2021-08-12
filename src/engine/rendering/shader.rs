@@ -75,8 +75,8 @@ impl ShaderDefaults {
 		// Load the default shader
 		self.default_shader_name = {
 			let default_shader = Shader::from_vr_fr_subshader_files(
-				"default.vrsh.glsl.pkg",
-				"default.frsh.glsl.pkg",
+				"default.vrsh.glsl",
+				"default.frsh.glsl",
 				resource_manager,
 				shader_manager,
 			);
@@ -119,7 +119,7 @@ impl Shader {
 		{
 			{
 				let default_vert_subshader_resource = resource_manager
-					.load_resource(vertex_file, "shaders\\")
+					.load_packed_resource(vertex_file, "shaders\\")
 					.unwrap();
 				// Link the vertex and fragment shaders
 				let mut vert_subshader =
@@ -132,7 +132,7 @@ impl Shader {
 			}
 			{
 				let default_frag_subshader_resource = resource_manager
-					.load_resource(fragment_file, "shaders\\")
+					.load_packed_resource(fragment_file, "shaders\\")
 					.unwrap();
 				// Link the vertex and fragment shaders
 				let mut frag_subshader =

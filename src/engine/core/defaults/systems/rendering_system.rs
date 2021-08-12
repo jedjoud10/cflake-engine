@@ -36,15 +36,15 @@ impl RenderingSystem {
 		let mut quad_renderer_component = Renderer::default();
 		quad_renderer_component.model = Model::from_resource(
 			data.resource_manager
-				.load_resource("screen_quad.mdl3d.pkg", "models\\")
+				.load_packed_resource("screen_quad.mdl3d", "models\\")
 				.unwrap(),
 		)
 		.unwrap();
 		quad_renderer_component.shader_name = {
 			// Load the shader that will draw the quad
 			let shader = Shader::from_vr_fr_subshader_files(
-				"passthrough.vrsh.glsl.pkg",
-				"screen_quad.frsh.glsl.pkg",
+				"passthrough.vrsh.glsl",
+				"screen_quad.frsh.glsl",
 				&mut data.resource_manager,
 				&mut data.shader_manager,
 			);
@@ -279,18 +279,25 @@ impl System for RenderingSystem {
 			(camera_position.x, camera_position.y, camera_position.z),
 		);
 		shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
+		let mut diffuse_texture_id: u32 = 0;
+		let mut normals_texture_id: u32 = 0;
 		// Check if we even have a diffuse texture
 		if rc.diffuse_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
-			let diffuse_texture = data.texture_manager.get_texture(rc.diffuse_texture_id as u16);
-			shader.set_texture2d("diffuse_tex", diffuse_texture.id, gl::TEXTURE0);
+			diffuse_texture_id = data.texture_manager.get_texture(rc.diffuse_texture_id as u16).id;
+		} else {
+			diffuse_texture_id = data.texture_manager.get_texture(data.texture_manager.white_texture_id).id;
 		}
 		// Check if we even have a normal texture
 		if rc.normals_texture_id != -1 {
 			// Convert the texture id into a texture, and then into a OpenGL texture id
-			let normal_texture = data.texture_manager.get_texture(rc.normals_texture_id as u16);
-			shader.set_texture2d("normal_tex", normal_texture.id, gl::TEXTURE1);
+			normals_texture_id = data.texture_manager.get_texture(rc.normals_texture_id as u16).id;
+		} else {
+			normals_texture_id = data.texture_manager.get_texture(data.texture_manager.white_texture_id).id;
 		}
+		
+		shader.set_texture2d("diffuse_tex", diffuse_texture_id, gl::TEXTURE0);
+		shader.set_texture2d("normal_tex", normals_texture_id, gl::TEXTURE1);
 		unsafe {
 			// Actually draw the array
 			if rc.gpu_data.initialized {
@@ -302,6 +309,7 @@ impl System for RenderingSystem {
 					gl::UNSIGNED_INT,
 					null(),
 				);
+				gl::BindTexture(gl::TEXTURE_2D, 0);
 			}
 		}
 	}

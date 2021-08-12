@@ -59,8 +59,8 @@ impl System for SkySystem {
 		// Use a custom shader
 		let sky_shader_name: String = {
 			let mut shader = Shader::from_vr_fr_subshader_files(
-				"default.vrsh.glsl.pkg",
-				"sky.frsh.glsl.pkg",
+				"default.vrsh.glsl",
+				"sky.frsh.glsl",
 				&mut data.resource_manager,
 				&mut data.shader_manager,
 			);
@@ -71,10 +71,10 @@ impl System for SkySystem {
 			&mut data.texture_manager,
 			&mut data.shader_manager,
 			&sky_shader_name,
-			"sphere.mdl3d.pkg",
-			vec!["sky_gradient2.png.pkg"]
+			"sphere.mdl3d",
+			vec!["sky_gradient2.png"]
 		);
-		let id = data.texture_manager.get_texture_id("sky_gradient2.png.pkg");
+		let id = data.texture_manager.get_texture_id("sky_gradient2.png");
 		data.custom_data.sky_gradient_global_id = id;
 
 		// Make the skysphere inside out, so we can see the insides only

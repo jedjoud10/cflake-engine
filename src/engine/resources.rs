@@ -25,8 +25,8 @@ pub struct ResourceManager {
 // Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
 impl ResourceManager {
 	// Loads a specific resource and caches it so we can use it next time
-	pub fn load_resource(&mut self, name: &str, path: &str) -> Option<&Resource> {
-		let name = String::from(name);
+	pub fn load_packed_resource(&mut self, name: &str, path: &str) -> Option<&Resource> {
+		let name = format!("{}.{}", name, "pkg");
 		let path = String::from(path);
 		let mut final_path: String = String::new();
 		{

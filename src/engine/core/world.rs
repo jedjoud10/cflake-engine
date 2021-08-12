@@ -67,6 +67,10 @@ impl World {
 			resource_manager: &mut self.resource_manager,
 			custom_data: &mut self.custom_data,
 		};
+
+		// Load default textures
+		data.texture_manager.load_default_texture(&mut data.resource_manager);
+
 		let new_entities = self
 			.system_manager
 			.add_additional_entities(&mut data)
@@ -92,7 +96,7 @@ impl World {
 			time_manager: &mut self.time_manager,
 			resource_manager: &mut self.resource_manager,
 			custom_data: &mut self.custom_data,
-		};
+		};	
 
 		// Update the entities
 		self.system_manager

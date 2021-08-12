@@ -99,7 +99,7 @@ impl Renderer {
 		}
 		// Load the model resource
 		let model_resource = resource_manager
-			.load_resource(model_name, "models\\")
+			.load_packed_resource(model_name, "models\\")
 			.unwrap();
 		let model = Model::from_resource(model_resource).unwrap();
 		return Self {
@@ -118,11 +118,13 @@ impl Renderer {
 	) -> Self {
 		// Load the model resource
 		let model_resource = resource_manager
-			.load_resource(model_name, "models\\")
+			.load_packed_resource(model_name, "models\\")
 			.unwrap();
 		let model = Model::from_resource(model_resource).unwrap();
 		return Self {
 			shader_name: shader_name.to_string(),
+			diffuse_texture_id: -1,
+			normals_texture_id: -1,
 			model,
 			..Self::default()
 		};

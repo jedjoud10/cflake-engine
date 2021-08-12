@@ -72,20 +72,14 @@ pub fn load_entities(world: &mut World) {
 
 	// Simple quad
 	let mut quad = Entity::new("Quad");
-	let shader_name: String = {
-		let mut checkerboard_shader = Shader::from_vr_fr_subshader_files(
-			"default.vrsh.glsl.pkg",
-			"checkerboard.frsh.glsl.pkg",
-			&mut world.resource_manager,
-			&mut world.shader_manager,
-		);
-		checkerboard_shader.name.clone()
-	};
 	// Link the component
-	let rc = Renderer::new(
+	let rc = Renderer::new_with_textures(
 		&mut world.resource_manager,
-		&shader_name,
-		"quad.mdl3d.pkg",
+		&mut world.texture_manager,
+		&mut world.shader_manager,
+		world.shader_defaults.default_shader_name.as_str().clone(),
+		"quad.mdl3d",
+		vec!["diffuse.png"]
 	);
 	quad.link_component::<Renderer>(&mut world.component_manager, rc);
 	quad.link_default_component::<transforms::Position>(&mut world.component_manager);
@@ -109,8 +103,8 @@ pub fn load_entities(world: &mut World) {
 		&mut world.texture_manager,
 		&mut world.shader_manager,
 		world.shader_defaults.default_shader_name.as_str().clone(),
-		"cube.mdl3d.pkg",				
-		vec!["diffuse.png.pkg", "normals.png.pkg"],
+		"cube.mdl3d",				
+		vec!["diffuse.png", "normals.png"],
 	);
 	rc.uv_scale *= 10.0;
 	cube.link_component::<Renderer>(&mut world.component_manager, rc);
