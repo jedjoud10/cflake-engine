@@ -34,7 +34,7 @@ vec3 czm_saturation(vec3 rgb, float adjustment)
 
 void main() {
 	// Sample the textures
-	vec3 normal = texture(normals_texture, uv_coordinates).xyz;
+	vec3 normal = normalize(texture(normals_texture, uv_coordinates).xyz);
 	vec3 diffuse = texture(diffuse_texture, uv_coordinates).xyz;
 	vec3 position = texture(position_texture, uv_coordinates).xyz;
 	vec3 emissive = texture(emissive_texture, uv_coordinates).xyz;

@@ -334,7 +334,7 @@ impl TerrainGenerator {
 		let shader_name: String = {
 			let mut shader = Shader::from_vr_fr_subshader_files(
 				"default.vrsh.glsl",
-				"passthrough.frsh.glsl",
+				"triplanar.frsh.glsl",
 				&mut data.resource_manager,
 				&mut data.shader_manager,
 			);
@@ -342,6 +342,9 @@ impl TerrainGenerator {
 		};
 
 		let mut rc = Renderer::new_procedural(data.resource_manager, shader_name.as_str(), model);
+		rc.uv_scale = glam::vec2(1.0, 1.0);
+		rc.diffuse_texture_id = data.texture_manager.get_texture_id("diffuse.png") as i16;
+		rc.normals_texture_id = data.texture_manager.get_texture_id("normals.png") as i16;
 		chunk_entity.link_component::<Renderer>(data.component_manager, rc);
 		chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
 		chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
@@ -363,7 +366,7 @@ pub struct Chunk {
 impl Chunk {
 	// Density functions
 	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-		return ((x * 0.2).sin() * 4.0) + y - 8.0;
+		return (x * 0.2).sin() * 5.0 + y;
 	}
 	// Generate the voxel data
 	pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
@@ -431,11 +434,9 @@ impl<'a> ProceduralModelGenerator for Chunk {
 								normal1.x = self.data[vert1_usize.0 + 1][vert1_usize.1][vert1_usize.2] - density1;
 								normal1.y = self.data[vert1_usize.0][vert1_usize.1 + 1][vert1_usize.2] - density1;
 								normal1.z = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2 + 1] - density1;
-								normal1.normalize_or_zero();
 								normal2.x = self.data[vert2_usize.0+1][vert2_usize.1][vert2_usize.2] - density2;
 								normal2.y = self.data[vert2_usize.0][vert2_usize.1+1][vert2_usize.2] - density2;
 								normal2.z = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2+1] - density2;
-								normal2.normalize_or_zero();
 								glam::Vec3::lerp(normal1, normal2, value)
 							};
 
@@ -451,7 +452,7 @@ impl<'a> ProceduralModelGenerator for Chunk {
 								model.triangles.push(model.vertices.len() as u32);
 								model.vertices.push(vertex);								
 								model.uvs.push(glam::Vec2::ZERO);
-								model.normals.push(normal);
+								model.normals.push(normal.normalize());
 								model.tangents.push(glam::Vec4::ZERO);
 							}							
 						}
