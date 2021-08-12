@@ -60,7 +60,7 @@ impl RenderingSystem {
 			gl::ClearColor(0.0, 0.0, 0.0, 0.0);
 			gl::Viewport(0, 0, default_size.0, default_size.1);
 			gl::Enable(gl::DEPTH_TEST);
-			gl::Enable(gl::CULL_FACE);
+			gl::Enable(gl::CULL_FACE);			
 			gl::CullFace(gl::BACK);
 		}
 	}

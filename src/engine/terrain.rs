@@ -350,7 +350,7 @@ pub struct Chunk {
 impl Chunk {
 	// Density functions
 	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-		return x.sin() * 5.0 + y - 5.0;
+		return (x * 0.2).sin() * 2.0 + y - 5.0;
 	}
 	// Generate the voxel data
 	pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
@@ -365,7 +365,7 @@ impl Chunk {
 
 		// Save the isoline
 		self.isoline = terrain_generator.isoline;
-	}	
+	}		
 }
 
 // This is a procedural model generator
@@ -395,9 +395,11 @@ impl<'a> ProceduralModelGenerator for Chunk {
 							// Get the vertex in local space
 							let vert1 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]];
 							let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
+							let density1 = self.data[x + vert1.x as usize][y + vert1.y as usize][z + vert1.z as usize];
+							let density2 = self.data[x + vert2.x as usize][y + vert2.y as usize][z + vert2.z as usize];
 							// Do inverse linear interpolation to find the factor value
-							let value: f32 = 
-							let mut vertex = glam::Vec3::lerp(vert1, vert2, 0.5);
+							let value: f32 = inverse_lerp(density1, density2, self.isoline);
+							let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
 							// Offset the vertex
 							vertex += glam::vec3(x as f32, y as f32, z as f32);
 							model.vertices.push(vertex);
@@ -410,7 +412,10 @@ impl<'a> ProceduralModelGenerator for Chunk {
 				}
 			}
 		}
-
+		// Inverse of lerp
+		fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
+			return (x - a) / (b - a);
+		}
 		// Return the model
 		return model;
 	}
