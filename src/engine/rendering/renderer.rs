@@ -129,6 +129,16 @@ impl Renderer {
 			..Self::default()
 		};
 	}
+	// Creates a new rendere using a procedural model, name of a shader, and no texture names
+	pub fn new_procedural(resource_manager: &mut ResourceManager, shader_name: &str, model: Model) -> Self {
+		return Self {
+			shader_name: shader_name.to_string(),
+			diffuse_texture_id: -1,
+			normals_texture_id: -1,
+			model,
+			..Self::default()
+		};
+	}
 	// Updates the model matrix using a position and a rotation
 	pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat, scale: f32) {
 		let model_matrix = glam::Mat4::from_quat(rotation)

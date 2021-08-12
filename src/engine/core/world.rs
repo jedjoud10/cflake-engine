@@ -12,6 +12,8 @@ use crate::engine::rendering::*;
 use crate::engine::core::defaults::components::components::Camera;
 use crate::engine::rendering::shader::ShaderDefaults;
 use crate::engine::resources::ResourceManager;
+use crate::engine::terrain::TerrainGenerator;
+use crate::engine::terrain::TerrainGeneratorData;
 use crate::game::level::*;
 
 // Import stuff from the rendering module
@@ -24,16 +26,22 @@ use super::defaults::systems::rendering_system::RenderingSystem;
 //  The actual world
 #[derive(Default)]
 pub struct World {
-	pub time_manager: Time,
+	// Managers
 	pub component_manager: ComponentManager,
 	pub input_manager: InputManager,
 	pub resource_manager: ResourceManager,
+	pub terrain_generator: TerrainGenerator,
+	pub texture_manager: TextureManager,
+	// Shaders
 	pub shader_manager: ShaderManager,
 	pub shader_defaults: ShaderDefaults,
-	pub texture_manager: TextureManager,
+	// ECS
 	pub entity_manager: EntityManager,
 	pub system_manager: SystemManager,
+	
+	// Miscs
 	pub custom_data: CustomWorldData,
+	pub time_manager: Time,
 	pub window: Window,
 }
 
@@ -47,6 +55,10 @@ impl World {
 		window.set_cursor_pos(0.0, 0.0);
 		self.shader_defaults
 			.load_default_shaders(&mut self.resource_manager, &mut self.shader_manager);
+
+		// Load default textures
+		self.texture_manager.load_default_texture(&mut self.resource_manager);
+
 		// Test stuff
 		/*
 		self.component_manager.register_component::<Position>();
@@ -57,6 +69,19 @@ impl World {
 		register_components(self);
 		load_systems(self);
 		load_entities(self);
+
+		let mut terrain_data = TerrainGeneratorData {
+			component_manager: &mut self.component_manager,
+			resource_manager: &mut self.resource_manager,
+			shader_manager: &mut self.shader_manager,
+			shader_defaults: &mut self.shader_defaults,
+			texture_manager: &mut self.texture_manager,
+		};
+
+		// Load the terrain generator
+		let entities = self.terrain_generator.generate_terrain(&mut terrain_data).clone();
+		self.add_entities(entities);
+		
 		let mut data: SystemEventData = SystemEventData {
 			entity_manager: &mut self.entity_manager,
 			component_manager: &mut self.component_manager,
@@ -67,9 +92,7 @@ impl World {
 			resource_manager: &mut self.resource_manager,
 			custom_data: &mut self.custom_data,
 		};
-
-		// Load default textures
-		data.texture_manager.load_default_texture(&mut data.resource_manager);
+		
 
 		let new_entities = self
 			.system_manager

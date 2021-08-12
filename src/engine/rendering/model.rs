@@ -59,3 +59,9 @@ pub struct ModelDataGPU {
 	pub initialized: bool,
 	pub model_matrix: glam::Mat4,
 }
+
+// Trait that allows you to make procedural models
+pub trait ProceduralModelGenerator {
+	// Generate the model
+	fn generate_model(&self) -> Model;
+}
