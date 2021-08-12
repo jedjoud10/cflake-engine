@@ -387,7 +387,7 @@ impl<'a> ProceduralModelGenerator for Chunk {
     // Generate a procedural marching cube model
 	fn generate_model(&self) -> Model {
 		let mut model: Model = Model::default();
-		let mut duplicate_vertices: HashMap<u32, u32> = HashMap::new();
+		let mut duplicate_vertices: HashMap<(u32, u32, u32, u32, u32, u32), u32> = HashMap::new();
 		let mut edge_counter: u32 = 0;
 		// Loop over every voxel
 		for x in 0..CHUNK_SIZE-2 {
@@ -422,19 +422,22 @@ impl<'a> ProceduralModelGenerator for Chunk {
 							// Offset the vertex
 							vertex += glam::vec3(x as f32, y as f32, z as f32);
 							
+							// Edge tuple
+							let edge_tuple: (u32, u32, u32, u32, u32, u32) = (x as u32 + vert1.x as u32, y as u32 + vert1.y as u32, z as u32 + vert1.z as u32, x as u32 + vert2.x as u32, y as u32 + vert2.y as u32, z as u32 + vert2.z as u32);
+
 							// Check if this vertex was already added
-							if duplicate_vertices.contains_key(edge_counter) {
-								// The vertex already exists
+							if duplicate_vertices.contains_key(&edge_tuple) {
+								// The vertex already exists				
+								model.triangles.push(duplicate_vertices[&edge_tuple]);				
 							} else {
 								// Add this vertex
-								duplicate_vertices.insert(edge_counter, model.triangles.len());
+								duplicate_vertices.insert(edge_tuple, model.vertices.len() as u32);
+								model.triangles.push(model.vertices.len() as u32);
+								model.vertices.push(vertex);								
+								model.uvs.push(glam::Vec2::ZERO);
+								model.normals.push(normal);
+								model.tangents.push(glam::Vec4::ZERO);
 							}
-							
-							model.vertices.push(vertex);
-							model.uvs.push(glam::Vec2::ZERO);
-							model.normals.push(normal);
-							model.tangents.push(glam::Vec4::ZERO);
-							model.triangles.push(model.triangles.len() as u32);
 						}
 					}
 				}
