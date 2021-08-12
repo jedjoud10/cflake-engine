@@ -387,12 +387,12 @@ impl<'a> ProceduralModelGenerator for Chunk {
     // Generate a procedural marching cube model
 	fn generate_model(&self) -> Model {
 		let mut model: Model = Model::default();
-		let mut triangle_duplicates: HashMap<>
-		let mut vertices_duplicates: HashMap<glam::Vec3, u16> = HashMap::new();
+		let mut duplicate_vertices: HashMap<u32, u32> = HashMap::new();
+		let mut edge_counter: u32 = 0;
 		// Loop over every voxel
-		for x in 0..CHUNK_SIZE-1 {
-			for y in 0..CHUNK_SIZE-1 {
-				for z in 0..CHUNK_SIZE-1 {
+		for x in 0..CHUNK_SIZE-2 {
+			for y in 0..CHUNK_SIZE-2 {
+				for z in 0..CHUNK_SIZE-2 {
 					// Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
 					let mut case_index = 0u8;
 					case_index += ((self.data[x][y][z] > self.isoline) as u8) * 1;
@@ -414,17 +414,22 @@ impl<'a> ProceduralModelGenerator for Chunk {
 							let density1 = self.data[x + vert1.x as usize][y + vert1.y as usize][z + vert1.z as usize];
 							let density2 = self.data[x + vert2.x as usize][y + vert2.y as usize][z + vert2.z as usize];
 							let mut normal = glam::Vec3::ZERO;
+							
 							// Create the normal
-							normal.x = self.data[x+1][y][z] - self.data[x][y][z];
-							normal.y = self.data[x][y+1][z] - self.data[x][y][z];
-							normal.z = self.data[x][y][z+1] - self.data[x][y][z];
-							normal.normalize_or_zero();
-
 							// Do inverse linear interpolation to find the factor value
 							let value: f32 = inverse_lerp(density1, density2, self.isoline);
 							let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
 							// Offset the vertex
 							vertex += glam::vec3(x as f32, y as f32, z as f32);
+							
+							// Check if this vertex was already added
+							if duplicate_vertices.contains_key(edge_counter) {
+								// The vertex already exists
+							} else {
+								// Add this vertex
+								duplicate_vertices.insert(edge_counter, model.triangles.len());
+							}
+							
 							model.vertices.push(vertex);
 							model.uvs.push(glam::Vec2::ZERO);
 							model.normals.push(normal);
