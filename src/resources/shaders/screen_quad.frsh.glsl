@@ -66,7 +66,7 @@ void main() {
 	if (debug_view == 0) {
 		color = max(final_color, emissive);
 	} else if (debug_view == 1) {
-		color = ambient_lighting;
+		color = normal;
 	} else if (debug_view == 2) {
 		color = diffuse;
 	}

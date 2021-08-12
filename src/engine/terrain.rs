@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
 use gl::{TRIANGLES, VERSION};
+
+use crate::engine::rendering::shader::Shader;
 
 use super::{core::{defaults::components::transforms, ecs::{component::ComponentManager, entity::{Entity, EntityManager}}, world::World}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::{ShaderDefaults, ShaderManager}, texture::TextureManager}, resources::ResourceManager};
 
@@ -328,7 +332,17 @@ impl TerrainGenerator {
 
 		// Create the entity
 		let mut chunk_entity = Entity::new("Chunk");
-		let mut rc = Renderer::new_procedural(data.resource_manager, data.shader_defaults.default_shader_name.as_str(), model);
+		let shader_name: String = {
+			let mut shader = Shader::from_vr_fr_subshader_files(
+				"default.vrsh.glsl",
+				"passthrough.frsh.glsl",
+				&mut data.resource_manager,
+				&mut data.shader_manager,
+			);
+			shader.name.clone()
+		};
+
+		let mut rc = Renderer::new_procedural(data.resource_manager, shader_name.as_str(), model);
 		chunk_entity.link_component::<Renderer>(data.component_manager, rc);
 		chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
 		chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
@@ -350,7 +364,7 @@ pub struct Chunk {
 impl Chunk {
 	// Density functions
 	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-		return (x * 0.2).sin() * 2.0 + y - 5.0;
+		return (x * 0.2).sin() * 7.0 + y - 5.0;
 	}
 	// Generate the voxel data
 	pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
@@ -373,6 +387,8 @@ impl<'a> ProceduralModelGenerator for Chunk {
     // Generate a procedural marching cube model
 	fn generate_model(&self) -> Model {
 		let mut model: Model = Model::default();
+		let mut triangle_duplicates: HashMap<>
+		let mut vertices_duplicates: HashMap<glam::Vec3, u16> = HashMap::new();
 		// Loop over every voxel
 		for x in 0..CHUNK_SIZE-1 {
 			for y in 0..CHUNK_SIZE-1 {
@@ -397,6 +413,13 @@ impl<'a> ProceduralModelGenerator for Chunk {
 							let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
 							let density1 = self.data[x + vert1.x as usize][y + vert1.y as usize][z + vert1.z as usize];
 							let density2 = self.data[x + vert2.x as usize][y + vert2.y as usize][z + vert2.z as usize];
+							let mut normal = glam::Vec3::ZERO;
+							// Create the normal
+							normal.x = self.data[x+1][y][z] - self.data[x][y][z];
+							normal.y = self.data[x][y+1][z] - self.data[x][y][z];
+							normal.z = self.data[x][y][z+1] - self.data[x][y][z];
+							normal.normalize_or_zero();
+
 							// Do inverse linear interpolation to find the factor value
 							let value: f32 = inverse_lerp(density1, density2, self.isoline);
 							let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
@@ -404,7 +427,7 @@ impl<'a> ProceduralModelGenerator for Chunk {
 							vertex += glam::vec3(x as f32, y as f32, z as f32);
 							model.vertices.push(vertex);
 							model.uvs.push(glam::Vec2::ZERO);
-							model.normals.push(glam::Vec3::ZERO);
+							model.normals.push(normal);
 							model.tangents.push(glam::Vec4::ZERO);
 							model.triangles.push(model.triangles.len() as u32);
 						}
