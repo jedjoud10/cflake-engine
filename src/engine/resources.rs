@@ -326,7 +326,8 @@ impl ResourceManager {
 		let mut env_path = env_path.to_str().unwrap();
 		let env_path: Vec<&str> = env_path.split("\\").collect();
 		let env_path: String = format!("{}\\", &env_path[..(env_path.len() - 2)].join("\\"));
-		let resources_path = format!("{}\\src\\resources\\", env_path);
+		let resources_path = format!("{}src\\resources\\", env_path);
+		let packed_resources_path = format!("{}src\\packed-resources\\", env_path);
 		println!("Resource path '{}'", resources_path);
 		
 		// Recursive file finder lol
@@ -368,6 +369,30 @@ impl ResourceManager {
 					// This is a texture
 					resource = Self::pack_texture(&mut file, &file_path);
 				}
+				_ => {}
+			}
+
+			// Now time to actually pack the resource
+			// Create a hashed name to make it able for all the resources to be in one folder
+			let packed_file_hashed_name: String = {
+				let mut hasher = DefaultHasher::new();
+				// Use the resource as the hash "key"
+				format!("{}{}.{}", subdirectory_name, file_name, file_extension).hash(&mut hasher);
+				hasher.finish().to_string()
+			};
+			let packed_file_path = format!("{}{}.pkg", packed_resources_path, packed_file_hashed_name);
+			// Create the file
+			let packed_file = File::create(packed_file_path).unwrap();
+			match resource {
+				Resource::Shader(shader) => {
+					// This is a shader
+				},
+				Resource::Model(model) => {
+					// This a 3D model
+				},
+				Resource::Texture(texture) => {
+					// This a texture
+				},
 				_ => {}
 			}
 		}
