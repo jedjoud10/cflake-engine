@@ -75,8 +75,8 @@ impl ShaderDefaults {
 		// Load the default shader
 		self.default_shader_name = {
 			let default_shader = Shader::from_vr_fr_subshader_files(
-				"default.vrsh.glsl",
-				"default.frsh.glsl",
+				"shaders\\default.vrsh.glsl",
+				"shaders\\default.frsh.glsl",
 				resource_manager,
 				shader_manager,
 			);
@@ -109,19 +109,19 @@ impl Default for Shader {
 impl Shader {
 	// Creates a shader from a vertex subshader file and a fragment subshader file
 	pub fn from_vr_fr_subshader_files<'a>(
-		vertex_file: &str,
-		fragment_file: &str,
+		vertex_file_path: &str,
+		fragment_file_path: &str,
 		resource_manager: &'a mut ResourceManager,
 		shader_manager: &'a mut ShaderManager,
 	) -> &'a mut Self {
 		let mut shader = Self::default();
-		shader.name = format!("{}_{}", vertex_file, fragment_file);
+		shader.name = format!("{}_{}", vertex_file_path, fragment_file_path);
 		{
 			{
 				let default_vert_subshader_resource = resource_manager
-					.load_packed_resource(vertex_file, "shaders\\")
+					.load_packed_resource(vertex_file_path)
 					.unwrap();
-				// Link the vertex and fragment shaders
+				// Link the vertex subshader
 				let mut vert_subshader =
 					SubShader::from_resource(default_vert_subshader_resource).unwrap();
 				// Compile the subshader
@@ -132,9 +132,9 @@ impl Shader {
 			}
 			{
 				let default_frag_subshader_resource = resource_manager
-					.load_packed_resource(fragment_file, "shaders\\")
+					.load_packed_resource(fragment_file_path)
 					.unwrap();
-				// Link the vertex and fragment shaders
+				// Link the fragment subshader
 				let mut frag_subshader =
 					SubShader::from_resource(default_frag_subshader_resource).unwrap();
 				// Compile the subshader

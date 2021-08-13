@@ -78,8 +78,8 @@ pub fn load_entities(world: &mut World) {
 		&mut world.texture_manager,
 		&mut world.shader_manager,
 		world.shader_defaults.default_shader_name.as_str().clone(),
-		"quad.mdl3d",
-		vec!["diffuse.png"]
+		"models\\quad.mdl3d",
+		vec!["textures\\diffuse.png"]
 	);
 	quad.link_component::<Renderer>(&mut world.component_manager, rc);
 	quad.link_default_component::<transforms::Position>(&mut world.component_manager);
@@ -103,8 +103,8 @@ pub fn load_entities(world: &mut World) {
 		&mut world.texture_manager,
 		&mut world.shader_manager,
 		world.shader_defaults.default_shader_name.as_str().clone(),
-		"cube.mdl3d",				
-		vec!["diffuse.png", "normals.png"],
+		"models\\cube.mdl3d",				
+		vec!["textures\\diffuse.png", "textures\\normals.png"],
 	);
 	rc.uv_scale *= 10.0;
 	cube.link_component::<Renderer>(&mut world.component_manager, rc);

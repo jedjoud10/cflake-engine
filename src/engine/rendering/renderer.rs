@@ -64,7 +64,7 @@ impl Renderer {
 		texture_manager: &mut TextureManager,
 		shader_manager: &mut ShaderManager,
 		shader_name: &str,
-		model_name: &str,
+		model_path: &str,
 		texture_names: Vec<&str>,
 	) -> Self {
 		// Temp variables holding the global IDs of the textures
@@ -99,7 +99,7 @@ impl Renderer {
 		}
 		// Load the model resource
 		let model_resource = resource_manager
-			.load_packed_resource(model_name, "models\\")
+			.load_packed_resource(model_path)
 			.unwrap();
 		let model = Model::from_resource(model_resource).unwrap();
 		return Self {
@@ -114,11 +114,11 @@ impl Renderer {
 	pub fn new(
 		resource_manager: &mut ResourceManager,
 		shader_name: &str,
-		model_name: &str,
+		model_path: &str,
 	) -> Self {
 		// Load the model resource
 		let model_resource = resource_manager
-			.load_packed_resource(model_name, "models\\")
+			.load_packed_resource(model_path)
 			.unwrap();
 		let model = Model::from_resource(model_resource).unwrap();
 		return Self {

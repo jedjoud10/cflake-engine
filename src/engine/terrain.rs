@@ -331,8 +331,8 @@ impl TerrainGenerator {
 		let mut chunk_entity = Entity::new("Chunk");
 		let shader_name: String = {
 			let mut shader = Shader::from_vr_fr_subshader_files(
-				"default.vrsh.glsl",
-				"triplanar.frsh.glsl",
+				"shaders\\default.vrsh.glsl",
+				"shaders\\triplanar.frsh.glsl",
 				&mut data.resource_manager,
 				&mut data.shader_manager,
 			);
@@ -341,8 +341,8 @@ impl TerrainGenerator {
 
 		let mut rc = Renderer::new_procedural(data.resource_manager, shader_name.as_str(), model);
 		rc.uv_scale = glam::vec2(1.0, 1.0);
-		rc.diffuse_texture_id = data.texture_manager.get_texture_id("diffuse.png") as i16;
-		rc.normals_texture_id = data.texture_manager.get_texture_id("normals.png") as i16;
+		rc.diffuse_texture_id = data.texture_manager.get_texture_id("textures\\diffuse.png") as i16;
+		rc.normals_texture_id = data.texture_manager.get_texture_id("textures\\normals.png") as i16;
 		chunk_entity.link_component::<Renderer>(data.component_manager, rc);
 		chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
 		chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);

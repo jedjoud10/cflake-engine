@@ -36,15 +36,15 @@ impl RenderingSystem {
 		let mut quad_renderer_component = Renderer::default();
 		quad_renderer_component.model = Model::from_resource(
 			data.resource_manager
-				.load_packed_resource("screen_quad.mdl3d", "models\\")
+				.load_packed_resource("models\\screen_quad.mdl3d")
 				.unwrap(),
 		)
 		.unwrap();
 		quad_renderer_component.shader_name = {
 			// Load the shader that will draw the quad
 			let shader = Shader::from_vr_fr_subshader_files(
-				"passthrough.vrsh.glsl",
-				"screen_quad.frsh.glsl",
+				"shaders\\passthrough.vrsh.glsl",
+				"shaders\\screen_quad.frsh.glsl",
 				&mut data.resource_manager,
 				&mut data.shader_manager,
 			);

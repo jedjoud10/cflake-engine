@@ -7,7 +7,7 @@ use std::{collections::{hash_map::DefaultHasher, HashMap}, env, ffi::OsStr, fmt:
 // A resource manager that will load structs from binary files
 #[derive(Default)]
 pub struct ResourceManager {
-	cached_resources: HashMap<String, Resource>,
+	cached_resources: HashMap<u64, Resource>,
 }
 
 // All the conversion stuff from File -> Resource
@@ -254,7 +254,6 @@ impl ResourceManager {
 impl ResourceManager {
 	// Load back the data from the reader and turn it into a LoadedModel resource
 	pub fn load_model(reader: &mut BufReader<File>) -> Option<Resource> {
-		// This is a model
 		let vertices_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
 		let triangles_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
 		let mut vertices: Vec<glam::Vec3> = Vec::new();
@@ -309,19 +308,19 @@ impl ResourceManager {
 		}));
 	}
 	// Load back the data from the reader and turn it into a LoadedSubShader resource
-	pub fn load_subshader(reader: &mut BufReader<File>, file_name: String) -> Option<Resource> {
-		let mut shader_type: SubShaderType;
+	pub fn load_shader(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
+		let shader_type: SubShaderType;
 		let mut shader_name: String = String::new();
 		match reader.read_u8().ok()? {
 			0 => {
 				// This is a vertex subshader so the name of the shader will have a 'vertex' appended
 				shader_type = SubShaderType::Vertex;
-				shader_name = format!("{}.{}", &file_name, "vertex.glsl");
+				shader_name = format!("{}.{}", &local_path, "vrsh.glsl");
 			}
 			1 => {
 				// This is a vertex subshader so the name of the shader will have a 'fragmnet' appended
 				shader_type = SubShaderType::Fragment;
-				shader_name = format!("{}.{}", &file_name, "fragment.glsl");
+				shader_name = format!("{}.{}", &local_path, "frsh.glsl");
 			}
 			_ => { panic!("Shader type not supported!"); }
 		}
@@ -332,11 +331,10 @@ impl ResourceManager {
 		return Option::Some(Resource::Shader(LoadedSubShader {
 			source: shader_source.clone(),
 			subshader_type: shader_type.clone(),
-		}, shader_name.clone()));
+		}, shader_name));
 	}
 	// Load back the data from the reader and turn it into a LoadedTexture resource
-	pub fn load_texture(reader: &mut BufReader<File>) -> Option<Resource> {
-		// This is a texture
+	pub fn load_texture(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
 		let texture_width = reader.read_u16::<LittleEndian>().unwrap();
 		let texture_height = reader.read_u16::<LittleEndian>().unwrap();
 		let mut compressed_bytes: Vec<u8> = Vec::new();
@@ -349,16 +347,76 @@ impl ResourceManager {
 			width: texture_width,
 			height: texture_height,
 			compressed_bytes,
-		}, String::new()));
+		}, local_path));
 	}
 }
 
 // Da code.
 // Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
+// Date: 2021-08-13. Basically rewrote the whole thing. It's good now
 impl ResourceManager {	
 	// Loads a specific resource and caches it so we can use it next time
-	pub fn load_packed_resource(&mut self, name: &str, path: &str) -> Option<&Resource> {
-		todo!()
+	pub fn load_packed_resource(&mut self, local_path: &str) -> Option<&Resource> {
+		// Get the global path of the packed-resources folder
+		let exe_path = env::current_exe().unwrap();
+		let exe_path = exe_path.to_str().unwrap();
+		let client_folder: Vec<&str> = exe_path.split("\\").collect();
+		let client_folder = format!("{}\\", &client_folder[..(client_folder.len() - 1)].join("\\"));
+		let packed_resources_path = format!("{}packed-resources\\", client_folder);
+
+		// Now split the local path into the extension and name
+		let name: Vec<&str> = local_path.split("\\").collect();
+		let name_and_extension = name[name.len() - 1];
+		let name = name_and_extension.split(".").nth(0).unwrap().to_string();
+		let extension: Vec<&str> = name_and_extension.split(".").collect();
+		let extension = extension[1..].join(".");
+		// Hash the local path and then use it to load the file
+		let hashed_name: u64 = {
+			let mut hasher = DefaultHasher::new();
+			local_path.hash(&mut hasher);
+			hasher.finish()
+		};
+		// Check if we have the file cached, if we do, then just take the resource from the cache
+		if self.cached_resources.contains_key(&hashed_name) {
+			// We have the needed resource in the resource cache!
+			let resource = self.cached_resources.get(&hashed_name)?;
+			println!("Load cached resource: '{}'", local_path);
+			Some(resource);
+		}
+
+		// The global file path for the hashed packed resource
+		let file_path = format!("{}{}.pkg", packed_resources_path, hashed_name);
+		let mut resource: Resource = Resource::None;
+
+		// Since the resource was not in the cache, load it and then put it in the cache
+		// Open the file
+		println!("{}", local_path);
+		let packed_file = File::open(file_path).unwrap();
+		let mut reader = BufReader::new(packed_file);
+
+		// Update the resource type
+		match extension.as_str() {
+			"vrsh.glsl" | "frsh.glsl" => {
+				// Load the packed resource as a subshader
+				resource = Self::load_shader(&mut reader, local_path.to_string()).unwrap();
+			}
+			"mdl3d" => {
+				// Load the packed resource as a model
+				resource = Self::load_model(&mut reader).unwrap();
+			}
+			"png" => {
+				// This is a texture
+				resource = Self::load_texture(&mut reader, local_path.to_string()).unwrap();
+			}
+			_ => {}
+		}
+
+		// Insert the resource in the cache
+		self.cached_resources.insert(hashed_name, resource);
+		let resource = self.cached_resources.get(&hashed_name).unwrap();
+		println!("Cached resource: '{}'", local_path);
+
+		return Some(resource);
 	}
 	// Unloads a resource to save on memory
 	pub fn unload_resouce(&mut self) {}

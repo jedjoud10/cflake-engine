@@ -51,23 +51,22 @@ impl TextureManager {
 			return self.get_texture(*id);
 		} else {
 			// We don't even have the texture
-			panic!(format!("Texture: '{}' was not cached!", name));
+			panic!("Texture: '{}' was not cached!", name);
 		}
 	}
 	// Get the texture id of a specific texture using it's name
 	pub fn get_texture_id(&self, name: &str) -> u16 {
 		// Check if the texture even exists
-		let name = format!("{}.pkg", name);
 		if self.texture_ids.contains_key(&name.to_string()) {
-			return self.texture_ids.get(&name).unwrap().clone();
+			return self.texture_ids.get(&name.to_string()).unwrap().clone();
 		} else {
-			panic!(format!("Texture: '{}' was not cached!", name));
+			panic!("Texture: '{}' was not cached!", name);
 		}
 	}
 	// Load the default textures like white and black textures
 	pub fn load_default_texture(&mut self, resource_manager: &mut ResourceManager) {
-		self.black_texture_id = Texture::load_from_file("black.png", resource_manager, self).unwrap();
-		self.white_texture_id = Texture::load_from_file("white.png", resource_manager, self).unwrap();
+		self.black_texture_id = Texture::load_from_file("textures\\black.png", resource_manager, self).unwrap();
+		self.white_texture_id = Texture::load_from_file("textures\\white.png", resource_manager, self).unwrap();
 	}
 }
 
@@ -86,22 +85,22 @@ pub struct Texture {
 impl Texture {
 	// Loads a texture and caches it, then returns the texture id
 	pub fn load_from_file(
-		file: &str,
+		file_path: &str,
 		resource_manager: &mut ResourceManager,
 		texture_manager: &mut TextureManager,
 	) -> Option<u16> {
 		let mut id = 0_u16;
 		// Check if the texture was cached
 		
-		if texture_manager.texture_ids.contains_key(file) {
+		if texture_manager.texture_ids.contains_key(file_path) {
 			// Texture was already cached
-			println!("Load cached texture '{}'", file);
-			let cached_texture_id = texture_manager.get_texture_id(file);
+			println!("Load cached texture '{}'", file_path);
+			let cached_texture_id = texture_manager.get_texture_id(file_path);
 			id = cached_texture_id;
 			let cached_texture = texture_manager.get_texture(id);
 		} else {
 			// First time loading this texture
-			let texture_resource = resource_manager.load_packed_resource(file, "textures\\")?;
+			let texture_resource = resource_manager.load_packed_resource(file_path)?;
 			let texture = Texture::from_resource(texture_resource)?;
 			id = texture_manager.cache_texture(texture);
 		}
