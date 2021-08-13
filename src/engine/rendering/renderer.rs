@@ -129,7 +129,7 @@ impl Renderer {
 			..Self::default()
 		};
 	}
-	// Creates a new rendere using a procedural model, name of a shader, and no texture names
+	// Creates a new renderer using a procedural model, name of a shader, and no texture names
 	pub fn new_procedural(resource_manager: &mut ResourceManager, shader_name: &str, model: Model) -> Self {
 		return Self {
 			shader_name: shader_name.to_string(),

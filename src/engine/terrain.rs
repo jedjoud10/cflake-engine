@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::engine::rendering::shader::Shader;
+use noise::{Fbm, NoiseFn};
+
+use crate::engine::rendering::{shader::Shader, texture::Texture};
 
 use super::{core::{defaults::components::transforms, ecs::{component::ComponentManager, entity::{Entity, EntityManager}}, world::World}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::{ShaderDefaults, ShaderManager}, texture::TextureManager}, resources::ResourceManager};
 
@@ -341,8 +343,9 @@ impl TerrainGenerator {
 
 		let mut rc = Renderer::new_procedural(data.resource_manager, shader_name.as_str(), model);
 		rc.uv_scale = glam::vec2(1.0, 1.0);
-		rc.diffuse_texture_id = data.texture_manager.get_texture_id("textures\\diffuse.png") as i16;
-		rc.normals_texture_id = data.texture_manager.get_texture_id("textures\\normals.png") as i16;
+		rc.diffuse_texture_id = Texture::load_from_file("textures\\rock\\Rock033_1K_Color.png", &mut data.resource_manager, &mut data.texture_manager).unwrap() as i16;
+		rc.normals_texture_id = Texture::load_from_file("textures\\rock\\Rock033_1K_Normal.png", &mut data.resource_manager, &mut data.texture_manager).unwrap() as i16;
+		rc.normals_texture_id = data.texture_manager.white_texture_id as i16;
 		chunk_entity.link_component::<Renderer>(data.component_manager, rc);
 		chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
 		chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
@@ -353,18 +356,29 @@ impl TerrainGenerator {
 
 
 // A single 32x32x32 chunk in the world
-#[derive(Default)]
 pub struct Chunk {
 	pub position: glam::Vec3,
 	pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
 	pub isoline: f32,
+	fbm: Fbm
+}
+
+impl Default for Chunk {
+	fn default() -> Self {
+		Self {
+			position: glam::Vec3::ZERO,
+			data: [[[0.0; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
+			isoline: 0.0,
+			fbm: Fbm::new() 
+		}
+	}
 }
 
 // Actual model generation
 impl Chunk {
 	// Density functions
 	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-		return (x * 0.2).sin() * 5.0 + y;
+		return self.fbm.get([0.1 * x as f64, 0.1 * z as f64]) as f32 * 5.0 + y - 3.0;
 	}
 	// Generate the voxel data
 	pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
