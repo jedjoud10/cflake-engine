@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use gl::{TRIANGLES, VERSION};
-
 use crate::engine::rendering::shader::Shader;
 
 use super::{core::{defaults::components::transforms, ecs::{component::ComponentManager, entity::{Entity, EntityManager}}, world::World}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::{ShaderDefaults, ShaderManager}, texture::TextureManager}, resources::ResourceManager};

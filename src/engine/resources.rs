@@ -1,19 +1,7 @@
 use crate::engine::rendering::shader::SubShaderType;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use image::{io::Reader as ImageReader, GenericImageView};
-use std::{
-	collections::{hash_map::DefaultHasher, HashMap},
-	env,
-	ffi::OsStr,
-	fs::{create_dir, create_dir_all, read_dir, remove_file, File, OpenOptions},
-	hash::{Hash, Hasher},
-	io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write},
-	os::windows::prelude::MetadataExt,
-	path::{Path, PathBuf},
-	str,
-	thread::current,
-	time::SystemTime,
-};
+use walkdir::WalkDir;
+use std::{collections::{hash_map::DefaultHasher, HashMap}, env, ffi::OsStr, fmt::format, fs::{create_dir, create_dir_all, read_dir, remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]
@@ -21,9 +9,137 @@ pub struct ResourceManager {
 	cached_resources: HashMap<String, Resource>,
 }
 
+// All the conversion stuff from File -> Resource
+impl ResourceManager {
+	// Turn a mdl3d file into a LoadedModel resource
+	pub fn pack_mdl3d(file: &File) -> Resource {
+		// Create all the buffers
+		let reader = BufReader::new(file);
+		let mut vertices: Vec<glam::Vec3> = Vec::new();
+		let mut normals: Vec<glam::Vec3> = Vec::new();
+		let mut tangents: Vec<glam::Vec4> = Vec::new();
+		let mut uvs: Vec<glam::Vec2> = Vec::new();
+		let mut triangles: Vec<u32> = Vec::new();
+		// Go over each line and scan it
+		for line in reader.lines() {
+			let line = line.unwrap();
+			let start = line.split_once(" ").unwrap().0;
+			let other = line.split_once(" ").unwrap().1;
+			match start {
+				// Vertices
+				"v" => {
+					let coords: Vec<f32> = other
+						.split("/")
+						.map(|coord| coord.parse::<f32>().unwrap())
+						.collect();
+					vertices.push(glam::vec3(coords[0], coords[1], coords[2]));
+				}
+				// Normals
+				"n" => {
+					let coords: Vec<f32> = other
+						.split("/")
+						.map(|coord| coord.parse::<f32>().unwrap())
+						.collect();
+					normals.push(glam::vec3(coords[0], coords[1], coords[2]));
+				}
+				// UVs
+				"u" => {
+					let coords: Vec<f32> = other
+						.split("/")
+						.map(|coord| coord.parse::<f32>().unwrap())
+						.collect();
+					uvs.push(glam::vec2(coords[0], coords[1]));
+				}
+				// Tangents
+				"t" => {
+					let coords: Vec<f32> = other
+						.split("/")
+						.map(|coord| coord.parse::<f32>().unwrap())
+						.collect();
+					tangents.push(glam::vec4(
+						coords[0], coords[1], coords[2], coords[3],
+					));
+				}
+				// Triangle indices
+				"i" => {
+					// Split the triangle into 3 indices
+					let mut indices = other
+						.split("/")
+						.map(|x| x.to_string().parse::<u32>().unwrap())
+						.collect();
+					triangles.append(&mut indices);
+				}
+				_ => {}
+			}
+		}
+		// Create the model
+		let model = LoadedModel {
+			vertices,
+			indices: triangles,
+			normals,
+			uvs,
+			tangents,
+		};
+		return Resource::Model(model);
+	}
+	// Turn a shader file of any type (vertex, fragment, etc) to a LoadedShader resource
+	pub fn pack_shader(file: &File, extension: &str) -> Resource {
+		// The shader resource
+		let mut shader: Resource = Resource::None;
+		// String holding the extension of the file
+		let mut reader = BufReader::new(file);
+		match extension {
+			"vrsh.glsl" => {
+				// This is a vertex shader
+				let mut string_source: String = String::new();
+				reader.read_to_string(&mut string_source);
+				shader = Resource::Shader(LoadedSubShader {
+					name: String::from("Undefined"),
+					source: string_source,
+					subshader_type: SubShaderType::Vertex,
+				});
+			}
+			"frsh.glsl" => {
+				// This is a fragment shader
+				let mut string_source: String = String::new();
+				reader.read_to_string(&mut string_source);
+				shader = Resource::Shader(LoadedSubShader {
+					name: String::from("Undefined"),
+					source: string_source,
+					subshader_type: SubShaderType::Fragment,
+				});
+			}
+			_ => {}
+		}
+		return shader;
+	}
+	// Turn a texture file to a LoadedTexture resource
+	pub fn pack_texture(file: &File) -> Resource {		
+		// The texture resource
+		let mut texture: Resource = Resource::None;
+		
+		// This is a texture
+		let mut reader = BufReader::new(file);
+		let image = image::load(&mut reader, image::ImageFormat::Png).unwrap();
+		let image = image.as_rgba8().unwrap();
+		let mut dimensions = image.dimensions();	
+		let mut bytes: Vec<u8> = Vec::new();
+
+		// Reset the cursor since we already read from buffer this
+		reader.seek(SeekFrom::Start(0));
+		reader.read_to_end(&mut bytes);
+		texture = Resource::Texture(LoadedTexture {
+			name: String::from(""),
+			width: dimensions.0 as u16,
+			height: dimensions.1 as u16,
+			compressed_bytes: bytes,
+		});
+		return texture;
+	}
+}
 // Da code.
 // Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
-impl ResourceManager {
+impl ResourceManager {	
 	// Loads a specific resource and caches it so we can use it next time
 	pub fn load_packed_resource(&mut self, name: &str, path: &str) -> Option<&Resource> {
 		let name = format!("{}.{}", name, "pkg");
@@ -178,430 +294,53 @@ impl ResourceManager {
 	pub fn unload_resouce(&mut self) {}
 	// Saves all the resources from the "resources" folder into the "packed-resources" folder
 	pub fn pack_resources() {
-		println!("Packing resources...");
-		// Go up by two folders, so we're in the main project folder
-		let path = env::current_dir().unwrap().clone();
-		let path = path.parent().unwrap().parent().unwrap();
-		let path = path.as_os_str().to_str().unwrap();
-		let resources_dir = format!("{}\\src\\resources\\", path);
-		let packed_resources_dir = format!("{}\\src\\packed-resources\\", path);
-		println!("Resources directory: {}", &resources_dir);
-		println!("Packed-Resources directory: {}", &packed_resources_dir);
-		// Get a writer to the log file
-		// Keep track of the names-timestamp relation
-		let log_file_path = format!("{}\\src\\packed-resources\\log.log", path);
-		let mut hashed_names_timestamps: HashMap<u64, u64> = HashMap::new();
-		{
-			let mut log_reader = BufReader::new(
-				OpenOptions::new()
-					.write(true)
-					.read(true)
-					.create(true)
-					.open(log_file_path.clone())
-					.unwrap(),
-			);
-			let mut num = 0;
-			let mut last_hashed_name = 0_u64;
-			// Make an infinite loop, and at each iteration, read 8 bytes
-			// Those 8 bytes will either be a hashed-name that we will store for the next iteration or
-			// A timestamp, if it's a timestamp then get the hashed-name we got from the last iteration and insert both of them into the hashmap
-			loop {
-				match log_reader.read_u64::<LittleEndian>() {
-					Ok(val) => {
-						// Check if this is a hashed name or a timestamp
-						if num % 2 == 0 {
-							// This is a hashed name
-							last_hashed_name = val;
-						} else {
-							// This is a timestamp
-							hashed_names_timestamps.insert(last_hashed_name.clone(), val);
-						}
-						num += 1;
-					}
-					Err(_) => {
-						// End of the log file
-						break;
-					}
-				}
+		// Get the original resource folder
+		let env_path = env::current_dir().unwrap();
+		let mut env_path = env_path.to_str().unwrap();
+		let env_path: Vec<&str> = env_path.split("\\").collect();
+		let env_path: String = format!("{}\\", &env_path[..(env_path.len() - 2)].join("\\"));
+		let resources_path = format!("{}\\src\\resources\\", env_path);
+		println!("Resource path '{}'", resources_path);
+		
+		// Recursive file finder lol
+		let walk_dir = WalkDir::new(resources_path);
+
+		// First of all, loop through all the resource directories recursively and find all the files that can be packed	
+		for dir_entry in walk_dir.into_iter() {
+			// Get the file
+			let dir_entry = dir_entry.unwrap();
+			// Skip the entry if it's not a file
+			if dir_entry.path().is_dir() {
+				continue;
 			}
-		}
-		println!("{:?}", hashed_names_timestamps);
-		// Get all the resource files from the resources folder
-		let files =
-			read_dir(resources_dir.clone()).expect("Failed to read the resources directory!");
-		let mut files_that_could_possibly_get_packed: Vec<String> = Vec::new();
-		// Now, pack every resource in each sub-directory
-		for sub_directory in files {
-			let sub_directory = sub_directory.as_ref().unwrap();
-			let md = &sub_directory.metadata().unwrap();
-			// This is a folder, so save the folder into the packed resources as well
-			if md.is_dir() {
-				let sub_dir_files = read_dir(sub_directory.path().to_str().unwrap())
-					.expect("Failed to read a resources sub-directory!");
-				for sub_file in sub_dir_files {
-					let sub_file = sub_file.as_ref().unwrap();
-					let path = sub_file.path();
-					// This extension is anything after the first dot
-					let extension: Vec<&str> = path
-						.file_name()
-						.unwrap()
-						.to_str()
-						.unwrap()
-						.split(".")
-						.collect();
-					let extension = &extension[1..].join(".");
-					let name: String = path
-						.file_name()
-						.unwrap()
-						.to_str()
-						.unwrap()
-						.split(".")
-						.nth(0)
-						.unwrap()
-						.to_string();
-					let sub_dir_name = sub_directory.file_name();
-					println!("Directory name: '{}'", sub_dir_name.to_str().unwrap());
-					let packed_resources_dir =
-						format!("{}{}", packed_resources_dir, sub_dir_name.to_str().unwrap());
-					println!("Packing resource: '{}'", name.as_str());
-					let opened_file = File::open(&path).unwrap();
-					files_that_could_possibly_get_packed.push(format!(
-						"{}\\{}",
-						sub_dir_name.to_str().unwrap(),
-						name
-					));
-					// Check the logged timestamp of this resource, if it does not exist, then pack this resource
-					{
-						// Hash the name
-						let mut hasher = DefaultHasher::new();
-						format!("{}\\{}", sub_dir_name.to_str().unwrap(), format!("{}.{}", name, extension)).hash(&mut hasher);
-						println!("{}", format!("{}\\{}", sub_dir_name.to_str().unwrap(), format!("{}.{}", name, extension)));
-						let hashed_name = hasher.finish();
-						// The timestamp of the current resource
-						let resource_timestamp = opened_file
-							.metadata()
-							.unwrap()
-							.modified()
-							.unwrap()
-							.duration_since(std::time::UNIX_EPOCH)
-							.unwrap()
-							.as_secs();
-						if hashed_names_timestamps.contains_key(&hashed_name) {
-							// Check if the timestamp changed drastically (Margin of 20 seconds)
-							let packed_resource_timestamp =
-								hashed_names_timestamps.get(&hashed_name).unwrap().clone();
-							// Did we update the resource?
-							if resource_timestamp > packed_resource_timestamp {
-								// We did update
-								println!("Resource file did change!");
-							} else {
-								// We did not update, no need to pack this resource
-								println!("Resource file did not change...");
-								continue;
-							}
-						} else {
-							// The resource just got added, so we pack it
-							println!("Could not find packed-resource data in log file...");
-						}
-					}
+			let file = OpenOptions::new().read(true).open(dir_entry.path()).unwrap();
+			let file_name_and_extension = dir_entry.file_name().to_str().unwrap();
+			// Everything before the first dot
+			let file_name = file_name_and_extension.split(".").nth(0).unwrap();
+			// Everything after the first dot
+			let file_extension: Vec<&str> = file_name_and_extension.split(".").collect();
+			let file_extension = file_extension[1..].join(".");
+			println!("Packaging file '{}.{}'", file_name, file_extension);
 
-					// Write the extension to the file
-					let mut reader = BufReader::new(opened_file);
-					let mut resource: Resource = Resource::None;
+			// This is the resource that we are going to pack
+			let mut resource = Resource::None;
 
-					// The type of resource that we will be saving
-					let mut resource_type = 0;
-
-					match extension.as_str() {
-						"vrsh.glsl" => {
-							// This is a vertex shader
-							let mut string_source: String = String::new();
-							reader.read_to_string(&mut string_source);
-							resource = Resource::Shader(LoadedSubShader {
-								name: String::from("Undefined"),
-								source: string_source,
-								subshader_type: SubShaderType::Vertex,
-							});
-							resource_type = 3;
-						}
-						"frsh.glsl" => {
-							// This is a fragment shader
-							let mut string_source: String = String::new();
-							reader.read_to_string(&mut string_source);
-							resource = Resource::Shader(LoadedSubShader {
-								name: String::from("Undefined"),
-								source: string_source,
-								subshader_type: SubShaderType::Fragment,
-							});
-							resource_type = 3;
-						}
-						"png" => {
-							// This is a texture
-							let image = ImageReader::open(path.clone())
-								.unwrap()
-								.with_guessed_format()
-								.unwrap()
-								.decode()
-								.unwrap();
-							let mut dimensions = image.dimensions();	
-							let mut bytes: Vec<u8> = Vec::new();
-							reader.read_to_end(&mut bytes);
-							resource = Resource::Texture(LoadedTexture {
-								name: String::from("Undefined"),
-								width: dimensions.0 as u16,
-								height: dimensions.1 as u16,
-								compressed_bytes: bytes,
-							});
-							resource_type = 2;
-						}
-						"wav" => {
-							resource_type = 4;
-							// This is a sound effect
-						}
-						"mdl3d" => {
-							resource_type = 1;
-							// This is a model
-							// Parse the obj model
-							let mut vertices: Vec<glam::Vec3> = Vec::new();
-							let mut normals: Vec<glam::Vec3> = Vec::new();
-							let mut tangents: Vec<glam::Vec4> = Vec::new();
-							let mut uvs: Vec<glam::Vec2> = Vec::new();
-							let mut triangles: Vec<u32> = Vec::new();
-							for line in reader.lines() {
-								let line = line.unwrap();
-								let start = line.split_once(" ").unwrap().0;
-								let other = line.split_once(" ").unwrap().1;
-								match start {
-									"v" => {
-										let coords: Vec<f32> = other
-											.split("/")
-											.map(|coord| coord.parse::<f32>().unwrap())
-											.collect();
-										vertices.push(glam::vec3(coords[0], coords[1], coords[2]));
-									}
-									"n" => {
-										let coords: Vec<f32> = other
-											.split("/")
-											.map(|coord| coord.parse::<f32>().unwrap())
-											.collect();
-										normals.push(glam::vec3(coords[0], coords[1], coords[2]));
-									}
-									"u" => {
-										let coords: Vec<f32> = other
-											.split("/")
-											.map(|coord| coord.parse::<f32>().unwrap())
-											.collect();
-										uvs.push(glam::vec2(coords[0], coords[1]));
-									}
-									"t" => {
-										let coords: Vec<f32> = other
-											.split("/")
-											.map(|coord| coord.parse::<f32>().unwrap())
-											.collect();
-										tangents.push(glam::vec4(
-											coords[0], coords[1], coords[2], coords[3],
-										));
-									}
-									// Load the triangle indices
-									"i" => {
-										// Split the triangle into 3 indices
-										let mut indices = other
-											.split("/")
-											.map(|x| x.to_string().parse::<u32>().unwrap())
-											.collect();
-										triangles.append(&mut indices);
-									}
-									_ => {}
-								}
-							}
-							resource = Resource::Model(LoadedModel {
-								vertices,
-								indices: triangles,
-								normals,
-								uvs,
-								tangents,
-							});
-						}
-						_ => {
-							println!("File type not supported!");
-							continue;
-						}
-					}
-
-					// Now we actually write to the file
-
-					// Make sure the packed resources directory exists
-					let temp_path = format!("{}\\", &packed_resources_dir);
-					let temp_path = Path::new(&temp_path);
-					if !temp_path.exists() {
-						create_dir_all(&temp_path);
-					}
-
-					let packed_file_path = format!(
-						"{}\\{}.{}.pkg",
-						&packed_resources_dir,
-						name.as_str(),
-						extension.as_str()
-					);
-					println!("{}", packed_file_path);
-					// Create the new file
-					let new_file = File::create(packed_file_path.clone())
-						.expect("Failed to create the packaged file!");
-					// These are the bytes that we are going to write to the file
-					let mut bytes_to_write: Vec<u8> = Vec::new();
-					let packed_resource_timestamp = new_file
-						.metadata()
-						.unwrap()
-						.modified()
-						.unwrap()
-						.duration_since(SystemTime::UNIX_EPOCH)
-						.unwrap()
-						.as_secs();
-					// Write the resource type first
-					let mut writer = BufWriter::new(new_file);
-					writer.write_u8(resource_type);
-
-					// Now we can serialize each type of resource and pack them
-					match resource {
-						Resource::None => {}
-						Resource::Model(model) => {
-							// Write to the strem
-							writer.write_u32::<LittleEndian>(model.vertices.len() as u32);
-							writer.write_u32::<LittleEndian>(model.indices.len() as u32);
-							// Write the vertices
-							for &vertex in model.vertices.iter() {
-								writer.write_f32::<LittleEndian>(vertex.x);
-								writer.write_f32::<LittleEndian>(vertex.y);
-								writer.write_f32::<LittleEndian>(vertex.z);
-							}
-							// Write the normals
-							for &normal in model.normals.iter() {
-								writer.write_f32::<LittleEndian>(normal.x);
-								writer.write_f32::<LittleEndian>(normal.y);
-								writer.write_f32::<LittleEndian>(normal.z);
-							}
-							// Write the tangents
-							for &tangent in model.tangents.iter() {
-								writer.write_f32::<LittleEndian>(tangent.x);
-								writer.write_f32::<LittleEndian>(tangent.y);
-								writer.write_f32::<LittleEndian>(tangent.z);
-								writer.write_f32::<LittleEndian>(tangent.w);
-							}
-							// Write the uvs
-							for &uv in model.uvs.iter() {
-								writer.write_f32::<LittleEndian>(uv.x);
-								writer.write_f32::<LittleEndian>(uv.y);
-							}
-							// Write the indices
-							for &index in model.indices.iter() {
-								writer.write_u32::<LittleEndian>(index);
-							}
-						}
-						Resource::Texture(texture) => {
-							// Write the dimensions of the texture
-							writer.write_u16::<LittleEndian>(texture.width).unwrap();
-							writer.write_u16::<LittleEndian>(texture.height).unwrap();
-
-							// Now write all the bytes
-							for byte in texture.compressed_bytes {
-								writer.write_u8(byte);
-							}
-						}
-						Resource::Shader(shader) => {
-							// Turn the source string into bytes, and write them into the resource file
-							let mut string_bytes = shader.source.into_bytes().to_vec();
-							let mut shader_type_byte: u8 = 0;
-							// Save the type of subshader
-							match shader.subshader_type {
-								SubShaderType::Vertex => shader_type_byte = 0,
-								SubShaderType::Fragment => shader_type_byte = 1,
-								SubShaderType::Geometry => shader_type_byte = 2,
-							}
-							bytes_to_write.append(&mut vec![shader_type_byte]);
-
-							// Save the shader source code found in the text files
-							bytes_to_write.append(&mut string_bytes);
-						}
-						Resource::Sound(_) => {}
-					}
-
-					// Create the packaged file
-					//panic!("{}", packed_file_path);
-					writer.write(bytes_to_write.as_slice());
-					// Save the name and timestamp creation date of this packed resource in the log file
-					{
-						let log_file = OpenOptions::new()
-							.append(true)
-							.open(log_file_path.clone())
-							.unwrap();
-						let mut log_writer = BufWriter::new(log_file);
-						let mut hashed_name: u64 = 0;
-						{
-							// Hash the name
-							let mut hasher = DefaultHasher::new();
-							format!("{}\\{}", sub_dir_name.to_str().unwrap(), format!("{}.{}", name, extension))
-								.hash(&mut hasher);
-							hashed_name = hasher.finish();
-						}
-						hashed_names_timestamps.insert(hashed_name, packed_resource_timestamp);
-						log_writer.write_u64::<LittleEndian>(hashed_name);
-						log_writer.write_u64::<LittleEndian>(packed_resource_timestamp);
-					}
+			// Now pack each resource in it's own way
+			match file_extension.as_str() {
+				"vrsh.glsl" | "frsh.glsl" => {
+					// This is a shader
+					resource = Self::pack_shader(&file, file_extension.as_str());
 				}
-			}
-		}
-		let mut log_file = OpenOptions::new()
-			.write(true)
-			.open(log_file_path.clone())
-			.unwrap();
-		log_file.set_len(0);
-		let mut log_writer = BufWriter::new(log_file);
-		// Now loop through all the packed files and delete the ones that are not present in the log file
-		let packed_files = read_dir(packed_resources_dir).unwrap();
-		println!("{:?}", hashed_names_timestamps);
-		for sub_directory in packed_files {
-			let sub_directory = sub_directory.unwrap();
-			let sub_dir_name = sub_directory.file_name();
-			let sub_dir_name = sub_dir_name.to_str().unwrap();
-			if sub_directory.metadata().unwrap().is_dir() {
-				for packed_file_dir_entry in read_dir(sub_directory.path()).unwrap() {
-					let packed_file = packed_file_dir_entry.as_ref().unwrap();
-					let packed_file_path = packed_file.path();
-					let packed_file_path = packed_file_path.to_str();
-					let name = packed_file.file_name();
-					let name = name.to_str().unwrap();
-					let split_name_vec: Vec<&str> = name.split(".").collect();
-					let split_name = split_name_vec[0];
-					if files_that_could_possibly_get_packed
-						.contains(&format!("{}\\{}", sub_dir_name, split_name))
-					{
-						// This file exists in the resources folder
-					} else {
-						// This file does not exist, so delete it
-						remove_file(packed_file_path.unwrap());
-						// And also remove it from the logs file
-
-						// Hash the name
-						let mut hashed_name: u64 = 0;
-						{
-							let mut hasher = DefaultHasher::new();
-							let new_name_split = name.split(".pkg").collect::<Vec<&str>>()[..1].join(".");
-							format!("{}\\{}", sub_dir_name, new_name_split).hash(&mut hasher);
-							println!("{}", format!("{}\\{}", sub_dir_name, new_name_split));
-							hashed_name = hasher.finish();
-						}
-						println!("{}", hashed_name);
-						println!("{}", hashed_names_timestamps.len());
-						hashed_names_timestamps.remove(&hashed_name);
-						println!("{}", hashed_names_timestamps.len());
-					}
+				"mdl3d" => {
+					// This is a 3D model
+					resource = Self::pack_mdl3d(&file);
 				}
+				"png" => {
+					// This is a texture
+					resource = Self::pack_texture(&file);
+				}
+				_ => {}
 			}
-		}
-		// Rewrite the log file
-		for (name, timestamp) in hashed_names_timestamps {
-			log_writer.write_u64::<LittleEndian>(name);
-			log_writer.write_u64::<LittleEndian>(timestamp);
 		}
 	}
 }
