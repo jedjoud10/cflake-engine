@@ -356,37 +356,30 @@ impl TerrainGenerator {
 
 
 // A single 32x32x32 chunk in the world
+#[derive(Default)]
 pub struct Chunk {
 	pub position: glam::Vec3,
 	pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
 	pub isoline: f32,
-	fbm: Fbm
-}
-
-impl Default for Chunk {
-	fn default() -> Self {
-		Self {
-			position: glam::Vec3::ZERO,
-			data: [[[0.0; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
-			isoline: 0.0,
-			fbm: Fbm::new() 
-		}
-	}
 }
 
 // Actual model generation
 impl Chunk {
 	// Density functions
-	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-		return self.fbm.get([0.1 * x as f64, 0.1 * z as f64]) as f32 * 5.0 + y - 3.0;
+	fn density(&self, x: f32, y: f32, z: f32, fbm: &Fbm) -> f32 {
+		let density: f32 =  fbm.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 5.0 + y - 3.0;
+		return y - 5.0;
+		return density.max(y-5.0).min(y+5.0);
 	}
 	// Generate the voxel data
 	pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
+		let mut fbm = Fbm::new();
+		fbm.octaves = 1;
 		// Create a simple plane 
 		for x in 0..CHUNK_SIZE {
 			for y in 0..CHUNK_SIZE {
 				for z in 0..CHUNK_SIZE {
-					self.data[x][y][z] = self.density(x as f32, y as f32, z as f32);
+					self.data[x][y][z] = self.density(x as f32, y as f32, z as f32, &fbm);
 				}
 			}
 		}

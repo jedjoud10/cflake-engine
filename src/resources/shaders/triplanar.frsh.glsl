@@ -29,9 +29,9 @@ void main() {
 	normaly = vec3(vec2(normaly.x, -normaly.y) + world_normal.xz, world_normal.y) * pow(abs(world_normal.y), sharpening);
 	normalz = vec3(vec2(normalz.x, -normalz.y) + world_normal.xy, world_normal.z) * pow(abs(world_normal.z), sharpening);
 
-	vec3 normal_final = normalize(normaly.xzy);
+	vec3 normal_final = normalize(normalx.zyx + normaly.zxy + normalz.xyz);
 
 	frag_diffuse = diffuse_final;
-	frag_normal = normal_final;
+	frag_normal = m_normal;
 	frag_pos = m_position;
 }
