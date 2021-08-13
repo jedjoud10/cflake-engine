@@ -145,8 +145,12 @@ impl ResourceManager {
 			
 			// Make sure the bit depth of the texture i 32, and to do that we load the texture, then resave it
 			image::save_buffer_with_format(full_path, &raw_pixels, dimensions.0, dimensions.1, image::ColorType::Rgba8, image::ImageFormat::Png);			
+		} else {
+			// I forgot to tell it to get the dimensions of the texture even if we shouldn't resave it -.-
+			let mut reader = BufReader::new(File::open(full_path).unwrap());
+			let image = image::io::Reader::new(&mut reader).with_guessed_format().unwrap().decode().unwrap();
+			dimensions = image.dimensions();
 		}
-		
 
 		// Re-read the image, since we might've changed it's bit depth in the last scope
 		let mut reader = BufReader::new(File::open(full_path).unwrap());
