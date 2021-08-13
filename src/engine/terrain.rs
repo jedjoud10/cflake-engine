@@ -4,15 +4,32 @@ use noise::{Fbm, NoiseFn};
 
 use crate::engine::rendering::{shader::Shader, texture::Texture};
 
-use super::{core::{defaults::components::transforms, ecs::{component::ComponentManager, entity::{Entity, EntityManager}}, world::World}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::{ShaderDefaults, ShaderManager}, texture::TextureManager}, resources::ResourceManager};
-
+use super::{
+    core::{
+        defaults::components::transforms,
+        ecs::{
+            component::ComponentManager,
+            entity::{Entity, EntityManager},
+        },
+        world::World,
+    },
+    rendering::{
+        model::{Model, ProceduralModelGenerator},
+        renderer::Renderer,
+        shader::{ShaderDefaults, ShaderManager},
+        texture::TextureManager,
+    },
+    resources::ResourceManager,
+};
 
 // How many voxels in one axis in each chunk?
 const CHUNK_SIZE: usize = 32;
 
 // Triangulation table
 const TRI_TABLE: [[i8; 16]; 256] = [
-    [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    [
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    ],
     [0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [1, 8, 3, 9, 8, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -267,209 +284,230 @@ const TRI_TABLE: [[i8; 16]; 256] = [
     [1, 3, 8, 9, 1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [0, 9, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-    [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    [
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    ],
 ];
 
 // Edge table
 const EDGE_TABLE: [usize; 24] = [
-	// Bottom face 
-	0, 1,
-	1, 2,
-	2, 3,
-	3, 0,
-
-	// Top face
-	4, 5,
-	5, 6,
-	6, 7,
-	7, 4,
-
-	// Sides
-	0, 4,
-	1, 5,
-	2, 6,
-	3, 7,
+    // Bottom face
+    0, 1, 1, 2, 2, 3, 3, 0, // Top face
+    4, 5, 5, 6, 6, 7, 7, 4, // Sides
+    0, 4, 1, 5, 2, 6, 3, 7,
 ];
 
-// Vertex table 
+// Vertex table
 const VERTEX_TABLE: [glam::Vec3; 8] = [
-	glam::const_vec3!([0.0, 0.0, 0.0]),
-	glam::const_vec3!([0.0, 0.0, 1.0]),
-	glam::const_vec3!([1.0, 0.0, 1.0]),
-	glam::const_vec3!([1.0, 0.0, 0.0]),
-
-	glam::const_vec3!([0.0, 1.0, 0.0]),
-	glam::const_vec3!([0.0, 1.0, 1.0]),
-	glam::const_vec3!([1.0, 1.0, 1.0]),
-	glam::const_vec3!([1.0, 1.0, 0.0]),
+    glam::const_vec3!([0.0, 0.0, 0.0]),
+    glam::const_vec3!([0.0, 0.0, 1.0]),
+    glam::const_vec3!([1.0, 0.0, 1.0]),
+    glam::const_vec3!([1.0, 0.0, 0.0]),
+    glam::const_vec3!([0.0, 1.0, 0.0]),
+    glam::const_vec3!([0.0, 1.0, 1.0]),
+    glam::const_vec3!([1.0, 1.0, 1.0]),
+    glam::const_vec3!([1.0, 1.0, 0.0]),
 ];
 // Hehe terrain generator moment
 #[derive(Default)]
 pub struct TerrainGenerator {
-	pub chunks: Vec<Chunk>,
-	pub isoline: f32,
+    pub chunks: Vec<Chunk>,
+    pub isoline: f32,
 }
 
 // Data that will be passed to the terrain generator
 pub struct TerrainGeneratorData<'a> {
-	pub component_manager: &'a mut ComponentManager,
-	pub resource_manager: &'a mut ResourceManager,
-	pub shader_manager: &'a mut ShaderManager,
-	pub shader_defaults: &'a mut ShaderDefaults,
-	pub texture_manager: &'a mut TextureManager,
+    pub component_manager: &'a mut ComponentManager,
+    pub resource_manager: &'a mut ResourceManager,
+    pub shader_manager: &'a mut ShaderManager,
+    pub shader_defaults: &'a mut ShaderDefaults,
+    pub texture_manager: &'a mut TextureManager,
 }
 
 // Terrain code
 impl TerrainGenerator {
-	// 1. Create the chunks, and generate their data
-	// 2. Create the actual chunk entities and create the models
-	pub fn generate_terrain(&mut self, data: &mut TerrainGeneratorData) -> Vec<Entity> {
-		self.isoline = 0.0;
-		let mut chunk = Chunk::default();
-		chunk.generate_data(self);
-		let model = chunk.generate_model();
+    // 1. Create the chunks, and generate their data
+    // 2. Create the actual chunk entities and create the models
+    pub fn generate_terrain(&mut self, data: &mut TerrainGeneratorData) -> Vec<Entity> {
+        self.isoline = 0.0;
+        let mut chunk = Chunk::default();
+        chunk.generate_data(self);
+        let model = chunk.generate_model();
 
-		// Create the entity
-		let mut chunk_entity = Entity::new("Chunk");
-		let shader_name: String = {
-			let mut shader = Shader::from_vr_fr_subshader_files(
-				"shaders\\default.vrsh.glsl",
-				"shaders\\triplanar.frsh.glsl",
-				&mut data.resource_manager,
-				&mut data.shader_manager,
-			);
-			shader.name.clone()
-		};
+        // Create the entity
+        let mut chunk_entity = Entity::new("Chunk");
+        let shader_name: String = {
+            let mut shader = Shader::from_vr_fr_subshader_files(
+                "shaders\\default.vrsh.glsl",
+                "shaders\\triplanar.frsh.glsl",
+                &mut data.resource_manager,
+                &mut data.shader_manager,
+            );
+            shader.name.clone()
+        };
 
-		let mut rc = Renderer::new_procedural(data.resource_manager, shader_name.as_str(), model);
-		rc.uv_scale = glam::vec2(1.0, 1.0);
-		rc.diffuse_texture_id = Texture::load_from_file("textures\\rock\\Rock033_1K_Color.png", &mut data.resource_manager, &mut data.texture_manager).unwrap() as i16;
-		rc.normals_texture_id = Texture::load_from_file("textures\\rock\\Rock033_1K_Normal.png", &mut data.resource_manager, &mut data.texture_manager).unwrap() as i16;
-		rc.normals_texture_id = data.texture_manager.white_texture_id as i16;
-		chunk_entity.link_component::<Renderer>(data.component_manager, rc);
-		chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
-		chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
-		chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
-		return vec![chunk_entity];
-	}
+        let mut rc = Renderer::new_procedural(data.resource_manager, shader_name.as_str(), model);
+        rc.uv_scale = glam::vec2(1.0, 1.0);
+        rc.diffuse_texture_id = Texture::load_from_file(
+            "textures\\rock\\Rock033_1K_Color.png",
+            &mut data.resource_manager,
+            &mut data.texture_manager,
+        )
+        .unwrap() as i16;
+        rc.normals_texture_id = Texture::load_from_file(
+            "textures\\rock\\Rock033_1K_Normal.png",
+            &mut data.resource_manager,
+            &mut data.texture_manager,
+        )
+        .unwrap() as i16;
+        rc.normals_texture_id = data.texture_manager.white_texture_id as i16;
+        chunk_entity.link_component::<Renderer>(data.component_manager, rc);
+        chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
+        chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
+        chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
+        return vec![chunk_entity];
+    }
 }
-
 
 // A single 32x32x32 chunk in the world
 #[derive(Default)]
 pub struct Chunk {
-	pub position: glam::Vec3,
-	pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
-	pub isoline: f32,
+    pub position: glam::Vec3,
+    pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
+    pub isoline: f32,
 }
 
 // Actual model generation
 impl Chunk {
-	// Density functions
-	fn density(&self, x: f32, y: f32, z: f32, fbm: &Fbm) -> f32 {
-		let density: f32 =  fbm.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 5.0 + y - 3.0;
-		return y - 5.0;
-		return density.max(y-5.0).min(y+5.0);
-	}
-	// Generate the voxel data
-	pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
-		let mut fbm = Fbm::new();
-		fbm.octaves = 1;
-		// Create a simple plane 
-		for x in 0..CHUNK_SIZE {
-			for y in 0..CHUNK_SIZE {
-				for z in 0..CHUNK_SIZE {
-					self.data[x][y][z] = self.density(x as f32, y as f32, z as f32, &fbm);
-				}
-			}
-		}
+    // Density functions
+    fn density(&self, x: f32, y: f32, z: f32, fbm: &Fbm) -> f32 {
+        let density: f32 = fbm.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 5.0 + y - 3.0;
+        return y - 5.0;
+        return density.max(y - 5.0).min(y + 5.0);
+    }
+    // Generate the voxel data
+    pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
+        let mut fbm = Fbm::new();
+        fbm.octaves = 1;
+        // Create a simple plane
+        for x in 0..CHUNK_SIZE {
+            for y in 0..CHUNK_SIZE {
+                for z in 0..CHUNK_SIZE {
+                    self.data[x][y][z] = self.density(x as f32, y as f32, z as f32, &fbm);
+                }
+            }
+        }
 
-		// Save the isoline
-		self.isoline = terrain_generator.isoline;
-	}		
+        // Save the isoline
+        self.isoline = terrain_generator.isoline;
+    }
 }
 
 // This is a procedural model generator
 impl<'a> ProceduralModelGenerator for Chunk {
     // Generate a procedural marching cube model
-	fn generate_model(&self) -> Model {
-		let mut model: Model = Model::default();
-		let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
-		let mut edge_counter: u32 = 0;
-		// Loop over every voxel
-		for x in 0..CHUNK_SIZE-2 {
-			for y in 0..CHUNK_SIZE-2 {
-				for z in 0..CHUNK_SIZE-2 {
-					// Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
-					let mut case_index = 0u8;
-					case_index += ((self.data[x][y][z] > self.isoline) as u8) * 1;
-					case_index += ((self.data[x][y][z+1] > self.isoline) as u8) * 2;
-					case_index += ((self.data[x+1][y][z+1] > self.isoline) as u8) * 4;
-					case_index += ((self.data[x+1][y][z] > self.isoline) as u8) * 8;
-					case_index += ((self.data[x][y+1][z] > self.isoline) as u8) * 16;
-					case_index += ((self.data[x][y+1][z+1] > self.isoline) as u8) * 32;
-					case_index += ((self.data[x+1][y+1][z+1] > self.isoline) as u8) * 64;
-					case_index += ((self.data[x+1][y+1][z] > self.isoline) as u8) * 128;
-					// Get triangles
-					let edges: [i8; 16] = TRI_TABLE[case_index as usize];
-					for edge in edges {
-						// Make sure the triangle is valid
-						if edge != -1 {
-							// Get the vertex in local space
-							let vert1 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]];
-							let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
+    fn generate_model(&self) -> Model {
+        let mut model: Model = Model::default();
+        let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
+        let mut edge_counter: u32 = 0;
+        // Loop over every voxel
+        for x in 0..CHUNK_SIZE - 2 {
+            for y in 0..CHUNK_SIZE - 2 {
+                for z in 0..CHUNK_SIZE - 2 {
+                    // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
+                    let mut case_index = 0u8;
+                    case_index += ((self.data[x][y][z] > self.isoline) as u8) * 1;
+                    case_index += ((self.data[x][y][z + 1] > self.isoline) as u8) * 2;
+                    case_index += ((self.data[x + 1][y][z + 1] > self.isoline) as u8) * 4;
+                    case_index += ((self.data[x + 1][y][z] > self.isoline) as u8) * 8;
+                    case_index += ((self.data[x][y + 1][z] > self.isoline) as u8) * 16;
+                    case_index += ((self.data[x][y + 1][z + 1] > self.isoline) as u8) * 32;
+                    case_index += ((self.data[x + 1][y + 1][z + 1] > self.isoline) as u8) * 64;
+                    case_index += ((self.data[x + 1][y + 1][z] > self.isoline) as u8) * 128;
+                    // Get triangles
+                    let edges: [i8; 16] = TRI_TABLE[case_index as usize];
+                    for edge in edges {
+                        // Make sure the triangle is valid
+                        if edge != -1 {
+                            // Get the vertex in local space
+                            let vert1 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]];
+                            let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
 
-							// In global space here
-							let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
-							let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
-							let density1 = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2];
-							let density2 = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2];
-							// Do inverse linear interpolation to find the factor value
-							let mut value: f32 = inverse_lerp(density1, density2, self.isoline);
+                            // In global space here
+                            let vert1_usize = (
+                                vert1.x as usize + x,
+                                vert1.y as usize + y,
+                                vert1.z as usize + z,
+                            );
+                            let vert2_usize = (
+                                vert2.x as usize + x,
+                                vert2.y as usize + y,
+                                vert2.z as usize + z,
+                            );
+                            let density1 = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2];
+                            let density2 = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2];
+                            // Do inverse linear interpolation to find the factor value
+                            let mut value: f32 = inverse_lerp(density1, density2, self.isoline);
 
-							// Create the vertex
-							let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
-							// Offset the vertex
-							vertex += glam::vec3(x as f32, y as f32, z as f32);		
-							let mut normal: glam::Vec3 = {
-								let mut normal1 = glam::Vec3::ZERO;
-								let mut normal2 = glam::Vec3::ZERO;
-								
-								// Create the normal
-								normal1.x = self.data[vert1_usize.0 + 1][vert1_usize.1][vert1_usize.2] - density1;
-								normal1.y = self.data[vert1_usize.0][vert1_usize.1 + 1][vert1_usize.2] - density1;
-								normal1.z = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2 + 1] - density1;
-								normal2.x = self.data[vert2_usize.0+1][vert2_usize.1][vert2_usize.2] - density2;
-								normal2.y = self.data[vert2_usize.0][vert2_usize.1+1][vert2_usize.2] - density2;
-								normal2.z = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2+1] - density2;
-								glam::Vec3::lerp(normal1, normal2, value)
-							};
+                            // Create the vertex
+                            let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
+                            // Offset the vertex
+                            vertex += glam::vec3(x as f32, y as f32, z as f32);
+                            let mut normal: glam::Vec3 = {
+                                let mut normal1 = glam::Vec3::ZERO;
+                                let mut normal2 = glam::Vec3::ZERO;
 
-							let edge_tuple: (u32, u32, u32) = (2 * x as u32 + vert1.x as u32 + vert2.x as u32, 2 * y as u32 + vert1.y as u32 + vert2.y as u32, 2 * z as u32 + vert1.z as u32 + vert2.z as u32);
-							
-							// Check if this vertex was already added
-							if duplicate_vertices.contains_key(&edge_tuple) {
-								// The vertex already exists				
-								model.triangles.push(duplicate_vertices[&edge_tuple]);				
-							} else {
-								// Add this vertex
-								duplicate_vertices.insert(edge_tuple, model.vertices.len() as u32);
-								model.triangles.push(model.vertices.len() as u32);
-								model.vertices.push(vertex);								
-								model.uvs.push(glam::Vec2::ZERO);
-								model.normals.push(normal.normalize());
-								model.tangents.push(glam::Vec4::ZERO);
-							}							
-						}
-					}
-				}
-			}
-		}
-		// Inverse of lerp
-		fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
-			return (x - a) / (b - a);
-		}
-		// Return the model
-		return model;
-	}
+                                // Create the normal
+                                normal1.x = self.data[vert1_usize.0 + 1][vert1_usize.1]
+                                    [vert1_usize.2]
+                                    - density1;
+                                normal1.y = self.data[vert1_usize.0][vert1_usize.1 + 1]
+                                    [vert1_usize.2]
+                                    - density1;
+                                normal1.z = self.data[vert1_usize.0][vert1_usize.1]
+                                    [vert1_usize.2 + 1]
+                                    - density1;
+                                normal2.x = self.data[vert2_usize.0 + 1][vert2_usize.1]
+                                    [vert2_usize.2]
+                                    - density2;
+                                normal2.y = self.data[vert2_usize.0][vert2_usize.1 + 1]
+                                    [vert2_usize.2]
+                                    - density2;
+                                normal2.z = self.data[vert2_usize.0][vert2_usize.1]
+                                    [vert2_usize.2 + 1]
+                                    - density2;
+                                glam::Vec3::lerp(normal1, normal2, value)
+                            };
+
+                            let edge_tuple: (u32, u32, u32) = (
+                                2 * x as u32 + vert1.x as u32 + vert2.x as u32,
+                                2 * y as u32 + vert1.y as u32 + vert2.y as u32,
+                                2 * z as u32 + vert1.z as u32 + vert2.z as u32,
+                            );
+
+                            // Check if this vertex was already added
+                            if duplicate_vertices.contains_key(&edge_tuple) {
+                                // The vertex already exists
+                                model.triangles.push(duplicate_vertices[&edge_tuple]);
+                            } else {
+                                // Add this vertex
+                                duplicate_vertices.insert(edge_tuple, model.vertices.len() as u32);
+                                model.triangles.push(model.vertices.len() as u32);
+                                model.vertices.push(vertex);
+                                model.uvs.push(glam::Vec2::ZERO);
+                                model.normals.push(normal.normalize());
+                                model.tangents.push(glam::Vec4::ZERO);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Inverse of lerp
+        fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
+            return (x - a) / (b - a);
+        }
+        // Return the model
+        return model;
+    }
 }

@@ -26,294 +26,297 @@ use super::defaults::systems::rendering_system::RenderingSystem;
 //  The actual world
 #[derive(Default)]
 pub struct World {
-	// Managers
-	pub component_manager: ComponentManager,
-	pub input_manager: InputManager,
-	pub resource_manager: ResourceManager,
-	pub terrain_generator: TerrainGenerator,
-	pub texture_manager: TextureManager,
-	// Shaders
-	pub shader_manager: ShaderManager,
-	pub shader_defaults: ShaderDefaults,
-	// ECS
-	pub entity_manager: EntityManager,
-	pub system_manager: SystemManager,
-	
-	// Miscs
-	pub custom_data: CustomWorldData,
-	pub time_manager: Time,
-	pub window: Window,
+    // Managers
+    pub component_manager: ComponentManager,
+    pub input_manager: InputManager,
+    pub resource_manager: ResourceManager,
+    pub terrain_generator: TerrainGenerator,
+    pub texture_manager: TextureManager,
+    // Shaders
+    pub shader_manager: ShaderManager,
+    pub shader_defaults: ShaderDefaults,
+    // ECS
+    pub entity_manager: EntityManager,
+    pub system_manager: SystemManager,
+
+    // Miscs
+    pub custom_data: CustomWorldData,
+    pub time_manager: Time,
+    pub window: Window,
 }
 
 impl World {
-	// When the world started initializing
-	pub fn start_world(&mut self, window: &mut glfw::Window) {
-		// Load all the default things
-		self.input_manager.setup_default_bindings();
-		self.window.size = Self::get_default_window_size();
-		window.set_cursor_mode(glfw::CursorMode::Disabled);
-		window.set_cursor_pos(0.0, 0.0);
-		self.shader_defaults
-			.load_default_shaders(&mut self.resource_manager, &mut self.shader_manager);
+    // When the world started initializing
+    pub fn start_world(&mut self, window: &mut glfw::Window) {
+        // Load all the default things
+        self.input_manager.setup_default_bindings();
+        self.window.size = Self::get_default_window_size();
+        window.set_cursor_mode(glfw::CursorMode::Disabled);
+        window.set_cursor_pos(0.0, 0.0);
+        self.shader_defaults
+            .load_default_shaders(&mut self.resource_manager, &mut self.shader_manager);
 
-		// Load default textures
-		self.texture_manager.load_default_texture(&mut self.resource_manager);
+        // Load default textures
+        self.texture_manager
+            .load_default_texture(&mut self.resource_manager);
 
-		// Test stuff
-		/*
-		self.component_manager.register_component::<Position>();
-		let mut test_entity = Entity::new("Test Entity");
-		test_entity.link_default_component::<Position>(&mut self.component_manager);
-		let entity_id = self.add_entity(test_entity);
-		*/
-		register_components(self);
-		load_systems(self);
-		load_entities(self);
+        // Test stuff
+        /*
+        self.component_manager.register_component::<Position>();
+        let mut test_entity = Entity::new("Test Entity");
+        test_entity.link_default_component::<Position>(&mut self.component_manager);
+        let entity_id = self.add_entity(test_entity);
+        */
+        register_components(self);
+        load_systems(self);
+        load_entities(self);
 
-		let mut terrain_data = TerrainGeneratorData {
-			component_manager: &mut self.component_manager,
-			resource_manager: &mut self.resource_manager,
-			shader_manager: &mut self.shader_manager,
-			shader_defaults: &mut self.shader_defaults,
-			texture_manager: &mut self.texture_manager,
-		};
+        let mut terrain_data = TerrainGeneratorData {
+            component_manager: &mut self.component_manager,
+            resource_manager: &mut self.resource_manager,
+            shader_manager: &mut self.shader_manager,
+            shader_defaults: &mut self.shader_defaults,
+            texture_manager: &mut self.texture_manager,
+        };
 
-		// Load the terrain generator
-		let entities = self.terrain_generator.generate_terrain(&mut terrain_data).clone();
-		self.add_entities(entities);
-		
-		let mut data: SystemEventData = SystemEventData {
-			entity_manager: &mut self.entity_manager,
-			component_manager: &mut self.component_manager,
-			input_manager: &mut self.input_manager,
-			shader_manager: &mut self.shader_manager,
-			texture_manager: &mut self.texture_manager,
-			time_manager: &mut self.time_manager,
-			resource_manager: &mut self.resource_manager,
-			custom_data: &mut self.custom_data,
-		};
-		
+        // Load the terrain generator
+        let entities = self
+            .terrain_generator
+            .generate_terrain(&mut terrain_data)
+            .clone();
+        self.add_entities(entities);
 
-		let new_entities = self
-			.system_manager
-			.add_additional_entities(&mut data)
-			.clone();
-		self.add_entities(new_entities);
-	}
-	// We do the following in this function
-	// 1. We update the entities of each UpdateSystem
-	// 2. We tick the entities of each TickSystem (Only if the framecount is valid)
-	// 3. We render the entities onto the screen using the RenderSystem
-	pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
-		// Check for input events
-		self.input_manager.update(window);
-		// Check for default input events
-		self.check_default_input_events(window, glfw);
-		// Create the data for the systems
-		let mut data: SystemEventData = SystemEventData {
-			entity_manager: &mut self.entity_manager,
-			component_manager: &mut self.component_manager,
-			input_manager: &mut self.input_manager,
-			shader_manager: &mut self.shader_manager,
-			texture_manager: &mut self.texture_manager,
-			time_manager: &mut self.time_manager,
-			resource_manager: &mut self.resource_manager,
-			custom_data: &mut self.custom_data,
-		};	
+        let mut data: SystemEventData = SystemEventData {
+            entity_manager: &mut self.entity_manager,
+            component_manager: &mut self.component_manager,
+            input_manager: &mut self.input_manager,
+            shader_manager: &mut self.shader_manager,
+            texture_manager: &mut self.texture_manager,
+            time_manager: &mut self.time_manager,
+            resource_manager: &mut self.resource_manager,
+            custom_data: &mut self.custom_data,
+        };
 
-		// Update the entities
-		self.system_manager
-			.run_system_type(SystemType::Update, &mut data);
-		// And render them
-		self.system_manager
-			.run_system_type(SystemType::Render, &mut data);
-		window.swap_buffers();
+        let new_entities = self
+            .system_manager
+            .add_additional_entities(&mut data)
+            .clone();
+        self.add_entities(new_entities);
+    }
+    // We do the following in this function
+    // 1. We update the entities of each UpdateSystem
+    // 2. We tick the entities of each TickSystem (Only if the framecount is valid)
+    // 3. We render the entities onto the screen using the RenderSystem
+    pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+        // Check for input events
+        self.input_manager.update(window);
+        // Check for default input events
+        self.check_default_input_events(window, glfw);
+        // Create the data for the systems
+        let mut data: SystemEventData = SystemEventData {
+            entity_manager: &mut self.entity_manager,
+            component_manager: &mut self.component_manager,
+            input_manager: &mut self.input_manager,
+            shader_manager: &mut self.shader_manager,
+            texture_manager: &mut self.texture_manager,
+            time_manager: &mut self.time_manager,
+            resource_manager: &mut self.resource_manager,
+            custom_data: &mut self.custom_data,
+        };
 
-		// Update the timings of every system
-		self.system_manager.update_systems(&self.time_manager);
+        // Update the entities
+        self.system_manager
+            .run_system_type(SystemType::Update, &mut data);
+        // And render them
+        self.system_manager
+            .run_system_type(SystemType::Render, &mut data);
+        window.swap_buffers();
 
-		// Update the inputs
-		self.input_manager
-			.late_update(self.time_manager.delta_time as f32);
-	}
-	// Check for default key map events
-	fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
-		// Check for default mapping events
-		if self.input_manager.map_pressed("quit") {
-			window.set_should_close(true);
-		}
-		// Toggle the fullscreen
-		if self.input_manager.map_pressed("fullscreen") {
-			self.toggle_fullscreen(glfw, window);
-		}
-		// Capture the fps
-		if self.input_manager.map_pressed("caputre_fps") {
-			println!(
-				"Current FPS: '{}', Delta: '{}'",
-				self.time_manager.seconds_since_game_start, self.time_manager.delta_time
-			);
-		}
-		// Change the debug view
-		if self.input_manager.map_pressed("change_debug_view") {
-			let render_system = self
-				.system_manager
-				.get_system_mut(self.custom_data.render_system_id)
-				.as_any_mut()
-				.downcast_mut::<RenderingSystem>()
-				.unwrap();
-			render_system.debug_view += 1;
-			render_system.debug_view = render_system.debug_view % 4;
-		}
-	}
-	// Toggle fullscreen
-	pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-		self.window.fullscreen = !self.window.fullscreen;
-		if self.window.fullscreen {
-			// Set the glfw window as a fullscreen window
-			glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-				let videomode = monitor.unwrap().get_video_mode().unwrap();
-				window.set_monitor(
-					glfw::WindowMode::FullScreen(monitor.unwrap()),
-					0,
-					0,
-					videomode.width,
-					videomode.height,
-					None,
-				);
-				unsafe {
-					// Update the OpenGL viewport
-					gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-				}
-			});
-		} else {
-			// Set the glfw window as a windowed window
-			glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-				let _videomode = monitor.unwrap().get_video_mode().unwrap();
-				let default_window_size = Self::get_default_window_size();
-				window.set_monitor(
-					glfw::WindowMode::Windowed,
-					50,
-					50,
-					default_window_size.0 as u32,
-					default_window_size.1 as u32,
-					None,
-				);
-				unsafe {
-					// Update the OpenGL viewport
-					gl::Viewport(
-						0,
-						0,
-						default_window_size.0 as i32,
-						default_window_size.1 as i32,
-					);
-				}
-			});
-		}
-	}
-	// When we want to close the application
-	pub fn kill_world(&mut self) {
-		let mut data: SystemEventDataLite = SystemEventDataLite {
-			entity_manager: &mut self.entity_manager,
-			component_manager: &mut self.component_manager,
-		};
-		self.system_manager.kill_systems(&mut data);
-	}
+        // Update the timings of every system
+        self.system_manager.update_systems(&self.time_manager);
+
+        // Update the inputs
+        self.input_manager
+            .late_update(self.time_manager.delta_time as f32);
+    }
+    // Check for default key map events
+    fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+        // Check for default mapping events
+        if self.input_manager.map_pressed("quit") {
+            window.set_should_close(true);
+        }
+        // Toggle the fullscreen
+        if self.input_manager.map_pressed("fullscreen") {
+            self.toggle_fullscreen(glfw, window);
+        }
+        // Capture the fps
+        if self.input_manager.map_pressed("caputre_fps") {
+            println!(
+                "Current FPS: '{}', Delta: '{}'",
+                self.time_manager.seconds_since_game_start, self.time_manager.delta_time
+            );
+        }
+        // Change the debug view
+        if self.input_manager.map_pressed("change_debug_view") {
+            let render_system = self
+                .system_manager
+                .get_system_mut(self.custom_data.render_system_id)
+                .as_any_mut()
+                .downcast_mut::<RenderingSystem>()
+                .unwrap();
+            render_system.debug_view += 1;
+            render_system.debug_view = render_system.debug_view % 4;
+        }
+    }
+    // Toggle fullscreen
+    pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+        self.window.fullscreen = !self.window.fullscreen;
+        if self.window.fullscreen {
+            // Set the glfw window as a fullscreen window
+            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                let videomode = monitor.unwrap().get_video_mode().unwrap();
+                window.set_monitor(
+                    glfw::WindowMode::FullScreen(monitor.unwrap()),
+                    0,
+                    0,
+                    videomode.width,
+                    videomode.height,
+                    None,
+                );
+                unsafe {
+                    // Update the OpenGL viewport
+                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+                }
+            });
+        } else {
+            // Set the glfw window as a windowed window
+            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                let _videomode = monitor.unwrap().get_video_mode().unwrap();
+                let default_window_size = Self::get_default_window_size();
+                window.set_monitor(
+                    glfw::WindowMode::Windowed,
+                    50,
+                    50,
+                    default_window_size.0 as u32,
+                    default_window_size.1 as u32,
+                    None,
+                );
+                unsafe {
+                    // Update the OpenGL viewport
+                    gl::Viewport(
+                        0,
+                        0,
+                        default_window_size.0 as i32,
+                        default_window_size.1 as i32,
+                    );
+                }
+            });
+        }
+    }
+    // When we want to close the application
+    pub fn kill_world(&mut self) {
+        let mut data: SystemEventDataLite = SystemEventDataLite {
+            entity_manager: &mut self.entity_manager,
+            component_manager: &mut self.component_manager,
+        };
+        self.system_manager.kill_systems(&mut data);
+    }
 }
 
 // Impl block for the entity stuff
 impl World {
-	// Wrapper function around the entity manager's add_entity
-	pub fn add_entity(&mut self, entity: Entity) -> u16 {
-		let id = self.entity_manager.add_entity(entity.clone());
-		let entity = self.entity_manager.get_entity(id).clone();
-		// Since we cloned the entity variable we gotta update the entity manager with the new one
-		self.system_manager.add_entity_to_systems(
-			&entity,
-			&mut SystemEventDataLite {
-				entity_manager: &mut self.entity_manager,
-				component_manager: &mut self.component_manager,
-			},
-		);
-		*self.entity_manager.get_entity_mut(id) = entity;
-		return id;
-	}
-	// Add multiple entities at once
-	pub fn add_entities(&mut self, entities: Vec<Entity>) -> Vec<u16> {
-		let mut result: Vec<u16> = Vec::new();
-		// Add all the entities
-		for entity in entities {
-			result.push(self.add_entity(entity));
-		}
-		return result;
-	}
-	// Wrapper function around the entity manager remove_entity
-	pub fn remove_entity(&mut self, entity_id: u16) {
-		// Remove the entity from the world first
-		let removed_entity = self.entity_manager.remove_entity(entity_id);
-	}
-	// Get a mutable reference to an entity from the entity manager
-	pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
-		self.entity_manager.get_entity_mut(entity_id)
-	}
-	// Get a reference to an entity from the entity manager
-	pub fn get_entity(&self, entity_id: u16) -> &Entity {
-		self.entity_manager.get_entity(entity_id)
-	}
+    // Wrapper function around the entity manager's add_entity
+    pub fn add_entity(&mut self, entity: Entity) -> u16 {
+        let id = self.entity_manager.add_entity(entity.clone());
+        let entity = self.entity_manager.get_entity(id).clone();
+        // Since we cloned the entity variable we gotta update the entity manager with the new one
+        self.system_manager.add_entity_to_systems(
+            &entity,
+            &mut SystemEventDataLite {
+                entity_manager: &mut self.entity_manager,
+                component_manager: &mut self.component_manager,
+            },
+        );
+        *self.entity_manager.get_entity_mut(id) = entity;
+        return id;
+    }
+    // Add multiple entities at once
+    pub fn add_entities(&mut self, entities: Vec<Entity>) -> Vec<u16> {
+        let mut result: Vec<u16> = Vec::new();
+        // Add all the entities
+        for entity in entities {
+            result.push(self.add_entity(entity));
+        }
+        return result;
+    }
+    // Wrapper function around the entity manager remove_entity
+    pub fn remove_entity(&mut self, entity_id: u16) {
+        // Remove the entity from the world first
+        let removed_entity = self.entity_manager.remove_entity(entity_id);
+    }
+    // Get a mutable reference to an entity from the entity manager
+    pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
+        self.entity_manager.get_entity_mut(entity_id)
+    }
+    // Get a reference to an entity from the entity manager
+    pub fn get_entity(&self, entity_id: u16) -> &Entity {
+        self.entity_manager.get_entity(entity_id)
+    }
 }
 
 // Impl block related to the windowing / rendering stuff
 impl World {
-	// Get the default width and height of the starting window
-	pub fn get_default_window_size() -> (i32, i32) {
-		(1280, 720)
-	}
-	// When we resize the window
-	pub fn resize_window_event(&mut self, size: (i32, i32)) {
-		unsafe {
-			gl::Viewport(0, 0, size.0, size.1);
+    // Get the default width and height of the starting window
+    pub fn get_default_window_size() -> (i32, i32) {
+        (1280, 720)
+    }
+    // When we resize the window
+    pub fn resize_window_event(&mut self, size: (i32, i32)) {
+        unsafe {
+            gl::Viewport(0, 0, size.0, size.1);
 
-			let render_system = self
-				.system_manager
-				.get_system_mut(0)
-				.as_any_mut()
-				.downcast_mut::<RenderingSystem>()
-				.unwrap();
-			// Update the size of each texture that is bound to the framebuffer
-			let size: (u32, u32) = (size.0 as u32, size.1 as u32);
-			render_system.diffuse_texture.update_size(size.0, size.1);
-			render_system
-				.depth_stencil_texture
-				.update_size(size.0, size.1);
-			render_system.normals_texture.update_size(size.0, size.1);
-			render_system.position_texture.update_size(size.0, size.1);
-			render_system.emissive_texture.update_size(size.0, size.1);
-		}
-		let camera_entity_clone = self
-			.get_entity(self.custom_data.main_camera_entity_id)
-			.clone();
-		let entity_clone_id = camera_entity_clone.entity_id;
-		let camera_component =
-			camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager);
-		camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
-		camera_component.window_size = size;
-		camera_component.update_projection_matrix();
-		// Update the original entity
-		*self.get_entity_mut(entity_clone_id) = camera_entity_clone;
-		self.window.size = size;
-	}
+            let render_system = self
+                .system_manager
+                .get_system_mut(0)
+                .as_any_mut()
+                .downcast_mut::<RenderingSystem>()
+                .unwrap();
+            // Update the size of each texture that is bound to the framebuffer
+            let size: (u32, u32) = (size.0 as u32, size.1 as u32);
+            render_system.diffuse_texture.update_size(size.0, size.1);
+            render_system
+                .depth_stencil_texture
+                .update_size(size.0, size.1);
+            render_system.normals_texture.update_size(size.0, size.1);
+            render_system.position_texture.update_size(size.0, size.1);
+            render_system.emissive_texture.update_size(size.0, size.1);
+        }
+        let camera_entity_clone = self
+            .get_entity(self.custom_data.main_camera_entity_id)
+            .clone();
+        let entity_clone_id = camera_entity_clone.entity_id;
+        let camera_component =
+            camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager);
+        camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
+        camera_component.window_size = size;
+        camera_component.update_projection_matrix();
+        // Update the original entity
+        *self.get_entity_mut(entity_clone_id) = camera_entity_clone;
+        self.window.size = size;
+    }
 }
 
 // Some custom data that will be passed to systems
 #[derive(Default)]
 pub struct CustomWorldData {
-	pub main_camera_entity_id: u16,
-	pub render_system_id: u8,
-	pub sun_rotation: glam::Quat,
-	pub sky_gradient_global_id: u16,
+    pub main_camera_entity_id: u16,
+    pub render_system_id: u8,
+    pub sun_rotation: glam::Quat,
+    pub sky_gradient_global_id: u16,
 }
 // Static time variables
 #[derive(Default)]
 pub struct Time {
-	pub seconds_since_game_start: f64,
-	pub delta_time: f64,
+    pub seconds_since_game_start: f64,
+    pub delta_time: f64,
 }
