@@ -268,7 +268,6 @@ impl Shader {
 pub enum SubShaderType {
 	Vertex,
 	Fragment,
-	Geometry,
 }
 
 // A sub shader, could be a geometry, vertex, or fragment shader
@@ -303,7 +302,6 @@ impl SubShader {
 		match self.subshader_type {
 			SubShaderType::Vertex => shader_type = gl::VERTEX_SHADER,
 			SubShaderType::Fragment => shader_type = gl::FRAGMENT_SHADER,
-			SubShaderType::Geometry => shader_type = gl::GEOMETRY_SHADER,
 		}
 		unsafe {
 			self.program = gl::CreateShader(shader_type);

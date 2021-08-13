@@ -118,9 +118,10 @@ impl Texture {
 				let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
 				image.set_format(image::ImageFormat::Png);
 				let decoded = image.with_guessed_format().unwrap().decode().unwrap();
-				let test = decoded.to_rgba8();
+				// Read the image as a 32 bit image
+				let rgba8_image = decoded.to_rgba8();
 
-				let mut new_texture = Self::create_rgba_texture(texture.name.clone(), width, height, &test.as_bytes().to_owned());
+				let mut new_texture = Self::create_rgba_texture(texture.name.clone(), width, height, &rgba8_image.as_bytes().to_owned());
 				new_texture.name = texture.name.clone();
 				return Some(new_texture);
 			}

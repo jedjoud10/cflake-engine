@@ -13,7 +13,7 @@ pub struct ResourceManager {
 // All the conversion stuff from File -> Resource
 impl ResourceManager {
 	// Turn a mdl3d file into a LoadedModel resource
-	pub fn pack_mdl3d(file: &File) -> Resource {
+	pub fn convert_mdl3d(file: &File) -> Resource {
 		// Create all the buffers
 		let reader = BufReader::new(file);
 		let mut vertices: Vec<glam::Vec3> = Vec::new();
@@ -84,7 +84,7 @@ impl ResourceManager {
 		return Resource::Model(model);
 	}
 	// Turn a shader file of any type (vertex, fragment, etc) to a LoadedShader resource
-	pub fn pack_shader(file: &File, extension: &str) -> Resource {
+	pub fn convert_shader(file: &File, extension: &str) -> Resource {
 		// The shader resource
 		let mut shader: Resource = Resource::None;
 		// String holding the extension of the file
@@ -115,8 +115,8 @@ impl ResourceManager {
 		return shader;
 	}
 	// Turn a texture file to a LoadedTexture resource
-	// While we're at it, make sure the texture has an alpha channel and EXACTLY a 24 bit depth
-	pub fn pack_texture(file: &mut File, full_path: &str) -> Resource {		
+	// While we're at it, make sure the texture has an alpha channel and EXACTLY a 32 bit depth
+	pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {		
 		// The texture resource
 		let mut texture: Resource = Resource::None;
 		let mut dimensions: (u32, u32) = (0, 0);
@@ -126,11 +126,11 @@ impl ResourceManager {
 			let image = image::io::Reader::new(&mut reader).with_guessed_format().unwrap().decode().unwrap();
 			match image {
 				image::DynamicImage::ImageRgba8(_) => {
-					// No need to do anything since we already have this texture at 24 bits per pixel
+					// No need to do anything since we already have this texture at 32 bits per pixel
 					false
 				}
  				_ => {
-					// Anything other than 24 bits
+					// Anything other than 32 bits
 					true
 				}
 			}				
@@ -145,7 +145,7 @@ impl ResourceManager {
 				dimensions = image.dimensions();	
 			}
 			
-			// Make sure the bit depth of the texture i 24, and to do that we load the texture, then resave it
+			// Make sure the bit depth of the texture i 32, and to do that we load the texture, then resave it
 			image::save_buffer_with_format(full_path, &raw_pixels, dimensions.0, dimensions.1, image::ColorType::Rgba8, image::ImageFormat::Png);			
 		}
 		
@@ -164,6 +164,95 @@ impl ResourceManager {
 		return texture;
 	}
 }
+
+// Impl block for packing all the Resources into a file
+impl ResourceManager {
+	// Pack a LoadedModel resource into a file
+	pub fn pack_model(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
+		let mut model: LoadedModel;
+		match resource {
+			Resource::Model(__model) => { model = __model; }
+			_ => { panic!("Resource was not a model!"); }
+		}
+		// Write to the strem
+		writer.write_u32::<LittleEndian>(model.vertices.len() as u32)?;
+		writer.write_u32::<LittleEndian>(model.indices.len() as u32)?;
+		// Write the vertices
+		for vertex in model.vertices {
+			writer.write_f32::<LittleEndian>(vertex.x)?;
+			writer.write_f32::<LittleEndian>(vertex.y)?;
+			writer.write_f32::<LittleEndian>(vertex.z)?;
+		}
+		// Write the normals
+		for normal in model.normals {
+			writer.write_f32::<LittleEndian>(normal.x)?;
+			writer.write_f32::<LittleEndian>(normal.y)?;
+			writer.write_f32::<LittleEndian>(normal.z)?;
+		}
+		// Write the tangents
+		for tangent in model.tangents {
+			writer.write_f32::<LittleEndian>(tangent.x)?;
+			writer.write_f32::<LittleEndian>(tangent.y)?;
+			writer.write_f32::<LittleEndian>(tangent.z)?;
+			writer.write_f32::<LittleEndian>(tangent.w)?;
+		}
+		// Write the uvs
+		for uv in model.uvs {
+			writer.write_f32::<LittleEndian>(uv.x)?;
+			writer.write_f32::<LittleEndian>(uv.y)?;
+		}
+		// Write the indices
+		for index in model.indices {
+			writer.write_u32::<LittleEndian>(index)?;
+		}
+
+		return std::io::Result::Ok(());
+	}
+	// Pack a LoadedSubShader resource into a file
+	pub fn pack_shader(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
+		let mut shader: LoadedSubShader;
+		match resource {
+			Resource::Shader(__shader) => { shader = __shader; }
+			_ => { panic!("Resource was not a shader!"); }
+		}
+
+		// Turn the source string into bytes, and write them into the resource file
+		let mut string_bytes = shader.source.into_bytes().to_vec();
+		let mut shader_type_byte: u8 = 0;
+		// Save the type of this subshader, can either be a Vertex or a Fragment subshader
+		match shader.subshader_type {
+			SubShaderType::Vertex => shader_type_byte = 0,
+			SubShaderType::Fragment => shader_type_byte = 1,
+		}
+		// Write the type of subshader
+		writer.write_u8(shader_type_byte)?;
+
+		// Write all the bytes
+		for byte in string_bytes {
+			writer.write_u8(byte)?;
+		}
+		return std::io::Result::Ok(());
+	}
+	// Pack a LoadedTexture resource into a file
+	pub fn pack_texture(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
+		let mut texture: LoadedTexture;
+		match resource {
+			Resource::Texture(__texture) => { texture = __texture; }
+			_ => { panic!("Resource was not a texture!"); }
+		}
+
+		// Write the dimensions of the texture
+		writer.write_u16::<LittleEndian>(texture.width)?;
+		writer.write_u16::<LittleEndian>(texture.height)?;
+
+		// Now write all the bytes
+		for byte in texture.compressed_bytes {
+			writer.write_u8(byte)?;
+		}
+		return std::io::Result::Ok(());
+	}
+}
+
 // Da code.
 // Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
 impl ResourceManager {	
@@ -281,7 +370,6 @@ impl ResourceManager {
 					// Temp shader type
 					let mut shader_type = SubShaderType::Fragment;
 					let mut shader_name: String = String::new();
-					// This is a shader
 					match bytes[1] {
 						0 => {
 							shader_type = SubShaderType::Vertex;
@@ -290,10 +378,6 @@ impl ResourceManager {
 						1 => {
 							shader_type = SubShaderType::Fragment;
 							shader_name = format!("{}.{}", &name, "fragment");
-						}
-						2 => {
-							shader_type = SubShaderType::Geometry;
-							shader_name = format!("{}.{}", &name, "geometry");
 						}
 						_ => {}
 					}
@@ -359,15 +443,15 @@ impl ResourceManager {
 			match file_extension.as_str() {
 				"vrsh.glsl" | "frsh.glsl" => {
 					// This is a shader
-					resource = Self::pack_shader(&file, file_extension.as_str());
+					resource = Self::convert_shader(&file, file_extension.as_str());
 				}
 				"mdl3d" => {
 					// This is a 3D model
-					resource = Self::pack_mdl3d(&file);
+					resource = Self::convert_mdl3d(&file);
 				}
 				"png" => {
 					// This is a texture
-					resource = Self::pack_texture(&mut file, &file_path);
+					resource = Self::convert_texture(&mut file, &file_path);
 				}
 				_ => {}
 			}
@@ -383,15 +467,19 @@ impl ResourceManager {
 			let packed_file_path = format!("{}{}.pkg", packed_resources_path, packed_file_hashed_name);
 			// Create the file
 			let packed_file = File::create(packed_file_path).unwrap();
+			let mut writer = BufWriter::new(packed_file);
 			match resource {
-				Resource::Shader(shader) => {
+				Resource::Shader(_) => {
 					// This is a shader
+					Self::pack_shader(&mut writer, resource);
 				},
-				Resource::Model(model) => {
+				Resource::Model(_) => {
 					// This a 3D model
+					Self::pack_model(&mut writer, resource);
 				},
-				Resource::Texture(texture) => {
+				Resource::Texture(_) => {
 					// This a texture
+					Self::pack_texture(&mut writer, resource);
 				},
 				_ => {}
 			}
