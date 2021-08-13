@@ -1,5 +1,6 @@
 use crate::engine::rendering::shader::SubShaderType;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use image::GenericImageView;
 use walkdir::WalkDir;
 use std::{collections::{hash_map::DefaultHasher, HashMap}, env, ffi::OsStr, fmt::format, fs::{create_dir, create_dir_all, read_dir, remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
 
@@ -114,18 +115,44 @@ impl ResourceManager {
 		return shader;
 	}
 	// Turn a texture file to a LoadedTexture resource
-	pub fn pack_texture(file: &File) -> Resource {		
+	// While we're at it, make sure the texture has an alpha channel and EXACTLY a 24 bit depth
+	pub fn pack_texture(file: &mut File, full_path: &str) -> Resource {		
 		// The texture resource
 		let mut texture: Resource = Resource::None;
+		let mut dimensions: (u32, u32) = (0, 0);
+		// Check if we even need to update the image
+		let should_update: bool = {
+			let mut reader = BufReader::new(file);
+			let image = image::io::Reader::new(&mut reader).with_guessed_format().unwrap().decode().unwrap();
+			match image {
+				image::DynamicImage::ImageRgba8(_) => {
+					// No need to do anything since we already have this texture at 24 bits per pixel
+					false
+				}
+ 				_ => {
+					// Anything other than 24 bits
+					true
+				}
+			}				
+		};
+		if should_update {
+			// We need to make this it's own scope because we cannot have a reader and a writer at the same time
+			let mut raw_pixels: Vec<u8> = Vec::new();
+			{
+				let mut reader = BufReader::new(File::open(full_path).unwrap());
+				let image = image::io::Reader::new(&mut reader).with_guessed_format().unwrap().decode().unwrap();
+				raw_pixels = image.to_rgba8().into_raw();
+				dimensions = image.dimensions();	
+			}
+			
+			// Make sure the bit depth of the texture i 24, and to do that we load the texture, then resave it
+			image::save_buffer_with_format(full_path, &raw_pixels, dimensions.0, dimensions.1, image::ColorType::Rgba8, image::ImageFormat::Png);			
+		}
 		
-		// This is a texture
-		let mut reader = BufReader::new(file);
-		let image = image::load(&mut reader, image::ImageFormat::Png).unwrap();
-		let image = image.as_rgba8().unwrap();
-		let mut dimensions = image.dimensions();	
-		let mut bytes: Vec<u8> = Vec::new();
 
-		// Reset the cursor since we already read from buffer this
+		// Re-read the image, since we might've changed it's bit depth in the last scope
+		let mut reader = BufReader::new(File::open(full_path).unwrap());
+		let mut bytes: Vec<u8> = Vec::new();
 		reader.seek(SeekFrom::Start(0));
 		reader.read_to_end(&mut bytes);
 		texture = Resource::Texture(LoadedTexture {
@@ -303,8 +330,7 @@ impl ResourceManager {
 		println!("Resource path '{}'", resources_path);
 		
 		// Recursive file finder lol
-		let walk_dir = WalkDir::new(resources_path);
-
+		let walk_dir = WalkDir::new(resources_path.clone());	
 		// First of all, loop through all the resource directories recursively and find all the files that can be packed	
 		for dir_entry in walk_dir.into_iter() {
 			// Get the file
@@ -313,14 +339,17 @@ impl ResourceManager {
 			if dir_entry.path().is_dir() {
 				continue;
 			}
-			let file = OpenOptions::new().read(true).open(dir_entry.path()).unwrap();
+			let mut file = OpenOptions::new().read(true).open(dir_entry.path()).unwrap();
 			let file_name_and_extension = dir_entry.file_name().to_str().unwrap();
 			// Everything before the first dot
 			let file_name = file_name_and_extension.split(".").nth(0).unwrap();
 			// Everything after the first dot
 			let file_extension: Vec<&str> = file_name_and_extension.split(".").collect();
 			let file_extension = file_extension[1..].join(".");
-			println!("Packaging file '{}.{}'", file_name, file_extension);
+			// The name where the current file is located relative to the resource's folder
+			let file_path =  dir_entry.path().to_str().unwrap();
+			let subdirectory_name = file_path.split(resources_path.as_str()).nth(1).unwrap().replace(file_name_and_extension, "");
+			println!("Packaging file '{}{}.{}'", subdirectory_name, file_name, file_extension);
 
 			// This is the resource that we are going to pack
 			let mut resource = Resource::None;
@@ -337,7 +366,7 @@ impl ResourceManager {
 				}
 				"png" => {
 					// This is a texture
-					resource = Self::pack_texture(&file);
+					resource = Self::pack_texture(&mut file, &file_path);
 				}
 				_ => {}
 			}
