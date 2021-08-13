@@ -95,20 +95,18 @@ impl ResourceManager {
 				let mut string_source: String = String::new();
 				reader.read_to_string(&mut string_source);
 				shader = Resource::Shader(LoadedSubShader {
-					name: String::from("Undefined"),
 					source: string_source,
 					subshader_type: SubShaderType::Vertex,
-				});
+				}, String::new());
 			}
 			"frsh.glsl" => {
 				// This is a fragment shader
 				let mut string_source: String = String::new();
 				reader.read_to_string(&mut string_source);
 				shader = Resource::Shader(LoadedSubShader {
-					name: String::from("Undefined"),
 					source: string_source,
 					subshader_type: SubShaderType::Fragment,
-				});
+				}, String::new());
 			}
 			_ => {}
 		}
@@ -156,11 +154,10 @@ impl ResourceManager {
 		reader.seek(SeekFrom::Start(0));
 		reader.read_to_end(&mut bytes);
 		texture = Resource::Texture(LoadedTexture {
-			name: String::from(""),
 			width: dimensions.0 as u16,
 			height: dimensions.1 as u16,
 			compressed_bytes: bytes,
-		});
+		}, String::new());
 		return texture;
 	}
 }
@@ -212,7 +209,7 @@ impl ResourceManager {
 	pub fn pack_shader(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
 		let mut shader: LoadedSubShader;
 		match resource {
-			Resource::Shader(__shader) => { shader = __shader; }
+			Resource::Shader(__shader, _) => { shader = __shader; }
 			_ => { panic!("Resource was not a shader!"); }
 		}
 
@@ -237,7 +234,7 @@ impl ResourceManager {
 	pub fn pack_texture(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
 		let mut texture: LoadedTexture;
 		match resource {
-			Resource::Texture(__texture) => { texture = __texture; }
+			Resource::Texture(__texture, _) => { texture = __texture; }
 			_ => { panic!("Resource was not a texture!"); }
 		}
 
@@ -253,153 +250,115 @@ impl ResourceManager {
 	}
 }
 
+// Impl block for turning all the packed data back into resources
+impl ResourceManager {
+	// Load back the data from the reader and turn it into a LoadedModel resource
+	pub fn load_model(reader: &mut BufReader<File>) -> Option<Resource> {
+		// This is a model
+		let vertices_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
+		let triangles_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
+		let mut vertices: Vec<glam::Vec3> = Vec::new();
+		let mut triangles: Vec<u32> = Vec::new();
+		let mut normals: Vec<glam::Vec3> = Vec::new();
+		let mut uvs: Vec<glam::Vec2> = Vec::new();
+		let mut tangents: Vec<glam::Vec4> = Vec::new();
+		// Load the vertices
+		for _ in 0..vertices_size {
+			vertices.push(glam::vec3(
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+			));
+		}
+		// Load the normals
+		for _ in 0..vertices_size {
+			normals.push(glam::vec3(
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+			));
+		}
+		// Load the tangents
+		for _ in 0..vertices_size {
+			tangents.push(glam::vec4(
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+			));
+		}
+		// Load the uvs
+		for _ in 0..vertices_size {
+			uvs.push(glam::vec2(
+				reader.read_f32::<LittleEndian>().ok()?,
+				reader.read_f32::<LittleEndian>().ok()?,
+			));
+		}
+
+		// Load the triangles
+		for _i in 0..triangles_size {
+			triangles.push(reader.read_u32::<LittleEndian>().unwrap());
+		}
+
+		return Option::Some(Resource::Model(LoadedModel {
+			vertices,
+			normals,
+			tangents,
+			uvs,
+			indices: triangles,
+		}));
+	}
+	// Load back the data from the reader and turn it into a LoadedSubShader resource
+	pub fn load_subshader(reader: &mut BufReader<File>, file_name: String) -> Option<Resource> {
+		let mut shader_type: SubShaderType;
+		let mut shader_name: String = String::new();
+		match reader.read_u8().ok()? {
+			0 => {
+				// This is a vertex subshader so the name of the shader will have a 'vertex' appended
+				shader_type = SubShaderType::Vertex;
+				shader_name = format!("{}.{}", &file_name, "vertex.glsl");
+			}
+			1 => {
+				// This is a vertex subshader so the name of the shader will have a 'fragmnet' appended
+				shader_type = SubShaderType::Fragment;
+				shader_name = format!("{}.{}", &file_name, "fragment.glsl");
+			}
+			_ => { panic!("Shader type not supported!"); }
+		}
+		// Read all the bytes until the end of the file, and then turn them into a utf8 string
+		let mut bytes: Vec<u8> = Vec::new();
+		reader.read_to_end(&mut bytes);
+		let shader_source = String::from_utf8(bytes).unwrap();
+		return Option::Some(Resource::Shader(LoadedSubShader {
+			source: shader_source.clone(),
+			subshader_type: shader_type.clone(),
+		}, shader_name.clone()));
+	}
+	// Load back the data from the reader and turn it into a LoadedTexture resource
+	pub fn load_texture(reader: &mut BufReader<File>) -> Option<Resource> {
+		// This is a texture
+		let texture_width = reader.read_u16::<LittleEndian>().unwrap();
+		let texture_height = reader.read_u16::<LittleEndian>().unwrap();
+		let mut compressed_bytes: Vec<u8> = Vec::new();
+		// Load all the bytes
+		reader.seek(SeekFrom::Start(4)).unwrap();
+		reader.read_to_end(&mut compressed_bytes);
+
+		// Load the bytes into the resource
+		return Option::Some(Resource::Texture(LoadedTexture {
+			width: texture_width,
+			height: texture_height,
+			compressed_bytes,
+		}, String::new()));
+	}
+}
+
 // Da code.
 // Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
 impl ResourceManager {	
 	// Loads a specific resource and caches it so we can use it next time
 	pub fn load_packed_resource(&mut self, name: &str, path: &str) -> Option<&Resource> {
-		let name = format!("{}.{}", name, "pkg");
-		let path = String::from(path);
-		let mut final_path: String = String::new();
-		{
-			let dir_original = env::current_exe().unwrap();
-			let dir_split_temp = dir_original.to_str().unwrap().split("\\");
-			let dir_split_len = dir_split_temp.clone().count();
-			let exe_dir = dir_split_temp
-				.enumerate()
-				.filter(|&(i, _)| i < dir_split_len - 1)
-				.map(|(_i, s)| s.to_string())
-				.into_iter()
-				.collect::<Vec<String>>()
-				.join(char::to_string(&'\\').as_str());
-			final_path = format!("{}\\packed-resources\\{}", exe_dir.as_str(), path);
-		}
-		// First of all, check if we have that resource cached
-		if self.cached_resources.contains_key(&name) {
-			// Return the cached resource
-			println!("Load cached resource '{}' from path {}", name, final_path);
-			return Some(self.cached_resources.get(&name).unwrap());
-		} else {
-			// If not, load a new resource
-			let file_path = format!("{}{}", final_path, name);
-			let file = File::open(file_path)
-				.expect(format!("The resource file '{}' could not be read!", &name).as_str());
-			let mut reader = BufReader::new(file);
-
-			// The bytes that will be turned into the resource
-			let mut bytes: Vec<u8> = Vec::new();
-			// Read each byte
-			let _bytes_read = reader.read_to_end(&mut bytes).unwrap();
-			// Temp variable
-			reader.seek(SeekFrom::Start(0));
-			let mut loaded_resource = Resource::None;
-
-			match reader.read_u8().unwrap() {
-				1 => {
-					// This is a model
-					let vertices_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
-					let triangles_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
-					let mut vertices: Vec<glam::Vec3> = Vec::new();
-					let mut triangles: Vec<u32> = Vec::new();
-					let mut normals: Vec<glam::Vec3> = Vec::new();
-					let mut uvs: Vec<glam::Vec2> = Vec::new();
-					let mut tangents: Vec<glam::Vec4> = Vec::new();
-					// Load the vertices
-					for _i in 0..vertices_size {
-						vertices.push(glam::vec3(
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-						));
-					}
-					// Load the normals
-					for _i in 0..vertices_size {
-						normals.push(glam::vec3(
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-						));
-					}
-					// Load the tangents
-					for _i in 0..vertices_size {
-						tangents.push(glam::vec4(
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-						));
-					}
-					// Load the uvs
-					for _i in 0..vertices_size {
-						uvs.push(glam::vec2(
-							reader.read_f32::<LittleEndian>().unwrap(),
-							reader.read_f32::<LittleEndian>().unwrap(),
-						));
-					}
-
-					// Load the triangles
-					for _i in 0..triangles_size {
-						triangles.push(reader.read_u32::<LittleEndian>().unwrap());
-					}
-					// Convert the bytes into a loaded model
-					loaded_resource = Resource::Model(LoadedModel {
-						vertices,
-						normals,
-						tangents,
-						uvs,
-						indices: triangles,
-					});
-				}
-				2 => {
-					// This is a texture
-					let texture_width = reader.read_u16::<LittleEndian>().unwrap();
-					let texture_height = reader.read_u16::<LittleEndian>().unwrap();
-					let mut compressed_bytes: Vec<u8> = Vec::new();
-					reader.seek(SeekFrom::Start(5)).unwrap();
-					reader.read_to_end(&mut compressed_bytes);
-
-					// Load the bytes into the resource
-					loaded_resource = Resource::Texture(LoadedTexture {
-						name: name.clone(),
-						width: texture_width,
-						height: texture_height,
-						compressed_bytes,
-					})
-				}
-				3 => {
-					// Temp shader type
-					let mut shader_type = SubShaderType::Fragment;
-					let mut shader_name: String = String::new();
-					match bytes[1] {
-						0 => {
-							shader_type = SubShaderType::Vertex;
-							shader_name = format!("{}.{}", &name, "vertex");
-						}
-						1 => {
-							shader_type = SubShaderType::Fragment;
-							shader_name = format!("{}.{}", &name, "fragment");
-						}
-						_ => {}
-					}
-					// This is a vertex subshader
-					let shader_source = String::from_utf8(bytes[2..].to_vec()).unwrap();
-					loaded_resource = Resource::Shader(LoadedSubShader {
-						name: shader_name,
-						source: shader_source.clone(),
-						subshader_type: shader_type.clone(),
-					});
-				}
-				4 => {
-					// This is a sound effect
-				}
-				_ => {}
-			}
-
-			// Cache the resource so we can use it later without the need to reload
-			println!("Cache resource: '{}'", name);
-			self.cached_resources.insert(name.clone(), loaded_resource);
-			return Some(self.cached_resources.get(&name).unwrap());
-		}
+		todo!()
 	}
 	// Unloads a resource to save on memory
 	pub fn unload_resouce(&mut self) {}
@@ -469,7 +428,7 @@ impl ResourceManager {
 			let packed_file = File::create(packed_file_path).unwrap();
 			let mut writer = BufWriter::new(packed_file);
 			match resource {
-				Resource::Shader(_) => {
+				Resource::Shader(_, _) => {
 					// This is a shader
 					Self::pack_shader(&mut writer, resource);
 				},
@@ -477,7 +436,7 @@ impl ResourceManager {
 					// This a 3D model
 					Self::pack_model(&mut writer, resource);
 				},
-				Resource::Texture(_) => {
+				Resource::Texture(_, _) => {
 					// This a texture
 					Self::pack_texture(&mut writer, resource);
 				},
@@ -491,9 +450,9 @@ impl ResourceManager {
 pub enum Resource {
 	None,
 	Model(LoadedModel),
-	Texture(LoadedTexture),
-	Shader(LoadedSubShader),
-	Sound(LoadedSoundEffect),
+	Texture(LoadedTexture, String),
+	Shader(LoadedSubShader, String),
+	Sound(LoadedSoundEffect, String),
 }
 
 // Default enum for ResourceType
@@ -514,7 +473,6 @@ pub struct LoadedModel {
 }
 // A loaded texture resource
 pub struct LoadedTexture {
-	pub name: String,
 	pub width: u16,
 	pub height: u16,
 	pub compressed_bytes: Vec<u8>,
@@ -522,7 +480,6 @@ pub struct LoadedTexture {
 // A loaded sub shader
 #[derive(Clone)]
 pub struct LoadedSubShader {
-	pub name: String,
 	pub source: String,
 	pub subshader_type: SubShaderType,
 }

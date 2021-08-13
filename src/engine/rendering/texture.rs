@@ -110,7 +110,7 @@ impl Texture {
 	// Convert the resource to a texture
 	pub fn from_resource(resource: &Resource) -> Option<Self> {
 		match resource {
-			Resource::Texture(texture) => {
+			Resource::Texture(texture, texture_name) => {
 				let width = texture.width;
 				let height = texture.height;
 
@@ -121,8 +121,8 @@ impl Texture {
 				// Read the image as a 32 bit image
 				let rgba8_image = decoded.to_rgba8();
 
-				let mut new_texture = Self::create_rgba_texture(texture.name.clone(), width, height, &rgba8_image.as_bytes().to_owned());
-				new_texture.name = texture.name.clone();
+				let mut new_texture = Self::create_rgba_texture(texture_name.clone(), width, height, &rgba8_image.as_bytes().to_owned());
+				new_texture.name = texture_name.clone();
 				return Some(new_texture);
 			}
 			_ => return None,

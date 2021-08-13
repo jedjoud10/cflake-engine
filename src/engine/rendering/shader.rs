@@ -283,10 +283,10 @@ impl SubShader {
 	// Create a subshader from a loaded subshader resource
 	pub fn from_resource(resource: &Resource) -> Option<Self> {
 		match resource {
-			Resource::Shader(shader) => {
+			Resource::Shader(shader, shader_name) => {
 				// Turn the loaded sub shader into a normal sub shader
 				let subshader = Self {
-					name: shader.name.clone(),
+					name: shader_name.clone(),
 					program: 0,
 					source: shader.source.clone(),
 					subshader_type: shader.subshader_type.clone(),
