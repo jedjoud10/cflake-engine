@@ -470,6 +470,8 @@ impl ResourceManager {
 		let log_file = OpenOptions::new().create(true).write(true).read(true).open(log_file_path.clone()).unwrap();
 		let mut log_file_writer = BufWriter::new(log_file);
 
+		// Keep track of all the resources in the original resources folder
+		let mut hashed_names: Vec<u64> = Vec::new(); 
 		// Recursive file finder lol
 		let walk_dir = WalkDir::new(resources_path.clone());	
 		// First of all, loop through all the resource directories recursively and find all the files that can be packed	
@@ -503,6 +505,9 @@ impl ResourceManager {
 				format!("{}{}.{}", subdirectory_name, file_name, file_extension).hash(&mut hasher);
 				hasher.finish()
 			};
+
+			// Keep it in sync
+			hashed_names.push(packed_file_hashed_name);
 
 			// Check if we even need to pack this resource
 			if log_file_packed_timestamps.contains_key(&packed_file_hashed_name) {
@@ -566,6 +571,18 @@ impl ResourceManager {
 			log_file_packed_timestamps.insert(packed_file_hashed_name, last_time_packed);
 		}
 		
+		// Check if there are files in the packed hashed names timestamp hashmap that don't exist in the resource folder
+		log_file_packed_timestamps.retain(|hashed, _| {
+			// Only keep the hashed names that are actually exist in the original resource folder
+			let keep = hashed_names.contains(&hashed);	
+			if !keep {
+				let packed_file_path = format!("{}{}.pkg", packed_resources_path, hashed);
+				println!("{}", packed_file_path);
+				remove_file(packed_file_path);		
+			}
+			keep
+		});
+
 		// Rewrite all the hashed names and timestamps that we saved in the hashmap
 		for (name, timestamp) in log_file_packed_timestamps {
 			log_file_writer.write_u64::<LittleEndian>(name).ok()?;
