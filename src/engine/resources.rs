@@ -2,7 +2,7 @@ use crate::engine::rendering::shader::SubShaderType;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use image::GenericImageView;
 use walkdir::WalkDir;
-use std::{collections::{hash_map::DefaultHasher, HashMap}, env, ffi::OsStr, fmt::format, fs::{create_dir, create_dir_all, read_dir, remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::SystemTime};
+use std::{collections::{hash_map::DefaultHasher, HashMap}, env, ffi::OsStr, fmt::format, fs::{create_dir, create_dir_all, read_dir, remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write}, os::windows::prelude::MetadataExt, path::{Path, PathBuf}, str, thread::current, time::{Duration, SystemTime}};
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]
@@ -425,7 +425,7 @@ impl ResourceManager {
 	// Unloads a resource to save on memory
 	pub fn unload_resouce(&mut self) {}
 	// Saves all the resources from the "resources" folder into the "packed-resources" folder
-	pub fn pack_resources() {
+	pub fn pack_resources() -> Option<()> {
 		// Get the original resource folder
 		let env_path = env::current_dir().unwrap();
 		let mut env_path = env_path.to_str().unwrap();
@@ -435,6 +435,41 @@ impl ResourceManager {
 		let packed_resources_path = format!("{}src\\packed-resources\\", env_path);
 		println!("Resource path '{}'", resources_path);
 		
+		// Make the log file that will be used later to save time when packing resources
+		let log_file_path = format!("{}log.log", packed_resources_path);
+		let log_file = OpenOptions::new().create(true).write(true).read(true).open(log_file_path.clone()).unwrap();
+		// A hashmap containing all the packed resources in the log file, with the timestamps of when their last edit happened
+		let mut log_file_packed_timestamps: HashMap<u64, u64> = HashMap::new();
+		{
+			let mut log_file_reader = BufReader::new(log_file);
+			// An index to keep track what 8 bytes we are reading
+			// 
+			// Read the log file
+			loop {
+				// There is a possibility for the first 8 bytes that we read in this iteration to cause an error (EoF), so we gotta handle it properly  
+				let hashed_name = log_file_reader.read_u64::<LittleEndian>();
+				let hashed_name = match hashed_name {
+					Ok(val) => {
+						// We read the value properly			
+						val			
+					},
+					Err(_) => {
+						// Break out of the loop since we can't read anymore
+						break;
+					},
+				};
+				let timestamp = log_file_reader.read_u64::<LittleEndian>().ok()?;
+				// Add the data to the hashmap
+				log_file_packed_timestamps.insert(hashed_name, timestamp);
+			}
+		}
+		
+		println!("{:?}", log_file_packed_timestamps);
+
+		// Reopen the file since it's a moved value
+		let log_file = OpenOptions::new().create(true).write(true).read(true).open(log_file_path.clone()).unwrap();
+		let mut log_file_writer = BufWriter::new(log_file);
+
 		// Recursive file finder lol
 		let walk_dir = WalkDir::new(resources_path.clone());	
 		// First of all, loop through all the resource directories recursively and find all the files that can be packed	
@@ -446,6 +481,7 @@ impl ResourceManager {
 				continue;
 			}
 			let mut file = OpenOptions::new().read(true).open(dir_entry.path()).unwrap();
+			let file_metadata = file.metadata().ok()?;
 			let file_name_and_extension = dir_entry.file_name().to_str().unwrap();
 			// Everything before the first dot
 			let file_name = file_name_and_extension.split(".").nth(0).unwrap();
@@ -455,12 +491,38 @@ impl ResourceManager {
 			// The name where the current file is located relative to the resource's folder
 			let file_path =  dir_entry.path().to_str().unwrap();
 			let subdirectory_name = file_path.split(resources_path.as_str()).nth(1).unwrap().replace(file_name_and_extension, "");
-			println!("Packaging file '{}{}.{}'", subdirectory_name, file_name, file_extension);
+			println!("Packing file '{}{}.{}'", subdirectory_name, file_name, file_extension);
 
 			// This is the resource that we are going to pack
 			let mut resource = Resource::None;
+			
+			// Create a hashed name to make it able for all the resources to be in one folder
+			let packed_file_hashed_name: u64 = {
+				let mut hasher = DefaultHasher::new();
+				// Use the resource as the hash "key"
+				format!("{}{}.{}", subdirectory_name, file_name, file_extension).hash(&mut hasher);
+				hasher.finish()
+			};
 
-			// Now pack each resource in it's own way
+			// Check if we even need to pack this resource
+			if log_file_packed_timestamps.contains_key(&packed_file_hashed_name) {
+				// We already packed this file, but we need to check if the original resource file was changed
+				let packed_timestamp = log_file_packed_timestamps.get(&packed_file_hashed_name)?;
+				let resource_timestamp = file_metadata.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+
+				// Did we edit the file?
+				if resource_timestamp > packed_timestamp.clone() {
+					// We did edit the file, so we need to pack it	
+				} else {
+					// We didn't edit the file, no need to pack
+					println!("File was not changed, skipped packing!");
+					continue;
+				}
+			} else {
+				// The file was just added to the resources folder, so we gotta pack it
+			}
+
+			// Now convert each resource in it's own way
 			match file_extension.as_str() {
 				"vrsh.glsl" | "frsh.glsl" => {
 					// This is a shader
@@ -478,16 +540,11 @@ impl ResourceManager {
 			}
 
 			// Now time to actually pack the resource
-			// Create a hashed name to make it able for all the resources to be in one folder
-			let packed_file_hashed_name: String = {
-				let mut hasher = DefaultHasher::new();
-				// Use the resource as the hash "key"
-				format!("{}{}.{}", subdirectory_name, file_name, file_extension).hash(&mut hasher);
-				hasher.finish().to_string()
-			};
 			let packed_file_path = format!("{}{}.pkg", packed_resources_path, packed_file_hashed_name);
 			// Create the file
 			let packed_file = File::create(packed_file_path).unwrap();
+			let packed_file_metadata = packed_file.metadata().ok()?;
+			let last_time_packed = packed_file_metadata.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
 			let mut writer = BufWriter::new(packed_file);
 			match resource {
 				Resource::Shader(_, _) => {
@@ -504,7 +561,19 @@ impl ResourceManager {
 				},
 				_ => {}
 			}
+
+			// After packing the file, we need to append it to log file
+			log_file_packed_timestamps.insert(packed_file_hashed_name, last_time_packed);
 		}
+		
+		// Rewrite all the hashed names and timestamps that we saved in the hashmap
+		for (name, timestamp) in log_file_packed_timestamps {
+			log_file_writer.write_u64::<LittleEndian>(name).ok()?;
+			log_file_writer.write_u64::<LittleEndian>(timestamp).ok()?;
+		}
+		
+		// Packed the resources sucsessfully
+		return Some(());
 	}
 }
 
