@@ -287,11 +287,6 @@ impl System for RenderingSystem {
 		shader.set_texture2d("diffuse_tex", opengl_texture_id[0], gl::TEXTURE0);
 		shader.set_texture2d("normals_tex", opengl_texture_id[1], gl::TEXTURE1);
 		
-		for (i, &texture_id) in rc.texture_cache_ids.iter().enumerate() {
-			let texture = data.texture_manager.id_get_object(texture_id);
-			let opengl_id = texture.id;
-			
-		}
         unsafe {
             // Actually draw the array
             if rc.gpu_data.initialized {
