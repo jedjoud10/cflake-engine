@@ -37,7 +37,7 @@ impl<A> CacheManager<A> {
 		} else {
 			// The object was never cached, so we've gotta cache it
 			self.objects.push(object);
-			self.names.insert(name.to_string(), self.objects.len() as u16);
+			self.names.insert(name.to_string(), self.objects.len() as u16 - 1);
 			let id = self.objects.len() as u16 - 1;
 			return id;
 		}

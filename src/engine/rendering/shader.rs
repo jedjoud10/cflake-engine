@@ -2,6 +2,7 @@ use crate::engine::core::cacher::CacheManager;
 use crate::engine::resources::Resource;
 use crate::engine::{core::world::World, resources::ResourceManager};
 use gl;
+use std::ptr::null_mut;
 use std::{
     collections::HashMap,
     ffi::{c_void, CString},
@@ -42,25 +43,20 @@ impl Shader {
 		shader.name = subshader_paths.join("__");
 		let name = shader.name.clone();
 		// Loop through all the subshaders and link them
-		for (subshader_path) in subshader_paths {
+		for (subshader_path) in subshader_paths {			
 			let resource = resource_manager
-                    .load_packed_resource(subshader_path)
-                    .unwrap();
-				// Do we even have this subshader cached?
-				if shader_manager.0.is_cached(subshader_path) {
-					// We have it cached, no need to recompile it
-					shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());
-				} else {
-					// We don't have it cached yet, we've gotta compile it and cache it
-					let mut subshader = SubShader::from_resource(resource).unwrap();
-					// Compile the subshader
-					subshader.compile_subshader();
-					// Cache it, and link it
-					let subshader = shader_manager.0.cache_object(subshader, subshader_path);
-					let subshader = shader_manager.0.id_get_object(subshader);
-					shader.link_subshader(subshader);
-				}
-                
+				.load_packed_resource(subshader_path)
+				.unwrap();
+			// We don't have it cached yet, we've gotta compile it and cache it
+			let mut subshader = SubShader::from_resource(resource).unwrap();
+			// Compile the subshader
+			subshader.compile_subshader();
+			// Cache it, and link it
+			
+			let subshader = shader_manager.0.cache_object(subshader, subshader_path);
+			let subshader = shader_manager.0.id_get_object(subshader);
+			
+			shader.link_subshader(&subshader);  		
 		}
 		// Finalize the shader and cache it
         shader.finalize_shader();
@@ -69,11 +65,10 @@ impl Shader {
     }
     // Finalizes a vert/frag shader by compiling it
     pub fn finalize_shader(&mut self) {
-        unsafe {
-            // Finalize the shader and stuff
+        unsafe {		
+			// Finalize the shader and stuff
             gl::LinkProgram(self.program);
 
-            // Check for errors
             // Check for any errors
             let mut info_log_length: i32 = 0;
             let info_log_length_ptr: *mut i32 = &mut info_log_length;

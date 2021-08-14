@@ -370,12 +370,12 @@ impl ResourceManager {
             0 => {
                 // This is a vertex subshader so the name of the shader will have a 'vertex' appended
                 shader_type = SubShaderType::Vertex;
-                shader_name = format!("{}.{}", &local_path, "vrsh.glsl");
+                shader_name = local_path;
             }
             1 => {
                 // This is a vertex subshader so the name of the shader will have a 'fragmnet' appended
                 shader_type = SubShaderType::Fragment;
-                shader_name = format!("{}.{}", &local_path, "frsh.glsl");
+                shader_name = local_path;
             }
             _ => {
                 panic!("Shader type not supported!");
