@@ -4,23 +4,10 @@ use noise::{Fbm, NoiseFn};
 
 use crate::engine::rendering::{shader::Shader, texture::Texture};
 
-use super::{
-    core::{
-        defaults::components::transforms,
-        ecs::{
+use super::{core::{cacher::CacheManager, defaults::components::transforms, ecs::{
             component::ComponentManager,
             entity::{Entity, EntityManager},
-        },
-        world::World,
-    },
-    rendering::{
-        model::{Model, ProceduralModelGenerator},
-        renderer::Renderer,
-        shader::{ShaderDefaults, ShaderManager},
-        texture::TextureManager,
-    },
-    resources::ResourceManager,
-};
+        }, world::World}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::SubShader}, resources::ResourceManager};
 
 // How many voxels in one axis in each chunk?
 const CHUNK_SIZE: usize = 32;
@@ -319,9 +306,8 @@ pub struct TerrainGenerator {
 pub struct TerrainGeneratorData<'a> {
     pub component_manager: &'a mut ComponentManager,
     pub resource_manager: &'a mut ResourceManager,
-    pub shader_manager: &'a mut ShaderManager,
-    pub shader_defaults: &'a mut ShaderDefaults,
-    pub texture_manager: &'a mut TextureManager,
+    pub shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
+    pub texture_manager: &'a mut CacheManager<Texture>,
 }
 
 // Terrain code
@@ -337,9 +323,8 @@ impl TerrainGenerator {
         // Create the entity
         let mut chunk_entity = Entity::new("Chunk");
         let shader_name: String = {
-            let mut shader = Shader::from_vr_fr_subshader_files(
-                "shaders\\default.vrsh.glsl",
-                "shaders\\triplanar.frsh.glsl",
+            let mut shader = Shader::new(
+                vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
                 &mut data.resource_manager,
                 &mut data.shader_manager,
             );
@@ -360,7 +345,6 @@ impl TerrainGenerator {
             &mut data.texture_manager,
         )
         .unwrap() as i16;
-        rc.normals_texture_id = data.texture_manager.white_texture_id as i16;
         chunk_entity.link_component::<Renderer>(data.component_manager, rc);
         chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
         chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);

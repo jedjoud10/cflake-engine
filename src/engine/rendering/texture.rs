@@ -9,69 +9,6 @@ use std::{
     ptr::null,
 };
 
-// A texture manager
-#[derive(Default)]
-pub struct TextureManager {
-    pub texture_ids: HashMap<String, u16>,
-    pub cached_textures: Vec<Texture>,
-    pub white_texture_id: u16,
-    pub black_texture_id: u16,
-}
-
-impl TextureManager {
-    // Get a reference to a texture from the texture manager's cache
-    pub fn get_texture(&self, id: u16) -> &Texture {
-        return self.cached_textures.get(id as usize).unwrap();
-    }
-    // Get a mutable reference to a texture from the texture manager's cache
-    pub fn get_texture_mut(&mut self, id: i16) -> &mut Texture {
-        return self.cached_textures.get_mut(id as usize).unwrap();
-    }
-    // Add a texture to the manager
-    pub fn cache_texture(&mut self, texture: Texture) -> u16 {
-        let name_clone = texture.name.clone();
-        // Make sure the texture isn't cached already
-        if !self.texture_ids.contains_key(&name_clone) {
-            self.cached_textures.push(texture);
-            let texture_id = self.cached_textures.len() as i16 - 1;
-            println!(
-                "Cache texture: '{}' with texture id '{}'",
-                &name_clone, &texture_id
-            );
-            self.texture_ids.insert(name_clone, texture_id as u16);
-            return texture_id as u16;
-        } else {
-            return self.texture_ids.get(&name_clone).unwrap().clone();
-        }
-    }
-    // Gets a reference to a texture using only it's name
-    pub fn get_texture_with_name(&self, name: &str) -> &Texture {
-        if self.texture_ids.contains_key(name) {
-            let id = self.texture_ids.get(name).unwrap();
-            return self.get_texture(*id);
-        } else {
-            // We don't even have the texture
-            panic!("Texture: '{}' was not cached!", name);
-        }
-    }
-    // Get the texture id of a specific texture using it's name
-    pub fn get_texture_id(&self, name: &str) -> u16 {
-        // Check if the texture even exists
-        if self.texture_ids.contains_key(&name.to_string()) {
-            return self.texture_ids.get(&name.to_string()).unwrap().clone();
-        } else {
-            panic!("Texture: '{}' was not cached!", name);
-        }
-    }
-    // Load the default textures like white and black textures
-    pub fn load_default_texture(&mut self, resource_manager: &mut ResourceManager) {
-        self.black_texture_id =
-            Texture::load_from_file("textures\\black.png", resource_manager, self).unwrap();
-        self.white_texture_id =
-            Texture::load_from_file("textures\\white.png", resource_manager, self).unwrap();
-    }
-}
-
 // A texture
 #[derive(Default)]
 pub struct Texture {

@@ -1,11 +1,6 @@
 use std::collections::HashMap;
 
-use crate::engine::{
-    core::world::{CustomWorldData, Time, World},
-    input::InputManager,
-    rendering::{shader::ShaderManager, texture::TextureManager},
-    resources::ResourceManager,
-};
+use crate::engine::{core::{cacher::CacheManager, world::{CustomWorldData, Time, World}}, input::InputManager, rendering::{shader::{Shader, SubShader}, texture::Texture}, resources::ResourceManager};
 
 use super::{
     component::{ComponentID, ComponentManager},
@@ -17,8 +12,8 @@ pub struct SystemEventData<'a> {
     pub entity_manager: &'a mut EntityManager,
     pub component_manager: &'a mut ComponentManager,
     pub input_manager: &'a mut InputManager,
-    pub shader_manager: &'a mut ShaderManager,
-    pub texture_manager: &'a mut TextureManager,
+    pub shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
+    pub texture_manager: &'a mut CacheManager<Texture>,
     pub resource_manager: &'a mut ResourceManager,
     pub time_manager: &'a mut Time,
     pub custom_data: &'a mut CustomWorldData,

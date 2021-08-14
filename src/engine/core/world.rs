@@ -10,16 +10,17 @@ use crate::engine::input::*;
 use crate::engine::rendering::*;
 
 use crate::engine::core::defaults::components::components::Camera;
-use crate::engine::rendering::shader::ShaderDefaults;
+use crate::engine::rendering::shader::Shader;
+use crate::engine::rendering::shader::SubShader;
+use crate::engine::rendering::texture::Texture;
 use crate::engine::resources::ResourceManager;
 use crate::engine::terrain::TerrainGenerator;
 use crate::engine::terrain::TerrainGeneratorData;
 use crate::game::level::*;
 
 // Import stuff from the rendering module
-use crate::engine::rendering::shader::ShaderManager;
-use crate::engine::rendering::texture::TextureManager;
 
+use super::cacher::CacheManager;
 use super::defaults::components::transforms::Position;
 use super::defaults::systems::rendering_system::RenderingSystem;
 
@@ -31,10 +32,9 @@ pub struct World {
     pub input_manager: InputManager,
     pub resource_manager: ResourceManager,
     pub terrain_generator: TerrainGenerator,
-    pub texture_manager: TextureManager,
+    pub texture_manager: CacheManager<Texture>,
     // Shaders
-    pub shader_manager: ShaderManager,
-    pub shader_defaults: ShaderDefaults,
+    pub shader_manager: (CacheManager<SubShader>, CacheManager<Shader>),
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
@@ -53,12 +53,6 @@ impl World {
         self.window.size = Self::get_default_window_size();
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
-        self.shader_defaults
-            .load_default_shaders(&mut self.resource_manager, &mut self.shader_manager);
-
-        // Load default textures
-        self.texture_manager
-            .load_default_texture(&mut self.resource_manager);
 
         // Test stuff
         /*
@@ -75,7 +69,6 @@ impl World {
             component_manager: &mut self.component_manager,
             resource_manager: &mut self.resource_manager,
             shader_manager: &mut self.shader_manager,
-            shader_defaults: &mut self.shader_defaults,
             texture_manager: &mut self.texture_manager,
         };
 
@@ -312,7 +305,6 @@ pub struct CustomWorldData {
     pub main_camera_entity_id: u16,
     pub render_system_id: u8,
     pub sun_rotation: glam::Quat,
-    pub sky_gradient_global_id: u16,
 }
 // Static time variables
 #[derive(Default)]

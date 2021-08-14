@@ -2,7 +2,6 @@ use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::world::World;
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;
-use crate::engine::rendering::texture::TextureManager;
 use glam::Vec4Swizzles;
 
 use crate::engine::core::ecs::{
@@ -63,27 +62,16 @@ impl System for SkySystem {
         let mut sky = Entity::new("Sky");
         // Use a custom shader
         let sky_shader_name: String = {
-            let mut shader = Shader::from_vr_fr_subshader_files(
-                "shaders\\default.vrsh.glsl",
-                "shaders\\sky.frsh.glsl",
+            let mut shader = Shader::new(
+                vec!["shaders\\default.vrsh.glsl", "shaders\\sky.frsh.glsl"],
                 &mut data.resource_manager,
                 &mut data.shader_manager,
             );
             shader.name.clone()
         };
-        let mut rc = Renderer::new_with_textures(
-            &mut data.resource_manager,
-            &mut data.texture_manager,
-            &mut data.shader_manager,
-            &sky_shader_name,
-            "models\\sphere.mdl3d",
-            vec!["textures\\sky_gradient2.png"],
-        );
-        let id = data
-            .texture_manager
-            .get_texture_id("textures\\sky_gradient2.png");
-        data.custom_data.sky_gradient_global_id = id;
-
+        let mut rc = Renderer::default();
+		rc.load_model("models\\sphere.mdl3d", &mut data.resource_manager);
+		rc.load_textures(ec!["textures\\sky_gradient2.png"], &mut data.texture_manager, &mut data.resource_manager);
         // Make the skysphere inside out, so we can see the insides only
         rc.model.flip_triangles();
         sky.link_component::<Renderer>(&mut data.component_manager, rc);

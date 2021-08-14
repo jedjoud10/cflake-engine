@@ -1,18 +1,7 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use super::{
-    model::Model,
-    model::ModelDataGPU,
-    shader::ShaderManager,
-    texture::{Texture, TextureManager},
-};
-use crate::engine::{
-    core::{
-        ecs::component::{Component, ComponentID},
-        world::World,
-    },
-    resources::ResourceManager,
-};
+use super::{model::Model, model::ModelDataGPU, shader::Shader, texture::{Texture}};
+use crate::engine::{core::{cacher::CacheManager, ecs::component::{Component, ComponentID}, world::World}, resources::ResourceManager};
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
@@ -21,8 +10,7 @@ pub struct Renderer {
     pub shader_name: String,
     pub model: Model,
     // Rendering stuff
-    pub diffuse_texture_id: i16,
-    pub normals_texture_id: i16,
+	pub texture_ids: Vec<u16>,
     // Default parameters for the shader
     pub uv_scale: glam::Vec2,
 }
@@ -34,8 +22,7 @@ impl Default for Renderer {
             gpu_data: ModelDataGPU::default(),
             shader_name: String::default(),
             model: Model::default(),
-            diffuse_texture_id: -1,
-            normals_texture_id: -1,
+			texture_ids: Vec::new(),
             uv_scale: glam::Vec2::ONE,
         }
     }
@@ -57,88 +44,29 @@ impl ComponentID for Renderer {
     }
 }
 
+// Everything related to the creation of a renderer
 impl Renderer {
-    // Create a new renderer using the name of a model, name of a shader, and name of the textures (Diffuse / Normal)
-    pub fn new_with_textures(
-        resource_manager: &mut ResourceManager,
-        texture_manager: &mut TextureManager,
-        shader_manager: &mut ShaderManager,
-        shader_name: &str,
-        model_path: &str,
-        texture_names: Vec<&str>,
-    ) -> Self {
-        // Temp variables holding the global IDs of the textures
-        let mut diffuse_texture_id: i16 = -1;
-        let mut normals_texture_id: i16 = -1;
-        // Load the textures
-        for (i, texture_name) in texture_names.iter().enumerate() {
-            match i {
-                0 => {
-                    // Diffuse texture
-                    diffuse_texture_id =
-                        Texture::load_from_file(texture_name, resource_manager, texture_manager)
-                            .unwrap() as i16;
-                }
-                1 => {
-                    // Normals texture
-                    normals_texture_id =
-                        Texture::load_from_file(texture_name, resource_manager, texture_manager)
-                            .unwrap() as i16;
-                }
-                2 => {
-                    // AO texture
-                }
-                3 => {
-                    // Roughness texture
-                }
-                3 => {
-                    // Metallic texture
-                }
-                _ => {}
-            }
-        }
-        // Load the model resource
-        let model_resource = resource_manager.load_packed_resource(model_path).unwrap();
-        let model = Model::from_resource(model_resource).unwrap();
-        return Self {
-            shader_name: shader_name.to_string(),
-            model,
-            diffuse_texture_id,
-            normals_texture_id,
-            ..Self::default()
-        };
-    }
-    // Create a new renderer using the name of a model, name of a shader, but this time without the textures
-    pub fn new(
-        resource_manager: &mut ResourceManager,
-        shader_name: &str,
-        model_path: &str,
-    ) -> Self {
-        // Load the model resource
-        let model_resource = resource_manager.load_packed_resource(model_path).unwrap();
-        let model = Model::from_resource(model_resource).unwrap();
-        return Self {
-            shader_name: shader_name.to_string(),
-            diffuse_texture_id: -1,
-            normals_texture_id: -1,
-            model,
-            ..Self::default()
-        };
-    }
-    // Creates a new renderer using a procedural model, name of a shader, and no texture names
-    pub fn new_procedural(
-        resource_manager: &mut ResourceManager,
-        shader_name: &str,
-        model: Model,
-    ) -> Self {
-        return Self {
-            shader_name: shader_name.to_string(),
-            diffuse_texture_id: -1,
-            normals_texture_id: -1,
-            model,
-            ..Self::default()
-        };
-    }
+	// Set a model
+	pub fn set_model(&mut self, model: Model) {
+
+	}
+	// Load a model
+	pub fn load_model(&mut self, model_path: &str, resource_manager: &mut ResourceManager) {
+		let resource = resource_manager
+		self.model = 
+	}
+	// Load textures
+	pub fn load_textures(&mut self, texture_paths: Vec<&str>, texture_manager: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) {
+		// Load the textures
+		for (i, &texture_path) in texture_paths.iter().enumerate() {
+			let resource = resource_manager.load_packed_resource(texture_path).unwrap();
+			let texture = Texture::from_resource(resource).unwrap();
+			self.texture_ids.push(texture_manager.cache_object(texture, texture_path));
+		}
+	}
+}
+
+impl Renderer {
     // Updates the model matrix using a position and a rotation
     pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat, scale: f32) {
         let model_matrix = glam::Mat4::from_quat(rotation)

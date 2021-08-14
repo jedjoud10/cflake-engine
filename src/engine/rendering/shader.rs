@@ -1,3 +1,4 @@
+use crate::engine::core::cacher::CacheManager;
 use crate::engine::resources::Resource;
 use crate::engine::{core::world::World, resources::ResourceManager};
 use gl;
@@ -7,83 +8,6 @@ use std::{
     mem::size_of,
     ptr::null,
 };
-
-// Shader manager
-#[derive(Default)]
-pub struct ShaderManager {
-    pub shaders: HashMap<String, Shader>,
-    pub subshaders: HashMap<String, SubShader>,
-}
-
-// Struct holding the names of the default shaders
-#[derive(Default)]
-pub struct ShaderDefaults {
-    pub default_shader_name: String,
-}
-
-impl ShaderManager {
-    // Caches a specific subshader, if it already exists then give back a reference
-    pub fn cache_subshader(&mut self, subshader: SubShader) -> Option<&mut SubShader> {
-        if !self.subshaders.contains_key(&subshader.name) {
-            // Cache the shader for later use
-            let name_clone = subshader.name.clone();
-            self.subshaders.insert(name_clone.clone(), subshader);
-            return self.subshaders.get_mut(&name_clone);
-        } else {
-            return self.subshaders.get_mut(&subshader.name);
-        }
-    }
-    // Cached a specific shader (An actual runnable shader with uniforms and all)
-    pub fn cache_shader(&mut self, shader: Shader) -> Option<&mut Shader> {
-        if !self.shaders.contains_key(&shader.name) {
-            // Cache the shader for later use
-            let name_clone = shader.name.clone();
-            self.shaders.insert(name_clone.clone(), shader);
-            return self.shaders.get_mut(&name_clone);
-        } else {
-            panic!("Cannot cache the same shader twice!");
-            return None;
-        }
-    }
-    // Gets a specific subshader from cache
-    pub fn get_subshader(&mut self, subshader_name: &String) -> Option<&mut SubShader> {
-        // Make sure it exists
-        if self.subshaders.contains_key(subshader_name) {
-            return self.subshaders.get_mut(subshader_name);
-        } else {
-            return None;
-        }
-    }
-    // Gets a specific shader from cache
-    pub fn get_shader(&self, shader_name: &String) -> Option<&Shader> {
-        // Make sure it exists
-        if self.shaders.contains_key(shader_name) {
-            return self.shaders.get(shader_name);
-        } else {
-            return None;
-        }
-    }
-}
-
-impl ShaderDefaults {
-    // Load all the default shaders
-    pub fn load_default_shaders(
-        &mut self,
-        resource_manager: &mut ResourceManager,
-        shader_manager: &mut ShaderManager,
-    ) {
-        // Load the default shader
-        self.default_shader_name = {
-            let default_shader = Shader::from_vr_fr_subshader_files(
-                "shaders\\default.vrsh.glsl",
-                "shaders\\default.frsh.glsl",
-                resource_manager,
-                shader_manager,
-            );
-            default_shader.name.clone()
-        };
-    }
-}
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
@@ -107,47 +31,34 @@ impl Default for Shader {
 }
 
 impl Shader {
-    // Creates a shader from a vertex subshader file and a fragment subshader file
-    pub fn from_vr_fr_subshader_files<'a>(
-        vertex_file_path: &str,
-        fragment_file_path: &str,
+    // Creates a shader from multiple subshader files
+    pub fn new<'a>(
+        subshader_paths: Vec<&str>,
         resource_manager: &'a mut ResourceManager,
-        shader_manager: &'a mut ShaderManager,
+        shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
     ) -> &'a mut Self {
         let mut shader = Self::default();
-        shader.name = format!("{}_{}", vertex_file_path, fragment_file_path);
-        {
-            {
-                let default_vert_subshader_resource = resource_manager
-                    .load_packed_resource(vertex_file_path)
-                    .unwrap();
-                // Link the vertex subshader
-                let mut vert_subshader =
-                    SubShader::from_resource(default_vert_subshader_resource).unwrap();
-                // Compile the subshader
-                vert_subshader.compile_subshader();
-                // Cache it, and link it
-                let vert_subshader = shader_manager.cache_subshader(vert_subshader).unwrap();
-                shader.link_subshader(&vert_subshader);
-            }
-            {
-                let default_frag_subshader_resource = resource_manager
-                    .load_packed_resource(fragment_file_path)
+		// Create the shader name
+		shader.name = subshader_paths.join("__");
+		// Loop through all the subshaders and link them
+		for (subshader_path) in subshader_paths {
+			let resource = resource_manager
+                    .load_packed_resource(subshader_path)
                     .unwrap();
                 // Link the fragment subshader
-                let mut frag_subshader =
-                    SubShader::from_resource(default_frag_subshader_resource).unwrap();
+                let mut subshader =
+                    SubShader::from_resource(resource).unwrap();
                 // Compile the subshader
-                frag_subshader.compile_subshader();
+                subshader.compile_subshader();
                 // Cache it, and link it
-                let frag_subshader = shader_manager.cache_subshader(frag_subshader).unwrap();
-                shader.link_subshader(&frag_subshader);
-            }
-        }
-
+                let subshader = shader_manager.0.cache_object(subshader, subshader_path);
+				let subshader = shader_manager.0.id_get_object(subshader);
+                shader.link_subshader(&subshader);
+		}
+		// Finalize the shader and cache it
         shader.finalize_shader();
-        let cached_shader = shader_manager.cache_shader(shader).unwrap();
-        return cached_shader;
+        let cached_shader_id = shader_manager.1.cache_object(shader, &shader.name);
+        return shader_manager.1.id_get_object_mut(cached_shader_id);
     }
     // Finalizes a vert/frag shader by compiling it
     pub fn finalize_shader(&mut self) {
