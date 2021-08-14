@@ -40,16 +40,11 @@ impl RenderingSystem {
                 .unwrap(),
         )
         .unwrap();
-        quad_renderer_component.shader_name = {
-            // Load the shader that will draw the quad
-            let shader = Shader::from_vr_fr_subshader_files(
-                "shaders\\passthrough.vrsh.glsl",
-                "shaders\\screen_quad.frsh.glsl",
-                &mut data.resource_manager,
-                &mut data.shader_manager,
-            );
-            shader.name.clone()
-        };
+        quad_renderer_component.shader_name = Shader::new(
+			vec!["shaders\\passthrough.vrsh.glsl", "shaders\\screen_quad.frsh.glsl"],
+			&mut data.resource_manager,
+			&mut data.shader_manager,
+		).1;
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
     }
@@ -258,7 +253,7 @@ impl System for RenderingSystem {
                 name = rc.shader_name.clone();
                 model_matrix = rc.gpu_data.model_matrix.clone();
             }
-            shader = data.shader_manager.get_shader(&name).unwrap();
+            shader = data.shader_manager.1.get_object(&name).unwrap();
         }
         // Use the shader, and update any uniforms
         shader.use_shader();
@@ -281,35 +276,23 @@ impl System for RenderingSystem {
         shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
         let mut diffuse_texture_id: u32 = 0;
         let mut normals_texture_id: u32 = 0;
-        // Check if we even have a diffuse texture
-        if rc.diffuse_texture_id != -1 {
-            // Convert the texture id into a texture, and then into a OpenGL texture id
-            diffuse_texture_id = data
-                .texture_manager
-                .get_texture(rc.diffuse_texture_id as u16)
-                .id;
-        } else {
-            diffuse_texture_id = data
-                .texture_manager
-                .get_texture(data.texture_manager.white_texture_id)
-                .id;
-        }
-        // Check if we even have a normal texture
-        if rc.normals_texture_id != -1 {
-            // Convert the texture id into a texture, and then into a OpenGL texture id
-            normals_texture_id = data
-                .texture_manager
-                .get_texture(rc.normals_texture_id as u16)
-                .id;
-        } else {
-            normals_texture_id = data
-                .texture_manager
-                .get_texture(data.texture_manager.white_texture_id)
-                .id;
-        }
-
-        shader.set_texture2d("diffuse_tex", diffuse_texture_id, gl::TEXTURE0);
-        shader.set_texture2d("normal_tex", normals_texture_id, gl::TEXTURE1);
+        
+		// Get the OpenGL texture id so we can bind it to the shader
+		for (i, &texture_id) in rc.texture_ids.iter().enumerate() {
+			let texture = data.texture_manager.id_get_object(texture_id);
+			let opengl_id = texture.id;
+			match i {
+				0 => {
+					// This is a diffuse texture
+					shader.set_texture2d("diffuse_tex", opengl_id, gl::TEXTURE0);
+				}
+				1 => {
+					// This is a normals texture
+					shader.set_texture2d("normals_tex", opengl_id, gl::TEXTURE1);
+				}
+				_ => {}
+			}
+		}
         unsafe {
             // Actually draw the array
             if rc.gpu_data.initialized {
@@ -338,7 +321,7 @@ impl System for RenderingSystem {
     fn post_fire(&mut self, data: &mut SystemEventData) {
         let shader = data
             .shader_manager
-            .get_shader(&self.quad_renderer.shader_name)
+            .1.get_object(&self.quad_renderer.shader_name)
             .unwrap();
         let camera_position = data
             .entity_manager
@@ -369,9 +352,7 @@ impl System for RenderingSystem {
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
         shader.set_texture2d(
             "default_sky_gradient",
-            data.texture_manager
-                .get_texture(data.custom_data.sky_gradient_global_id)
-                .id,
+            data.texture_manager.id_get_object(data.entity_manager.get_entity(data.custom_data.skysphere_entity_id).get_component::<components::Sky>(data.component_manager).sky_gradient_texture_id).id,
             gl::TEXTURE5,
         );
 

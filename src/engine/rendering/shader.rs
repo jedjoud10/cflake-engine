@@ -36,10 +36,11 @@ impl Shader {
         subshader_paths: Vec<&str>,
         resource_manager: &'a mut ResourceManager,
         shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
-    ) -> &'a mut Self {
+    ) -> (&'a mut Self, String) {
         let mut shader = Self::default();
 		// Create the shader name
 		shader.name = subshader_paths.join("__");
+		let name = shader.name.clone();
 		// Loop through all the subshaders and link them
 		for (subshader_path) in subshader_paths {
 			let resource = resource_manager
@@ -57,8 +58,8 @@ impl Shader {
 		}
 		// Finalize the shader and cache it
         shader.finalize_shader();
-        let cached_shader_id = shader_manager.1.cache_object(shader, &shader.name);
-        return shader_manager.1.id_get_object_mut(cached_shader_id);
+        let cached_shader_id = shader_manager.1.cache_object(shader, &name);
+        return (shader_manager.1.id_get_object_mut(cached_shader_id), name);
     }
     // Finalizes a vert/frag shader by compiling it
     pub fn finalize_shader(&mut self) {

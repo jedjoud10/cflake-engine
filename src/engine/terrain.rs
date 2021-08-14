@@ -322,29 +322,15 @@ impl TerrainGenerator {
 
         // Create the entity
         let mut chunk_entity = Entity::new("Chunk");
-        let shader_name: String = {
-            let mut shader = Shader::new(
-                vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
-                &mut data.resource_manager,
-                &mut data.shader_manager,
-            );
-            shader.name.clone()
-        };
-
-        let mut rc = Renderer::new_procedural(data.resource_manager, shader_name.as_str(), model);
+        let mut rc = Renderer::default();
+		rc.shader_name = Shader::new(
+			vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
+			&mut data.resource_manager,
+			&mut data.shader_manager,
+		).1;
+		rc.model = model;
+		rc.load_textures(vec!["textures\\rock\\Rock033_1K_Color.png", "textures\\rock\\Rock033_1K_Normal.png",], &mut data.texture_manager, &mut data.resource_manager);
         rc.uv_scale = glam::vec2(1.0, 1.0);
-        rc.diffuse_texture_id = Texture::load_from_file(
-            "textures\\rock\\Rock033_1K_Color.png",
-            &mut data.resource_manager,
-            &mut data.texture_manager,
-        )
-        .unwrap() as i16;
-        rc.normals_texture_id = Texture::load_from_file(
-            "textures\\rock\\Rock033_1K_Normal.png",
-            &mut data.resource_manager,
-            &mut data.texture_manager,
-        )
-        .unwrap() as i16;
         chunk_entity.link_component::<Renderer>(data.component_manager, rc);
         chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
         chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);

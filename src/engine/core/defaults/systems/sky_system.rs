@@ -61,17 +61,14 @@ impl System for SkySystem {
         // Create the sky entity
         let mut sky = Entity::new("Sky");
         // Use a custom shader
-        let sky_shader_name: String = {
-            let mut shader = Shader::new(
-                vec!["shaders\\default.vrsh.glsl", "shaders\\sky.frsh.glsl"],
-                &mut data.resource_manager,
-                &mut data.shader_manager,
-            );
-            shader.name.clone()
-        };
+        let sky_shader_name: String = Shader::new(
+			vec!["shaders\\default.vrsh.glsl", "shaders\\sky.frsh.glsl"],
+			&mut data.resource_manager,
+			&mut data.shader_manager,
+		).1;
         let mut rc = Renderer::default();
 		rc.load_model("models\\sphere.mdl3d", &mut data.resource_manager);
-		rc.load_textures(ec!["textures\\sky_gradient2.png"], &mut data.texture_manager, &mut data.resource_manager);
+		rc.load_textures(vec!["textures\\sky_gradient2.png"], &mut data.texture_manager, &mut data.resource_manager);
         // Make the skysphere inside out, so we can see the insides only
         rc.model.flip_triangles();
         sky.link_component::<Renderer>(&mut data.component_manager, rc);

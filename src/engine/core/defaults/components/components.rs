@@ -75,10 +75,7 @@ impl Default for Camera {
 // A component that will be linked to the skysphere
 #[derive(Default)]
 pub struct Sky {
-    pub render_state: EntityRenderState,
-    pub gpu_data: ModelDataGPU,
-    pub shader_name: String,
-    pub model: Model,
+    pub sky_gradient_texture_id: u16
 }
 
 // Main traits implemented
@@ -93,6 +90,6 @@ impl Component for Sky {
 }
 impl ComponentID for Sky {
     fn get_component_name() -> String {
-        String::from("Skyshpere")
+        String::from("Sky")
     }
 }

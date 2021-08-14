@@ -1,3 +1,4 @@
+use crate::engine::core::cacher::CacheManager;
 use crate::engine::resources::Resource;
 use crate::engine::{core::world::World, resources::ResourceManager};
 use gl;
@@ -24,26 +25,16 @@ pub struct Texture {
 impl Texture {
     // Loads a texture and caches it, then returns the texture id
     pub fn load_from_file(
-        file_path: &str,
+        local_path: &str,
         resource_manager: &mut ResourceManager,
-        texture_manager: &mut TextureManager,
+        texture_manager: &mut CacheManager<Texture>,
     ) -> Option<u16> {
-        let mut id = 0_u16;
-        // Check if the texture was cached
-
-        if texture_manager.texture_ids.contains_key(file_path) {
-            // Texture was already cached
-            println!("Load cached texture '{}'", file_path);
-            let cached_texture_id = texture_manager.get_texture_id(file_path);
-            id = cached_texture_id;
-            let cached_texture = texture_manager.get_texture(id);
-        } else {
-            // First time loading this texture
-            let texture_resource = resource_manager.load_packed_resource(file_path)?;
-            let texture = Texture::from_resource(texture_resource)?;
-            id = texture_manager.cache_texture(texture);
-        }
-        return Some(id);
+		// Load the resource
+		let resource = resource_manager.load_packed_resource(local_path)?;
+		// Then load the texture from that resource
+		let texture = Texture::from_resource(resource)?;
+		let texture_id = texture_manager.cache_object(texture, local_path);
+		return Some(texture_id);
     }
     // Convert the resource to a texture
     pub fn from_resource(resource: &Resource) -> Option<Self> {

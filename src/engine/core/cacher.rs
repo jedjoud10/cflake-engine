@@ -3,14 +3,16 @@ use std::collections::HashMap;
 // A cacher manager struct that can cache any type of data so it doesn't need to be reloaded later on
 pub struct CacheManager<A> {
 	pub objects: Vec<A>,
-	pub names: HashMap<String, u16>
+	pub names: HashMap<String, u16>,
+	pub defaults: Vec<String>
 }
 
 impl<A> Default for CacheManager<A> {
     fn default() -> Self {
         Self {
 			objects: Vec::new(),
-			names: HashMap::new()
+			names: HashMap::new(),
+			defaults: Vec::new(),
 		}
     }
 }
@@ -55,7 +57,7 @@ impl<A> CacheManager<A> {
 		return self.objects.get(id as usize).unwrap();
 	}
 	// Get a reference to an object using it's object ID
-	pub fn id_get_object_mut(&self, id: u16) -> &mut A {
+	pub fn id_get_object_mut(&mut self, id: u16) -> &mut A {
 		return self.objects.get_mut(id as usize).unwrap();
 	}
 }

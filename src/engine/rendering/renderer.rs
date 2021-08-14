@@ -3,6 +3,8 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 use super::{model::Model, model::ModelDataGPU, shader::Shader, texture::{Texture}};
 use crate::engine::{core::{cacher::CacheManager, ecs::component::{Component, ComponentID}, world::World}, resources::ResourceManager};
 
+// The default texture paths to use when certain renderer textures aren't set
+const DEFAULT_TEXTURE_PATHS: [&'static str; 2] = ["textures\\white.png", "textures\\white.png"];
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub render_state: EntityRenderState,
@@ -10,7 +12,7 @@ pub struct Renderer {
     pub shader_name: String,
     pub model: Model,
     // Rendering stuff
-	pub texture_ids: Vec<u16>,
+	pub texture_ids: Vec<u16>,	
     // Default parameters for the shader
     pub uv_scale: glam::Vec2,
 }
@@ -46,14 +48,11 @@ impl ComponentID for Renderer {
 
 // Everything related to the creation of a renderer
 impl Renderer {
-	// Set a model
-	pub fn set_model(&mut self, model: Model) {
-
-	}
 	// Load a model
 	pub fn load_model(&mut self, model_path: &str, resource_manager: &mut ResourceManager) {
-		let resource = resource_manager
-		self.model = 
+		let resource = resource_manager.load_packed_resource(model_path).unwrap();
+		let model = Model::from_resource(resource).unwrap();
+		self.model = model;
 	}
 	// Load textures
 	pub fn load_textures(&mut self, texture_paths: Vec<&str>, texture_manager: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) {
