@@ -4,7 +4,7 @@ use crate::engine::{core::{cacher::CacheManager, world::{CustomWorldData, Time, 
 
 use super::{
     component::{ComponentID, ComponentManager},
-    entity::EntityManager,
+    entity_manager::EntityManager,
 };
 
 // Data that will be passed to the fire events in systems
@@ -12,8 +12,8 @@ pub struct SystemEventData<'a> {
     pub entity_manager: &'a mut EntityManager,
     pub component_manager: &'a mut ComponentManager,
     pub input_manager: &'a mut InputManager,
-    pub shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
-    pub texture_manager: &'a mut CacheManager<Texture>,
+    pub shader_cacher: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
+    pub texture_cacher: &'a mut CacheManager<Texture>,
     pub resource_manager: &'a mut ResourceManager,
     pub time_manager: &'a mut Time,
     pub custom_data: &'a mut CustomWorldData,

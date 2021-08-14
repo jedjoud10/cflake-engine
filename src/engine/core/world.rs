@@ -23,6 +23,7 @@ use crate::game::level::*;
 use super::cacher::CacheManager;
 use super::defaults::components::transforms::Position;
 use super::defaults::systems::rendering_system::RenderingSystem;
+use super::ecs::entity_manager::EntityManager;
 
 //  The actual world
 #[derive(Default)]
@@ -103,8 +104,8 @@ impl World {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             input_manager: &mut self.input_manager,
-            shader_manager: &mut self.shader_manager,
-            texture_manager: &mut self.texture_manager,
+            shader_cacher: &mut self.shader_manager,
+            texture_cacher: &mut self.texture_manager,
             time_manager: &mut self.time_manager,
             resource_manager: &mut self.resource_manager,
             custom_data: &mut self.custom_data,
@@ -131,8 +132,8 @@ impl World {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             input_manager: &mut self.input_manager,
-            shader_manager: &mut self.shader_manager,
-            texture_manager: &mut self.texture_manager,
+            shader_cacher: &mut self.shader_manager,
+            texture_cacher: &mut self.texture_manager,
             time_manager: &mut self.time_manager,
             resource_manager: &mut self.resource_manager,
             custom_data: &mut self.custom_data,

@@ -6,7 +6,8 @@ use crate::engine::rendering::{shader::Shader, texture::Texture};
 
 use super::{core::{cacher::CacheManager, defaults::components::transforms, ecs::{
             component::ComponentManager,
-            entity::{Entity, EntityManager},
+            entity::{Entity},
+			entity_manager::EntityManager
         }, world::World}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::SubShader}, resources::ResourceManager};
 
 // How many voxels in one axis in each chunk?

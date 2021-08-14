@@ -72,7 +72,7 @@ impl ComponentManager {
         } else {
             panic!("Component {} not registered!", name);
         }
-    }
+    }	
 	// Get a component by it's global ID
 	pub fn id_get_component<'a, T: ComponentID + Component + 'static>(&'a self, id: u16) -> Result<&'a T, super::error::Error> {
         // Check if we even have the component
@@ -88,6 +88,7 @@ impl ComponentManager {
             return Err(super::error::Error::new(format!("Component '{}' does not exist in the ComponentManager!", T::get_component_name()).as_str()));
         }		
     }
+	
 }
 
 // A trait used to identify each component by their name

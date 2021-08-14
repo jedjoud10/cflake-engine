@@ -44,7 +44,7 @@ impl RenderingSystem {
         quad_renderer_component.shader_name = Shader::new(
 			vec!["shaders\\passthrough.vrsh.glsl", "shaders\\screen_quad.frsh.glsl"],
 			&mut data.resource_manager,
-			&mut data.shader_manager,
+			&mut data.shader_cacher,
 		).1;
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
@@ -254,7 +254,7 @@ impl System for RenderingSystem {
                 name = rc.shader_name.clone();
                 model_matrix = rc.gpu_data.model_matrix.clone();
             }
-            shader = data.shader_manager.1.get_object(&name).unwrap();
+            shader = data.shader_cacher.1.get_object(&name).unwrap();
         }
         // Use the shader, and update any uniforms
         shader.use_shader();
@@ -282,7 +282,7 @@ impl System for RenderingSystem {
 		// Load the default ones
 		for (i, &id) in rc.texture_cache_ids.iter().enumerate() {
 			// If this is a negative number, it means we've gotta use the default texture
-			opengl_texture_id.push(data.texture_manager.id_get_object(id).id as u32);
+			opengl_texture_id.push(data.texture_cacher.id_get_object(id).unwrap().id as u32);
 		}
 		shader.set_texture2d("diffuse_tex", opengl_texture_id[0], gl::TEXTURE0);
 		shader.set_texture2d("normals_tex", opengl_texture_id[1], gl::TEXTURE1);
@@ -314,7 +314,7 @@ impl System for RenderingSystem {
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut SystemEventData) {
         let shader = data
-            .shader_manager
+            .shader_cacher
             .1.get_object(&self.quad_renderer.shader_name)
             .unwrap();
         let camera_position = data
@@ -347,7 +347,7 @@ impl System for RenderingSystem {
 		let sky_component = data.component_manager.id_get_component::<components::Sky>(data.custom_data.sky_component_id).unwrap();
         shader.set_texture2d(
             "default_sky_gradient",
-            data.texture_manager.id_get_object(sky_component.sky_gradient_texture_id).id,
+            data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap().id,
             gl::TEXTURE5,
         );
 

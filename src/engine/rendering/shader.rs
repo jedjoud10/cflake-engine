@@ -65,7 +65,7 @@ impl Shader {
 		// Finalize the shader and cache it
         shader.finalize_shader();
         let cached_shader_id = shader_manager.1.cache_object(shader, &name);
-        return (shader_manager.1.id_get_object_mut(cached_shader_id), name);
+        return (shader_manager.1.id_get_object_mut(cached_shader_id).unwrap(), name);
     }
     // Finalizes a vert/frag shader by compiling it
     pub fn finalize_shader(&mut self) {
