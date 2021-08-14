@@ -47,34 +47,52 @@ pub struct World {
 }
 
 impl World {
-	// Load everything that needs to be loaded by default
-	fn load_defaults(&mut self, window: &mut glfw::Window) {
-		// Load all the default things
-		self.input_manager.setup_default_bindings();
-		self.window.size = Self::get_default_window_size();
-		window.set_cursor_mode(glfw::CursorMode::Disabled);
-		window.set_cursor_pos(0.0, 0.0);
+    // Load everything that needs to be loaded by default
+    fn load_defaults(&mut self, window: &mut glfw::Window) {
+        // Load all the default things
+        self.input_manager.setup_default_bindings();
+        self.window.size = Self::get_default_window_size();
+        window.set_cursor_mode(glfw::CursorMode::Disabled);
+        window.set_cursor_pos(0.0, 0.0);
 
-		// Load the default objects for the CacheManagers
-		let white_texture = Texture::from_resource(self.resource_manager.load_packed_resource("textures\\white.png").unwrap()).unwrap();
-		let black_texture = Texture::from_resource(self.resource_manager.load_packed_resource("textures\\black.png").unwrap()).unwrap();
-		self.texture_manager.cache_object(white_texture, "textures\\white.png");
-		self.texture_manager.cache_object(black_texture, "textures\\black.png");
-		self.texture_manager.generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
-		
-		// Copy the default shader name
-		let default_shader_name: String;
-		{
-			let default_shader = Shader::new(vec!["shaders\\default.vrsh.glsl", "shaders\\default.frsh.glsl"], &mut self.resource_manager, &mut self.shader_manager);
-			default_shader_name = default_shader.1.clone();
-		}
-		self.shader_manager.1.generate_defaults(vec![default_shader_name.as_str()]);
-	}
+        // Load the default objects for the CacheManagers
+        let white_texture = Texture::from_resource(
+            self.resource_manager
+                .load_packed_resource("textures\\white.png")
+                .unwrap(),
+        )
+        .unwrap();
+        let black_texture = Texture::from_resource(
+            self.resource_manager
+                .load_packed_resource("textures\\black.png")
+                .unwrap(),
+        )
+        .unwrap();
+        self.texture_manager
+            .cache_object(white_texture, "textures\\white.png");
+        self.texture_manager
+            .cache_object(black_texture, "textures\\black.png");
+        self.texture_manager
+            .generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
+
+        // Copy the default shader name
+        let default_shader_name: String;
+        {
+            let default_shader = Shader::new(
+                vec!["shaders\\default.vrsh.glsl", "shaders\\default.frsh.glsl"],
+                &mut self.resource_manager,
+                &mut self.shader_manager,
+            );
+            default_shader_name = default_shader.1.clone();
+        }
+        self.shader_manager
+            .1
+            .generate_defaults(vec![default_shader_name.as_str()]);
+    }
     // When the world started initializing
     pub fn start_world(&mut self, window: &mut glfw::Window) {
-        
-		// Load the default stuff
-		self.load_defaults(window);
+        // Load the default stuff
+        self.load_defaults(window);
         // Test stuff
         /*
         self.component_manager.register_component::<Position>();
@@ -115,7 +133,7 @@ impl World {
             .system_manager
             .add_additional_entities(&mut data)
             .clone();
-			println!("{}", self.custom_data.sky_component_id);
+        println!("{}", self.custom_data.sky_component_id);
         self.add_entities(new_entities);
     }
     // We do the following in this function
@@ -310,8 +328,9 @@ impl World {
             .get_entity(self.custom_data.main_camera_entity_id)
             .clone();
         let entity_clone_id = camera_entity_clone.entity_id;
-        let camera_component =
-            camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager).unwrap();
+        let camera_component = camera_entity_clone
+            .get_component_mut::<Camera>(&mut self.component_manager)
+            .unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.window_size = size;
         camera_component.update_projection_matrix();
@@ -325,7 +344,7 @@ impl World {
 #[derive(Default)]
 pub struct CustomWorldData {
     pub main_camera_entity_id: u16,
-	pub sky_component_id: u16,
+    pub sky_component_id: u16,
     pub render_system_id: u8,
     pub sun_rotation: glam::Quat,
 }

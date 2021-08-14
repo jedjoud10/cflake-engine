@@ -1,7 +1,14 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use super::{model::Model, model::ModelDataGPU, shader::Shader, texture::{Texture}};
-use crate::engine::{core::{cacher::CacheManager, ecs::component::{Component, ComponentID}, world::World}, resources::ResourceManager};
+use super::{model::Model, model::ModelDataGPU, shader::Shader, texture::Texture};
+use crate::engine::{
+    core::{
+        cacher::CacheManager,
+        ecs::component::{Component, ComponentID},
+        world::World,
+    },
+    resources::ResourceManager,
+};
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub render_state: EntityRenderState,
@@ -9,7 +16,7 @@ pub struct Renderer {
     pub shader_name: String,
     pub model: Model,
     // Rendering stuff
-	pub texture_cache_ids: Vec<u16>,	
+    pub texture_cache_ids: Vec<u16>,
     // Default parameters for the shader
     pub uv_scale: glam::Vec2,
 }
@@ -21,7 +28,7 @@ impl Default for Renderer {
             gpu_data: ModelDataGPU::default(),
             shader_name: String::default(),
             model: Model::default(),
-			texture_cache_ids: Vec::new(),
+            texture_cache_ids: Vec::new(),
             uv_scale: glam::Vec2::ONE,
         }
     }
@@ -45,27 +52,37 @@ impl ComponentID for Renderer {
 
 // Everything related to the creation of a renderer
 impl Renderer {
-	// Load a model
-	pub fn load_model(&mut self, model_path: &str, resource_manager: &mut ResourceManager) {
-		let resource = resource_manager.load_packed_resource(model_path).unwrap();
-		let model = Model::from_resource(resource).unwrap();
-		self.model = model;
-	}
-	// Load textures
-	pub fn load_textures(&mut self, texture_paths: Vec<&str>, texture_manager: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) {
-		// Load the textures
-		for (i, &texture_path) in texture_paths.iter().enumerate() {
-			let resource = resource_manager.load_packed_resource(texture_path).unwrap();
-			let texture = Texture::from_resource(resource).unwrap();
-			self.texture_cache_ids.push(texture_manager.cache_object(texture, texture_path));
-		}
+    // Load a model
+    pub fn load_model(&mut self, model_path: &str, resource_manager: &mut ResourceManager) {
+        let resource = resource_manager.load_packed_resource(model_path).unwrap();
+        let model = Model::from_resource(resource).unwrap();
+        self.model = model;
+    }
+    // Load textures
+    pub fn load_textures(
+        &mut self,
+        texture_paths: Vec<&str>,
+        texture_manager: &mut CacheManager<Texture>,
+        resource_manager: &mut ResourceManager,
+    ) {
+        // Load the textures
+        for (i, &texture_path) in texture_paths.iter().enumerate() {
+            let resource = resource_manager.load_packed_resource(texture_path).unwrap();
+            let texture = Texture::from_resource(resource).unwrap();
+            self.texture_cache_ids
+                .push(texture_manager.cache_object(texture, texture_path));
+        }
 
-		// For the rest of the textures that weren't explicitly given a texture path, load the default ones
-		// Diffuse, Normals, Roughness, Metallic, AO
-		for i in [(texture_paths.len() - 1)..5] {
-			self.texture_cache_ids.push(texture_manager.get_object_id("textures\\white.png").unwrap());
-		}
-	}
+        // For the rest of the textures that weren't explicitly given a texture path, load the default ones
+        // Diffuse, Normals, Roughness, Metallic, AO
+        for i in [(texture_paths.len() - 1)..5] {
+            self.texture_cache_ids.push(
+                texture_manager
+                    .get_object_id("textures\\white.png")
+                    .unwrap(),
+            );
+        }
+    }
 }
 
 impl Renderer {

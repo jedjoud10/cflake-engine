@@ -42,10 +42,14 @@ impl RenderingSystem {
         )
         .unwrap();
         quad_renderer_component.shader_name = Shader::new(
-			vec!["shaders\\passthrough.vrsh.glsl", "shaders\\screen_quad.frsh.glsl"],
-			&mut data.resource_manager,
-			&mut data.shader_cacher,
-		).1;
+            vec![
+                "shaders\\passthrough.vrsh.glsl",
+                "shaders\\screen_quad.frsh.glsl",
+            ],
+            &mut data.resource_manager,
+            &mut data.shader_cacher,
+        )
+        .1;
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
     }
@@ -221,12 +225,14 @@ impl System for RenderingSystem {
             let camera_entity = data
                 .entity_manager
                 .get_entity(data.custom_data.main_camera_entity_id);
-            let camera_data =
-                camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
+            let camera_data = camera_entity
+                .get_component::<components::Camera>(&mut data.component_manager)
+                .unwrap();
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
             camera_position = camera_entity
-                .get_component::<transforms::Position>(&mut data.component_manager).unwrap()
+                .get_component::<transforms::Position>(&mut data.component_manager)
+                .unwrap()
                 .position;
         }
         let model_matrix: glam::Mat4;
@@ -240,16 +246,21 @@ impl System for RenderingSystem {
                 let scale: f32;
                 {
                     position = entity
-                        .get_component::<transforms::Position>(&mut data.component_manager).unwrap()
+                        .get_component::<transforms::Position>(&mut data.component_manager)
+                        .unwrap()
                         .position;
                     rotation = entity
-                        .get_component::<transforms::Rotation>(&mut data.component_manager).unwrap()
+                        .get_component::<transforms::Rotation>(&mut data.component_manager)
+                        .unwrap()
                         .rotation;
                     scale = entity
-                        .get_component::<transforms::Scale>(&mut data.component_manager).unwrap()
+                        .get_component::<transforms::Scale>(&mut data.component_manager)
+                        .unwrap()
                         .scale;
                 }
-                let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
+                let rc = entity
+                    .get_component_mut::<Renderer>(&mut data.component_manager)
+                    .unwrap();
                 rc.update_model_matrix(position.clone(), rotation.clone(), scale);
                 name = rc.shader_name.clone();
                 model_matrix = rc.gpu_data.model_matrix.clone();
@@ -259,7 +270,9 @@ impl System for RenderingSystem {
         // Use the shader, and update any uniforms
         shader.use_shader();
 
-        let rc = entity.get_component::<Renderer>(&mut data.component_manager).unwrap();
+        let rc = entity
+            .get_component::<Renderer>(&mut data.component_manager)
+            .unwrap();
         // Calculate the mvp matrix
         let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
         // Pass the MVP and the model matrix to the shader
@@ -275,18 +288,18 @@ impl System for RenderingSystem {
             (camera_position.x, camera_position.y, camera_position.z),
         );
         shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
-        
-		// Get the OpenGL texture id so we can bind it to the shader
-		let mut opengl_texture_id: Vec<u32> = Vec::new();
 
-		// Load the default ones
-		for (i, &id) in rc.texture_cache_ids.iter().enumerate() {
-			// If this is a negative number, it means we've gotta use the default texture
-			opengl_texture_id.push(data.texture_cacher.id_get_object(id).unwrap().id as u32);
-		}
-		shader.set_texture2d("diffuse_tex", opengl_texture_id[0], gl::TEXTURE0);
-		shader.set_texture2d("normals_tex", opengl_texture_id[1], gl::TEXTURE1);
-		
+        // Get the OpenGL texture id so we can bind it to the shader
+        let mut opengl_texture_id: Vec<u32> = Vec::new();
+
+        // Load the default ones
+        for (i, &id) in rc.texture_cache_ids.iter().enumerate() {
+            // If this is a negative number, it means we've gotta use the default texture
+            opengl_texture_id.push(data.texture_cacher.id_get_object(id).unwrap().id as u32);
+        }
+        shader.set_texture2d("diffuse_tex", opengl_texture_id[0], gl::TEXTURE0);
+        shader.set_texture2d("normals_tex", opengl_texture_id[1], gl::TEXTURE1);
+
         unsafe {
             // Actually draw the array
             if rc.gpu_data.initialized {
@@ -315,12 +328,14 @@ impl System for RenderingSystem {
     fn post_fire(&mut self, data: &mut SystemEventData) {
         let shader = data
             .shader_cacher
-            .1.get_object(&self.quad_renderer.shader_name)
+            .1
+            .get_object(&self.quad_renderer.shader_name)
             .unwrap();
         let camera_position = data
             .entity_manager
             .get_entity(data.custom_data.main_camera_entity_id)
-            .get_component::<transforms::Position>(data.component_manager).unwrap()
+            .get_component::<transforms::Position>(data.component_manager)
+            .unwrap()
             .position;
         shader.use_shader();
 
@@ -344,10 +359,16 @@ impl System for RenderingSystem {
         // Sky params
         shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
-		let sky_component = data.component_manager.id_get_component::<components::Sky>(data.custom_data.sky_component_id).unwrap();
+        let sky_component = data
+            .component_manager
+            .id_get_component::<components::Sky>(data.custom_data.sky_component_id)
+            .unwrap();
         shader.set_texture2d(
             "default_sky_gradient",
-            data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap().id,
+            data.texture_cacher
+                .id_get_object(sky_component.sky_gradient_texture_id)
+                .unwrap()
+                .id,
             gl::TEXTURE5,
         );
 
@@ -377,14 +398,18 @@ impl System for RenderingSystem {
 
     // When an entity gets added to this system
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
-        let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
+        let rc = entity
+            .get_component_mut::<Renderer>(&mut data.component_manager)
+            .unwrap();
         // Make sure we create the OpenGL data for this entity's model
         rc.refresh_model();
     }
 
     // When an entity gets removed from this system
     fn entity_removed(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
-        let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
+        let rc = entity
+            .get_component_mut::<Renderer>(&mut data.component_manager)
+            .unwrap();
         // Dispose the model when the entity gets destroyed
         rc.dispose_model();
     }

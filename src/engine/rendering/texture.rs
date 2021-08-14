@@ -29,12 +29,12 @@ impl Texture {
         resource_manager: &mut ResourceManager,
         texture_manager: &mut CacheManager<Texture>,
     ) -> Option<u16> {
-		// Load the resource
-		let resource = resource_manager.load_packed_resource(local_path)?;
-		// Then load the texture from that resource
-		let texture = Texture::from_resource(resource)?;
-		let texture_id = texture_manager.cache_object(texture, local_path);
-		return Some(texture_id);
+        // Load the resource
+        let resource = resource_manager.load_packed_resource(local_path)?;
+        // Then load the texture from that resource
+        let texture = Texture::from_resource(resource)?;
+        let texture_id = texture_manager.cache_object(texture, local_path);
+        return Some(texture_id);
     }
     // Convert the resource to a texture
     pub fn from_resource(resource: &Resource) -> Option<Self> {

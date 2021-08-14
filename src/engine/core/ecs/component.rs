@@ -72,23 +72,27 @@ impl ComponentManager {
         } else {
             panic!("Component {} not registered!", name);
         }
-    }	
-	// Get a component by it's global ID
-	pub fn id_get_component<'a, T: ComponentID + Component + 'static>(&'a self, id: u16) -> Result<&'a T, super::error::Error> {
+    }
+    // Get a component by it's global ID
+    pub fn id_get_component<'a, T: ComponentID + Component + 'static>(
+        &'a self,
+        id: u16,
+    ) -> Result<&'a T, super::error::Error> {
         // Check if we even have the component
         if self.components.len() <= id as usize + 1 {
-            let component_any: &dyn Any = self
-                .components
-                .get(id as usize)
-                .unwrap()
-                .as_any();
+            let component_any: &dyn Any = self.components.get(id as usize).unwrap().as_any();
             let final_component = component_any.downcast_ref::<T>().unwrap();
             return Ok(final_component);
         } else {
-            return Err(super::error::Error::new(format!("Component '{}' does not exist in the ComponentManager!", T::get_component_name()).as_str()));
-        }		
+            return Err(super::error::Error::new(
+                format!(
+                    "Component '{}' does not exist in the ComponentManager!",
+                    T::get_component_name()
+                )
+                .as_str(),
+            ));
+        }
     }
-	
 }
 
 // A trait used to identify each component by their name

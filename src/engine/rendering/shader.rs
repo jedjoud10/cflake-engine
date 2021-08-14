@@ -39,38 +39,43 @@ impl Shader {
         shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
     ) -> (&'a mut Self, String) {
         let mut shader = Self::default();
-		// Create the shader name
-		shader.name = subshader_paths.join("__");
-		let name = shader.name.clone();
-		// Loop through all the subshaders and link them
-		for subshader_path in subshader_paths {			
-			// Check if we even have the subshader cached
-			if shader_manager.0.is_cached(subshader_path) {
-				shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());  	
-			} else {
-				// It was not cached, so we need to cache it
-				let resource = resource_manager
-					.load_packed_resource(subshader_path)
-					.unwrap();
-				let mut subshader = SubShader::from_resource(resource).unwrap();
-				// Compile the subshader
-				subshader.compile_subshader();
-				
-				// Cache it, and link it
-				let subshader = shader_manager.0.cache_object(subshader, subshader_path);
-				shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());  	
-			}
-				
-		}
-		// Finalize the shader and cache it
+        // Create the shader name
+        shader.name = subshader_paths.join("__");
+        let name = shader.name.clone();
+        // Loop through all the subshaders and link them
+        for subshader_path in subshader_paths {
+            // Check if we even have the subshader cached
+            if shader_manager.0.is_cached(subshader_path) {
+                shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());
+            } else {
+                // It was not cached, so we need to cache it
+                let resource = resource_manager
+                    .load_packed_resource(subshader_path)
+                    .unwrap();
+                let mut subshader = SubShader::from_resource(resource).unwrap();
+                // Compile the subshader
+                subshader.compile_subshader();
+
+                // Cache it, and link it
+                let subshader = shader_manager.0.cache_object(subshader, subshader_path);
+                shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());
+            }
+        }
+        // Finalize the shader and cache it
         shader.finalize_shader();
         let cached_shader_id = shader_manager.1.cache_object(shader, &name);
-        return (shader_manager.1.id_get_object_mut(cached_shader_id).unwrap(), name);
+        return (
+            shader_manager
+                .1
+                .id_get_object_mut(cached_shader_id)
+                .unwrap(),
+            name,
+        );
     }
     // Finalizes a vert/frag shader by compiling it
     pub fn finalize_shader(&mut self) {
-        unsafe {		
-			// Finalize the shader and stuff
+        unsafe {
+            // Finalize the shader and stuff
             gl::LinkProgram(self.program);
 
             // Check for any errors

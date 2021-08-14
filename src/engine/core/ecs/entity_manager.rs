@@ -41,5 +41,5 @@ impl EntityManager {
             removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield
         );
         return removed_entity;
-    }	
+    }
 }

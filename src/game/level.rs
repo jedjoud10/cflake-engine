@@ -74,9 +74,13 @@ pub fn load_entities(world: &mut World) {
     let mut quad = Entity::new("Quad");
     // Link the component
     let mut rc = Renderer::default();
-	rc.load_model("models\\quad.mdl3d", &mut world.resource_manager);
-	rc.shader_name = world.shader_manager.1.defaults[0].clone();
-	rc.load_textures(vec!["textures\\diffuse.png"], &mut world.texture_manager, &mut world.resource_manager);        
+    rc.load_model("models\\quad.mdl3d", &mut world.resource_manager);
+    rc.shader_name = world.shader_manager.1.defaults[0].clone();
+    rc.load_textures(
+        vec!["textures\\diffuse.png"],
+        &mut world.texture_manager,
+        &mut world.resource_manager,
+    );
     quad.link_component::<Renderer>(&mut world.component_manager, rc);
     quad.link_default_component::<transforms::Position>(&mut world.component_manager);
     quad.link_component::<transforms::Rotation>(
@@ -95,9 +99,13 @@ pub fn load_entities(world: &mut World) {
     let mut cube = Entity::new("Cube");
     // Link the component
     let mut rc = Renderer::default();
-	rc.load_model("models\\cube.mdl3d", &mut world.resource_manager);
-	rc.shader_name = world.shader_manager.1.defaults[0].clone();
-	rc.load_textures(vec!["textures\\diffuse.png", "textures\\normals.png"], &mut world.texture_manager, &mut world.resource_manager);
+    rc.load_model("models\\cube.mdl3d", &mut world.resource_manager);
+    rc.shader_name = world.shader_manager.1.defaults[0].clone();
+    rc.load_textures(
+        vec!["textures\\diffuse.png", "textures\\normals.png"],
+        &mut world.texture_manager,
+        &mut world.resource_manager,
+    );
     rc.uv_scale *= 10.0;
     cube.link_component::<Renderer>(&mut world.component_manager, rc);
     cube.link_default_component::<transforms::Position>(&mut world.component_manager);

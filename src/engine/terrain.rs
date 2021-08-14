@@ -4,11 +4,20 @@ use noise::{Fbm, NoiseFn};
 
 use crate::engine::rendering::{shader::Shader, texture::Texture};
 
-use super::{core::{cacher::CacheManager, defaults::components::transforms, ecs::{
-            component::ComponentManager,
-            entity::{Entity},
-			entity_manager::EntityManager
-        }, world::World}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::SubShader}, resources::ResourceManager};
+use super::{
+    core::{
+        cacher::CacheManager,
+        defaults::components::transforms,
+        ecs::{component::ComponentManager, entity::Entity, entity_manager::EntityManager},
+        world::World,
+    },
+    rendering::{
+        model::{Model, ProceduralModelGenerator},
+        renderer::Renderer,
+        shader::SubShader,
+    },
+    resources::ResourceManager,
+};
 
 // How many voxels in one axis in each chunk?
 const CHUNK_SIZE: usize = 32;
@@ -324,13 +333,21 @@ impl TerrainGenerator {
         // Create the entity
         let mut chunk_entity = Entity::new("Chunk");
         let mut rc = Renderer::default();
-		rc.shader_name = Shader::new(
-			vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
-			&mut data.resource_manager,
-			&mut data.shader_manager,
-		).1;
-		rc.model = model;
-		rc.load_textures(vec!["textures\\rock\\Rock033_1K_Color.png", "textures\\rock\\Rock033_1K_Normal.png",], &mut data.texture_manager, &mut data.resource_manager);
+        rc.shader_name = Shader::new(
+            vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
+            &mut data.resource_manager,
+            &mut data.shader_manager,
+        )
+        .1;
+        rc.model = model;
+        rc.load_textures(
+            vec![
+                "textures\\rock\\Rock033_1K_Color.png",
+                "textures\\rock\\Rock033_1K_Normal.png",
+            ],
+            &mut data.texture_manager,
+            &mut data.resource_manager,
+        );
         rc.uv_scale = glam::vec2(1.0, 1.0);
         chunk_entity.link_component::<Renderer>(data.component_manager, rc);
         chunk_entity.link_default_component::<transforms::Position>(data.component_manager);

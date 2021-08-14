@@ -1,5 +1,5 @@
-use std::{any::Any, collections::HashMap};
 use std::error::Error;
+use std::{any::Any, collections::HashMap};
 
 use super::component::{Component, ComponentID, ComponentManager};
 // A simple entity in the world
@@ -96,8 +96,15 @@ impl Entity {
             let final_component = component_any.downcast_ref::<T>().unwrap();
             return Ok(final_component);
         } else {
-            return Err(super::error::Error::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str()));
-        }		
+            return Err(super::error::Error::new(
+                format!(
+                    "Component '{}' does not exist on Entity '{}'!",
+                    T::get_component_name(),
+                    self.name
+                )
+                .as_str(),
+            ));
+        }
     }
     // Gets a specific component, mutably
     pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(
@@ -115,11 +122,18 @@ impl Entity {
             let final_component = component_any.downcast_mut::<T>().unwrap();
             return Ok(final_component);
         } else {
-            return Err(super::error::Error::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str()));
-        }	
+            return Err(super::error::Error::new(
+                format!(
+                    "Component '{}' does not exist on Entity '{}'!",
+                    T::get_component_name(),
+                    self.name
+                )
+                .as_str(),
+            ));
+        }
     }
-	// Get the global world ID of a specified component that this entity has
-	pub fn get_global_component_id<'a, T: ComponentID + Component + 'static>(
+    // Get the global world ID of a specified component that this entity has
+    pub fn get_global_component_id<'a, T: ComponentID + Component + 'static>(
         &self,
         component_manager: &'a mut ComponentManager,
     ) -> Result<u16, super::error::Error> {
@@ -128,7 +142,14 @@ impl Entity {
         if self.components.contains_key(&component_id) {
             return Ok(self.components[&component_id]);
         } else {
-			return Err(super::error::Error::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str()));
+            return Err(super::error::Error::new(
+                format!(
+                    "Component '{}' does not exist on Entity '{}'!",
+                    T::get_component_name(),
+                    self.name
+                )
+                .as_str(),
+            ));
         }
-    }	
+    }
 }
