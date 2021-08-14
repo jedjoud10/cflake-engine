@@ -9,7 +9,7 @@ pub struct Renderer {
     pub shader_name: String,
     pub model: Model,
     // Rendering stuff
-	pub texture_ids: Vec<u16>,	
+	pub texture_cache_ids: Vec<u16>,	
     // Default parameters for the shader
     pub uv_scale: glam::Vec2,
 }
@@ -21,7 +21,7 @@ impl Default for Renderer {
             gpu_data: ModelDataGPU::default(),
             shader_name: String::default(),
             model: Model::default(),
-			texture_ids: Vec::new(),
+			texture_cache_ids: Vec::new(),
             uv_scale: glam::Vec2::ONE,
         }
     }
@@ -57,7 +57,13 @@ impl Renderer {
 		for (i, &texture_path) in texture_paths.iter().enumerate() {
 			let resource = resource_manager.load_packed_resource(texture_path).unwrap();
 			let texture = Texture::from_resource(resource).unwrap();
-			self.texture_ids.push(texture_manager.cache_object(texture, texture_path));
+			self.texture_cache_ids.push(texture_manager.cache_object(texture, texture_path));
+		}
+
+		// For the rest of the textures that weren't explicitly given a texture path, load the default ones
+		// Diffuse, Normals, Roughness, Metallic, AO
+		for i in [(texture_paths.len() - 1)..5] {
+			self.texture_cache_ids.push(texture_manager.get_object_id("textures\\white.png").unwrap());
 		}
 	}
 }

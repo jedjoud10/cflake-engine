@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 // A cacher manager struct that can cache any type of data so it doesn't need to be reloaded later on
 pub struct CacheManager<A> {
@@ -17,6 +17,30 @@ impl<A> Default for CacheManager<A> {
     }
 }
 
+// Custom error handling for the cacher
+#[derive(Debug)]
+pub struct Error {
+    details: String
+}
+
+impl Error {
+    pub fn new(msg: &str) -> Self {
+        Self{details: msg.to_string()}
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}",self.details)
+    }
+}
+
+impl std::error::Error for Error {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
 // Da code
 impl<A> CacheManager<A> {
 	// Check if an object is cached
@@ -27,6 +51,29 @@ impl<A> CacheManager<A> {
 	pub fn generate_defaults(&mut self, mut default_objects_names: Vec<&str>) {		
 		let mut default_object_names: Vec<String> = default_objects_names.iter().map(|&x| x.to_string()).collect();
 		self.defaults.append(&mut default_object_names);
+	}
+	// Get a default object using it's ID
+	pub fn id_get_default_object(&self, id: u16) -> Result<&A, Error> {
+		if id < self.defaults.len() as u16 {
+			// The ID is valid
+			let name = self.defaults[id as usize].clone();
+			let object: &A = self.get_object(name.as_str()).unwrap();
+			return Ok(object);
+		} else {
+			// ID isn't valid
+			return Err(Error::new(format!("Default cached object with ID '{}' does not exist!", id).as_str()));
+		}
+	}
+	// Get the ID of an object using it's name
+	pub fn get_object_id(&self, name: &str) -> Result<u16, Error> {
+		if self.defaults.contains(&name.to_string()) {
+			// That default object name is valid
+			let id = self.names[name].clone();
+			return Ok(id);
+		} else {
+			// Name's not valid
+			return Err(Error::new(format!("Object name '{}' is invalid!", name).as_str()));
+		}
 	}
 	// Cached an object and gives back it's cached ID
 	pub fn cache_object(&mut self, object: A, name: &str) -> u16 {

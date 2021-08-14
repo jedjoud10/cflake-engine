@@ -275,24 +275,22 @@ impl System for RenderingSystem {
             (camera_position.x, camera_position.y, camera_position.z),
         );
         shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
-        let mut diffuse_texture_id: u32 = 0;
-        let mut normals_texture_id: u32 = 0;
         
 		// Get the OpenGL texture id so we can bind it to the shader
-		for (i, &texture_id) in rc.texture_ids.iter().enumerate() {
+		let mut opengl_texture_id: Vec<u32> = Vec::new();
+
+		// Load the default ones
+		for (i, &id) in rc.texture_cache_ids.iter().enumerate() {
+			// If this is a negative number, it means we've gotta use the default texture
+			opengl_texture_id.push(data.texture_manager.id_get_object(id).id as u32);
+		}
+		shader.set_texture2d("diffuse_tex", opengl_texture_id[0], gl::TEXTURE0);
+		shader.set_texture2d("normals_tex", opengl_texture_id[1], gl::TEXTURE1);
+		
+		for (i, &texture_id) in rc.texture_cache_ids.iter().enumerate() {
 			let texture = data.texture_manager.id_get_object(texture_id);
 			let opengl_id = texture.id;
-			match i {
-				0 => {
-					// This is a diffuse texture
-					shader.set_texture2d("diffuse_tex", opengl_id, gl::TEXTURE0);
-				}
-				1 => {
-					// This is a normals texture
-					shader.set_texture2d("normals_tex", opengl_id, gl::TEXTURE1);
-				}
-				_ => {}
-			}
+			
 		}
         unsafe {
             // Actually draw the array
