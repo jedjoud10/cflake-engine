@@ -2,9 +2,6 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use super::{model::Model, model::ModelDataGPU, shader::Shader, texture::{Texture}};
 use crate::engine::{core::{cacher::CacheManager, ecs::component::{Component, ComponentID}, world::World}, resources::ResourceManager};
-
-// The default texture paths to use when certain renderer textures aren't set
-const DEFAULT_TEXTURE_PATHS: [&'static str; 2] = ["textures\\white.png", "textures\\white.png"];
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub render_state: EntityRenderState,

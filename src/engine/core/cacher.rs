@@ -19,6 +19,15 @@ impl<A> Default for CacheManager<A> {
 
 // Da code
 impl<A> CacheManager<A> {
+	// Check if an object is cached
+	pub fn is_cached(&self, name: &str) -> bool {
+		self.names.contains_key(name)
+	}
+	// Generate default objects maps so we can use them late
+	pub fn generate_defaults(&mut self, mut default_objects_names: Vec<&str>) {		
+		let mut default_object_names: Vec<String> = default_objects_names.iter().map(|&x| x.to_string()).collect();
+		self.defaults.append(&mut default_object_names);
+	}
 	// Cached an object and gives back it's cached ID
 	pub fn cache_object(&mut self, object: A, name: &str) -> u16 {
 		// Cache the object, if it was already cached then just return it's id
@@ -28,7 +37,8 @@ impl<A> CacheManager<A> {
 		} else {
 			// The object was never cached, so we've gotta cache it
 			self.objects.push(object);
-			let id = self.names.insert(name.to_string(), self.objects.len() as u16).unwrap();
+			self.names.insert(name.to_string(), self.objects.len() as u16);
+			let id = self.objects.len() as u16 - 1;
 			return id;
 		}
 	} 	
@@ -60,4 +70,9 @@ impl<A> CacheManager<A> {
 	pub fn id_get_object_mut(&mut self, id: u16) -> &mut A {
 		return self.objects.get_mut(id as usize).unwrap();
 	}
+}
+
+// The "From Resource" trait
+trait FromResource {
+	fn from_resource() -> Self;
 }

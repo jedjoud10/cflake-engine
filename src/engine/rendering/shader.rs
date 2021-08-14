@@ -46,15 +46,21 @@ impl Shader {
 			let resource = resource_manager
                     .load_packed_resource(subshader_path)
                     .unwrap();
-                // Link the fragment subshader
-                let mut subshader =
-                    SubShader::from_resource(resource).unwrap();
-                // Compile the subshader
-                subshader.compile_subshader();
-                // Cache it, and link it
-                let subshader = shader_manager.0.cache_object(subshader, subshader_path);
-				let subshader = shader_manager.0.id_get_object(subshader);
-                shader.link_subshader(&subshader);
+				// Do we even have this subshader cached?
+				if shader_manager.0.is_cached(subshader_path) {
+					// We have it cached, no need to recompile it
+					shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());
+				} else {
+					// We don't have it cached yet, we've gotta compile it and cache it
+					let mut subshader = SubShader::from_resource(resource).unwrap();
+					// Compile the subshader
+					subshader.compile_subshader();
+					// Cache it, and link it
+					let subshader = shader_manager.0.cache_object(subshader, subshader_path);
+					let subshader = shader_manager.0.id_get_object(subshader);
+					shader.link_subshader(subshader);
+				}
+                
 		}
 		// Finalize the shader and cache it
         shader.finalize_shader();

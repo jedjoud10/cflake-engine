@@ -46,14 +46,34 @@ pub struct World {
 }
 
 impl World {
+	// Load everything that needs to be loaded by default
+	fn load_defaults(&mut self, window: &mut glfw::Window) {
+		// Load all the default things
+		self.input_manager.setup_default_bindings();
+		self.window.size = Self::get_default_window_size();
+		window.set_cursor_mode(glfw::CursorMode::Disabled);
+		window.set_cursor_pos(0.0, 0.0);
+
+		// Load the default objects for the CacheManagers
+		let white_texture = Texture::from_resource(self.resource_manager.load_packed_resource("textures\\white.png").unwrap()).unwrap();
+		let black_texture = Texture::from_resource(self.resource_manager.load_packed_resource("textures\\black.png").unwrap()).unwrap();
+		self.texture_manager.cache_object(white_texture, "textures\\white.png");
+		self.texture_manager.cache_object(black_texture, "textures\\black.png");
+		self.texture_manager.generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
+		
+		// Copy the default shader name
+		let default_shader_name: String;
+		{
+			let default_shader = Shader::new(vec!["shaders\\default.vrsh.glsl", "shaders\\default.frsh.glsl"], &mut self.resource_manager, &mut self.shader_manager);
+			default_shader_name = default_shader.1.clone();
+		}
+		self.shader_manager.1.generate_defaults(vec![default_shader_name.as_str()]);
+	}
     // When the world started initializing
     pub fn start_world(&mut self, window: &mut glfw::Window) {
-        // Load all the default things
-        self.input_manager.setup_default_bindings();
-        self.window.size = Self::get_default_window_size();
-        window.set_cursor_mode(glfw::CursorMode::Disabled);
-        window.set_cursor_pos(0.0, 0.0);
-
+        
+		// Load the default stuff
+		self.load_defaults(window);
         // Test stuff
         /*
         self.component_manager.register_component::<Position>();

@@ -446,8 +446,8 @@ impl ResourceManager {
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!
             let resource = self.cached_resources.get(&hashed_name)?;
-            println!("Load cached resource: '{}'", local_path);
-            Some(resource);
+            println!("Load cached resource: '{}'", local_path);			
+            return Some(resource);
         }
 
         // The global file path for the hashed packed resource
