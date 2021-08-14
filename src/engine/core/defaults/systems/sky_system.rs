@@ -49,10 +49,10 @@ impl System for SkySystem {
         let position = data
             .entity_manager
             .get_entity(data.custom_data.main_camera_entity_id)
-            .get_component::<transforms::Position>(data.component_manager)
+            .get_component::<transforms::Position>(data.component_manager).unwrap()
             .position;
         *entity
-            .get_component_mut::<transforms::Position>(data.component_manager)
+            .get_component_mut::<transforms::Position>(data.component_manager).unwrap()
             .position = *position;
     }
 
@@ -91,7 +91,7 @@ impl System for SkySystem {
         );
         sky.link_default_component::<components::Sky>(&mut data.component_manager);
 		// Update the custom data
-		data.custom_data.skysphere_entity_id = sky.entity_id;
+		data.custom_data.sky_component_id = sky.get_component_global_id::<components::Sky>(&mut data.component_manager).unwrap();
         vec![sky]
     }
 

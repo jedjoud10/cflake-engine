@@ -43,20 +43,24 @@ impl Shader {
 		shader.name = subshader_paths.join("__");
 		let name = shader.name.clone();
 		// Loop through all the subshaders and link them
-		for (subshader_path) in subshader_paths {			
-			let resource = resource_manager
-				.load_packed_resource(subshader_path)
-				.unwrap();
-			// We don't have it cached yet, we've gotta compile it and cache it
-			let mut subshader = SubShader::from_resource(resource).unwrap();
-			// Compile the subshader
-			subshader.compile_subshader();
-			// Cache it, and link it
-			
-			let subshader = shader_manager.0.cache_object(subshader, subshader_path);
-			let subshader = shader_manager.0.id_get_object(subshader);
-			
-			shader.link_subshader(&subshader);  		
+		for subshader_path in subshader_paths {			
+			// Check if we even have the subshader cached
+			if shader_manager.0.is_cached(subshader_path) {
+				shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());  	
+			} else {
+				// It was not cached, so we need to cache it
+				let resource = resource_manager
+					.load_packed_resource(subshader_path)
+					.unwrap();
+				let mut subshader = SubShader::from_resource(resource).unwrap();
+				// Compile the subshader
+				subshader.compile_subshader();
+				
+				// Cache it, and link it
+				let subshader = shader_manager.0.cache_object(subshader, subshader_path);
+				shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());  	
+			}
+				
 		}
 		// Finalize the shader and cache it
         shader.finalize_shader();

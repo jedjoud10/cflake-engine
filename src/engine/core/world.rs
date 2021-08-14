@@ -114,6 +114,7 @@ impl World {
             .system_manager
             .add_additional_entities(&mut data)
             .clone();
+			println!("{}", self.custom_data.sky_component_id);
         self.add_entities(new_entities);
     }
     // We do the following in this function
@@ -309,7 +310,7 @@ impl World {
             .clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component =
-            camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager);
+            camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager).unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.window_size = size;
         camera_component.update_projection_matrix();
@@ -323,7 +324,7 @@ impl World {
 #[derive(Default)]
 pub struct CustomWorldData {
     pub main_camera_entity_id: u16,
-	pub skysphere_entity_id: u16,
+	pub sky_component_id: u16,
     pub render_system_id: u8,
     pub sun_rotation: glam::Quat,
 }

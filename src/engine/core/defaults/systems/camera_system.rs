@@ -53,7 +53,7 @@ impl System for CameraSystem {
             {
                 let _delta_time = data.time_manager.delta_time as f32;
                 let mut changed_rotation = entity
-                    .get_component_mut::<transforms::Rotation>(data.component_manager)
+                    .get_component_mut::<transforms::Rotation>(data.component_manager).unwrap()
                     .rotation
                     .clone();
 
@@ -78,7 +78,7 @@ impl System for CameraSystem {
                     .mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0))
                     .xyz();
                 let changed_position = &mut entity
-                    .get_component::<transforms::Position>(data.component_manager)
+                    .get_component::<transforms::Position>(data.component_manager).unwrap()
                     .position
                     .clone();
                 let delta = data.time_manager.delta_time as f32;
@@ -98,7 +98,7 @@ impl System for CameraSystem {
                     *changed_position -= up_vector * delta;
                 }
                 let mut current_fov = entity
-                    .get_component_mut::<components::Camera>(data.component_manager)
+                    .get_component_mut::<components::Camera>(data.component_manager).unwrap()
                     .horizontal_fov
                     .clone();
                 // Change the fov
@@ -111,17 +111,17 @@ impl System for CameraSystem {
 
                 // Update the variables
                 *entity
-                    .get_component_mut::<transforms::Position>(data.component_manager)
+                    .get_component_mut::<transforms::Position>(data.component_manager).unwrap()
                     .position = **changed_position;
                 entity
-                    .get_component_mut::<transforms::Rotation>(data.component_manager)
+                    .get_component_mut::<transforms::Rotation>(data.component_manager).unwrap()
                     .rotation = changed_rotation;
                 position = *changed_position;
                 rotation = changed_rotation.clone();
             }
         }
         let camera_component =
-            entity.get_component_mut::<components::Camera>(data.component_manager);
+            entity.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         camera_component.horizontal_fov = new_fov;
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
@@ -136,14 +136,14 @@ impl System for CameraSystem {
         {
             // Set the variables since we can't have two mutable references at once
             rotation = entity
-                .get_component::<transforms::Rotation>(data.component_manager)
+                .get_component::<transforms::Rotation>(data.component_manager).unwrap()
                 .rotation;
             position = entity
-                .get_component::<transforms::Position>(data.component_manager)
+                .get_component::<transforms::Position>(data.component_manager).unwrap()
                 .position;
         }
         let camera_component =
-            entity.get_component_mut::<components::Camera>(data.component_manager);
+            entity.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         camera_component.update_projection_matrix();
         camera_component.update_view_matrix(position, rotation);
     }

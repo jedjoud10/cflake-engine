@@ -1,4 +1,5 @@
 use std::{any::Any, collections::HashMap};
+use std::error::Error;
 
 use super::component::{Component, ComponentID, ComponentManager};
 
@@ -126,7 +127,7 @@ impl Entity {
     pub fn get_component<'a, T: ComponentID + Component + 'static>(
         &self,
         component_manager: &'a ComponentManager,
-    ) -> &'a T {
+    ) -> Result<&'a T, super::error::Error> {
         let component_id = component_manager.get_component_id::<T>();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
@@ -136,20 +137,16 @@ impl Entity {
                 .unwrap()
                 .as_any();
             let final_component = component_any.downcast_ref::<T>().unwrap();
-            return final_component;
+            return Ok(final_component);
         } else {
-            panic!(format!(
-                "Component '{}' does not exist on entity '{}'!",
-                T::get_component_name(),
-                self.name
-            ));
-        }
+            return Err(super::error::Error::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str()));
+        }		
     }
     // Gets a specific component, mutably
     pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(
         &self,
         component_manager: &'a mut ComponentManager,
-    ) -> &'a mut T {
+    ) -> Result<&'a mut T, super::error::Error> {
         let component_id = component_manager.get_component_id::<T>();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
@@ -159,13 +156,22 @@ impl Entity {
                 .unwrap()
                 .as_any_mut();
             let final_component = component_any.downcast_mut::<T>().unwrap();
-            return final_component;
+            return Ok(final_component);
         } else {
-            panic!(format!(
-                "Component '{}' does not exist on entity '{}'!",
-                T::get_component_name(),
-                self.name
-            ));
+            return Err(super::error::Error::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str()));
+        }	
+    }
+	// Get the global world ID of a specified component that this entity has
+	pub fn get_component_global_id<'a, T: ComponentID + Component + 'static>(
+        &self,
+        component_manager: &'a mut ComponentManager,
+    ) -> Result<u16, super::error::Error> {
+        let component_id = component_manager.get_component_id::<T>();
+        // Check if we even have the component
+        if self.components.contains_key(&component_id) {
+            return Ok(self.components[&component_id]);
+        } else {
+			return Err(super::error::Error::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str()));
         }
     }
 }
