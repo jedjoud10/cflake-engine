@@ -3,12 +3,20 @@ use crate::engine::resources::Resource;
 use crate::engine::{core::world::World, resources::ResourceManager};
 use gl;
 use image::EncodableLayout;
+use bitflags::bitflags;
 use std::{
     collections::HashMap,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
 };
+
+bitflags! {
+	struct TextureFlags: u8 {
+		const Mutable = 0b00000001;
+		const MipMaps = 0b00000010;
+	}
+}
 
 // A texture
 #[derive(Default)]
@@ -26,50 +34,19 @@ impl Texture {
     // Loads a texture and caches it, then returns the texture id
     pub fn load_from_file(
         local_path: &str,
-        resource_manager: &mut ResourceManager,
-        texture_manager: &mut CacheManager<Texture>,
+       
     ) -> Option<u16> {
-        // Load the resource
-        let resource = resource_manager.load_packed_resource(local_path)?;
-        // Then load the texture from that resource
-        let texture = Texture::from_resource(resource)?;
-        let texture_id = texture_manager.cache_object(texture, local_path);
-        return Some(texture_id);
+        
     }
     // Convert the resource to a texture
     pub fn from_resource(resource: &Resource) -> Option<Self> {
-        match resource {
-            Resource::Texture(texture, texture_name) => {
-                let width = texture.width;
-                let height = texture.height;
-
-                // Turn the compressed png bytes into their raw form
-                let mut image =
-                    image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
-                image.set_format(image::ImageFormat::Png);
-                let decoded = image.with_guessed_format().unwrap().decode().unwrap();
-                // Read the image as a 32 bit image
-                let rgba8_image = decoded.to_rgba8();
-
-                let mut new_texture = Self::create_rgba_texture(
-                    texture_name.clone(),
-                    width,
-                    height,
-                    &rgba8_image.as_bytes().to_owned(),
-                );
-                new_texture.name = texture_name.clone();
-                return Some(new_texture);
-            }
-            _ => return None,
-        }
+        
     }
     // Creates a new empty texture from a specified size
     pub fn create_new_texture(
         width: u16,
         height: u16,
-        internal_format: u32,
-        format: u32,
-        data_type: u32,
+        
     ) -> Self {
         let mut texture = Self {
             width,
@@ -104,7 +81,7 @@ impl Texture {
 
         return texture;
     }
-    // Creates a rgb texture from a vector filled with bytes
+    // Creates a mutable rgba texture from a vector filled with bytes
     pub fn create_rgba_texture(name: String, width: u16, height: u16, pixels: &Vec<u8>) -> Self {
         let mut texture = Self {
             width,
@@ -134,7 +111,38 @@ impl Texture {
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
         }
-
+        return texture;
+    }
+	// Creates an immutable rgba texture from a vector filled with bytes
+    pub fn create_immutable_rgba_texture(name: String, width: u16, height: u16, pixels: &Vec<u8>) -> Self {
+        let mut texture = Self {
+            width,
+            height,
+            id: 0,
+            internal_format: gl::RGBA,
+            name,
+            format: gl::RGBA,
+            data_type: gl::UNSIGNED_BYTE,
+        };
+        // Create the OpenGL texture and set it's data to null since it's empty
+        unsafe {
+            gl::GenTextures(1, &mut texture.id as *mut u32);
+            gl::BindTexture(gl::TEXTURE_2D, texture.id);
+            gl::Text(
+                gl::TEXTURE_2D,
+                0,
+                texture.internal_format as i32,
+                width as i32,
+                height as i32,
+                0,
+                texture.format,
+                texture.data_type,
+                pixels.as_ptr() as *const c_void,
+            );
+            // Mag and min filters
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+        }
         return texture;
     }
     // Update the size of this specific texture
@@ -154,4 +162,63 @@ impl Texture {
             );
         }
     }
+		unsafe {
+			gl::BindTexture(gl::TEXTURE_2D, self.id);
+			gl::GenerateMipmap(gl::TEXTURE_2D);
+		}
+	}
+
+	// Just a new texture that can be tweaked before we load/generate it
+	pub fn new() -> Self {
+		Self {
+
+		}
+	}
+
+	// Set the height and width of the soon to be generated texture
+	pub fn set_dimensions(self, height: u16, width: u16) -> Self {
+
+	}
+	// The internal format and data type of the soon to be generated texture
+	pub fn set_internalformat_datatype_format(self, internal_format: u32, format: u32, data_type: u32) -> Self {
+
+	}
+
+	// Load a texture from a resource and auto caches it. Returns the cached ID of the texture
+	pub fn load_resource(self, resource: &Resource, texture_manager: &mut CacheManager<Texture>) -> Option<u16> {
+		match resource {
+            Resource::Texture(texture, texture_name) => {
+                let width = texture.width;
+                let height = texture.height;
+
+                // Turn the compressed png bytes into their raw form
+                let mut image =
+                    image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
+                image.set_format(image::ImageFormat::Png);
+                let decoded = image.with_guessed_format().unwrap().decode().unwrap();
+                // Read the image as a 32 bit image
+                let rgba8_image = decoded.to_rgba8();
+
+                let mut new_texture = Self::create_rgba_texture(
+                    texture_name.clone(),
+                    width,
+                    height,
+                    &rgba8_image.as_bytes().to_owned(),
+                );
+                new_texture.name = texture_name.clone();
+                return Some(new_texture);
+            }
+            _ => return None,
+        }
+	}
+	// Load a texture from a file and auto caches it. Returns the cached ID of the texture
+	pub fn load_texture(self, local_path: &str, resource_manager: &ResourceManager, texture_manager: &mut CacheManager<Texture>) -> Option<u16> {
+		// Load the resource
+		let resource = resource_manager.load_packed_resource(local_path)?;
+		// Then load the texture from that resource
+		let texture = Texture::from_resource(resource)?;
+		let texture_id = texture_manager.cache_object(texture, local_path);
+		return Some(texture_id);		
+	}
+	// Generate an empty texture, could either be a mutable one or an immutable one
 }

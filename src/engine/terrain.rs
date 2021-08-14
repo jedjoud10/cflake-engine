@@ -337,8 +337,7 @@ impl TerrainGenerator {
             vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_manager,
-        )
-        .1;
+        ).1;
         rc.model = model;
         rc.load_textures(
             vec![
@@ -369,9 +368,9 @@ pub struct Chunk {
 impl Chunk {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32, fbm: &Fbm) -> f32 {
-        let density: f32 = fbm.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 5.0 + y - 3.0;
-        return y - 5.0;
-        return density.max(y - 5.0).min(y + 5.0);
+        let density: f32 = fbm.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 10.0 + y - 3.0;
+        return density - 5.0;
+        //return density.max(y - 5.0).min(y + 5.0);
     }
     // Generate the voxel data
     pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {

@@ -68,7 +68,8 @@ impl Renderer {
         // Load the textures
         for (i, &texture_path) in texture_paths.iter().enumerate() {
             let resource = resource_manager.load_packed_resource(texture_path).unwrap();
-            let texture = Texture::from_resource(resource).unwrap();
+            let mut texture = Texture::from_resource(resource).unwrap();
+			texture.generate_mipmaps();
             self.texture_cache_ids
                 .push(texture_manager.cache_object(texture, texture_path));
         }
