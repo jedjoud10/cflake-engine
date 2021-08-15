@@ -56,24 +56,9 @@ impl World {
         window.set_cursor_pos(0.0, 0.0);
 
         // Load the default objects for the CacheManagers
-        let white_texture = Texture::from_resource(
-            self.resource_manager
-                .load_packed_resource("textures\\white.png")
-                .unwrap(),
-        )
-        .unwrap();
-        let black_texture = Texture::from_resource(
-            self.resource_manager
-                .load_packed_resource("textures\\black.png")
-                .unwrap(),
-        )
-        .unwrap();
-        self.texture_manager
-            .cache_object(white_texture, "textures\\white.png");
-        self.texture_manager
-            .cache_object(black_texture, "textures\\black.png");
-        self.texture_manager
-            .generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
+        let white_texture = Texture::new().load_texture("textures\\white.png", &mut self.resource_manager, &mut self.texture_manager).unwrap();
+        let black_texture = Texture::new().load_texture("textures\\black.png", &mut self.resource_manager, &mut self.texture_manager).unwrap();
+        self.texture_manager.generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
 
         // Copy the default shader name
         let default_shader_name: String;
@@ -315,11 +300,9 @@ impl World {
                 .downcast_mut::<RenderingSystem>()
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            let size: (u32, u32) = (size.0 as u32, size.1 as u32);
+            let size: (u16, u16) = (size.0 as u16, size.1 as u16);
             render_system.diffuse_texture.update_size(size.0, size.1);
-            render_system
-                .depth_stencil_texture
-                .update_size(size.0, size.1);
+            render_system.depth_stencil_texture.update_size(size.0, size.1);
             render_system.normals_texture.update_size(size.0, size.1);
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);

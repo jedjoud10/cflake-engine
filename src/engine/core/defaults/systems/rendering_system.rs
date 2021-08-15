@@ -72,45 +72,16 @@ impl RenderingSystem {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
-            self.diffuse_texture = Texture::create_new_texture(
-                default_size.0 as u16,
-                default_size.1 as u16,
-                gl::RGB,
-                gl::RGB,
-                gl::UNSIGNED_BYTE,
-            );
+            self.diffuse_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
             // Create the normals render texture
-            self.normals_texture = Texture::create_new_texture(
-                default_size.0 as u16,
-                default_size.1 as u16,
-                gl::RGB16_SNORM,
-                gl::RGB,
-                gl::UNSIGNED_BYTE,
-            );
+            self.normals_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
             // Create the position render texture
-            self.position_texture = Texture::create_new_texture(
-                default_size.0 as u16,
-                default_size.1 as u16,
-                gl::RGB32F,
-                gl::RGB,
-                gl::UNSIGNED_BYTE,
-            );
+            self.position_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
             // Create the emissive render texture
-            self.emissive_texture = Texture::create_new_texture(
-                default_size.0 as u16,
-                default_size.1 as u16,
-                gl::RGB32F,
-                gl::RGB,
-                gl::UNSIGNED_BYTE,
-            );
+			
+            self.emissive_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
             // Create the depth-stencil render texture
-            self.depth_stencil_texture = Texture::create_new_texture(
-                default_size.0 as u16,
-                default_size.1 as u16,
-                gl::DEPTH24_STENCIL8,
-                gl::DEPTH_STENCIL,
-                gl::UNSIGNED_INT_24_8,
-            );
+            self.depth_stencil_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8).generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             gl::BindTexture(gl::TEXTURE_2D, self.diffuse_texture.id);
             gl::FramebufferTexture2D(
