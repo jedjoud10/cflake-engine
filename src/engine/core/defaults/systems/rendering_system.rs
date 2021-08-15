@@ -73,12 +73,11 @@ impl RenderingSystem {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
             self.diffuse_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
-            // Create the normals render texture
+			// Create the normals render texture
             self.normals_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
             // Create the position render texture
             self.position_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
-            // Create the emissive render texture
-			
+            // Create the emissive render texture			
             self.emissive_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
             // Create the depth-stencil render texture
             self.depth_stencil_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8).generate_texture(Vec::new());
@@ -142,10 +141,11 @@ impl RenderingSystem {
             );
 
             // Check if the frame buffer is okay
+			println!("Checking framebuffer...");
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
                 println!("Framebuffer is okay :)");
             } else {
-                panic!("Framebuffer has failed initialization");
+                panic!("Framebuffer has failed initialization! Error: '{}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
             }
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
