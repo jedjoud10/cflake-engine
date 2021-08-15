@@ -68,7 +68,7 @@ impl Renderer {
         // Load the textures
         for (i, &texture_path) in texture_paths.iter().enumerate() {
             let resource = resource_manager.load_packed_resource(texture_path).unwrap();
-            let mut texture = Texture::new().set_mutable(false).enable_mipmaps().set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE).load_texture(texture_path, resource_manager, texture_manager).unwrap();
+            let mut texture = Texture::new().set_mutable(true).enable_mipmaps().set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE).load_texture(texture_path, resource_manager, texture_manager).unwrap();
             self.texture_cache_ids.push(texture_manager.get_object_id(texture_path).unwrap());
         }
 

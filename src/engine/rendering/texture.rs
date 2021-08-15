@@ -161,25 +161,16 @@ impl Texture {
 				gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
 				gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 			}
-		} else {
-			// It's an immutable texture
-			unsafe {
-				gl::GenTextures(1, &mut self.id as *mut u32);
-				gl::BindTexture(gl::TEXTURE_2D, self.id);				
-				gl::TexStorage2D(
-					gl::TEXTURE_2D,
-					1,
-					self.internal_format,
-					self.width as i32,
-					self.height as i32
-				);
-				gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, self.width as i32, self.height as i32, self.format, self.data_type, pointer);
-				//gl::GenerateMipmap(gl::TEXTURE_2D);
-				// Mag and min filters
-				gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-				gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-			}
 
+			if self.flags.contains(TextureFlags::MipMaps) {
+				// Create the mipmaps
+				unsafe {
+					gl::GenerateMipmap(gl::TEXTURE_2D);
+					gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+				}
+			}
+		} else {
+			// Nobody loves you, OpenGL storage textures
 			if self.flags.contains(TextureFlags::MipMaps) {
 				// Create the mipmaps
 				unsafe {
