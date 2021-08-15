@@ -68,14 +68,17 @@ impl Texture {
 		self
 	}
 	// Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
-	pub fn set_mutable(mut self, mutable: bool) -> Self {
-		self
-		/*
+	pub fn set_mutable(mut self, mutable: bool) -> Self {		
 		match mutable {
-    		true => self.flags |= TextureFlags::Mutable,
+			true => self.flags |= TextureFlags::Mutable,
     		false => self.flags = self.flags & !TextureFlags::Mutable,
-		}
-		*/
+		}		
+		self
+	}
+	// Set the generation of mipmaps
+	pub fn enable_mipmaps(mut self) -> Self {
+		self.flags |= TextureFlags::MipMaps;
+		self
 	}
 	// Update the size of a current immutable texture
 	pub fn update_size(&self, width: u16, height: u16) {
@@ -113,9 +116,9 @@ impl Texture {
 
 				// Set the proper dimensions and generate the texture from the resource's bytes
 				self = self.set_dimensions(width, height);
-                let mut new_texture = self.generate_texture(rgba8_image.as_bytes().to_vec());
 				// Set the texture name since the texture has an empty name
-				new_texture.name = texture_name.clone();
+				self.name = texture_name.clone();
+                let mut new_texture = self.generate_texture(rgba8_image.as_bytes().to_vec());
 				// Cache the texture for later use
 				texture_cacher.cache_object(new_texture, &texture_name);
                 return Some(texture_cacher.get_object(texture_name).unwrap());
@@ -134,15 +137,15 @@ impl Texture {
 	// Generate an empty texture, could either be a mutable one or an immutable one
 	pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
 		println!("{:?}", self);
+		let mut pointer: *const c_void = null();
+		if bytes.len() > 0 {
+			pointer = bytes.as_ptr() as *const c_void;
+		} 
 		if self.flags.contains(TextureFlags::Mutable) {
-			// Is mutable texture
+			// It's a mutable texture
 			unsafe {
 				gl::GenTextures(1, &mut self.id as *mut u32);
 				gl::BindTexture(gl::TEXTURE_2D, self.id);
-				let mut pointer: *const c_void = null();
-				if bytes.len() > 0 {
-					pointer = bytes.as_ptr() as *const c_void;
-				} 
 				gl::TexImage2D(
 					gl::TEXTURE_2D,
 					0,
@@ -159,18 +162,19 @@ impl Texture {
 				gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 			}
 		} else {
-			// Is immutable texture
+			// It's an immutable texture
 			unsafe {
 				gl::GenTextures(1, &mut self.id as *mut u32);
-				gl::BindTexture(gl::TEXTURE_2D, self.id);
+				gl::BindTexture(gl::TEXTURE_2D, self.id);				
 				gl::TexStorage2D(
 					gl::TEXTURE_2D,
-					0,
+					1,
 					self.internal_format,
 					self.width as i32,
 					self.height as i32
 				);
-				gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, self.width as i32, self.height as i32, self.format, self.data_type, bytes.as_ptr() as *const c_void);
+				gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, self.width as i32, self.height as i32, self.format, self.data_type, pointer);
+				//gl::GenerateMipmap(gl::TEXTURE_2D);
 				// Mag and min filters
 				gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
 				gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
@@ -179,7 +183,7 @@ impl Texture {
 			if self.flags.contains(TextureFlags::MipMaps) {
 				// Create the mipmaps
 				unsafe {
-					gl::GenerateMipmap(gl::TEXTURE_2D);
+					//gl::GenerateMipmap(gl::TEXTURE_2D);
 				}
 			}
 		}
