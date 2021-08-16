@@ -2,6 +2,7 @@
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_normal;
 layout(location = 2) out vec3 frag_pos;
+layout(location = 3) out vec3 frag_emissive;
 uniform sampler2D diffuse_tex;
 uniform sampler2D normals_tex;
 uniform vec2 uv_scale;
@@ -16,4 +17,5 @@ void main() {
 	vec3 tangent_space_normals = texture(normals_tex, m_uv * uv_scale).xyz * 2.0 - 1.0;
 	frag_normal = normalize(tbn * tangent_space_normals);
 	frag_pos = m_position;
+	frag_emissive = vec3(0, 0, 0);
 }
