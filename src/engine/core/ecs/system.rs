@@ -48,15 +48,6 @@ impl SystemManager {
             }
         }
     }
-    // Add the additional entities in all the systems
-    pub fn add_additional_entities(&mut self, data: &mut SystemEventData) -> Vec<Entity> {
-        let mut entities: Vec<Entity> = Vec::new();
-        for system in self.systems.iter_mut() {
-            entities.append(&mut system.additional_entities(data));
-        }
-        return entities;
-    }
-
     // Add a system to the world, and returns it's system ID
     pub fn add_system<T: 'static + System>(&mut self, mut system: T) -> u8 {
         let id = self.systems.len() as u8;
@@ -161,9 +152,9 @@ pub trait System {
         let system_data_clone = self.get_system_data().clone();
         // Loop over all the entities and fire the entity removed event
         for &entity_id in system_data_clone.entities.iter() {
-            let entity_clone = &mut data.entity_manager.get_entity(entity_id).clone();
+            let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
             self.entity_removed(entity_clone, data);
-            *data.entity_manager.get_entity_mut(entity_id) = entity_clone.clone();
+            *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
         }
         *self.get_system_data_mut() = system_data_clone;
     }
@@ -173,7 +164,7 @@ pub trait System {
         self.pre_fire(data);
         // Loop over all the entities and update their components
         for &entity_id in system_data_clone.entities.iter() {
-            let mut entity_clone = data.entity_manager.get_entity_mut(entity_id).clone();
+            let mut entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap().clone();
             self.fire_entity(&mut entity_clone, data);
         }
         *self.get_system_data_mut() = system_data_clone;
@@ -185,11 +176,6 @@ pub trait System {
     fn get_system_data_mut(&mut self) -> &mut SystemData;
 
     // System Events
-    // This one is when we have a single entity in a system, like the sky system
-    fn additional_entities(&mut self, _data: &mut SystemEventData) -> Vec<Entity> {
-        Vec::new()
-    }
-
     fn entity_added(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 

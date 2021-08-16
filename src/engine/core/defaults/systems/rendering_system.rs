@@ -195,7 +195,7 @@ impl System for RenderingSystem {
         {
             let camera_entity = data
                 .entity_manager
-                .get_entity(data.custom_data.main_camera_entity_id);
+                .get_entity(data.custom_data.main_camera_entity_id).unwrap();
             let camera_data = camera_entity
                 .get_component::<components::Camera>(&mut data.component_manager)
                 .unwrap();
@@ -304,7 +304,7 @@ impl System for RenderingSystem {
             .unwrap();
         let camera_position = data
             .entity_manager
-            .get_entity(data.custom_data.main_camera_entity_id)
+            .get_entity(data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
             .position;

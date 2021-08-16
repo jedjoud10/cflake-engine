@@ -4,20 +4,11 @@ use noise::{Fbm, NoiseFn};
 
 use crate::engine::rendering::{shader::Shader, texture::Texture};
 
-use super::{
-    core::{
-        cacher::CacheManager,
-        defaults::components::transforms,
-        ecs::{component::ComponentManager, entity::Entity, entity_manager::EntityManager},
-        world::World,
-    },
-    rendering::{
+use super::{core::{cacher::CacheManager, defaults::components::{components, transforms}, ecs::{component::{Component, ComponentID, ComponentManager}, entity::Entity, entity_manager::EntityManager, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}, world::World}, rendering::{
         model::{Model, ProceduralModelGenerator},
         renderer::Renderer,
         shader::SubShader,
-    },
-    resources::ResourceManager,
-};
+    }, resources::ResourceManager};
 
 // How many voxels in one axis in each chunk?
 const CHUNK_SIZE: usize = 32;
@@ -307,33 +298,24 @@ const VERTEX_TABLE: [glam::Vec3; 8] = [
 ];
 // Hehe terrain generator moment
 #[derive(Default)]
-pub struct TerrainGenerator {
+pub struct Terrain {
+	pub system_data: SystemData,
     pub chunks: Vec<Chunk>,
     pub isoline: f32,
 	pub noise: noise::OpenSimplex
 }
 
-// Data that will be passed to the terrain generator
-pub struct TerrainGeneratorData<'a> {
-    pub component_manager: &'a mut ComponentManager,
-    pub resource_manager: &'a mut ResourceManager,
-    pub shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
-    pub texture_manager: &'a mut CacheManager<Texture>,
-}
-
-// Terrain code
-impl TerrainGenerator {
-
+// All the terrain generator code
+impl Terrain {
 	// Density functions
 	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
 		let density: f32 = self.noise.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 20.0;
 		return density + y - 20.0;
 	}
-    // 1. Create the chunks, and generate their data
+	// 1. Create the chunks, and generate their data
     // 2. Create the actual chunk entities and create the models
-    pub fn generate_terrain(&mut self, data: &mut TerrainGeneratorData) -> Vec<Entity> {
+    pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
-        let mut chunks: Vec<Entity> = Vec::new();
 		self.noise = noise::OpenSimplex::new();
 
         // Create the entity
@@ -350,7 +332,7 @@ impl TerrainGenerator {
 					rc.shader_name = Shader::new(
 						vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
 						&mut data.resource_manager,
-						&mut data.shader_manager,
+						&mut data.shader_cacher,
 					).1;
 					rc.model = model;
 					rc.load_textures(
@@ -358,7 +340,7 @@ impl TerrainGenerator {
 							"textures\\rock\\Rock033_1K_Color.png",
 							"textures\\rock\\Rock033_1K_Normal.png",
 						],
-						&mut data.texture_manager,
+						&mut data.texture_cacher,
 						&mut data.resource_manager,
 					);
 					rc.uv_scale = glam::vec2(1.0, 1.0);
@@ -368,15 +350,61 @@ impl TerrainGenerator {
 					});
 					chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
 					chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
-					chunks.push(chunk_entity);
+					data.entity_manager.add_entity_s(chunk_entity);
 				}
 			}
-		}        
-        return chunks;
+		}                
+    }
+	// Whenever the camera changes position
+	pub fn camera_position_update(&mut self, position: glam::Vec3) {
+
+	}
+}
+
+impl System for Terrain {
+    // Wrappers around system data
+    fn get_system_data(&self) -> &SystemData {
+        return &self.system_data;
+    }
+
+    fn get_system_data_mut(&mut self) -> &mut SystemData {
+        return &mut self.system_data;
+    }
+
+    // Setup the system
+    fn setup_system(&mut self, data: &mut SystemEventData) {
+		// This system will loop over all the chunks and generate new ones if needed
+		self.system_data.link_component::<Chunk>(data.component_manager);
+		self.system_data.link_component::<Renderer>(data.component_manager);
+		self.system_data.link_component::<transforms::Position>(data.component_manager);
+		self.generate_terrain(data);
+	}
+
+    // Called for each entity in the system
+    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {}
+
+	// When a chunk gets added to the world
+	fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+		// Generate the data for this chunk and then create the model
+		let chunk = entity.get_component_mut::<Chunk>(data.component_manager).unwrap();
+		chunk.generate_data(self);
+		let model = chunk.generate_model();
+		let rc = entity.get_component_mut::<Renderer>(data.component_manager).unwrap();
+		rc.model = model;
+		rc.refresh_model();		
+	}
+
+    // Turn this into "Any" so we can cast into child systems
+    fn as_any(&self) -> &dyn std::any::Any {
+        return self;
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        return self;
     }
 }
 
-// A single 32x32x32 chunk in the world
+// A component that will be added to well... chunks
 #[derive(Default)]
 pub struct Chunk {
     pub position: glam::Vec3,
@@ -384,10 +412,27 @@ pub struct Chunk {
     pub isoline: f32,
 }
 
+// Main traits implemented
+impl Component for Chunk {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+}
+impl ComponentID for Chunk {
+    fn get_component_name() -> String {
+        String::from("Chunk")
+    }
+}
+
+
 // Actual model generation
 impl Chunk {
     // Generate the voxel data
-    pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
+    pub fn generate_data(&mut self, terrain_generator: &Terrain) {
         // Create a simple plane
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
@@ -403,7 +448,7 @@ impl Chunk {
 }
 
 // This is a procedural model generator
-impl<'a> ProceduralModelGenerator for Chunk {
+impl ProceduralModelGenerator for Chunk {
     // Generate a procedural marching cube model
     fn generate_model(&self) -> Model {
         let mut model: Model = Model::default();

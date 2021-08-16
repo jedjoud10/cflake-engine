@@ -14,6 +14,7 @@ use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;
 use crate::engine::rendering::texture::Texture;
 use crate::engine::rendering::*;
+use crate::engine::terrain::Terrain;
 use rendering_system::RenderingSystem;
 
 // Pre-register unused components
@@ -54,6 +55,11 @@ pub fn load_systems(world: &mut World) {
     let mut sky_system = SkySystem::default();
     sky_system.setup_system(&mut data);
     world.system_manager.add_system(sky_system);
+
+	// Load the terrain generator system
+	let mut terrain_generator = Terrain::default();
+	terrain_generator.setup_system(&mut data);
+	world.system_manager.add_system(terrain_generator);
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {

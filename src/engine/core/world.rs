@@ -14,8 +14,7 @@ use crate::engine::rendering::shader::Shader;
 use crate::engine::rendering::shader::SubShader;
 use crate::engine::rendering::texture::Texture;
 use crate::engine::resources::ResourceManager;
-use crate::engine::terrain::TerrainGenerator;
-use crate::engine::terrain::TerrainGeneratorData;
+use crate::engine::terrain::Terrain;
 use crate::game::level::*;
 
 // Import stuff from the rendering module
@@ -32,7 +31,6 @@ pub struct World {
     pub component_manager: ComponentManager,
     pub input_manager: InputManager,
     pub resource_manager: ResourceManager,
-    pub terrain_generator: TerrainGenerator,
     pub texture_manager: CacheManager<Texture>,
     // Shaders
     pub shader_manager: (CacheManager<SubShader>, CacheManager<Shader>),
@@ -88,20 +86,7 @@ impl World {
         register_components(self);
         load_systems(self);
         load_entities(self);
-
-        let mut terrain_data = TerrainGeneratorData {
-            component_manager: &mut self.component_manager,
-            resource_manager: &mut self.resource_manager,
-            shader_manager: &mut self.shader_manager,
-            texture_manager: &mut self.texture_manager,
-        };
-
-        // Load the terrain generator
-        let entities = self
-            .terrain_generator
-            .generate_terrain(&mut terrain_data)
-            .clone();
-        self.add_entities(entities);
+	
 
         let mut data: SystemEventData = SystemEventData {
             entity_manager: &mut self.entity_manager,
@@ -113,13 +98,7 @@ impl World {
             resource_manager: &mut self.resource_manager,
             custom_data: &mut self.custom_data,
         };
-
-        let new_entities = self
-            .system_manager
-            .add_additional_entities(&mut data)
-            .clone();
         println!("{}", self.custom_data.sky_component_id);
-        self.add_entities(new_entities);
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -156,7 +135,12 @@ impl World {
         // Update the inputs
         self.input_manager
             .late_update(self.time_manager.delta_time as f32);
-    }
+	
+		// Add the entities that need to be added
+		self.add_entities(self.entity_manager.entitites_to_add.clone());
+		// So we don't cause an infinite loop lol
+		self.entity_manager.entities.clear();
+	}
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
         // Check for default mapping events
@@ -245,8 +229,8 @@ impl World {
 impl World {
     // Wrapper function around the entity manager's add_entity
     pub fn add_entity(&mut self, entity: Entity) -> u16 {
-        let id = self.entity_manager.add_entity(entity.clone());
-        let entity = self.entity_manager.get_entity(id).clone();
+        let id = self.entity_manager.internal_add_entity(entity.clone());
+        let entity = self.entity_manager.get_entity(id).unwrap().clone();
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         self.system_manager.add_entity_to_systems(
             &entity,
@@ -255,7 +239,7 @@ impl World {
                 component_manager: &mut self.component_manager,
             },
         );
-        *self.entity_manager.get_entity_mut(id) = entity;
+        *self.entity_manager.get_entity_mut(id).unwrap() = entity;
         return id;
     }
     // Add multiple entities at once
@@ -286,14 +270,6 @@ impl World {
 		}	
 		return result;
 	}
-    // Get a mutable reference to an entity from the entity manager
-    pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
-        self.entity_manager.get_entity_mut(entity_id)
-    }
-    // Get a reference to an entity from the entity manager
-    pub fn get_entity(&self, entity_id: u16) -> &Entity {
-        self.entity_manager.get_entity(entity_id)
-    }
 }
 
 // Impl block related to the windowing / rendering stuff
@@ -321,8 +297,8 @@ impl World {
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);
         }
-        let camera_entity_clone = self
-            .get_entity(self.custom_data.main_camera_entity_id)
+        let camera_entity_clone = self.entity_manager
+            .get_entity(self.custom_data.main_camera_entity_id).unwrap()
             .clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component = camera_entity_clone
@@ -332,7 +308,7 @@ impl World {
         camera_component.window_size = size;
         camera_component.update_projection_matrix();
         // Update the original entity
-        *self.get_entity_mut(entity_clone_id) = camera_entity_clone;
+        *self.entity_manager.get_entity_mut(entity_clone_id).unwrap() = camera_entity_clone;
         self.window.size = size;
     }
 }

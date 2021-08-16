@@ -84,7 +84,7 @@ impl ComponentManager {
 		final_component
 	}
 	// Check if we have a specified component in the manager
-	pub fn is_component_valid(&self, component_id: u16) -> bool {
+	pub fn is_component_id_valid(&self, component_id: u16) -> bool {
 		self.components.contains_key(&component_id)
 	}
     // Get a refernece to a component by it's global ID

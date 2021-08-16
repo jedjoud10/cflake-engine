@@ -31,36 +31,8 @@ impl System for SkySystem {
         system_data.link_component::<components::Sky>(data.component_manager);
         system_data.link_component::<transforms::Position>(data.component_manager);
         system_data.link_component::<transforms::Scale>(data.component_manager);
-    }
 
-    // Update the sun rotation
-    fn pre_fire(&mut self, data: &mut SystemEventData) {
-        data.custom_data.sun_rotation = glam::Quat::from_euler(
-            glam::EulerRot::XYZ,
-            data.time_manager.seconds_since_game_start as f32 / 4.0,
-            data.time_manager.seconds_since_game_start as f32 / 4.0,
-            data.time_manager.seconds_since_game_start as f32 / 4.0,
-        );
-    }
-
-    // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
-        // Set the position of the sky sphere to always be the camera
-        let position = data
-            .entity_manager
-            .get_entity(data.custom_data.main_camera_entity_id)
-            .get_component::<transforms::Position>(data.component_manager)
-            .unwrap()
-            .position;
-        *entity
-            .get_component_mut::<transforms::Position>(data.component_manager)
-            .unwrap()
-            .position = *position;
-    }
-
-    // Add additional entities related to this system
-    fn additional_entities(&mut self, data: &mut SystemEventData) -> Vec<Entity> {
-        // Create the sky entity
+		// Create the sky entity
         let mut sky = Entity::new("Sky");
         // Use a custom shader
         let sky_shader_name = Shader::new(
@@ -101,7 +73,32 @@ impl System for SkySystem {
         data.custom_data.sky_component_id = sky
             .get_global_component_id::<components::Sky>(&mut data.component_manager)
             .unwrap();
-        vec![sky]
+		data.entity_manager.add_entity_s(sky);
+    }
+
+    // Update the sun rotation
+    fn pre_fire(&mut self, data: &mut SystemEventData) {
+        data.custom_data.sun_rotation = glam::Quat::from_euler(
+            glam::EulerRot::XYZ,
+            data.time_manager.seconds_since_game_start as f32 / 4.0,
+            data.time_manager.seconds_since_game_start as f32 / 4.0,
+            data.time_manager.seconds_since_game_start as f32 / 4.0,
+        );
+    }
+
+    // Called for each entity in the system
+    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
+        // Set the position of the sky sphere to always be the camera
+        let position = data
+            .entity_manager
+            .get_entity(data.custom_data.main_camera_entity_id).unwrap()
+            .get_component::<transforms::Position>(data.component_manager)
+            .unwrap()
+            .position;
+        *entity
+            .get_component_mut::<transforms::Position>(data.component_manager)
+            .unwrap()
+            .position = *position;
     }
 
     // Turn this into "Any" so we can cast into child systems
