@@ -25,7 +25,11 @@ impl EntityManager {
 	// Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
 	pub fn add_entity_s(&mut self, mut entity: Entity) -> u16 {
 		// Temporarily add it to the entities_to_add vector
-		let id = self.entities.len() as u16;
+
+		// Get the id of the entity inside the temp vector (Local ID)
+		let mut id = self.entitites_to_add.len() as u16;
+		// Add that id to the id of the current vector length (Global ID)
+		id += self.entities.len() as u16;
 		entity.entity_id = id;
 		self.entitites_to_add.push(entity);
 		return id;

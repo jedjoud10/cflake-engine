@@ -85,19 +85,12 @@ impl World {
         */
         register_components(self);
         load_systems(self);
-        load_entities(self);
-	
+		// Add the entities that need to be added
+		self.add_entities(self.entity_manager.entitites_to_add.clone());
+		// So we don't cause an infinite loop lol
+		self.entity_manager.entitites_to_add.clear();
 
-        let mut data: SystemEventData = SystemEventData {
-            entity_manager: &mut self.entity_manager,
-            component_manager: &mut self.component_manager,
-            input_manager: &mut self.input_manager,
-            shader_cacher: &mut self.shader_manager,
-            texture_cacher: &mut self.texture_manager,
-            time_manager: &mut self.time_manager,
-            resource_manager: &mut self.resource_manager,
-            custom_data: &mut self.custom_data,
-        };
+        load_entities(self);
         println!("{}", self.custom_data.sky_component_id);
     }
     // We do the following in this function
@@ -139,7 +132,7 @@ impl World {
 		// Add the entities that need to be added
 		self.add_entities(self.entity_manager.entitites_to_add.clone());
 		// So we don't cause an infinite loop lol
-		self.entity_manager.entities.clear();
+		self.entity_manager.entitites_to_add.clear();
 	}
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
@@ -247,6 +240,7 @@ impl World {
         let mut result: Vec<u16> = Vec::new();
         // Add all the entities
         for entity in entities {
+			println!("{:?}", entity);
             result.push(self.add_entity(entity));
         }
         return result;
