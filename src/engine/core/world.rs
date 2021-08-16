@@ -98,7 +98,7 @@ impl World {
     // 2. We tick the entities of each TickSystem (Only if the framecount is valid)
     // 3. We render the entities onto the screen using the RenderSystem
     pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
-        // Check for input events
+		// Check for input events
         self.input_manager.update(window);
         // Check for default input events
         self.check_default_input_events(window, glfw);
@@ -127,8 +127,8 @@ impl World {
 
         // Update the inputs
         self.input_manager
-            .late_update(self.time_manager.delta_time as f32);
-	
+            .late_update(self.time_manager.delta_time as f32);	
+
 		// Add the entities that need to be added
 		self.add_entities(self.entity_manager.entitites_to_add.clone());
 		// So we don't cause an infinite loop lol
@@ -145,7 +145,7 @@ impl World {
             self.toggle_fullscreen(glfw, window);
         }
         // Capture the fps
-        if self.input_manager.map_pressed("caputre_fps") {
+        if self.input_manager.map_pressed("capture_fps") {
             println!(
                 "Current FPS: '{}', Delta: '{}'",
                 self.time_manager.seconds_since_game_start, self.time_manager.delta_time
@@ -240,7 +240,6 @@ impl World {
         let mut result: Vec<u16> = Vec::new();
         // Add all the entities
         for entity in entities {
-			println!("{:?}", entity);
             result.push(self.add_entity(entity));
         }
         return result;
