@@ -114,7 +114,6 @@ impl InputManager {
                 .insert(key.clone(), map_name.to_string().clone());
             self.mappings
                 .insert(map_name.to_string().clone(), MapStatus::Nothing);
-            println!("Create a new binding with mapping name '{}'", map_name);
         }
     }
     // Returns true when the map is pressed

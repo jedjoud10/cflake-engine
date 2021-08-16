@@ -91,7 +91,6 @@ impl World {
 		self.entity_manager.entitites_to_add.clear();
 
         load_entities(self);
-        println!("{}", self.custom_data.sky_component_id);
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -245,21 +244,21 @@ impl World {
         return result;
     }
     // Wrapper function around the entity manager remove_entity
-    pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
+    pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, super::ecs::error::EntityError> {
         // Remove the entity from the world first
-        let removed_entity = self.entity_manager.remove_entity(entity_id);
+        let removed_entity = self.entity_manager.remove_entity(entity_id)?;
 		// Remove all the components this entity had
 		for (_, global_id) in removed_entity.components.iter() {
 			self.component_manager.remove_component(global_id.clone());
 		}
-		removed_entity
+		Ok(removed_entity)
 	}
 	// Remove multiple entities at once 
 	pub fn remove_entities(&mut self, entity_ids: Vec<u16>) -> Vec<Entity> {
 		let mut result: Vec<Entity> = Vec::new();
 		// Remove the specified entities 
 		for entity_id in entity_ids {
-			result.push(self.remove_entity(entity_id));
+			result.push(self.remove_entity(entity_id).unwrap());
 		}	
 		return result;
 	}

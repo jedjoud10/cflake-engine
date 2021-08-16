@@ -2,6 +2,7 @@
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_normal;
 layout(location = 2) out vec3 frag_pos;
+layout(location = 3) out vec3 frag_emissive;
 uniform sampler2D diffuse_tex;
 uniform sampler2D normals_tex;
 uniform vec2 uv_scale;
@@ -34,4 +35,5 @@ void main() {
 	frag_diffuse = diffuse_final;
 	frag_normal = normal_final;
 	frag_pos = m_position;
+	frag_emissive = vec3(0, 0, 0);
 }

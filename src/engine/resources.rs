@@ -462,7 +462,6 @@ impl ResourceManager {
 
         // Since the resource was not in the cache, load it and then put it in the cache
         // Open the file
-        println!("{}", local_path);
         let packed_file = File::open(file_path).unwrap();
         let mut reader = BufReader::new(packed_file);
 

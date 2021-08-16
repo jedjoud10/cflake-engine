@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use noise::{Fbm, NoiseFn};
-
 use crate::engine::rendering::{shader::Shader, texture::Texture};
 
 use super::{core::{cacher::CacheManager, defaults::components::{components, transforms}, ecs::{component::{Component, ComponentID, ComponentManager}, entity::Entity, entity_manager::EntityManager, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}, world::World}, rendering::{
@@ -297,67 +295,104 @@ const VERTEX_TABLE: [glam::Vec3; 8] = [
     glam::const_vec3!([1.0, 1.0, 0.0]),
 ];
 // Hehe terrain generator moment
-#[derive(Default)]
 pub struct Terrain {
 	pub system_data: SystemData,
-    pub chunks: Vec<Chunk>,
+    pub chunks: Vec<glam::IVec3>,
     pub isoline: f32,
-	pub noise: noise::OpenSimplex
+	pub noise: bracket_noise::prelude::FastNoise,
+	pub camera_chunk_position: glam::IVec3,
+}
+
+impl Default for Terrain {
+	fn default() -> Self {
+		Self {
+			system_data: SystemData::default(),
+			chunks: Vec::new(),
+			isoline: 0.0,
+			noise: bracket_noise::prelude::FastNoise::new(),
+			camera_chunk_position: glam::IVec3::ZERO,
+		}
+	}
 }
 
 // All the terrain generator code
 impl Terrain {
 	// Density functions
 	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-		let density: f32 = self.noise.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 20.0;
+		let density: f32 = self.noise.get_noise(0.05 * x, 0.05 * z) * 20.0;
 		return density + y - 20.0;
+	}
+	// Creates a single chunk entity
+	fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
+		// Generate the component
+		let mut chunk = Chunk::default();
+		chunk.position = position;
+		chunk.generate_data(self);
+
+		// Generate the model
+		let model = chunk.generate_model();
+
+		// Create the entity
+		let mut chunk_entity = Entity::new("Chunk");
+
+		// Load the renderer
+		let mut rc = Renderer::default();
+		rc.shader_name = Shader::new(
+			vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
+			&mut data.resource_manager,
+			&mut data.shader_cacher,
+		).1;
+		rc.model = model;
+
+		// Load the terrain textures
+		rc.load_textures(
+			vec![
+				"textures\\rock\\Rock033_1K_Color.png",
+				"textures\\rock\\Rock033_1K_Normal.png",
+			],
+			&mut data.texture_cacher,
+			&mut data.resource_manager,
+		);
+		rc.uv_scale = glam::vec2(1.0, 1.0);
+
+		// Link the required components to the entity
+		chunk_entity.link_component::<Renderer>(data.component_manager, rc);
+		chunk_entity.link_component::<transforms::Position>(data.component_manager, transforms::Position {
+			position: position,
+		});
+		chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
+		chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
+
+		// This is in global coordinates btw (-30, 0, 30, 60)
+		self.chunks.push(position.as_i32());
+		// Add the entity to the world
+		data.entity_manager.add_entity_s(chunk_entity)
 	}
 	// 1. Create the chunks, and generate their data
     // 2. Create the actual chunk entities and create the models
     pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
-		self.noise = noise::OpenSimplex::new();
+		self.noise = bracket_noise::prelude::FastNoise::new();
+		self.noise.set_cellular_distance_function(bracket_noise::prelude::CellularDistanceFunction::Euclidean);
+		self.noise.set_cellular_return_type(bracket_noise::prelude::CellularReturnType::Distance);
 
         // Create the entity
-		for x in 0..3 {
-			for y in 0..3 {
-				for z in 0..3 {
-					let mut chunk = Chunk::default();
+		for x in 0..5 {
+			for y in 0..2 {
+				for z in 0..5 {
 					let position = glam::vec3(((CHUNK_SIZE as f32) - 2.0) * x as f32, ((CHUNK_SIZE as f32) - 2.0) * y as f32, ((CHUNK_SIZE as f32) - 2.0) * z as f32);
-					chunk.position = position;
-					chunk.generate_data(self);
-					let model = chunk.generate_model();
-					let mut chunk_entity = Entity::new("Chunk");
-					let mut rc = Renderer::default();
-					rc.shader_name = Shader::new(
-						vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
-						&mut data.resource_manager,
-						&mut data.shader_cacher,
-					).1;
-					rc.model = model;
-					rc.load_textures(
-						vec![
-							"textures\\rock\\Rock033_1K_Color.png",
-							"textures\\rock\\Rock033_1K_Normal.png",
-						],
-						&mut data.texture_cacher,
-						&mut data.resource_manager,
-					);
-					rc.uv_scale = glam::vec2(1.0, 1.0);
-					chunk_entity.link_component::<Renderer>(data.component_manager, rc);
-					chunk_entity.link_component::<transforms::Position>(data.component_manager, transforms::Position {
-						position: position,
-					});
-					chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
-					chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
-					data.entity_manager.add_entity_s(chunk_entity);
+					self.create_single_chunk(position, data);
 				}
 			}
 		}                
     }
-	// Whenever the camera changes position
-	pub fn camera_position_update(&mut self, position: glam::Vec3) {
-
+	// When we want to update the terrain
+	pub fn update_terrain(&mut self, position: glam::Vec3, data: &mut SystemEventData) {
+		let new_camera_chunk_position = ((position - 2.0) / CHUNK_SIZE as f32).floor().as_i32();
+		if new_camera_chunk_position != self.camera_chunk_position {
+			// The camera moved from one chunk to another
+		}
+		self.camera_chunk_position = new_camera_chunk_position;
 	}
 }
 
@@ -377,7 +412,13 @@ impl System for Terrain {
 		self.system_data.link_component::<Chunk>(data.component_manager);
 		self.system_data.link_component::<Renderer>(data.component_manager);
 		self.system_data.link_component::<transforms::Position>(data.component_manager);
-		//self.generate_terrain(data);
+		self.generate_terrain(data);
+	}
+
+	// Update the camera position inside the terrain generator
+	fn pre_fire(&mut self, data: &mut SystemEventData) {
+		let camera_position = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap().get_component::<transforms::Position>(data.component_manager).unwrap().position;
+		self.update_terrain(camera_position, data);
 	}
 
     // Called for each entity in the system
@@ -453,7 +494,6 @@ impl ProceduralModelGenerator for Chunk {
     fn generate_model(&self) -> Model {
         let mut model: Model = Model::default();
         let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
-        let mut edge_counter: u32 = 0;
         // Loop over every voxel
         for x in 0..CHUNK_SIZE - 2 {
             for y in 0..CHUNK_SIZE - 2 {

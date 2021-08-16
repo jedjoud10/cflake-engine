@@ -51,16 +51,19 @@ impl EntityManager {
 		}
     }
     // Removes an entity from the world
-    pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
-        //println!("{:?}", self.entities);
-        let removed_entity = self
+    pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, super::error::EntityError> {
+		if self.entities.contains_key(&entity_id) {
+			let removed_entity = self
             .entities
             .remove(&entity_id)
             .expect("Entity does not exist, so it could not be removed!");
-        println!(
-            "\x1b[33mRemove entity '{}' with entity ID: {} and cBitfield: {}\x1b[0m",
-            removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield
-        );
-        return removed_entity;
+			println!(
+				"\x1b[33mRemove entity '{}' with entity ID: {} and cBitfield: {}\x1b[0m",
+				removed_entity.name, removed_entity.entity_id, removed_entity.c_bitfield
+			);
+			return Ok(removed_entity);
+		} else {
+			return Err(super::error::EntityError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
+		}
     }
 }
