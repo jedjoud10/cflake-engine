@@ -308,16 +308,17 @@ impl System for RenderingSystem {
         unsafe {
             // Actually draw the array
             if rc.gpu_data.initialized {
+
                 gl::BindVertexArray(rc.gpu_data.vertex_array_object);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
+				
                 gl::DrawElements(
                     gl::TRIANGLES,
                     rc.model.triangles.len() as i32,
                     gl::UNSIGNED_INT,
                     null(),
-                );
-                gl::BindTexture(gl::TEXTURE_2D, 0);
-
+                );                
+				
                 // Make another other pass to render the wireframe on top
                 if true {
                     let wireframe_shader = data
@@ -329,8 +330,8 @@ impl System for RenderingSystem {
                     wireframe_shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
                     wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
                     wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);
-                    gl::Enable(gl::POLYGON_OFFSET_FILL);
-                    gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                    gl::Enable(gl::POLYGON_OFFSET_LINE);
+                    gl::PolygonMode(gl::FRONT, gl::LINE);
                     gl::PolygonOffset(0.0, -1.0);
                     gl::DrawElements(
                         gl::TRIANGLES,
@@ -338,8 +339,9 @@ impl System for RenderingSystem {
                         gl::UNSIGNED_INT,
                         null(),
                     );
+					gl::BindTexture(gl::TEXTURE_2D, 0);
                     gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-                    gl::Disable(gl::POLYGON_OFFSET_FILL);
+                    gl::Disable(gl::POLYGON_OFFSET_LINE);
                 }
             }
         }

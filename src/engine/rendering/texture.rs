@@ -16,6 +16,7 @@ bitflags! {
     pub struct TextureFlags: u8 {
         const Mutable = 0b00000001;
         const MipMaps = 0b00000010;
+		const Multisampled = 0b00000100;
     }
 }
 
@@ -119,6 +120,11 @@ impl Texture {
         self.flags |= TextureFlags::MipMaps;
         self
     }
+	// Make this texture a multisampled texture (Only used for the texture attachements of the framebuffer)
+	pub fn enable_multisampling(mut self) -> Self {
+		self.flags |= TextureFlags::Multisampled;
+		self
+	}
     // Update the size of a current immutable texture
     pub fn update_size(&self, width: u16, height: u16) {
         if self.flags.contains(TextureFlags::Mutable) {
@@ -168,8 +174,12 @@ impl Texture {
         if bytes.len() > 0 {
             pointer = bytes.as_ptr() as *const c_void;
         }
+		
+		if self.flags.contains(TextureFlags::Multisampled) {
+			// This is a multisampled texture
+		}
         if self.flags.contains(TextureFlags::Mutable) {
-            // It's a mutable texture
+            // It's a normal mutable texture
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
                 gl::BindTexture(gl::TEXTURE_2D, self.id);

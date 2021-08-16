@@ -334,7 +334,7 @@ impl Default for Terrain {
 impl Terrain {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-        let density: f32 = self.noise.get_noise(0.02 * x, 0.02 * z) * 2.0;
+        let density: f32 = self.noise.get_noise3d(0.02 * x, 0.05 * y, 0.02 * z) * 3.0;
         return density + y - 20.0;
     }
     // Creates a single chunk entity
@@ -363,8 +363,8 @@ impl Terrain {
         // Load the terrain textures
         rc.load_textures(
             vec![
-                "textures\\rock\\Rock033_1K_Color.png",
-                "textures\\rock\\Rock033_1K_Normal.png",
+                "textures\\white.png",
+                "textures\\white.png",
             ],
             &mut data.texture_cacher,
             &mut data.resource_manager,
@@ -405,7 +405,7 @@ impl Terrain {
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * z as f32,
                     );
-                    //self.create_single_chunk(position, data);
+                    self.create_single_chunk(position, data);
                 }
             }
         }

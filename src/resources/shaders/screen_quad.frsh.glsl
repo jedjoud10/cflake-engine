@@ -64,10 +64,14 @@ void main() {
 	vec3 depth = vec3(depth_stencil.x, 0, 0);
 
 	if (debug_view == 0) {
-		color = max(final_color, emissive);
+		if (emissive.x <= -1.0) {
+			color = vec3(0.0);
+		} else {
+			color = max(final_color, emissive);
+		}
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
-		color = diffuse;
+		color = emissive;
 	}
 }
