@@ -32,7 +32,7 @@ impl System for SkySystem {
         system_data.link_component::<transforms::Position>(data.component_manager);
         system_data.link_component::<transforms::Scale>(data.component_manager);
 
-		// Create the sky entity
+        // Create the sky entity
         let mut sky = Entity::new("Sky");
         // Use a custom shader
         let sky_shader_name = Shader::new(
@@ -73,7 +73,7 @@ impl System for SkySystem {
         data.custom_data.sky_component_id = sky
             .get_global_component_id::<components::Sky>(&mut data.component_manager)
             .unwrap();
-		data.entity_manager.add_entity_s(sky);
+        data.entity_manager.add_entity_s(sky);
     }
 
     // Update the sun rotation
@@ -91,7 +91,8 @@ impl System for SkySystem {
         // Set the position of the sky sphere to always be the camera
         let position = data
             .entity_manager
-            .get_entity(data.custom_data.main_camera_entity_id).unwrap()
+            .get_entity(data.custom_data.main_camera_entity_id)
+            .unwrap()
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
             .position;

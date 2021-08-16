@@ -70,23 +70,27 @@ impl ComponentManager {
             panic!("Component {} not registered!", name);
         }
     }
-	// Cast a boxed component to a reference of that component
-	pub fn cast_component<'a, T: ComponentID + Component + 'static>(boxed_component: &'a Box<dyn Component>) -> &'a T {
-		let component_any: &dyn Any = boxed_component.as_any();
+    // Cast a boxed component to a reference of that component
+    pub fn cast_component<'a, T: ComponentID + Component + 'static>(
+        boxed_component: &'a Box<dyn Component>,
+    ) -> &'a T {
+        let component_any: &dyn Any = boxed_component.as_any();
         let final_component = component_any.downcast_ref::<T>().unwrap();
-		final_component
-	}
-	
-	// Cast a boxed component to a mutable reference of that component
-	pub fn cast_component_mut<'a, T: ComponentID + Component + 'static>(boxed_component: &'a mut Box<dyn Component>) -> &'a mut T {
-		let component_any: &mut dyn Any = boxed_component.as_any_mut();
+        final_component
+    }
+
+    // Cast a boxed component to a mutable reference of that component
+    pub fn cast_component_mut<'a, T: ComponentID + Component + 'static>(
+        boxed_component: &'a mut Box<dyn Component>,
+    ) -> &'a mut T {
+        let component_any: &mut dyn Any = boxed_component.as_any_mut();
         let final_component = component_any.downcast_mut::<T>().unwrap();
-		final_component
-	}
-	// Check if we have a specified component in the manager
-	pub fn is_component_id_valid(&self, component_id: u16) -> bool {
-		self.components.contains_key(&component_id)
-	}
+        final_component
+    }
+    // Check if we have a specified component in the manager
+    pub fn is_component_id_valid(&self, component_id: u16) -> bool {
+        self.components.contains_key(&component_id)
+    }
     // Get a refernece to a component by it's global ID
     pub fn id_get_component<'a, T: ComponentID + Component + 'static>(
         &'a self,
@@ -105,14 +109,16 @@ impl ComponentManager {
             ));
         }
     }
-	// Get a mutable component by it's global ID
+    // Get a mutable component by it's global ID
     pub fn id_get_component_mut<'a, T: ComponentID + Component + 'static>(
         &'a mut self,
         id: u16,
     ) -> Result<&'a mut T, super::error::ComponentError> {
         // Check if we even have the component
         if (id as usize) < self.components.len() {
-            return Ok(Self::cast_component_mut::<T>(self.components.get_mut(&id).unwrap()));
+            return Ok(Self::cast_component_mut::<T>(
+                self.components.get_mut(&id).unwrap(),
+            ));
         } else {
             return Err(super::error::ComponentError::new(
                 format!(
@@ -123,16 +129,19 @@ impl ComponentManager {
             ));
         }
     }
-	// Add a single component to the component manager
-	pub fn add_component<'a, T: ComponentID + Component + 'a>(&mut self, component: Box<dyn Component>) -> u16 {
-		let id = self.components.len() as u16;
-		self.components.insert(id,component);
-		id
-	}
-	// Remove a single component from the component manager using it's id
-	pub fn remove_component(&mut self, component_id: u16) {
-		self.components.remove(&component_id);
-	}
+    // Add a single component to the component manager
+    pub fn add_component<'a, T: ComponentID + Component + 'a>(
+        &mut self,
+        component: Box<dyn Component>,
+    ) -> u16 {
+        let id = self.components.len() as u16;
+        self.components.insert(id, component);
+        id
+    }
+    // Remove a single component from the component manager using it's id
+    pub fn remove_component(&mut self, component_id: u16) {
+        self.components.remove(&component_id);
+    }
 }
 
 // A trait used to identify each component by their name

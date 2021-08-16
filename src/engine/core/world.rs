@@ -54,9 +54,22 @@ impl World {
         window.set_cursor_pos(0.0, 0.0);
 
         // Load the default objects for the CacheManagers
-        let white_texture = Texture::new().load_texture("textures\\white.png", &mut self.resource_manager, &mut self.texture_manager).unwrap();
-        let black_texture = Texture::new().load_texture("textures\\black.png", &mut self.resource_manager, &mut self.texture_manager).unwrap();
-        self.texture_manager.generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
+        let white_texture = Texture::new()
+            .load_texture(
+                "textures\\white.png",
+                &mut self.resource_manager,
+                &mut self.texture_manager,
+            )
+            .unwrap();
+        let black_texture = Texture::new()
+            .load_texture(
+                "textures\\black.png",
+                &mut self.resource_manager,
+                &mut self.texture_manager,
+            )
+            .unwrap();
+        self.texture_manager
+            .generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
 
         // Copy the default shader name
         let default_shader_name: String;
@@ -85,10 +98,10 @@ impl World {
         */
         register_components(self);
         load_systems(self);
-		// Add the entities that need to be added
-		self.add_entities(self.entity_manager.entitites_to_add.clone());
-		// So we don't cause an infinite loop lol
-		self.entity_manager.entitites_to_add.clear();
+        // Add the entities that need to be added
+        self.add_entities(self.entity_manager.entitites_to_add.clone());
+        // So we don't cause an infinite loop lol
+        self.entity_manager.entitites_to_add.clear();
 
         load_entities(self);
     }
@@ -97,7 +110,7 @@ impl World {
     // 2. We tick the entities of each TickSystem (Only if the framecount is valid)
     // 3. We render the entities onto the screen using the RenderSystem
     pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
-		// Check for input events
+        // Check for input events
         self.input_manager.update(window);
         // Check for default input events
         self.check_default_input_events(window, glfw);
@@ -126,13 +139,13 @@ impl World {
 
         // Update the inputs
         self.input_manager
-            .late_update(self.time_manager.delta_time as f32);	
+            .late_update(self.time_manager.delta_time as f32);
 
-		// Add the entities that need to be added
-		self.add_entities(self.entity_manager.entitites_to_add.clone());
-		// So we don't cause an infinite loop lol
-		self.entity_manager.entitites_to_add.clear();
-	}
+        // Add the entities that need to be added
+        self.add_entities(self.entity_manager.entitites_to_add.clone());
+        // So we don't cause an infinite loop lol
+        self.entity_manager.entitites_to_add.clear();
+    }
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
         // Check for default mapping events
@@ -244,24 +257,27 @@ impl World {
         return result;
     }
     // Wrapper function around the entity manager remove_entity
-    pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, super::ecs::error::EntityError> {
+    pub fn remove_entity(
+        &mut self,
+        entity_id: u16,
+    ) -> Result<Entity, super::ecs::error::EntityError> {
         // Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
-		// Remove all the components this entity had
-		for (_, global_id) in removed_entity.components.iter() {
-			self.component_manager.remove_component(global_id.clone());
-		}
-		Ok(removed_entity)
-	}
-	// Remove multiple entities at once 
-	pub fn remove_entities(&mut self, entity_ids: Vec<u16>) -> Vec<Entity> {
-		let mut result: Vec<Entity> = Vec::new();
-		// Remove the specified entities 
-		for entity_id in entity_ids {
-			result.push(self.remove_entity(entity_id).unwrap());
-		}	
-		return result;
-	}
+        // Remove all the components this entity had
+        for (_, global_id) in removed_entity.components.iter() {
+            self.component_manager.remove_component(global_id.clone());
+        }
+        Ok(removed_entity)
+    }
+    // Remove multiple entities at once
+    pub fn remove_entities(&mut self, entity_ids: Vec<u16>) -> Vec<Entity> {
+        let mut result: Vec<Entity> = Vec::new();
+        // Remove the specified entities
+        for entity_id in entity_ids {
+            result.push(self.remove_entity(entity_id).unwrap());
+        }
+        return result;
+    }
 }
 
 // Impl block related to the windowing / rendering stuff
@@ -284,13 +300,17 @@ impl World {
             // Update the size of each texture that is bound to the framebuffer
             let size: (u16, u16) = (size.0 as u16, size.1 as u16);
             render_system.diffuse_texture.update_size(size.0, size.1);
-            render_system.depth_stencil_texture.update_size(size.0, size.1);
+            render_system
+                .depth_stencil_texture
+                .update_size(size.0, size.1);
             render_system.normals_texture.update_size(size.0, size.1);
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);
         }
-        let camera_entity_clone = self.entity_manager
-            .get_entity(self.custom_data.main_camera_entity_id).unwrap()
+        let camera_entity_clone = self
+            .entity_manager
+            .get_entity(self.custom_data.main_camera_entity_id)
+            .unwrap()
             .clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component = camera_entity_clone

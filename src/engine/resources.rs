@@ -25,8 +25,8 @@ pub struct ResourceManager {
 
 // A trait for structs that can be loaded from resources
 pub trait LoadableResource {
-	// Turn a resource into the current struct
-	fn from_resource(self, resource: &Resource) -> Self;
+    // Turn a resource into the current struct
+    fn from_resource(self, resource: &Resource) -> Self;
 }
 
 // All the conversion stuff from File -> Resource

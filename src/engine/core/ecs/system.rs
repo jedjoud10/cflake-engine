@@ -164,7 +164,11 @@ pub trait System {
         self.pre_fire(data);
         // Loop over all the entities and update their components
         for &entity_id in system_data_clone.entities.iter() {
-            let mut entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap().clone();
+            let mut entity_clone = data
+                .entity_manager
+                .get_entity_mut(entity_id)
+                .unwrap()
+                .clone();
             self.fire_entity(&mut entity_clone, data);
         }
         *self.get_system_data_mut() = system_data_clone;

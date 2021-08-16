@@ -56,10 +56,10 @@ pub fn load_systems(world: &mut World) {
     sky_system.setup_system(&mut data);
     world.system_manager.add_system(sky_system);
 
-	// Load the terrain generator system
-	let mut terrain_generator = Terrain::default();
-	terrain_generator.setup_system(&mut data);
-	world.system_manager.add_system(terrain_generator);
+    // Load the terrain generator system
+    let mut terrain_generator = Terrain::default();
+    terrain_generator.setup_system(&mut data);
+    world.system_manager.add_system(terrain_generator);
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {

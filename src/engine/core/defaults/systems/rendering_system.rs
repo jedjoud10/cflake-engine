@@ -27,8 +27,8 @@ pub struct RenderingSystem {
     pub depth_stencil_texture: Texture,
     pub quad_renderer_index: u16,
     pub debug_view: u16,
-	pub wireframe: bool,
-	pub wireframe_shader_name: String,
+    pub wireframe: bool,
+    pub wireframe_shader_name: String,
     quad_renderer: Renderer,
     window: Window,
 }
@@ -74,15 +74,34 @@ impl RenderingSystem {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
-            self.diffuse_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
-			// Create the normals render texture
-            self.normals_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
+            self.diffuse_texture = Texture::new()
+                .set_dimensions(default_size.0, default_size.1)
+                .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
+                .generate_texture(Vec::new());
+            // Create the normals render texture
+            self.normals_texture = Texture::new()
+                .set_dimensions(default_size.0, default_size.1)
+                .set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
+                .generate_texture(Vec::new());
             // Create the position render texture
-            self.position_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
-            // Create the emissive render texture			
-            self.emissive_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE).generate_texture(Vec::new());
+            self.position_texture = Texture::new()
+                .set_dimensions(default_size.0, default_size.1)
+                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
+                .generate_texture(Vec::new());
+            // Create the emissive render texture
+            self.emissive_texture = Texture::new()
+                .set_dimensions(default_size.0, default_size.1)
+                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
+                .generate_texture(Vec::new());
             // Create the depth-stencil render texture
-            self.depth_stencil_texture = Texture::new().set_dimensions(default_size.0, default_size.1).set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8).generate_texture(Vec::new());
+            self.depth_stencil_texture = Texture::new()
+                .set_dimensions(default_size.0, default_size.1)
+                .set_idf(
+                    gl::DEPTH24_STENCIL8,
+                    gl::DEPTH_STENCIL,
+                    gl::UNSIGNED_INT_24_8,
+                )
+                .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             gl::BindTexture(gl::TEXTURE_2D, self.diffuse_texture.id);
             gl::FramebufferTexture2D(
@@ -143,11 +162,14 @@ impl RenderingSystem {
             );
 
             // Check if the frame buffer is okay
-			println!("Checking framebuffer...");
+            println!("Checking framebuffer...");
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
                 println!("Framebuffer is okay :)");
             } else {
-                panic!("Framebuffer has failed initialization! Error: '{}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
+                panic!(
+                    "Framebuffer has failed initialization! Error: '{}'",
+                    gl::CheckFramebufferStatus(gl::FRAMEBUFFER)
+                );
             }
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
@@ -185,10 +207,15 @@ impl System for RenderingSystem {
         self.setup_opengl(default_size);
         self.setup_render_buffer(default_size);
 
-		// Load the wireframe shader
-		let wireframe_shader_name = Shader::new(vec!["shaders\\default.vrsh.glsl", "shaders\\wireframe.frsh.glsl"], &mut data.resource_manager, &mut data.shader_cacher).1;
-		self.wireframe_shader_name = wireframe_shader_name;
-	}
+        // Load the wireframe shader
+        let wireframe_shader_name = Shader::new(
+            vec!["shaders\\default.vrsh.glsl", "shaders\\wireframe.frsh.glsl"],
+            &mut data.resource_manager,
+            &mut data.shader_cacher,
+        )
+        .1;
+        self.wireframe_shader_name = wireframe_shader_name;
+    }
 
     // Called for each entity in the system
     fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
@@ -201,7 +228,8 @@ impl System for RenderingSystem {
         {
             let camera_entity = data
                 .entity_manager
-                .get_entity(data.custom_data.main_camera_entity_id).unwrap();
+                .get_entity(data.custom_data.main_camera_entity_id)
+                .unwrap();
             let camera_data = camera_entity
                 .get_component::<components::Camera>(&mut data.component_manager)
                 .unwrap();
@@ -280,7 +308,7 @@ impl System for RenderingSystem {
         unsafe {
             // Actually draw the array
             if rc.gpu_data.initialized {
-                gl::BindVertexArray(rc.gpu_data.vertex_array_object);				
+                gl::BindVertexArray(rc.gpu_data.vertex_array_object);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
                 gl::DrawElements(
                     gl::TRIANGLES,
@@ -290,25 +318,29 @@ impl System for RenderingSystem {
                 );
                 gl::BindTexture(gl::TEXTURE_2D, 0);
 
-				// Make another other pass to render the wireframe on top
-				if true {
-					let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
-					wireframe_shader.use_shader();
-					wireframe_shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
-					wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
-					wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);
-					gl::Enable(gl::POLYGON_OFFSET_FILL);
-					gl::PolygonMode( gl::FRONT_AND_BACK, gl::LINE);
-					gl::PolygonOffset(0.0, -1.0);
-                	gl::DrawElements(
-                	    gl::TRIANGLES,
-                	    rc.model.triangles.len() as i32,
-                	    gl::UNSIGNED_INT,
-                	    null(),
-                	);
-					gl::PolygonMode( gl::FRONT_AND_BACK, gl::FILL);
-					gl::Disable(gl::POLYGON_OFFSET_FILL);
-				}
+                // Make another other pass to render the wireframe on top
+                if true {
+                    let wireframe_shader = data
+                        .shader_cacher
+                        .1
+                        .get_object(&self.wireframe_shader_name)
+                        .unwrap();
+                    wireframe_shader.use_shader();
+                    wireframe_shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
+                    wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
+                    wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);
+                    gl::Enable(gl::POLYGON_OFFSET_FILL);
+                    gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                    gl::PolygonOffset(0.0, -1.0);
+                    gl::DrawElements(
+                        gl::TRIANGLES,
+                        rc.model.triangles.len() as i32,
+                        gl::UNSIGNED_INT,
+                        null(),
+                    );
+                    gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+                    gl::Disable(gl::POLYGON_OFFSET_FILL);
+                }
             }
         }
     }
@@ -330,7 +362,8 @@ impl System for RenderingSystem {
             .unwrap();
         let camera_position = data
             .entity_manager
-            .get_entity(data.custom_data.main_camera_entity_id).unwrap()
+            .get_entity(data.custom_data.main_camera_entity_id)
+            .unwrap()
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
             .position;
