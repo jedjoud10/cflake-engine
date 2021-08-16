@@ -25,78 +25,56 @@ impl Entity {
     pub fn link_default_component<T: ComponentID + Default + Component + 'static>(
         &mut self,
         component_manager: &mut ComponentManager,
-    ) {
-        let component_name = T::get_component_name();
-        let component_id = component_manager.get_component_id_by_name(&component_name);
-        // Check if we have the component linked in the first place
-        if self.components.contains_key(&component_id) {
-            println!(
-                "Cannot link component '{}' to entity '{}' because it is already linked!",
-                component_name, self.name
-            );
-            return;
-        }
-        component_manager.components.push(Box::new(T::default()));
-        let world_component_id = component_manager.components.len() - 1;
-        self.c_bitfield = self.c_bitfield | component_id;
-        self.components
-            .insert(component_id, world_component_id as u16);
-        println!(
-            "Link component '{}' to entity '{}', with ID: {} and global ID: '{}'",
-            component_name, self.name, component_id, world_component_id
-        );
+    ) -> Result<(), super::error::EntityError> {
+		// Simple wrapper around the default link component
+		self.link_component(component_manager, T::default())
     }
-    // Link a component to this entity and use the gived default state parameter
+    // Link a component to this entity and use the given default state parameter
     pub fn link_component<T: ComponentID + Component + 'static>(
         &mut self,
         component_manager: &mut ComponentManager,
         default_state: T,
-    ) {
-        let component_name = T::get_component_name();
-        let component_id = component_manager.get_component_id_by_name(&component_name);
-        // Check if we have the component linked in the first place
+    ) -> Result<(), super::error::EntityError> {
+        let component_id = component_manager.get_component_id::<T>();
+        // Check if we have the component linked on this entity
         if self.components.contains_key(&component_id) {
-            println!(
-                "Cannot link component '{}' to entity '{}' because it is already linked!",
-                component_name, self.name
-            );
-            return;
+			return Err(super::error::EntityError::new(format!("Cannot link component '{}' to entity '{}' because it is already linked!",
+			T::get_component_name(), self.name).as_str()));
         }
-        component_manager.components.push(Box::new(default_state));
-        let world_component_id = component_manager.components.len() - 1;
+
+		// Add the component inside the component manager
+        let global_id = component_manager.add_component::<T>(Box::new(default_state));
+
+		// Add the component's bitfield to the entity's bitfield
         self.c_bitfield = self.c_bitfield | component_id;
-        self.components
-            .insert(component_id, world_component_id as u16);
+        self.components.insert(component_id, global_id as u16);
         println!(
             "Link component '{}' to entity '{}', with ID: {} and global ID: '{}'",
-            component_name, self.name, component_id, world_component_id
+            T::get_component_name(), self.name, component_id, global_id
         );
+		return Ok(());
     }
     // Unlink a component from this entity
-    pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &ComponentManager) {
+    pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) {
         let name = T::get_component_name();
-        let id = component_manager.get_component_id_by_name(&name);
+        let id = component_manager.get_component_id::<T>();
         // Take the bit, invert it, then AND it to the bitfield
         self.c_bitfield = (!id) & self.c_bitfield;
-        self.components.remove(&id);
+        let global_id = self.components.remove(&id).unwrap();
+		component_manager.remove_component(id);
     }
     // Gets a reference to a component
     pub fn get_component<'a, T: ComponentID + Component + 'static>(
         &self,
         component_manager: &'a ComponentManager,
-    ) -> Result<&'a T, super::error::Error> {
+    ) -> Result<&'a T, super::error::EntityError> {
         let component_id = component_manager.get_component_id::<T>();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
-            let component_any: &dyn Any = component_manager
-                .components
-                .get(self.components[&component_id] as usize)
-                .unwrap()
-                .as_any();
-            let final_component = component_any.downcast_ref::<T>().unwrap();
+            let final_component = component_manager.id_get_component::<T>(self.components[&component_id]).unwrap();
             return Ok(final_component);
         } else {
-            return Err(super::error::Error::new(
+            return Err(super::error::EntityError::new(
                 format!(
                     "Component '{}' does not exist on Entity '{}'!",
                     T::get_component_name(),
@@ -110,19 +88,14 @@ impl Entity {
     pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(
         &self,
         component_manager: &'a mut ComponentManager,
-    ) -> Result<&'a mut T, super::error::Error> {
+    ) -> Result<&'a mut T, super::error::EntityError> {
         let component_id = component_manager.get_component_id::<T>();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
-            let component_any: &mut dyn Any = component_manager
-                .components
-                .get_mut(self.components[&component_id] as usize)
-                .unwrap()
-                .as_any_mut();
-            let final_component = component_any.downcast_mut::<T>().unwrap();
+            let final_component = component_manager.id_get_component_mut::<T>(self.components[&component_id]).unwrap();
             return Ok(final_component);
         } else {
-            return Err(super::error::Error::new(
+            return Err(super::error::EntityError::new(
                 format!(
                     "Component '{}' does not exist on Entity '{}'!",
                     T::get_component_name(),
@@ -136,13 +109,13 @@ impl Entity {
     pub fn get_global_component_id<'a, T: ComponentID + Component + 'static>(
         &self,
         component_manager: &'a mut ComponentManager,
-    ) -> Result<u16, super::error::Error> {
+    ) -> Result<u16, super::error::EntityError> {
         let component_id = component_manager.get_component_id::<T>();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
             return Ok(self.components[&component_id]);
         } else {
-            return Err(super::error::Error::new(
+            return Err(super::error::EntityError::new(
                 format!(
                     "Component '{}' does not exist on Entity '{}'!",
                     T::get_component_name(),
