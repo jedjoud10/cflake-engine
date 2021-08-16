@@ -268,10 +268,24 @@ impl World {
         return result;
     }
     // Wrapper function around the entity manager remove_entity
-    pub fn remove_entity(&mut self, entity_id: u16) {
+    pub fn remove_entity(&mut self, entity_id: u16) -> Entity {
         // Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id);
-    }
+		// Remove all the components this entity had
+		for (_, global_component_id) in removed_entity.components {
+			self.component_manager.
+		}
+		removed_entity
+	}
+	// Remove multiple entities at once 
+	pub fn remove_entities(&mut self, entity_ids: Vec<u16>) -> Vec<Entity> {
+		let mut result: Vec<Entity> = Vec::new();
+		// Remove the specified entities 
+		for entity_id in entity_ids {
+			result.push(self.remove_entity(entity_id));
+		}	
+		return result;
+	}
     // Get a mutable reference to an entity from the entity manager
     pub fn get_entity_mut(&mut self, entity_id: u16) -> &mut Entity {
         self.entity_manager.get_entity_mut(entity_id)

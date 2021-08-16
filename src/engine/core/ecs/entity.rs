@@ -8,8 +8,8 @@ pub struct Entity {
     pub name: String,
     pub entity_id: u16,
     pub c_bitfield: u16,
-    // The actual components are stored in the world, this allows for two objects to share a single component if we want to have duplicate entities
-    components: HashMap<u16, u16>,
+    // The actual components are stored in the world
+    pub components: HashMap<u16, u16>,
 }
 
 // ECS time bois

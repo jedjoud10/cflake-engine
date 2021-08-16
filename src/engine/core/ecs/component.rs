@@ -45,7 +45,6 @@ impl ComponentManager {
         println!("Registered component '{}' with ID {}", name, component_id);
         component_id
     }
-
     // Get the component id for a specific entity
     pub fn get_component_id<T: ComponentID>(&self) -> u16 {
         let name: String = T::get_component_name();
@@ -93,6 +92,12 @@ impl ComponentManager {
             ));
         }
     }
+	// Add a single component to the component manager
+	pub fn add_component<'a, T: ComponentID + Component + 'a>(&mut self, component: Box<dyn Component>) {
+		self.components.push(component);
+	}
+	// Get a single component from the component manager using a specific world id
+	pub fn get_component
 }
 
 // A trait used to identify each component by their name

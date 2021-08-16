@@ -310,6 +310,7 @@ const VERTEX_TABLE: [glam::Vec3; 8] = [
 pub struct TerrainGenerator {
     pub chunks: Vec<Chunk>,
     pub isoline: f32,
+	pub noise: noise::OpenSimplex
 }
 
 // Data that will be passed to the terrain generator
@@ -322,37 +323,56 @@ pub struct TerrainGeneratorData<'a> {
 
 // Terrain code
 impl TerrainGenerator {
+
+	// Density functions
+	fn density(&self, x: f32, y: f32, z: f32) -> f32 {
+		let density: f32 = self.noise.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 20.0;
+		return density + y - 20.0;
+	}
     // 1. Create the chunks, and generate their data
     // 2. Create the actual chunk entities and create the models
     pub fn generate_terrain(&mut self, data: &mut TerrainGeneratorData) -> Vec<Entity> {
         self.isoline = 0.0;
-        let mut chunk = Chunk::default();
-        chunk.generate_data(self);
-        let model = chunk.generate_model();
+        let mut chunks: Vec<Entity> = Vec::new();
+		self.noise = noise::OpenSimplex::new();
 
         // Create the entity
-        let mut chunk_entity = Entity::new("Chunk");
-        let mut rc = Renderer::default();
-        rc.shader_name = Shader::new(
-            vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
-            &mut data.resource_manager,
-            &mut data.shader_manager,
-        ).1;
-        rc.model = model;
-        rc.load_textures(
-            vec![
-                "textures\\rock\\Rock033_1K_Color.png",
-                "textures\\rock\\Rock033_1K_Normal.png",
-            ],
-            &mut data.texture_manager,
-            &mut data.resource_manager,
-        );
-        rc.uv_scale = glam::vec2(1.0, 1.0);
-        chunk_entity.link_component::<Renderer>(data.component_manager, rc);
-        chunk_entity.link_default_component::<transforms::Position>(data.component_manager);
-        chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
-        chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
-        return vec![chunk_entity];
+		for x in 0..3 {
+			for y in 0..3 {
+				for z in 0..3 {
+					let mut chunk = Chunk::default();
+					let position = glam::vec3(((CHUNK_SIZE as f32) - 2.0) * x as f32, ((CHUNK_SIZE as f32) - 2.0) * y as f32, ((CHUNK_SIZE as f32) - 2.0) * z as f32);
+					chunk.position = position;
+					chunk.generate_data(self);
+					let model = chunk.generate_model();
+					let mut chunk_entity = Entity::new("Chunk");
+					let mut rc = Renderer::default();
+					rc.shader_name = Shader::new(
+						vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
+						&mut data.resource_manager,
+						&mut data.shader_manager,
+					).1;
+					rc.model = model;
+					rc.load_textures(
+						vec![
+							"textures\\rock\\Rock033_1K_Color.png",
+							"textures\\rock\\Rock033_1K_Normal.png",
+						],
+						&mut data.texture_manager,
+						&mut data.resource_manager,
+					);
+					rc.uv_scale = glam::vec2(1.0, 1.0);
+					chunk_entity.link_component::<Renderer>(data.component_manager, rc);
+					chunk_entity.link_component::<transforms::Position>(data.component_manager, transforms::Position {
+						position: position,
+					});
+					chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
+					chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
+					chunks.push(chunk_entity);
+				}
+			}
+		}        
+        return chunks;
     }
 }
 
@@ -366,21 +386,13 @@ pub struct Chunk {
 
 // Actual model generation
 impl Chunk {
-    // Density functions
-    fn density(&self, x: f32, y: f32, z: f32, fbm: &Fbm) -> f32 {
-        let density: f32 = fbm.get([0.05 * x as f64, 0.05 * z as f64]) as f32 * 10.0 + y - 3.0;
-        return density - 5.0;
-        //return density.max(y - 5.0).min(y + 5.0);
-    }
     // Generate the voxel data
     pub fn generate_data(&mut self, terrain_generator: &TerrainGenerator) {
-        let mut fbm = Fbm::new();
-        fbm.octaves = 1;
         // Create a simple plane
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    self.data[x][y][z] = self.density(x as f32, y as f32, z as f32, &fbm);
+                    self.data[x][y][z] = terrain_generator.density(x as f32 + self.position.x, y as f32 + self.position.y, z as f32 + self.position.z);
                 }
             }
         }

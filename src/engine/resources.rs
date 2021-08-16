@@ -23,6 +23,12 @@ pub struct ResourceManager {
     cached_resources: HashMap<u64, Resource>,
 }
 
+// A trait for structs that can be loaded from resources
+pub trait LoadableResource {
+	// Turn a resource into the current struct
+	fn from_resource(self, resource: &Resource) -> Self;
+}
+
 // All the conversion stuff from File -> Resource
 impl ResourceManager {
     // Turn a mdl3d file into a LoadedModel resource

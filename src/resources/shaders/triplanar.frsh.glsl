@@ -13,7 +13,7 @@ in vec2 m_uv;
 in mat3 tbn;
 void main() {
 	vec3 world_normal = normalize(m_normal);
-	const float sharpening = 5.0;
+	const float sharpening = 3.0;
 	vec3 blending = pow(abs(world_normal), vec3(sharpening, sharpening, sharpening));
 
 	// Sample the diffuse texture three times to make the triplanar texture
