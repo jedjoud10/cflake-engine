@@ -20,7 +20,6 @@ use std::ptr::null;
 pub struct RenderingSystem {
     pub system_data: SystemData,
     pub framebuffer: u32,
-	pub framebuffer_ms: u32,
     pub diffuse_texture: Texture,
     pub normals_texture: Texture,
     pub position_texture: Texture,
@@ -90,90 +89,8 @@ impl RenderingSystem {
 	}
 
     // Setup the render buffer
-    fn setup_render_buffer(&mut self, default_size: (i32, i32)) {
+    fn setup_render_buffer(&mut self, default_size: (i32, i32), data: &mut SystemEventData) {
         unsafe {
-			// This framebuffer will hold the multisampled textures
-            let default_size: (u16, u16) = (default_size.0 as u16, default_size.1 as u16);
-            gl::GenFramebuffers(1, &mut self.framebuffer_ms);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer_ms);
-            // Create the diffuse render texture
-            let diffuse_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
-                .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
-                .generate_texture(Vec::new());
-            // Create the normals render texture
-            let normals_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
-                .set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
-                .generate_texture(Vec::new());
-            // Create the position render texture
-            let position_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
-                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
-                .generate_texture(Vec::new());
-            // Create the emissive render texture
-            let emissive_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
-                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
-                .generate_texture(Vec::new());
-            // Create the depth-stencil render texture
-            let depth_stencil_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
-                .set_idf(
-                    gl::DEPTH24_STENCIL8,
-                    gl::DEPTH_STENCIL,
-                    gl::UNSIGNED_INT_24_8,
-                )
-				.enable_multisampling(4)
-                .generate_texture(Vec::new());
-            // Bind the color texture to the color attachement 0 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT0, true, diffuse_texture.id);
-            // Bind the normal texture to the color attachement 1 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT1, true, normals_texture.id);
-            // Bind the position texture to the color attachement 2 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT2, true, position_texture.id);
-            // Bind the emissive texture to the color attachement 3 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT3, true, emissive_texture.id);
-            
-            // Create a depth-stencil render object and attach it to the framebuffer
-			let mut depth_stencil_renderobject = 0;
-			gl::GenRenderbuffers(1, &mut depth_stencil_renderobject);
-			gl::BindRenderbuffer(gl::RENDERBUFFER, depth_stencil_renderobject);
-			gl::RenderbufferStorageMultisample(gl::RENDERBUFFER, 4, gl::DEPTH24_STENCIL8, default_size.0 as i32, default_size.1 as i32);
-			gl::BindRenderbuffer(gl::RENDERBUFFER, 0);
-			gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, depth_stencil_renderobject);
-
-            let attachements = vec![
-                gl::COLOR_ATTACHMENT0,
-                gl::COLOR_ATTACHMENT1,
-                gl::COLOR_ATTACHMENT2,
-                gl::COLOR_ATTACHMENT3,
-            ];
-            // Set the frame buffer attachements
-            gl::DrawBuffers(
-                attachements.len() as i32,
-                attachements.as_ptr() as *const u32,
-            );
-
-            // Check if the frame buffer is okay
-            println!("Checking multisampled framebuffer...");
-            if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
-                println!("Multisampled framebuffer is okay :)");
-            } else {
-                panic!(
-                    "Multisampled framebuffer has failed initialization! Error: '{}'",
-                    gl::CheckFramebufferStatus(gl::FRAMEBUFFER)
-                );
-            }
-			// Unbind
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        }
-		unsafe {
-			// This framebuffer is the one that will be outputed to the screen
             let default_size: (u16, u16) = (default_size.0 as u16, default_size.1 as u16);
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
@@ -196,15 +113,11 @@ impl RenderingSystem {
             self.emissive_texture = Texture::new()
                 .set_dimensions(default_size.0, default_size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-				.generate_texture(Vec::new());
-            // Create the depth-stencil render texture
-            self.depth_stencil_texture = Texture::new()
+                .generate_texture(Vec::new());
+			// Create the depth-stencil render texture
+			self.depth_stencil_texture = Texture::new()
                 .set_dimensions(default_size.0, default_size.1)
-                .set_idf(
-                    gl::DEPTH24_STENCIL8,
-                    gl::DEPTH_STENCIL,
-                    gl::UNSIGNED_INT_24_8,
-                )
+                .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, false, self.diffuse_texture.id);
@@ -214,13 +127,15 @@ impl RenderingSystem {
 			Self::bind_attachement(gl::COLOR_ATTACHMENT2, false, self.position_texture.id);
             // Bind the emissive texture to the color attachement 3 of the frame buffer
 			Self::bind_attachement(gl::COLOR_ATTACHMENT3, false, self.emissive_texture.id);
-
-			
+            // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
+			Self::bind_attachement(gl::DEPTH_STENCIL_ATTACHMENT, false, self.depth_stencil_texture.id);
+            
             let attachements = vec![
                 gl::COLOR_ATTACHMENT0,
                 gl::COLOR_ATTACHMENT1,
                 gl::COLOR_ATTACHMENT2,
                 gl::COLOR_ATTACHMENT3,
+				gl::COLOR_ATTACHMENT4,
             ];
             // Set the frame buffer attachements
             gl::DrawBuffers(
@@ -237,9 +152,11 @@ impl RenderingSystem {
                     "Framebuffer has failed initialization! Error: '{}'",
                     gl::CheckFramebufferStatus(gl::FRAMEBUFFER)
                 );
-            }
+            }			
+
+			// Unbind
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        }    
+        }  
 	}
 }
 
@@ -272,7 +189,7 @@ impl System for RenderingSystem {
         // Then setup opengl and the render buffer
         let default_size = World::get_default_window_size();
         self.setup_opengl(default_size);
-        self.setup_render_buffer(default_size);
+        self.setup_render_buffer(default_size, data);
 
         // Load the wireframe shader
         let wireframe_shader_name = Shader::new(
@@ -413,7 +330,7 @@ impl System for RenderingSystem {
     // Called before each fire_entity event is fired
     fn pre_fire(&mut self, data: &mut SystemEventData) {
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer_ms);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
     }
@@ -432,20 +349,21 @@ impl System for RenderingSystem {
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
             .position;
-			
+		/*
 		unsafe {
 			// Read the multisampled framebuffer and draw it to the normal framebuffer (blitting)
-			gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.framebuffer_ms);
+			gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.framebuffer);
 			gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, self.framebuffer);
 			// Helps us a lil
 			let resolution: glam::IVec2 = glam::ivec2(self.window.size.0 as i32, self.window.size.1 as i32);
 			gl::BlitFramebuffer(0, 0, resolution.x, resolution.y, 0, 0, resolution.x, resolution.y, gl::COLOR_BUFFER_BIT, gl::NEAREST);
-		}        
+		}  
+		*/      
 		shader.use_shader();
-			let light_dir = data
-            .custom_data
-            .sun_rotation
-            .mul_vec3(glam::vec3(0.0, 1.0, 0.0));
+			shader.set_texture2d("diffuse_texture", self.diffuse_texture.id, gl::TEXTURE0);
+			shader.set_texture2d("normals_texture", self.normals_texture.id, gl::TEXTURE1);
+			shader.set_texture2d("position_texture", self.position_texture.id, gl::TEXTURE2);
+			shader.set_texture2d("emissive_texture", self.emissive_texture.id, gl::TEXTURE3);        
 
         // Sky params
         shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
