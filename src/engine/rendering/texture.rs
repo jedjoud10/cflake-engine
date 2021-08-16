@@ -31,6 +31,7 @@ pub struct Texture {
     pub format: u32,
     pub data_type: u32,
     pub flags: TextureFlags,
+	pub samples: u8,
 }
 
 impl Default for Texture {
@@ -83,6 +84,7 @@ impl Texture {
             format: gl::RGBA,
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::Mutable,
+			samples: 0
         }
     }
     // Cache the current texture and return it's reference
@@ -121,8 +123,9 @@ impl Texture {
         self
     }
 	// Make this texture a multisampled texture (Only used for the texture attachements of the framebuffer)
-	pub fn enable_multisampling(mut self) -> Self {
+	pub fn enable_multisampling(mut self, samples: u8) -> Self {
 		self.flags |= TextureFlags::Multisampled;
+		self.samples = samples;
 		self
 	}
     // Update the size of a current immutable texture
@@ -169,7 +172,7 @@ impl Texture {
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
-        println!("{:?}", self);
+        
         let mut pointer: *const c_void = null();
         if bytes.len() > 0 {
             pointer = bytes.as_ptr() as *const c_void;
@@ -177,8 +180,19 @@ impl Texture {
 		
 		if self.flags.contains(TextureFlags::Multisampled) {
 			// This is a multisampled texture
-		}
-        if self.flags.contains(TextureFlags::Mutable) {
+			unsafe {
+                gl::GenTextures(1, &mut self.id as *mut u32);
+                gl::BindTexture(gl::TEXTURE_2D_MULTISAMPLE, self.id);
+                gl::TexImage2DMultisample(
+                    gl::TEXTURE_2D_MULTISAMPLE,
+                    self.samples as i32,
+                    self.internal_format as u32,
+                    self.width as i32,
+                    self.height as i32,
+                    gl::TRUE,
+                );
+            }
+		} else if self.flags.contains(TextureFlags::Mutable) {
             // It's a normal mutable texture
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
@@ -199,6 +213,7 @@ impl Texture {
                 gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
             }
 
+			// The texture is already bound to the TEXTURE_2D
             if self.flags.contains(TextureFlags::MipMaps) {
                 // Create the mipmaps
                 unsafe {
@@ -219,6 +234,7 @@ impl Texture {
                 }
             }
         }
+		println!("{:?}", self);
         return self;
     }
 }

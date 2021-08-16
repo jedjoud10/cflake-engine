@@ -405,7 +405,7 @@ impl Terrain {
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * z as f32,
                     );
-                    self.create_single_chunk(position, data);
+                    //self.create_single_chunk(position, data);
                 }
             }
         }
