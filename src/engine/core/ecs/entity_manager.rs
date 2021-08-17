@@ -28,6 +28,7 @@ impl EntityManager {
         // Add that id to the id of the current vector length (Global ID)
         id += self.entities.len() as u16;
         entity.entity_id = id;
+		println!("{:?}", entity);
         self.entitites_to_add.push(entity);
         id
     }

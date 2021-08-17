@@ -47,7 +47,7 @@ impl System for SkySystem {
         rc.shader_name = sky_shader_name;
 
 		// The texture that will be used as gradient
-		let cached_texture_id = Texture::new().enable_mipmaps().set_wrapping_mode(TextureWrapping::ClampToEdge).load_texture("textures\\sky_gradient2.png", data.resource_manager, data.texture_cacher).unwrap().1;
+		let cached_texture_id = Texture::new().enable_mipmaps().set_wrapping_mode(TextureWrapping::ClampToEdge).load_texture("textures\\sky_gradient.png", data.resource_manager, data.texture_cacher).unwrap().1;
         rc.load_textures(
             vec![cached_texture_id],
             &mut data.texture_cacher

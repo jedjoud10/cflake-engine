@@ -267,6 +267,7 @@ impl System for RenderingSystem {
             (camera_position.x, camera_position.y, camera_position.z),
         );
         shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
+		shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
 
         // Get the OpenGL texture id so we can bind it to the shader
         let mut textures: Vec<&Texture> = Vec::new();
@@ -349,7 +350,7 @@ impl System for RenderingSystem {
 		shader.set_texture2d("position_texture", &self.position_texture, gl::TEXTURE2);
 		shader.set_texture2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);        
 		shader.set_scalar_2_uniform("resolution", (self.window.size.0 as f32, self.window.size.1 as f32));
-		shader.set_int_uniform("samples_count", self.multisampling.unwrap_or(1) as i32);
+		shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
         // Sky params
         shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));

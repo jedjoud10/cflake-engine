@@ -392,9 +392,9 @@ impl Terrain {
             .set_cellular_return_type(bracket_noise::prelude::CellularReturnType::Distance);
 
         // Create the entity
-        for x in 0..5 {
+        for x in 0..20 {
             for y in 0..2 {
-                for z in 0..5 {
+                for z in 0..20 {
                     let position = glam::vec3(
                         ((CHUNK_SIZE as f32) - 2.0) * x as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,

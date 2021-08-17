@@ -160,7 +160,7 @@ impl World {
         if self.input_manager.map_pressed("capture_fps") {
             println!(
                 "Current FPS: '{}', Delta: '{}'",
-                self.time_manager.seconds_since_game_start, self.time_manager.delta_time
+                self.time_manager.fps, self.time_manager.delta_time
             );
         }
         // Change the debug view
@@ -184,6 +184,9 @@ impl World {
                 .unwrap();
 			render_system.wireframe = !render_system.wireframe;
 		}
+
+		// Update the FPS
+		self.time_manager.fps = 1.0 / self.time_manager.delta_time;
     }
     // Toggle fullscreen
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -256,6 +259,7 @@ impl World {
 				custom_data: &mut self.custom_data
             },
         );
+		println!("{:?}", entity);
         *self.entity_manager.get_entity_mut(id).unwrap() = entity;
         id
     }
@@ -350,4 +354,5 @@ pub struct CustomWorldData {
 pub struct Time {
     pub seconds_since_game_start: f64,
     pub delta_time: f64,
+	pub fps: f64
 }
