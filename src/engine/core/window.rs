@@ -18,6 +18,7 @@ pub fn setup_window() {
     // Set the type of events that we want to listen to
     window.set_key_polling(true);
     window.set_cursor_pos_polling(true);
+	window.set_scroll_polling(true);
     window.set_size_polling(true);
     window.make_current();
     if gl::Viewport::is_loaded() {
@@ -58,6 +59,8 @@ fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glf
         glfw::WindowEvent::Size(x, y) => {
             world.resize_window_event((x as u16, y as u16));
         }
+		glfw::WindowEvent::Scroll(scroll, scroll2) => world.input_manager.recieve_mouse_event(None, Some(scroll2)),	
+		glfw::WindowEvent::CursorPos(x, y) => world.input_manager.recieve_mouse_event(Some((x, y)), None),
         _ => {}
     }
 }

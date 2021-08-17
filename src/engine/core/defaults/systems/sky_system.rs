@@ -1,6 +1,6 @@
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::world::World;
-use crate::engine::rendering::renderer::Renderer;
+use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
 use glam::Vec4Swizzles;
 
@@ -49,10 +49,11 @@ impl System for SkySystem {
             &mut data.texture_cacher,
             &mut data.resource_manager,
         );
+		rc.flags.remove(RendererFlags::Wireframe);
         // Make the skysphere inside out, so we can see the insides only
         rc.model.flip_triangles();
-        sky.link_component::<Renderer>(&mut data.component_manager, rc);
-        sky.link_default_component::<transforms::Position>(&mut data.component_manager);
+        sky.link_component::<Renderer>(&mut data.component_manager, rc).unwrap();
+        sky.link_default_component::<transforms::Position>(&mut data.component_manager).unwrap();
         sky.link_component::<transforms::Rotation>(
             &mut data.component_manager,
             transforms::Rotation {
@@ -63,12 +64,12 @@ impl System for SkySystem {
                     0.0,
                 ),
             },
-        );
+        ).unwrap();
         sky.link_component::<transforms::Scale>(
             &mut data.component_manager,
-            transforms::Scale { scale: 900.0 },
-        );
-        sky.link_default_component::<components::Sky>(&mut data.component_manager);
+            transforms::Scale { scale: 10.0 },
+        ).unwrap();
+        sky.link_default_component::<components::Sky>(&mut data.component_manager).unwrap();
         // Update the custom data
         data.custom_data.sky_component_id = sky
             .get_global_component_id::<components::Sky>(&mut data.component_manager)

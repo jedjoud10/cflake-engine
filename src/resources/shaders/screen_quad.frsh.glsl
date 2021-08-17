@@ -1,9 +1,9 @@
 #version 460 core
 out vec3 color;
-uniform sampler2DMS diffuse_texture;
-uniform sampler2DMS normals_texture;
-uniform sampler2DMS position_texture;
-uniform sampler2DMS emissive_texture;
+uniform sampler2D diffuse_texture;
+uniform sampler2D normals_texture;
+uniform sampler2D position_texture;
+uniform sampler2D emissive_texture;
 
 // Ambient sky gradient
 uniform sampler2D default_sky_gradient;
@@ -46,10 +46,10 @@ vec4 sample_ms_texture(sampler2DMS ms_texture, vec2 uvs) {
 
 void main() {	
 	// Sample the textures
-	vec3 normal = normalize(sample_ms_texture(normals_texture, uv_coordinates).xyz);
-	vec3 diffuse = sample_ms_texture(diffuse_texture, uv_coordinates).xyz;
-	vec3 position = sample_ms_texture(position_texture, uv_coordinates).xyz;
-	vec3 emissive = sample_ms_texture(emissive_texture, uv_coordinates).xyz;
+	vec3 normal = normalize(texture(normals_texture, uv_coordinates).xyz);
+	vec3 diffuse = texture(diffuse_texture, uv_coordinates).xyz;
+	vec3 position = texture(position_texture, uv_coordinates).xyz;
+	vec3 emissive = texture(emissive_texture, uv_coordinates).xyz;
 
 	// Calculate specular
 	vec3 view_dir = normalize(view_pos - position);

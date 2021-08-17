@@ -129,7 +129,7 @@ impl Texture {
 				self.flags |= TextureFlags::Multisampled;
 				self.samples = samples;
 			},
-    		None => todo!(),
+    		None => {},
 		}		
 		self
 	}

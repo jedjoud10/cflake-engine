@@ -9,6 +9,15 @@ use crate::engine::{
     },
     resources::ResourceManager,
 };
+use bitflags::bitflags;
+
+bitflags! {
+	pub struct RendererFlags: u8 {
+        const Renderable = 0b00000001;
+		const Wireframe = 0b00000010;
+		const Default = Self::Renderable.bits | Self::Wireframe.bits;
+    }
+}
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub render_state: EntityRenderState,
@@ -19,6 +28,8 @@ pub struct Renderer {
     pub texture_cache_ids: Vec<u16>,
     // Default parameters for the shader
     pub uv_scale: glam::Vec2,
+	// Flags
+	pub flags: RendererFlags
 }
 
 impl Default for Renderer {
@@ -30,6 +41,7 @@ impl Default for Renderer {
             model: Model::default(),
             texture_cache_ids: Vec::new(),
             uv_scale: glam::Vec2::ONE,
+			flags: RendererFlags::Default
         }
     }
 }
@@ -93,8 +105,7 @@ impl Renderer {
 impl Renderer {
     // Updates the model matrix using a position and a rotation
     pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat, scale: f32) {
-        let model_matrix = glam::Mat4::from_quat(rotation)
-            * glam::Mat4::from_translation(position)
+        let model_matrix = glam::Mat4::from_translation(position) * glam::Mat4::from_quat(rotation)
             * glam::Mat4::from_scale(glam::vec3(scale, scale, scale));
         self.gpu_data.model_matrix = model_matrix;
     }

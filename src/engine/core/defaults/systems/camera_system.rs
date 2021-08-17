@@ -39,8 +39,7 @@ impl System for CameraSystem {
         data.input_manager.bind_key(glfw::Key::Space, "camera_up");
         data.input_manager
             .bind_key(glfw::Key::LeftShift, "camera_down");
-        data.input_manager.bind_key(glfw::Key::G, "zoom");
-        data.input_manager.bind_key(glfw::Key::H, "unzoom");
+        data.input_manager.bind_key(glfw::Key::G, "speed_switch");
     }
 
     // Called for each entity in the system
@@ -84,33 +83,23 @@ impl System for CameraSystem {
                     .position
                     .clone();
                 let delta = data.time_manager.delta_time as f32;
+				// Default speed
+				let mut speed = (1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1);
                 if data.input_manager.map_held("camera_forward").0 {
-                    *changed_position -= forward_vector * delta;
+                    *changed_position -= forward_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_backwards").0 {
-                    *changed_position += forward_vector * delta;
+                    *changed_position += forward_vector * delta * speed;
                 }
                 if data.input_manager.map_held("camera_right").0 {
-                    *changed_position += right_vector * delta;
+                    *changed_position += right_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_left").0 {
-                    *changed_position -= right_vector * delta;
+                    *changed_position -= right_vector * delta * speed;
                 }
                 if data.input_manager.map_held("camera_up").0 {
-                    *changed_position += up_vector * delta;
+                    *changed_position += up_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_down").0 {
-                    *changed_position -= up_vector * delta;
-                }
-                let mut current_fov = entity
-                    .get_component_mut::<components::Camera>(data.component_manager)
-                    .unwrap()
-                    .horizontal_fov
-                    .clone();
-                // Change the fov
-                if data.input_manager.map_held("zoom").0 {
-                    current_fov += 10.0 * delta;
-                } else if data.input_manager.map_held("unzoom").0 {
-                    current_fov -= 10.0 * delta;
-                }
-                new_fov = current_fov;
+                    *changed_position -= up_vector * delta * speed;
+                }                
 
                 // Update the variables
                 *entity
@@ -128,7 +117,6 @@ impl System for CameraSystem {
         let camera_component = entity
             .get_component_mut::<components::Camera>(data.component_manager)
             .unwrap();
-        camera_component.horizontal_fov = new_fov;
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix(&data.custom_data.window);

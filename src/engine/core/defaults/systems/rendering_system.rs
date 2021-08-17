@@ -8,9 +8,9 @@ use crate::engine::core::ecs::{
 };
 use crate::engine::core::world::World;
 use crate::engine::rendering::model::Model;
-use crate::engine::rendering::renderer::Renderer;
+use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
-use crate::engine::rendering::texture::Texture;
+use crate::engine::rendering::texture::{Texture, TextureFlags};
 use crate::engine::rendering::*;
 use crate::gl;
 use std::ffi::CString;
@@ -70,20 +70,20 @@ impl RenderingSystem {
     }
 
 	// Bind a specific texture attachement to the frame buffer
-	fn bind_attachement(attachement: u32, multisampled: bool, texture: u32) {
+	fn bind_attachement(attachement: u32, texture: &Texture) {
 		unsafe {
 			// Default target, no multisamplind
 			let mut target: u32 = gl::TEXTURE_2D;
-			if multisampled {
+			if texture.flags.contains(TextureFlags::Multisampled) {
 				// Activate multisampling for this attachement
 				target = gl::TEXTURE_2D_MULTISAMPLE;
 			}
-			gl::BindTexture(target, texture);
+			gl::BindTexture(target, texture.id);
             gl::FramebufferTexture2D(
                 gl::FRAMEBUFFER,
                 attachement,
                 target,
-                texture,
+                texture.id,
                 0,
             );
 		}
@@ -125,15 +125,15 @@ impl RenderingSystem {
 				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT0, true, self.diffuse_texture.id);
+            Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
             // Bind the normal texture to the color attachement 1 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT1, true, self.normals_texture.id);
+			Self::bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
             // Bind the position texture to the color attachement 2 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT2, true, self.position_texture.id);
+			Self::bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
             // Bind the emissive texture to the color attachement 3 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT3, true, self.emissive_texture.id);
+			Self::bind_attachement(gl::COLOR_ATTACHMENT3, &self.emissive_texture);
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
-			Self::bind_attachement(gl::DEPTH_STENCIL_ATTACHMENT, true, self.depth_stencil_texture.id);
+			Self::bind_attachement(gl::DEPTH_STENCIL_ATTACHMENT, &self.depth_stencil_texture);
             
             let attachements = vec![
                 gl::COLOR_ATTACHMENT0,
@@ -291,10 +291,10 @@ impl System for RenderingSystem {
         shader.set_texture2d("diffuse_tex", &textures[0], gl::TEXTURE0);
         shader.set_texture2d("normals_tex", &textures[1], gl::TEXTURE1);
 
-        unsafe {
-            // Actually draw the array
-            if rc.gpu_data.initialized {
-
+		// Draw normally
+		if !self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::Renderable) {
+			unsafe {
+				// Actually draw the array
                 gl::BindVertexArray(rc.gpu_data.vertex_array_object);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
 				
@@ -303,34 +303,34 @@ impl System for RenderingSystem {
                     rc.model.triangles.len() as i32,
                     gl::UNSIGNED_INT,
                     null(),
-                );                
-				
-                // Make another other pass to render the wireframe on top
-                if true {
-                    let wireframe_shader = data
-                        .shader_cacher
-                        .1
-                        .get_object(&self.wireframe_shader_name)
-                        .unwrap();
-                    wireframe_shader.use_shader();
-                    wireframe_shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
-                    wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
-                    wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);
-                    gl::Enable(gl::POLYGON_OFFSET_LINE);
-                    gl::PolygonMode(gl::FRONT, gl::LINE);
-                    gl::PolygonOffset(0.0, -1.0);
-                    gl::DrawElements(
-                        gl::TRIANGLES,
-                        rc.model.triangles.len() as i32,
-                        gl::UNSIGNED_INT,
-                        null(),
-                    );
-					gl::BindTexture(gl::TEXTURE_2D, 0);
-                    gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-                    gl::Disable(gl::POLYGON_OFFSET_LINE);
-                }
+                );                   
             }
         }
+		// Draw the wireframe
+		if self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::Wireframe) {
+			let wireframe_shader = data
+				.shader_cacher
+				.1
+				.get_object(&self.wireframe_shader_name)
+				.unwrap();
+			wireframe_shader.use_shader();
+			wireframe_shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
+			wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
+			wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);
+			unsafe {
+				gl::PolygonMode(gl::FRONT, gl::LINE);
+				gl::BindVertexArray(rc.gpu_data.vertex_array_object);
+				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
+				gl::DrawElements(
+					gl::TRIANGLES,
+					rc.model.triangles.len() as i32,
+					gl::UNSIGNED_INT,
+					null(),
+				);
+				gl::BindTexture(gl::TEXTURE_2D, 0);
+				gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);				
+			}
+		} 
     }
 
     // Called before each fire_entity event is fired
@@ -355,16 +355,6 @@ impl System for RenderingSystem {
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
             .position;
-		/*
-		unsafe {
-			// Read the multisampled framebuffer and draw it to the normal framebuffer (blitting)
-			gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.framebuffer);
-			gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, self.framebuffer);
-			// Helps us a lil
-			let resolution: glam::IVec2 = glam::ivec2(self.window.size.0 as i32, self.window.size.1 as i32);
-			gl::BlitFramebuffer(0, 0, resolution.x, resolution.y, 0, 0, resolution.x, resolution.y, gl::COLOR_BUFFER_BIT, gl::NEAREST);
-		}  
-		*/      
 		shader.use_shader();
 		shader.set_texture2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
 		shader.set_texture2d("normals_texture", &self.normals_texture, gl::TEXTURE1);

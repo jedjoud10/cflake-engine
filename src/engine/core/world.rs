@@ -173,6 +173,16 @@ impl World {
             render_system.debug_view += 1;
             render_system.debug_view = render_system.debug_view % 4;
         }
+		// Enable / Disable wireframe
+		if self.input_manager.map_pressed("toggle_wireframe") {
+			let render_system = self
+                .system_manager
+                .get_system_mut(self.custom_data.render_system_id)
+                .as_any_mut()
+                .downcast_mut::<RenderingSystem>()
+                .unwrap();
+			render_system.wireframe = !render_system.wireframe;
+		}
     }
     // Toggle fullscreen
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {

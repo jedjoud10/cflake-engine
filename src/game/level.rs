@@ -114,7 +114,9 @@ pub fn load_entities(world: &mut World) {
     );
     rc.uv_scale *= 10.0;
     cube.link_component::<Renderer>(&mut world.component_manager, rc);
-    cube.link_default_component::<transforms::Position>(&mut world.component_manager);
+    cube.link_component::<transforms::Position>(&mut world.component_manager, transforms::Position {
+		position: glam::vec3(0.0, 1.0, 0.0)
+	});
     cube.link_default_component::<transforms::Rotation>(&mut world.component_manager);
     cube.link_default_component::<transforms::Scale>(&mut world.component_manager);
     world.add_entity(cube);
