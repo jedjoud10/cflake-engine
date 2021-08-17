@@ -30,6 +30,7 @@ pub struct RenderingSystem {
     pub wireframe: bool,
     pub wireframe_shader_name: String,
     pub window: Window,
+	pub multisampling: Option<u8>,
     quad_renderer: Renderer,
 }
 
@@ -89,7 +90,7 @@ impl RenderingSystem {
 	}
 
     // Setup the render buffer
-    fn setup_render_buffer(&mut self, data: &mut SystemEventData) {
+    fn setup_render_buffer(&mut self, data: &mut SystemEventData, multisampling: Option<u8>) {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
@@ -97,31 +98,31 @@ impl RenderingSystem {
             self.diffuse_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
+				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Create the normals render texture
             self.normals_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
+				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Create the position render texture
             self.position_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
+				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Create the emissive render texture
             self.emissive_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-				.enable_multisampling(4)
+				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
 			// Create the depth-stencil render texture
 			self.depth_stencil_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
-				.enable_multisampling(4)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
+				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, true, self.diffuse_texture.id);
@@ -181,6 +182,7 @@ impl System for RenderingSystem {
 
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
+		self.multisampling = Some(8);
         let system_data = &mut self.system_data;
         system_data.link_component::<Renderer>(&mut data.component_manager);
         system_data.link_component::<transforms::Position>(&mut data.component_manager);
@@ -193,7 +195,7 @@ impl System for RenderingSystem {
         // Then setup opengl and the render buffer
         let default_size = World::get_default_window_size();
         self.setup_opengl();
-        self.setup_render_buffer(data);
+        self.setup_render_buffer(data, self.multisampling);
 
         // Load the wireframe shader
         let wireframe_shader_name = Shader::new(
@@ -368,8 +370,8 @@ impl System for RenderingSystem {
 		shader.set_texture2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
 		shader.set_texture2d("position_texture", &self.position_texture, gl::TEXTURE2);
 		shader.set_texture2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);        
-		println!("{:?}", (self.window.size.0 as f32, self.window.size.1 as f32));
 		shader.set_scalar_2_uniform("resolution", (self.window.size.0 as f32, self.window.size.1 as f32));
+		shader.set_int_uniform("samples_count", self.multisampling.unwrap_or(1) as i32);
         // Sky params
         shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));

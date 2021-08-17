@@ -10,6 +10,7 @@ uniform sampler2D default_sky_gradient;
 
 uniform vec3 directional_light_dir;
 uniform vec3 view_pos;
+uniform int samples_count;
 uniform int debug_view;
 uniform vec2 resolution;
 in vec2 uv_coordinates;
@@ -32,16 +33,23 @@ vec3 czm_saturation(vec3 rgb, float adjustment)
     return mix(intensity, rgb, adjustment);
 }
 
-void main() {
-	ivec2 coords = ivec2(uv_coordinates * resolution);
-	color = texelFetch(diffuse_texture, coords, 0).xyz;
-	color = vec3(coords, 0);
-	/*
+// Sample a multisampled texture
+vec4 sample_ms_texture(sampler2DMS ms_texture, vec2 uvs) {
+	ivec2 coords = ivec2(uvs * resolution);	
+	vec4 return_color = vec4(0, 0, 0, 0);
+	for(int i = 0; i < samples_count; i++) {
+		return_color += texelFetch(ms_texture, coords, i);
+	}
+	return_color /= float(samples_count);
+	return return_color;
+}
+
+void main() {	
 	// Sample the textures
-	vec3 normal = normalize(texture(normals_texture, uv_coordinates).xyz);
-	vec3 diffuse = texture(diffuse_texture, uv_coordinates).xyz;
-	vec3 position = texture(position_texture, uv_coordinates).xyz;
-	vec3 emissive = texture(emissive_texture, uv_coordinates).xyz;
+	vec3 normal = normalize(sample_ms_texture(normals_texture, uv_coordinates).xyz);
+	vec3 diffuse = sample_ms_texture(diffuse_texture, uv_coordinates).xyz;
+	vec3 position = sample_ms_texture(position_texture, uv_coordinates).xyz;
+	vec3 emissive = sample_ms_texture(emissive_texture, uv_coordinates).xyz;
 
 	// Calculate specular
 	vec3 view_dir = normalize(view_pos - position);
@@ -74,5 +82,5 @@ void main() {
 	} else if (debug_view == 2) {
 		color = diffuse;
 	}
-	*/
+	
 }

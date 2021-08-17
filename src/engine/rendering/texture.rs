@@ -123,15 +123,34 @@ impl Texture {
         self
     }
 	// Make this texture a multisampled texture (Only used for the texture attachements of the framebuffer)
-	pub fn enable_multisampling(mut self, samples: u8) -> Self {
-		self.flags |= TextureFlags::Multisampled;
-		self.samples = samples;
+	pub fn set_multisampling(mut self, multisampling: Option<u8>) -> Self {
+		match multisampling {
+    		Some(samples) => {
+				self.flags |= TextureFlags::Multisampled;
+				self.samples = samples;
+			},
+    		None => todo!(),
+		}		
 		self
 	}
     // Update the size of a current immutable texture
     pub fn update_size(&self, width: u16, height: u16) {
-        if self.flags.contains(TextureFlags::Mutable) {
+		// Check if it's a multisampled texture first
+        if self.flags.contains(TextureFlags::Multisampled) {
             unsafe {
+                gl::BindTexture(gl::TEXTURE_2D_MULTISAMPLE, self.id);
+                gl::TexImage2DMultisample(
+                    gl::TEXTURE_2D_MULTISAMPLE,
+                    self.samples as i32,
+                    self.internal_format,
+                    width as i32,
+                    height as i32,
+                    gl::TRUE,
+                );
+            }
+        } else {
+			// This is a normal texture getting resized
+			unsafe {
                 gl::BindTexture(gl::TEXTURE_2D, self.id);
                 gl::TexImage2D(
                     gl::TEXTURE_2D,
@@ -145,7 +164,7 @@ impl Texture {
                     null(),
                 );
             }
-        }
+		}
     }
     // Load a texture from a file and auto caches it. Returns the cached ID of the texture
     pub fn load_texture<'a>(

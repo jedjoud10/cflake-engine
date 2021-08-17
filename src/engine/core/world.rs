@@ -41,7 +41,6 @@ pub struct World {
     // Miscs
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
-    pub window: Window,
 }
 
 impl World {
@@ -49,7 +48,7 @@ impl World {
     fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load all the default things
         self.input_manager.setup_default_bindings();
-        self.window.size = Self::get_default_window_size();
+        self.custom_data.window.size = Self::get_default_window_size();
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
 
@@ -177,8 +176,8 @@ impl World {
     }
     // Toggle fullscreen
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-        self.window.fullscreen = !self.window.fullscreen;
-        if self.window.fullscreen {
+        self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
+        if self.custom_data.window.fullscreen {
             // Set the glfw window as a fullscreen window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let videomode = monitor.unwrap().get_video_mode().unwrap();
@@ -322,7 +321,7 @@ impl World {
         camera_component.update_projection_matrix(&self.custom_data.window);
         // Update the original entity
         *self.entity_manager.get_entity_mut(entity_clone_id).unwrap() = camera_entity_clone;
-        self.window.size = size;
+        self.custom_data.window.size = size;
     }
 }
 
