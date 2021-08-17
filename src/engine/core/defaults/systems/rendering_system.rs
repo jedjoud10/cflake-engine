@@ -64,7 +64,6 @@ impl RenderingSystem {
             gl::Viewport(0, 0, self.window.size.0 as i32, self.window.size.1 as i32);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
-			gl::Enable(gl::MULTISAMPLE);
             gl::CullFace(gl::BACK);
         }
     }
@@ -74,10 +73,6 @@ impl RenderingSystem {
 		unsafe {
 			// Default target, no multisamplind
 			let mut target: u32 = gl::TEXTURE_2D;
-			if texture.flags.contains(TextureFlags::Multisampled) {
-				// Activate multisampling for this attachement
-				target = gl::TEXTURE_2D_MULTISAMPLE;
-			}
 			gl::BindTexture(target, texture.id);
             gl::FramebufferTexture2D(
                 gl::FRAMEBUFFER,
@@ -98,31 +93,26 @@ impl RenderingSystem {
             self.diffuse_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
-				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Create the normals render texture
             self.normals_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
-				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Create the position render texture
             self.position_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Create the emissive render texture
             self.emissive_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
 			// Create the depth-stencil render texture
 			self.depth_stencil_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
-				.set_multisampling(multisampling)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);

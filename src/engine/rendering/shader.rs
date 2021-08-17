@@ -168,26 +168,15 @@ impl Shader {
             gl::UniformMatrix4fv(self.get_uniform_location(name), 1, gl::FALSE, ptr);
         }
     }
-    // Set a texture basically
+    // Set a texture
     pub fn set_texture2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         unsafe {
-			// Check if this texture is a multisampled one
-			if texture.flags.contains(TextureFlags::Multisampled) {
-				gl::ActiveTexture(active_texture_id);
-				gl::BindTexture(gl::TEXTURE_2D_MULTISAMPLE, texture.id);
-				gl::Uniform1i(
-					self.get_uniform_location(name),
-					active_texture_id as i32 - 33984,
-				);
-			} else {
-				gl::ActiveTexture(active_texture_id);
-            	gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            	gl::Uniform1i(
-                self.get_uniform_location(name),
-                active_texture_id as i32 - 33984,
-            	);
-			}
-            
+			gl::ActiveTexture(active_texture_id);
+			gl::BindTexture(gl::TEXTURE_2D, texture.id);
+			gl::Uniform1i(
+			self.get_uniform_location(name),
+			active_texture_id as i32 - 33984,
+			);           
         }
     }
     // Set a int

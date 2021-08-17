@@ -1,4 +1,4 @@
-cd target/debug
+cd target/release
 hypothermia.exe --pack-resources
 cd..
 cd..

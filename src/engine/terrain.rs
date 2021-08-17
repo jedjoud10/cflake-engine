@@ -334,7 +334,7 @@ impl Default for Terrain {
 impl Terrain {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-        let density: f32 = self.noise.get_noise3d(0.02 * x, 0.05 * y, 0.02 * z) * 3.0;
+        let density: f32 = self.noise.get_noise3d(0.02 * x, 0.05 * y, 0.02 * z) * 16.0;
         return density + y - 20.0;
     }
     // Creates a single chunk entity
@@ -363,13 +363,13 @@ impl Terrain {
         // Load the terrain textures
         rc.load_textures(
             vec![
-                "textures\\white.png",
-                "textures\\white.png",
+                "textures\\sand\\dirt_aerial_02_diff_4k.png",
+                "textures\\sand\\dirt_aerial_02_nor_gl_4k.png",
             ],
             &mut data.texture_cacher,
             &mut data.resource_manager,
         );
-        rc.uv_scale = glam::vec2(1.0, 1.0);
+        rc.uv_scale = glam::vec2(0.2, 0.2);
 
         // Link the required components to the entity
         chunk_entity.link_component::<Renderer>(data.component_manager, rc);

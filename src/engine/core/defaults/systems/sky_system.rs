@@ -67,7 +67,7 @@ impl System for SkySystem {
         ).unwrap();
         sky.link_component::<transforms::Scale>(
             &mut data.component_manager,
-            transforms::Scale { scale: 10.0 },
+            transforms::Scale { scale: 900.0 },
         ).unwrap();
         sky.link_default_component::<components::Sky>(&mut data.component_manager).unwrap();
         // Update the custom data
