@@ -65,7 +65,7 @@ impl Default for Camera {
             projection_matrix: glam::Mat4::IDENTITY,
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
-            clip_planes: (0.1, 1000.0),
+            clip_planes: (3.0, 10000.0),
         }
     }
 }

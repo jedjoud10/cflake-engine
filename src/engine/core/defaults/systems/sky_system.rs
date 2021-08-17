@@ -70,7 +70,7 @@ impl System for SkySystem {
         ).unwrap();
         sky.link_component::<transforms::Scale>(
             &mut data.component_manager,
-            transforms::Scale { scale: 900.0 },
+            transforms::Scale { scale: 9000.0 },
         ).unwrap();		
         sky.link_component::<components::Sky>(&mut data.component_manager, components::Sky { 
 			sky_gradient_texture_id: cached_texture_id
