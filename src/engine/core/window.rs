@@ -4,7 +4,7 @@ use crate::gl;
 use glfw::{Action, Context, Key};
 
 pub fn setup_window() {
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+	let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let default_size = World::get_default_window_size();
     let (mut window, events) = glfw
         .create_window(
