@@ -33,6 +33,7 @@ pub struct SystemEventData<'a> {
 pub struct SystemEventDataLite<'a> {
     pub entity_manager: &'a mut EntityManager,
     pub component_manager: &'a mut ComponentManager,
+	pub custom_data: &'a mut CustomWorldData,
 }
 
 // Some system data that is part of a system and wrapped around System trait getter functions

@@ -1,9 +1,9 @@
 #version 460 core
 out vec3 color;
-uniform sampler2D diffuse_texture;
-uniform sampler2D normals_texture;
-uniform sampler2D position_texture;
-uniform sampler2D emissive_texture;
+uniform sampler2DMS diffuse_texture;
+uniform sampler2DMS normals_texture;
+uniform sampler2DMS position_texture;
+uniform sampler2DMS emissive_texture;
 
 // Ambient sky gradient
 uniform sampler2D default_sky_gradient;
@@ -11,6 +11,7 @@ uniform sampler2D default_sky_gradient;
 uniform vec3 directional_light_dir;
 uniform vec3 view_pos;
 uniform int debug_view;
+uniform vec2 resolution;
 in vec2 uv_coordinates;
 
 // Some tonemapping
@@ -32,6 +33,10 @@ vec3 czm_saturation(vec3 rgb, float adjustment)
 }
 
 void main() {
+	ivec2 coords = ivec2(uv_coordinates * resolution);
+	color = texelFetch(diffuse_texture, coords, 0).xyz;
+	color = vec3(coords, 0);
+	/*
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uv_coordinates).xyz);
 	vec3 diffuse = texture(diffuse_texture, uv_coordinates).xyz;
@@ -69,4 +74,5 @@ void main() {
 	} else if (debug_view == 2) {
 		color = diffuse;
 	}
+	*/
 }

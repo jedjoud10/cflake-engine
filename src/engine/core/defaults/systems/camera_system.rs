@@ -131,7 +131,7 @@ impl System for CameraSystem {
         camera_component.horizontal_fov = new_fov;
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
-        camera_component.update_projection_matrix();
+        camera_component.update_projection_matrix(&data.custom_data.window);
     }
 
     // When an entity gets added to this system
@@ -153,7 +153,7 @@ impl System for CameraSystem {
         let camera_component = entity
             .get_component_mut::<components::Camera>(data.component_manager)
             .unwrap();
-        camera_component.update_projection_matrix();
+        camera_component.update_projection_matrix(&data.custom_data.window);
         camera_component.update_view_matrix(position, rotation);
     }
 

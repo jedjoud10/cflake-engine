@@ -29,8 +29,8 @@ pub struct RenderingSystem {
     pub debug_view: u16,
     pub wireframe: bool,
     pub wireframe_shader_name: String,
+    pub window: Window,
     quad_renderer: Renderer,
-    window: Window,
 }
 
 impl RenderingSystem {
@@ -57,10 +57,10 @@ impl RenderingSystem {
     }
 
     // Setup all the settings for opengl like culling and the clear color
-    fn setup_opengl(&mut self, default_size: (i32, i32)) {
+    fn setup_opengl(&mut self) {
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-            gl::Viewport(0, 0, default_size.0, default_size.1);
+            gl::Viewport(0, 0, self.window.size.0 as i32, self.window.size.1 as i32);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
 			gl::Enable(gl::MULTISAMPLE);
@@ -89,46 +89,50 @@ impl RenderingSystem {
 	}
 
     // Setup the render buffer
-    fn setup_render_buffer(&mut self, default_size: (i32, i32), data: &mut SystemEventData) {
+    fn setup_render_buffer(&mut self, data: &mut SystemEventData) {
         unsafe {
-            let default_size: (u16, u16) = (default_size.0 as u16, default_size.1 as u16);
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
             self.diffuse_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
+                .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
+				.enable_multisampling(4)
                 .generate_texture(Vec::new());
             // Create the normals render texture
             self.normals_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
+                .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
+				.enable_multisampling(4)
                 .generate_texture(Vec::new());
             // Create the position render texture
             self.position_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
+                .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
+				.enable_multisampling(4)
                 .generate_texture(Vec::new());
             // Create the emissive render texture
             self.emissive_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
+                .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
+				.enable_multisampling(4)
                 .generate_texture(Vec::new());
 			// Create the depth-stencil render texture
 			self.depth_stencil_texture = Texture::new()
-                .set_dimensions(default_size.0, default_size.1)
+                .set_dimensions(self.window.size.0, self.window.size.1)
+				.enable_multisampling(4)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT0, false, self.diffuse_texture.id);
+            Self::bind_attachement(gl::COLOR_ATTACHMENT0, true, self.diffuse_texture.id);
             // Bind the normal texture to the color attachement 1 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT1, false, self.normals_texture.id);
+			Self::bind_attachement(gl::COLOR_ATTACHMENT1, true, self.normals_texture.id);
             // Bind the position texture to the color attachement 2 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT2, false, self.position_texture.id);
+			Self::bind_attachement(gl::COLOR_ATTACHMENT2, true, self.position_texture.id);
             // Bind the emissive texture to the color attachement 3 of the frame buffer
-			Self::bind_attachement(gl::COLOR_ATTACHMENT3, false, self.emissive_texture.id);
+			Self::bind_attachement(gl::COLOR_ATTACHMENT3, true, self.emissive_texture.id);
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
-			Self::bind_attachement(gl::DEPTH_STENCIL_ATTACHMENT, false, self.depth_stencil_texture.id);
+			Self::bind_attachement(gl::DEPTH_STENCIL_ATTACHMENT, true, self.depth_stencil_texture.id);
             
             let attachements = vec![
                 gl::COLOR_ATTACHMENT0,
@@ -188,8 +192,8 @@ impl System for RenderingSystem {
 
         // Then setup opengl and the render buffer
         let default_size = World::get_default_window_size();
-        self.setup_opengl(default_size);
-        self.setup_render_buffer(default_size, data);
+        self.setup_opengl();
+        self.setup_render_buffer(data);
 
         // Load the wireframe shader
         let wireframe_shader_name = Shader::new(
@@ -275,15 +279,15 @@ impl System for RenderingSystem {
         shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
 
         // Get the OpenGL texture id so we can bind it to the shader
-        let mut opengl_texture_id: Vec<u32> = Vec::new();
+        let mut textures: Vec<&Texture> = Vec::new();
 
         // Load the default ones
         for (i, &id) in rc.texture_cache_ids.iter().enumerate() {
             // If this is a negative number, it means we've gotta use the default texture
-            opengl_texture_id.push(data.texture_cacher.id_get_object(id).unwrap().id as u32);
+            textures.push(data.texture_cacher.id_get_object(id).unwrap());
         }
-        shader.set_texture2d("diffuse_tex", opengl_texture_id[0], gl::TEXTURE0);
-        shader.set_texture2d("normals_tex", opengl_texture_id[1], gl::TEXTURE1);
+        shader.set_texture2d("diffuse_tex", &textures[0], gl::TEXTURE0);
+        shader.set_texture2d("normals_tex", &textures[1], gl::TEXTURE1);
 
         unsafe {
             // Actually draw the array
@@ -360,11 +364,12 @@ impl System for RenderingSystem {
 		}  
 		*/      
 		shader.use_shader();
-			shader.set_texture2d("diffuse_texture", self.diffuse_texture.id, gl::TEXTURE0);
-			shader.set_texture2d("normals_texture", self.normals_texture.id, gl::TEXTURE1);
-			shader.set_texture2d("position_texture", self.position_texture.id, gl::TEXTURE2);
-			shader.set_texture2d("emissive_texture", self.emissive_texture.id, gl::TEXTURE3);        
-
+		shader.set_texture2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
+		shader.set_texture2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
+		shader.set_texture2d("position_texture", &self.position_texture, gl::TEXTURE2);
+		shader.set_texture2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);        
+		println!("{:?}", (self.window.size.0 as f32, self.window.size.1 as f32));
+		shader.set_scalar_2_uniform("resolution", (self.window.size.0 as f32, self.window.size.1 as f32));
         // Sky params
         shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
@@ -376,8 +381,7 @@ impl System for RenderingSystem {
             "default_sky_gradient",
             data.texture_cacher
                 .id_get_object(sky_component.sky_gradient_texture_id)
-                .unwrap()
-                .id,
+                .unwrap(),
             gl::TEXTURE5,
         );
 

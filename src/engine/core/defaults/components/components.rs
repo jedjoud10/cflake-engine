@@ -1,5 +1,7 @@
 use crate::engine::core::ecs::component::{Component, ComponentID};
+use crate::engine::core::world::CustomWorldData;
 use crate::engine::core::{ecs::*, world::World};
+use crate::engine::rendering::Window;
 use crate::engine::rendering::model::{Model, ModelDataGPU};
 use crate::engine::rendering::renderer::{EntityRenderState, Renderer};
 use glam::Vec4Swizzles;
@@ -11,17 +13,14 @@ pub struct Camera {
     pub horizontal_fov: f32,
     pub aspect_ratio: f32,
     pub clip_planes: (f32, f32), // Near, far
-    pub window_size: (i32, i32), // Width, height
 }
 
 // Impl block for Camera component
 impl Camera {
     // Update the projection matrix of this camera
-    pub fn update_projection_matrix(&mut self) {
+    pub fn update_projection_matrix(&mut self, window: &Window) {
         // Turn the horizontal fov into a vertical one
-        let vertical_fov: f32 = 2.0
-            * ((self.horizontal_fov.to_radians() / 2.0).tan()
-                * (self.window_size.1 as f32 / self.window_size.0 as f32))
+        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (window.size.1 as f32 / window.size.0 as f32))
                 .atan();
         self.projection_matrix = glam::Mat4::perspective_rh(
             vertical_fov,
@@ -67,7 +66,6 @@ impl Default for Camera {
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
             clip_planes: (0.1, 1000.0),
-            window_size: World::get_default_window_size(),
         }
     }
 }

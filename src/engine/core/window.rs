@@ -56,7 +56,7 @@ fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glf
             world.input_manager.receive_key_event(key, action_type);
         }
         glfw::WindowEvent::Size(x, y) => {
-            world.resize_window_event((x, y));
+            world.resize_window_event((x as u16, y as u16));
         }
         _ => {}
     }

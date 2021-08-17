@@ -10,6 +10,8 @@ use std::{
     ptr::null,
 };
 
+use super::texture::{Texture, TextureFlags};
+
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
     pub name: String,
@@ -167,14 +169,25 @@ impl Shader {
         }
     }
     // Set a texture basically
-    pub fn set_texture2d(&self, name: &str, texture_id: u32, active_texture_id: u32) {
+    pub fn set_texture2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         unsafe {
-            gl::ActiveTexture(active_texture_id);
-            gl::BindTexture(gl::TEXTURE_2D, texture_id);
-            gl::Uniform1i(
+			// Check if this texture is a multisampled one
+			if texture.flags.contains(TextureFlags::Multisampled) {
+				gl::ActiveTexture(active_texture_id);
+				gl::BindTexture(gl::TEXTURE_2D_MULTISAMPLE, texture.id);
+				gl::Uniform1i(
+					self.get_uniform_location(name),
+					active_texture_id as i32 - 33984,
+				);
+			} else {
+				gl::ActiveTexture(active_texture_id);
+            	gl::BindTexture(gl::TEXTURE_2D, texture.id);
+            	gl::Uniform1i(
                 self.get_uniform_location(name),
                 active_texture_id as i32 - 33984,
-            );
+            	);
+			}
+            
         }
     }
     // Set a int

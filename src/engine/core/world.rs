@@ -225,6 +225,7 @@ impl World {
         let mut data: SystemEventDataLite = SystemEventDataLite {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
+			custom_data: &mut self.custom_data
         };
         self.system_manager.kill_systems(&mut data);
     }
@@ -242,6 +243,7 @@ impl World {
             &mut SystemEventDataLite {
                 entity_manager: &mut self.entity_manager,
                 component_manager: &mut self.component_manager,
+				custom_data: &mut self.custom_data
             },
         );
         *self.entity_manager.get_entity_mut(id).unwrap() = entity;
@@ -283,13 +285,13 @@ impl World {
 // Impl block related to the windowing / rendering stuff
 impl World {
     // Get the default width and height of the starting window
-    pub fn get_default_window_size() -> (i32, i32) {
+    pub fn get_default_window_size() -> (u16, u16) {
         (1280, 720)
     }
     // When we resize the window
-    pub fn resize_window_event(&mut self, size: (i32, i32)) {
+    pub fn resize_window_event(&mut self, size: (u16, u16)) {
         unsafe {
-            gl::Viewport(0, 0, size.0, size.1);
+            gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
 
             let render_system = self
                 .system_manager
@@ -298,7 +300,7 @@ impl World {
                 .downcast_mut::<RenderingSystem>()
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            let size: (u16, u16) = (size.0 as u16, size.1 as u16);
+			render_system.window.size = size;
             render_system.diffuse_texture.update_size(size.0, size.1);
             render_system
                 .depth_stencil_texture
@@ -317,8 +319,7 @@ impl World {
             .get_component_mut::<Camera>(&mut self.component_manager)
             .unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
-        camera_component.window_size = size;
-        camera_component.update_projection_matrix();
+        camera_component.update_projection_matrix(&self.custom_data.window);
         // Update the original entity
         *self.entity_manager.get_entity_mut(entity_clone_id).unwrap() = camera_entity_clone;
         self.window.size = size;
@@ -332,6 +333,7 @@ pub struct CustomWorldData {
     pub sky_component_id: u16,
     pub render_system_id: u8,
     pub sun_rotation: glam::Quat,
+	pub window: Window,
 }
 // Static time variables
 #[derive(Default)]
