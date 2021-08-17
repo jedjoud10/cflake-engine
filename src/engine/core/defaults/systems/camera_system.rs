@@ -27,9 +27,9 @@ impl System for CameraSystem {
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
-        system_data.link_component::<components::Camera>(data.component_manager);
-        system_data.link_component::<transforms::Position>(data.component_manager);
-        system_data.link_component::<transforms::Rotation>(data.component_manager);
+        system_data.link_component::<components::Camera>(data.component_manager).unwrap();
+        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
+        system_data.link_component::<transforms::Rotation>(data.component_manager).unwrap();
 
         data.input_manager.bind_key(glfw::Key::W, "camera_forward");
         data.input_manager
@@ -51,10 +51,7 @@ impl System for CameraSystem {
             // Create some movement using user input
             {
                 let _delta_time = data.time_manager.delta_time as f32;
-                let mut changed_rotation = entity
-                    .get_component_mut::<transforms::Rotation>(data.component_manager)
-                    .unwrap()
-                    .rotation;
+                let changed_rotation: glam::Quat;
 
                 // Rotate the camera around
                 let mouse_pos = data.input_manager.get_accumulated_mouse_position();

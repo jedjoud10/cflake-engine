@@ -105,7 +105,7 @@ impl ResourceManager {
             "vrsh.glsl" => {
                 // This is a vertex shader
                 let mut string_source: String = String::new();
-                reader.read_to_string(&mut string_source);
+                reader.read_to_string(&mut string_source).unwrap();
                 shader = Resource::Shader(
                     LoadedSubShader {
                         source: string_source,
@@ -117,7 +117,7 @@ impl ResourceManager {
             "frsh.glsl" => {
                 // This is a fragment shader
                 let mut string_source: String = String::new();
-                reader.read_to_string(&mut string_source);
+                reader.read_to_string(&mut string_source).unwrap();
                 shader = Resource::Shader(
                     LoadedSubShader {
                         source: string_source,
@@ -134,8 +134,8 @@ impl ResourceManager {
     // While we're at it, make sure the texture has an alpha channel and EXACTLY a 32 bit depth
     pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {
         // The texture resource
-        let mut texture: Resource = Resource::None;
-        let mut dimensions: (u32, u32) = (0, 0);
+        let texture: Resource;
+        let dimensions: (u32, u32);
         // Check if we even need to update the image
         let should_update: bool = {
             let mut reader = BufReader::new(file);
@@ -157,7 +157,7 @@ impl ResourceManager {
         };
         if should_update {
             // We need to make this it's own scope because we cannot have a reader and a writer at the same time
-            let mut raw_pixels: Vec<u8> = Vec::new();
+            let raw_pixels: Vec<u8>;
             {
                 let mut reader = BufReader::new(File::open(full_path).unwrap());
                 let image = image::io::Reader::new(&mut reader)
@@ -177,7 +177,7 @@ impl ResourceManager {
                 dimensions.1,
                 image::ColorType::Rgba8,
                 image::ImageFormat::Png,
-            );
+            ).unwrap();
         } else {
             // I forgot to tell it to get the dimensions of the texture even if we shouldn't resave it -.-
             let mut reader = BufReader::new(File::open(full_path).unwrap());
@@ -192,8 +192,8 @@ impl ResourceManager {
         // Re-read the image, since we might've changed it's bit depth in the last scope
         let mut reader = BufReader::new(File::open(full_path).unwrap());
         let mut bytes: Vec<u8> = Vec::new();
-        reader.seek(SeekFrom::Start(0));
-        reader.read_to_end(&mut bytes);
+        reader.seek(SeekFrom::Start(0)).unwrap();
+        reader.read_to_end(&mut bytes).unwrap();
         texture = Resource::Texture(
             LoadedTexture {
                 width: dimensions.0 as u16,
@@ -267,7 +267,7 @@ impl ResourceManager {
 
         // Turn the source string into bytes, and write them into the resource file
         let string_bytes = shader.source.into_bytes().to_vec();
-        let mut shader_type_byte: u8 = 0;
+        let shader_type_byte: u8;
         // Save the type of this subshader, can either be a Vertex or a Fragment subshader
         match shader.subshader_type {
             SubShaderType::Vertex => shader_type_byte = 0,
@@ -366,7 +366,7 @@ impl ResourceManager {
     // Load back the data from the reader and turn it into a LoadedSubShader resource
     pub fn load_shader(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
         let shader_type: SubShaderType;
-        let mut shader_name: String = String::new();
+        let shader_name: String;
         match reader.read_u8().ok()? {
             0 => {
                 // This is a vertex subshader so the name of the shader will have a 'vertex' appended
@@ -384,7 +384,7 @@ impl ResourceManager {
         }
         // Read all the bytes until the end of the file, and then turn them into a utf8 string
         let mut bytes: Vec<u8> = Vec::new();
-        reader.read_to_end(&mut bytes);
+        reader.read_to_end(&mut bytes).unwrap();
         let shader_source = String::from_utf8(bytes).unwrap();
         Option::Some(Resource::Shader(
             LoadedSubShader {
@@ -401,7 +401,7 @@ impl ResourceManager {
         let mut compressed_bytes: Vec<u8> = Vec::new();
         // Load all the bytes
         reader.seek(SeekFrom::Start(4)).unwrap();
-        reader.read_to_end(&mut compressed_bytes);
+        reader.read_to_end(&mut compressed_bytes).unwrap();
 
         // Load the bytes into the resource
         Option::Some(Resource::Texture(
@@ -645,15 +645,15 @@ impl ResourceManager {
             match resource {
                 Resource::Shader(_, _) => {
                     // This is a shader
-                    Self::pack_shader(&mut writer, resource);
+                    Self::pack_shader(&mut writer, resource).unwrap();
                 }
                 Resource::Model(_) => {
                     // This a 3D model
-                    Self::pack_model(&mut writer, resource);
+                    Self::pack_model(&mut writer, resource).unwrap();
                 }
                 Resource::Texture(_, _) => {
                     // This a texture
-                    Self::pack_texture(&mut writer, resource);
+                    Self::pack_texture(&mut writer, resource).unwrap();
                 }
                 _ => {}
             }
@@ -669,7 +669,7 @@ impl ResourceManager {
             if !keep {
                 let packed_file_path = format!("{}{}.pkg", packed_resources_path, hashed);
                 println!("{}", packed_file_path);
-                remove_file(packed_file_path);
+                remove_file(packed_file_path).unwrap();
             }
             keep
         });

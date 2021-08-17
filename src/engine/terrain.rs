@@ -358,8 +358,8 @@ impl Terrain {
         // Load the terrain textures
         rc.load_textures(
             vec![
-                "textures\\sand\\dirt_aerial_02_diff_4k.png",
-                "textures\\sand\\dirt_aerial_02_nor_gl_4k.png",
+                "textures\\rock\\Rock033_1K_Color.png",
+                "textures\\rock\\Rock033_1K_Normal.png",
             ],
             &mut data.texture_cacher,
             &mut data.resource_manager,
@@ -367,13 +367,13 @@ impl Terrain {
         rc.uv_scale = glam::vec2(0.2, 0.2);
 
         // Link the required components to the entity
-        chunk_entity.link_component::<Renderer>(data.component_manager, rc);
+        chunk_entity.link_component::<Renderer>(data.component_manager, rc).unwrap();
         chunk_entity.link_component::<transforms::Position>(
             data.component_manager,
             transforms::Position { position },
-        );
-        chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
-        chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
+        ).unwrap();
+        chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager).unwrap();
+        chunk_entity.link_default_component::<transforms::Scale>(data.component_manager).unwrap();
 
         // This is in global coordinates btw (-30, 0, 30, 60)
         self.chunks.push(position.as_i32());
@@ -429,11 +429,11 @@ impl System for Terrain {
     fn setup_system(&mut self, data: &mut SystemEventData) {
         // This system will loop over all the chunks and generate new ones if needed
         self.system_data
-            .link_component::<Chunk>(data.component_manager);
+            .link_component::<Chunk>(data.component_manager).unwrap();
         self.system_data
-            .link_component::<Renderer>(data.component_manager);
+            .link_component::<Renderer>(data.component_manager).unwrap();
         self.system_data
-            .link_component::<transforms::Position>(data.component_manager);
+            .link_component::<transforms::Position>(data.component_manager).unwrap();
         self.generate_terrain(data);
     }
 

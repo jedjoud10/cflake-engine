@@ -171,10 +171,10 @@ impl System for RenderingSystem {
     fn setup_system(&mut self, data: &mut SystemEventData) {
 		self.multisampling = None;
         let system_data = &mut self.system_data;
-        system_data.link_component::<Renderer>(&mut data.component_manager);
-        system_data.link_component::<transforms::Position>(&mut data.component_manager);
-        system_data.link_component::<transforms::Rotation>(&mut data.component_manager);
-        system_data.link_component::<transforms::Scale>(&mut data.component_manager);
+        system_data.link_component::<Renderer>(&mut data.component_manager).unwrap();
+        system_data.link_component::<transforms::Position>(&mut data.component_manager).unwrap();
+        system_data.link_component::<transforms::Rotation>(&mut data.component_manager).unwrap();
+        system_data.link_component::<transforms::Scale>(&mut data.component_manager).unwrap();
 
         // Create the screen quad
         self.create_screen_quad(data);

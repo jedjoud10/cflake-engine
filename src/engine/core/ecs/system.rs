@@ -69,6 +69,7 @@ impl SystemManager {
             .systems
             .iter_mut()
             .filter(|x| match x.get_system_data().stype {
+				// TODO: Uhhh fix this
                 _system_type => true,
                 _ => false,
             })

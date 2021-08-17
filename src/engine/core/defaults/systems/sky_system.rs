@@ -28,9 +28,9 @@ impl System for SkySystem {
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
-        system_data.link_component::<components::Sky>(data.component_manager);
-        system_data.link_component::<transforms::Position>(data.component_manager);
-        system_data.link_component::<transforms::Scale>(data.component_manager);
+        system_data.link_component::<components::Sky>(data.component_manager).unwrap();
+        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
+        system_data.link_component::<transforms::Scale>(data.component_manager).unwrap();
 
         // Create the sky entity
         let mut sky = Entity::new("Sky");

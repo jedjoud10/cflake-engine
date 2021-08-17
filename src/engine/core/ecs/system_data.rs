@@ -91,9 +91,4 @@ pub enum SystemType {
     Update,
     Tick,
     Render,
-
-    // Additional Default System: Uses the main system types
-    Physics,
-    GUI,
-    Terrain,
 }
