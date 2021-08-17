@@ -22,7 +22,6 @@ pub fn setup_window() {
     window.set_size_polling(true);
     window.make_current();
     if gl::Viewport::is_loaded() {
-        println!("OpenGL viewport has loaded");
         unsafe {
             gl::Viewport(0, 0, 300, 300);
         }

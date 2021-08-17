@@ -13,10 +13,7 @@ use crate::engine::{
     resources::ResourceManager,
 };
 
-use super::{
-    component::{ComponentID, ComponentManager},
-    entity_manager::EntityManager,
-};
+use super::{component::{ComponentID, ComponentManager}, entity_manager::EntityManager, error::ECSError};
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {
@@ -63,19 +60,20 @@ impl Default for SystemData {
 
 impl SystemData {
     // Add a component to this system's component bitfield id
-    pub fn link_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) {
+    pub fn link_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         if component_manager.is_component_registered::<T>() {
-            self.c_bitfield = self.c_bitfield | component_manager.get_component_id::<T>();
+            self.c_bitfield = self.c_bitfield | component_manager.get_component_id::<T>()?;
         } else {
             component_manager.register_component::<T>();
-            self.c_bitfield = self.c_bitfield | component_manager.get_component_id::<T>();
+            self.c_bitfield = self.c_bitfield | component_manager.get_component_id::<T>()?;
         }
         println!(
             "Link component '{}' to system '{}', with ID: {}",
             T::get_component_name(),
             self.system_id,
-            component_manager.get_component_id::<T>()
+            component_manager.get_component_id::<T>()?
         );
+		return Ok(());
     }
 }
 

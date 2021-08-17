@@ -16,6 +16,7 @@ use crate::engine::rendering::texture::Texture;
 use crate::engine::resources::ResourceManager;
 use crate::engine::terrain::Terrain;
 use crate::game::level::*;
+use crate::engine::core::ecs::error::ECSError;
 
 // Import stuff from the rendering module
 
@@ -271,7 +272,7 @@ impl World {
     pub fn remove_entity(
         &mut self,
         entity_id: u16,
-    ) -> Result<Entity, super::ecs::error::EntityError> {
+    ) -> Result<Entity, ECSError> {
         // Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
         // Remove all the components this entity had

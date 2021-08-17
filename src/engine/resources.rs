@@ -451,8 +451,7 @@ impl ResourceManager {
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!
-            let resource = self.cached_resources.get(&hashed_name)?;
-            println!("Load cached resource: '{}'", local_path);
+            let resource = self.cached_resources.get(&hashed_name)?;            
             return Some(resource);
         }
 
@@ -485,7 +484,6 @@ impl ResourceManager {
         // Insert the resource in the cache
         self.cached_resources.insert(hashed_name, resource);
         let resource = self.cached_resources.get(&hashed_name).unwrap();
-        println!("Cached resource: '{}'", local_path);
 
         return Some(resource);
     }

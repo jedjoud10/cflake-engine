@@ -139,9 +139,7 @@ impl RenderingSystem {
             );
 
             // Check if the frame buffer is okay
-            println!("Checking framebuffer...");
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
-                println!("Framebuffer is okay :)");
             } else {
                 panic!(
                     "Framebuffer has failed initialization! Error: '{}'",

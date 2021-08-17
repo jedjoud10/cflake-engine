@@ -1,5 +1,7 @@
 use std::{any::Any, collections::HashMap};
 
+use super::error::ECSError;
+
 // Maximum amount of components allowed on an entity
 const MAX_COMPONENTS: u16 = 16;
 
@@ -40,18 +42,17 @@ impl ComponentManager {
         // Bit shift to the left
         self.current_component_id = self.current_component_id << 1;
         // Return the component id before the bit shift
-        println!("Registered component '{}' with ID {}", name, component_id);
         component_id
     }
     // Get the component id for a specific entity
-    pub fn get_component_id<T: ComponentID>(&self) -> u16 {
+    pub fn get_component_id<T: ComponentID>(&self) -> Result<u16, ECSError> {
         let name: String = T::get_component_name();
         // It found the component, so just return it's id
         if self.component_ids.contains_key(&name) {
             let value = self.component_ids[&name];
-            return value;
+            return Ok(value);
         } else {
-            panic!("Component {} not registered!", name);
+            return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
         }
     }
 
@@ -61,13 +62,13 @@ impl ComponentManager {
     }
 
     // Get the component id for a specific entity
-    pub fn name_get_component_id(&self, name: &String) -> u16 {
+    pub fn name_get_component_id(&self, name: &String) -> Result<u16, ECSError> {
         // It found the component, so just return it's id
         if self.component_ids.contains_key(name) {
             let value = self.component_ids[name];
-            return value;
+            return Ok(value);
         } else {
-            panic!("Component {} not registered!", name);
+            return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
         }
     }
     // Cast a boxed component to a reference of that component
@@ -95,12 +96,12 @@ impl ComponentManager {
     pub fn id_get_component<'a, T: ComponentID + Component + 'static>(
         &'a self,
         id: u16,
-    ) -> Result<&'a T, super::error::ComponentError> {
+    ) -> Result<&'a T, ECSError> {
         // Check if we even have the component
         if (id as usize) < self.components.len() {
             return Ok(Self::cast_component::<T>(self.components.get(&id).unwrap()));
         } else {
-            return Err(super::error::ComponentError::new(
+            return Err(ECSError::new(
                 format!(
                     "Component '{}' does not exist in the ComponentManager!",
                     T::get_component_name()
@@ -113,14 +114,14 @@ impl ComponentManager {
     pub fn id_get_component_mut<'a, T: ComponentID + Component + 'static>(
         &'a mut self,
         id: u16,
-    ) -> Result<&'a mut T, super::error::ComponentError> {
+    ) -> Result<&'a mut T, ECSError> {
         // Check if we even have the component
         if (id as usize) < self.components.len() {
             return Ok(Self::cast_component_mut::<T>(
                 self.components.get_mut(&id).unwrap(),
             ));
         } else {
-            return Err(super::error::ComponentError::new(
+            return Err(ECSError::new(
                 format!(
                     "Component '{}' does not exist in the ComponentManager!",
                     T::get_component_name()
