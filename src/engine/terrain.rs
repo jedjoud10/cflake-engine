@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::engine::rendering::{shader::Shader};
+use crate::engine::rendering::{renderer::EntityRenderState, shader::Shader};
 
 use super::{
     core::{
@@ -354,7 +354,6 @@ impl Terrain {
         )
         .1;
         rc.model = model;
-
         // Load the terrain textures
         rc.resource_load_textures(
             vec![

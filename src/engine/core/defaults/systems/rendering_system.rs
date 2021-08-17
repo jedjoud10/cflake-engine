@@ -196,19 +196,33 @@ impl System for RenderingSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {	
+		// Check if this entity is renderable in the first place
+		match entity.get_component::<Renderer>(data.component_manager).unwrap().render_state {
+			EntityRenderState::Invisible => {
+				// No need to render this entity, exit early
+				return;
+			}
+			_ => {}
+		}
+		
+		// Get the entity position
+		let entity_position = entity.get_component::<transforms::Position>(data.component_manager).unwrap().position;
+		
         let _id = entity.entity_id;
         let shader: &Shader;
         let view_matrix: glam::Mat4;
         let projection_matrix: glam::Mat4;
         let camera_position: glam::Vec3;
-        // Get the projection * view matrix
+		let camera_forward: glam::Vec3;
+		let camera_data: &components::Camera;
+        // Get everything related to the camera
         {
             let camera_entity = data
                 .entity_manager
                 .get_entity(data.custom_data.main_camera_entity_id)
                 .unwrap();
-            let camera_data = camera_entity
+            camera_data = camera_entity
                 .get_component::<components::Camera>(&mut data.component_manager)
                 .unwrap();
             projection_matrix = camera_data.projection_matrix;
@@ -217,7 +231,20 @@ impl System for RenderingSystem {
                 .get_component::<transforms::Position>(&mut data.component_manager)
                 .unwrap()
                 .position;
+			camera_forward = camera_entity.get_component::<transforms::Rotation>(data.component_manager).unwrap().rotation.mul_vec3(glam::vec3(0.0, 0.0, 1.0));
         }
+
+		// Check if the entity can be seen by the camera
+		match entity.get_component::<Renderer>(data.component_manager).unwrap().render_state {
+			EntityRenderState::Visible => {
+				// If it is visible, check if the camera can see it, if it cannot, then don't waste time rendering it
+				if ((entity_position - camera_position).normalize()).dot(camera_forward) > -0.8 {
+					return;
+				}
+			}
+			_ => {}
+		}
+
         let model_matrix: glam::Mat4;
         // Render the entity
         {
