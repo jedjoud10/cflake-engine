@@ -54,31 +54,27 @@ void main() {
 	// Calculate specular
 	vec3 view_dir = normalize(view_pos - position);
 	vec3 reflect_dir = reflect(-directional_light_dir, normal);
-	const float specular_strength = 0.3;
-	float specular = pow(max(dot(view_dir, reflect_dir), 0), 64);
+	const float specular_strength = 0.8;
+	float specular = pow(max(dot(view_dir, reflect_dir), 0), 16);
 	
 	// Calculate the diffuse lighting
 	const float directional_light_strength = 0.9;
 	float light_val = max(dot(normal, normalize(directional_light_dir)), 0) * directional_light_strength;
 
 	// Used for ambient lighting
-	float ambient_lighting_strength = 0.4;
+	float ambient_lighting_strength = 1;
 	float light_val_inverted = max(-dot(normal, normalize(directional_light_dir)), 0) * ambient_lighting_strength;
 	float sky_light_val = (dot(normal, vec3(0, 1, 0)) + 1) / 2.0; 
-	vec3 ambient_lighting_color = texture(default_sky_gradient, vec2(0, 1 - sky_light_val)).xyz;
+	vec3 ambient_lighting_color = texture(default_sky_gradient, uv_coordinates).xyz;
 
 	// Add everything
-	vec3 ambient_lighting = diffuse * ambient_lighting_color * ambient_lighting_strength;
+	vec3 ambient_lighting = ambient_lighting_color * ambient_lighting_strength;
 	vec3 final_color = ambient_lighting;
 	final_color += diffuse * light_val;
 	final_color += specular * specular_strength;
 
 	if (debug_view == 0) {
-		if (emissive.x <= -1.0) {
-			color = vec3(0.0);
-		} else {
-			color = max(final_color, emissive);
-		}
+		color = ambient_lighting_color;		
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {

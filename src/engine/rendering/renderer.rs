@@ -12,9 +12,8 @@ use bitflags::bitflags;
 
 bitflags! {
 	pub struct RendererFlags: u8 {
-        const Renderable = 0b00000001;
-		const Wireframe = 0b00000010;
-		const Default = Self::Renderable.bits | Self::Wireframe.bits;
+		const WIREFRAME = 0b00000010;
+		const DEFAULT = Self::WIREFRAME.bits;
     }
 }
 // A component that will be linked to entities that are renderable
@@ -40,7 +39,7 @@ impl Default for Renderer {
             model: Model::default(),
             texture_cache_ids: Vec::new(),
             uv_scale: glam::Vec2::ONE,
-			flags: RendererFlags::Default
+			flags: RendererFlags::DEFAULT
         }
     }
 }
@@ -69,8 +68,8 @@ impl Renderer {
         let model = Model::from_resource(resource).unwrap();
         self.model = model;
     }
-    // Load textures
-    pub fn load_textures(
+    // Load textures from their resource paths
+    pub fn resource_load_textures(
         &mut self,
         texture_paths: Vec<&str>,
         texture_manager: &mut CacheManager<Texture>,
@@ -92,6 +91,29 @@ impl Renderer {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
         for _i in [(texture_paths.len() - 1)..5] {
+            self.texture_cache_ids.push(
+                texture_manager
+                    .get_object_id("textures\\white.png")
+                    .unwrap(),
+            );
+        }
+    }
+
+	// Load textures from their texture struct
+    pub fn load_textures(
+        &mut self,
+        texture_ids: Vec<u16>,
+        texture_manager: &mut CacheManager<Texture>,
+    ) {
+        // Set the textures as the renderer's textures
+        for (_i, &texture_id) in texture_ids.iter().enumerate() {
+			// Since these are loadable textures, we already know they got cached beforehand
+            self.texture_cache_ids.push(texture_id);
+        }
+
+        // For the rest of the textures that weren't explicitly given a texture path, load the default ones
+        // Diffuse, Normals, Roughness, Metallic, AO
+        for _i in [(texture_ids.len() - 1)..5] {
             self.texture_cache_ids.push(
                 texture_manager
                     .get_object_id("textures\\white.png")

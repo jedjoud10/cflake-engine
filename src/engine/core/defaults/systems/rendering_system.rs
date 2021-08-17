@@ -11,6 +11,7 @@ use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
 use crate::engine::rendering::texture::{Texture};
 use crate::engine::rendering::*;
+use crate::engine::rendering::renderer::EntityRenderState;
 use crate::gl;
 
 use std::ptr::null;
@@ -279,7 +280,7 @@ impl System for RenderingSystem {
         shader.set_texture2d("normals_tex", textures[1], gl::TEXTURE1);
 
 		// Draw normally
-		if !self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::Renderable) {
+		if !self.wireframe && rc.gpu_data.initialized {
 			unsafe {
 				// Actually draw the array
                 gl::BindVertexArray(rc.gpu_data.vertex_array_object);
@@ -294,7 +295,7 @@ impl System for RenderingSystem {
             }
         }
 		// Draw the wireframe
-		if self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::Wireframe) {
+		if self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::WIREFRAME) {
 			let wireframe_shader = data
 				.shader_cacher
 				.1
@@ -356,12 +357,14 @@ impl System for RenderingSystem {
             .component_manager
             .id_get_component::<components::Sky>(data.custom_data.sky_component_id)
             .unwrap();
+
+		// Set the sky gradient
         shader.set_texture2d(
             "default_sky_gradient",
             data.texture_cacher
                 .id_get_object(sky_component.sky_gradient_texture_id)
                 .unwrap(),
-            gl::TEXTURE5,
+            gl::TEXTURE4,
         );
 
         // Other params

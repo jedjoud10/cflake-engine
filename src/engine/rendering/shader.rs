@@ -131,6 +131,7 @@ impl Shader {
 // Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh
 impl Shader {
     // Get the location of a specific uniform, using it's name
+	#[allow(temporary_cstring_as_ptr)]
     pub fn get_uniform_location(&self, name: &str) -> i32 {
         unsafe {
             gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr())

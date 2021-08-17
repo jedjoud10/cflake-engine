@@ -12,8 +12,8 @@ use std::{
 
 bitflags! {
     pub struct TextureFlags: u8 {
-        const Mutable = 0b00000001;
-        const MipMaps = 0b00000010;
+        const MUTABLE = 0b00000001;
+        const MIPMAPS = 0b00000010;
     }
 }
 
@@ -80,7 +80,7 @@ impl Texture {
             internal_format: gl::RGBA,
             format: gl::RGBA,
             data_type: gl::UNSIGNED_BYTE,
-            flags: TextureFlags::Mutable,
+            flags: TextureFlags::MUTABLE,
 			samples: 0
         }
     }
@@ -88,10 +88,10 @@ impl Texture {
     pub fn cache_texture<'a>(
         self,
         texture_cacher: &'a mut CacheManager<Texture>,
-    ) -> Option<&'a Self> {
+    ) -> Option<(&'a Self, u16)> {
         let texture_name = self.name.clone();
-        texture_cacher.cache_object(self, texture_name.as_str());
-        return texture_cacher.get_object(texture_name.as_str()).ok();
+        let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
+        return Some((texture_cacher.get_object(texture_name.as_str()).unwrap(), texture_id));
     }
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, width: u16, height: u16) -> Self {
@@ -109,14 +109,14 @@ impl Texture {
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
     pub fn set_mutable(mut self, mutable: bool) -> Self {
         match mutable {
-            true => self.flags |= TextureFlags::Mutable,
-            false => self.flags &= !TextureFlags::Mutable,
+            true => self.flags |= TextureFlags::MUTABLE,
+            false => self.flags &= !TextureFlags::MUTABLE,
         }
         self
     }
     // Set the generation of mipmaps
     pub fn enable_mipmaps(mut self) -> Self {
-        self.flags |= TextureFlags::MipMaps;
+        self.flags |= TextureFlags::MIPMAPS;
         self
     }
     // Update the size of a current immutable texture
@@ -137,20 +137,21 @@ impl Texture {
 			);
 		}		
     }
-    // Load a texture from a file and auto caches it. Returns the cached ID of the texture
+    // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
     pub fn load_texture<'a>(
         self,
         local_path: &str,
         resource_manager: &mut ResourceManager,
         texture_cacher: &'a mut CacheManager<Texture>,
-    ) -> Option<&'a Self> {
+    ) -> Option<(&'a Self, u16)> {
         // Load the resource
         let resource = resource_manager.load_packed_resource(local_path)?;
         // If the texture was already cached, just loaded from cache
         if texture_cacher.is_cached(local_path) {
             // It is indeed cached
             let texture = texture_cacher.get_object(local_path).unwrap();
-            Some(texture)
+			let texture_id = texture_cacher.get_object_id(local_path).unwrap();
+            Some((texture, texture_id))
         } else {
             // If it not cached, then load the texture from that resource
             let texture = self
@@ -168,7 +169,7 @@ impl Texture {
             pointer = bytes.as_ptr() as *const c_void;
         }
 		
-		if self.flags.contains(TextureFlags::Mutable) {
+		if self.flags.contains(TextureFlags::MUTABLE) {
             // It's a normal mutable texture
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
@@ -190,7 +191,7 @@ impl Texture {
             }
 
 			// The texture is already bound to the TEXTURE_2D
-            if self.flags.contains(TextureFlags::MipMaps) {
+            if self.flags.contains(TextureFlags::MIPMAPS) {
                 // Create the mipmaps
                 unsafe {
                     gl::GenerateMipmap(gl::TEXTURE_2D);
@@ -203,7 +204,7 @@ impl Texture {
             }
         } else {
             // Nobody loves you, OpenGL storage textures
-            if self.flags.contains(TextureFlags::MipMaps) {
+            if self.flags.contains(TextureFlags::MIPMAPS) {
                 // Create the mipmaps
                 unsafe {
                     //gl::GenerateMipmap(gl::TEXTURE_2D);

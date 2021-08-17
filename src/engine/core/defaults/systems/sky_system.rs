@@ -9,6 +9,7 @@ use crate::engine::core::ecs::{
     system::System,
     system_data::{SystemData, SystemEventData},
 };
+use crate::engine::rendering::texture::Texture;
 
 #[derive(Default)]
 pub struct SkySystem {
@@ -44,12 +45,14 @@ impl System for SkySystem {
         let mut rc = Renderer::default();
         rc.load_model("models\\sphere.mdl3d", &mut data.resource_manager);
         rc.shader_name = sky_shader_name;
+
+		// The texture that will be used as gradient
+		let cached_texture_id = Texture::new().enable_mipmaps().load_texture("textures\\sky_gradient2.png", data.resource_manager, data.texture_cacher).unwrap().1;
         rc.load_textures(
-            vec!["textures\\sky_gradient2.png"],
-            &mut data.texture_cacher,
-            &mut data.resource_manager,
+            vec![cached_texture_id],
+            &mut data.texture_cacher
         );
-		rc.flags.remove(RendererFlags::Wireframe);
+		rc.flags.remove(RendererFlags::WIREFRAME);
         // Make the skysphere inside out, so we can see the insides only
         rc.model.flip_triangles();
         sky.link_component::<Renderer>(&mut data.component_manager, rc).unwrap();
@@ -68,8 +71,10 @@ impl System for SkySystem {
         sky.link_component::<transforms::Scale>(
             &mut data.component_manager,
             transforms::Scale { scale: 900.0 },
-        ).unwrap();
-        sky.link_default_component::<components::Sky>(&mut data.component_manager).unwrap();
+        ).unwrap();		
+        sky.link_component::<components::Sky>(&mut data.component_manager, components::Sky { 
+			sky_gradient_texture_id: cached_texture_id
+		}).unwrap();
         // Update the custom data
         data.custom_data.sky_component_id = sky
             .get_global_component_id::<components::Sky>(&mut data.component_manager)

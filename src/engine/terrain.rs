@@ -356,7 +356,7 @@ impl Terrain {
         rc.model = model;
 
         // Load the terrain textures
-        rc.load_textures(
+        rc.resource_load_textures(
             vec![
                 "textures\\rock\\Rock033_1K_Color.png",
                 "textures\\rock\\Rock033_1K_Normal.png",
