@@ -17,16 +17,16 @@ pub struct CameraSystem {
 impl System for CameraSystem {
     // Wrappers around system data
     fn get_system_data(&self) -> &SystemData {
-        return &self.system_data;
+        &self.system_data
     }
 
     fn get_system_data_mut(&mut self) -> &mut SystemData {
-        return &mut self.system_data;
+        &mut self.system_data
     }
 
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
-        let mut system_data = self.get_system_data_mut();
+        let system_data = self.get_system_data_mut();
         system_data.link_component::<components::Camera>(data.component_manager);
         system_data.link_component::<transforms::Position>(data.component_manager);
         system_data.link_component::<transforms::Rotation>(data.component_manager);
@@ -46,7 +46,7 @@ impl System for CameraSystem {
     fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
         let position: glam::Vec3;
         let rotation: glam::Quat;
-        let new_fov: f32;
+        let _new_fov: f32;
         {
             // Create some movement using user input
             {
@@ -54,8 +54,7 @@ impl System for CameraSystem {
                 let mut changed_rotation = entity
                     .get_component_mut::<transforms::Rotation>(data.component_manager)
                     .unwrap()
-                    .rotation
-                    .clone();
+                    .rotation;
 
                 // Rotate the camera around
                 let mouse_pos = data.input_manager.get_accumulated_mouse_position();
@@ -84,7 +83,7 @@ impl System for CameraSystem {
                     .clone();
                 let delta = data.time_manager.delta_time as f32;
 				// Default speed
-				let mut speed = (1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1);
+				let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1;
                 if data.input_manager.map_held("camera_forward").0 {
                     *changed_position -= forward_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_backwards").0 {
@@ -111,7 +110,7 @@ impl System for CameraSystem {
                     .unwrap()
                     .rotation = changed_rotation;
                 position = *changed_position;
-                rotation = changed_rotation.clone();
+                rotation = changed_rotation;
             }
         }
         let camera_component = entity
@@ -147,10 +146,10 @@ impl System for CameraSystem {
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
-        return self;
+        self
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        return self;
+        self
     }
 }

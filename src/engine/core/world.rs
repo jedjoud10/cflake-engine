@@ -1,6 +1,6 @@
 use glfw::Context;
-use std::collections::HashMap;
-use std::ptr::null;
+
+
 
 use crate::engine::core::ecs::component::*;
 use crate::engine::core::ecs::entity::*;
@@ -14,14 +14,14 @@ use crate::engine::rendering::shader::Shader;
 use crate::engine::rendering::shader::SubShader;
 use crate::engine::rendering::texture::Texture;
 use crate::engine::resources::ResourceManager;
-use crate::engine::terrain::Terrain;
+
 use crate::game::level::*;
 use crate::engine::core::ecs::error::ECSError;
 
 // Import stuff from the rendering module
 
 use super::cacher::CacheManager;
-use super::defaults::components::transforms::Position;
+
 use super::defaults::systems::rendering_system::RenderingSystem;
 use super::ecs::entity_manager::EntityManager;
 
@@ -54,14 +54,14 @@ impl World {
         window.set_cursor_pos(0.0, 0.0);
 
         // Load the default objects for the CacheManagers
-        let white_texture = Texture::new()
+        let _white_texture = Texture::new()
             .load_texture(
                 "textures\\white.png",
                 &mut self.resource_manager,
                 &mut self.texture_manager,
             )
             .unwrap();
-        let black_texture = Texture::new()
+        let _black_texture = Texture::new()
             .load_texture(
                 "textures\\black.png",
                 &mut self.resource_manager,
@@ -79,7 +79,7 @@ impl World {
                 &mut self.resource_manager,
                 &mut self.shader_manager,
             );
-            default_shader_name = default_shader.1.clone();
+            default_shader_name = default_shader.1;
         }
         self.shader_manager
             .1
@@ -172,7 +172,7 @@ impl World {
                 .downcast_mut::<RenderingSystem>()
                 .unwrap();
             render_system.debug_view += 1;
-            render_system.debug_view = render_system.debug_view % 4;
+            render_system.debug_view %= 4;
         }
 		// Enable / Disable wireframe
 		if self.input_manager.map_pressed("toggle_wireframe") {
@@ -245,7 +245,7 @@ impl World {
 impl World {
     // Wrapper function around the entity manager's add_entity
     pub fn add_entity(&mut self, entity: Entity) -> u16 {
-        let id = self.entity_manager.internal_add_entity(entity.clone());
+        let id = self.entity_manager.internal_add_entity(entity);
         let entity = self.entity_manager.get_entity(id).unwrap().clone();
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         self.system_manager.add_entity_to_systems(
@@ -257,7 +257,7 @@ impl World {
             },
         );
         *self.entity_manager.get_entity_mut(id).unwrap() = entity;
-        return id;
+        id
     }
     // Add multiple entities at once
     pub fn add_entities(&mut self, entities: Vec<Entity>) -> Vec<u16> {
@@ -266,7 +266,7 @@ impl World {
         for entity in entities {
             result.push(self.add_entity(entity));
         }
-        return result;
+        result
     }
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(
@@ -277,7 +277,7 @@ impl World {
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
         // Remove all the components this entity had
         for (_, global_id) in removed_entity.components.iter() {
-            self.component_manager.remove_component(global_id.clone());
+            self.component_manager.remove_component(*global_id);
         }
         Ok(removed_entity)
     }
@@ -288,7 +288,7 @@ impl World {
         for entity_id in entity_ids {
             result.push(self.remove_entity(entity_id).unwrap());
         }
-        return result;
+        result
     }
 }
 

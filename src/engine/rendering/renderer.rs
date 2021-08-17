@@ -1,11 +1,10 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use super::{model::Model, model::ModelDataGPU, shader::Shader, texture::Texture};
+use super::{model::Model, model::ModelDataGPU, texture::Texture};
 use crate::engine::{
     core::{
         cacher::CacheManager,
         ecs::component::{Component, ComponentID},
-        world::World,
     },
     resources::ResourceManager,
 };
@@ -78,9 +77,9 @@ impl Renderer {
         resource_manager: &mut ResourceManager,
     ) {
         // Load the textures
-        for (i, &texture_path) in texture_paths.iter().enumerate() {
-            let resource = resource_manager.load_packed_resource(texture_path).unwrap();
-            let mut texture = Texture::new()
+        for (_i, &texture_path) in texture_paths.iter().enumerate() {
+            let _resource = resource_manager.load_packed_resource(texture_path).unwrap();
+            let _texture = Texture::new()
                 .set_mutable(true)
                 .enable_mipmaps()
                 .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -92,7 +91,7 @@ impl Renderer {
 
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
-        for i in [(texture_paths.len() - 1)..5] {
+        for _i in [(texture_paths.len() - 1)..5] {
             self.texture_cache_ids.push(
                 texture_manager
                     .get_object_id("textures\\white.png")

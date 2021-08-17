@@ -1,8 +1,8 @@
 use crate::engine::core::defaults::components::{components, *};
-use crate::engine::core::world::World;
+
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
-use glam::Vec4Swizzles;
+
 
 use crate::engine::core::ecs::{
     entity::Entity,
@@ -18,11 +18,11 @@ pub struct SkySystem {
 impl System for SkySystem {
     // Wrappers around system data
     fn get_system_data(&self) -> &SystemData {
-        return &self.system_data;
+        &self.system_data
     }
 
     fn get_system_data_mut(&mut self) -> &mut SystemData {
-        return &mut self.system_data;
+        &mut self.system_data
     }
 
     // Setup the system
@@ -105,10 +105,10 @@ impl System for SkySystem {
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
-        return self;
+        self
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        return self;
+        self
     }
 }

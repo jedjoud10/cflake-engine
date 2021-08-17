@@ -17,7 +17,7 @@ impl EntityManager {
         // Add the entity to the world
         let id = entity.entity_id;
         self.entities.insert(entity.entity_id, entity);
-        return id;
+        id
     }
     // Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
     pub fn add_entity_s(&mut self, mut entity: Entity) -> u16 {
@@ -29,7 +29,7 @@ impl EntityManager {
         id += self.entities.len() as u16;
         entity.entity_id = id;
         self.entitites_to_add.push(entity);
-        return id;
+        id
     }
     // Get a mutable reference to a stored entity
     pub fn get_entity_mut(
@@ -69,7 +69,7 @@ impl EntityManager {
                 .entities
                 .remove(&entity_id)
 				.unwrap();
-            return Ok(removed_entity);
+            Ok(removed_entity)
         } else {
             return Err(ECSError::new(
                 format!(

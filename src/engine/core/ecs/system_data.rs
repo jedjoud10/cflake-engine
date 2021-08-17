@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::engine::{
     core::{
         cacher::CacheManager,
-        world::{CustomWorldData, Time, World},
+        world::{CustomWorldData, Time},
     },
     input::InputManager,
     rendering::{
@@ -62,10 +62,10 @@ impl SystemData {
     // Add a component to this system's component bitfield id
     pub fn link_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         if component_manager.is_component_registered::<T>() {
-            self.c_bitfield = self.c_bitfield | component_manager.get_component_id::<T>()?;
+            self.c_bitfield |= component_manager.get_component_id::<T>()?;
         } else {
             component_manager.register_component::<T>();
-            self.c_bitfield = self.c_bitfield | component_manager.get_component_id::<T>()?;
+            self.c_bitfield |= component_manager.get_component_id::<T>()?;
         }
         println!(
             "Link component '{}' to system '{}', with ID: {}",
@@ -73,7 +73,7 @@ impl SystemData {
             self.system_id,
             component_manager.get_component_id::<T>()?
         );
-		return Ok(());
+		Ok(())
     }
 }
 

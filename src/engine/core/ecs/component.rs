@@ -36,11 +36,11 @@ impl ComponentManager {
         let name: String = T::get_component_name();
         // Register the component
         self.component_ids
-            .insert(name.clone(), self.current_component_id);
+            .insert(name, self.current_component_id);
         // Make a copy of the id before the bit shift
         let component_id = self.current_component_id;
         // Bit shift to the left
-        self.current_component_id = self.current_component_id << 1;
+        self.current_component_id <<= 1;
         // Return the component id before the bit shift
         component_id
     }
@@ -50,7 +50,7 @@ impl ComponentManager {
         // It found the component, so just return it's id
         if self.component_ids.contains_key(&name) {
             let value = self.component_ids[&name];
-            return Ok(value);
+            Ok(value)
         } else {
             return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
         }
@@ -66,7 +66,7 @@ impl ComponentManager {
         // It found the component, so just return it's id
         if self.component_ids.contains_key(name) {
             let value = self.component_ids[name];
-            return Ok(value);
+            Ok(value)
         } else {
             return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
         }

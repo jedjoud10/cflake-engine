@@ -1,5 +1,5 @@
-use std::error::Error;
-use std::{any::Any, collections::HashMap};
+
+use std::{collections::HashMap};
 
 use super::component::{Component, ComponentID, ComponentManager};
 use super::error::ECSError;
@@ -53,17 +53,17 @@ impl Entity {
         let global_id = component_manager.add_component::<T>(Box::new(default_state));
 
         // Add the component's bitfield to the entity's bitfield
-        self.c_bitfield = self.c_bitfield | component_id;
+        self.c_bitfield |= component_id;
         self.components.insert(component_id, global_id as u16);
-        return Ok(());
+        Ok(())
     }
     // Unlink a component from this entity
     pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) {
-        let name = T::get_component_name();
+        let _name = T::get_component_name();
         let id = component_manager.get_component_id::<T>().unwrap();
         // Take the bit, invert it, then AND it to the bitfield
-        self.c_bitfield = (!id) & self.c_bitfield;
-        let global_id = self.components.remove(&id).unwrap();
+        self.c_bitfield &= !id;
+        let _global_id = self.components.remove(&id).unwrap();
         component_manager.remove_component(id);
     }
     // Gets a reference to a component
@@ -77,7 +77,7 @@ impl Entity {
             let final_component = component_manager
                 .id_get_component::<T>(self.components[&component_id])
                 .unwrap();
-            return Ok(final_component);
+            Ok(final_component)
         } else {
             return Err(ECSError::new(
                 format!(
@@ -100,7 +100,7 @@ impl Entity {
             let final_component = component_manager
                 .id_get_component_mut::<T>(self.components[&component_id])
                 .unwrap();
-            return Ok(final_component);
+            Ok(final_component)
         } else {
             return Err(ECSError::new(
                 format!(
@@ -120,7 +120,7 @@ impl Entity {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we even have the component
         if self.components.contains_key(&component_id) {
-            return Ok(self.components[&component_id]);
+            Ok(self.components[&component_id])
         } else {
             return Err(ECSError::new(
                 format!(

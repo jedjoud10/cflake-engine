@@ -4,16 +4,11 @@ use image::GenericImageView;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     env,
-    ffi::OsStr,
-    fmt::format,
-    fs::{create_dir, create_dir_all, read_dir, remove_file, File, OpenOptions},
+    fs::{remove_file, File, OpenOptions},
     hash::{Hash, Hasher},
-    io::{BufRead, BufReader, BufWriter, Cursor, Read, Seek, SeekFrom, Write},
-    os::windows::prelude::MetadataExt,
-    path::{Path, PathBuf},
+    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     str,
-    thread::current,
-    time::{Duration, SystemTime},
+    time::{SystemTime},
 };
 use walkdir::WalkDir;
 
@@ -49,7 +44,7 @@ impl ResourceManager {
                 // Vertices
                 "v" => {
                     let coords: Vec<f32> = other
-                        .split("/")
+                        .split('/')
                         .map(|coord| coord.parse::<f32>().unwrap())
                         .collect();
                     vertices.push(glam::vec3(coords[0], coords[1], coords[2]));
@@ -57,7 +52,7 @@ impl ResourceManager {
                 // Normals
                 "n" => {
                     let coords: Vec<f32> = other
-                        .split("/")
+                        .split('/')
                         .map(|coord| coord.parse::<f32>().unwrap())
                         .collect();
                     normals.push(glam::vec3(coords[0], coords[1], coords[2]));
@@ -65,7 +60,7 @@ impl ResourceManager {
                 // UVs
                 "u" => {
                     let coords: Vec<f32> = other
-                        .split("/")
+                        .split('/')
                         .map(|coord| coord.parse::<f32>().unwrap())
                         .collect();
                     uvs.push(glam::vec2(coords[0], coords[1]));
@@ -73,7 +68,7 @@ impl ResourceManager {
                 // Tangents
                 "t" => {
                     let coords: Vec<f32> = other
-                        .split("/")
+                        .split('/')
                         .map(|coord| coord.parse::<f32>().unwrap())
                         .collect();
                     tangents.push(glam::vec4(coords[0], coords[1], coords[2], coords[3]));
@@ -82,7 +77,7 @@ impl ResourceManager {
                 "i" => {
                     // Split the triangle into 3 indices
                     let mut indices = other
-                        .split("/")
+                        .split('/')
                         .map(|x| x.to_string().parse::<u32>().unwrap())
                         .collect();
                     triangles.append(&mut indices);
@@ -98,7 +93,7 @@ impl ResourceManager {
             uvs,
             tangents,
         };
-        return Resource::Model(model);
+        Resource::Model(model)
     }
     // Turn a shader file of any type (vertex, fragment, etc) to a LoadedShader resource
     pub fn convert_shader(file: &File, extension: &str) -> Resource {
@@ -133,7 +128,7 @@ impl ResourceManager {
             }
             _ => {}
         }
-        return shader;
+        shader
     }
     // Turn a texture file to a LoadedTexture resource
     // While we're at it, make sure the texture has an alpha channel and EXACTLY a 32 bit depth
@@ -207,7 +202,7 @@ impl ResourceManager {
             },
             String::new(),
         );
-        return texture;
+        texture
     }
 }
 
@@ -215,7 +210,7 @@ impl ResourceManager {
 impl ResourceManager {
     // Pack a LoadedModel resource into a file
     pub fn pack_model(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
-        let mut model: LoadedModel;
+        let model: LoadedModel;
         match resource {
             Resource::Model(__model) => {
                 model = __model;
@@ -256,11 +251,11 @@ impl ResourceManager {
             writer.write_u32::<LittleEndian>(index)?;
         }
 
-        return std::io::Result::Ok(());
+        std::io::Result::Ok(())
     }
     // Pack a LoadedSubShader resource into a file
     pub fn pack_shader(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
-        let mut shader: LoadedSubShader;
+        let shader: LoadedSubShader;
         match resource {
             Resource::Shader(__shader, _) => {
                 shader = __shader;
@@ -271,7 +266,7 @@ impl ResourceManager {
         }
 
         // Turn the source string into bytes, and write them into the resource file
-        let mut string_bytes = shader.source.into_bytes().to_vec();
+        let string_bytes = shader.source.into_bytes().to_vec();
         let mut shader_type_byte: u8 = 0;
         // Save the type of this subshader, can either be a Vertex or a Fragment subshader
         match shader.subshader_type {
@@ -285,11 +280,11 @@ impl ResourceManager {
         for byte in string_bytes {
             writer.write_u8(byte)?;
         }
-        return std::io::Result::Ok(());
+        std::io::Result::Ok(())
     }
     // Pack a LoadedTexture resource into a file
     pub fn pack_texture(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
-        let mut texture: LoadedTexture;
+        let texture: LoadedTexture;
         match resource {
             Resource::Texture(__texture, _) => {
                 texture = __texture;
@@ -307,7 +302,7 @@ impl ResourceManager {
         for byte in texture.compressed_bytes {
             writer.write_u8(byte)?;
         }
-        return std::io::Result::Ok(());
+        std::io::Result::Ok(())
     }
 }
 
@@ -360,13 +355,13 @@ impl ResourceManager {
             triangles.push(reader.read_u32::<LittleEndian>().unwrap());
         }
 
-        return Option::Some(Resource::Model(LoadedModel {
+        Option::Some(Resource::Model(LoadedModel {
             vertices,
             normals,
             tangents,
             uvs,
             indices: triangles,
-        }));
+        }))
     }
     // Load back the data from the reader and turn it into a LoadedSubShader resource
     pub fn load_shader(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
@@ -391,13 +386,13 @@ impl ResourceManager {
         let mut bytes: Vec<u8> = Vec::new();
         reader.read_to_end(&mut bytes);
         let shader_source = String::from_utf8(bytes).unwrap();
-        return Option::Some(Resource::Shader(
+        Option::Some(Resource::Shader(
             LoadedSubShader {
-                source: shader_source.clone(),
-                subshader_type: shader_type.clone(),
+                source: shader_source,
+                subshader_type: shader_type,
             },
             shader_name,
-        ));
+        ))
     }
     // Load back the data from the reader and turn it into a LoadedTexture resource
     pub fn load_texture(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
@@ -409,14 +404,14 @@ impl ResourceManager {
         reader.read_to_end(&mut compressed_bytes);
 
         // Load the bytes into the resource
-        return Option::Some(Resource::Texture(
+        Option::Some(Resource::Texture(
             LoadedTexture {
                 width: texture_width,
                 height: texture_height,
                 compressed_bytes,
             },
             local_path,
-        ));
+        ))
     }
 }
 
@@ -429,7 +424,7 @@ impl ResourceManager {
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
         let exe_path = exe_path.to_str().unwrap();
-        let client_folder: Vec<&str> = exe_path.split("\\").collect();
+        let client_folder: Vec<&str> = exe_path.split('\\').collect();
         let client_folder = format!(
             "{}\\",
             &client_folder[..(client_folder.len() - 1)].join("\\")
@@ -437,10 +432,10 @@ impl ResourceManager {
         let packed_resources_path = format!("{}packed-resources\\", client_folder);
 
         // Now split the local path into the extension and name
-        let name: Vec<&str> = local_path.split("\\").collect();
+        let name: Vec<&str> = local_path.split('\\').collect();
         let name_and_extension = name[name.len() - 1];
-        let name = name_and_extension.split(".").nth(0).unwrap().to_string();
-        let extension: Vec<&str> = name_and_extension.split(".").collect();
+        let _name = name_and_extension.split('.').next().unwrap().to_string();
+        let extension: Vec<&str> = name_and_extension.split('.').collect();
         let extension = extension[1..].join(".");
         // Hash the local path and then use it to load the file
         let hashed_name: u64 = {
@@ -485,7 +480,7 @@ impl ResourceManager {
         self.cached_resources.insert(hashed_name, resource);
         let resource = self.cached_resources.get(&hashed_name).unwrap();
 
-        return Some(resource);
+        Some(resource)
     }
     // Unloads a resource to save on memory
     pub fn unload_resouce(&mut self) {}
@@ -493,8 +488,8 @@ impl ResourceManager {
     pub fn pack_resources() -> Option<()> {
         // Get the original resource folder
         let env_path = env::current_dir().unwrap();
-        let mut env_path = env_path.to_str().unwrap();
-        let env_path: Vec<&str> = env_path.split("\\").collect();
+        let env_path = env_path.to_str().unwrap();
+        let env_path: Vec<&str> = env_path.split('\\').collect();
         let env_path: String = format!("{}\\", &env_path[..(env_path.len() - 2)].join("\\"));
         let resources_path = format!("{}src\\resources\\", env_path);
         let packed_resources_path = format!("{}src\\packed-resources\\", env_path);
@@ -541,7 +536,7 @@ impl ResourceManager {
             .create(true)
             .write(true)
             .read(true)
-            .open(log_file_path.clone())
+            .open(log_file_path)
             .unwrap();
         let mut log_file_writer = BufWriter::new(log_file);
 
@@ -564,9 +559,9 @@ impl ResourceManager {
             let file_metadata = file.metadata().ok()?;
             let file_name_and_extension = dir_entry.file_name().to_str().unwrap();
             // Everything before the first dot
-            let file_name = file_name_and_extension.split(".").nth(0).unwrap();
+            let file_name = file_name_and_extension.split('.').next().unwrap();
             // Everything after the first dot
-            let file_extension: Vec<&str> = file_name_and_extension.split(".").collect();
+            let file_extension: Vec<&str> = file_name_and_extension.split('.').collect();
             let file_extension = file_extension[1..].join(".");
             // The name where the current file is located relative to the resource's folder
             let file_path = dir_entry.path().to_str().unwrap();
@@ -606,7 +601,7 @@ impl ResourceManager {
                     .as_secs();
 
                 // Did we edit the file?
-                if resource_timestamp > packed_timestamp.clone() {
+                if resource_timestamp > *packed_timestamp {
                     // We did edit the file, so we need to pack it
                 } else {
                     // We didn't edit the file, no need to pack
@@ -629,7 +624,7 @@ impl ResourceManager {
                 }
                 "png" => {
                     // This is a texture
-                    resource = Self::convert_texture(&mut file, &file_path);
+                    resource = Self::convert_texture(&mut file, file_path);
                 }
                 _ => {}
             }
@@ -670,7 +665,7 @@ impl ResourceManager {
         // Check if there are files in the packed hashed names timestamp hashmap that don't exist in the resource folder
         log_file_packed_timestamps.retain(|hashed, _| {
             // Only keep the hashed names that are actually exist in the original resource folder
-            let keep = hashed_names.contains(&hashed);
+            let keep = hashed_names.contains(hashed);
             if !keep {
                 let packed_file_path = format!("{}{}.pkg", packed_resources_path, hashed);
                 println!("{}", packed_file_path);
@@ -686,7 +681,7 @@ impl ResourceManager {
         }
 
         // Packed the resources sucsessfully
-        return Some(());
+        Some(())
     }
 }
 

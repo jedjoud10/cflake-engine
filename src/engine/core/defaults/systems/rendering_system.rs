@@ -1,19 +1,18 @@
 use crate::engine::core::defaults::components::{components, *};
-use crate::engine::core::ecs::component;
+
 use crate::engine::core::ecs::{
-    component::{Component, ComponentID, ComponentManager},
     entity::Entity,
-    system::{System, SystemManager},
+    system::{System},
     system_data::{SystemData, SystemEventData, SystemEventDataLite},
 };
 use crate::engine::core::world::World;
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
-use crate::engine::rendering::texture::{Texture, TextureFlags};
+use crate::engine::rendering::texture::{Texture};
 use crate::engine::rendering::*;
 use crate::gl;
-use std::ffi::CString;
+
 use std::ptr::null;
 
 #[derive(Default)]
@@ -72,7 +71,7 @@ impl RenderingSystem {
 	fn bind_attachement(attachement: u32, texture: &Texture) {
 		unsafe {
 			// Default target, no multisamplind
-			let mut target: u32 = gl::TEXTURE_2D;
+			let target: u32 = gl::TEXTURE_2D;
 			gl::BindTexture(target, texture.id);
             gl::FramebufferTexture2D(
                 gl::FRAMEBUFFER,
@@ -85,7 +84,7 @@ impl RenderingSystem {
 	}
 
     // Setup the render buffer
-    fn setup_render_buffer(&mut self, data: &mut SystemEventData, multisampling: Option<u8>) {
+    fn setup_render_buffer(&mut self, _data: &mut SystemEventData, _multisampling: Option<u8>) {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
@@ -156,11 +155,11 @@ impl RenderingSystem {
 impl System for RenderingSystem {
     // Wrappers around system data
     fn get_system_data(&self) -> &SystemData {
-        return &self.system_data;
+        &self.system_data
     }
 
     fn get_system_data_mut(&mut self) -> &mut SystemData {
-        return &mut self.system_data;
+        &mut self.system_data
     }
 
     // When the system gets added to the world
@@ -181,7 +180,7 @@ impl System for RenderingSystem {
         self.create_screen_quad(data);
 
         // Then setup opengl and the render buffer
-        let default_size = World::get_default_window_size();
+        let _default_size = World::get_default_window_size();
         self.setup_opengl();
         self.setup_render_buffer(data, self.multisampling);
 
@@ -244,9 +243,9 @@ impl System for RenderingSystem {
                 let rc = entity
                     .get_component_mut::<Renderer>(&mut data.component_manager)
                     .unwrap();
-                rc.update_model_matrix(position.clone(), rotation.clone(), scale);
+                rc.update_model_matrix(position, rotation, scale);
                 name = rc.shader_name.clone();
-                model_matrix = rc.gpu_data.model_matrix.clone();
+                model_matrix = rc.gpu_data.model_matrix;
             }
             shader = data.shader_cacher.1.get_object(&name).unwrap();
         }
@@ -272,12 +271,12 @@ impl System for RenderingSystem {
         let mut textures: Vec<&Texture> = Vec::new();
 
         // Load the default ones
-        for (i, &id) in rc.texture_cache_ids.iter().enumerate() {
+        for (_i, &id) in rc.texture_cache_ids.iter().enumerate() {
             // If this is a negative number, it means we've gotta use the default texture
             textures.push(data.texture_cacher.id_get_object(id).unwrap());
         }
-        shader.set_texture2d("diffuse_tex", &textures[0], gl::TEXTURE0);
-        shader.set_texture2d("normals_tex", &textures[1], gl::TEXTURE1);
+        shader.set_texture2d("diffuse_tex", textures[0], gl::TEXTURE0);
+        shader.set_texture2d("normals_tex", textures[1], gl::TEXTURE1);
 
 		// Draw normally
 		if !self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::Renderable) {
@@ -322,7 +321,7 @@ impl System for RenderingSystem {
     }
 
     // Called before each fire_entity event is fired
-    fn pre_fire(&mut self, data: &mut SystemEventData) {
+    fn pre_fire(&mut self, _data: &mut SystemEventData) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -413,10 +412,10 @@ impl System for RenderingSystem {
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
-        return self;
+        self
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        return self;
+        self
     }
 }

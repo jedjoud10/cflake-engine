@@ -1,16 +1,14 @@
 use crate::engine::core::cacher::CacheManager;
 use crate::engine::resources::Resource;
-use crate::engine::{core::world::World, resources::ResourceManager};
+use crate::engine::{resources::ResourceManager};
 use gl;
-use std::ptr::null_mut;
+
 use std::{
-    collections::HashMap,
-    ffi::{c_void, CString},
-    mem::size_of,
+    ffi::{CString},
     ptr::null,
 };
 
-use super::texture::{Texture, TextureFlags};
+use super::texture::{Texture};
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
@@ -59,7 +57,7 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
-                let subshader = shader_manager.0.cache_object(subshader, subshader_path);
+                let _subshader = shader_manager.0.cache_object(subshader, subshader_path);
                 shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());
             }
         }
@@ -93,7 +91,7 @@ impl Shader {
                 gl::GetProgramInfoLog(
                     self.program,
                     info_log_length,
-                    0 as *mut i32,
+                    std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
                 println!("Error while finalizing shader {}!:", self.name);
@@ -105,7 +103,7 @@ impl Shader {
             }
 
             for subshader_program in self.linked_subshaders_programs.iter() {
-                gl::DetachShader(self.program, subshader_program.clone());
+                gl::DetachShader(self.program, *subshader_program);
             }
             self.finalized = true;
         }
@@ -135,7 +133,7 @@ impl Shader {
     // Get the location of a specific uniform, using it's name
     pub fn get_uniform_location(&self, name: &str) -> i32 {
         unsafe {
-            return gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
+            gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr())
         }
     }
     // Set a scalar uniform
@@ -215,9 +213,9 @@ impl SubShader {
                     source: shader.source.clone(),
                     subshader_type: shader.subshader_type.clone(),
                 };
-                return Some(subshader);
+                Some(subshader)
             }
-            _ => return None,
+            _ => None,
         }
     }
     // Compile the current subshader's source code
@@ -248,7 +246,7 @@ impl SubShader {
                 gl::GetShaderInfoLog(
                     self.program,
                     info_log_length,
-                    0 as *mut i32,
+                    std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
                 println!("Error while compiling sub-shader {}!:", self.name);

@@ -1,12 +1,7 @@
-use crate::engine::core::world::World;
+
 use crate::engine::resources::Resource;
-use gl;
-use std::{
-    collections::HashMap,
-    ffi::{c_void, CString},
-    mem::size_of,
-    ptr::null,
-};
+
+
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug)]
@@ -31,18 +26,16 @@ impl Model {
                     uvs: model.uvs.clone(),
                     triangles: model.indices.clone(),
                 };
-                return Some(new_model);
+                Some(new_model)
             }
-            _ => return None,
+            _ => None,
         }
     }
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
         for i in (0..self.triangles.len()).step_by(3) {
             // Swap the first and last index of each triangle
-            let copy = self.triangles[i];
-            self.triangles[i] = self.triangles[i + 2];
-            self.triangles[i + 2] = copy;
+            self.triangles.swap(i, i + 2);
         }
     }
 }

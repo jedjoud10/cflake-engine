@@ -1,9 +1,9 @@
 use crate::engine::core::ecs::component::{Component, ComponentID};
-use crate::engine::core::world::CustomWorldData;
-use crate::engine::core::{ecs::*, world::World};
+
+
 use crate::engine::rendering::Window;
-use crate::engine::rendering::model::{Model, ModelDataGPU};
-use crate::engine::rendering::renderer::{EntityRenderState, Renderer};
+
+
 use glam::Vec4Swizzles;
 
 // A simple camera component

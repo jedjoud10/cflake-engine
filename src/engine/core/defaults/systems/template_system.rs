@@ -1,7 +1,7 @@
 use crate::engine::core::ecs::{
     entity::Entity,
     system::System,
-    system_data::{SystemData, SystemEventData, SystemEventDataLite},
+    system_data::{SystemData, SystemEventData},
 };
 
 #[derive(Default)]
@@ -12,25 +12,25 @@ pub struct TemplateSystem {
 impl System for TemplateSystem {
     // Wrappers around system data
     fn get_system_data(&self) -> &SystemData {
-        return &self.system_data;
+        &self.system_data
     }
 
     fn get_system_data_mut(&mut self) -> &mut SystemData {
-        return &mut self.system_data;
+        &mut self.system_data
     }
 
     // Setup the system
-    fn setup_system(&mut self, data: &mut SystemEventData) {}
+    fn setup_system(&mut self, _data: &mut SystemEventData) {}
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {}
+    fn fire_entity(&mut self, _entity: &mut Entity, _data: &mut SystemEventData) {}
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
-        return self;
+        self
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        return self;
+        self
     }
 }

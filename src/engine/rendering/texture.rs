@@ -1,14 +1,12 @@
 use crate::engine::core::cacher::CacheManager;
 use crate::engine::resources::{LoadableResource, Resource};
-use crate::engine::{core::world::World, resources::ResourceManager};
+use crate::engine::{resources::ResourceManager};
 use bitflags::bitflags;
 use gl;
 use image::EncodableLayout;
-use std::io::Read;
+
 use std::{
-    collections::HashMap,
-    ffi::{c_void, CString},
-    mem::size_of,
+    ffi::{c_void},
     ptr::null,
 };
 
@@ -57,11 +55,11 @@ impl LoadableResource for Texture {
                 let rgba8_image = decoded.to_rgba8();
 
                 // Set the proper dimensions and generate the texture from the resource's bytes
-                let mut texture = self.set_dimensions(width, height).clone();
+                let mut texture = self.set_dimensions(width, height);
                 // Set the texture name since the texture has an empty name
                 texture.name = texture_name.clone();
-                let mut new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec());
-                return new_texture;
+                let new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec());
+                new_texture
             }
             _ => {
                 panic!("");
@@ -93,7 +91,7 @@ impl Texture {
     ) -> Option<&'a Self> {
         let texture_name = self.name.clone();
         texture_cacher.cache_object(self, texture_name.as_str());
-        return Some(texture_cacher.get_object(texture_name.as_str()).ok()?);
+        return texture_cacher.get_object(texture_name.as_str()).ok();
     }
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, width: u16, height: u16) -> Self {
@@ -112,7 +110,7 @@ impl Texture {
     pub fn set_mutable(mut self, mutable: bool) -> Self {
         match mutable {
             true => self.flags |= TextureFlags::Mutable,
-            false => self.flags = self.flags & !TextureFlags::Mutable,
+            false => self.flags &= !TextureFlags::Mutable,
         }
         self
     }
@@ -141,7 +139,7 @@ impl Texture {
     }
     // Load a texture from a file and auto caches it. Returns the cached ID of the texture
     pub fn load_texture<'a>(
-        mut self,
+        self,
         local_path: &str,
         resource_manager: &mut ResourceManager,
         texture_cacher: &'a mut CacheManager<Texture>,
@@ -152,21 +150,21 @@ impl Texture {
         if texture_cacher.is_cached(local_path) {
             // It is indeed cached
             let texture = texture_cacher.get_object(local_path).unwrap();
-            return Some(texture);
+            Some(texture)
         } else {
             // If it not cached, then load the texture from that resource
             let texture = self
                 .from_resource(resource)
                 .cache_texture(texture_cacher)
                 .unwrap();
-            return Some(texture);
+            Some(texture)
         }
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
         
         let mut pointer: *const c_void = null();
-        if bytes.len() > 0 {
+        if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
         }
 		
@@ -213,6 +211,6 @@ impl Texture {
             }
         }
 		println!("{:?}", self);
-        return self;
+        self
     }
 }

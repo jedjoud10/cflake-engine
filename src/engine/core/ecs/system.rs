@@ -4,7 +4,7 @@ use super::{
     entity::Entity,
     system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
 };
-use crate::engine::core::world::{Time, World};
+use crate::engine::core::world::{Time};
 
 #[derive(Default)]
 // Manages the systems
@@ -18,7 +18,7 @@ impl SystemManager {
         // Check if the system matches the component ID of the entity
         let bitfield: u16 = system_data.c_bitfield & !entity.c_bitfield;
         // If the entity is valid, all the bits would be 0
-        return bitfield == 0;
+        bitfield == 0
     }
     // Remove an entity from it's corresponding systems
     pub fn remove_entity_from_systems(
@@ -42,9 +42,9 @@ impl SystemManager {
         // Check if there are systems that need this entity
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
-            if Self::is_entity_valid_for_system(&entity, system_data) {
+            if Self::is_entity_valid_for_system(entity, system_data) {
                 // Add the entity to the system
-                system.add_entity(&entity, data);
+                system.add_entity(entity, data);
             }
         }
     }
@@ -55,7 +55,7 @@ impl SystemManager {
         system_data.system_id = id;
         println!("Add system with cBitfield: {}", system_data.c_bitfield);
         self.systems.push(Box::new(system));
-        return id;
+        id
     }
     // Kill all the systems
     pub fn kill_systems(&mut self, data: &mut SystemEventDataLite) {
@@ -74,7 +74,7 @@ impl SystemManager {
             })
         {
             match system.get_system_data().state {
-                SystemState::Enabled(f) => {
+                SystemState::Enabled(_f) => {
                     system.run_system(data);
                 }
                 _ => {}
@@ -99,12 +99,12 @@ impl SystemManager {
     // Gets a reference to a system
     pub fn get_system(&self, system_id: u8) -> &Box<dyn System> {
         let system = self.systems.get(system_id as usize).unwrap();
-        return system;
+        system
     }
     // Gets a mutable reference to a system
     pub fn get_system_mut(&mut self, system_id: u8) -> &mut Box<dyn System> {
         let system = self.systems.get_mut(system_id as usize).unwrap();
-        return system;
+        system
     }
 }
 
@@ -112,7 +112,7 @@ pub trait System {
     // Setup the system, link all the components and create default data
     fn setup_system(&mut self, data: &mut SystemEventData);
     // When the system gets added the world
-    fn system_added(&mut self, data: &mut SystemEventData, system_id: u8) {}
+    fn system_added(&mut self, _data: &mut SystemEventData, _system_id: u8) {}
     // Add an entity to the current system
     fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
         {

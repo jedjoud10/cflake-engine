@@ -1,6 +1,6 @@
-use rand::prelude::SliceRandom;
 
-use crate::engine::core::defaults::components::components::Camera;
+
+
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::defaults::systems::camera_system::CameraSystem;
 use crate::engine::core::defaults::systems::sky_system::SkySystem;
@@ -9,11 +9,11 @@ use crate::engine::core::ecs::entity::Entity;
 use crate::engine::core::ecs::system::System;
 use crate::engine::core::ecs::system_data::SystemEventData;
 use crate::engine::core::world::World;
-use crate::engine::rendering::model::Model;
+
 use crate::engine::rendering::renderer::Renderer;
-use crate::engine::rendering::shader::Shader;
-use crate::engine::rendering::texture::Texture;
-use crate::engine::rendering::*;
+
+
+
 use crate::engine::terrain::Terrain;
 use rendering_system::RenderingSystem;
 

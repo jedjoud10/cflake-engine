@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    fmt::{self, Display, Formatter},
-    hash::Hash,
+    fmt::{self},
 };
 extern crate glfw;
 use glfw::{Action, Key};
@@ -42,7 +41,7 @@ impl InputManager {
 		self.bind_key(Key::F, "toggle_wireframe")
     }
     // Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
-    pub fn update(&mut self, window: &mut glfw::Window) {
+    pub fn update(&mut self, _window: &mut glfw::Window) {
         // Update mappings first
         self.update_mappings();
         // Calculate the mouse delta
@@ -113,9 +112,7 @@ impl InputManager {
     // When we receive a key event from glfw (Always at the start of the frame)
     pub fn receive_key_event(&mut self, key: Key, action_type: Action) {
         // If this key does not exist in the dictionary yet, insert it
-        if !self.keys.contains_key(&key) {
-            self.keys.insert(key.clone(), MapStatus::Nothing);
-        }
+        self.keys.entry(key).or_insert(MapStatus::Nothing);
         match action_type {
             Action::Release => {
                 *self.keys.get_mut(&key).unwrap() = MapStatus::Released;
@@ -129,14 +126,13 @@ impl InputManager {
     // Binds a key to a specific mapping
     pub fn bind_key(&mut self, key: Key, map_name: &str) {
         // Check if the binding exists
-        if self.bindings.contains_key(&key) {
-            // Nein.
-        } else {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.bindings.entry(key) {
             // The binding does not exist yet, so create a new one
-            self.bindings
-                .insert(key.clone(), map_name.to_string().clone());
+            e.insert(map_name.to_string());
             self.mappings
-                .insert(map_name.to_string().clone(), MapStatus::Nothing);
+                .insert(map_name.to_string(), MapStatus::Nothing);
+        } else {
+            // Nein.
         }
     }
     // Returns true when the map is pressed

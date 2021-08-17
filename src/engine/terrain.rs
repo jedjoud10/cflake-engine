@@ -1,26 +1,21 @@
 use std::collections::HashMap;
 
-use crate::engine::rendering::{shader::Shader, texture::Texture};
+use crate::engine::rendering::{shader::Shader};
 
 use super::{
     core::{
-        cacher::CacheManager,
-        defaults::components::{components, transforms},
+        defaults::components::{transforms},
         ecs::{
-            component::{Component, ComponentID, ComponentManager},
+            component::{Component, ComponentID},
             entity::Entity,
-            entity_manager::EntityManager,
             system::System,
             system_data::{SystemData, SystemEventData, SystemEventDataLite},
         },
-        world::World,
     },
     rendering::{
         model::{Model, ProceduralModelGenerator},
         renderer::Renderer,
-        shader::SubShader,
     },
-    resources::ResourceManager,
 };
 
 // How many voxels in one axis in each chunk?
@@ -335,7 +330,7 @@ impl Terrain {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32) -> f32 {
         let density: f32 = self.noise.get_noise3d(0.02 * x, 0.05 * y, 0.02 * z) * 16.0;
-        return density + y - 20.0;
+        density + y - 20.0
     }
     // Creates a single chunk entity
     fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
@@ -375,7 +370,7 @@ impl Terrain {
         chunk_entity.link_component::<Renderer>(data.component_manager, rc);
         chunk_entity.link_component::<transforms::Position>(
             data.component_manager,
-            transforms::Position { position: position },
+            transforms::Position { position },
         );
         chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager);
         chunk_entity.link_default_component::<transforms::Scale>(data.component_manager);
@@ -411,7 +406,7 @@ impl Terrain {
         }
     }
     // When we want to update the terrain
-    pub fn update_terrain(&mut self, position: glam::Vec3, data: &mut SystemEventData) {
+    pub fn update_terrain(&mut self, position: glam::Vec3, _data: &mut SystemEventData) {
         let new_camera_chunk_position = ((position - 2.0) / CHUNK_SIZE as f32).floor().as_i32();
         if new_camera_chunk_position != self.camera_chunk_position {
             // The camera moved from one chunk to another
@@ -423,11 +418,11 @@ impl Terrain {
 impl System for Terrain {
     // Wrappers around system data
     fn get_system_data(&self) -> &SystemData {
-        return &self.system_data;
+        &self.system_data
     }
 
     fn get_system_data_mut(&mut self) -> &mut SystemData {
-        return &mut self.system_data;
+        &mut self.system_data
     }
 
     // Setup the system
@@ -455,7 +450,7 @@ impl System for Terrain {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {}
+    fn fire_entity(&mut self, _entity: &mut Entity, _data: &mut SystemEventData) {}
 
     // When a chunk gets added to the world
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
@@ -474,11 +469,11 @@ impl System for Terrain {
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
-        return self;
+        self
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        return self;
+        self
     }
 }
 
@@ -571,13 +566,13 @@ impl ProceduralModelGenerator for Chunk {
                             let density1 = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2];
                             let density2 = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2];
                             // Do inverse linear interpolation to find the factor value
-                            let mut value: f32 = inverse_lerp(density1, density2, self.isoline);
+                            let value: f32 = inverse_lerp(density1, density2, self.isoline);
 
                             // Create the vertex
                             let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
                             // Offset the vertex
                             vertex += glam::vec3(x as f32, y as f32, z as f32);
-                            let mut normal: glam::Vec3 = {
+                            let normal: glam::Vec3 = {
                                 let mut normal1 = glam::Vec3::ZERO;
                                 let mut normal2 = glam::Vec3::ZERO;
 
@@ -610,17 +605,17 @@ impl ProceduralModelGenerator for Chunk {
                             );
 
                             // Check if this vertex was already added
-                            if duplicate_vertices.contains_key(&edge_tuple) {
-                                // The vertex already exists
-                                model.triangles.push(duplicate_vertices[&edge_tuple]);
-                            } else {
+                            if let std::collections::hash_map::Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
                                 // Add this vertex
-                                duplicate_vertices.insert(edge_tuple, model.vertices.len() as u32);
+                                e.insert(model.vertices.len() as u32);
                                 model.triangles.push(model.vertices.len() as u32);
                                 model.vertices.push(vertex);
                                 model.uvs.push(glam::Vec2::ZERO);
                                 model.normals.push(normal.normalize());
                                 model.tangents.push(glam::Vec4::ZERO);
+                            } else {
+                                // The vertex already exists
+                                model.triangles.push(duplicate_vertices[&edge_tuple]);
                             }
                         }
                     }
@@ -629,9 +624,9 @@ impl ProceduralModelGenerator for Chunk {
         }
         // Inverse of lerp
         fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
-            return (x - a) / (b - a);
+            (x - a) / (b - a)
         }
         // Return the model
-        return model;
+        model
     }
 }
