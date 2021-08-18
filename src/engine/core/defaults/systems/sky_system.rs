@@ -1,5 +1,6 @@
 use crate::engine::core::defaults::components::{components, *};
 
+use crate::engine::core::ecs::component::LinkedEntityComponents;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
 
@@ -93,7 +94,7 @@ impl System for SkySystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &mut LinkedEntityComponents, data: &mut SystemEventData) {
         // Set the position of the sky sphere to always be the camera
         let position = data
             .entity_manager
@@ -102,10 +103,10 @@ impl System for SkySystem {
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
             .position;
-        *entity
+			components
             .get_component_mut::<transforms::Position>(data.component_manager)
             .unwrap()
-            .position = *position;
+            .position = position;
     }
 
     // Turn this into "Any" so we can cast into child systems

@@ -1,5 +1,6 @@
 use crate::engine::core::defaults::components::{components, *};
 
+use crate::engine::core::ecs::component::LinkedEntityComponents;
 use crate::engine::core::ecs::{
     entity::Entity,
     system::{System},
@@ -196,9 +197,9 @@ impl System for RenderingSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {			
+    fn fire_entity(&mut self, components: &mut LinkedEntityComponents, data: &mut SystemEventData) {			
 		// Check if this entity is renderable in the first place
-		match entity.get_component::<Renderer>(data.component_manager).unwrap().render_state {
+		match components.get_component::<Renderer>(data.component_manager).unwrap().render_state {
 			EntityRenderState::Invisible => {
 				// No need to render this entity, exit early
 				return;
@@ -207,9 +208,7 @@ impl System for RenderingSystem {
 		}		
 		
 		// Get the entity position
-		let entity_position = entity.get_component::<transforms::Position>(data.component_manager).unwrap().position;
-		
-        let _id = entity.entity_id;
+		let entity_position = components.get_component::<transforms::Position>(data.component_manager).unwrap().position;
         let shader: &Shader;
         let view_matrix: glam::Mat4;
         let projection_matrix: glam::Mat4;
@@ -234,7 +233,7 @@ impl System for RenderingSystem {
 			camera_forward = camera_entity.get_component::<transforms::Rotation>(data.component_manager).unwrap().rotation.mul_vec3(glam::vec3(0.0, 0.0, 1.0));
         }		
 		// Check if the entity can be seen by the camera
-		match entity.get_component::<Renderer>(data.component_manager).unwrap().render_state {
+		match components.get_component::<Renderer>(data.component_manager).unwrap().render_state {
 			EntityRenderState::Visible => {
 				// If it is visible, check if the camera can see it, if it cannot, then don't waste time rendering it
 				if ((entity_position - camera_position).normalize()).dot(camera_forward) > -0.8 {
@@ -255,21 +254,17 @@ impl System for RenderingSystem {
                 let rotation: glam::Quat;
                 let scale: f32;
                 {
-                    position = entity
-                        .get_component::<transforms::Position>(&mut data.component_manager)
+                    position = components.get_component::<transforms::Position>(data.component_manager)
                         .unwrap()
                         .position;
-                    rotation = entity
-                        .get_component::<transforms::Rotation>(&mut data.component_manager)
+                    rotation = components.get_component::<transforms::Rotation>(data.component_manager)
                         .unwrap()
                         .rotation;
-                    scale = entity
-                        .get_component::<transforms::Scale>(&mut data.component_manager)
+                    scale = components.get_component::<transforms::Scale>(data.component_manager)
                         .unwrap()
                         .scale;
                 }
-                let rc = entity
-                    .get_component_mut::<Renderer>(&mut data.component_manager)
+                let rc = components.get_component_mut::<Renderer>(&mut data.component_manager)
                     .unwrap();
                 rc.update_model_matrix(position, rotation, scale);
                 name = rc.shader_name.clone();
@@ -280,8 +275,7 @@ impl System for RenderingSystem {
         // Use the shader, and update any uniforms
         shader.use_shader();
 
-        let rc = entity
-            .get_component::<Renderer>(&mut data.component_manager)
+        let rc = components.get_component::<Renderer>(&mut data.component_manager)
             .unwrap();
         // Calculate the mvp matrix
         let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;

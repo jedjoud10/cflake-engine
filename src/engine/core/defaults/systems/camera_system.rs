@@ -1,13 +1,6 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::{core::{
-    defaults::components::{components, transforms},
-    ecs::{
-        entity::Entity,
-        system::System,
-        system_data::{SystemData, SystemEventData, SystemEventDataLite},
-    },
-}, math};
+use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{component::LinkedEntityComponents, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, math};
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -43,10 +36,9 @@ impl System for CameraSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &mut LinkedEntityComponents, data: &mut SystemEventData) {
         let position: glam::Vec3;
         let rotation: glam::Quat;
-        let _new_fov: f32;
         {
             // Create some movement using user input
             {
@@ -73,44 +65,38 @@ impl System for CameraSystem {
                 let right_vector = glam::Mat4::from_quat(changed_rotation)
                     .mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0))
                     .xyz();
-                let changed_position = &mut entity
-                    .get_component::<transforms::Position>(data.component_manager)
-                    .unwrap()
-                    .position
-                    .clone();
+                let changed_position = components.get_component_mut::<transforms::Position>(data.component_manager).unwrap().position.clone();
                 let delta = data.time_manager.delta_time as f32;
 				// Default speed
 				let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1;
                 if data.input_manager.map_held("camera_forward").0 {
-                    *changed_position -= forward_vector * delta * speed;
+                    changed_position -= forward_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_backwards").0 {
-                    *changed_position += forward_vector * delta * speed;
+                    changed_position += forward_vector * delta * speed;
                 }
                 if data.input_manager.map_held("camera_right").0 {
-                    *changed_position += right_vector * delta * speed;
+                    changed_position += right_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_left").0 {
-                    *changed_position -= right_vector * delta * speed;
+                    changed_position -= right_vector * delta * speed;
                 }
                 if data.input_manager.map_held("camera_up").0 {
-                    *changed_position += up_vector * delta * speed;
+                    changed_position += up_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_down").0 {
-                    *changed_position -= up_vector * delta * speed;
+                    changed_position -= up_vector * delta * speed;
                 }                
 
                 // Update the variables
-                *entity
-                    .get_component_mut::<transforms::Position>(data.component_manager)
+                components.get_component_mut::<transforms::Position>(data.component_manager)
                     .unwrap()
-                    .position = **changed_position;
-                entity
-                    .get_component_mut::<transforms::Rotation>(data.component_manager)
+                    .position = changed_position;
+					components.get_component_mut::<transforms::Rotation>(data.component_manager)
                     .unwrap()
                     .rotation = changed_rotation;
-                position = *changed_position;
+                position = changed_position;
                 rotation = changed_rotation;
             }
         }
-        let camera_component = entity
+        let camera_component = components
             .get_component_mut::<components::Camera>(data.component_manager)
             .unwrap();
         // Update the view matrix every time we make a change

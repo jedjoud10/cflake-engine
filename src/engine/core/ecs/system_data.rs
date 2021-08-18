@@ -41,7 +41,6 @@ pub struct SystemData {
     pub state: SystemState,
     pub stype: SystemType,
     pub entities: Vec<u16>,
-    pub system_components: HashMap<u16, u16>,
 }
 
 // Default for system data
@@ -53,7 +52,6 @@ impl Default for SystemData {
             state: SystemState::Enabled(0.0),
             stype: SystemType::Update,
             entities: Vec::new(),
-            system_components: HashMap::new(),
         }
     }
 }

@@ -132,4 +132,14 @@ impl Entity {
             ));
         }
     }
+	// Get all the components (local ID hashmap) that match with the specified bitfield
+	pub fn bitfield_get_components(&self, bitfield: u16) -> HashMap<u16, u16> {
+		// Loop over all the components and filter them
+		let components = self.components.iter().filter(|(&component_id, _)| {
+			// Create a bitwise AND with the bitfield and component ID...
+			// Then check if it is equal to the component ID
+			(bitfield & component_id) == component_id
+		}).map(|x| (x.0.clone(), x.1.clone())).collect();
+		return components;
+	}
 }

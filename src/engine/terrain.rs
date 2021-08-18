@@ -1,21 +1,10 @@
 use std::collections::HashMap;
 
 use crate::engine::rendering::{renderer::EntityRenderState, shader::Shader};
-use super::{
-    core::{
-        defaults::components::{transforms},
-        ecs::{
-            component::{Component, ComponentID},
-            entity::Entity,
-            system::System,
-            system_data::{SystemData, SystemEventData, SystemEventDataLite},
-        },
-    },
-    rendering::{
+use super::{core::{defaults::components::{transforms}, ecs::{component::{Component, ComponentID, LinkedEntityComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, rendering::{
         model::{Model, ProceduralModelGenerator},
         renderer::Renderer,
-    },
-};
+    }};
 
 // How many voxels in one axis in each chunk?
 const CHUNK_SIZE: usize = 32;
@@ -442,7 +431,7 @@ impl System for Terrain {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, _entity: &mut Entity, _data: &mut SystemEventData) {}
+    fn fire_entity(&mut self, _components: &mut LinkedEntityComponents, _data: &mut SystemEventData) {}
 
     // When a chunk gets added to the world
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {

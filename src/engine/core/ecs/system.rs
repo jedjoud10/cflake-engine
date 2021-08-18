@@ -1,9 +1,6 @@
 use std::any::Any;
 
-use super::{
-    entity::Entity,
-    system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
-};
+use super::{component::LinkedEntityComponents, entity::Entity, system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType}};
 use crate::engine::core::world::{Time};
 
 #[derive(Default)]
@@ -150,6 +147,19 @@ pub trait System {
         }
         *self.get_system_data_mut() = system_data_clone;
     }
+	// Get the LinkedEntityComponents from an entity and our system data
+	fn get_linkedentitycomponents(&self, entity: &Entity) -> LinkedEntityComponents {
+		let system_data = self.get_system_data();
+		// Get the components that match this system's c_bitfield from the entity
+		let components = entity.bitfield_get_components(system_data.c_bitfield);
+		
+
+		let linked_entity_components = LinkedEntityComponents {
+			entity_id: entity.entity_id,
+			components: components
+		};
+		return linked_entity_components;
+	}
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {
         let system_data_clone = self.get_system_data().clone();
@@ -161,7 +171,9 @@ pub trait System {
                 .get_entity_mut(entity_id)
                 .unwrap()
                 .clone();
-            self.fire_entity(&mut entity_clone, data);
+			// Get the linked entity components from the current entity
+			let mut linked_entity_components = self.get_linkedentitycomponents(entity_clone);
+            self.fire_entity(&mut linked_entity_components, data);
         }
         *self.get_system_data_mut() = system_data_clone;
         self.post_fire(data);
@@ -176,7 +188,7 @@ pub trait System {
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 
     // System control functions
-    fn fire_entity(&mut self, components: , data: &mut SystemEventData);
+    fn fire_entity(&mut self, components: &mut LinkedEntityComponents, data: &mut SystemEventData);
     fn pre_fire(&mut self, _data: &mut SystemEventData) {}
     fn post_fire(&mut self, _data: &mut SystemEventData) {}
 

@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap};
+use std::{any::{Any, TypeId}, collections::HashMap};
 
 use super::error::ECSError;
 
@@ -152,12 +152,24 @@ pub trait ComponentID {
 
 // Linked entity components
 pub struct LinkedEntityComponents {
-	pub components: HashMap<u16, Box<dyn Component>>,
+	pub components: HashMap<u16, u16>,
 	pub entity_id: u16,
 }
 
 // Get a specific component from the linked entity components struct
 impl LinkedEntityComponents {
-	// Get a specific components
-	pub fn get_component<T: Component + ComponentID + 'static>(&self, ) -> T
+	// Get a reference to a specific component
+	pub fn get_component<'a, T: Component + ComponentID + 'static>(&self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
+		let component_id = component_manager.get_component_id::<T>()?;
+		let global_component_id = self.components.get(&component_id).unwrap().clone();
+		let component = component_manager.id_get_component::<T>(global_component_id)?;
+		Ok(component)
+	}
+	// Get a reference to a specific component mutably
+	pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
+		let component_id = component_manager.get_component_id::<T>()?;
+		let global_component_id = self.components.get(&component_id).unwrap().clone();
+		let component = component_manager.id_get_component_mut::<T>(global_component_id)?;
+		Ok(component)
+	}
 }
