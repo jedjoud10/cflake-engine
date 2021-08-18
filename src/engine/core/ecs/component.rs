@@ -149,3 +149,15 @@ impl ComponentManager {
 pub trait ComponentID {
     fn get_component_name() -> String;
 }
+
+// Linked entity components
+pub struct LinkedEntityComponents {
+	pub components: HashMap<u16, Box<dyn Component>>,
+	pub entity_id: u16,
+}
+
+// Get a specific component from the linked entity components struct
+impl LinkedEntityComponents {
+	// Get a specific components
+	pub fn get_component<T: Component + ComponentID + 'static>(&self, ) -> T
+}

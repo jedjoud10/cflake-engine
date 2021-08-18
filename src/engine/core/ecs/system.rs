@@ -176,7 +176,7 @@ pub trait System {
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 
     // System control functions
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData);
+    fn fire_entity(&mut self, components: , data: &mut SystemEventData);
     fn pre_fire(&mut self, _data: &mut SystemEventData) {}
     fn post_fire(&mut self, _data: &mut SystemEventData) {}
 
