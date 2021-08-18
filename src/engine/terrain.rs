@@ -309,7 +309,6 @@ pub struct Terrain {
     pub system_data: SystemData,
     pub chunks: Vec<glam::IVec3>,
     pub isoline: f32,
-    pub noise: bracket_noise::prelude::FastNoise,
     pub camera_chunk_position: glam::IVec3,
 }
 
@@ -319,7 +318,6 @@ impl Default for Terrain {
             system_data: SystemData::default(),
             chunks: Vec::new(),
             isoline: 0.0,
-            noise: bracket_noise::prelude::FastNoise::new(),
             camera_chunk_position: glam::IVec3::ZERO,
         }
     }
@@ -329,8 +327,8 @@ impl Default for Terrain {
 impl Terrain {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-        let density: f32 = (1.0 - self.noise.get_noise3d(0.02 * x, 0.05 * y, 0.02 * z)) * 32.0;
-        density + y - 20.0
+        let density: f32 = 32.0;
+        y - 20.0
     }
     // Creates a single chunk entity
     fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
@@ -383,14 +381,6 @@ impl Terrain {
     // 2. Create the actual chunk entities and create the models
     pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
-        self.noise = bracket_noise::prelude::FastNoise::new();
-		self.noise.set_noise_type(bracket_noise::prelude::NoiseType::Cellular);
-        self.noise.set_cellular_distance_function(
-            bracket_noise::prelude::CellularDistanceFunction::Euclidean,
-        );
-        self.noise
-            .set_cellular_return_type(bracket_noise::prelude::CellularReturnType::Distance);
-
         // Create the entity
         for x in 0..20 {
             for y in 0..2 {

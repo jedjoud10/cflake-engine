@@ -273,8 +273,6 @@ impl Texture {
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, wrapping_mode);
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, wrapping_mode);
 		}
-			
-		println!("{:?}", self);
         self
     }
 }

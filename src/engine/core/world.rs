@@ -32,9 +32,9 @@ pub struct World {
     pub component_manager: ComponentManager,
     pub input_manager: InputManager,
     pub resource_manager: ResourceManager,
-    pub texture_manager: CacheManager<Texture>,
+    pub texture_cacher: CacheManager<Texture>,
     // Shaders
-    pub shader_manager: (CacheManager<SubShader>, CacheManager<Shader>),
+    pub shader_cacher: (CacheManager<SubShader>, CacheManager<Shader>),
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
@@ -58,17 +58,17 @@ impl World {
             .load_texture(
                 "textures\\white.png",
                 &mut self.resource_manager,
-                &mut self.texture_manager,
+                &mut self.texture_cacher,
             )
             .unwrap();
         let _black_texture = Texture::new()
             .load_texture(
                 "textures\\black.png",
                 &mut self.resource_manager,
-                &mut self.texture_manager,
+                &mut self.texture_cacher,
             )
             .unwrap();
-        self.texture_manager
+        self.texture_cacher
             .generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
 
         // Copy the default shader name
@@ -77,11 +77,11 @@ impl World {
             let default_shader = Shader::new(
                 vec!["shaders\\default.vrsh.glsl", "shaders\\default.frsh.glsl"],
                 &mut self.resource_manager,
-                &mut self.shader_manager,
+                &mut self.shader_cacher,
             );
             default_shader_name = default_shader.1;
         }
-        self.shader_manager
+        self.shader_cacher
             .1
             .generate_defaults(vec![default_shader_name.as_str()]);
     }
@@ -119,8 +119,8 @@ impl World {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             input_manager: &mut self.input_manager,
-            shader_cacher: &mut self.shader_manager,
-            texture_cacher: &mut self.texture_manager,
+            shader_cacher: &mut self.shader_cacher,
+            texture_cacher: &mut self.texture_cacher,
             time_manager: &mut self.time_manager,
             resource_manager: &mut self.resource_manager,
             custom_data: &mut self.custom_data,

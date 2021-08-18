@@ -41,7 +41,7 @@ impl Model {
 }
 
 // Struct that hold the model's information from OpenGL
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ModelDataGPU {
     pub vertex_buf: u32,
     pub normal_buf: u32,

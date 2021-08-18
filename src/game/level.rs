@@ -1,6 +1,3 @@
-
-
-
 use crate::engine::core::defaults::components::{components, *};
 use crate::engine::core::defaults::systems::camera_system::CameraSystem;
 use crate::engine::core::defaults::systems::sky_system::SkySystem;
@@ -9,11 +6,8 @@ use crate::engine::core::ecs::entity::Entity;
 use crate::engine::core::ecs::system::System;
 use crate::engine::core::ecs::system_data::SystemEventData;
 use crate::engine::core::world::World;
-
 use crate::engine::rendering::renderer::Renderer;
-
-
-
+use crate::engine::rendering::shader::Shader;
 use crate::engine::terrain::Terrain;
 use rendering_system::RenderingSystem;
 
@@ -34,8 +28,8 @@ pub fn load_systems(world: &mut World) {
         entity_manager: &mut world.entity_manager,
         component_manager: &mut world.component_manager,
         input_manager: &mut world.input_manager,
-        shader_cacher: &mut world.shader_manager,
-        texture_cacher: &mut world.texture_manager,
+        shader_cacher: &mut world.shader_cacher,
+        texture_cacher: &mut world.texture_cacher,
         time_manager: &mut world.time_manager,
         resource_manager: &mut world.resource_manager,
         custom_data: &mut world.custom_data,
@@ -81,12 +75,8 @@ pub fn load_entities(world: &mut World) {
     // Link the component
     let mut rc = Renderer::default();
     rc.load_model("models\\quad.mdl3d", &mut world.resource_manager);
-    rc.shader_name = world.shader_manager.1.defaults[0].clone();
-    rc.resource_load_textures(
-        vec!["textures\\diffuse.png"],
-        &mut world.texture_manager,
-        &mut world.resource_manager,
-    );
+    rc.shader_name = Shader::new(vec!["shaders\\default.vrsh.glsl", "shaders\\checkerboard.frsh.glsl"], &mut world.resource_manager, &mut world.shader_cacher).1;
+    rc.load_default_textures(&mut world.texture_cacher);
     quad.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     quad.link_default_component::<transforms::Position>(&mut world.component_manager).unwrap();
     quad.link_component::<transforms::Rotation>(
@@ -106,10 +96,10 @@ pub fn load_entities(world: &mut World) {
     // Link the component
     let mut rc = Renderer::default();
     rc.load_model("models\\cube.mdl3d", &mut world.resource_manager);
-    rc.shader_name = world.shader_manager.1.defaults[0].clone();
+    rc.shader_name = world.shader_cacher.1.defaults[0].clone();
     rc.resource_load_textures(
         vec!["textures\\diffuse.png", "textures\\normals.png"],
-        &mut world.texture_manager,
+        &mut world.texture_cacher,
         &mut world.resource_manager,
     );
     rc.uv_scale *= 10.0;

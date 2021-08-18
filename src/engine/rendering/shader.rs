@@ -35,8 +35,8 @@ impl Shader {
     // Creates a shader from multiple subshader files
     pub fn new<'a>(
         subshader_paths: Vec<&str>,
-        resource_manager: &'a mut ResourceManager,
-        shader_manager: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
+        resource_cacher: &'a mut ResourceManager,
+        shader_cacher: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
     ) -> (&'a mut Self, String) {
         let mut shader = Self::default();
         // Create the shader name
@@ -45,11 +45,11 @@ impl Shader {
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached
-            if shader_manager.0.is_cached(subshader_path) {
-                shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());
+            if shader_cacher.0.is_cached(subshader_path) {
+                shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             } else {
                 // It was not cached, so we need to cache it
-                let resource = resource_manager
+                let resource = resource_cacher
                     .load_packed_resource(subshader_path)
                     .unwrap();
                 let mut subshader = SubShader::from_resource(resource).unwrap();
@@ -57,15 +57,15 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
-                let _subshader = shader_manager.0.cache_object(subshader, subshader_path);
-                shader.link_subshader(shader_manager.0.get_object(subshader_path).unwrap());
+                let _subshader = shader_cacher.0.cache_object(subshader, subshader_path);
+                shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             }
         }
         // Finalize the shader and cache it
         shader.finalize_shader();
-        let cached_shader_id = shader_manager.1.cache_object(shader, &name);
+        let cached_shader_id = shader_cacher.1.cache_object(shader, &name);
         return (
-            shader_manager
+            shader_cacher
                 .1
                 .id_get_object_mut(cached_shader_id)
                 .unwrap(),
@@ -115,8 +115,6 @@ impl Shader {
             unsafe {
                 gl::UseProgram(self.program);
             }
-        } else {
-            println!("Shader '{}' not finalized!", self.name);
         }
     }
     // Link a specific subshader to this shader

@@ -67,12 +67,6 @@ impl SystemData {
             component_manager.register_component::<T>();
             self.c_bitfield |= component_manager.get_component_id::<T>()?;
         }
-        println!(
-            "Link component '{}' to system '{}', with ID: {}",
-            T::get_component_name(),
-            self.system_id,
-            component_manager.get_component_id::<T>()?
-        );
 		Ok(())
     }
 }

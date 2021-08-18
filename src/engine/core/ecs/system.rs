@@ -53,7 +53,6 @@ impl SystemManager {
         let id = self.systems.len() as u8;
         let system_data = system.get_system_data_mut();
         system_data.system_id = id;
-        println!("Add system with cBitfield: {}", system_data.c_bitfield);
         self.systems.push(Box::new(system));
         id
     }
@@ -118,10 +117,6 @@ pub trait System {
     fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
         {
             let system_data = self.get_system_data_mut();
-            println!(
-                "\x1b[32mAdd entity '{}' with entity ID: {}, to the system '{}'\x1b[0m",
-                entity.name, entity.entity_id, system_data.system_id
-            );
             system_data.entities.push(entity.entity_id);
         }
         self.entity_added(entity, data);
@@ -142,10 +137,6 @@ pub trait System {
             .position(|&entity_id_in_vec| entity_id_in_vec == entity_id)
             .unwrap();
         system_data.entities.remove(system_entity_id);
-        println!(
-            "\x1b[33mRemoved entity '{}' with entity ID: {}, from the system '{}'\x1b[0m",
-            removed_entity.name, removed_entity.entity_id, system_data.system_id
-        );
         self.entity_removed(removed_entity, data);
     }
     // Stop the system permanently

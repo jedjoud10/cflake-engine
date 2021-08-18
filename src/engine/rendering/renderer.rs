@@ -17,6 +17,7 @@ bitflags! {
     }
 }
 // A component that will be linked to entities that are renderable
+#[derive(Debug)]
 pub struct Renderer {
     pub render_state: EntityRenderState,
     pub gpu_data: ModelDataGPU,
@@ -72,7 +73,7 @@ impl Renderer {
     pub fn resource_load_textures(
         &mut self,
         texture_paths: Vec<&str>,
-        texture_manager: &mut CacheManager<Texture>,
+        texture_cacher: &mut CacheManager<Texture>,
         resource_manager: &mut ResourceManager,
     ) {
         // Load the textures
@@ -82,45 +83,42 @@ impl Renderer {
                 .set_mutable(true)
                 .enable_mipmaps()
                 .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
-                .load_texture(texture_path, resource_manager, texture_manager)
+                .load_texture(texture_path, resource_manager, texture_cacher)
                 .unwrap();
             self.texture_cache_ids
-                .push(texture_manager.get_object_id(texture_path).unwrap());
+                .push(texture_cacher.get_object_id(texture_path).unwrap());
         }
-
-        // For the rest of the textures that weren't explicitly given a texture path, load the default ones
-        // Diffuse, Normals, Roughness, Metallic, AO
-        for _i in [(texture_paths.len() - 1)..5] {
-            self.texture_cache_ids.push(
-                texture_manager
-                    .get_object_id("textures\\white.png")
-                    .unwrap(),
-            );
-        }
+		// Load the default textures
+		self.load_default_textures(texture_cacher);  
     }
 
 	// Load textures from their texture struct
     pub fn load_textures(
         &mut self,
         texture_ids: Vec<u16>,
-        texture_manager: &mut CacheManager<Texture>,
+        texture_cacher: &mut CacheManager<Texture>,
     ) {
         // Set the textures as the renderer's textures
         for (_i, &texture_id) in texture_ids.iter().enumerate() {
 			// Since these are loadable textures, we already know they got cached beforehand
             self.texture_cache_ids.push(texture_id);
-        }
+        }     
+		// Load the default textures
+		self.load_default_textures(texture_cacher);  
+    }
 
-        // For the rest of the textures that weren't explicitly given a texture path, load the default ones
+	// Load the default textures
+	pub fn load_default_textures(&mut self, texture_cacher: &mut CacheManager<Texture>) {
+ 		// For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
-        for _i in [(texture_ids.len() - 1)..5] {
+        for _i in (self.texture_cache_ids.len())..5 {
             self.texture_cache_ids.push(
-                texture_manager
+                texture_cacher
                     .get_object_id("textures\\white.png")
                     .unwrap(),
             );
         }
-    }
+	}
 }
 
 impl Renderer {
@@ -211,11 +209,6 @@ impl Renderer {
             gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
 
             self.gpu_data.initialized = true;
-            println!(
-                "Initialized model with '{}' vertices and '{}' triangles",
-                self.model.vertices.len(),
-                self.model.triangles.len()
-            );
             // Unbind
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
@@ -232,6 +225,7 @@ impl Renderer {
 }
 
 // The current render state of the entity
+#[derive(Debug)]
 pub enum EntityRenderState {
     Visible,
     Invisible,
