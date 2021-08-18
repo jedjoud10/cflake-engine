@@ -10,6 +10,6 @@ pub struct Plane {
 impl Plane {
 	// Test intersection with another plane
 	pub fn intersect_other(&self, other: Self) -> bool {
-		false
+		todo!()
 	}
 }
