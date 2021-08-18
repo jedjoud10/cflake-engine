@@ -196,7 +196,7 @@ impl System for RenderingSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {	
+    fn fire_entity(&mut self, entity: &mut Entity, data: &mut SystemEventData) {			
 		// Check if this entity is renderable in the first place
 		match entity.get_component::<Renderer>(data.component_manager).unwrap().render_state {
 			EntityRenderState::Invisible => {
@@ -204,7 +204,7 @@ impl System for RenderingSystem {
 				return;
 			}
 			_ => {}
-		}
+		}		
 		
 		// Get the entity position
 		let entity_position = entity.get_component::<transforms::Position>(data.component_manager).unwrap().position;
@@ -232,8 +232,7 @@ impl System for RenderingSystem {
                 .unwrap()
                 .position;
 			camera_forward = camera_entity.get_component::<transforms::Rotation>(data.component_manager).unwrap().rotation.mul_vec3(glam::vec3(0.0, 0.0, 1.0));
-        }
-
+        }		
 		// Check if the entity can be seen by the camera
 		match entity.get_component::<Renderer>(data.component_manager).unwrap().render_state {
 			EntityRenderState::Visible => {
@@ -244,6 +243,7 @@ impl System for RenderingSystem {
 			}
 			_ => {}
 		}
+		
 
         let model_matrix: glam::Mat4;
         // Render the entity
@@ -300,7 +300,7 @@ impl System for RenderingSystem {
         let mut textures: Vec<&Texture> = Vec::new();
 
         // Load the default ones
-        for (_i, &id) in rc.texture_cache_ids.iter().enumerate() {
+        for &id in rc.texture_cache_ids.iter() {
             // If this is a negative number, it means we've gotta use the default texture
             textures.push(data.texture_cacher.id_get_object(id).unwrap());
         }

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::engine::rendering::{renderer::EntityRenderState, shader::Shader};
-
 use super::{
     core::{
         defaults::components::{transforms},
@@ -327,8 +326,9 @@ impl Default for Terrain {
 impl Terrain {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-        let density: f32 = 32.0;
-        y - 20.0
+        let mut density: f32 = (glam::vec3(x, y, z).length() - 10.0);
+		density = density.min(y + (x * 0.2).sin() + (z * 0.2).sin()) - 10.0;
+        density
     }
     // Creates a single chunk entity
     fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
@@ -382,9 +382,9 @@ impl Terrain {
     pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
         // Create the entity
-        for x in 0..20 {
+        for x in -10..10 {
             for y in 0..2 {
-                for z in 0..20 {
+                for z in -10..10 {
                     let position = glam::vec3(
                         ((CHUNK_SIZE as f32) - 2.0) * x as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,
@@ -496,7 +496,8 @@ impl Chunk {
     // Generate the voxel data
     pub fn generate_data(&mut self, terrain_generator: &Terrain) {
         // Create a simple plane
-        for x in 0..CHUNK_SIZE {
+        
+		for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
                     self.data[x][y][z] = terrain_generator.density(
@@ -507,6 +508,7 @@ impl Chunk {
                 }
             }
         }
+		
 
         // Save the isoline
         self.isoline = terrain_generator.isoline;
