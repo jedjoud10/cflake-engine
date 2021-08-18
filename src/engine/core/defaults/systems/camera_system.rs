@@ -1,13 +1,13 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::core::{
+use crate::engine::{core::{
     defaults::components::{components, transforms},
     ecs::{
         entity::Entity,
         system::System,
         system_data::{SystemData, SystemEventData, SystemEventDataLite},
     },
-};
+}, math};
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -139,6 +139,10 @@ impl System for CameraSystem {
             .unwrap();
         camera_component.update_projection_matrix(&data.custom_data.window);
         camera_component.update_view_matrix(position, rotation);
+
+		// Calculate the frustum planes at setup
+		//let mut frustum = math::frustum::Frustum::default();
+		//frustum.calculate_planes(position, rotation, camera_component);
     }
 
     // Turn this into "Any" so we can cast into child systems

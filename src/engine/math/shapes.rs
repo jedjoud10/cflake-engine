@@ -1,4 +1,5 @@
 // A simple plane consisting of 4 vertices
+#[derive(Default)]
 pub struct Plane {
 	pub x: glam::Vec3,
 	pub y: glam::Vec3,
