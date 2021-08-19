@@ -280,9 +280,7 @@ impl World {
         // Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
         // Remove all the components this entity had
-        for (_, global_id) in removed_entity.components.iter() {
-            self.component_manager.remove_component(*global_id);
-        }
+        self.component_manager.remove_linkedentitycomponents(&entity_id);        
         Ok(removed_entity)
     }
     // Remove multiple entities at once

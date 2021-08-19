@@ -1,7 +1,9 @@
 
 use std::{collections::HashMap};
 
-use super::component::{Component, ComponentID, ComponentManager, LinkedEntityComponents};
+use gl::LineWidth;
+
+use super::component::{Component, ComponentID, ComponentManager, LinkedComponents};
 use super::error::ECSError;
 // A simple entity in the world
 #[derive(Clone, Default, Debug)]
@@ -9,8 +11,6 @@ pub struct Entity {
     pub name: String,
     pub entity_id: u16,
     pub c_bitfield: u16,
-    // The LinkedEntityComponents ids in the component manager
-    pub linked_components_id: u16,
 }
 
 // ECS time bois
@@ -37,8 +37,11 @@ impl Entity {
         default_state: T,
     ) -> Result<(), ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
+
+        // Get the linked entity component from the component manager
+        let linked_entity_component = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
         // Check if we have the component linked on this entity
-        if self.components.contains_key(&component_id) {
+        if linked_entity_component.components.contains_key(&component_id) {
             return Err(ECSError::new(
                 format!(
                     "Cannot link component '{}' to entity '{}' because it is already linked!",
@@ -50,11 +53,10 @@ impl Entity {
         }
 
         // Add the component inside the component manager
-        let global_id = component_manager.add_component::<T>(Box::new(default_state));
+        let global_id = linked_entity_component.add_component::<T>(Box::new(default_state));
 
         // Add the component's bitfield to the entity's bitfield
         self.c_bitfield |= component_id;
-        self.components.insert(component_id, global_id as u16);
         Ok(())
     }
     // Unlink a component from this entity
@@ -63,8 +65,7 @@ impl Entity {
         let id = component_manager.get_component_id::<T>().unwrap();
         // Take the bit, invert it, then AND it to the bitfield
         self.c_bitfield &= !id;
-        let _global_id = self.components.remove(&id).unwrap();
-        component_manager.remove_component(id);
+        component_manager.remove_linkedentitycomponents(&self.entity_id).unwrap();
     }
     // Gets a reference to a component
     pub fn get_component<'a, T: ComponentID + Component + 'static>(
@@ -72,11 +73,10 @@ impl Entity {
         component_manager: &'a ComponentManager,
     ) -> Result<&'a T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
+        let lec = component_manager.get_linkedentitycomponents(self.entity_id)?;
         // Check if we even have the component
-        if self.components.contains_key(&component_id) {
-            let final_component = component_manager
-                .id_get_component::<T>(self.components[&component_id])
-                .unwrap();
+        if lec.contains_component(&component_id) {
+            let final_component = lec.id_get_component::<T>(&component_id)?;
             Ok(final_component)
         } else {
             return Err(ECSError::new(
@@ -94,33 +94,12 @@ impl Entity {
         &self,
         component_manager: &'a mut ComponentManager,
     ) -> Result<&'a mut T, ECSError> {
-        let component_id = component_manager.get_component_id::<T>()?;
-        // Check if we even have the component
-        if self.components.contains_key(&component_id) {
-            let final_component = component_manager
-                .id_get_component_mut::<T>(self.components[&component_id])
-                .unwrap();
-            Ok(final_component)
-        } else {
-            return Err(ECSError::new(
-                format!(
-                    "Component '{}' does not exist on Entity '{}'!",
-                    T::get_component_name(),
-                    self.name
-                )
-                .as_str(),
-            ));
-        }
-    }
-    // Get the global world ID of a specified component that this entity has
-    pub fn get_global_component_id<'a, T: ComponentID + Component + 'static>(
-        &self,
-        component_manager: &'a mut ComponentManager,
-    ) -> Result<u16, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
+        let lec = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
         // Check if we even have the component
-        if self.components.contains_key(&component_id) {
-            Ok(self.components[&component_id])
+        if lec.contains_component(&component_id) {
+            let final_component = lec.id_get_component_mut::<T>(&component_id)?;
+            Ok(final_component)
         } else {
             return Err(ECSError::new(
                 format!(
@@ -134,6 +113,8 @@ impl Entity {
     }
 	// Get all the components (local ID hashmap) that match with the specified bitfield
 	pub fn bitfield_get_components(&self, bitfield: u16) -> HashMap<u16, u16> {
+        todo!();
+        /*
 		// Loop over all the components and filter them
 		let components = self.components.iter().filter(|(&component_id, _)| {
 			// Create a bitwise AND with the bitfield and component ID...
@@ -141,5 +122,6 @@ impl Entity {
 			(bitfield & component_id) == component_id
 		}).map(|x| (*x.0, *x.1)).collect();
 		components
+        */
 	}
 }

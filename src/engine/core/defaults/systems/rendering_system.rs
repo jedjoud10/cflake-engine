@@ -1,6 +1,6 @@
 use crate::engine::core::defaults::components::{components, *};
 
-use crate::engine::core::ecs::component::LinkedEntityComponents;
+use crate::engine::core::ecs::component::{FilteredLinkedComponents, LinkedComponents};
 use crate::engine::core::ecs::{
     entity::Entity,
     system::{System},
@@ -197,7 +197,7 @@ impl System for RenderingSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &mut LinkedEntityComponents, data: &mut SystemEventData) {			
+    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData) {			
 		// Check if this entity is renderable in the first place
 		match components.get_component::<Renderer>(data.component_manager).unwrap().render_state {
 			EntityRenderState::Invisible => {

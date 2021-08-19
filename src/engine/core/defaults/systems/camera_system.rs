@@ -1,6 +1,6 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{component::LinkedEntityComponents, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}};
+use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{component::{FilteredLinkedComponents, LinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}};
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -36,7 +36,7 @@ impl System for CameraSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &mut LinkedEntityComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData) {
         let position: glam::Vec3;
         let rotation: glam::Quat;
         {

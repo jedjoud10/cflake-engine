@@ -1,6 +1,6 @@
 use crate::engine::core::defaults::components::{components, *};
 
-use crate::engine::core::ecs::component::LinkedEntityComponents;
+use crate::engine::core::ecs::component::{FilteredLinkedComponents, LinkedComponents};
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
 
@@ -77,9 +77,7 @@ impl System for SkySystem {
 			sky_gradient_texture_id: cached_texture_id
 		}).unwrap();
         // Update the custom data
-        data.custom_data.sky_entity = sky
-            .get_global_component_id::<components::Sky>(&mut data.component_manager)
-            .unwrap();
+        data.custom_data.sky_entity = sky.entity_id;
         data.entity_manager.add_entity_s(sky);
     }
 
@@ -94,7 +92,7 @@ impl System for SkySystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &mut LinkedEntityComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData) {
         // Set the position of the sky sphere to always be the camera
         let position = data
             .entity_manager
