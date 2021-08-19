@@ -150,14 +150,8 @@ pub trait System {
 	// Get the filtered LinkedComponents from an entity and our system data
 	fn get_flec(&self, entity: &Entity) -> FilteredLinkedComponents {
 		let system_data = self.get_system_data();
-		// Get the components that match this system's c_bitfield from the entity
-		todo!();
-        /*
-        return FilteredLinkedComponents {
-            entity_id: entity.entity_id.clone(),
-            global_ids: 
-        }
-        */
+		// Get the components that match this system's c_bitfield from the entity        
+        return FilteredLinkedComponents::get_filted_linked_components(entity, system_data.c_bitfield);
 	}
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {

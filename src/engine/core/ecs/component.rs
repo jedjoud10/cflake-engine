@@ -106,20 +106,32 @@ pub trait ComponentID {
     fn get_component_name() -> String;
 }
 // The filtered components that are linked to a specific entity, and that also match a specific c_bitfield
+#[derive(Default)]
 pub struct FilteredLinkedComponents {
     pub entity_id: u16,
-    pub global_ids: HashMap<u16, u16>
+    pub components: HashMap<u16, u16>
 }
 
 // Get the components
 impl FilteredLinkedComponents {
+    // Get the matching filtered components from a specific entity
+    pub fn get_filted_linked_components(entity: &Entity, system_c_bitfield: u16) -> Self {
+        let mut filted_linked_components: Self = Self::default();
+        let global_ids: HashMap<u16, u16> = entity.linked_components.iter().filter(|(&component_id, _)| {
+			// Create a bitwise AND with the bitfield and component ID...
+			// Then check if it is equal to the component ID
+			(system_c_bitfield & component_id) == component_id
+		}).map(|x| (*x.0, *x.1)).collect();
+        filted_linked_components.components = global_ids;
+        return filted_linked_components;
+    }
     // Get a reference to a component using the component manager
     pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();      
         // Check if we are even allowed to get that components
-        if self.global_ids.contains_key(&id) {
+        if self.components.contains_key(&id) {
             // We are allowed to get this component
-            let global_id = self.global_ids.get(&id).unwrap();
+            let global_id = self.components.get(&id).unwrap();
             let component = component_manager.id_get_linked_component(global_id)?;
             return Ok(component);
         } else {
@@ -137,9 +149,9 @@ impl FilteredLinkedComponents {
     pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
         // Check if we are even allowed to get that components
-        if self.global_ids.contains_key(&id) {
+        if self.components.contains_key(&id) {
             // We are allowed to get this component
-            let global_id = self.global_ids.get(&id).unwrap();
+            let global_id = self.components.get(&id).unwrap();
             let component = component_manager.id_get_linked_component_mut(global_id)?;
             return Ok(component);
         } else {
