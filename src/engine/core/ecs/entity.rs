@@ -56,7 +56,6 @@ impl Entity {
         } else {
             linked_entity_component = component_manager.add_linkedentitycomponents(self.lc_id, LinkedComponents::default())?;
         }
-        println!("{:?}", linked_entity_component.components.keys());
         // Check if we have the component linked on this entity
         if linked_entity_component.components.contains_key(&component_id) {
             return Err(ECSError::new(
@@ -91,7 +90,6 @@ impl Entity {
     ) -> Result<&'a T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();        
         let lec = component_manager.get_linkedentitycomponents(self.entity_id)?;
-        println!("{:?}", lec.components.keys());
         // Check if we even have the component
         if lec.contains_component(&component_id) {
             let final_component = lec.id_get_component::<T>(&component_id)?;
@@ -114,7 +112,6 @@ impl Entity {
     ) -> Result<&'a mut T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         let lec = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
-        println!("{:?} {}", lec.components.keys(), component_id);
         // Check if we even have the component
         if lec.contains_component(&component_id) {
             let final_component = lec.id_get_component_mut::<T>(&component_id)?;

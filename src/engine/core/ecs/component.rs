@@ -36,7 +36,6 @@ impl ComponentManager {
         .insert(name.clone(), self.current_component_id);
         // Make a copy of the id before the bit shift
         let component_id = self.current_component_id;
-        println!("Register component {} with ID {}", name, component_id);
         // Bit shift to the left
         self.current_component_id <<= 1;
         // Return the component id before the bit shift
@@ -48,7 +47,6 @@ impl ComponentManager {
         // It found the component, so just return it's id
         if self.component_ids.contains_key(&name) {
             let value = self.component_ids[&name];
-            println!("GetComponentID call '{}' {}", name, value);
             Ok(value)
         } else {
             return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
@@ -167,7 +165,6 @@ impl FilteredLinkedComponents {
     // Get a mutable reference to a component using the component manager
     pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
-        println!("Get filtered component call");
         let lec = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
         let component = lec.id_get_component_mut::<T>(&id)?;
         return Ok(component);
