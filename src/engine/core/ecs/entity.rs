@@ -1,14 +1,13 @@
 
 use std::{collections::HashMap};
-use super::component::{Component, ComponentID, ComponentManager, LinkedComponents};
+use super::component::{Component, ComponentID, ComponentManager};
 use super::error::ECSError;
 // A simple entity in the world
 #[derive(Clone, Default, Debug)]
 pub struct Entity {
     pub name: String,
     pub entity_id: u16,
-    pub lc_id: u16,
-    pub generate_lc_id: bool,
+    pub global_ids: HashMap<u16, u16>,
     pub c_bitfield: u16,
 }
 
@@ -18,7 +17,6 @@ impl Entity {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
-            generate_lc_id: true,
             ..Self::default()
         }
     }
@@ -30,6 +28,8 @@ impl Entity {
         // Simple wrapper around the default link component
         self.link_component(component_manager, T::default())
     }
+    // Check if we have a component linked
+    pub fn is_component_linked(&self, component_id: &u16) -> bool { self.global_ids.contains_key(component_id) }
     // Link a component to this entity and use the given default state parameter
     pub fn link_component<T: ComponentID + Component + 'static>(
         &mut self,
@@ -37,24 +37,10 @@ impl Entity {
         default_state: T,
     ) -> Result<(), ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
-
-        // Get the linked entity component from the component manager
-        let linked_entity_component: &mut LinkedComponents;
-
-        // Generate a new LinkedComponent ID
-        if self.generate_lc_id {
-            self.lc_id = component_manager.linked_entity_components.len() as u16;
-            self.generate_lc_id = false;
-        }
-
-        if component_manager.linked_entity_components.contains_key(&self.lc_id) {
-            // It already exists, so just use that
-            linked_entity_component = component_manager.get_linked_components_mut(self.lc_id)?;
-        } else {
-            linked_entity_component = component_manager.add_linked_components(self.lc_id, LinkedComponents::default())?;
-        }
+        // Add the component and get the global ID and add it to our hashmap
+        let global_id = component_manager.add_linked_component::<T>(default_state)?;
         // Check if we have the component linked on this entity
-        if linked_entity_component.components.contains_key(&component_id) {
+        if component_manager.linked_component.contains_key(&component_id) {
             return Err(ECSError::new(
                 format!(
                     "Cannot link component '{}' to entity '{}' because it is already linked!",
@@ -64,10 +50,8 @@ impl Entity {
                 .as_str(),
             ));
         }
-
-        // Add the component inside the component manager
-        linked_entity_component.id_add_component::<T>(default_state, component_id);
-
+        // Add the global ID to our hashmap
+        self.global_ids.insert(component_id, global_id);
         // Add the component's bitfield to the entity's bitfield
         self.c_bitfield |= component_id;
         Ok(())
@@ -76,12 +60,12 @@ impl Entity {
     pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         let _name = T::get_component_name();
         let id = component_manager.get_component_id::<T>()?;
+        let global_id = self.global_ids.get(&id).unwrap();
         // Take the bit, invert it, then AND it to the bitfield
         self.c_bitfield &= !id;
         
         // Get the linked components and remove the component from it
-        let linked_components = component_manager.get_linked_components_mut(self.entity_id)?;
-        linked_components.remove_component(&id);
+        component_manager.id_remove_linked_component(global_id)?;
         return Ok(());
     }
     // Gets a reference to a component
@@ -90,10 +74,10 @@ impl Entity {
         component_manager: &'a ComponentManager,
     ) -> Result<&'a T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();        
-        let lc = component_manager.get_linked_components(self.entity_id)?;
         // Check if we even have the component
-        if lc.contains_component(&component_id) {
-            let final_component = lc.id_get_component::<T>(&component_id)?;
+        if self.is_component_linked(&component_id) {
+            let global_id = self.global_ids.get(&component_id).unwrap();
+            let final_component = component_manager.id_get_linked_component::<T>(&component_id)?;
             Ok(final_component)
         } else {
             return Err(ECSError::new(
@@ -112,10 +96,10 @@ impl Entity {
         component_manager: &'a mut ComponentManager,
     ) -> Result<&'a mut T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
-        let lc = component_manager.get_linked_components_mut(self.entity_id)?;
         // Check if we even have the component
-        if lc.contains_component(&component_id) {
-            let final_component = lc.id_get_component_mut::<T>(&component_id)?;
+        if self.is_component_linked(&component_id) {
+            let global_id = self.global_ids.get(&component_id).unwrap();
+            let final_component = component_manager.id_get_linked_component_mut::<T>(&component_id)?;
             Ok(final_component)
         } else {
             return Err(ECSError::new(

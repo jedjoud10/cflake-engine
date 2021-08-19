@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use super::{component::{ComponentManager, FilteredLinkedComponents, LinkedComponents}, entity::Entity, system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType}};
+use super::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType}};
 use crate::engine::core::world::{Time};
 
 #[derive(Default)]
@@ -153,7 +153,7 @@ pub trait System {
 		// Get the components that match this system's c_bitfield from the entity
 		return FilteredLinkedComponents {
             entity_id: entity.entity_id.clone(),
-            filtered_c_bitfield: system_data.c_bitfield
+            global_ids: 
         }
 	}
     // Run the system for a single iteration

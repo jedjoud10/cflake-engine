@@ -11,7 +11,7 @@ pub trait Component {
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
     component_ids: HashMap<String, u16>,
-    pub linked_entity_components: HashMap<u16, LinkedComponents>,
+    pub linked_component: HashMap<u16, Box<dyn Component>>,
     pub current_component_id: u16,
 }
 
@@ -19,7 +19,7 @@ impl Default for ComponentManager {
     fn default() -> Self {
         Self {
             component_ids: HashMap::new(),
-            linked_entity_components: HashMap::new(),
+            linked_component: HashMap::new(),
             current_component_id: 1,
         }
     }
@@ -56,25 +56,47 @@ impl ComponentManager {
     pub fn is_component_registered<T: ComponentID>(&self) -> bool {
         self.component_ids.contains_key(&T::get_component_name())
     }
-    // Add a specific LinkedComponents struct to the world
-    pub fn add_linked_components(&mut self, entity_id: u16, lec: LinkedComponents) -> Result<&mut LinkedComponents, ECSError> {
-        self.linked_entity_components.insert(entity_id, lec);
-        // Give back a mutable reference
-        return Ok(self.get_linked_components_mut(entity_id)?);
+    // Add a specific linked componment to the component manager, returns the global IDs of the components
+    pub fn add_linked_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
+        let global_id = self.linked_component.len() as u16;
+        let boxed_component = Box::new(component);
+        self.linked_component.insert(global_id, boxed_component);
+        // Give back the global ID of the component
+        return Ok(global_id);
     }
-    // Get a reference to a specific linked entity components struct
-    pub fn get_linked_components(&self, entity_id: u16) -> Result<&LinkedComponents, ECSError> {
-        let linked_entity_components = self.linked_entity_components.get(&entity_id).unwrap();
-        return Ok(linked_entity_components);
+    // Cast a boxed component to a reference of that component
+    fn cast_component<'a, T: ComponentID + Component + 'static>(
+        boxed_component: &'a Box<dyn Component>,
+    ) -> &'a T {
+        let component_any: &dyn Any = boxed_component.as_any();
+        let final_component = component_any.downcast_ref::<T>().unwrap();
+        final_component
+    }
+    // Cast a boxed component to a mutable reference of that component
+    fn cast_component_mut<'a, T: ComponentID + Component + 'static>(
+        boxed_component: &'a mut Box<dyn Component>,
+    ) -> &'a mut T {
+        let component_any: &mut dyn Any = boxed_component.as_any_mut();
+        let final_component = component_any.downcast_mut::<T>().unwrap();
+        final_component
+    }
+    // Get a reference to a specific linked component
+    pub fn id_get_linked_component<'a, T: Component + ComponentID + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
+        // TODO: Make each entity have a specified amount of components so we can have faster indexing using 
+        // entity_id * 16 + local_component_id
+        let linked_component = self.linked_component.get(global_id).unwrap();
+        let component = Self::cast_component(linked_component);
+        return Ok(component);
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_linked_components_mut(&mut self, entity_id: u16) -> Result<&mut LinkedComponents, ECSError> {
-        let linked_entity_components = self.linked_entity_components.get_mut(&entity_id).unwrap();
-        return Ok(linked_entity_components);
+    pub fn id_get_linked_component_mut<'a, T: Component + ComponentID + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
+        let linked_component = self.linked_component.get_mut(global_id).unwrap();
+        let component = Self::cast_component_mut(linked_component);
+        return Ok(component);
     }
-    // Remove a specified linked entity component struct from the manager
-    pub fn remove_linked_components(&mut self, entity_id: &u16) -> Result<(), ECSError> {
-        self.linked_entity_components.remove(entity_id).unwrap();
+    // Remove a specified component from the list
+    pub fn id_remove_linked_component(&mut self, global_id: &u16) -> Result<(), ECSError> {
+        //self.linked_entity_components.remove(entity_id).unwrap();
         return Ok(());
     }
 }
@@ -83,75 +105,10 @@ impl ComponentManager {
 pub trait ComponentID {
     fn get_component_name() -> String;
 }
-
-// Components that are linked to a specific entity
-#[derive(Default)]
-pub struct LinkedComponents {
-	pub components: HashMap<u16, Box<dyn Component>>,
-}
-
-// Get a specific component from the linked entity components struct
-impl LinkedComponents {
-    // Cast a boxed component to a reference of that component
-    pub fn cast_component<'a, T: ComponentID + Component + 'static>(
-        boxed_component: &'a Box<dyn Component>,
-    ) -> &'a T {
-        let component_any: &dyn Any = boxed_component.as_any();
-        let final_component = component_any.downcast_ref::<T>().unwrap();
-        final_component
-    }
-    // Cast a boxed component to a mutable reference of that component
-    pub fn cast_component_mut<'a, T: ComponentID + Component + 'static>(
-        boxed_component: &'a mut Box<dyn Component>,
-    ) -> &'a mut T {
-        let component_any: &mut dyn Any = boxed_component.as_any_mut();
-        let final_component = component_any.downcast_mut::<T>().unwrap();
-        final_component
-    }
-	// Get a reference to a specific component
-	pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
-		let component_id = component_manager.get_component_id::<T>()?;
-		let component = Self::cast_component(self.components.get(&component_id).unwrap());
-		Ok(component)
-	}
-	// Get a mutable reference to a specific component
-	pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
-		let component_id = component_manager.get_component_id::<T>()?;
-		let component = Self::cast_component_mut(self.components.get_mut(&component_id).unwrap());
-		Ok(component)
-	}
-    // Get a reference to a specific component using it's component ID
-    pub fn id_get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_id: &u16) -> Result<&'a T, ECSError> {
-		let component = Self::cast_component(self.components.get(&component_id).unwrap());
-		Ok(component)
-	} 
-    // Get a mutable reference to a specific component using it's component ID
-    pub fn id_get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_id: &u16) -> Result<&'a mut T, ECSError> {
-		let component = Self::cast_component_mut(self.components.get_mut(&component_id).unwrap());
-		Ok(component)
-	} 
-    // Add a single component to the LinkedComponents
-    pub fn id_add_component<'a, T: ComponentID + Component + 'static>(
-        &mut self,
-        component: T,
-        component_id: u16
-    ) {
-        // Box the component
-        let boxed_component = Box::new(component);
-        self.components.insert(component_id, boxed_component);
-    }
-    // Remove a single component from the component manager using it's id
-    pub fn remove_component(&mut self, component_id: &u16) {
-        self.components.remove(component_id);
-    }
-    // Check if this linked entity components contains a specific component
-    pub fn contains_component(&self, component_id: &u16) -> bool { self.components.contains_key(component_id) }
-}
-
 // The filtered components that are linked to a specific entity, and that also match a specific c_bitfield
 pub struct FilteredLinkedComponents {
     pub entity_id: u16,
-    pub filtered_c_bitfield: u16
+    pub global_ids: HashMap<u16, u16>
 }
 
 // Get the components
@@ -160,10 +117,10 @@ impl FilteredLinkedComponents {
     pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();      
         // Check if we are even allowed to get that components
-        if (id & self.filtered_c_bitfield) == id {
+        if self.global_ids.contains_key(&id) {
             // We are allowed to get this component
-            let lc = component_manager.get_linked_components(self.entity_id)?;
-            let component = lc.id_get_component::<T>(&id)?;
+            let global_id = self.global_ids.get(&id).unwrap();
+            let component = component_manager.id_get_linked_component(global_id)?;
             return Ok(component);
         } else {
             // We are not allowed to get this component
@@ -180,10 +137,10 @@ impl FilteredLinkedComponents {
     pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
         // Check if we are even allowed to get that components
-        if (id & self.filtered_c_bitfield) == id {
+        if self.global_ids.contains_key(&id) {
             // We are allowed to get this component
-            let lc = component_manager.get_linked_components_mut(self.entity_id)?;
-            let component = lc.id_get_component_mut::<T>(&id)?;
+            let global_id = self.global_ids.get(&id).unwrap();
+            let component = component_manager.id_get_linked_components_mut(global_id)?;
             return Ok(component);
         } else {
             // We are not allowed to get this component
