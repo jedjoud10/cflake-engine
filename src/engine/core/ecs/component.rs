@@ -57,18 +57,18 @@ impl ComponentManager {
         self.component_ids.contains_key(&T::get_component_name())
     }
     // Add a specific LinkedComponents struct to the world
-    pub fn add_linkedentitycomponents(&mut self, entity_id: u16, lec: LinkedComponents) -> Result<&mut LinkedComponents, ECSError> {
+    pub fn add_linked_components(&mut self, entity_id: u16, lec: LinkedComponents) -> Result<&mut LinkedComponents, ECSError> {
         self.linked_entity_components.insert(entity_id, lec);
         // Give back a mutable reference
-        return Ok(self.get_linkedentitycomponents_mut(entity_id)?);
+        return Ok(self.get_linked_components_mut(entity_id)?);
     }
     // Get a reference to a specific linked entity components struct
-    pub fn get_linkedentitycomponents(&self, entity_id: u16) -> Result<&LinkedComponents, ECSError> {
+    pub fn get_linked_components(&self, entity_id: u16) -> Result<&LinkedComponents, ECSError> {
         let linked_entity_components = self.linked_entity_components.get(&entity_id).unwrap();
         return Ok(linked_entity_components);
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_linkedentitycomponents_mut(&mut self, entity_id: u16) -> Result<&mut LinkedComponents, ECSError> {
+    pub fn get_linked_components_mut(&mut self, entity_id: u16) -> Result<&mut LinkedComponents, ECSError> {
         let linked_entity_components = self.linked_entity_components.get_mut(&entity_id).unwrap();
         return Ok(linked_entity_components);
     }
@@ -158,15 +158,15 @@ impl FilteredLinkedComponents {
     // Get a reference to a component using the component manager
     pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();        
-        let lec = component_manager.get_linkedentitycomponents(self.entity_id)?;
-        let component = lec.id_get_component::<T>(&id)?;
+        let lc = component_manager.get_linked_components(self.entity_id)?;
+        let component = lc.id_get_component::<T>(&id)?;
         return Ok(component);
     }
     // Get a mutable reference to a component using the component manager
     pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
-        let lec = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
-        let component = lec.id_get_component_mut::<T>(&id)?;
+        let lc = component_manager.get_linked_components_mut(self.entity_id)?;
+        let component = lc.id_get_component_mut::<T>(&id)?;
         return Ok(component);
     }
 }

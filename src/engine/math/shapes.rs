@@ -1,16 +1,21 @@
-// A simple plane consisting of 4 vertices
+// An infinite plane
 #[derive(Default)]
 pub struct Plane {
-	pub x: glam::Vec3,
-	pub y: glam::Vec3,
-	pub x1: glam::Vec3,
-	pub y1: glam::Vec3,
+	pub position: glam::Vec3,
+	pub normal: glam::Vec3
 }
 
 // Intersection tests
 impl Plane {
-	// Test intersection with another plane
-	pub fn intersect_other(&self, _other: Self) -> bool {
+	// Test intersection with a line
+	pub fn intersect_line(&self, line: Line) -> bool {
 		todo!()
 	}
+}
+
+// A simple, finite line
+#[derive(Default)]
+pub struct Line {
+	pub point: glam::Vec3,
+	pub point2: glam::Vec3,
 }

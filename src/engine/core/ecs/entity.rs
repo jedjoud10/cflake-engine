@@ -52,9 +52,9 @@ impl Entity {
 
         if component_manager.linked_entity_components.contains_key(&self.lc_id) {
             // It already exists, so just use that
-            linked_entity_component = component_manager.get_linkedentitycomponents_mut(self.lc_id)?;
+            linked_entity_component = component_manager.get_linked_components_mut(self.lc_id)?;
         } else {
-            linked_entity_component = component_manager.add_linkedentitycomponents(self.lc_id, LinkedComponents::default())?;
+            linked_entity_component = component_manager.add_linked_components(self.lc_id, LinkedComponents::default())?;
         }
         // Check if we have the component linked on this entity
         if linked_entity_component.components.contains_key(&component_id) {
@@ -89,10 +89,10 @@ impl Entity {
         component_manager: &'a ComponentManager,
     ) -> Result<&'a T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();        
-        let lec = component_manager.get_linkedentitycomponents(self.entity_id)?;
+        let lc = component_manager.get_linked_components(self.entity_id)?;
         // Check if we even have the component
-        if lec.contains_component(&component_id) {
-            let final_component = lec.id_get_component::<T>(&component_id)?;
+        if lc.contains_component(&component_id) {
+            let final_component = lc.id_get_component::<T>(&component_id)?;
             Ok(final_component)
         } else {
             return Err(ECSError::new(
@@ -111,10 +111,10 @@ impl Entity {
         component_manager: &'a mut ComponentManager,
     ) -> Result<&'a mut T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
-        let lec = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
+        let lc = component_manager.get_linked_components_mut(self.entity_id)?;
         // Check if we even have the component
-        if lec.contains_component(&component_id) {
-            let final_component = lec.id_get_component_mut::<T>(&component_id)?;
+        if lc.contains_component(&component_id) {
+            let final_component = lc.id_get_component_mut::<T>(&component_id)?;
             Ok(final_component)
         } else {
             return Err(ECSError::new(

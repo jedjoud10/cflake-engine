@@ -260,6 +260,7 @@ impl World {
             },
         );
 		println!("{:?}", entity);
+        println!("{:?}", self.component_manager.get_linked_components(id).unwrap().components.keys());
         *self.entity_manager.get_entity_mut(id).unwrap() = entity;
         id
     }
