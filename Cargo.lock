@@ -184,8 +184,7 @@ checksum = "e01732b97afd8508eee3333a541b9f7610f454bb818669e66e90f5f57c93a776"
 [[package]]
 name = "glfw"
 version = "0.41.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbb254ad1715644ab078c94372405bf061358b97969635ef7b09cf6f9437843e"
+source = "git+https://github.com/bjz/glfw-rs.git#c9d332ff60166d32b0649ce0a081af6f4f3e85e1"
 dependencies = [
  "bitflags",
  "glfw-sys",
