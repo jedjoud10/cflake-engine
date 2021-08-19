@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::engine::rendering::{renderer::EntityRenderState, shader::Shader};
+use crate::engine::rendering::{shader::Shader};
 use super::{core::{defaults::components::{transforms}, ecs::{component::{Component, ComponentID, LinkedEntityComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, rendering::{
         model::{Model, ProceduralModelGenerator},
         renderer::Renderer,
@@ -315,7 +315,7 @@ impl Default for Terrain {
 impl Terrain {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-        let mut density: f32 = (glam::vec3(x, y, z).length() - 10.0);
+        let mut density: f32 = glam::vec3(x, y, z).length() - 10.0;
 		density = density.min(y + (x * 0.2).sin() + (z * 0.2).sin()) - 10.0;
         density
     }

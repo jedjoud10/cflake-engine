@@ -154,11 +154,11 @@ pub trait System {
 		let components = entity.bitfield_get_components(system_data.c_bitfield);
 		
 
-		let linked_entity_components = LinkedEntityComponents {
+		
+		LinkedEntityComponents {
 			entity_id: entity.entity_id,
-			components: components
-		};
-		return linked_entity_components;
+			components
+		}
 	}
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {
@@ -166,7 +166,7 @@ pub trait System {
         self.pre_fire(data);
         // Loop over all the entities and update their components
         for &entity_id in system_data_clone.entities.iter() {
-            let mut entity_clone = data
+            let entity_clone = data
                 .entity_manager
                 .get_entity_mut(entity_id)
                 .unwrap()

@@ -9,15 +9,15 @@ pub struct AABB {
 // Intersection functions
 impl AABB {
 	// Check if this AABB intersects a sphere (or is inside of it)
-	pub fn intersect_sphere(&self, sphere_center: glam::Vec3, sphere_radius: f32) -> bool {
+	pub fn intersect_sphere(&self, _sphere_center: glam::Vec3, _sphere_radius: f32) -> bool {
 		false
 	}
 	// Check if this AABB intersects another AABB (or is inside of it)
-	pub fn intersect_other(&self, other: Self) -> bool {
+	pub fn intersect_other(&self, _other: Self) -> bool {
 		false
 	}
 	// Check if this AABB intersects a frustum (Like the camera's)
-	pub fn intersect_frustum(&self, frustum: Frustum) -> bool {
+	pub fn intersect_frustum(&self, _frustum: Frustum) -> bool {
 		false
 	}
 }

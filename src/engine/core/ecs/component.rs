@@ -1,4 +1,4 @@
-use std::{any::{Any, TypeId}, collections::HashMap};
+use std::{any::{Any}, collections::HashMap};
 
 use super::error::ECSError;
 
@@ -161,14 +161,14 @@ impl LinkedEntityComponents {
 	// Get a reference to a specific component
 	pub fn get_component<'a, T: Component + ComponentID + 'static>(&self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
 		let component_id = component_manager.get_component_id::<T>()?;
-		let global_component_id = self.components.get(&component_id).unwrap().clone();
+		let global_component_id = *self.components.get(&component_id).unwrap();
 		let component = component_manager.id_get_component::<T>(global_component_id)?;
 		Ok(component)
 	}
 	// Get a reference to a specific component mutably
 	pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
 		let component_id = component_manager.get_component_id::<T>()?;
-		let global_component_id = self.components.get(&component_id).unwrap().clone();
+		let global_component_id = *self.components.get(&component_id).unwrap();
 		let component = component_manager.id_get_component_mut::<T>(global_component_id)?;
 		Ok(component)
 	}

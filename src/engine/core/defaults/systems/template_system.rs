@@ -1,4 +1,4 @@
-use crate::engine::core::ecs::{component::LinkedEntityComponents, entity::Entity, system::System, system_data::{SystemData, SystemEventData}};
+use crate::engine::core::ecs::{component::LinkedEntityComponents, system::System, system_data::{SystemData, SystemEventData}};
 
 #[derive(Default)]
 pub struct TemplateSystem {

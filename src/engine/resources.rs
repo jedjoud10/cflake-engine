@@ -1,16 +1,15 @@
 use crate::engine::rendering::shader::SubShaderType;
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use image::GenericImageView;
+use byteorder::{LittleEndian, ReadBytesExt};
+
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     env,
-    fs::{remove_file, File, OpenOptions},
+    fs::{File},
     hash::{Hash, Hasher},
-    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
+    io::{BufRead, BufReader, Read, Seek, SeekFrom},
     str,
-    time::{SystemTime},
 };
-use walkdir::WalkDir;
+
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]

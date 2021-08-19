@@ -323,7 +323,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
     // Get the original resource folder
     let env_path = src_path.clone();
     let env_path: Vec<&str> = env_path.split('\\').collect();
-    let env_path: String = format!("{}\\", &env_path[..(env_path.len() - 2)].join("\\"));
+    let _env_path: String = format!("{}\\", &env_path[..(env_path.len() - 2)].join("\\"));
     let resources_path = format!("{}src\\resources\\", src_path);
     let packed_resources_path = format!("{}src\\packed-resources\\", src_path);
     println!("Resource path '{}'", resources_path);

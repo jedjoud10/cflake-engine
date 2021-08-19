@@ -139,7 +139,7 @@ impl Entity {
 			// Create a bitwise AND with the bitfield and component ID...
 			// Then check if it is equal to the component ID
 			(bitfield & component_id) == component_id
-		}).map(|x| (x.0.clone(), x.1.clone())).collect();
-		return components;
+		}).map(|x| (*x.0, *x.1)).collect();
+		components
 	}
 }

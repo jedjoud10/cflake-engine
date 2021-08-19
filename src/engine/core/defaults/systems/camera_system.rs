@@ -1,6 +1,6 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{component::LinkedEntityComponents, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, math};
+use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{component::LinkedEntityComponents, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}};
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -65,7 +65,7 @@ impl System for CameraSystem {
                 let right_vector = glam::Mat4::from_quat(changed_rotation)
                     .mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0))
                     .xyz();
-                let mut changed_position = components.get_component_mut::<transforms::Position>(data.component_manager).unwrap().position.clone();
+                let mut changed_position = components.get_component_mut::<transforms::Position>(data.component_manager).unwrap().position;
                 let delta = data.time_manager.delta_time as f32;
 				// Default speed
 				let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1;
