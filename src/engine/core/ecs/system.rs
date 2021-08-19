@@ -172,7 +172,7 @@ pub trait System {
                 .unwrap()
                 .clone();
 			// Get the linked entity components from the current entity
-			let mut linked_entity_components = self.get_linkedentitycomponents(entity_clone);
+			let mut linked_entity_components = self.get_linkedentitycomponents(&entity_clone);
             self.fire_entity(&mut linked_entity_components, data);
         }
         *self.get_system_data_mut() = system_data_clone;
