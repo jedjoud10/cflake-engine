@@ -259,7 +259,6 @@ impl World {
 				custom_data: &mut self.custom_data
             },
         );
-		println!("{:?}", entity);
         *self.entity_manager.get_entity_mut(id).unwrap() = entity;
         id
     }
