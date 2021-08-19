@@ -1,7 +1,7 @@
 
 use std::{collections::HashMap};
 
-use super::component::{Component, ComponentID, ComponentManager};
+use super::component::{Component, ComponentID, ComponentManager, LinkedEntityComponents};
 use super::error::ECSError;
 // A simple entity in the world
 #[derive(Clone, Default, Debug)]
@@ -9,8 +9,8 @@ pub struct Entity {
     pub name: String,
     pub entity_id: u16,
     pub c_bitfield: u16,
-    // The actual components are stored in the world
-    pub components: HashMap<u16, u16>,
+    // The LinkedEntityComponents ids in the component manager
+    pub linked_components_id: u16,
 }
 
 // ECS time bois

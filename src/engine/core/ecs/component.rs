@@ -1,9 +1,6 @@
 use std::{any::{Any}, collections::HashMap};
-
 use super::error::ECSError;
 
-// Maximum amount of components allowed on an entity
-const MAX_COMPONENTS: u16 = 16;
 
 // A component trait that can be added to other components
 pub trait Component {
@@ -14,7 +11,7 @@ pub trait Component {
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
     component_ids: HashMap<String, u16>,
-    components: HashMap<u16, Box<dyn Component>>,
+    pub linked_entity_components: Vec<LinkedEntityComponents>,
     pub current_component_id: u16,
 }
 
@@ -22,7 +19,7 @@ impl Default for ComponentManager {
     fn default() -> Self {
         Self {
             component_ids: HashMap::new(),
-            components: HashMap::new(),
+            linked_entity_components: Vec::new(),
             current_component_id: 1,
         }
     }
@@ -55,93 +52,9 @@ impl ComponentManager {
             return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
         }
     }
-
     // Checks if a specific component is registered
     pub fn is_component_registered<T: ComponentID>(&self) -> bool {
         self.component_ids.contains_key(&T::get_component_name())
-    }
-
-    // Get the component id for a specific entity
-    pub fn name_get_component_id(&self, name: &String) -> Result<u16, ECSError> {
-        // It found the component, so just return it's id
-        if self.component_ids.contains_key(name) {
-            let value = self.component_ids[name];
-            Ok(value)
-        } else {
-            return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
-        }
-    }
-    // Cast a boxed component to a reference of that component
-    pub fn cast_component<'a, T: ComponentID + Component + 'static>(
-        boxed_component: &'a Box<dyn Component>,
-    ) -> &'a T {
-        let component_any: &dyn Any = boxed_component.as_any();
-        let final_component = component_any.downcast_ref::<T>().unwrap();
-        final_component
-    }
-
-    // Cast a boxed component to a mutable reference of that component
-    pub fn cast_component_mut<'a, T: ComponentID + Component + 'static>(
-        boxed_component: &'a mut Box<dyn Component>,
-    ) -> &'a mut T {
-        let component_any: &mut dyn Any = boxed_component.as_any_mut();
-        let final_component = component_any.downcast_mut::<T>().unwrap();
-        final_component
-    }
-    // Check if we have a specified component in the manager
-    pub fn is_component_id_valid(&self, component_id: u16) -> bool {
-        self.components.contains_key(&component_id)
-    }
-    // Get a refernece to a component by it's global ID
-    pub fn id_get_component<'a, T: ComponentID + Component + 'static>(
-        &'a self,
-        id: u16,
-    ) -> Result<&'a T, ECSError> {
-        // Check if we even have the component
-        if (id as usize) < self.components.len() {
-            return Ok(Self::cast_component::<T>(self.components.get(&id).unwrap()));
-        } else {
-            return Err(ECSError::new(
-                format!(
-                    "Component '{}' does not exist in the ComponentManager!",
-                    T::get_component_name()
-                )
-                .as_str(),
-            ));
-        }
-    }
-    // Get a mutable component by it's global ID
-    pub fn id_get_component_mut<'a, T: ComponentID + Component + 'static>(
-        &'a mut self,
-        id: u16,
-    ) -> Result<&'a mut T, ECSError> {
-        // Check if we even have the component
-        if (id as usize) < self.components.len() {
-            return Ok(Self::cast_component_mut::<T>(
-                self.components.get_mut(&id).unwrap(),
-            ));
-        } else {
-            return Err(ECSError::new(
-                format!(
-                    "Component '{}' does not exist in the ComponentManager!",
-                    T::get_component_name()
-                )
-                .as_str(),
-            ));
-        }
-    }
-    // Add a single component to the component manager
-    pub fn add_component<'a, T: ComponentID + Component + 'a>(
-        &mut self,
-        component: Box<dyn Component>,
-    ) -> u16 {
-        let id = self.components.len() as u16;
-        self.components.insert(id, component);
-        id
-    }
-    // Remove a single component from the component manager using it's id
-    pub fn remove_component(&mut self, component_id: u16) {
-        self.components.remove(&component_id);
     }
 }
 
@@ -150,26 +63,39 @@ pub trait ComponentID {
     fn get_component_name() -> String;
 }
 
-// Linked entity components
+// Components that are linked to a specific entity
 pub struct LinkedEntityComponents {
-	pub components: HashMap<u16, u16>,
-	pub entity_id: u16,
+	pub components: HashMap<u16, Box<dyn Component>>,
 }
 
 // Get a specific component from the linked entity components struct
 impl LinkedEntityComponents {
+    // Cast a boxed component to a reference of that component
+    pub fn cast_component<'a, T: ComponentID + Component + 'static>(
+        boxed_component: &'a Box<dyn Component>,
+    ) -> &'a T {
+        let component_any: &dyn Any = boxed_component.as_any();
+        let final_component = component_any.downcast_ref::<T>().unwrap();
+        final_component
+    }
+    // Cast a boxed component to a mutable reference of that component
+    pub fn cast_component_mut<'a, T: ComponentID + Component + 'static>(
+        boxed_component: &'a mut Box<dyn Component>,
+    ) -> &'a mut T {
+        let component_any: &mut dyn Any = boxed_component.as_any_mut();
+        let final_component = component_any.downcast_mut::<T>().unwrap();
+        final_component
+    }
 	// Get a reference to a specific component
-	pub fn get_component<'a, T: Component + ComponentID + 'static>(&self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
+	pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
 		let component_id = component_manager.get_component_id::<T>()?;
-		let global_component_id = *self.components.get(&component_id).unwrap();
-		let component = component_manager.id_get_component::<T>(global_component_id)?;
+		let component = Self::cast_component(self.components.get(&component_id).unwrap());
 		Ok(component)
 	}
 	// Get a reference to a specific component mutably
-	pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
+	pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
 		let component_id = component_manager.get_component_id::<T>()?;
-		let global_component_id = *self.components.get(&component_id).unwrap();
-		let component = component_manager.id_get_component_mut::<T>(global_component_id)?;
+		let component = Self::cast_component_mut(self.components.get_mut(&component_id).unwrap());
 		Ok(component)
 	}
 }

@@ -375,10 +375,7 @@ impl System for RenderingSystem {
         // Sky params
         shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
-        let sky_component = data
-            .component_manager
-            .id_get_component::<components::Sky>(data.custom_data.sky_component_id)
-            .unwrap();
+        let sky_component = data.entity_manager.get_entity(data.custom_data.sky_entity).unwrap().get_component::<components::Sky>(data.component_manager).unwrap();
 
 		// Set the sky gradient
         shader.set_texture2d(

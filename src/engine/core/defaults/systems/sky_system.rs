@@ -77,7 +77,7 @@ impl System for SkySystem {
 			sky_gradient_texture_id: cached_texture_id
 		}).unwrap();
         // Update the custom data
-        data.custom_data.sky_component_id = sky
+        data.custom_data.sky_entity = sky
             .get_global_component_id::<components::Sky>(&mut data.component_manager)
             .unwrap();
         data.entity_manager.add_entity_s(sky);
