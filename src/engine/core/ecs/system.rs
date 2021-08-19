@@ -151,10 +151,13 @@ pub trait System {
 	fn get_flec(&self, entity: &Entity) -> FilteredLinkedComponents {
 		let system_data = self.get_system_data();
 		// Get the components that match this system's c_bitfield from the entity
-		return FilteredLinkedComponents {
+		todo!();
+        /*
+        return FilteredLinkedComponents {
             entity_id: entity.entity_id.clone(),
             global_ids: 
         }
+        */
 	}
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {

@@ -260,7 +260,6 @@ impl World {
             },
         );
 		println!("{:?}", entity);
-        println!("{:?}", self.component_manager.get_linked_components(id).unwrap().components.keys());
         *self.entity_manager.get_entity_mut(id).unwrap() = entity;
         id
     }
@@ -281,7 +280,9 @@ impl World {
         // Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
         // Remove all the components this entity had
-        self.component_manager.remove_linked_components(&entity_id);        
+        for global_component_id in removed_entity.linked_components.values() {
+            self.component_manager.id_remove_linked_component(global_component_id);    
+        }
         Ok(removed_entity)
     }
     // Remove multiple entities at once

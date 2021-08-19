@@ -7,7 +7,7 @@ use super::error::ECSError;
 pub struct Entity {
     pub name: String,
     pub entity_id: u16,
-    pub global_ids: HashMap<u16, u16>,
+    pub linked_components: HashMap<u16, u16>,
     pub c_bitfield: u16,
 }
 
@@ -29,7 +29,7 @@ impl Entity {
         self.link_component(component_manager, T::default())
     }
     // Check if we have a component linked
-    pub fn is_component_linked(&self, component_id: &u16) -> bool { self.global_ids.contains_key(component_id) }
+    pub fn is_component_linked(&self, component_id: &u16) -> bool { self.linked_components.contains_key(component_id) }
     // Link a component to this entity and use the given default state parameter
     pub fn link_component<T: ComponentID + Component + 'static>(
         &mut self,
@@ -51,7 +51,7 @@ impl Entity {
             ));
         }
         // Add the global ID to our hashmap
-        self.global_ids.insert(component_id, global_id);
+        self.linked_components.insert(component_id, global_id);
         // Add the component's bitfield to the entity's bitfield
         self.c_bitfield |= component_id;
         Ok(())
@@ -60,7 +60,7 @@ impl Entity {
     pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         let _name = T::get_component_name();
         let id = component_manager.get_component_id::<T>()?;
-        let global_id = self.global_ids.get(&id).unwrap();
+        let global_id = self.linked_components.get(&id).unwrap();
         // Take the bit, invert it, then AND it to the bitfield
         self.c_bitfield &= !id;
         
@@ -76,7 +76,7 @@ impl Entity {
         let component_id = component_manager.get_component_id::<T>().unwrap();        
         // Check if we even have the component
         if self.is_component_linked(&component_id) {
-            let global_id = self.global_ids.get(&component_id).unwrap();
+            let global_id = self.linked_components.get(&component_id).unwrap();
             let final_component = component_manager.id_get_linked_component::<T>(&component_id)?;
             Ok(final_component)
         } else {
@@ -98,7 +98,7 @@ impl Entity {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we even have the component
         if self.is_component_linked(&component_id) {
-            let global_id = self.global_ids.get(&component_id).unwrap();
+            let global_id = self.linked_components.get(&component_id).unwrap();
             let final_component = component_manager.id_get_linked_component_mut::<T>(&component_id)?;
             Ok(final_component)
         } else {

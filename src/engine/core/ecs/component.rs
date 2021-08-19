@@ -140,7 +140,7 @@ impl FilteredLinkedComponents {
         if self.global_ids.contains_key(&id) {
             // We are allowed to get this component
             let global_id = self.global_ids.get(&id).unwrap();
-            let component = component_manager.id_get_linked_components_mut(global_id)?;
+            let component = component_manager.id_get_linked_component_mut(global_id)?;
             return Ok(component);
         } else {
             // We are not allowed to get this component
