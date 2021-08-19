@@ -24,6 +24,7 @@ pub trait LoadableResource {
     fn from_resource(self, resource: &Resource) -> Self;
 }
 
+
 // All the conversion stuff from File -> Resource
 impl ResourceManager {
     // Turn a mdl3d file into a LoadedModel resource
@@ -421,6 +422,7 @@ impl ResourceManager {
 impl ResourceManager {
     // Loads a specific resource and caches it so we can use it next time
     pub fn load_packed_resource(&mut self, local_path: &str) -> Option<&Resource> {
+        
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
         let exe_path = exe_path.to_str().unwrap();
@@ -486,6 +488,7 @@ impl ResourceManager {
     pub fn unload_resouce(&mut self) {}
     // Saves all the resources from the "resources" folder into the "packed-resources" folder
     pub fn pack_resources() -> Option<()> {
+        /*
         // Get the original resource folder
         let env_path = env::current_dir().unwrap();
         let env_path = env_path.to_str().unwrap();
@@ -681,6 +684,7 @@ impl ResourceManager {
         }
 
         // Packed the resources sucsessfully
+        */
         Some(())
     }
 }
