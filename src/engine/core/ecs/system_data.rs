@@ -13,7 +13,7 @@ use crate::engine::{
     resources::ResourceManager,
 };
 
-use super::{component::{ComponentID, ComponentManager}, entity_manager::EntityManager, error::ECSError};
+use super::{component::{ComponentID, ComponentManager}, entity::EntityManager, error::ECSError};
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {

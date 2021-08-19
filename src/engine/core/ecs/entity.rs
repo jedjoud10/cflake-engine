@@ -1,8 +1,5 @@
 
 use std::{collections::HashMap};
-
-use gl::LineWidth;
-
 use super::component::{Component, ComponentID, ComponentManager, LinkedComponents};
 use super::error::ECSError;
 // A simple entity in the world
@@ -76,12 +73,16 @@ impl Entity {
         Ok(())
     }
     // Unlink a component from this entity
-    pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) {
+    pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         let _name = T::get_component_name();
-        let id = component_manager.get_component_id::<T>().unwrap();
+        let id = component_manager.get_component_id::<T>()?;
         // Take the bit, invert it, then AND it to the bitfield
         self.c_bitfield &= !id;
-        component_manager.remove_linkedentitycomponents(&self.entity_id).unwrap();
+        
+        // Get the linked components and remove the component from it
+        let linked_components = component_manager.get_linked_components_mut(self.entity_id)?;
+        linked_components.remove_component(&id);
+        return Ok(());
     }
     // Gets a reference to a component
     pub fn get_component<'a, T: ComponentID + Component + 'static>(
@@ -127,17 +128,84 @@ impl Entity {
             ));
         }
     }
-	// Get all the components (local ID hashmap) that match with the specified bitfield
-	pub fn bitfield_get_components(&self, bitfield: u16) -> HashMap<u16, u16> {
-        todo!();
-        /*
-		// Loop over all the components and filter them
-		let components = self.components.iter().filter(|(&component_id, _)| {
-			// Create a bitwise AND with the bitfield and component ID...
-			// Then check if it is equal to the component ID
-			(bitfield & component_id) == component_id
-		}).map(|x| (*x.0, *x.1)).collect();
-		components
-        */
-	}
+}
+
+// An entity manager that handles entities
+#[derive(Default)]
+pub struct EntityManager {
+    pub entities: HashMap<u16, Entity>,
+    pub entitites_to_add: Vec<Entity>,
+}
+
+impl EntityManager {
+    // Add an entity to the entity manager
+    pub fn internal_add_entity(&mut self, mut entity: Entity) -> u16 {
+        entity.entity_id = self.entities.len() as u16;
+        // Add the entity to the world
+        let id = entity.entity_id;
+        self.entities.insert(entity.entity_id, entity);
+        id
+    }
+    // Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
+    pub fn add_entity_s(&mut self, mut entity: Entity) -> u16 {
+        // Temporarily add it to the entities_to_add vector
+
+        // Get the id of the entity inside the temp vector (Local ID)
+        let mut id = self.entitites_to_add.len() as u16;
+        // Add that id to the id of the current vector length (Global ID)
+        id += self.entities.len() as u16;
+        entity.entity_id = id;
+		println!("{:?}", entity);
+        self.entitites_to_add.push(entity);
+        id
+    }
+    // Get a mutable reference to a stored entity
+    pub fn get_entity_mut(
+        &mut self,
+        entity_id: u16,
+    ) -> Result<&mut Entity, ECSError> {
+        if self.entities.contains_key(&entity_id) {
+            return Ok(self.entities.get_mut(&entity_id).unwrap());
+        } else {
+            return Err(ECSError::new(
+                format!(
+                    "Entity with ID '{}' does not exist in EntityManager!",
+                    entity_id
+                )
+                .as_str(),
+            ));
+        }
+    }
+    // Get an entity using it's entity id
+    pub fn get_entity(&self, entity_id: u16) -> Result<&Entity, ECSError> {
+        if self.entities.contains_key(&entity_id) {
+            return Ok(self.entities.get(&entity_id).unwrap());
+        } else {
+            return Err(ECSError::new(
+                format!(
+                    "Entity with ID '{}' does not exist in EntityManager!",
+                    entity_id
+                )
+                .as_str(),
+            ));
+        }
+    }
+    // Removes an entity from the world
+    pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {
+        if self.entities.contains_key(&entity_id) {
+            let removed_entity = self
+                .entities
+                .remove(&entity_id)
+				.unwrap();
+            Ok(removed_entity)
+        } else {
+            return Err(ECSError::new(
+                format!(
+                    "Entity with ID '{}' does not exist in EntityManager!",
+                    entity_id
+                )
+                .as_str(),
+            ));
+        }
+    }
 }

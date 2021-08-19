@@ -23,7 +23,7 @@ use crate::engine::core::ecs::error::ECSError;
 use super::cacher::CacheManager;
 
 use super::defaults::systems::rendering_system::RenderingSystem;
-use super::ecs::entity_manager::EntityManager;
+use super::ecs::entity::EntityManager;
 
 //  The actual world
 #[derive(Default)]
@@ -281,7 +281,7 @@ impl World {
         // Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
         // Remove all the components this entity had
-        self.component_manager.remove_linkedentitycomponents(&entity_id);        
+        self.component_manager.remove_linked_components(&entity_id);        
         Ok(removed_entity)
     }
     // Remove multiple entities at once

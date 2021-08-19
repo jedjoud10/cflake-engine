@@ -148,11 +148,12 @@ pub trait System {
         *self.get_system_data_mut() = system_data_clone;
     }
 	// Get the filtered LinkedComponents from an entity and our system data
-	fn get_flec(&self, component_manager: &ComponentManager, entity: &Entity) -> FilteredLinkedComponents {
+	fn get_flec(&self, entity: &Entity) -> FilteredLinkedComponents {
 		let system_data = self.get_system_data();
 		// Get the components that match this system's c_bitfield from the entity
 		return FilteredLinkedComponents {
-            entity_id: entity.entity_id.clone()
+            entity_id: entity.entity_id.clone(),
+            filtered_c_bitfield: system_data.c_bitfield
         }
 	}
     // Run the system for a single iteration
@@ -167,7 +168,7 @@ pub trait System {
                 .unwrap()
                 .clone();
 			// Get the linked entity components from the current entity
-			let mut linked_entity_components = self.get_flec(data.component_manager, &entity_clone);
+			let mut linked_entity_components = self.get_flec(&entity_clone);
             self.fire_entity(&mut linked_entity_components, data);
         }
         *self.get_system_data_mut() = system_data_clone;

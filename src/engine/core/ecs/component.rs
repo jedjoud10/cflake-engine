@@ -1,5 +1,5 @@
 use std::{any::{Any}, collections::HashMap, hash::Hash};
-use super::error::ECSError;
+use super::{entity::Entity, error::ECSError};
 
 
 // A component trait that can be added to other components
@@ -73,7 +73,7 @@ impl ComponentManager {
         return Ok(linked_entity_components);
     }
     // Remove a specified linked entity component struct from the manager
-    pub fn remove_linkedentitycomponents(&mut self, entity_id: &u16) -> Result<(), ECSError> {
+    pub fn remove_linked_components(&mut self, entity_id: &u16) -> Result<(), ECSError> {
         self.linked_entity_components.remove(entity_id).unwrap();
         return Ok(());
     }
@@ -150,23 +150,50 @@ impl LinkedComponents {
 
 // The filtered components that are linked to a specific entity, and that also match a specific c_bitfield
 pub struct FilteredLinkedComponents {
-    pub entity_id: u16
+    pub entity_id: u16,
+    pub filtered_c_bitfield: u16
 }
 
 // Get the components
 impl FilteredLinkedComponents {
     // Get a reference to a component using the component manager
     pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
-        let id = component_manager.get_component_id::<T>()?.clone();        
-        let lc = component_manager.get_linked_components(self.entity_id)?;
-        let component = lc.id_get_component::<T>(&id)?;
-        return Ok(component);
+        let id = component_manager.get_component_id::<T>()?.clone();      
+        // Check if we are even allowed to get that components
+        if (id & self.filtered_c_bitfield) == id {
+            // We are allowed to get this component
+            let lc = component_manager.get_linked_components(self.entity_id)?;
+            let component = lc.id_get_component::<T>(&id)?;
+            return Ok(component);
+        } else {
+            // We are not allowed to get this component
+            return Err(ECSError::new(
+                format!(
+                    "Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}",
+                    id, self.entity_id
+                )
+                .as_str(),
+            ));
+        }        
     }
     // Get a mutable reference to a component using the component manager
     pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
-        let lc = component_manager.get_linked_components_mut(self.entity_id)?;
-        let component = lc.id_get_component_mut::<T>(&id)?;
-        return Ok(component);
+        // Check if we are even allowed to get that components
+        if (id & self.filtered_c_bitfield) == id {
+            // We are allowed to get this component
+            let lc = component_manager.get_linked_components_mut(self.entity_id)?;
+            let component = lc.id_get_component_mut::<T>(&id)?;
+            return Ok(component);
+        } else {
+            // We are not allowed to get this component
+            return Err(ECSError::new(
+                format!(
+                    "Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}",
+                    id, self.entity_id
+                )
+                .as_str(),
+            ));
+        }
     }
 }
