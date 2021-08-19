@@ -1,4 +1,4 @@
-use std::{any::{Any}, collections::HashMap};
+use std::{any::{Any}, collections::HashMap, hash::Hash};
 use super::error::ECSError;
 
 
@@ -33,9 +33,10 @@ impl ComponentManager {
         let name: String = T::get_component_name();
         // Register the component
         self.component_ids
-            .insert(name, self.current_component_id);
+        .insert(name.clone(), self.current_component_id);
         // Make a copy of the id before the bit shift
         let component_id = self.current_component_id;
+        println!("Register component {} with ID {}", name, component_id);
         // Bit shift to the left
         self.current_component_id <<= 1;
         // Return the component id before the bit shift
@@ -47,6 +48,7 @@ impl ComponentManager {
         // It found the component, so just return it's id
         if self.component_ids.contains_key(&name) {
             let value = self.component_ids[&name];
+            println!("GetComponentID call '{}' {}", name, value);
             Ok(value)
         } else {
             return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
@@ -55,6 +57,12 @@ impl ComponentManager {
     // Checks if a specific component is registered
     pub fn is_component_registered<T: ComponentID>(&self) -> bool {
         self.component_ids.contains_key(&T::get_component_name())
+    }
+    // Add a specific LinkedComponents struct to the world
+    pub fn add_linkedentitycomponents(&mut self, entity_id: u16, lec: LinkedComponents) -> Result<&mut LinkedComponents, ECSError> {
+        self.linked_entity_components.insert(entity_id, lec);
+        // Give back a mutable reference
+        return Ok(self.get_linkedentitycomponents_mut(entity_id)?);
     }
     // Get a reference to a specific linked entity components struct
     pub fn get_linkedentitycomponents(&self, entity_id: u16) -> Result<&LinkedComponents, ECSError> {
@@ -79,6 +87,7 @@ pub trait ComponentID {
 }
 
 // Components that are linked to a specific entity
+#[derive(Default)]
 pub struct LinkedComponents {
 	pub components: HashMap<u16, Box<dyn Component>>,
 }
@@ -123,14 +132,15 @@ impl LinkedComponents {
 		let component = Self::cast_component_mut(self.components.get_mut(&component_id).unwrap());
 		Ok(component)
 	} 
-    // Add a single component to the component manager
-    pub fn add_component<'a, T: ComponentID + Component + 'a>(
+    // Add a single component to the LinkedComponents
+    pub fn id_add_component<'a, T: ComponentID + Component + 'static>(
         &mut self,
-        component: Box<dyn Component>,
-    ) -> u16 {
-        let id = self.components.len() as u16;
-        self.components.insert(id, component);
-        id
+        component: T,
+        component_id: u16
+    ) {
+        // Box the component
+        let boxed_component = Box::new(component);
+        self.components.insert(component_id, boxed_component);
     }
     // Remove a single component from the component manager using it's id
     pub fn remove_component(&mut self, component_id: &u16) {
@@ -149,7 +159,7 @@ pub struct FilteredLinkedComponents {
 impl FilteredLinkedComponents {
     // Get a reference to a component using the component manager
     pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
-        let id = component_manager.get_component_id::<T>()?.clone();
+        let id = component_manager.get_component_id::<T>()?.clone();        
         let lec = component_manager.get_linkedentitycomponents(self.entity_id)?;
         let component = lec.id_get_component::<T>(&id)?;
         return Ok(component);
@@ -157,6 +167,7 @@ impl FilteredLinkedComponents {
     // Get a mutable reference to a component using the component manager
     pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
+        println!("Get filtered component call");
         let lec = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
         let component = lec.id_get_component_mut::<T>(&id)?;
         return Ok(component);

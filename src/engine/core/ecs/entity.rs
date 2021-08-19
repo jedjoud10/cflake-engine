@@ -10,6 +10,8 @@ use super::error::ECSError;
 pub struct Entity {
     pub name: String,
     pub entity_id: u16,
+    pub lc_id: u16,
+    pub generate_lc_id: bool,
     pub c_bitfield: u16,
 }
 
@@ -19,6 +21,7 @@ impl Entity {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
+            generate_lc_id: true,
             ..Self::default()
         }
     }
@@ -39,7 +42,21 @@ impl Entity {
         let component_id = component_manager.get_component_id::<T>().unwrap();
 
         // Get the linked entity component from the component manager
-        let linked_entity_component = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
+        let linked_entity_component: &mut LinkedComponents;
+
+        // Generate a new LinkedComponent ID
+        if self.generate_lc_id {
+            self.lc_id = component_manager.linked_entity_components.len() as u16;
+            self.generate_lc_id = false;
+        }
+
+        if component_manager.linked_entity_components.contains_key(&self.lc_id) {
+            // It already exists, so just use that
+            linked_entity_component = component_manager.get_linkedentitycomponents_mut(self.lc_id)?;
+        } else {
+            linked_entity_component = component_manager.add_linkedentitycomponents(self.lc_id, LinkedComponents::default())?;
+        }
+        println!("{:?}", linked_entity_component.components.keys());
         // Check if we have the component linked on this entity
         if linked_entity_component.components.contains_key(&component_id) {
             return Err(ECSError::new(
@@ -53,7 +70,7 @@ impl Entity {
         }
 
         // Add the component inside the component manager
-        let global_id = linked_entity_component.add_component::<T>(Box::new(default_state));
+        linked_entity_component.id_add_component::<T>(default_state, component_id);
 
         // Add the component's bitfield to the entity's bitfield
         self.c_bitfield |= component_id;
@@ -72,8 +89,9 @@ impl Entity {
         &self,
         component_manager: &'a ComponentManager,
     ) -> Result<&'a T, ECSError> {
-        let component_id = component_manager.get_component_id::<T>().unwrap();
+        let component_id = component_manager.get_component_id::<T>().unwrap();        
         let lec = component_manager.get_linkedentitycomponents(self.entity_id)?;
+        println!("{:?}", lec.components.keys());
         // Check if we even have the component
         if lec.contains_component(&component_id) {
             let final_component = lec.id_get_component::<T>(&component_id)?;
@@ -96,6 +114,7 @@ impl Entity {
     ) -> Result<&'a mut T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         let lec = component_manager.get_linkedentitycomponents_mut(self.entity_id)?;
+        println!("{:?} {}", lec.components.keys(), component_id);
         // Check if we even have the component
         if lec.contains_component(&component_id) {
             let final_component = lec.id_get_component_mut::<T>(&component_id)?;
