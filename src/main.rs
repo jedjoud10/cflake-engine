@@ -8,14 +8,5 @@ extern crate gl;
 // include the OpenGL type aliases
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    // Check if we want to pack the resourcess
-    let mut open_window = true;
-    if args.len() > 1 && args[1] == *"--pack-resources" {
-        open_window = false;
-        engine::resources::ResourceManager::pack_resources();
-    }
-    if open_window {
-        setup_window();
-    }
+    setup_window();    
 }

@@ -1,14 +1,4 @@
-cd target/release
-hypothermia.exe --pack-resources
-cd..
-cd..
-
-:: Clear the two other directories
-:: rmdir .\target\debug\packed-resources\ /q / s
-:: mkdir .\target\debug\packed-resources\
-:: rmdir .\target\release\packed-resources\ /q / s
-:: mkdir .\target\release\packed-resources\
-
+:: Just copy all the files to the two packed-resources folders
 robocopy .\src\packed-resources\ target\debug\packed-resources\ /mir /njh /njs /ndl /nc /ns
 robocopy .\src\packed-resources\ target\release\packed-resources\ /mir /njh /njs /ndl /nc /ns
 pause
