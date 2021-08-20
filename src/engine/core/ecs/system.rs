@@ -150,27 +150,36 @@ pub trait System {
         self.pre_fire(data);
         let system_data = self.get_system_data_mut();
         let c_bitfield = system_data.c_bitfield;
-        let invalid_entity_ppf = system_data.entity_ppf.as_ref();
-        let valid_test = invalid_entity_ppf.unwrap();
-        // Not yet initialized
-        let mut other: bool = false;
-        match invalid_entity_ppf {
-            None => other = true,
-            _ => { }
-        }
+        let entity_ppf = system_data.entity_ppf.as_ref();
+        
 
-        // The filtered entities
-        let filtered_entities = system_data.entities.iter().filter(|&entity_id| {
+        // The filtered entities tuple that also contains the linked component data
+        let filtered_entity_ids = system_data.entities.iter().filter_map(|entity_id| {
             let entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap();
-            valid_test.filter_entity(&entity_clone).clone()
-        }).map(|&entity_id| entity_id).collect::<Vec<u16>>();
+            // Get the linked components
+            let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
+            let mut valid_entity: bool = match entity_ppf {
+                // Filter
+                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &linked_components),
+                // Default
+                None => true, 
+            };
+            // Check if it is a valid entity
+            if valid_entity {
+                // This entity passed the filter
+                Some(*entity_id)
+            } else {
+                // This entity failed the filter
+                None
+            }
+        }).collect::<Vec<u16>>().clone();
 
         // Loop over all the entities and update their components
-        for entity_id in filtered_entities.iter()  {
+        for entity_id in filtered_entity_ids  {
+            let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
             // Get the linked entity components from the current entity
-            let entity_clone = data.entity_manager.get_entity(entity_id).unwrap();
-            let linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
-            self.fire_entity(&linked_entity_components, data);
+            let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
+            self.fire_entity(&linked_components, data);
         }
         
         // Post fire event call
@@ -186,10 +195,6 @@ pub trait System {
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 
     // System control functions
-    fn generate_eppf(&mut self) -> Box<dyn EntityPrePassFilter> {
-        let eppf = DefaultEntityPrePassFilter::default();
-        return Box::new(eppf);
-    }
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData);
     fn pre_fire(&mut self, _data: &mut SystemEventData) {}
     fn post_fire(&mut self, _data: &mut SystemEventData) {}
@@ -201,17 +206,5 @@ pub trait System {
 
 // Pre pass filter for the entities
 pub trait EntityPrePassFilter {
-    fn filter_entity(&self, entity: &Entity) -> bool;
-}
-
-// The default entity pre pass filter
-#[derive(Default)]
-pub struct DefaultEntityPrePassFilter {
-}
-
-// The default entity pre pass filter, so make every entity pass the filter succsesfully
-impl EntityPrePassFilter for DefaultEntityPrePassFilter {
-    fn filter_entity(&self, entity: &Entity) -> bool {
-        true
-    }
+    fn filter_entity(&self, entity: &Entity, flc: &FilteredLinkedComponents) -> bool;
 }

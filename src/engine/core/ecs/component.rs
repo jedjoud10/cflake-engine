@@ -119,7 +119,7 @@ impl FilteredLinkedComponents {
                 // Then check if it is equal to the component ID
                 (system_c_bitfield & component_id) == component_id
             })
-            .map(|x| (*x.0, *x.1))
+            .map(|(&x, &x1)| (x, x1))
             .collect();
         filted_linked_components.components = global_ids;
         return filted_linked_components;
