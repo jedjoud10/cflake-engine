@@ -1,4 +1,5 @@
 use crate::engine::core::ecs::component::{Component, ComponentID};
+use crate::engine::math::bounds;
 use crate::engine::rendering::window::Window;
 use glam::Vec4Swizzles;
 
@@ -75,5 +76,27 @@ impl Component for Sky {
 impl ComponentID for Sky {
     fn get_component_name() -> String {
         String::from("Sky")
+    }
+}
+
+// An AABB components
+#[derive(Default)]
+pub struct AABB {
+    pub aabb: bounds::AABB,
+}
+
+// Main traits implemented
+impl Component for AABB {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+}
+impl ComponentID for AABB {
+    fn get_component_name() -> String {
+        String::from("AABB")
     }
 }

@@ -93,9 +93,9 @@ impl Terrain {
     pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
         // Create the entity
-        for x in -10..10 {
+        for x in -2..2 {
             for y in 0..2 {
-                for z in -10..10 {
+                for z in -2..2 {
                     let position = glam::vec3(
                         ((CHUNK_SIZE as f32) - 2.0) * x as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,
@@ -132,7 +132,7 @@ impl System for Terrain {
         self.system_data.link_component::<Chunk>(data.component_manager).unwrap();
         self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
         self.system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
-        //self.generate_terrain(data);
+        self.generate_terrain(data);
     }
 
     // Update the camera position inside the terrain generator

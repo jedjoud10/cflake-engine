@@ -1,3 +1,2 @@
-pub mod aabb;
-pub mod frustum;
+pub mod bounds;
 pub mod shapes;
