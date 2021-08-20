@@ -1,7 +1,8 @@
 use std::any::Any;
+use glfw::ffi::DECORATED;
 
 use super::{
-    component::{ComponentManager, FilteredLinkedComponents},
+     component::{ComponentManager, FilteredLinkedComponents},
     entity::Entity,
     error::ECSError,
     system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
@@ -150,12 +151,31 @@ pub trait System {
         let system_data = self.get_system_data_mut();
         let entities_clone = system_data.entities.clone();
         let c_bitfield = system_data.c_bitfield;
+        let invalid_entity_ppf = system_data.entity_ppf.as_ref();
+        let valid_test = invalid_entity_ppf.unwrap();
+        // Not yet initialized
+        let mut valid_ppf: bool = false;
+        match invalid_entity_ppf {
+            None => valid_ppf = true,
+            _ => { }
+        }
+
         // Loop over all the entities and update their components
         for &entity_id in entities_clone.iter() {
             let entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap().clone();
-            // Get the linked entity components from the current entity
-            let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
-            self.fire_entity(&mut linked_entity_components, data);
+            let test: bool = false;
+            {
+                let is_valid_entity = valid_test.filter_entity(&entity_clone);
+
+            }
+            // TODO: Make this actually filter and don't skip
+            if test {
+                // Get the linked entity components from the current entity
+                let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
+                self.fire_entity(&mut linked_entity_components, data);
+            } else {
+                continue;
+            }
         }
         // Reput the cloned entities
         self.get_system_data_mut().entities = entities_clone;
@@ -172,6 +192,10 @@ pub trait System {
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 
     // System control functions
+    fn generate_eppf(&mut self) -> Box<dyn EntityPrePassFilter> {
+        let eppf = DefaultEntityPrePassFilter::default();
+        return Box::new(eppf);
+    }
     fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData);
     fn pre_fire(&mut self, _data: &mut SystemEventData) {}
     fn post_fire(&mut self, _data: &mut SystemEventData) {}
@@ -184,4 +208,16 @@ pub trait System {
 // Pre pass filter for the entities
 pub trait EntityPrePassFilter {
     fn filter_entity(&self, entity: &Entity) -> bool;
+}
+
+// The default entity pre pass filter
+#[derive(Default)]
+pub struct DefaultEntityPrePassFilter {
+}
+
+// The default entity pre pass filter, so make every entity pass the filter succsesfully
+impl EntityPrePassFilter for DefaultEntityPrePassFilter {
+    fn filter_entity(&self, entity: &Entity) -> bool {
+        true
+    }
 }

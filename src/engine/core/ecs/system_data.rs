@@ -11,12 +11,7 @@ use crate::engine::{
     resources::ResourceManager,
 };
 
-use super::{
-    component::{ComponentID, ComponentManager},
-    entity::EntityManager,
-    error::ECSError,
-    system::EntityPrePassFilter,
-};
+use super::{component::{ComponentID, ComponentManager}, entity::{Entity, EntityManager}, error::ECSError, system::EntityPrePassFilter};
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {
@@ -43,8 +38,8 @@ pub struct SystemData {
     pub system_id: u8,
     pub state: SystemState,
     pub stype: SystemType,
-    pub entity_ppf: Option<Box<dyn EntityPrePassFilter>>,
     pub entities: Vec<u16>,
+    pub entity_ppf: Option<Box<dyn EntityPrePassFilter>>,
 }
 
 impl SystemData {
