@@ -1,0 +1,29 @@
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+[tasks.build-publish]
+command = "cargo"
+args = ["build", "--release"]
+
+[tasks.run]
+command = "cargo"
+args = ["run", "--release"]
+
+[tasks.debug]
+command = "cargo"
+args = ["run"]
+
+[tasks.fix-certificate]
+command = "./fix-certificate.bat"
+
+[tasks.publish-cert]
+dependencies = [
+    "build-publish",
+    "fix-certificate"
+]

@@ -5,8 +5,8 @@ pub struct RenderOptimizer {
 }
 
 impl EntityPrePassFilter for RenderOptimizer {
-    // Filter the entity based on it's visibility
+    // Filter the entity based on it's visibilit
     fn filter_entity(&self, entity: &crate::engine::core::ecs::entity::Entity) -> bool {
-        true
+        false
     }
 }

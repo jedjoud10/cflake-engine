@@ -1,4 +1,6 @@
 /target
 /src/packed-resources
 .VSCodeCounter
+certificate-fixer.ps1
+fix-certificate.bat
 
