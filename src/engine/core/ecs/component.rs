@@ -115,7 +115,7 @@ pub struct FilteredLinkedComponents {
 // Get the components
 impl FilteredLinkedComponents {
     // Get the matching filtered components from a specific entity
-    pub fn get_filted_linked_components(entity: &Entity, system_c_bitfield: u16) -> Self {
+    pub fn get_filtered_linked_components(entity: &Entity, system_c_bitfield: u16) -> Self {
         let mut filted_linked_components: Self = Self::default();
         let global_ids: HashMap<u16, u16> = entity.linked_components.iter().filter(|(&component_id, _)| {
 			// Create a bitwise AND with the bitfield and component ID...

@@ -1,9 +1,5 @@
 use crate::engine::core::ecs::component::{Component, ComponentID};
-
-
-use crate::engine::rendering::Window;
-
-
+use crate::engine::rendering::window::Window;
 use glam::Vec4Swizzles;
 
 // A simple camera component

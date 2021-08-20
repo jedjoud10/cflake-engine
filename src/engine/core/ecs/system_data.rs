@@ -13,7 +13,7 @@ use crate::engine::{
     resources::ResourceManager,
 };
 
-use super::{component::{ComponentID, ComponentManager}, entity::EntityManager, error::ECSError};
+use super::{component::{ComponentID, ComponentManager}, entity::EntityManager, error::ECSError, system::EntityPrePassFilter};
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {
@@ -34,26 +34,14 @@ pub struct SystemEventDataLite<'a> {
 }
 
 // Some system data that is part of a system and wrapped around System trait getter functions
-#[derive(Clone)]
+#[derive(Default)]
 pub struct SystemData {
     pub c_bitfield: u16,
     pub system_id: u8,
     pub state: SystemState,
     pub stype: SystemType,
+    pub entity_ppf: Option<Box<dyn EntityPrePassFilter>>,
     pub entities: Vec<u16>,
-}
-
-// Default for system data
-impl Default for SystemData {
-    fn default() -> Self {
-        Self {
-            c_bitfield: 0,
-            system_id: 0,
-            state: SystemState::Enabled(0.0),
-            stype: SystemType::Update,
-            entities: Vec::new(),
-        }
-    }
 }
 
 impl SystemData {
@@ -75,6 +63,8 @@ pub enum SystemState {
     Enabled(f32),
     Disabled(f32),
 }
+// Default system state
+impl Default for SystemState { fn default() -> Self { Self::Enabled(0.0) } } 
 
 // All of the systems that are implement by default
 #[derive(Clone, Copy)]
@@ -84,3 +74,5 @@ pub enum SystemType {
     Tick,
     Render,
 }
+// Default system type
+impl Default for SystemType { fn default() -> Self { Self::Update } }

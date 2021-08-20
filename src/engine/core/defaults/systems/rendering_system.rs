@@ -11,7 +11,7 @@ use crate::engine::rendering::model::Model;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
 use crate::engine::rendering::texture::{Texture};
-use crate::engine::rendering::*;
+use crate::engine::rendering::window::Window;
 use crate::engine::rendering::renderer::EntityRenderState;
 use crate::gl;
 

@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use super::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType}};
+use super::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, error::ECSError, system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType}};
 use crate::engine::core::world::{Time};
 
 #[derive(Default)]
@@ -99,9 +99,10 @@ impl SystemManager {
         system
     }
     // Gets a mutable reference to a system
-    pub fn get_system_mut(&mut self, system_id: u8) -> &mut Box<dyn System> {
-        let system = self.systems.get_mut(system_id as usize).unwrap();
-        system
+    pub fn get_system_mut<'a, T: System + 'static>(&'a mut self, system_id: u8) -> Result<&'a mut T, ECSError> {
+        let system = self.systems.get_mut(system_id as usize).ok_or::<ECSError>(ECSError::new("N"))?;
+        let cast_system = system.as_any().downcast_mut::<T>().ok_or::<ECSError>(ECSError::new("N"))?;
+        cast_system
     }
 }
 
@@ -138,25 +139,18 @@ pub trait System {
     }
     // Stop the system permanently
     fn end_system(&mut self, data: &mut SystemEventDataLite) {
-        let system_data_clone = self.get_system_data().clone();
+        let system_data_clone = self.get_system_data_mut();
         // Loop over all the entities and fire the entity removed event
         for &entity_id in system_data_clone.entities.iter() {
             let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
             self.entity_removed(entity_clone, data);
             *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
         }
-        *self.get_system_data_mut() = system_data_clone;
     }
-	// Get the filtered LinkedComponents from an entity and our system data
-	fn get_flec(&self, entity: &Entity) -> FilteredLinkedComponents {
-		let system_data = self.get_system_data();
-		// Get the components that match this system's c_bitfield from the entity        
-        return FilteredLinkedComponents::get_filted_linked_components(entity, system_data.c_bitfield);
-	}
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {
-        let system_data_clone = self.get_system_data().clone();
         self.pre_fire(data);
+        let system_data_clone = self.get_system_data_mut();
         // Loop over all the entities and update their components
         for &entity_id in system_data_clone.entities.iter() {
             let entity_clone = data
@@ -165,10 +159,9 @@ pub trait System {
                 .unwrap()
                 .clone();
 			// Get the linked entity components from the current entity
-			let mut linked_entity_components = self.get_flec(&entity_clone);
+			let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, system_data_clone.c_bitfield);
             self.fire_entity(&mut linked_entity_components, data);
         }
-        *self.get_system_data_mut() = system_data_clone;
         self.post_fire(data);
     }
 
@@ -189,3 +182,9 @@ pub trait System {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
+
+// Pre pass filter for the entities
+pub trait EntityPrePassFilter {
+    fn filter_entity(&self, entity: &Entity) -> bool;
+}
+

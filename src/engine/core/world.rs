@@ -7,7 +7,7 @@ use crate::engine::core::ecs::entity::*;
 use crate::engine::core::ecs::system::*;
 use crate::engine::core::ecs::system_data::*;
 use crate::engine::input::*;
-use crate::engine::rendering::*;
+use crate::engine::rendering::window::Window;
 
 use crate::engine::core::defaults::components::components::Camera;
 use crate::engine::rendering::shader::Shader;
@@ -167,9 +167,7 @@ impl World {
         if self.input_manager.map_pressed("change_debug_view") {
             let render_system = self
                 .system_manager
-                .get_system_mut(self.custom_data.render_system_id)
-                .as_any_mut()
-                .downcast_mut::<RenderingSystem>()
+                .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
                 .unwrap();
             render_system.debug_view += 1;
             render_system.debug_view %= 4;
@@ -178,9 +176,7 @@ impl World {
 		if self.input_manager.map_pressed("toggle_wireframe") {
 			let render_system = self
                 .system_manager
-                .get_system_mut(self.custom_data.render_system_id)
-                .as_any_mut()
-                .downcast_mut::<RenderingSystem>()
+                .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
                 .unwrap();
 			render_system.wireframe = !render_system.wireframe;
 		}
