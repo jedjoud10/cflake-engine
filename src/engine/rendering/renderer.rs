@@ -213,6 +213,13 @@ pub enum EntityRenderState {
     Invisible,
 }
 
+// If the entity is culled or not
+#[derive(Debug)]
+pub enum EntityCullingState {
+    Culled,
+    Unculled,
+}
+
 impl Default for EntityRenderState {
     fn default() -> Self {
         Self::Visible

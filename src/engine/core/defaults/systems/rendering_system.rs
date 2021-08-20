@@ -201,17 +201,6 @@ impl System for RenderingSystem {
                 .rotation
                 .mul_vec3(glam::vec3(0.0, 0.0, 1.0));
         }
-        // Check if the entity can be seen by the camera
-        match components.get_component::<Renderer>(data.component_manager).unwrap().render_state {
-            EntityRenderState::Visible => {
-                // If it is visible, check if the camera can see it, if it cannot, then don't waste time rendering it
-                if ((entity_position - camera_position).normalize()).dot(camera_forward) > -0.8 {
-                    return;
-                }
-            }
-            _ => {}
-        }
-
         let model_matrix: glam::Mat4;
         // Render the entity
         {
