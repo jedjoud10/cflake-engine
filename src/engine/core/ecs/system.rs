@@ -7,7 +7,7 @@ use super::{
     error::ECSError,
     system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
 };
-use crate::engine::core::world::Time;
+use crate::engine::core::world::{CustomWorldData, Time};
 
 #[derive(Default)]
 // Manages the systems
@@ -150,7 +150,7 @@ pub trait System {
         self.pre_fire(data);
         let system_data = self.get_system_data_mut();
         let c_bitfield = system_data.c_bitfield;
-        let entity_ppf = system_data.entity_ppf.as_ref();
+        let entity_ppf = system_data.eppf.as_ref();
         
 
         // The filtered entities tuple that also contains the linked component data
@@ -160,7 +160,7 @@ pub trait System {
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
             let mut valid_entity: bool = match entity_ppf {
                 // Filter
-                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &linked_components),
+                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &linked_components, data.custom_data),
                 // Default
                 None => true, 
             };
@@ -185,6 +185,12 @@ pub trait System {
         // Post fire event call
         self.post_fire(data);
     }
+    
+    // Add an EntityPrePassFilter into the system
+    fn add_eppf<>(&mut self, eppf: Box<dyn EntityPrePassFilter>) {
+        let system_data = self.get_system_data_mut();
+        system_data.eppf = Some(eppf);
+    }
 
     // Getters for the system data
     fn get_system_data(&self) -> &SystemData;
@@ -206,5 +212,5 @@ pub trait System {
 
 // Pre pass filter for the entities
 pub trait EntityPrePassFilter {
-    fn filter_entity(&self, entity: &Entity, flc: &FilteredLinkedComponents) -> bool;
+    fn filter_entity(&self, entity: &Entity, flc: &FilteredLinkedComponents, custom_data: &CustomWorldData) -> bool;
 }

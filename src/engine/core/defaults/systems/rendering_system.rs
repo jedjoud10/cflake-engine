@@ -8,6 +8,7 @@ use crate::engine::core::ecs::{
 };
 use crate::engine::core::world::World;
 use crate::engine::rendering::model::Model;
+use crate::engine::rendering::optimizer::RenderOptimizer;
 use crate::engine::rendering::renderer::EntityRenderState;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
@@ -165,6 +166,7 @@ impl System for RenderingSystem {
         let _default_size = World::get_default_window_size();
         self.setup_opengl();
         self.setup_render_buffer(data, self.multisampling);
+        self.add_eppf(Box::new(RenderOptimizer::default()));
 
         // Load the wireframe shader
         let wireframe_shader_name = Shader::new(
@@ -178,15 +180,6 @@ impl System for RenderingSystem {
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
-        // Check if this entity is renderable in the first place
-        match components.get_component::<Renderer>(data.component_manager).unwrap().render_state {
-            EntityRenderState::Invisible => {
-                // No need to render this entity, exit early
-                return;
-            }
-            _ => {}
-        }
-
         // Get the entity position
         let entity_position = components.get_component::<transforms::Position>(data.component_manager).unwrap().position;
         let shader: &Shader;
@@ -323,7 +316,7 @@ impl System for RenderingSystem {
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
         let sky_component = data
             .entity_manager
-            .get_entity(&data.custom_data.sky_entity)
+            .get_entity(&data.custom_data.sky_entity_id)
             .unwrap()
             .get_component::<components::Sky>(data.component_manager)
             .unwrap();

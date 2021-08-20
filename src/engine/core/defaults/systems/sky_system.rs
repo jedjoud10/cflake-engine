@@ -76,7 +76,7 @@ impl System for SkySystem {
         )
         .unwrap();
         // Update the custom data
-        data.custom_data.sky_entity = sky.entity_id;
+        data.custom_data.sky_entity_id = sky.entity_id;
         data.entity_manager.add_entity_s(sky);
     }
 
