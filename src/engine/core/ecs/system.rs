@@ -136,7 +136,7 @@ pub trait System {
         let system_data_clone = self.get_system_data_mut();
         let entities_clone = system_data_clone.entities.clone();
         // Loop over all the entities and fire the entity removed event
-        for &entity_id in entities_clone.iter() {
+        for entity_id in entities_clone.iter() {
             let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
             self.entity_removed(entity_clone, data);
             *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
@@ -149,36 +149,30 @@ pub trait System {
         // Pre fire event call
         self.pre_fire(data);
         let system_data = self.get_system_data_mut();
-        let entities_clone = system_data.entities.clone();
         let c_bitfield = system_data.c_bitfield;
         let invalid_entity_ppf = system_data.entity_ppf.as_ref();
         let valid_test = invalid_entity_ppf.unwrap();
         // Not yet initialized
-        let mut valid_ppf: bool = false;
+        let mut other: bool = false;
         match invalid_entity_ppf {
-            None => valid_ppf = true,
+            None => other = true,
             _ => { }
         }
 
-        // Loop over all the entities and update their components
-        for &entity_id in entities_clone.iter() {
-            let entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap().clone();
-            let test: bool = false;
-            {
-                let is_valid_entity = valid_test.filter_entity(&entity_clone);
+        // The filtered entities
+        let filtered_entities = system_data.entities.iter().filter(|&entity_id| {
+            let entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap();
+            valid_test.filter_entity(&entity_clone).clone()
+        }).map(|&entity_id| entity_id).collect::<Vec<u16>>();
 
-            }
-            // TODO: Make this actually filter and don't skip
-            if test {
-                // Get the linked entity components from the current entity
-                let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
-                self.fire_entity(&mut linked_entity_components, data);
-            } else {
-                continue;
-            }
+        // Loop over all the entities and update their components
+        for entity_id in filtered_entities.iter()  {
+            // Get the linked entity components from the current entity
+            let entity_clone = data.entity_manager.get_entity(entity_id).unwrap();
+            let linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
+            self.fire_entity(&linked_entity_components, data);
         }
-        // Reput the cloned entities
-        self.get_system_data_mut().entities = entities_clone;
+        
         // Post fire event call
         self.post_fire(data);
     }
@@ -196,7 +190,7 @@ pub trait System {
         let eppf = DefaultEntityPrePassFilter::default();
         return Box::new(eppf);
     }
-    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData);
+    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData);
     fn pre_fire(&mut self, _data: &mut SystemEventData) {}
     fn post_fire(&mut self, _data: &mut SystemEventData) {}
 

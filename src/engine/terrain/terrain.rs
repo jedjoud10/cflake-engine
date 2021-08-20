@@ -139,7 +139,7 @@ impl System for Terrain {
     fn pre_fire(&mut self, data: &mut SystemEventData) {
         let camera_position = data
             .entity_manager
-            .get_entity(data.custom_data.main_camera_entity_id)
+            .get_entity(&data.custom_data.main_camera_entity_id)
             .unwrap()
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
@@ -148,7 +148,7 @@ impl System for Terrain {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, _components: &mut FilteredLinkedComponents, _data: &mut SystemEventData) {}
+    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {}
 
     // When a chunk gets added to the world
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {

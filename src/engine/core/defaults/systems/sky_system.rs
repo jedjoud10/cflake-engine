@@ -91,11 +91,11 @@ impl System for SkySystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
         // Set the position of the sky sphere to always be the camera
         let position = data
             .entity_manager
-            .get_entity(data.custom_data.main_camera_entity_id)
+            .get_entity(&data.custom_data.main_camera_entity_id)
             .unwrap()
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()

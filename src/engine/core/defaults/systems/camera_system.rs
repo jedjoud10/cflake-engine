@@ -42,7 +42,7 @@ impl System for CameraSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
         let position: glam::Vec3;
         let rotation: glam::Quat;
         {

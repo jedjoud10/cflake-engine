@@ -213,6 +213,7 @@ dependencies = [
  "glam",
  "glfw",
  "image",
+ "rayon",
  "walkdir",
 ]
 

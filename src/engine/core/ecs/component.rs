@@ -141,7 +141,7 @@ impl FilteredLinkedComponents {
         }
     }
     // Get a mutable reference to a component using the component manager
-    pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
+    pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
