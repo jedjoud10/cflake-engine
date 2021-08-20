@@ -14,12 +14,7 @@ pub struct Frustum {
 // Le kode
 impl Frustum {
     // Calculate all the 6 planes that consist this frustum
-    pub fn calculate_planes(
-        &mut self,
-        _camera_position: glam::Vec3,
-        _camera_rotation: glam::Quat,
-        camera_data: &components::Camera,
-    ) -> Vec<Plane> {
+    pub fn calculate_planes(&mut self, _camera_position: glam::Vec3, _camera_rotation: glam::Quat, camera_data: &components::Camera) -> Vec<Plane> {
         let planes: Vec<Plane> = Vec::new();
         // Create a simple cube, then transform all of it's vertices by the projection matrix and then view matrix, that should leave us with the view frustum vertices
         let mut vertices: Vec<glam::Vec3> = vec![
@@ -32,10 +27,7 @@ impl Frustum {
         ];
         // Transform all the points by the view matrix
         for vertex in vertices.iter_mut() {
-            let new_vertex = camera_data
-                .projection_matrix
-                .mul_vec4(glam::vec4(vertex.x, vertex.y, vertex.z, 1.0))
-                .xyz();
+            let new_vertex = camera_data.projection_matrix.mul_vec4(glam::vec4(vertex.x, vertex.y, vertex.z, 1.0)).xyz();
             *vertex = new_vertex;
             println!("{}", vertex);
         }

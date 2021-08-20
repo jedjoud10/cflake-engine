@@ -13,12 +13,7 @@ pub fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let default_size = World::get_default_window_size();
     let (mut window, events) = glfw
-        .create_window(
-            default_size.0 as u32,
-            default_size.1 as u32,
-            "Hypothermia",
-            glfw::WindowMode::Windowed,
-        )
+        .create_window(default_size.0 as u32, default_size.1 as u32, "Hypothermia", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
     gl::load_with(|s| window.get_proc_address(s) as *const _);
     // Set the type of events that we want to listen to
@@ -64,12 +59,8 @@ fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glf
         glfw::WindowEvent::Size(x, y) => {
             world.resize_window_event((x as u16, y as u16));
         }
-        glfw::WindowEvent::Scroll(_scroll, scroll2) => {
-            world.input_manager.recieve_mouse_event(None, Some(scroll2))
-        }
-        glfw::WindowEvent::CursorPos(x, y) => {
-            world.input_manager.recieve_mouse_event(Some((x, y)), None)
-        }
+        glfw::WindowEvent::Scroll(_scroll, scroll2) => world.input_manager.recieve_mouse_event(None, Some(scroll2)),
+        glfw::WindowEvent::CursorPos(x, y) => world.input_manager.recieve_mouse_event(Some((x, y)), None),
         _ => {}
     }
 }

@@ -13,12 +13,8 @@ use rendering_system::RenderingSystem;
 
 // Pre-register unused components
 pub fn register_components(world: &mut World) {
-    world
-        .component_manager
-        .register_component::<transforms::Position>();
-    world
-        .component_manager
-        .register_component::<transforms::Rotation>();
+    world.component_manager.register_component::<transforms::Position>();
+    world.component_manager.register_component::<transforms::Rotation>();
 }
 // Load the systems
 pub fn load_systems(world: &mut World) {
@@ -67,12 +63,8 @@ pub fn load_entities(world: &mut World) {
             },
         )
         .unwrap();
-    camera
-        .link_default_component::<transforms::Rotation>(&mut world.component_manager)
-        .unwrap();
-    camera
-        .link_default_component::<components::Camera>(&mut world.component_manager)
-        .unwrap();
+    camera.link_default_component::<transforms::Rotation>(&mut world.component_manager).unwrap();
+    camera.link_default_component::<components::Camera>(&mut world.component_manager).unwrap();
     // Make it the default camera
     world.custom_data.main_camera_entity_id = world.add_entity(camera);
 
@@ -82,19 +74,14 @@ pub fn load_entities(world: &mut World) {
     let mut rc = Renderer::default();
     rc.load_model("models\\quad.mdl3d", &mut world.resource_manager);
     rc.shader_name = Shader::new(
-        vec![
-            "shaders\\default.vrsh.glsl",
-            "shaders\\checkerboard.frsh.glsl",
-        ],
+        vec!["shaders\\default.vrsh.glsl", "shaders\\checkerboard.frsh.glsl"],
         &mut world.resource_manager,
         &mut world.shader_cacher,
     )
     .1;
     rc.load_default_textures(&mut world.texture_cacher);
-    quad.link_component::<Renderer>(&mut world.component_manager, rc)
-        .unwrap();
-    quad.link_default_component::<transforms::Position>(&mut world.component_manager)
-        .unwrap();
+    quad.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
+    quad.link_default_component::<transforms::Position>(&mut world.component_manager).unwrap();
     quad.link_component::<transforms::Rotation>(
         &mut world.component_manager,
         transforms::Rotation {
@@ -102,11 +89,8 @@ pub fn load_entities(world: &mut World) {
         },
     )
     .unwrap();
-    quad.link_component::<transforms::Scale>(
-        &mut world.component_manager,
-        transforms::Scale { scale: 100.0 },
-    )
-    .unwrap();
+    quad.link_component::<transforms::Scale>(&mut world.component_manager, transforms::Scale { scale: 100.0 })
+        .unwrap();
     world.add_entity(quad);
 
     // Anime moment
@@ -121,8 +105,7 @@ pub fn load_entities(world: &mut World) {
         &mut world.resource_manager,
     );
     rc.uv_scale *= 10.0;
-    cube.link_component::<Renderer>(&mut world.component_manager, rc)
-        .unwrap();
+    cube.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     cube.link_component::<transforms::Position>(
         &mut world.component_manager,
         transforms::Position {
@@ -130,9 +113,7 @@ pub fn load_entities(world: &mut World) {
         },
     )
     .unwrap();
-    cube.link_default_component::<transforms::Rotation>(&mut world.component_manager)
-        .unwrap();
-    cube.link_default_component::<transforms::Scale>(&mut world.component_manager)
-        .unwrap();
+    cube.link_default_component::<transforms::Rotation>(&mut world.component_manager).unwrap();
+    cube.link_default_component::<transforms::Scale>(&mut world.component_manager).unwrap();
     world.add_entity(cube);
 }

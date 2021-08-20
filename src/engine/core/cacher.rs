@@ -25,9 +25,7 @@ pub struct Error {
 
 impl Error {
     pub fn new(msg: &str) -> Self {
-        Self {
-            details: msg.to_string(),
-        }
+        Self { details: msg.to_string() }
     }
 }
 
@@ -51,10 +49,7 @@ impl<A> CacheManager<A> {
     }
     // Generate default objects maps so we can use them late
     pub fn generate_defaults(&mut self, default_objects_names: Vec<&str>) {
-        let mut default_object_names: Vec<String> = default_objects_names
-            .iter()
-            .map(|&x| x.to_string())
-            .collect();
+        let mut default_object_names: Vec<String> = default_objects_names.iter().map(|&x| x.to_string()).collect();
         self.defaults.append(&mut default_object_names);
     }
     // Get a default object using it's ID
@@ -66,9 +61,7 @@ impl<A> CacheManager<A> {
             Ok(object)
         } else {
             // ID isn't valid
-            return Err(Error::new(
-                format!("Default cached object with ID '{}' does not exist!", id).as_str(),
-            ));
+            return Err(Error::new(format!("Default cached object with ID '{}' does not exist!", id).as_str()));
         }
     }
     // Get the ID of an object using it's name
@@ -79,9 +72,7 @@ impl<A> CacheManager<A> {
             Ok(id)
         } else {
             // Name's not valid
-            return Err(Error::new(
-                format!("Object name '{}' is invalid!", name).as_str(),
-            ));
+            return Err(Error::new(format!("Object name '{}' is invalid!", name).as_str()));
         }
     }
     // Cached an object and gives back it's cached ID
@@ -93,8 +84,7 @@ impl<A> CacheManager<A> {
         } else {
             // The object was never cached, so we've gotta cache it
             self.objects.push(object);
-            self.names
-                .insert(name.to_string(), self.objects.len() as u16 - 1);
+            self.names.insert(name.to_string(), self.objects.len() as u16 - 1);
 
             self.objects.len() as u16 - 1
         }
@@ -103,30 +93,20 @@ impl<A> CacheManager<A> {
     pub fn get_object(&self, name: &str) -> Result<&A, Error> {
         if self.is_cached(name) {
             // The object exists, we can safely return it
-            return Ok(self
-                .objects
-                .get(self.names[&name.to_string()] as usize)
-                .unwrap());
+            return Ok(self.objects.get(self.names[&name.to_string()] as usize).unwrap());
         } else {
             // The object does not exist
-            return Err(Error::new(
-                format!("Cached object with name '{}' does not exist!", name).as_str(),
-            ));
+            return Err(Error::new(format!("Cached object with name '{}' does not exist!", name).as_str()));
         }
     }
     // Get a reference to an object using it's object name
     pub fn get_object_mut(&mut self, name: &str) -> Result<&mut A, Error> {
         if self.names.contains_key(name) {
             // The object exists, we can safely return it
-            return Ok(self
-                .objects
-                .get_mut(self.names[&name.to_string()] as usize)
-                .unwrap());
+            return Ok(self.objects.get_mut(self.names[&name.to_string()] as usize).unwrap());
         } else {
             // The object does not exist
-            return Err(Error::new(
-                format!("Cached object with name '{}' does not exist!", name).as_str(),
-            ));
+            return Err(Error::new(format!("Cached object with name '{}' does not exist!", name).as_str()));
         }
     }
     // Get a reference to an object using it's object ID

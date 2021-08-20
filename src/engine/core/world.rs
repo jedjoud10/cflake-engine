@@ -53,21 +53,12 @@ impl World {
 
         // Load the default objects for the CacheManagers
         let _white_texture = Texture::new()
-            .load_texture(
-                "textures\\white.png",
-                &mut self.resource_manager,
-                &mut self.texture_cacher,
-            )
+            .load_texture("textures\\white.png", &mut self.resource_manager, &mut self.texture_cacher)
             .unwrap();
         let _black_texture = Texture::new()
-            .load_texture(
-                "textures\\black.png",
-                &mut self.resource_manager,
-                &mut self.texture_cacher,
-            )
+            .load_texture("textures\\black.png", &mut self.resource_manager, &mut self.texture_cacher)
             .unwrap();
-        self.texture_cacher
-            .generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
+        self.texture_cacher.generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
 
         // Copy the default shader name
         let default_shader_name: String;
@@ -79,9 +70,7 @@ impl World {
             );
             default_shader_name = default_shader.1;
         }
-        self.shader_cacher
-            .1
-            .generate_defaults(vec![default_shader_name.as_str()]);
+        self.shader_cacher.1.generate_defaults(vec![default_shader_name.as_str()]);
     }
     // When the world started initializing
     pub fn start_world(&mut self, window: &mut glfw::Window) {
@@ -125,19 +114,16 @@ impl World {
         };
 
         // Update the entities
-        self.system_manager
-            .run_system_type(SystemType::Update, &mut data);
+        self.system_manager.run_system_type(SystemType::Update, &mut data);
         // And render them
-        self.system_manager
-            .run_system_type(SystemType::Render, &mut data);
+        self.system_manager.run_system_type(SystemType::Render, &mut data);
         window.swap_buffers();
 
         // Update the timings of every system
         self.system_manager.update_systems(&self.time_manager);
 
         // Update the inputs
-        self.input_manager
-            .late_update(self.time_manager.delta_time as f32);
+        self.input_manager.late_update(self.time_manager.delta_time as f32);
 
         // Add the entities that need to be added
         self.add_entities(self.entity_manager.entitites_to_add.clone());
@@ -156,26 +142,17 @@ impl World {
         }
         // Capture the fps
         if self.input_manager.map_pressed("capture_fps") {
-            println!(
-                "Current FPS: '{}', Delta: '{}'",
-                self.time_manager.fps, self.time_manager.delta_time
-            );
+            println!("Current FPS: '{}', Delta: '{}'", self.time_manager.fps, self.time_manager.delta_time);
         }
         // Change the debug view
         if self.input_manager.map_pressed("change_debug_view") {
-            let render_system = self
-                .system_manager
-                .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
-                .unwrap();
+            let render_system = self.system_manager.get_system_mut::<RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.debug_view += 1;
             render_system.debug_view %= 4;
         }
         // Enable / Disable wireframe
         if self.input_manager.map_pressed("toggle_wireframe") {
-            let render_system = self
-                .system_manager
-                .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
-                .unwrap();
+            let render_system = self.system_manager.get_system_mut::<RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.wireframe = !render_system.wireframe;
         }
 
@@ -189,14 +166,7 @@ impl World {
             // Set the glfw window as a fullscreen window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let videomode = monitor.unwrap().get_video_mode().unwrap();
-                window.set_monitor(
-                    glfw::WindowMode::FullScreen(monitor.unwrap()),
-                    0,
-                    0,
-                    videomode.width,
-                    videomode.height,
-                    None,
-                );
+                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
                 unsafe {
                     // Update the OpenGL viewport
                     gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
@@ -207,22 +177,10 @@ impl World {
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let _videomode = monitor.unwrap().get_video_mode().unwrap();
                 let default_window_size = Self::get_default_window_size();
-                window.set_monitor(
-                    glfw::WindowMode::Windowed,
-                    50,
-                    50,
-                    default_window_size.0 as u32,
-                    default_window_size.1 as u32,
-                    None,
-                );
+                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
                 unsafe {
                     // Update the OpenGL viewport
-                    gl::Viewport(
-                        0,
-                        0,
-                        default_window_size.0 as i32,
-                        default_window_size.1 as i32,
-                    );
+                    gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
                 }
             });
         }
@@ -271,8 +229,7 @@ impl World {
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
         // Remove all the components this entity had
         for global_component_id in removed_entity.linked_components.values() {
-            self.component_manager
-                .id_remove_linked_component(global_component_id);
+            self.component_manager.id_remove_linked_component(global_component_id);
         }
         Ok(removed_entity)
     }
@@ -298,29 +255,18 @@ impl World {
         unsafe {
             gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
 
-            let render_system = self
-                .system_manager
-                .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
-                .unwrap();
+            let render_system = self.system_manager.get_system_mut::<RenderingSystem>(self.custom_data.render_system_id).unwrap();
             // Update the size of each texture that is bound to the framebuffer
             render_system.window.size = size;
             render_system.diffuse_texture.update_size(size.0, size.1);
-            render_system
-                .depth_stencil_texture
-                .update_size(size.0, size.1);
+            render_system.depth_stencil_texture.update_size(size.0, size.1);
             render_system.normals_texture.update_size(size.0, size.1);
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);
         }
-        let camera_entity_clone = self
-            .entity_manager
-            .get_entity(self.custom_data.main_camera_entity_id)
-            .unwrap()
-            .clone();
+        let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
-        let camera_component = camera_entity_clone
-            .get_component_mut::<Camera>(&mut self.component_manager)
-            .unwrap();
+        let camera_component = camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager).unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.update_projection_matrix(&self.custom_data.window);
         // Update the original entity

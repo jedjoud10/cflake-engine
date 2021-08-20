@@ -46,9 +46,7 @@ impl Shader {
                 shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             } else {
                 // It was not cached, so we need to cache it
-                let resource = resource_cacher
-                    .load_packed_resource(subshader_path)
-                    .unwrap();
+                let resource = resource_cacher.load_packed_resource(subshader_path).unwrap();
                 let mut subshader = SubShader::from_resource(resource).unwrap();
                 // Compile the subshader
                 subshader.compile_subshader();
@@ -61,10 +59,7 @@ impl Shader {
         // Finalize the shader and cache it
         shader.finalize_shader();
         let cached_shader_id = shader_cacher.1.cache_object(shader, &name);
-        return (
-            shader_cacher.1.id_get_object_mut(cached_shader_id).unwrap(),
-            name,
-        );
+        return (shader_cacher.1.id_get_object_mut(cached_shader_id).unwrap(), name);
     }
     // Finalizes a vert/frag shader by compiling it
     pub fn finalize_shader(&mut self) {
@@ -82,12 +77,7 @@ impl Shader {
             // Print any errors that might've happened while finalizing this shader
             if info_log_length > 0 {
                 let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetProgramInfoLog(
-                    self.program,
-                    info_log_length,
-                    std::ptr::null_mut::<i32>(),
-                    log.as_mut_ptr(),
-                );
+                gl::GetProgramInfoLog(self.program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                 println!("Error while finalizing shader {}!:", self.name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
@@ -142,12 +132,7 @@ impl Shader {
     // Set a scalar x3 uniform
     pub fn set_scalar_3_uniform(&self, name: &str, values: (f32, f32, f32)) {
         unsafe {
-            gl::Uniform3f(
-                self.get_uniform_location(name),
-                values.0,
-                values.1,
-                values.2,
-            );
+            gl::Uniform3f(self.get_uniform_location(name), values.0, values.1, values.2);
         }
     }
     // Set a matrix 4x4
@@ -162,10 +147,7 @@ impl Shader {
         unsafe {
             gl::ActiveTexture(active_texture_id);
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            gl::Uniform1i(
-                self.get_uniform_location(name),
-                active_texture_id as i32 - 33984,
-            );
+            gl::Uniform1i(self.get_uniform_location(name), active_texture_id as i32 - 33984);
         }
     }
     // Set a int
@@ -234,12 +216,7 @@ impl SubShader {
             // Print any errors that might've happened while compiling this subshader
             if info_log_length > 0 {
                 let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetShaderInfoLog(
-                    self.program,
-                    info_log_length,
-                    std::ptr::null_mut::<i32>(),
-                    log.as_mut_ptr(),
-                );
+                gl::GetShaderInfoLog(self.program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                 println!("Error while compiling sub-shader {}!:", self.name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
@@ -248,10 +225,7 @@ impl SubShader {
                 panic!();
             }
 
-            println!(
-                "\x1b[32mSubshader {} compiled succsessfully!\x1b[0m",
-                self.name
-            );
+            println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", self.name);
         }
     }
 }

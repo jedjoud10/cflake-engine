@@ -125,8 +125,7 @@ impl InputManager {
         if let std::collections::hash_map::Entry::Vacant(e) = self.bindings.entry(key) {
             // The binding does not exist yet, so create a new one
             e.insert(map_name.to_string());
-            self.mappings
-                .insert(map_name.to_string(), MapStatus::Nothing);
+            self.mappings.insert(map_name.to_string(), MapStatus::Nothing);
         } else {
             // Nein.
         }

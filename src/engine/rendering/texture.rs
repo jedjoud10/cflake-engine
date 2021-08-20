@@ -62,8 +62,7 @@ impl LoadableResource for Texture {
                 let height = texture.height;
 
                 // Turn the compressed png bytes into their raw form
-                let mut image =
-                    image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
+                let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
                 image.set_format(image::ImageFormat::Png);
                 let decoded = image.with_guessed_format().unwrap().decode().unwrap();
                 // Read the image as a 32 bit image
@@ -102,16 +101,10 @@ impl Texture {
         }
     }
     // Cache the current texture and return it's reference
-    pub fn cache_texture<'a>(
-        self,
-        texture_cacher: &'a mut CacheManager<Texture>,
-    ) -> Option<(&'a Self, u16)> {
+    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture>) -> Option<(&'a Self, u16)> {
         let texture_name = self.name.clone();
         let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
-        return Some((
-            texture_cacher.get_object(texture_name.as_str()).unwrap(),
-            texture_id,
-        ));
+        return Some((texture_cacher.get_object(texture_name.as_str()).unwrap(), texture_id));
     }
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, width: u16, height: u16) -> Self {
@@ -158,12 +151,7 @@ impl Texture {
         }
     }
     // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
-    pub fn load_texture<'a>(
-        self,
-        local_path: &str,
-        resource_manager: &mut ResourceManager,
-        texture_cacher: &'a mut CacheManager<Texture>,
-    ) -> Option<(&'a Self, u16)> {
+    pub fn load_texture<'a>(self, local_path: &str, resource_manager: &mut ResourceManager, texture_cacher: &'a mut CacheManager<Texture>) -> Option<(&'a Self, u16)> {
         // Load the resource
         let resource = resource_manager.load_packed_resource(local_path)?;
         // If the texture was already cached, just loaded from cache
@@ -174,10 +162,7 @@ impl Texture {
             Some((texture, texture_id))
         } else {
             // If it not cached, then load the texture from that resource
-            let texture = self
-                .from_resource(resource)
-                .cache_texture(texture_cacher)
-                .unwrap();
+            let texture = self.from_resource(resource).cache_texture(texture_cacher).unwrap();
             Some(texture)
         }
     }
@@ -218,29 +203,13 @@ impl Texture {
                 match self.texture_filter {
                     TextureFilter::Linear => {
                         // 'Linear' filter
-                        gl::TexParameteri(
-                            gl::TEXTURE_2D,
-                            gl::TEXTURE_MIN_FILTER,
-                            gl::LINEAR as i32,
-                        );
-                        gl::TexParameteri(
-                            gl::TEXTURE_2D,
-                            gl::TEXTURE_MAG_FILTER,
-                            gl::LINEAR as i32,
-                        );
+                        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
                     }
                     TextureFilter::Nearest => {
                         // 'Nearest' filter
-                        gl::TexParameteri(
-                            gl::TEXTURE_2D,
-                            gl::TEXTURE_MIN_FILTER,
-                            gl::NEAREST as i32,
-                        );
-                        gl::TexParameteri(
-                            gl::TEXTURE_2D,
-                            gl::TEXTURE_MAG_FILTER,
-                            gl::NEAREST as i32,
-                        );
+                        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+                        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                     }
                 }
             }
@@ -254,29 +223,13 @@ impl Texture {
                     match self.texture_filter {
                         TextureFilter::Linear => {
                             // 'Linear' filter
-                            gl::TexParameteri(
-                                gl::TEXTURE_2D,
-                                gl::TEXTURE_MIN_FILTER,
-                                gl::LINEAR_MIPMAP_LINEAR as i32,
-                            );
-                            gl::TexParameteri(
-                                gl::TEXTURE_2D,
-                                gl::TEXTURE_MAG_FILTER,
-                                gl::LINEAR_MIPMAP_LINEAR as i32,
-                            );
+                            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+                            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
                         }
                         TextureFilter::Nearest => {
                             // 'Nearest' filter
-                            gl::TexParameteri(
-                                gl::TEXTURE_2D,
-                                gl::TEXTURE_MIN_FILTER,
-                                gl::NEAREST_MIPMAP_NEAREST as i32,
-                            );
-                            gl::TexParameteri(
-                                gl::TEXTURE_2D,
-                                gl::TEXTURE_MAG_FILTER,
-                                gl::NEAREST_MIPMAP_NEAREST as i32,
-                            );
+                            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
                         }
                     }
                 }

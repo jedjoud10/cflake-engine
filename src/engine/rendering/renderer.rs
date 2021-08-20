@@ -70,12 +70,7 @@ impl Renderer {
         self.model = model;
     }
     // Load textures from their resource paths
-    pub fn resource_load_textures(
-        &mut self,
-        texture_paths: Vec<&str>,
-        texture_cacher: &mut CacheManager<Texture>,
-        resource_manager: &mut ResourceManager,
-    ) {
+    pub fn resource_load_textures(&mut self, texture_paths: Vec<&str>, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) {
         // Load the textures
         for (_i, &texture_path) in texture_paths.iter().enumerate() {
             let _resource = resource_manager.load_packed_resource(texture_path).unwrap();
@@ -85,19 +80,14 @@ impl Renderer {
                 .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
                 .load_texture(texture_path, resource_manager, texture_cacher)
                 .unwrap();
-            self.texture_cache_ids
-                .push(texture_cacher.get_object_id(texture_path).unwrap());
+            self.texture_cache_ids.push(texture_cacher.get_object_id(texture_path).unwrap());
         }
         // Load the default textures
         self.load_default_textures(texture_cacher);
     }
 
     // Load textures from their texture struct
-    pub fn load_textures(
-        &mut self,
-        texture_ids: Vec<u16>,
-        texture_cacher: &mut CacheManager<Texture>,
-    ) {
+    pub fn load_textures(&mut self, texture_ids: Vec<u16>, texture_cacher: &mut CacheManager<Texture>) {
         // Set the textures as the renderer's textures
         for (_i, &texture_id) in texture_ids.iter().enumerate() {
             // Since these are loadable textures, we already know they got cached beforehand
@@ -112,8 +102,7 @@ impl Renderer {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
         for _i in (self.texture_cache_ids.len())..5 {
-            self.texture_cache_ids
-                .push(texture_cacher.get_object_id("textures\\white.png").unwrap());
+            self.texture_cache_ids.push(texture_cacher.get_object_id("textures\\white.png").unwrap());
         }
     }
 }
@@ -121,9 +110,7 @@ impl Renderer {
 impl Renderer {
     // Updates the model matrix using a position and a rotation
     pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat, scale: f32) {
-        let model_matrix = glam::Mat4::from_translation(position)
-            * glam::Mat4::from_quat(rotation)
-            * glam::Mat4::from_scale(glam::vec3(scale, scale, scale));
+        let model_matrix = glam::Mat4::from_translation(position) * glam::Mat4::from_quat(rotation) * glam::Mat4::from_scale(glam::vec3(scale, scale, scale));
         self.gpu_data.model_matrix = model_matrix;
     }
     // When we update the model and want to refresh it's OpenGL data
@@ -135,10 +122,7 @@ impl Renderer {
 
             // Create the EBO
             gl::GenBuffers(1, &mut self.gpu_data.element_buffer_object);
-            gl::BindBuffer(
-                gl::ELEMENT_ARRAY_BUFFER,
-                self.gpu_data.element_buffer_object,
-            );
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.gpu_data.element_buffer_object);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (self.model.triangles.len() * size_of::<u32>()) as isize,

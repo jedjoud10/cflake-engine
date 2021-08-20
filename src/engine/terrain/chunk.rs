@@ -80,16 +80,8 @@ impl ProceduralModelGenerator for Chunk {
                             let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
 
                             // In global space here
-                            let vert1_usize = (
-                                vert1.x as usize + x,
-                                vert1.y as usize + y,
-                                vert1.z as usize + z,
-                            );
-                            let vert2_usize = (
-                                vert2.x as usize + x,
-                                vert2.y as usize + y,
-                                vert2.z as usize + z,
-                            );
+                            let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
+                            let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
                             let density1 = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2];
                             let density2 = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2];
                             // Do inverse linear interpolation to find the factor value
@@ -104,24 +96,12 @@ impl ProceduralModelGenerator for Chunk {
                                 let mut normal2 = glam::Vec3::ZERO;
 
                                 // Create the normal
-                                normal1.x = self.data[vert1_usize.0 + 1][vert1_usize.1]
-                                    [vert1_usize.2]
-                                    - density1;
-                                normal1.y = self.data[vert1_usize.0][vert1_usize.1 + 1]
-                                    [vert1_usize.2]
-                                    - density1;
-                                normal1.z = self.data[vert1_usize.0][vert1_usize.1]
-                                    [vert1_usize.2 + 1]
-                                    - density1;
-                                normal2.x = self.data[vert2_usize.0 + 1][vert2_usize.1]
-                                    [vert2_usize.2]
-                                    - density2;
-                                normal2.y = self.data[vert2_usize.0][vert2_usize.1 + 1]
-                                    [vert2_usize.2]
-                                    - density2;
-                                normal2.z = self.data[vert2_usize.0][vert2_usize.1]
-                                    [vert2_usize.2 + 1]
-                                    - density2;
+                                normal1.x = self.data[vert1_usize.0 + 1][vert1_usize.1][vert1_usize.2] - density1;
+                                normal1.y = self.data[vert1_usize.0][vert1_usize.1 + 1][vert1_usize.2] - density1;
+                                normal1.z = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2 + 1] - density1;
+                                normal2.x = self.data[vert2_usize.0 + 1][vert2_usize.1][vert2_usize.2] - density2;
+                                normal2.y = self.data[vert2_usize.0][vert2_usize.1 + 1][vert2_usize.2] - density2;
+                                normal2.z = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2 + 1] - density2;
                                 glam::Vec3::lerp(normal1, normal2, value)
                             };
 
@@ -132,9 +112,7 @@ impl ProceduralModelGenerator for Chunk {
                             );
 
                             // Check if this vertex was already added
-                            if let std::collections::hash_map::Entry::Vacant(e) =
-                                duplicate_vertices.entry(edge_tuple)
-                            {
+                            if let std::collections::hash_map::Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
                                 // Add this vertex
                                 e.insert(model.vertices.len() as u32);
                                 model.triangles.push(model.vertices.len() as u32);

@@ -60,10 +60,7 @@ impl ResourceManager {
         }
         // Load the uvs
         for _ in 0..vertices_size {
-            uvs.push(glam::vec2(
-                reader.read_f32::<LittleEndian>().ok()?,
-                reader.read_f32::<LittleEndian>().ok()?,
-            ));
+            uvs.push(glam::vec2(reader.read_f32::<LittleEndian>().ok()?, reader.read_f32::<LittleEndian>().ok()?));
         }
 
         // Load the triangles
@@ -141,10 +138,7 @@ impl ResourceManager {
         let exe_path = env::current_exe().unwrap();
         let exe_path = exe_path.to_str().unwrap();
         let client_folder: Vec<&str> = exe_path.split('\\').collect();
-        let client_folder = format!(
-            "{}\\",
-            &client_folder[..(client_folder.len() - 1)].join("\\")
-        );
+        let client_folder = format!("{}\\", &client_folder[..(client_folder.len() - 1)].join("\\"));
         let packed_resources_path = format!("{}packed-resources\\", client_folder);
 
         // Now split the local path into the extension and name

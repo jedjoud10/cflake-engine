@@ -68,31 +68,19 @@ impl Terrain {
         rc.model = model;
         // Load the terrain textures
         rc.resource_load_textures(
-            vec![
-                "textures\\rock\\Rock033_1K_Color.png",
-                "textures\\rock\\Rock033_1K_Normal.png",
-            ],
+            vec!["textures\\rock\\Rock033_1K_Color.png", "textures\\rock\\Rock033_1K_Normal.png"],
             &mut data.texture_cacher,
             &mut data.resource_manager,
         );
         rc.uv_scale = glam::vec2(0.2, 0.2);
 
         // Link the required components to the entity
+        chunk_entity.link_component::<Renderer>(data.component_manager, rc).unwrap();
         chunk_entity
-            .link_component::<Renderer>(data.component_manager, rc)
+            .link_component::<transforms::Position>(data.component_manager, transforms::Position { position })
             .unwrap();
-        chunk_entity
-            .link_component::<transforms::Position>(
-                data.component_manager,
-                transforms::Position { position },
-            )
-            .unwrap();
-        chunk_entity
-            .link_default_component::<transforms::Rotation>(data.component_manager)
-            .unwrap();
-        chunk_entity
-            .link_default_component::<transforms::Scale>(data.component_manager)
-            .unwrap();
+        chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager).unwrap();
+        chunk_entity.link_default_component::<transforms::Scale>(data.component_manager).unwrap();
 
         // This is in global coordinates btw (-30, 0, 30, 60)
         self.chunks.push(position.as_i32());
@@ -141,15 +129,9 @@ impl System for Terrain {
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
         // This system will loop over all the chunks and generate new ones if needed
-        self.system_data
-            .link_component::<Chunk>(data.component_manager)
-            .unwrap();
-        self.system_data
-            .link_component::<Renderer>(data.component_manager)
-            .unwrap();
-        self.system_data
-            .link_component::<transforms::Position>(data.component_manager)
-            .unwrap();
+        self.system_data.link_component::<Chunk>(data.component_manager).unwrap();
+        self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
+        self.system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
         //self.generate_terrain(data);
     }
 
@@ -166,24 +148,15 @@ impl System for Terrain {
     }
 
     // Called for each entity in the system
-    fn fire_entity(
-        &mut self,
-        _components: &mut FilteredLinkedComponents,
-        _data: &mut SystemEventData,
-    ) {
-    }
+    fn fire_entity(&mut self, _components: &mut FilteredLinkedComponents, _data: &mut SystemEventData) {}
 
     // When a chunk gets added to the world
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
         // Generate the data for this chunk and then create the model
-        let chunk = entity
-            .get_component_mut::<Chunk>(data.component_manager)
-            .unwrap();
+        let chunk = entity.get_component_mut::<Chunk>(data.component_manager).unwrap();
         chunk.generate_data(self);
         let model = chunk.generate_model();
-        let rc = entity
-            .get_component_mut::<Renderer>(data.component_manager)
-            .unwrap();
+        let rc = entity.get_component_mut::<Renderer>(data.component_manager).unwrap();
         rc.model = model;
         rc.refresh_model();
     }

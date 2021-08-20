@@ -70,43 +70,28 @@ pub fn convert_mdl3d(file: &File) -> Resource {
         match start {
             // Vertices
             "v" => {
-                let coords: Vec<f32> = other
-                    .split('/')
-                    .map(|coord| coord.parse::<f32>().unwrap())
-                    .collect();
+                let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
                 vertices.push((coords[0], coords[1], coords[2]));
             }
             // Normals
             "n" => {
-                let coords: Vec<f32> = other
-                    .split('/')
-                    .map(|coord| coord.parse::<f32>().unwrap())
-                    .collect();
+                let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
                 normals.push((coords[0], coords[1], coords[2]));
             }
             // UVs
             "u" => {
-                let coords: Vec<f32> = other
-                    .split('/')
-                    .map(|coord| coord.parse::<f32>().unwrap())
-                    .collect();
+                let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
                 uvs.push((coords[0], coords[1]));
             }
             // Tangents
             "t" => {
-                let coords: Vec<f32> = other
-                    .split('/')
-                    .map(|coord| coord.parse::<f32>().unwrap())
-                    .collect();
+                let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
                 tangents.push((coords[0], coords[1], coords[2], coords[3]));
             }
             // Triangle indices
             "i" => {
                 // Split the triangle into 3 indices
-                let mut indices = other
-                    .split('/')
-                    .map(|x| x.to_string().parse::<u32>().unwrap())
-                    .collect();
+                let mut indices = other.split('/').map(|x| x.to_string().parse::<u32>().unwrap()).collect();
                 triangles.append(&mut indices);
             }
             _ => {}
@@ -166,11 +151,7 @@ pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {
     // Check if we even need to update the image
     let should_update: bool = {
         let mut reader = BufReader::new(file);
-        let image = image::io::Reader::new(&mut reader)
-            .with_guessed_format()
-            .unwrap()
-            .decode()
-            .unwrap();
+        let image = image::io::Reader::new(&mut reader).with_guessed_format().unwrap().decode().unwrap();
         match image {
             image::DynamicImage::ImageRgba8(_) => {
                 // No need to do anything since we already have this texture at 32 bits per pixel
@@ -187,33 +168,17 @@ pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {
         let raw_pixels: Vec<u8>;
         {
             let mut reader = BufReader::new(File::open(full_path).unwrap());
-            let image = image::io::Reader::new(&mut reader)
-                .with_guessed_format()
-                .unwrap()
-                .decode()
-                .unwrap();
+            let image = image::io::Reader::new(&mut reader).with_guessed_format().unwrap().decode().unwrap();
             raw_pixels = image.to_rgba8().into_raw();
             dimensions = image.dimensions();
         }
 
         // Make sure the bit depth of the texture i 32, and to do that we load the texture, then resave it
-        image::save_buffer_with_format(
-            full_path,
-            &raw_pixels,
-            dimensions.0,
-            dimensions.1,
-            image::ColorType::Rgba8,
-            image::ImageFormat::Png,
-        )
-        .unwrap();
+        image::save_buffer_with_format(full_path, &raw_pixels, dimensions.0, dimensions.1, image::ColorType::Rgba8, image::ImageFormat::Png).unwrap();
     } else {
         // I forgot to tell it to get the dimensions of the texture even if we shouldn't resave it -.-
         let mut reader = BufReader::new(File::open(full_path).unwrap());
-        let image = image::io::Reader::new(&mut reader)
-            .with_guessed_format()
-            .unwrap()
-            .decode()
-            .unwrap();
+        let image = image::io::Reader::new(&mut reader).with_guessed_format().unwrap().decode().unwrap();
         dimensions = image.dimensions();
     }
 
@@ -337,12 +302,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
     // Make the log file that will be used later to save time when packing resources
     let log_file_path = format!("{}log.log", packed_resources_path);
     println!("Log file path '{}'", log_file_path);
-    let log_file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .read(true)
-        .open(log_file_path.clone())
-        .unwrap();
+    let log_file = OpenOptions::new().create(true).write(true).read(true).open(log_file_path.clone()).unwrap();
     // A hashmap containing all the packed resources in the log file, with the timestamps of when their last edit happened
     let mut log_file_packed_timestamps: HashMap<u64, u64> = HashMap::new();
     {
@@ -372,12 +332,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
     println!("{:?}", log_file_packed_timestamps);
 
     // Reopen the file since it's a moved value
-    let log_file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .read(true)
-        .open(log_file_path)
-        .unwrap();
+    let log_file = OpenOptions::new().create(true).write(true).read(true).open(log_file_path).unwrap();
     let mut log_file_writer = BufWriter::new(log_file);
 
     // Keep track of all the resources in the original resources folder
@@ -392,10 +347,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         if dir_entry.path().is_dir() {
             continue;
         }
-        let mut file = OpenOptions::new()
-            .read(true)
-            .open(dir_entry.path())
-            .unwrap();
+        let mut file = OpenOptions::new().read(true).open(dir_entry.path()).unwrap();
         let file_metadata = file.metadata().ok()?;
         let file_name_and_extension = dir_entry.file_name().to_str().unwrap();
         // Everything before the first dot
@@ -405,15 +357,8 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         let file_extension = file_extension[1..].join(".");
         // The name where the current file is located relative to the resource's folder
         let file_path = dir_entry.path().to_str().unwrap();
-        let subdirectory_name = file_path
-            .split(resources_path.as_str())
-            .nth(1)
-            .unwrap()
-            .replace(file_name_and_extension, "");
-        println!(
-            "Packing file '{}{}.{}'",
-            subdirectory_name, file_name, file_extension
-        );
+        let subdirectory_name = file_path.split(resources_path.as_str()).nth(1).unwrap().replace(file_name_and_extension, "");
+        println!("Packing file '{}{}.{}'", subdirectory_name, file_name, file_extension);
 
         // This is the resource that we are going to pack
         let mut resource = Resource::None;
@@ -433,12 +378,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         if log_file_packed_timestamps.contains_key(&packed_file_hashed_name) {
             // We already packed this file, but we need to check if the original resource file was changed
             let packed_timestamp = log_file_packed_timestamps.get(&packed_file_hashed_name)?;
-            let resource_timestamp = file_metadata
-                .modified()
-                .unwrap()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
+            let resource_timestamp = file_metadata.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
 
             // Did we edit the file?
             if resource_timestamp > *packed_timestamp {
@@ -474,12 +414,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         // Create the file
         let packed_file = File::create(packed_file_path).unwrap();
         let packed_file_metadata = packed_file.metadata().ok()?;
-        let last_time_packed = packed_file_metadata
-            .modified()
-            .unwrap()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let last_time_packed = packed_file_metadata.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
         let mut writer = BufWriter::new(packed_file);
         match resource {
             Resource::Shader(_, _) => {

@@ -49,10 +49,7 @@ pub struct SystemData {
 
 impl SystemData {
     // Add a component to this system's component bitfield id
-    pub fn link_component<T: ComponentID>(
-        &mut self,
-        component_manager: &mut ComponentManager,
-    ) -> Result<(), ECSError> {
+    pub fn link_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         if component_manager.is_component_registered::<T>() {
             self.c_bitfield |= component_manager.get_component_id::<T>()?;
         } else {

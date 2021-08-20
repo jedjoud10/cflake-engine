@@ -24,9 +24,7 @@ impl ComponentID for Position {
 
 impl Default for Position {
     fn default() -> Self {
-        Self {
-            position: glam::Vec3::ZERO,
-        }
+        Self { position: glam::Vec3::ZERO }
     }
 }
 
@@ -80,8 +78,6 @@ impl ComponentID for Rotation {
 
 impl Default for Rotation {
     fn default() -> Self {
-        Self {
-            rotation: glam::Quat::IDENTITY,
-        }
+        Self { rotation: glam::Quat::IDENTITY }
     }
 }

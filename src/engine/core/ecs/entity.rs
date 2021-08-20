@@ -36,13 +36,7 @@ impl EntityManager {
         if self.entities.contains_key(&entity_id) {
             return Ok(self.entities.get_mut(&entity_id).unwrap());
         } else {
-            return Err(ECSError::new(
-                format!(
-                    "Entity with ID '{}' does not exist in EntityManager!",
-                    entity_id
-                )
-                .as_str(),
-            ));
+            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
         }
     }
     // Get an entity using it's entity id
@@ -50,13 +44,7 @@ impl EntityManager {
         if self.entities.contains_key(&entity_id) {
             return Ok(self.entities.get(&entity_id).unwrap());
         } else {
-            return Err(ECSError::new(
-                format!(
-                    "Entity with ID '{}' does not exist in EntityManager!",
-                    entity_id
-                )
-                .as_str(),
-            ));
+            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
         }
     }
     // Removes an entity from the world
@@ -65,13 +53,7 @@ impl EntityManager {
             let removed_entity = self.entities.remove(&entity_id).unwrap();
             Ok(removed_entity)
         } else {
-            return Err(ECSError::new(
-                format!(
-                    "Entity with ID '{}' does not exist in EntityManager!",
-                    entity_id
-                )
-                .as_str(),
-            ));
+            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
         }
     }
 }
@@ -95,10 +77,7 @@ impl Entity {
         }
     }
     // Link a component to this entity and automatically set it to the default variable
-    pub fn link_default_component<T: ComponentID + Default + Component + 'static>(
-        &mut self,
-        component_manager: &mut ComponentManager,
-    ) -> Result<(), ECSError> {
+    pub fn link_default_component<T: ComponentID + Default + Component + 'static>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         // Simple wrapper around the default link component
         self.link_component(component_manager, T::default())
     }
@@ -107,11 +86,7 @@ impl Entity {
         self.linked_components.contains_key(component_id)
     }
     // Link a component to this entity and use the given default state parameter
-    pub fn link_component<T: ComponentID + Component + 'static>(
-        &mut self,
-        component_manager: &mut ComponentManager,
-        default_state: T,
-    ) -> Result<(), ECSError> {
+    pub fn link_component<T: ComponentID + Component + 'static>(&mut self, component_manager: &mut ComponentManager, default_state: T) -> Result<(), ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we have the component linked on this entity
         if !self.linked_components.contains_key(&component_id) {
@@ -136,10 +111,7 @@ impl Entity {
         Ok(())
     }
     // Unlink a component from this entity
-    pub fn unlink_component<T: ComponentID>(
-        &mut self,
-        component_manager: &mut ComponentManager,
-    ) -> Result<(), ECSError> {
+    pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         let _name = T::get_component_name();
         let id = component_manager.get_component_id::<T>()?;
         let global_id = self.linked_components.get(&id).unwrap();
@@ -151,10 +123,7 @@ impl Entity {
         return Ok(());
     }
     // Gets a reference to a component
-    pub fn get_component<'a, T: ComponentID + Component + 'static>(
-        &self,
-        component_manager: &'a ComponentManager,
-    ) -> Result<&'a T, ECSError> {
+    pub fn get_component<'a, T: ComponentID + Component + 'static>(&self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we even have the component
         if self.is_component_linked(&component_id) {
@@ -163,20 +132,12 @@ impl Entity {
             Ok(final_component)
         } else {
             return Err(ECSError::new(
-                format!(
-                    "Component '{}' does not exist on Entity '{}'!",
-                    T::get_component_name(),
-                    self.name
-                )
-                .as_str(),
+                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str(),
             ));
         }
     }
     // Gets a specific component, mutably
-    pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(
-        &self,
-        component_manager: &'a mut ComponentManager,
-    ) -> Result<&'a mut T, ECSError> {
+    pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(&self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we even have the component
         if self.is_component_linked(&component_id) {
@@ -185,12 +146,7 @@ impl Entity {
             Ok(final_component)
         } else {
             return Err(ECSError::new(
-                format!(
-                    "Component '{}' does not exist on Entity '{}'!",
-                    T::get_component_name(),
-                    self.name
-                )
-                .as_str(),
+                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str(),
             ));
         }
     }

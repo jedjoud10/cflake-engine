@@ -23,12 +23,7 @@ impl SystemManager {
         bitfield == 0
     }
     // Remove an entity from it's corresponding systems
-    pub fn remove_entity_from_systems(
-        &mut self,
-        removed_entity: Entity,
-        entity_id: u16,
-        data: &mut SystemEventDataLite,
-    ) {
+    pub fn remove_entity_from_systems(&mut self, removed_entity: Entity, entity_id: u16, data: &mut SystemEventDataLite) {
         // Remove the entity from all the systems it was in
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
@@ -66,15 +61,11 @@ impl SystemManager {
     }
     // Runs a specific type of system
     pub fn run_system_type(&mut self, _system_type: SystemType, data: &mut SystemEventData) {
-        for system in self
-            .systems
-            .iter_mut()
-            .filter(|x| match x.get_system_data().stype {
-                // TODO: Uhhh fix this
-                _system_type => true,
-                _ => false,
-            })
-        {
+        for system in self.systems.iter_mut().filter(|x| match x.get_system_data().stype {
+            // TODO: Uhhh fix this
+            _system_type => true,
+            _ => false,
+        }) {
             match system.get_system_data().state {
                 SystemState::Enabled(_f) => {
                     system.run_system(data);
@@ -104,27 +95,15 @@ impl SystemManager {
         system
     }
     // Gets a mutable reference to a system
-    pub fn get_system_mut<'a, T: System + 'static>(
-        &'a mut self,
-        system_id: u8,
-    ) -> Result<&'a mut T, ECSError> {
+    pub fn get_system_mut<'a, T: System + 'static>(&'a mut self, system_id: u8) -> Result<&'a mut T, ECSError> {
         let system = self
             .systems
             .get_mut(system_id as usize)
-            .ok_or::<ECSError>(ECSError::new(
-                format!("System with ID: '{}' does not exist!", system_id).as_str(),
-            ))?;
-        let cast_system =
-            system
-                .as_any_mut()
-                .downcast_mut::<T>()
-                .ok_or::<ECSError>(ECSError::new(
-                    format!(
-                        "Could not cast system to type: '{}'!",
-                        std::any::type_name::<T>()
-                    )
-                    .as_str(),
-                ))?;
+            .ok_or::<ECSError>(ECSError::new(format!("System with ID: '{}' does not exist!", system_id).as_str()))?;
+        let cast_system = system
+            .as_any_mut()
+            .downcast_mut::<T>()
+            .ok_or::<ECSError>(ECSError::new(format!("Could not cast system to type: '{}'!", std::any::type_name::<T>()).as_str()))?;
         Ok(cast_system)
     }
 }
@@ -144,19 +123,10 @@ pub trait System {
     }
     // Remove an entity from the current system
     // NOTE: The entity was already removed in the world global entities, so the "removed_entity" argument is just the clone of that removed entity
-    fn remove_entity(
-        &mut self,
-        entity_id: u16,
-        removed_entity: &Entity,
-        data: &mut SystemEventDataLite,
-    ) {
+    fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, data: &mut SystemEventDataLite) {
         let system_data = self.get_system_data_mut();
         // Search for the entity with the matching entity_id
-        let system_entity_id = system_data
-            .entities
-            .iter()
-            .position(|&entity_id_in_vec| entity_id_in_vec == entity_id)
-            .unwrap();
+        let system_entity_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
         system_data.entities.remove(system_entity_id);
         self.entity_removed(removed_entity, data);
     }
@@ -182,17 +152,9 @@ pub trait System {
         let c_bitfield = system_data.c_bitfield;
         // Loop over all the entities and update their components
         for &entity_id in entities_clone.iter() {
-            let entity_clone = data
-                .entity_manager
-                .get_entity_mut(entity_id)
-                .unwrap()
-                .clone();
+            let entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap().clone();
             // Get the linked entity components from the current entity
-            let mut linked_entity_components =
-                FilteredLinkedComponents::get_filtered_linked_components(
-                    &entity_clone,
-                    c_bitfield.clone(),
-                );
+            let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
             self.fire_entity(&mut linked_entity_components, data);
         }
         // Reput the cloned entities
@@ -210,11 +172,7 @@ pub trait System {
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 
     // System control functions
-    fn fire_entity(
-        &mut self,
-        components: &mut FilteredLinkedComponents,
-        data: &mut SystemEventData,
-    );
+    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData);
     fn pre_fire(&mut self, _data: &mut SystemEventData) {}
     fn post_fire(&mut self, _data: &mut SystemEventData) {}
 
