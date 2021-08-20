@@ -1,7 +1,6 @@
-
-use std::{collections::HashMap};
 use super::component::{Component, ComponentID, ComponentManager};
 use super::error::ECSError;
+use std::collections::HashMap;
 
 // An entity manager that handles entities
 #[derive(Default)]
@@ -33,10 +32,7 @@ impl EntityManager {
         id
     }
     // Get a mutable reference to a stored entity
-    pub fn get_entity_mut(
-        &mut self,
-        entity_id: u16,
-    ) -> Result<&mut Entity, ECSError> {
+    pub fn get_entity_mut(&mut self, entity_id: u16) -> Result<&mut Entity, ECSError> {
         if self.entities.contains_key(&entity_id) {
             return Ok(self.entities.get_mut(&entity_id).unwrap());
         } else {
@@ -66,10 +62,7 @@ impl EntityManager {
     // Removes an entity from the world
     pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {
         if self.entities.contains_key(&entity_id) {
-            let removed_entity = self
-                .entities
-                .remove(&entity_id)
-				.unwrap();
+            let removed_entity = self.entities.remove(&entity_id).unwrap();
             Ok(removed_entity)
         } else {
             return Err(ECSError::new(
@@ -110,14 +103,16 @@ impl Entity {
         self.link_component(component_manager, T::default())
     }
     // Check if we have a component linked
-    pub fn is_component_linked(&self, component_id: &u16) -> bool { self.linked_components.contains_key(component_id) }
+    pub fn is_component_linked(&self, component_id: &u16) -> bool {
+        self.linked_components.contains_key(component_id)
+    }
     // Link a component to this entity and use the given default state parameter
     pub fn link_component<T: ComponentID + Component + 'static>(
         &mut self,
         component_manager: &mut ComponentManager,
         default_state: T,
     ) -> Result<(), ECSError> {
-        let component_id = component_manager.get_component_id::<T>().unwrap();        
+        let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we have the component linked on this entity
         if !self.linked_components.contains_key(&component_id) {
             // The component was not linked yet, link it
@@ -135,19 +130,22 @@ impl Entity {
                 )
                 .as_str(),
             ));
-        }        
+        }
         // Add the component's bitfield to the entity's bitfield
         self.c_bitfield |= component_id;
         Ok(())
     }
     // Unlink a component from this entity
-    pub fn unlink_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
+    pub fn unlink_component<T: ComponentID>(
+        &mut self,
+        component_manager: &mut ComponentManager,
+    ) -> Result<(), ECSError> {
         let _name = T::get_component_name();
         let id = component_manager.get_component_id::<T>()?;
         let global_id = self.linked_components.get(&id).unwrap();
         // Take the bit, invert it, then AND it to the bitfield
         self.c_bitfield &= !id;
-        
+
         // Get the linked components and remove the component from it
         component_manager.id_remove_linked_component(global_id)?;
         return Ok(());
@@ -157,7 +155,7 @@ impl Entity {
         &self,
         component_manager: &'a ComponentManager,
     ) -> Result<&'a T, ECSError> {
-        let component_id = component_manager.get_component_id::<T>().unwrap();        
+        let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we even have the component
         if self.is_component_linked(&component_id) {
             let global_id = self.linked_components.get(&component_id).unwrap();
@@ -197,4 +195,3 @@ impl Entity {
         }
     }
 }
-

@@ -1,6 +1,14 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{component::{FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}};
+use crate::engine::core::{
+    defaults::components::{components, transforms},
+    ecs::{
+        component::FilteredLinkedComponents,
+        entity::Entity,
+        system::System,
+        system_data::{SystemData, SystemEventData, SystemEventDataLite},
+    },
+};
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -20,9 +28,15 @@ impl System for CameraSystem {
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
-        system_data.link_component::<components::Camera>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Rotation>(data.component_manager).unwrap();
+        system_data
+            .link_component::<components::Camera>(data.component_manager)
+            .unwrap();
+        system_data
+            .link_component::<transforms::Position>(data.component_manager)
+            .unwrap();
+        system_data
+            .link_component::<transforms::Rotation>(data.component_manager)
+            .unwrap();
 
         data.input_manager.bind_key(glfw::Key::W, "camera_forward");
         data.input_manager
@@ -36,7 +50,11 @@ impl System for CameraSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(
+        &mut self,
+        components: &mut FilteredLinkedComponents,
+        data: &mut SystemEventData,
+    ) {
         let position: glam::Vec3;
         let rotation: glam::Quat;
         {
@@ -65,10 +83,13 @@ impl System for CameraSystem {
                 let right_vector = glam::Mat4::from_quat(changed_rotation)
                     .mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0))
                     .xyz();
-                let mut changed_position = components.get_component_mut::<transforms::Position>(data.component_manager).unwrap().position;
+                let mut changed_position = components
+                    .get_component_mut::<transforms::Position>(data.component_manager)
+                    .unwrap()
+                    .position;
                 let delta = data.time_manager.delta_time as f32;
-				// Default speed
-				let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1;
+                // Default speed
+                let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1;
                 if data.input_manager.map_held("camera_forward").0 {
                     changed_position -= forward_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_backwards").0 {
@@ -83,13 +104,15 @@ impl System for CameraSystem {
                     changed_position += up_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_down").0 {
                     changed_position -= up_vector * delta * speed;
-                }                
+                }
 
                 // Update the variables
-                components.get_component_mut::<transforms::Position>(data.component_manager)
+                components
+                    .get_component_mut::<transforms::Position>(data.component_manager)
                     .unwrap()
                     .position = changed_position;
-					components.get_component_mut::<transforms::Rotation>(data.component_manager)
+                components
+                    .get_component_mut::<transforms::Rotation>(data.component_manager)
                     .unwrap()
                     .rotation = changed_rotation;
                 position = changed_position;
@@ -126,9 +149,9 @@ impl System for CameraSystem {
         camera_component.update_projection_matrix(&data.custom_data.window);
         camera_component.update_view_matrix(position, rotation);
 
-		// Calculate the frustum planes at setup
-		//let mut frustum = math::frustum::Frustum::default();
-		//frustum.calculate_planes(position, rotation, camera_component);
+        // Calculate the frustum planes at setup
+        //let mut frustum = math::frustum::Frustum::default();
+        //frustum.calculate_planes(position, rotation, camera_component);
     }
 
     // Turn this into "Any" so we can cast into child systems

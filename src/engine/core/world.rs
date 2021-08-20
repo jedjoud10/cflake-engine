@@ -1,7 +1,5 @@
 use glfw::Context;
 
-
-
 use crate::engine::core::ecs::component::*;
 use crate::engine::core::ecs::entity::*;
 use crate::engine::core::ecs::system::*;
@@ -15,8 +13,8 @@ use crate::engine::rendering::shader::SubShader;
 use crate::engine::rendering::texture::Texture;
 use crate::engine::resources::ResourceManager;
 
-use crate::game::level::*;
 use crate::engine::core::ecs::error::ECSError;
+use crate::game::level::*;
 
 // Import stuff from the rendering module
 
@@ -172,17 +170,17 @@ impl World {
             render_system.debug_view += 1;
             render_system.debug_view %= 4;
         }
-		// Enable / Disable wireframe
-		if self.input_manager.map_pressed("toggle_wireframe") {
-			let render_system = self
+        // Enable / Disable wireframe
+        if self.input_manager.map_pressed("toggle_wireframe") {
+            let render_system = self
                 .system_manager
                 .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
                 .unwrap();
-			render_system.wireframe = !render_system.wireframe;
-		}
+            render_system.wireframe = !render_system.wireframe;
+        }
 
-		// Update the FPS
-		self.time_manager.fps = 1.0 / self.time_manager.delta_time;
+        // Update the FPS
+        self.time_manager.fps = 1.0 / self.time_manager.delta_time;
     }
     // Toggle fullscreen
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -234,7 +232,7 @@ impl World {
         let mut data: SystemEventDataLite = SystemEventDataLite {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
-			custom_data: &mut self.custom_data
+            custom_data: &mut self.custom_data,
         };
         self.system_manager.kill_systems(&mut data);
     }
@@ -252,7 +250,7 @@ impl World {
             &mut SystemEventDataLite {
                 entity_manager: &mut self.entity_manager,
                 component_manager: &mut self.component_manager,
-				custom_data: &mut self.custom_data
+                custom_data: &mut self.custom_data,
             },
         );
         *self.entity_manager.get_entity_mut(id).unwrap() = entity;
@@ -268,15 +266,13 @@ impl World {
         result
     }
     // Wrapper function around the entity manager remove_entity
-    pub fn remove_entity(
-        &mut self,
-        entity_id: u16,
-    ) -> Result<Entity, ECSError> {
+    pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {
         // Remove the entity from the world first
         let removed_entity = self.entity_manager.remove_entity(entity_id)?;
         // Remove all the components this entity had
         for global_component_id in removed_entity.linked_components.values() {
-            self.component_manager.id_remove_linked_component(global_component_id);    
+            self.component_manager
+                .id_remove_linked_component(global_component_id);
         }
         Ok(removed_entity)
     }
@@ -307,7 +303,7 @@ impl World {
                 .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
-			render_system.window.size = size;
+            render_system.window.size = size;
             render_system.diffuse_texture.update_size(size.0, size.1);
             render_system
                 .depth_stencil_texture
@@ -340,12 +336,12 @@ pub struct CustomWorldData {
     pub sky_entity: u16,
     pub render_system_id: u8,
     pub sun_rotation: glam::Quat,
-	pub window: Window,
+    pub window: Window,
 }
 // Static time variables
 #[derive(Default)]
 pub struct Time {
     pub seconds_since_game_start: f64,
     pub delta_time: f64,
-	pub fps: f64
+    pub fps: f64,
 }

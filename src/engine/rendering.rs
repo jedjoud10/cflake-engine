@@ -1,6 +1,6 @@
 pub mod model;
-pub mod window;
+pub mod optimizer;
 pub mod renderer;
 pub mod shader;
 pub mod texture;
-pub mod optimizer;
+pub mod window;

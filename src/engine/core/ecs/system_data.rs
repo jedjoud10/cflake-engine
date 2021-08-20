@@ -1,5 +1,3 @@
-
-
 use crate::engine::{
     core::{
         cacher::CacheManager,
@@ -13,7 +11,12 @@ use crate::engine::{
     resources::ResourceManager,
 };
 
-use super::{component::{ComponentID, ComponentManager}, entity::EntityManager, error::ECSError, system::EntityPrePassFilter};
+use super::{
+    component::{ComponentID, ComponentManager},
+    entity::EntityManager,
+    error::ECSError,
+    system::EntityPrePassFilter,
+};
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {
@@ -30,7 +33,7 @@ pub struct SystemEventData<'a> {
 pub struct SystemEventDataLite<'a> {
     pub entity_manager: &'a mut EntityManager,
     pub component_manager: &'a mut ComponentManager,
-	pub custom_data: &'a mut CustomWorldData,
+    pub custom_data: &'a mut CustomWorldData,
 }
 
 // Some system data that is part of a system and wrapped around System trait getter functions
@@ -46,14 +49,17 @@ pub struct SystemData {
 
 impl SystemData {
     // Add a component to this system's component bitfield id
-    pub fn link_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
+    pub fn link_component<T: ComponentID>(
+        &mut self,
+        component_manager: &mut ComponentManager,
+    ) -> Result<(), ECSError> {
         if component_manager.is_component_registered::<T>() {
             self.c_bitfield |= component_manager.get_component_id::<T>()?;
         } else {
             component_manager.register_component::<T>();
             self.c_bitfield |= component_manager.get_component_id::<T>()?;
         }
-		Ok(())
+        Ok(())
     }
 }
 
@@ -64,7 +70,11 @@ pub enum SystemState {
     Disabled(f32),
 }
 // Default system state
-impl Default for SystemState { fn default() -> Self { Self::Enabled(0.0) } } 
+impl Default for SystemState {
+    fn default() -> Self {
+        Self::Enabled(0.0)
+    }
+}
 
 // All of the systems that are implement by default
 #[derive(Clone, Copy)]
@@ -75,4 +85,8 @@ pub enum SystemType {
     Render,
 }
 // Default system type
-impl Default for SystemType { fn default() -> Self { Self::Update } }
+impl Default for SystemType {
+    fn default() -> Self {
+        Self::Update
+    }
+}

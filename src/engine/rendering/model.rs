@@ -1,7 +1,4 @@
-
 use crate::engine::resources::Resource;
-
-
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug)]

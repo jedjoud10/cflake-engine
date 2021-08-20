@@ -1,14 +1,11 @@
 use crate::engine::core::cacher::CacheManager;
+use crate::engine::resources::ResourceManager;
 use crate::engine::resources::{LoadableResource, Resource};
-use crate::engine::{resources::ResourceManager};
 use bitflags::bitflags;
 use gl;
 use image::EncodableLayout;
 
-use std::{
-    ffi::{c_void},
-    ptr::null,
-};
+use std::{ffi::c_void, ptr::null};
 
 bitflags! {
     pub struct TextureFlags: u8 {
@@ -20,17 +17,17 @@ bitflags! {
 // Texture filters
 #[derive(Debug)]
 pub enum TextureFilter {
-	Linear,
-	Nearest,
+    Linear,
+    Nearest,
 }
 
 // Texture wrapping filters
 #[derive(Debug)]
 pub enum TextureWrapping {
-	ClampToEdge,
-	ClampToBorder,
-	Repeat,
-	MirroredRepeat,
+    ClampToEdge,
+    ClampToBorder,
+    Repeat,
+    MirroredRepeat,
 }
 
 // A texture
@@ -44,9 +41,9 @@ pub struct Texture {
     pub format: u32,
     pub data_type: u32,
     pub flags: TextureFlags,
-	pub samples: u8,
-	pub texture_filter: TextureFilter,
-	pub texture_wrap_mode: TextureWrapping
+    pub samples: u8,
+    pub texture_filter: TextureFilter,
+    pub texture_wrap_mode: TextureWrapping,
 }
 
 impl Default for Texture {
@@ -99,9 +96,9 @@ impl Texture {
             format: gl::RGBA,
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::MUTABLE,
-			samples: 0,
-			texture_filter: TextureFilter::Linear,
-			texture_wrap_mode: TextureWrapping::Repeat,
+            samples: 0,
+            texture_filter: TextureFilter::Linear,
+            texture_wrap_mode: TextureWrapping::Repeat,
         }
     }
     // Cache the current texture and return it's reference
@@ -111,7 +108,10 @@ impl Texture {
     ) -> Option<(&'a Self, u16)> {
         let texture_name = self.name.clone();
         let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
-        return Some((texture_cacher.get_object(texture_name.as_str()).unwrap(), texture_id));
+        return Some((
+            texture_cacher.get_object(texture_name.as_str()).unwrap(),
+            texture_id,
+        ));
     }
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, width: u16, height: u16) -> Self {
@@ -140,22 +140,22 @@ impl Texture {
         self
     }
     // Update the size of a current immutable texture
-    pub fn update_size(&self, width: u16, height: u16) {		
-		// This is a normal texture getting resized
-		unsafe {
-			gl::BindTexture(gl::TEXTURE_2D, self.id);
-			gl::TexImage2D(
-				gl::TEXTURE_2D,
-				0,
-				self.internal_format as i32,
-				width as i32,
-				height as i32,
-				0,
-				self.format,
-				self.data_type,
-				null(),
-			);
-		}		
+    pub fn update_size(&self, width: u16, height: u16) {
+        // This is a normal texture getting resized
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.id);
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                self.internal_format as i32,
+                width as i32,
+                height as i32,
+                0,
+                self.format,
+                self.data_type,
+                null(),
+            );
+        }
     }
     // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
     pub fn load_texture<'a>(
@@ -170,7 +170,7 @@ impl Texture {
         if texture_cacher.is_cached(local_path) {
             // It is indeed cached
             let texture = texture_cacher.get_object(local_path).unwrap();
-			let texture_id = texture_cacher.get_object_id(local_path).unwrap();
+            let texture_id = texture_cacher.get_object_id(local_path).unwrap();
             Some((texture, texture_id))
         } else {
             // If it not cached, then load the texture from that resource
@@ -181,25 +181,24 @@ impl Texture {
             Some(texture)
         }
     }
-	// Set the mag and min filters
-	pub fn set_filter(mut self, filter: TextureFilter) -> Self {
-		self.texture_filter = filter;
-		self
-	}
-	// Set the wrapping mode
-	pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
-		self.texture_wrap_mode = wrapping_mode;
-		self
-	}
+    // Set the mag and min filters
+    pub fn set_filter(mut self, filter: TextureFilter) -> Self {
+        self.texture_filter = filter;
+        self
+    }
+    // Set the wrapping mode
+    pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
+        self.texture_wrap_mode = wrapping_mode;
+        self
+    }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
-        
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
         }
-		
-		if self.flags.contains(TextureFlags::MUTABLE) {
+
+        if self.flags.contains(TextureFlags::MUTABLE) {
             // It's a normal mutable texture
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
@@ -216,38 +215,70 @@ impl Texture {
                     pointer,
                 );
                 // Set the texture parameters for a normal texture
-				match self.texture_filter {
-        			TextureFilter::Linear => {
-						// 'Linear' filter
-						gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-						gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-					},
-       				TextureFilter::Nearest => {
-						// 'Nearest' filter
-						gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-						gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-					},
-    			}							
+                match self.texture_filter {
+                    TextureFilter::Linear => {
+                        // 'Linear' filter
+                        gl::TexParameteri(
+                            gl::TEXTURE_2D,
+                            gl::TEXTURE_MIN_FILTER,
+                            gl::LINEAR as i32,
+                        );
+                        gl::TexParameteri(
+                            gl::TEXTURE_2D,
+                            gl::TEXTURE_MAG_FILTER,
+                            gl::LINEAR as i32,
+                        );
+                    }
+                    TextureFilter::Nearest => {
+                        // 'Nearest' filter
+                        gl::TexParameteri(
+                            gl::TEXTURE_2D,
+                            gl::TEXTURE_MIN_FILTER,
+                            gl::NEAREST as i32,
+                        );
+                        gl::TexParameteri(
+                            gl::TEXTURE_2D,
+                            gl::TEXTURE_MAG_FILTER,
+                            gl::NEAREST as i32,
+                        );
+                    }
+                }
             }
 
-			// The texture is already bound to the TEXTURE_2D
+            // The texture is already bound to the TEXTURE_2D
             if self.flags.contains(TextureFlags::MIPMAPS) {
                 // Create the mipmaps
                 unsafe {
                     gl::GenerateMipmap(gl::TEXTURE_2D);
-					// Set the texture parameters for a mipmapped texture
+                    // Set the texture parameters for a mipmapped texture
                     match self.texture_filter {
-						TextureFilter::Linear => {
-							// 'Linear' filter
-							gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
-							gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
-						},
-						   TextureFilter::Nearest => {
-							// 'Nearest' filter
-							gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-							gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-						},
-					}
+                        TextureFilter::Linear => {
+                            // 'Linear' filter
+                            gl::TexParameteri(
+                                gl::TEXTURE_2D,
+                                gl::TEXTURE_MIN_FILTER,
+                                gl::LINEAR_MIPMAP_LINEAR as i32,
+                            );
+                            gl::TexParameteri(
+                                gl::TEXTURE_2D,
+                                gl::TEXTURE_MAG_FILTER,
+                                gl::LINEAR_MIPMAP_LINEAR as i32,
+                            );
+                        }
+                        TextureFilter::Nearest => {
+                            // 'Nearest' filter
+                            gl::TexParameteri(
+                                gl::TEXTURE_2D,
+                                gl::TEXTURE_MIN_FILTER,
+                                gl::NEAREST_MIPMAP_NEAREST as i32,
+                            );
+                            gl::TexParameteri(
+                                gl::TEXTURE_2D,
+                                gl::TEXTURE_MAG_FILTER,
+                                gl::NEAREST_MIPMAP_NEAREST as i32,
+                            );
+                        }
+                    }
                 }
             }
         } else {
@@ -260,19 +291,19 @@ impl Texture {
             }
         }
 
-		// Set the wrap mode for the texture (Mipmapped or not)
-		let wrapping_mode: i32;
-		match self.texture_wrap_mode {
-			TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE as i32,
-			TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER as i32,
-			TextureWrapping::Repeat => wrapping_mode = gl::REPEAT as i32,
-			TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT as i32,
-		}
-		unsafe {
-			// Now set the actual wrapping mode in the opengl texture
-			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, wrapping_mode);
-			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, wrapping_mode);
-		}
+        // Set the wrap mode for the texture (Mipmapped or not)
+        let wrapping_mode: i32;
+        match self.texture_wrap_mode {
+            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE as i32,
+            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER as i32,
+            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT as i32,
+            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT as i32,
+        }
+        unsafe {
+            // Now set the actual wrapping mode in the opengl texture
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, wrapping_mode);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, wrapping_mode);
+        }
         self
     }
 }

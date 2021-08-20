@@ -1,5 +1,12 @@
-
-use std::{collections::{HashMap, hash_map::DefaultHasher}, env, fs::{File, OpenOptions, remove_file}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom}, process::Command, time::SystemTime};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    env,
+    fs::{remove_file, File, OpenOptions},
+    hash::{Hash, Hasher},
+    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom},
+    process::Command,
+    time::SystemTime,
+};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use image::GenericImageView;
@@ -45,7 +52,6 @@ pub struct LoadedSubShader {
 }
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {}
-
 
 // Turn a mdl3d file into a LoadedModel resource
 pub fn convert_mdl3d(file: &File) -> Resource {
@@ -198,7 +204,8 @@ pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {
             dimensions.1,
             image::ColorType::Rgba8,
             image::ImageFormat::Png,
-        ).unwrap();
+        )
+        .unwrap();
     } else {
         // I forgot to tell it to get the dimensions of the texture even if we shouldn't resave it -.-
         let mut reader = BufReader::new(File::open(full_path).unwrap());
@@ -319,7 +326,7 @@ pub fn pack_texture(writer: &mut BufWriter<File>, resource: Resource) -> std::io
     std::io::Result::Ok(())
 }
 // Saves all the resources from the "resources" folder into the "packed-resources" folder
-pub fn pack_resources(src_path: String) -> Option<()> {        
+pub fn pack_resources(src_path: String) -> Option<()> {
     // Get the original resource folder
     let env_path = src_path.clone();
     let env_path: Vec<&str> = env_path.split('\\').collect();
@@ -463,8 +470,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         }
 
         // Now time to actually pack the resource
-        let packed_file_path =
-            format!("{}{}.pkg", packed_resources_path, packed_file_hashed_name);
+        let packed_file_path = format!("{}{}.pkg", packed_resources_path, packed_file_hashed_name);
         // Create the file
         let packed_file = File::create(packed_file_path).unwrap();
         let packed_file_metadata = packed_file.metadata().ok()?;
@@ -513,15 +519,15 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         log_file_writer.write_u64::<LittleEndian>(timestamp).ok()?;
     }
 
-    // Packed the resources sucsessfully        
+    // Packed the resources sucsessfully
     Some(())
 }
 
 fn main() {
-    let target_path = env::var("OUT_DIR").unwrap();   
-    let target_path: Vec<&str> = target_path.split('\\').collect(); 
+    let target_path = env::var("OUT_DIR").unwrap();
+    let target_path: Vec<&str> = target_path.split('\\').collect();
     // The src path
-    let src_path = target_path[..(target_path.len() - 5)].join("\\");     
+    let src_path = target_path[..(target_path.len() - 5)].join("\\");
     let src_path = format!("{}\\", src_path);
     pack_resources(src_path);
     Command::new("pack-resources.bat").spawn().unwrap();

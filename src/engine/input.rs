@@ -28,7 +28,7 @@ pub struct InputManager {
     pub keys: HashMap<Key, MapStatus>,
     pub mappings: HashMap<String, MapStatus>,
     last_mouse_pos: (i32, i32),
-	last_mouse_scroll: f32
+    last_mouse_scroll: f32,
 }
 
 impl InputManager {
@@ -38,36 +38,32 @@ impl InputManager {
         self.bind_key(Key::F1, "fullscreen");
         self.bind_key(Key::F2, "capture_fps");
         self.bind_key(Key::F3, "change_debug_view");
-		self.bind_key(Key::F, "toggle_wireframe")
+        self.bind_key(Key::F, "toggle_wireframe")
     }
     // Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
     pub fn update(&mut self, _window: &mut glfw::Window) {
         // Update mappings first
         self.update_mappings();
         // Calculate the mouse delta
-        
     }
-	// Called when we recieve a new mouse event from the window (Could either be a mouse position one or a scroll one)
-	pub fn recieve_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
-		match position {
-    		Some(position) => {
-				// This is a mouse position event
-				let mouse_pos = (
-					position.0 as i32,
-					position.1 as i32,
-				);
-				self.last_mouse_pos = mouse_pos;
-			},
-			_ => {}
-		}
-		match scroll {
-    		Some(scroll) => {
-				// This is a mouse scroll event
-				self.last_mouse_scroll += scroll as f32;
-			},
-    		_ => {}
-		}
-	}
+    // Called when we recieve a new mouse event from the window (Could either be a mouse position one or a scroll one)
+    pub fn recieve_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
+        match position {
+            Some(position) => {
+                // This is a mouse position event
+                let mouse_pos = (position.0 as i32, position.1 as i32);
+                self.last_mouse_pos = mouse_pos;
+            }
+            _ => {}
+        }
+        match scroll {
+            Some(scroll) => {
+                // This is a mouse scroll event
+                self.last_mouse_scroll += scroll as f32;
+            }
+            _ => {}
+        }
+    }
     // Update event fired from the world (fired after everything happens)
     pub fn late_update(&mut self, delta_time: f32) {
         for key in self.keys.iter_mut() {
@@ -92,10 +88,10 @@ impl InputManager {
     pub fn get_accumulated_mouse_position(&self) -> (i32, i32) {
         self.last_mouse_pos
     }
-	// Get the accumulated mouse scroll
-	pub fn get_accumulated_mouse_scroll(&self) -> f32 {
-		self.last_mouse_scroll
-	}
+    // Get the accumulated mouse scroll
+    pub fn get_accumulated_mouse_scroll(&self) -> f32 {
+        self.last_mouse_scroll
+    }
     // Update the maps using the keys
     fn update_mappings(&mut self) {
         // Update the mappings

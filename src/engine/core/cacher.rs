@@ -95,7 +95,7 @@ impl<A> CacheManager<A> {
             self.objects.push(object);
             self.names
                 .insert(name.to_string(), self.objects.len() as u16 - 1);
-            
+
             self.objects.len() as u16 - 1
         }
     }

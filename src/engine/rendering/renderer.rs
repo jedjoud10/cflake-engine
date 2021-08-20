@@ -11,9 +11,9 @@ use crate::engine::{
 use bitflags::bitflags;
 
 bitflags! {
-	pub struct RendererFlags: u8 {
-		const WIREFRAME = 0b00000010;
-		const DEFAULT = Self::WIREFRAME.bits;
+    pub struct RendererFlags: u8 {
+        const WIREFRAME = 0b00000010;
+        const DEFAULT = Self::WIREFRAME.bits;
     }
 }
 // A component that will be linked to entities that are renderable
@@ -27,8 +27,8 @@ pub struct Renderer {
     pub texture_cache_ids: Vec<u16>,
     // Default parameters for the shader
     pub uv_scale: glam::Vec2,
-	// Flags
-	pub flags: RendererFlags
+    // Flags
+    pub flags: RendererFlags,
 }
 
 impl Default for Renderer {
@@ -40,7 +40,7 @@ impl Default for Renderer {
             model: Model::default(),
             texture_cache_ids: Vec::new(),
             uv_scale: glam::Vec2::ONE,
-			flags: RendererFlags::DEFAULT
+            flags: RendererFlags::DEFAULT,
         }
     }
 }
@@ -88,11 +88,11 @@ impl Renderer {
             self.texture_cache_ids
                 .push(texture_cacher.get_object_id(texture_path).unwrap());
         }
-		// Load the default textures
-		self.load_default_textures(texture_cacher);  
+        // Load the default textures
+        self.load_default_textures(texture_cacher);
     }
 
-	// Load textures from their texture struct
+    // Load textures from their texture struct
     pub fn load_textures(
         &mut self,
         texture_ids: Vec<u16>,
@@ -100,31 +100,29 @@ impl Renderer {
     ) {
         // Set the textures as the renderer's textures
         for (_i, &texture_id) in texture_ids.iter().enumerate() {
-			// Since these are loadable textures, we already know they got cached beforehand
+            // Since these are loadable textures, we already know they got cached beforehand
             self.texture_cache_ids.push(texture_id);
-        }     
-		// Load the default textures
-		self.load_default_textures(texture_cacher);  
+        }
+        // Load the default textures
+        self.load_default_textures(texture_cacher);
     }
 
-	// Load the default textures
-	pub fn load_default_textures(&mut self, texture_cacher: &mut CacheManager<Texture>) {
- 		// For the rest of the textures that weren't explicitly given a texture path, load the default ones
+    // Load the default textures
+    pub fn load_default_textures(&mut self, texture_cacher: &mut CacheManager<Texture>) {
+        // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
         for _i in (self.texture_cache_ids.len())..5 {
-            self.texture_cache_ids.push(
-                texture_cacher
-                    .get_object_id("textures\\white.png")
-                    .unwrap(),
-            );
+            self.texture_cache_ids
+                .push(texture_cacher.get_object_id("textures\\white.png").unwrap());
         }
-	}
+    }
 }
 
 impl Renderer {
     // Updates the model matrix using a position and a rotation
     pub fn update_model_matrix(&mut self, position: glam::Vec3, rotation: glam::Quat, scale: f32) {
-        let model_matrix = glam::Mat4::from_translation(position) * glam::Mat4::from_quat(rotation)
+        let model_matrix = glam::Mat4::from_translation(position)
+            * glam::Mat4::from_quat(rotation)
             * glam::Mat4::from_scale(glam::vec3(scale, scale, scale));
         self.gpu_data.model_matrix = model_matrix;
     }

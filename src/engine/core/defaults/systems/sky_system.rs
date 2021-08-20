@@ -1,9 +1,8 @@
 use crate::engine::core::defaults::components::{components, *};
 
-use crate::engine::core::ecs::component::{FilteredLinkedComponents};
+use crate::engine::core::ecs::component::FilteredLinkedComponents;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
-
 
 use crate::engine::core::ecs::{
     entity::Entity,
@@ -30,9 +29,15 @@ impl System for SkySystem {
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
-        system_data.link_component::<components::Sky>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Scale>(data.component_manager).unwrap();
+        system_data
+            .link_component::<components::Sky>(data.component_manager)
+            .unwrap();
+        system_data
+            .link_component::<transforms::Position>(data.component_manager)
+            .unwrap();
+        system_data
+            .link_component::<transforms::Scale>(data.component_manager)
+            .unwrap();
 
         // Create the sky entity
         let mut sky = Entity::new("Sky");
@@ -47,17 +52,25 @@ impl System for SkySystem {
         rc.load_model("models\\sphere.mdl3d", &mut data.resource_manager);
         rc.shader_name = sky_shader_name;
 
-		// The texture that will be used as gradient
-		let cached_texture_id = Texture::new().enable_mipmaps().set_wrapping_mode(TextureWrapping::ClampToEdge).load_texture("textures\\sky_gradient.png", data.resource_manager, data.texture_cacher).unwrap().1;
-        rc.load_textures(
-            vec![cached_texture_id],
-            &mut data.texture_cacher
-        );
-		rc.flags.remove(RendererFlags::WIREFRAME);
+        // The texture that will be used as gradient
+        let cached_texture_id = Texture::new()
+            .enable_mipmaps()
+            .set_wrapping_mode(TextureWrapping::ClampToEdge)
+            .load_texture(
+                "textures\\sky_gradient.png",
+                data.resource_manager,
+                data.texture_cacher,
+            )
+            .unwrap()
+            .1;
+        rc.load_textures(vec![cached_texture_id], &mut data.texture_cacher);
+        rc.flags.remove(RendererFlags::WIREFRAME);
         // Make the skysphere inside out, so we can see the insides only
         rc.model.flip_triangles();
-        sky.link_component::<Renderer>(&mut data.component_manager, rc).unwrap();
-        sky.link_default_component::<transforms::Position>(&mut data.component_manager).unwrap();
+        sky.link_component::<Renderer>(&mut data.component_manager, rc)
+            .unwrap();
+        sky.link_default_component::<transforms::Position>(&mut data.component_manager)
+            .unwrap();
         sky.link_component::<transforms::Rotation>(
             &mut data.component_manager,
             transforms::Rotation {
@@ -68,14 +81,20 @@ impl System for SkySystem {
                     0.0,
                 ),
             },
-        ).unwrap();
+        )
+        .unwrap();
         sky.link_component::<transforms::Scale>(
             &mut data.component_manager,
             transforms::Scale { scale: 9000.0 },
-        ).unwrap();		
-        sky.link_component::<components::Sky>(&mut data.component_manager, components::Sky { 
-			sky_gradient_texture_id: cached_texture_id
-		}).unwrap();
+        )
+        .unwrap();
+        sky.link_component::<components::Sky>(
+            &mut data.component_manager,
+            components::Sky {
+                sky_gradient_texture_id: cached_texture_id,
+            },
+        )
+        .unwrap();
         // Update the custom data
         data.custom_data.sky_entity = sky.entity_id;
         data.entity_manager.add_entity_s(sky);
@@ -92,7 +111,11 @@ impl System for SkySystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(
+        &mut self,
+        components: &mut FilteredLinkedComponents,
+        data: &mut SystemEventData,
+    ) {
         // Set the position of the sky sphere to always be the camera
         let position = data
             .entity_manager
@@ -101,7 +124,7 @@ impl System for SkySystem {
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
             .position;
-			components
+        components
             .get_component_mut::<transforms::Position>(data.component_manager)
             .unwrap()
             .position = position;

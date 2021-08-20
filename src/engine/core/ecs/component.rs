@@ -1,6 +1,5 @@
-use std::{any::{Any}, collections::HashMap, hash::Hash};
 use super::{entity::Entity, error::ECSError};
-
+use std::{any::Any, collections::HashMap, hash::Hash};
 
 // A component trait that can be added to other components
 pub trait Component {
@@ -33,7 +32,7 @@ impl ComponentManager {
         let name: String = T::get_component_name();
         // Register the component
         self.component_ids
-        .insert(name.clone(), self.current_component_id);
+            .insert(name.clone(), self.current_component_id);
         // Make a copy of the id before the bit shift
         let component_id = self.current_component_id;
         // Bit shift to the left
@@ -49,7 +48,9 @@ impl ComponentManager {
             let value = self.component_ids[&name];
             Ok(value)
         } else {
-            return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
+            return Err(ECSError::new(
+                format!("Component {} not registered!", name).as_str(),
+            ));
         }
     }
     // Checks if a specific component is registered
@@ -57,7 +58,10 @@ impl ComponentManager {
         self.component_ids.contains_key(&T::get_component_name())
     }
     // Add a specific linked componment to the component manager, returns the global IDs of the components
-    pub fn add_linked_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
+    pub fn add_linked_component<T: Component + ComponentID + 'static>(
+        &mut self,
+        component: T,
+    ) -> Result<u16, ECSError> {
         let global_id = self.linked_component.len() as u16;
         let boxed_component = Box::new(component);
         self.linked_component.insert(global_id, boxed_component);
@@ -81,15 +85,21 @@ impl ComponentManager {
         final_component
     }
     // Get a reference to a specific linked component
-    pub fn id_get_linked_component<'a, T: Component + ComponentID + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
-        // TODO: Make each entity have a specified amount of components so we can have faster indexing using 
+    pub fn id_get_linked_component<'a, T: Component + ComponentID + 'static>(
+        &self,
+        global_id: &u16,
+    ) -> Result<&T, ECSError> {
+        // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self.linked_component.get(global_id).unwrap();
         let component = Self::cast_component(linked_component);
         return Ok(component);
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn id_get_linked_component_mut<'a, T: Component + ComponentID + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
+    pub fn id_get_linked_component_mut<'a, T: Component + ComponentID + 'static>(
+        &mut self,
+        global_id: &u16,
+    ) -> Result<&mut T, ECSError> {
         let linked_component = self.linked_component.get_mut(global_id).unwrap();
         let component = Self::cast_component_mut(linked_component);
         return Ok(component);
@@ -109,7 +119,7 @@ pub trait ComponentID {
 #[derive(Default)]
 pub struct FilteredLinkedComponents {
     pub entity_id: u16,
-    pub components: HashMap<u16, u16>
+    pub components: HashMap<u16, u16>,
 }
 
 // Get the components
@@ -117,17 +127,25 @@ impl FilteredLinkedComponents {
     // Get the matching filtered components from a specific entity
     pub fn get_filtered_linked_components(entity: &Entity, system_c_bitfield: u16) -> Self {
         let mut filted_linked_components: Self = Self::default();
-        let global_ids: HashMap<u16, u16> = entity.linked_components.iter().filter(|(&component_id, _)| {
-			// Create a bitwise AND with the bitfield and component ID...
-			// Then check if it is equal to the component ID
-			(system_c_bitfield & component_id) == component_id
-		}).map(|x| (*x.0, *x.1)).collect();
+        let global_ids: HashMap<u16, u16> = entity
+            .linked_components
+            .iter()
+            .filter(|(&component_id, _)| {
+                // Create a bitwise AND with the bitfield and component ID...
+                // Then check if it is equal to the component ID
+                (system_c_bitfield & component_id) == component_id
+            })
+            .map(|x| (*x.0, *x.1))
+            .collect();
         filted_linked_components.components = global_ids;
         return filted_linked_components;
     }
     // Get a reference to a component using the component manager
-    pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
-        let id = component_manager.get_component_id::<T>()?.clone();      
+    pub fn get_component<'a, T: Component + ComponentID + 'static>(
+        &'a self,
+        component_manager: &'a ComponentManager,
+    ) -> Result<&'a T, ECSError> {
+        let id = component_manager.get_component_id::<T>()?.clone();
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
             // We are allowed to get this component
@@ -143,10 +161,13 @@ impl FilteredLinkedComponents {
                 )
                 .as_str(),
             ));
-        }        
+        }
     }
     // Get a mutable reference to a component using the component manager
-    pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a mut self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
+    pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(
+        &'a mut self,
+        component_manager: &'a mut ComponentManager,
+    ) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {

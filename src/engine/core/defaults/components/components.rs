@@ -16,7 +16,9 @@ impl Camera {
     // Update the projection matrix of this camera
     pub fn update_projection_matrix(&mut self, window: &Window) {
         // Turn the horizontal fov into a vertical one
-        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (window.size.1 as f32 / window.size.0 as f32))
+        let vertical_fov: f32 = 2.0
+            * ((self.horizontal_fov.to_radians() / 2.0).tan()
+                * (window.size.1 as f32 / window.size.0 as f32))
                 .atan();
         self.projection_matrix = glam::Mat4::perspective_rh(
             vertical_fov,

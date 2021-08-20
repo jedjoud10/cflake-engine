@@ -1,7 +1,12 @@
 use std::any::Any;
 
-use super::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, error::ECSError, system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType}};
-use crate::engine::core::world::{Time};
+use super::{
+    component::{ComponentManager, FilteredLinkedComponents},
+    entity::Entity,
+    error::ECSError,
+    system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
+};
+use crate::engine::core::world::Time;
 
 #[derive(Default)]
 // Manages the systems
@@ -65,7 +70,7 @@ impl SystemManager {
             .systems
             .iter_mut()
             .filter(|x| match x.get_system_data().stype {
-				// TODO: Uhhh fix this
+                // TODO: Uhhh fix this
                 _system_type => true,
                 _ => false,
             })
@@ -99,9 +104,27 @@ impl SystemManager {
         system
     }
     // Gets a mutable reference to a system
-    pub fn get_system_mut<'a, T: System + 'static>(&'a mut self, system_id: u8) -> Result<&'a mut T, ECSError> {
-        let system = self.systems.get_mut(system_id as usize).ok_or::<ECSError>(ECSError::new(format!("System with ID: '{}' does not exist!", system_id).as_str()))?;
-        let cast_system = system.as_any_mut().downcast_mut::<T>().ok_or::<ECSError>(ECSError::new(format!("Could not cast system to type: '{}'!", std::any::type_name::<T>()).as_str()))?;
+    pub fn get_system_mut<'a, T: System + 'static>(
+        &'a mut self,
+        system_id: u8,
+    ) -> Result<&'a mut T, ECSError> {
+        let system = self
+            .systems
+            .get_mut(system_id as usize)
+            .ok_or::<ECSError>(ECSError::new(
+                format!("System with ID: '{}' does not exist!", system_id).as_str(),
+            ))?;
+        let cast_system =
+            system
+                .as_any_mut()
+                .downcast_mut::<T>()
+                .ok_or::<ECSError>(ECSError::new(
+                    format!(
+                        "Could not cast system to type: '{}'!",
+                        std::any::type_name::<T>()
+                    )
+                    .as_str(),
+                ))?;
         Ok(cast_system)
     }
 }
@@ -164,8 +187,12 @@ pub trait System {
                 .get_entity_mut(entity_id)
                 .unwrap()
                 .clone();
-			// Get the linked entity components from the current entity
-			let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
+            // Get the linked entity components from the current entity
+            let mut linked_entity_components =
+                FilteredLinkedComponents::get_filtered_linked_components(
+                    &entity_clone,
+                    c_bitfield.clone(),
+                );
             self.fire_entity(&mut linked_entity_components, data);
         }
         // Reput the cloned entities
@@ -183,7 +210,11 @@ pub trait System {
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
 
     // System control functions
-    fn fire_entity(&mut self, components: &mut FilteredLinkedComponents, data: &mut SystemEventData);
+    fn fire_entity(
+        &mut self,
+        components: &mut FilteredLinkedComponents,
+        data: &mut SystemEventData,
+    );
     fn pre_fire(&mut self, _data: &mut SystemEventData) {}
     fn post_fire(&mut self, _data: &mut SystemEventData) {}
 
@@ -196,4 +227,3 @@ pub trait System {
 pub trait EntityPrePassFilter {
     fn filter_entity(&self, entity: &Entity) -> bool;
 }
-

@@ -2,16 +2,15 @@
 mod engine;
 mod game;
 
-
 extern crate gl;
 // include the OpenGL type aliases
 
 extern crate glfw;
 use crate::engine::core::world::World;
-use glfw::{Context};
+use glfw::Context;
 
 pub fn main() {
-	let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let default_size = World::get_default_window_size();
     let (mut window, events) = glfw
         .create_window(
@@ -25,7 +24,7 @@ pub fn main() {
     // Set the type of events that we want to listen to
     window.set_key_polling(true);
     window.set_cursor_pos_polling(true);
-	window.set_scroll_polling(true);
+    window.set_scroll_polling(true);
     window.set_size_polling(true);
     window.make_current();
     if gl::Viewport::is_loaded() {
@@ -65,8 +64,12 @@ fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glf
         glfw::WindowEvent::Size(x, y) => {
             world.resize_window_event((x as u16, y as u16));
         }
-		glfw::WindowEvent::Scroll(_scroll, scroll2) => world.input_manager.recieve_mouse_event(None, Some(scroll2)),	
-		glfw::WindowEvent::CursorPos(x, y) => world.input_manager.recieve_mouse_event(Some((x, y)), None),
+        glfw::WindowEvent::Scroll(_scroll, scroll2) => {
+            world.input_manager.recieve_mouse_event(None, Some(scroll2))
+        }
+        glfw::WindowEvent::CursorPos(x, y) => {
+            world.input_manager.recieve_mouse_event(Some((x, y)), None)
+        }
         _ => {}
     }
 }

@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
-use crate::engine::{core::ecs::component::{Component, ComponentID}, rendering::model::{Model, ProceduralModelGenerator}, terrain::tables::{EDGE_TABLE, TRI_TABLE, VERTEX_TABLE}};
-use super::terrain::{CHUNK_SIZE, Terrain};
+use super::terrain::{Terrain, CHUNK_SIZE};
+use crate::engine::{
+    core::ecs::component::{Component, ComponentID},
+    rendering::model::{Model, ProceduralModelGenerator},
+    terrain::tables::{EDGE_TABLE, TRI_TABLE, VERTEX_TABLE},
+};
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -27,13 +31,12 @@ impl ComponentID for Chunk {
     }
 }
 
-
 // Actual model generation
 impl Chunk {
     // Generate the voxel data
     pub fn generate_data(&mut self, terrain_generator: &Terrain) {
-        // Create the data using SIMD       
-		for x in 0..CHUNK_SIZE {
+        // Create the data using SIMD
+        for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
                     let data: f32 = y as f32 - 10.0;
@@ -41,7 +44,6 @@ impl Chunk {
                 }
             }
         }
-		
 
         // Save the isoline
         self.isoline = terrain_generator.isoline;
@@ -130,7 +132,9 @@ impl ProceduralModelGenerator for Chunk {
                             );
 
                             // Check if this vertex was already added
-                            if let std::collections::hash_map::Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
+                            if let std::collections::hash_map::Entry::Vacant(e) =
+                                duplicate_vertices.entry(edge_tuple)
+                            {
                                 // Add this vertex
                                 e.insert(model.vertices.len() as u32);
                                 model.triangles.push(model.vertices.len() as u32);

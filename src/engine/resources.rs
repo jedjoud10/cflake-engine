@@ -4,12 +4,11 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     env,
-    fs::{File},
+    fs::File,
     hash::{Hash, Hasher},
     io::{BufRead, BufReader, Read, Seek, SeekFrom},
     str,
 };
-
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]
@@ -137,7 +136,7 @@ impl ResourceManager {
 // Date: 2021-08-13. Basically rewrote the whole thing. It's good now
 impl ResourceManager {
     // Loads a specific resource and caches it so we can use it next time
-    pub fn load_packed_resource(&mut self, local_path: &str) -> Option<&Resource> {        
+    pub fn load_packed_resource(&mut self, local_path: &str) -> Option<&Resource> {
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
         let exe_path = exe_path.to_str().unwrap();
@@ -163,7 +162,7 @@ impl ResourceManager {
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!
-            let resource = self.cached_resources.get(&hashed_name)?;            
+            let resource = self.cached_resources.get(&hashed_name)?;
             return Some(resource);
         }
 
@@ -200,7 +199,7 @@ impl ResourceManager {
         Some(resource)
     }
     // Unloads a resource to save on memory
-    pub fn unload_resouce(&mut self) {}    
+    pub fn unload_resouce(&mut self) {}
 }
 
 // A simple loaded resource

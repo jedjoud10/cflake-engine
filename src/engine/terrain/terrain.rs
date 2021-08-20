@@ -1,5 +1,17 @@
+use crate::engine::{
+    core::{
+        defaults::components::transforms,
+        ecs::{
+            component::{Component, ComponentID, FilteredLinkedComponents},
+            entity::Entity,
+            system::System,
+            system_data::{SystemData, SystemEventData, SystemEventDataLite},
+        },
+    },
+    rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader},
+    terrain::chunk::Chunk,
+};
 use std::collections::HashMap;
-use crate::engine::{core::{defaults::components::transforms, ecs::{component::{Component, ComponentID, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
 
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 32;
@@ -28,12 +40,12 @@ impl Terrain {
     // Density functions
     fn density(&self, x: f32, y: f32, z: f32) -> f32 {
         let mut density: f32 = glam::vec3(x, y, z).length() - 10.0;
-		density = density.min(y + (x * 0.2).sin() + (z * 0.2).sin()) - 10.0;
+        density = density.min(y + (x * 0.2).sin() + (z * 0.2).sin()) - 10.0;
         density
     }
     // Creates a single chunk entity
     fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
-		let now = std::time::Instant::now();
+        let now = std::time::Instant::now();
         // Generate the component
         let mut chunk = Chunk::default();
         chunk.position = position;
@@ -66,18 +78,26 @@ impl Terrain {
         rc.uv_scale = glam::vec2(0.2, 0.2);
 
         // Link the required components to the entity
-        chunk_entity.link_component::<Renderer>(data.component_manager, rc).unwrap();
-        chunk_entity.link_component::<transforms::Position>(
-            data.component_manager,
-            transforms::Position { position },
-        ).unwrap();
-        chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager).unwrap();
-        chunk_entity.link_default_component::<transforms::Scale>(data.component_manager).unwrap();
+        chunk_entity
+            .link_component::<Renderer>(data.component_manager, rc)
+            .unwrap();
+        chunk_entity
+            .link_component::<transforms::Position>(
+                data.component_manager,
+                transforms::Position { position },
+            )
+            .unwrap();
+        chunk_entity
+            .link_default_component::<transforms::Rotation>(data.component_manager)
+            .unwrap();
+        chunk_entity
+            .link_default_component::<transforms::Scale>(data.component_manager)
+            .unwrap();
 
         // This is in global coordinates btw (-30, 0, 30, 60)
         self.chunks.push(position.as_i32());
         // Add the entity to the world
-		println!("{} ms to generate chunk entity", now.elapsed().as_millis());
+        println!("{} ms to generate chunk entity", now.elapsed().as_millis());
         data.entity_manager.add_entity_s(chunk_entity)
     }
     // 1. Create the chunks, and generate their data
@@ -122,11 +142,14 @@ impl System for Terrain {
     fn setup_system(&mut self, data: &mut SystemEventData) {
         // This system will loop over all the chunks and generate new ones if needed
         self.system_data
-            .link_component::<Chunk>(data.component_manager).unwrap();
+            .link_component::<Chunk>(data.component_manager)
+            .unwrap();
         self.system_data
-            .link_component::<Renderer>(data.component_manager).unwrap();
+            .link_component::<Renderer>(data.component_manager)
+            .unwrap();
         self.system_data
-            .link_component::<transforms::Position>(data.component_manager).unwrap();
+            .link_component::<transforms::Position>(data.component_manager)
+            .unwrap();
         //self.generate_terrain(data);
     }
 
@@ -143,7 +166,12 @@ impl System for Terrain {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, _components: &mut FilteredLinkedComponents, _data: &mut SystemEventData) {}
+    fn fire_entity(
+        &mut self,
+        _components: &mut FilteredLinkedComponents,
+        _data: &mut SystemEventData,
+    ) {
+    }
 
     // When a chunk gets added to the world
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
@@ -169,4 +197,3 @@ impl System for Terrain {
         self
     }
 }
-

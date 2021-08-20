@@ -8,10 +8,10 @@ pub struct Window {
 }
 
 impl Default for Window {
-	fn default() -> Self {
-		Self {
-			fullscreen: false,
-			size: World::get_default_window_size()
-		}
-	}
+    fn default() -> Self {
+        Self {
+            fullscreen: false,
+            size: World::get_default_window_size(),
+        }
+    }
 }

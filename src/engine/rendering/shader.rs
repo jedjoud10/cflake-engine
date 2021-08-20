@@ -1,14 +1,11 @@
 use crate::engine::core::cacher::CacheManager;
 use crate::engine::resources::Resource;
-use crate::engine::{resources::ResourceManager};
+use crate::engine::resources::ResourceManager;
 use gl;
 
-use std::{
-    ffi::{CString},
-    ptr::null,
-};
+use std::{ffi::CString, ptr::null};
 
-use super::texture::{Texture};
+use super::texture::Texture;
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
@@ -65,10 +62,7 @@ impl Shader {
         shader.finalize_shader();
         let cached_shader_id = shader_cacher.1.cache_object(shader, &name);
         return (
-            shader_cacher
-                .1
-                .id_get_object_mut(cached_shader_id)
-                .unwrap(),
+            shader_cacher.1.id_get_object_mut(cached_shader_id).unwrap(),
             name,
         );
     }
@@ -129,11 +123,9 @@ impl Shader {
 // Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh
 impl Shader {
     // Get the location of a specific uniform, using it's name
-	#[allow(temporary_cstring_as_ptr)]
+    #[allow(temporary_cstring_as_ptr)]
     pub fn get_uniform_location(&self, name: &str) -> i32 {
-        unsafe {
-            gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr())
-        }
+        unsafe { gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr()) }
     }
     // Set a scalar uniform
     pub fn set_scalar_1_uniform(&self, name: &str, value: f32) {
@@ -168,12 +160,12 @@ impl Shader {
     // Set a texture
     pub fn set_texture2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         unsafe {
-			gl::ActiveTexture(active_texture_id);
-			gl::BindTexture(gl::TEXTURE_2D, texture.id);
-			gl::Uniform1i(
-			self.get_uniform_location(name),
-			active_texture_id as i32 - 33984,
-			);           
+            gl::ActiveTexture(active_texture_id);
+            gl::BindTexture(gl::TEXTURE_2D, texture.id);
+            gl::Uniform1i(
+                self.get_uniform_location(name),
+                active_texture_id as i32 - 33984,
+            );
         }
     }
     // Set a int
