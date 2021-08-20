@@ -304,9 +304,7 @@ impl World {
 
             let render_system = self
                 .system_manager
-                .get_system_mut(0)
-                .as_any_mut()
-                .downcast_mut::<RenderingSystem>()
+                .get_system_mut::<RenderingSystem>(self.custom_data.render_system_id)
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
 			render_system.window.size = size;

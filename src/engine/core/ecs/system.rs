@@ -100,9 +100,9 @@ impl SystemManager {
     }
     // Gets a mutable reference to a system
     pub fn get_system_mut<'a, T: System + 'static>(&'a mut self, system_id: u8) -> Result<&'a mut T, ECSError> {
-        let system = self.systems.get_mut(system_id as usize).ok_or::<ECSError>(ECSError::new("N"))?;
-        let cast_system = system.as_any().downcast_mut::<T>().ok_or::<ECSError>(ECSError::new("N"))?;
-        cast_system
+        let system = self.systems.get_mut(system_id as usize).ok_or::<ECSError>(ECSError::new(format!("System with ID: '{}' does not exist!", system_id).as_str()))?;
+        let cast_system = system.as_any_mut().downcast_mut::<T>().ok_or::<ECSError>(ECSError::new(format!("Could not cast system to type: '{}'!", std::any::type_name::<T>()).as_str()))?;
+        Ok(cast_system)
     }
 }
 
@@ -140,28 +140,37 @@ pub trait System {
     // Stop the system permanently
     fn end_system(&mut self, data: &mut SystemEventDataLite) {
         let system_data_clone = self.get_system_data_mut();
+        let entities_clone = system_data_clone.entities.clone();
         // Loop over all the entities and fire the entity removed event
-        for &entity_id in system_data_clone.entities.iter() {
+        for &entity_id in entities_clone.iter() {
             let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
             self.entity_removed(entity_clone, data);
             *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
         }
+        // Reput the cloned entities
+        self.get_system_data_mut().entities = entities_clone;
     }
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {
+        // Pre fire event call
         self.pre_fire(data);
-        let system_data_clone = self.get_system_data_mut();
+        let system_data = self.get_system_data_mut();
+        let entities_clone = system_data.entities.clone();
+        let c_bitfield = system_data.c_bitfield;
         // Loop over all the entities and update their components
-        for &entity_id in system_data_clone.entities.iter() {
+        for &entity_id in entities_clone.iter() {
             let entity_clone = data
                 .entity_manager
                 .get_entity_mut(entity_id)
                 .unwrap()
                 .clone();
 			// Get the linked entity components from the current entity
-			let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, system_data_clone.c_bitfield);
+			let mut linked_entity_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, c_bitfield.clone());
             self.fire_entity(&mut linked_entity_components, data);
         }
+        // Reput the cloned entities
+        self.get_system_data_mut().entities = entities_clone;
+        // Post fire event call
         self.post_fire(data);
     }
 
