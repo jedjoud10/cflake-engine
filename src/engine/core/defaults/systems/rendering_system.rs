@@ -181,13 +181,10 @@ impl System for RenderingSystem {
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
-        // Get the entity position
-        let entity_position = components.get_component::<transforms::Position>(data.component_manager).unwrap().position;
         let shader: &Shader;
         let view_matrix: glam::Mat4;
         let projection_matrix: glam::Mat4;
         let camera_position: glam::Vec3;
-        let camera_forward: glam::Vec3;
         let camera_data: &components::Camera;
         // Get everything related to the camera
         {
@@ -196,11 +193,6 @@ impl System for RenderingSystem {
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
             camera_position = camera_entity.get_component::<transforms::Position>(&mut data.component_manager).unwrap().position;
-            camera_forward = camera_entity
-                .get_component::<transforms::Rotation>(data.component_manager)
-                .unwrap()
-                .rotation
-                .mul_vec3(glam::vec3(0.0, 0.0, 1.0));
         }
         let model_matrix: glam::Mat4;
         // Render the entity
@@ -228,7 +220,7 @@ impl System for RenderingSystem {
 
         let rc = components.get_component::<Renderer>(&mut data.component_manager).unwrap();
         // Calculate the mvp matrix
-        let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
+        let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;        
         // Pass the MVP and the model matrix to the shader
         shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
         shader.set_matrix_44_uniform("model_matrix", model_matrix);

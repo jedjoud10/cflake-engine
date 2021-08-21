@@ -1,16 +1,9 @@
-use crate::engine::{
-    core::{
-        defaults::components::transforms,
-        ecs::{
+use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{
             component::{Component, ComponentID, FilteredLinkedComponents},
             entity::Entity,
             system::System,
             system_data::{SystemData, SystemEventData, SystemEventDataLite},
-        },
-    },
-    rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader},
-    terrain::chunk::Chunk,
-};
+        }}, math::bounds, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
 use std::collections::HashMap;
 
 // How many voxels in one axis in each chunk?
@@ -75,6 +68,7 @@ impl Terrain {
         rc.uv_scale = glam::vec2(0.2, 0.2);
 
         // Link the required components to the entity
+        chunk_entity.link_component::<components::AABB>(data.component_manager, components::AABB::from_model(&rc.model, position)).unwrap();
         chunk_entity.link_component::<Renderer>(data.component_manager, rc).unwrap();
         chunk_entity
             .link_component::<transforms::Position>(data.component_manager, transforms::Position { position })

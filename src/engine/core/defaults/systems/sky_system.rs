@@ -58,7 +58,8 @@ impl System for SkySystem {
         // Make the skysphere inside out, so we can see the insides only
         rc.model.flip_triangles();
         sky.link_component::<Renderer>(&mut data.component_manager, rc).unwrap();
-        sky.link_default_component::<transforms::Position>(&mut data.component_manager).unwrap();
+        sky.link_default_component::<components::AABB>(data.component_manager).unwrap();
+        sky.link_default_component::<transforms::Position>(data.component_manager).unwrap();
         sky.link_component::<transforms::Rotation>(
             &mut data.component_manager,
             transforms::Rotation {

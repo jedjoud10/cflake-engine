@@ -1,5 +1,6 @@
 use crate::engine::core::ecs::component::{Component, ComponentID};
 use crate::engine::math::bounds;
+use crate::engine::rendering::model::Model;
 use crate::engine::rendering::window::Window;
 use glam::Vec4Swizzles;
 
@@ -81,6 +82,17 @@ impl ComponentID for Sky {
 #[derive(Default)]
 pub struct AABB {
     pub aabb: bounds::AABB,
+}
+
+// AABB component functions
+impl AABB {
+    // Generate the AABB from a Model reference (Wrapper)
+    pub fn from_model(model: &Model, position: glam::Vec3) -> Self {
+        let mut aabb = bounds::AABB::from_model(model);
+        aabb.offset(position);        
+        println!("AABB generated from model, min: {} max: {}", aabb.min, aabb.max);
+        return Self { aabb: aabb };
+    }
 }
 
 // Main traits implemented

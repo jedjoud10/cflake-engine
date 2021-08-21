@@ -6,6 +6,8 @@ use crate::engine::core::ecs::entity::Entity;
 use crate::engine::core::ecs::system::System;
 use crate::engine::core::ecs::system_data::SystemEventData;
 use crate::engine::core::world::World;
+use crate::engine::math::bounds;
+use crate::engine::rendering::model::Model;
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;
 use crate::engine::terrain::terrain::Terrain;
@@ -80,6 +82,7 @@ pub fn load_entities(world: &mut World) {
     )
     .1;
     rc.load_default_textures(&mut world.texture_cacher);
+    quad.link_component::<components::AABB>(&mut world.component_manager, components::AABB::from_model(&rc.model, glam::Vec3::ZERO)).unwrap();
     quad.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     quad.link_default_component::<transforms::Position>(&mut world.component_manager).unwrap();
     quad.link_component::<transforms::Rotation>(
@@ -105,11 +108,12 @@ pub fn load_entities(world: &mut World) {
         &mut world.resource_manager,
     );
     rc.uv_scale *= 10.0;
+    cube.link_component::<components::AABB>(&mut world.component_manager, components::AABB { aabb: bounds::AABB::from_model(&rc.model) }).unwrap();
     cube.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     cube.link_component::<transforms::Position>(
         &mut world.component_manager,
         transforms::Position {
-            position: glam::vec3(0.0, 1.0, 0.0),
+            position: glam::vec3(0.0, 0.0, 0.0),
         },
     )
     .unwrap();

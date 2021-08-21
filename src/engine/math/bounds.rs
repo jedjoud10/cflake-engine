@@ -1,4 +1,6 @@
-use crate::engine::core::defaults::components::components::Camera;
+use glam::Vec4Swizzles;
+
+use crate::engine::{core::defaults::components::components::Camera, rendering::model::Model};
 
 
 // An aabb bound
@@ -35,7 +37,6 @@ impl AABB {
             _ => { glam::Vec3::ZERO }
         }
     }
-
     // Check if this AABB intersects a sphere (or is inside of it)
     pub fn intersect_sphere(&self, _sphere_center: glam::Vec3, _sphere_radius: f32) -> bool {
         false
@@ -47,17 +48,39 @@ impl AABB {
     // Check if this AABB intersects the camera's view frustum
     pub fn intersect_camera_view_frustum(&self, camera: &Camera) -> bool {
         // Create the clip space matrix
-        let projection_matrix = camera.projection_matrix;
+        let matrix = camera.projection_matrix * camera.view_matrix * glam::Mat4::IDENTITY;
         // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC
         for corner_index in 0..8 {
             let corner = self.get_corner(corner_index);
-            let transformed_corner = projection_matrix.mul_vec4(glam::vec4(corner.x, corner.y, corner.z, 1.0));
+            let transformed_corner = matrix.mul_vec4(glam::vec4(corner.x, corner.y, corner.z, 1.0));
+            // You have to divide by the W scalar first to get the NDC
+            let transformed_corner = transformed_corner.xyz() / transformed_corner.w;
             // Check if is inside the bounds of the NDC
-            if transformed_corner.abs().cmplt(glam::Vec4::ONE).all() {
+            if transformed_corner.abs().cmplt(glam::Vec3::ONE).any() {
                 // The AABB is inside the view frustum,.we can exit early
                 return true;
             }
         }
         return false;
+    }
+}
+
+// Generation functions
+impl AABB {
+    // Generate the AABB from a model; just loop over all the vertices and keep track of the min and max ones
+    pub fn from_model(model: &Model) -> Self {
+        let mut aabb: Self = AABB::default();
+        // Loop over the vertices
+        for vertex in model.vertices.iter() {
+            aabb.min = aabb.min.min(*vertex);
+            aabb.max = aabb.max.max(*vertex);
+        }
+        return aabb;
+    }
+    // Offset the AABB using a position
+    pub fn offset(&mut self, position: glam::Vec3) {
+        // Offset the AABB by offsetting the min and max
+        self.min += position;
+        self.max += position;
     }
 }
