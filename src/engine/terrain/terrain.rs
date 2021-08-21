@@ -68,13 +68,13 @@ impl Terrain {
         rc.uv_scale = glam::vec2(0.2, 0.2);
 
         // Link the required components to the entity
-        chunk_entity.link_component::<components::AABB>(data.component_manager, components::AABB::from_model(&rc.model, position)).unwrap();
         chunk_entity.link_component::<Renderer>(data.component_manager, rc).unwrap();
         chunk_entity
-            .link_component::<transforms::Position>(data.component_manager, transforms::Position { position })
-            .unwrap();
+        .link_component::<transforms::Position>(data.component_manager, transforms::Position { position })
+        .unwrap();
         chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager).unwrap();
         chunk_entity.link_default_component::<transforms::Scale>(data.component_manager).unwrap();
+        chunk_entity.link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&chunk_entity, data.component_manager)).unwrap();
 
         // This is in global coordinates btw (-30, 0, 30, 60)
         self.chunks.push(position.as_i32());
@@ -87,9 +87,9 @@ impl Terrain {
     pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
         // Create the entity
-        for x in -2..2 {
-            for y in 0..2 {
-                for z in -2..2 {
+        for x in -8..8 {
+            for y in 1..2 {
+                for z in -8..8 {
                     let position = glam::vec3(
                         ((CHUNK_SIZE as f32) - 2.0) * x as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,

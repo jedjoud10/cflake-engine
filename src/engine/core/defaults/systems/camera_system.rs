@@ -91,10 +91,6 @@ impl System for CameraSystem {
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix(&data.custom_data.window);
-        
-        // Test
-        let matrix = camera_component.projection_matrix * camera_component.view_matrix;
-        println!("{}", matrix.mul_vec4(glam::vec4(0.0, 0.0, 0.0, 1.0)));
     }
 
     // When an entity gets added to this system

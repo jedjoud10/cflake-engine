@@ -69,6 +69,8 @@ void main() {
 		color = normal;
 	} else if (debug_view == 2) {
 		color = diffuse;
+	} else if (debug_view == 3) {
+		color = emissive;
 	}
 	
 }

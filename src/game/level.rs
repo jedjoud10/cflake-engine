@@ -82,7 +82,6 @@ pub fn load_entities(world: &mut World) {
     )
     .1;
     rc.load_default_textures(&mut world.texture_cacher);
-    quad.link_component::<components::AABB>(&mut world.component_manager, components::AABB::from_model(&rc.model, glam::Vec3::ZERO)).unwrap();
     quad.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     quad.link_default_component::<transforms::Position>(&mut world.component_manager).unwrap();
     quad.link_component::<transforms::Rotation>(
@@ -90,10 +89,11 @@ pub fn load_entities(world: &mut World) {
         transforms::Rotation {
             rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, -90.0_f32.to_radians(), 0.0, 0.0),
         },
-    )
-    .unwrap();
+    ).unwrap();
     quad.link_component::<transforms::Scale>(&mut world.component_manager, transforms::Scale { scale: 100.0 })
         .unwrap();
+    let aabb = components::AABB::from_components(&quad, &world.component_manager);
+    quad.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
     world.add_entity(quad);
 
     // Anime moment
@@ -108,7 +108,6 @@ pub fn load_entities(world: &mut World) {
         &mut world.resource_manager,
     );
     rc.uv_scale *= 10.0;
-    cube.link_component::<components::AABB>(&mut world.component_manager, components::AABB { aabb: bounds::AABB::from_model(&rc.model) }).unwrap();
     cube.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     cube.link_component::<transforms::Position>(
         &mut world.component_manager,
@@ -119,5 +118,7 @@ pub fn load_entities(world: &mut World) {
     .unwrap();
     cube.link_default_component::<transforms::Rotation>(&mut world.component_manager).unwrap();
     cube.link_default_component::<transforms::Scale>(&mut world.component_manager).unwrap();
+    let aabb = components::AABB::from_components(&cube, &world.component_manager);
+    cube.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
     world.add_entity(cube);
 }
