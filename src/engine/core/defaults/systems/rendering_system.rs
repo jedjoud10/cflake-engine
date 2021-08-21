@@ -1,4 +1,4 @@
-use crate::engine::core::defaults::components::{components, *};
+use crate::engine::core::defaults::components::*;
 
 use crate::engine::core::ecs::component::FilteredLinkedComponents;
 use crate::engine::core::ecs::{
@@ -9,7 +9,6 @@ use crate::engine::core::ecs::{
 use crate::engine::core::world::World;
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::optimizer::RenderOptimizer;
-use crate::engine::rendering::renderer::EntityRenderState;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
 use crate::engine::rendering::shader::Shader;
 use crate::engine::rendering::texture::Texture;
@@ -36,6 +35,7 @@ pub struct RenderingSystem {
     quad_renderer: Renderer,
 }
 
+// Everything custom
 impl RenderingSystem {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut SystemEventData) {
@@ -153,11 +153,12 @@ impl System for RenderingSystem {
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
         self.multisampling = None;
-        let system_data = &mut self.system_data;
-        system_data.link_component::<Renderer>(&mut data.component_manager).unwrap();
-        system_data.link_component::<transforms::Position>(&mut data.component_manager).unwrap();
-        system_data.link_component::<transforms::Rotation>(&mut data.component_manager).unwrap();
-        system_data.link_component::<transforms::Scale>(&mut data.component_manager).unwrap();
+        let system_data = self.get_system_data_mut();
+        system_data.link_component::<Renderer>(data.component_manager).unwrap();
+        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
+        system_data.link_component::<transforms::Rotation>(data.component_manager).unwrap();
+        system_data.link_component::<transforms::Scale>(data.component_manager).unwrap();
+        system_data.link_component::<components::AABB>(data.component_manager).unwrap();
 
         // Create the screen quad
         self.create_screen_quad(data);
