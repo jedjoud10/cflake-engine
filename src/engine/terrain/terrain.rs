@@ -87,9 +87,9 @@ impl Terrain {
     pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
         // Create the entity
-        for x in -8..8 {
+        for x in -20..20 {
             for y in 1..2 {
-                for z in -8..8 {
+                for z in -20..20 {
                     let position = glam::vec3(
                         ((CHUNK_SIZE as f32) - 2.0) * x as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,

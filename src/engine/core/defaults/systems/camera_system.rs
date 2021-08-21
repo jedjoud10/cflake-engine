@@ -39,7 +39,6 @@ impl System for CameraSystem {
         data.input_manager.bind_key(glfw::Key::Space, "camera_up");
         data.input_manager.bind_key(glfw::Key::LeftShift, "camera_down");
         data.input_manager.bind_key(glfw::Key::G, "speed_switch");
-        data.input_manager.bind_key(glfw::Key::J, "toggle_frustum_matrix_update");
     }
 
     // Called for each entity in the system
@@ -92,10 +91,8 @@ impl System for CameraSystem {
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix(&data.custom_data.window);
-        // Update the frustum culling matrix if we toggled it
-        if data.input_manager.map_held("toggle_frustum_matrix_update").0 {
-            camera_component.update_frustum_culling_matrix();
-        }
+        // Update the frustum culling matrix
+        camera_component.update_frustum_culling_matrix();
     }
 
     // When an entity gets added to this system
