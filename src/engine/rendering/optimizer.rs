@@ -1,7 +1,7 @@
-use crate::engine::core::{defaults::components::{components, transforms}, ecs::{component::FilteredLinkedComponents, entity::Entity, system::EntityPrePassFilter, system_data::{SystemEventData, SystemEventDataLite}}, world::CustomWorldData};
+use crate::engine::core::{defaults::components::{components, transforms}, ecs::{component::FilteredLinkedComponents, entity::Entity, system_data::{SystemEventData, SystemEventDataLite}}, world::CustomWorldData};
 
 use super::renderer::Renderer;
-
+/*
 // Optimizes the rendering of objects using multiple techniques like frustum culling and such
 #[derive(Default)]
 pub struct RenderOptimizer {}
@@ -22,3 +22,5 @@ impl EntityPrePassFilter for RenderOptimizer {
         return render_entity;
     }
 }
+
+*/

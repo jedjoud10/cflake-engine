@@ -1,5 +1,5 @@
 use std::any::Any;
-use glfw::ffi::DECORATED;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
      component::{ComponentManager, FilteredLinkedComponents},
@@ -150,20 +150,14 @@ pub trait System {
         self.pre_fire(data);
         let system_data = self.get_system_data_mut();
         let c_bitfield = system_data.c_bitfield;
-        let entity_ppf = system_data.eppf.as_ref();
-        
+        let entity_filter = &system_data.entity_filter;
 
         // The filtered entities tuple that also contains the linked component data
-        let filtered_entity_ids = system_data.entities.iter().filter_map(|entity_id| {
-            let entity_clone = &data.entity_manager.get_entity_mut(entity_id).unwrap().clone();
+        let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
+            let entity_clone = &data.entity_manager.get_entity(entity_id).unwrap().clone();
             // Get the linked components
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
-            let mut valid_entity: bool = match entity_ppf {
-                // Filter
-                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &linked_components, data),
-                // Default
-                None => true, 
-            };
+            let mut valid_entity = (entity_filter.filter_entity_fn)();
             // Check if it is a valid entity
             if valid_entity {
                 // This entity passed the filter
@@ -187,7 +181,7 @@ pub trait System {
     }
     
     // Add an EntityPrePassFilter into the system
-    fn add_eppf<>(&mut self, eppf: Box<dyn EntityPrePassFilter>) {
+    fn add_eppf<>(&mut self, eppf: EntityPrePassFilter) {
         let system_data = self.get_system_data_mut();
         system_data.eppf = Some(eppf);
     }
@@ -210,7 +204,29 @@ pub trait System {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
-// Pre pass filter for the entities
-pub trait EntityPrePassFilter {
-    fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &SystemEventData) -> bool;
+// Some data that can be passed to the entity filter
+pub enum EntityFilterDataType {
+    Scalar(f32),
+    Integer(i32),
+}
+// Entity linked dat
+pub struct PassedComponent {
+    pub test: f32
+}
+
+// The entity filter used to optimize the world
+pub struct EntityFilter {
+    // The filter closure
+    pub filter_entity_fn: fn(Vec<EntityFilterDataType>) -> bool, 
+}
+
+// Default entity filter
+impl Default for EntityFilter {
+    fn default() -> Self {
+        Self {
+            filter_entity_fn: |data| {
+                true
+            }
+        }
+    }
 }
