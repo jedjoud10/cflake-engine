@@ -85,7 +85,7 @@ impl Entity {
     pub fn is_component_linked(&self, component_id: &u16) -> bool {
         self.linked_components.contains_key(component_id)
     }
-    // Link a component to this entity and use the given default state parameter
+    // Link a component to this entity and also link it's default component dependencies if they are not linked yet
     pub fn link_component<T: ComponentID + Component + 'static>(&mut self, component_manager: &mut ComponentManager, default_state: T) -> Result<(), ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we have the component linked on this entity

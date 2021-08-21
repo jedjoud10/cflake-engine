@@ -1,12 +1,6 @@
 use super::{entity::Entity, error::ECSError};
 use std::{any::Any, collections::HashMap, hash::Hash};
 
-// A component trait that can be added to other components
-pub trait Component {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
     component_ids: HashMap<String, u16>,
@@ -94,7 +88,11 @@ impl ComponentManager {
         return Ok(());
     }
 }
-
+// A component trait that can be added to other components
+pub trait Component {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
 // A trait used to identify each component by their name
 pub trait ComponentID {
     fn get_component_name() -> String;
