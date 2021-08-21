@@ -137,9 +137,9 @@ pub trait System {
         let entities_clone = system_data_clone.entities.clone();
         // Loop over all the entities and fire the entity removed event
         for entity_id in entities_clone.iter() {
-            let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
+            let entity_clone = &mut data.entity_manager.id_get_entity(entity_id).unwrap().clone();
             self.entity_removed(entity_clone, data);
-            *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
+            *data.entity_manager.id_get_entity_mut(entity_id).unwrap() = entity_clone.clone();
         }
         // Reput the cloned entities
         self.get_system_data_mut().entities = entities_clone;
@@ -151,10 +151,24 @@ pub trait System {
         let system_data = self.get_system_data_mut();
         let c_bitfield = system_data.c_bitfield;
         let entity_filter = &system_data.entity_filter;
+        // The linked data types of the entity filter
+        let mut entity_filter_linked_types_global: Vec<EntityFilterDataType> = Vec::new();
+        let length: i32 = -1;
+        // Get them by calling the get_efdt on each entity
+        for entity_id in system_data.entities.iter() {
+            // Get the entity
+            let entity = data.entity_manager.id_get_entity(entity_id).unwrap();
+            let mut entity_data_types = (system_data.entity_filter.get_efdt)(entity, data.component_manager);
+            entity_filter_linked_types_global.append(&mut entity_data_types);
+            if length == -1 {
+                // Save the length of the data types vector, since it will always be the same for all the entities
+                length = entity_data_types.len() as i32;
+            }
+        }
 
         // The filtered entities tuple that also contains the linked component data
         let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
-            let entity_clone = &data.entity_manager.get_entity(entity_id).unwrap().clone();
+            let entity_clone = &data.entity_manager.id_get_entity(entity_id).unwrap().clone();
             // Get the linked components
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
             let mut valid_entity = (entity_filter.filter_entity_fn)();
@@ -170,7 +184,7 @@ pub trait System {
 
         // Loop over all the entities and update their components
         for entity_id in filtered_entity_ids  {
-            let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
+            let entity_clone = data.entity_manager.id_get_entity_mut(&entity_id).unwrap();
             // Get the linked entity components from the current entity
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
             self.fire_entity(&linked_components, data);
@@ -180,10 +194,10 @@ pub trait System {
         self.post_fire(data);
     }
     
-    // Add an EntityPrePassFilter into the system
-    fn add_eppf<>(&mut self, eppf: EntityPrePassFilter) {
+    // Set the entity filter of this system
+    fn set_entity_filter(&mut self, entity_filter: EntityFilter) {
         let system_data = self.get_system_data_mut();
-        system_data.eppf = Some(eppf);
+        system_data.entity_filter = entity_filter;
     }
 
     // Getters for the system data
@@ -218,14 +232,21 @@ pub struct PassedComponent {
 pub struct EntityFilter {
     // The filter closure
     pub filter_entity_fn: fn(Vec<EntityFilterDataType>) -> bool, 
+    // Get the entity filter data types from a specific entity
+    pub get_efdt: fn(&Entity, &ComponentManager) -> Vec<EntityFilterDataType>,
 }
 
 // Default entity filter
 impl Default for EntityFilter {
     fn default() -> Self {
         Self {
+            // Default filter closure
             filter_entity_fn: |data| {
                 true
+            },
+            // Default data types
+            get_efdt: |entity, component_manager| {
+                Vec::new()
             }
         }
     }

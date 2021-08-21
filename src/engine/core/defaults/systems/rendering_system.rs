@@ -188,7 +188,7 @@ impl System for RenderingSystem {
         let camera_data: &components::Camera;
         // Get everything related to the camera
         {
-            let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+            let camera_entity = data.entity_manager.id_get_entity(&data.custom_data.main_camera_entity_id).unwrap();
             camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
@@ -281,7 +281,7 @@ impl System for RenderingSystem {
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();
         let camera_position = data
             .entity_manager
-            .get_entity(&data.custom_data.main_camera_entity_id)
+            .id_get_entity(&data.custom_data.main_camera_entity_id)
             .unwrap()
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
@@ -298,7 +298,7 @@ impl System for RenderingSystem {
         //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
         let sky_component = data
             .entity_manager
-            .get_entity(&data.custom_data.sky_entity_id)
+            .id_get_entity(&data.custom_data.sky_entity_id)
             .unwrap()
             .get_component::<components::Sky>(data.component_manager)
             .unwrap();

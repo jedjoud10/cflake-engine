@@ -96,7 +96,7 @@ impl System for SkySystem {
         // Set the position of the sky sphere to always be the camera
         let position = data
             .entity_manager
-            .get_entity(&data.custom_data.main_camera_entity_id)
+            .id_get_entity(&data.custom_data.main_camera_entity_id)
             .unwrap()
             .get_component::<transforms::Position>(data.component_manager)
             .unwrap()
