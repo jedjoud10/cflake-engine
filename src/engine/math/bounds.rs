@@ -48,17 +48,19 @@ impl AABB {
     // Check if this AABB intersects the camera's view frustum
     pub fn intersect_camera_view_frustum(&self, camera: &Camera) -> bool {
         // Create the clip space matrix
-        let matrix = camera.projection_matrix * camera.view_matrix;
+        let matrix = camera.frustum_culling_matrix;
         // An multiplication factor just to debug the frustum culling
-        const factor: f32 = 1.1;
+        const factor: f32 = 1.0;
         // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC
         for corner_index in 0..8 {
             let corner = self.get_corner(corner_index);
             let transformed_corner = matrix.mul_vec4(glam::vec4(corner.x, corner.y, corner.z, 1.0));
-            // You have to divide by the W scalar first to get the NDC
-            let transformed_corner = transformed_corner.xyz() / transformed_corner.w;
-            // Check if is inside the bounds of the NDC
-            if (transformed_corner * factor).abs().cmplt(glam::Vec3::ONE).any() {
+            // You have to divide by the W scalar first to get the screenspace NDC
+            let transformed_corner_screen_space = transformed_corner.xy() / transformed_corner.w;
+            // Check if is inside the bounds of the 2D screenspace NDC
+            let min = (transformed_corner_screen_space * factor).cmplt(glam::Vec2::ONE).all();
+            let max = (transformed_corner_screen_space * factor).cmpgt(-glam::Vec2::ONE).all();
+            if min && max {
                 // The AABB is inside the view frustum,.we can exit early
                 return true;
             }

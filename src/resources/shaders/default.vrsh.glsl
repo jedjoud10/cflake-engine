@@ -9,13 +9,13 @@ out vec3 m_normal;
 out vec4 m_tangents;
 out vec2 m_uv;
 out vec3 m_position;
-out vec4 mvp_pos;
+out vec2 screen_space_pos;
 out mat3 tbn;
 
 void main() {
-	vec4 local_mvp_pos = mvp_matrix * vec4(model_pos, 1.0);
+	vec4 mvp_pos = mvp_matrix * vec4(model_pos, 1.0);
 	vec3 model_matrix_pos = (model_matrix * vec4(model_pos, 1.0)).xyz;
-	mvp_pos = local_mvp_pos;
+	screen_space_pos = mvp_pos.xy / mvp_pos.w;
 	gl_Position = mvp_pos;
 
 	// Pass the data to the next shader

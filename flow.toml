@@ -24,6 +24,6 @@ command = "./fix-certificate.bat"
 
 [tasks.publish-cert]
 dependencies = [
-    "build-publish",
+    "run",
     "fix-certificate"
 ]

@@ -11,6 +11,7 @@ use glam::Vec4Swizzles;
 pub struct Camera {
     pub view_matrix: glam::Mat4,
     pub projection_matrix: glam::Mat4,
+    pub frustum_culling_matrix: glam::Mat4,
     pub horizontal_fov: f32,
     pub aspect_ratio: f32,
     pub clip_planes: (f32, f32), // Near, far
@@ -30,6 +31,11 @@ impl Camera {
         let forward_vector = rotation_matrix.mul_vec4(glam::vec4(0.0, 0.0, -1.0, 1.0)).xyz();
         let up_vector = rotation_matrix.mul_vec4(glam::vec4(0.0, 1.0, 0.0, 1.0)).xyz();
         self.view_matrix = glam::Mat4::look_at_rh(position, forward_vector + position, up_vector);
+    }
+    // Update the frustum-culling matrix
+    pub fn update_frustum_culling_matrix(&mut self) {
+        // Too ez m8
+        self.frustum_culling_matrix = self.projection_matrix * self.view_matrix;
     }
 }
 
@@ -53,6 +59,7 @@ impl Default for Camera {
         Self {
             view_matrix: glam::Mat4::IDENTITY,
             projection_matrix: glam::Mat4::IDENTITY,
+            frustum_culling_matrix: glam::Mat4::IDENTITY,
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
             clip_planes: (3.0, 10000.0),
