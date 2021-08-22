@@ -279,8 +279,6 @@ impl System for RenderingSystem {
             frustum = &camera_data.frustum;
             vp_matrix = projection_matrix * view_matrix;
         }
-        // Casually just draw the frustum
-        data.debug.debug(frustum.get_debug_renderer());
         // Draw the debug primitives
         data.debug.draw_debug(vp_matrix, &data.shader_cacher.1);
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();
