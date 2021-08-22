@@ -4,6 +4,7 @@ use crate::engine::{core::defaults::components::components::Camera, rendering::m
 
 
 // An aabb bound
+#[derive(Clone, Copy)]
 pub struct AABB {
     pub min: glam::Vec3,
     pub max: glam::Vec3,
@@ -46,9 +47,9 @@ impl AABB {
         false
     }
     // Check if this AABB intersects the camera's view frustum
-    pub fn intersect_camera_view_frustum(&self, camera: &Camera) -> bool {
+    pub fn intersect_camera_view_frustum(&self, camera_frustum_matrix: &glam::Mat4) -> bool {
         // Create the clip space matrix
-        let matrix = camera.frustum_culling_matrix;
+        let matrix = camera_frustum_matrix;
         // An multiplication factor just to debug the frustum culling
         const factor: f32 = 1.3;
         // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC

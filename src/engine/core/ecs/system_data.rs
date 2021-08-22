@@ -11,7 +11,7 @@ use crate::engine::{
     resources::ResourceManager,
 };
 
-use super::{component::{ComponentID, ComponentManager}, entity::{Entity, EntityManager}, error::ECSError, system::EntityPrePassFilter};
+use super::{component::{ComponentID, ComponentManager}, entity::{Entity, EntityManager}, error::ECSError, system::EntityFilter};
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {

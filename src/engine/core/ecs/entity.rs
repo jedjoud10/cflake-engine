@@ -32,7 +32,7 @@ impl EntityManager {
         id
     }
     // Get a mutable reference to a stored entity
-    pub fn get_entity_mut(&mut self, entity_id: &u16) -> Result<&mut Entity, ECSError> {
+    pub fn id_get_entity_mut(&mut self, entity_id: &u16) -> Result<&mut Entity, ECSError> {
         if self.entities.contains_key(entity_id) {
             return Ok(self.entities.get_mut(entity_id).unwrap());
         } else {
@@ -40,7 +40,7 @@ impl EntityManager {
         }
     }
     // Get an entity using it's entity id
-    pub fn get_entity(&self, entity_id: &u16) -> Result<&Entity, ECSError> {
+    pub fn id_get_entity(&self, entity_id: &u16) -> Result<&Entity, ECSError> {
         if self.entities.contains_key(entity_id) {
             return Ok(self.entities.get(entity_id).unwrap());
         } else {
@@ -48,7 +48,7 @@ impl EntityManager {
         }
     }
     // Removes an entity from the world
-    pub fn remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
+    pub fn id_remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
         if self.entities.contains_key(entity_id) {
             let removed_entity = self.entities.remove(&entity_id).unwrap();
             Ok(removed_entity)

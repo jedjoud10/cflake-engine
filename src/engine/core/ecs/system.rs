@@ -2,13 +2,14 @@ use std::{any::Any, time::Instant};
 use glfw::ffi::DECORATED;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
+
 use super::{
      component::{ComponentManager, FilteredLinkedComponents},
     entity::Entity,
     error::ECSError,
     system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
 };
-use crate::engine::core::world::{CustomWorldData, Time};
+use crate::engine::{core::world::{CustomWorldData, Time}, math::{self, bounds::AABB}};
 
 #[derive(Default)]
 // Manages the systems
@@ -138,9 +139,9 @@ pub trait System {
         let entities_clone = system_data_clone.entities.clone();
         // Loop over all the entities and fire the entity removed event
         for entity_id in entities_clone.iter() {
-            let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
+            let entity_clone = &mut data.entity_manager.id_get_entity(entity_id).unwrap().clone();
             self.entity_removed(entity_clone, data);
-            *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
+            *data.entity_manager.id_get_entity_mut(entity_id).unwrap() = entity_clone.clone();
         }
         // Reput the cloned entities
         self.get_system_data_mut().entities = entities_clone;
@@ -159,14 +160,20 @@ pub trait System {
         let current_time = Instant::now();
         let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
             let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap().clone();
+
             // Get the linked components
-            let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
-            let mut valid_entity: bool = match entity_ppf {
-                // Filter
-                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &linked_components, data),
-                // Default
-                None => true, 
-            };
+            let linked_types_global_start_index = iteration_index * entity_lcdt_length as usize;
+            let start = linked_types_global_start_index;
+            let end = gcdt.len() + entity_lcdt_length as usize;
+            let mut local_linked_data_types: Vec<&EntityFilterDataType> = Vec::new();
+            // Now add the component data types
+            for data_type_index in start..end {
+                // Get the data type from the global component data types and add it
+                local_linked_data_types.push(gcdt.get(data_type_index).unwrap());
+            }
+            let mut valid_entity = (entity_filter.filter_entity_fn)(EntityFilterData {
+                data_types: local_linked_data_types
+            });
             // Check if it is a valid entity
             if valid_entity {
                 // This entity passed the filter
@@ -174,12 +181,12 @@ pub trait System {
             } else {
                 // This entity failed the filter
                 None
-            }
+            }       
         }).collect::<Vec<u16>>().clone();
         println!("{}", current_time.elapsed().as_micros());
         // Loop over all the entities and update their components
         for entity_id in filtered_entity_ids  {
-            let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
+            let entity_clone = data.entity_manager.id_get_entity_mut(&entity_id).unwrap();
             // Get the linked entity components from the current entity
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
             self.fire_entity(&linked_components, data);
@@ -188,11 +195,13 @@ pub trait System {
         // Post fire event call
         self.post_fire(data);
     }
-    
+
     // Add an EntityPrePassFilter into the system
     fn add_eppf<>(&mut self, eppf: Box<dyn EntityPrePassFilter + Send + Sync>) {
+
         let system_data = self.get_system_data_mut();
-        system_data.eppf = Some(eppf);
+        let entity_filter = entity_filter_wrapper.create_entity_filter();
+        system_data.entity_filter = entity_filter;
     }
 
     // Getters for the system data
@@ -213,7 +222,77 @@ pub trait System {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
-// Pre pass filter for the entities
-pub trait EntityPrePassFilter {
-    fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &SystemEventData) -> bool;
+// Some data that can be passed to the entity filter
+pub enum EntityFilterDataType {
+    BOOL(bool),
+    AABB(math::bounds::AABB),
+    MAT4(glam::Mat4),
+}
+
+// Helper struct that will cast the data types to their inner counter parts
+pub struct EntityFilterData<'a> {
+    // The data types
+    pub data_types: Vec<&'a EntityFilterDataType>,
+}
+
+impl<'a> EntityFilterData<'a> {
+    // Get and cast --Bool--
+    pub fn get_bool(&self, index: usize) -> bool {
+        // Extraction
+        match self.data_types.get(index).unwrap() {
+            EntityFilterDataType::BOOL(x) => {
+                return *x;
+            }
+            _ => { panic!("Tried to extract Bool with index '{}'", index) },
+        }
+    }
+    // Get and cast --AABB--
+    pub fn get_aabb(&self, index: usize) -> math::bounds::AABB {
+        // Extraction
+        match self.data_types.get(index).unwrap() {
+            EntityFilterDataType::AABB(x) => {
+                return *x;
+            }
+            _ => { panic!("Tried to extract AABB with index '{}'", index) },
+        }
+    }
+    // Get and cast --Mat4
+    pub fn get_mat4(&self, index: usize) -> glam::Mat4 {
+        // Extraction
+        match self.data_types.get(index).unwrap() {
+            EntityFilterDataType::MAT4(x) => {
+                return *x;
+            }
+            _ => { panic!("Tried to extract Mat4 with index '{}'", index) },
+        }
+    }
+}
+
+// The entity filter used to optimize the world
+pub struct EntityFilter {
+    // The filter closure
+    pub filter_entity_fn: fn(EntityFilterData) -> bool, 
+    // Get the entity filter data types from a specific entity
+    pub get_efdt: fn(&Entity, &SystemEventData) -> Vec<EntityFilterDataType>,
+}
+
+// Default entity filter
+impl Default for EntityFilter {
+    fn default() -> Self {
+        Self {
+            // Default filter closure
+            filter_entity_fn: |data| {
+                true
+            },
+            // Default data types
+            get_efdt: |entity, data| {
+                Vec::new()
+            }
+        }
+    }
+}
+
+// Simple wrapper
+pub trait EntityFilterWrapper {
+    fn create_entity_filter(&self) -> EntityFilter;
 }

@@ -201,7 +201,7 @@ impl World {
     // Wrapper function around the entity manager's add_entity
     pub fn add_entity(&mut self, entity: Entity) -> u16 {
         let id = self.entity_manager.internal_add_entity(entity);
-        let entity = self.entity_manager.get_entity(&id).unwrap().clone();
+        let entity = self.entity_manager.id_get_entity(&id).unwrap().clone();
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         self.system_manager.add_entity_to_systems(
             &entity,
@@ -211,7 +211,7 @@ impl World {
                 custom_data: &mut self.custom_data,
             },
         );
-        *self.entity_manager.get_entity_mut(&id).unwrap() = entity;
+        *self.entity_manager.id_get_entity_mut(&id).unwrap() = entity;
         id
     }
     // Add multiple entities at once
@@ -226,7 +226,7 @@ impl World {
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {
         // Remove the entity from the world first
-        let removed_entity = self.entity_manager.remove_entity(&entity_id)?;
+        let removed_entity = self.entity_manager.id_remove_entity(&entity_id)?;
         // Remove all the components this entity had
         for global_component_id in removed_entity.linked_components.values() {
             self.component_manager.id_remove_linked_component(global_component_id);
@@ -264,13 +264,13 @@ impl World {
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);
         }
-        let camera_entity_clone = self.entity_manager.get_entity(&self.custom_data.main_camera_entity_id).unwrap().clone();
+        let camera_entity_clone = self.entity_manager.id_get_entity(&self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component = camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager).unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.update_projection_matrix(&self.custom_data.window);
         // Update the original entity
-        *self.entity_manager.get_entity_mut(&entity_clone_id).unwrap() = camera_entity_clone;
+        *self.entity_manager.id_get_entity_mut(&entity_clone_id).unwrap() = camera_entity_clone;
         self.custom_data.window.size = size;
     }
 }
