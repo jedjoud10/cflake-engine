@@ -7,7 +7,7 @@ use super::{
     error::ECSError,
     system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
 };
-use crate::engine::core::world::{CustomWorldData, Time};
+use crate::engine::{core::world::{CustomWorldData, Time}, math::{self, bounds::AABB}};
 
 #[derive(Default)]
 // Manages the systems
@@ -228,8 +228,14 @@ pub trait System {
 
 // Some data that can be passed to the entity filter
 pub enum EntityFilterDataType {
-    Scalar(f32),
-    Integer(i32),
+    F32(f32),
+    I32(i32),
+    F64(f64),
+    I54(i64),
+    U32(u32),
+    U64(u64),
+    AABB(math::bounds::AABB),
+    MAT4(glam::Mat4),
 }
 // Entity linked dat
 pub struct PassedComponent {
@@ -250,7 +256,6 @@ impl Default for EntityFilter {
         Self {
             // Default filter closure
             filter_entity_fn: |data| {
-                let first = data.get(0).unwrap();
                 true
             },
             // Default data types
