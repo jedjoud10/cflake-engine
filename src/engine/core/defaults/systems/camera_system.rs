@@ -1,6 +1,6 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::core::{
+use crate::engine::{core::{
     defaults::components::{components, transforms},
     ecs::{
         component::FilteredLinkedComponents,
@@ -8,7 +8,7 @@ use crate::engine::core::{
         system::System,
         system_data::{SystemData, SystemEventData, SystemEventDataLite},
     },
-};
+}, debug::DebugRendererable};
 
 #[derive(Default)]
 pub struct CameraSystem {

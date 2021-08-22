@@ -278,7 +278,7 @@ impl System for RenderingSystem {
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut SystemEventData) {
         // At the end of each frame, disable the depth test and render the debug objects
-        let mut vp_matrix: glam::Mat4 = glam::Mat4::IDENTITY;
+        let mut vp_matrix: glam::Mat4;
         let frustum: &math::Frustum;
         // Get the (projection * view) matrix
         {

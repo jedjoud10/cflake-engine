@@ -110,7 +110,7 @@ impl DebugRenderer {
         match default_debug_renderer_type {
             DefaultDebugRendererType::CUBE(center, size) => {
                 // Apply the center and size
-                let new_corner = math::shapes::CUBE_CORNERS.to_vec().iter().map(|&x| { center + (x * size) }).collect::<Vec<glam::Vec3>>();
+                let new_corner = math::shapes::CUBE_CORNERS.to_vec().iter().map(|&x| { center + (x * size) - size / 2.0 }).collect::<Vec<glam::Vec3>>();
                 // Add the cube debug primitive
                 self.debug(DebugRendererType::CUBE(new_corner));
             },

@@ -36,6 +36,7 @@ impl Camera {
     pub fn update_frustum_culling_matrix(&mut self) {
         // Too ez m8
         self.frustum.matrix = self.projection_matrix * self.view_matrix;
+        self.frustum.projection_matrix = self.projection_matrix;
     }
 }
 
@@ -63,7 +64,7 @@ impl Default for Camera {
             frustum: math::Frustum::default(),
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
-            clip_planes: (3.0, 10000.0),
+            clip_planes: (0.3, 10000.0),
         }
     }
 }

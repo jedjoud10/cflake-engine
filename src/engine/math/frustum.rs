@@ -1,11 +1,12 @@
-use glam::Vec4Swizzles;
+use glam::{Vec3Swizzles, Vec4Swizzles};
 
 use crate::engine::debug::{DebugRendererable, DebugRendererType};
 
 // A view frustum
 #[derive(Default)]
 pub struct Frustum {
-    pub matrix: glam::Mat4
+    pub matrix: glam::Mat4,
+    pub projection_matrix: glam::Mat4
 }
 
 // Code
@@ -15,14 +16,14 @@ impl Frustum {
         // An multiplication factor just to debug the frustum culling
         const factor: f32 = 1.3;
 
-        let transformed_corner = self.matrix.mul_vec4(glam::vec4(point.x, point.y, point.z, 1.0));
-        // You have to divide by the W scalar first to get the screenspace NDC
-        let transformed_corner_screen_space = transformed_corner.xy() / transformed_corner.w;
+        // This automatically does the projection division for us
+        let transformed_corner = self.matrix.project_point3(point);
+        let transformed_ss = transformed_corner.xy();
         // Check if the point is in front of us
         if transformed_corner.z > 0.0 {
             // Check if is inside the bounds of the 2D screenspace NDC
-            let min = (transformed_corner_screen_space * factor).cmplt(glam::Vec2::ONE).all();
-            let max = (transformed_corner_screen_space * factor).cmpgt(-glam::Vec2::ONE).all();
+            let min = (transformed_ss * factor).cmplt(glam::Vec2::ONE).all();
+            let max = (transformed_ss * factor).cmpgt(-glam::Vec2::ONE).all();
             if min && max {
                 // The pojnt is inside the frustum
                 return true;
@@ -39,11 +40,14 @@ impl DebugRendererable for Frustum {
     // Turn the frustum into a cube and render it
     fn get_debug_renderer(&self) -> DebugRendererType {
         let corners = super::shapes::CUBE_CORNERS;   
-        let mut projected_corners: Vec<glam::Vec3> = Vec::new();   
+        let mut projected_corners: Vec<glam::Vec3> = Vec::new();  
+        // Extract the near / far planes from the projection matrix
+        //let near = self.projection_matrix.row(index)[14] / (self.projection_matrix[10] - 1.0); 
         // Project each corner of the unit cube by the frustum's matrix
         for corner in corners.iter() {
-            let projected_corner = self.matrix.mul_vec4(glam::vec4(corner.x, corner.y, corner.z, 1.0));
-            projected_corners.push(projected_corner.xyz() / projected_corner.w);
+            let new_corner = *corner * 2.0 - 1.0;
+            let projected_corner = self.matrix.inverse().project_point3(new_corner);
+            projected_corners.push(projected_corner);
         }  
         return DebugRendererType::CUBE(projected_corners);
     }
