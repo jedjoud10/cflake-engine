@@ -152,27 +152,32 @@ pub trait System {
         let c_bitfield = system_data.c_bitfield;
         let entity_filter = &system_data.entity_filter;
         // The linked data types of the entity filter
-        let mut entity_filter_linked_types_global: Vec<EntityFilterDataType> = Vec::new();
-        let mut length: i32 = -1;
+        let mut gcdt: Vec<EntityFilterDataType> = Vec::new();
+        let mut entity_lcdt_length: i32 = -1;
         // Get them by calling the get_efdt on each entity
         for entity_id in system_data.entities.iter() {
             // Get the entity
             let entity = data.entity_manager.id_get_entity(entity_id).unwrap();
             let mut entity_data_types = (system_data.entity_filter.get_efdt)(entity, data.component_manager);
-            entity_filter_linked_types_global.append(&mut entity_data_types);
-            if length == -1 {
+            gcdt.append(&mut entity_data_types);
+            if entity_lcdt_length == -1 {
                 // Save the length of the data types vector, since it will always be the same for all the entities
-                length = entity_data_types.len() as i32;
+                entity_lcdt_length = entity_data_types.len() as i32;
             }
         }
 
         // The filtered entities tuple that also contains the linked component data
         let filtered_entity_ids = system_data.entities.par_iter().enumerate().filter_map(|(iteration_index, entity_id)| { 
             // Get the linked components
-            let linked_types_global_start_index = iteration_index * length as usize;
+            let linked_types_global_start_index = iteration_index * entity_lcdt_length as usize;
             let start = linked_types_global_start_index;
-            let end = entity_filter_linked_types_global.len() + length as usize;
-            let local_linked_data_types: Vec<&EntityFilterDataType> = Vec::new();
+            let end = gcdt.len() + entity_lcdt_length as usize;
+            let mut local_linked_data_types: Vec<&EntityFilterDataType> = Vec::new();
+            // Now add the component data types
+            for data_type_index in start..end {
+                // Get the data type from the global component data types and add it
+                local_linked_data_types.push(gcdt.get(data_type_index).unwrap());
+            }
             let mut valid_entity = (entity_filter.filter_entity_fn)(local_linked_data_types);
             // Check if it is a valid entity
             if valid_entity {
