@@ -7,6 +7,8 @@ use crate::engine::core::ecs::{
     system_data::{SystemData, SystemEventData, SystemEventDataLite},
 };
 use crate::engine::core::world::World;
+use crate::engine::debug::{DebugRendererType, DebugRendererable};
+use crate::engine::math;
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::optimizer::RenderOptimizer;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
@@ -277,16 +279,20 @@ impl System for RenderingSystem {
     fn post_fire(&mut self, data: &mut SystemEventData) {
         // At the end of each frame, disable the depth test and render the debug objects
         let mut vp_matrix: glam::Mat4 = glam::Mat4::IDENTITY;
+        let frustum: &math::Frustum;
         // Get the (projection * view) matrix
         {
             let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
             let camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
             let projection_matrix = camera_data.projection_matrix;
             let view_matrix = camera_data.view_matrix;
+            frustum = &camera_data.frustum;
             vp_matrix = projection_matrix * view_matrix;
         }
+        data.debug.debug(frustum.get_debug_renderer());
+        data.debug.debug(DebugRendererType::CUBE(math::shapes::CUBE_CORNERS.to_vec()));
         // Draw the debug primitives
-        data.debug.draw_debug(vp_matrix, data);
+        data.debug.draw_debug(vp_matrix, &data.shader_cacher.1);
 
 
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();

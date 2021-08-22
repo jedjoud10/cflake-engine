@@ -5,7 +5,7 @@ use crate::engine::{core::{cacher::CacheManager, ecs::system_data::SystemEventDa
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {
-    pub debug_renderers: Vec<DebugRendererType>, 
+    pub debug_primitives: Vec<DebugRendererType>, 
     pub shader_name: String,
     pub vao: u32,
 }
@@ -22,10 +22,10 @@ impl DebugRenderer {
         self.shader_name = Shader::new(vec!["shaders\\debug.vrsh.glsl", "shaders\\debug.frsh.glsl"], resource_manager, shader_cacher).1;
     }
     // Draw the debug renderers
-    pub fn draw_debug(&self, vp_matrix: glam::Mat4, data: &SystemEventData) {
+    pub fn draw_debug(&mut self, vp_matrix: glam::Mat4, shader_cacher_1: &CacheManager<Shader>) {
         // Loop each one and construct lines out of them
         let mut lines: Vec<math::shapes::Line> = Vec::new();        
-        for renderer in self.debug_renderers.iter() {
+        for renderer in self.debug_primitives.iter() {
             match renderer {
                 DebugRendererType::CUBE(corners) => {
                     // Turn the corners into lines
@@ -70,7 +70,7 @@ impl DebugRenderer {
         }
 
         // Set the shader
-        let shader = data.shader_cacher.1.get_object(self.shader_name.as_str()).unwrap();
+        let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();
         // Since we don't have a model matrix you can set it directly
         shader.set_matrix_44_uniform("mvp_matrix", vp_matrix);
         shader.set_scalar_3_uniform("debug_color", (1.0, 1.0, 1.0));
@@ -86,6 +86,13 @@ impl DebugRenderer {
             gl::Enable(gl::DEPTH_TEST);
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
         }
+
+        // Clear the debug primitives we already rendered
+        self.debug_primitives.clear();
+    }
+    // Add a debug primitive to the queue and then render it
+    pub fn debug(&mut self, debug_renderer_type: DebugRendererType) {
+        self.debug_primitives.push(debug_renderer_type);
     }
 }
 

@@ -119,7 +119,7 @@ impl System for Terrain {
         self.system_data.link_component::<Chunk>(data.component_manager).unwrap();
         self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
         self.system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
-        self.generate_terrain(data);
+        //self.generate_terrain(data);
     }
 
     // Update the camera position inside the terrain generator
