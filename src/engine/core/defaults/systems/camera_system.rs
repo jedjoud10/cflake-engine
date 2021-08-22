@@ -39,6 +39,7 @@ impl System for CameraSystem {
         data.input_manager.bind_key(glfw::Key::Space, "camera_up");
         data.input_manager.bind_key(glfw::Key::LeftShift, "camera_down");
         data.input_manager.bind_key(glfw::Key::G, "speed_switch");
+        data.input_manager.bind_key(glfw::Key::J, "update_frustum");
     }
 
     // Called for each entity in the system
@@ -91,8 +92,10 @@ impl System for CameraSystem {
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix(&data.custom_data.window);
-        // Update the frustum culling matrix
-        camera_component.update_frustum_culling_matrix();
+        if data.input_manager.map_held("update_frustum").0 {
+            // Update the frustum culling matrix
+            camera_component.update_frustum_culling_matrix();
+        }
     }
 
     // When an entity gets added to this system
@@ -108,10 +111,7 @@ impl System for CameraSystem {
         let camera_component = entity.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         camera_component.update_projection_matrix(&data.custom_data.window);
         camera_component.update_view_matrix(position, rotation);
-
-        // Calculate the frustum planes at setup
-        //let mut frustum = math::frustum::Frustum::default();
-        //frustum.calculate_planes(position, rotation, camera_component);
+        camera_component.update_frustum_culling_matrix();
     }
 
     // Turn this into "Any" so we can cast into child systems

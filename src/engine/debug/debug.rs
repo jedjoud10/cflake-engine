@@ -8,6 +8,7 @@ pub struct DebugRenderer {
     pub debug_primitives: Vec<DebugRendererType>, 
     pub shader_name: String,
     pub vao: u32,
+    pub vertices: Vec<glam::Vec3>,
     pub vertex_buffer: u32,
 }
 
@@ -71,16 +72,14 @@ impl DebugRenderer {
         }
     
         // Turn all the lines into vertices
-        let mut vertices: Vec<glam::Vec3> = Vec::new();
         for line in lines {
-            vertices.push(line.point);
-            vertices.push(line.point2);
+            self.vertices.push(line.point);
+            self.vertices.push(line.point2);
         }
         // Then edit the vertex buffer
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0, vertices.len() as isize, vertices.as_ptr() as *const c_void);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0, self.vertices.len() as isize, self.vertices.as_ptr() as *const c_void);
         }
 
         // Set the shader
@@ -92,17 +91,11 @@ impl DebugRenderer {
 
         // Draw each line
         unsafe {
-            // Remove depth testing when rendering the debug primitives
-            //gl::Disable(gl::DEPTH_TEST);
-            //gl::PolygonMode(gl::FRONT, gl::LINE);
-            
+            // Remove depth testing when rendering the debug primitives            
+            gl::Disable(gl::DEPTH_TEST);
             gl::BindVertexArray(self.vao);
-            gl::DrawArrays(gl::LINES, 0, vertices.len() as i32);
-            gl::BindVertexArray(0);
-            
-            
-            //gl::Enable(gl::DEPTH_TEST);
-            //gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            gl::DrawArrays(gl::LINES, 0, self.vertices.len() as i32);           
+            gl::Enable(gl::DEPTH_TEST);
         }
 
         // Clear the debug primitives we already rendered
@@ -112,6 +105,17 @@ impl DebugRenderer {
     pub fn debug(&mut self, debug_renderer_type: DebugRendererType) {
         self.debug_primitives.push(debug_renderer_type);
     }
+    // Add a default debug primite to the queue
+    pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType) {
+        match default_debug_renderer_type {
+            DefaultDebugRendererType::CUBE(center, size) => {
+                // Apply the center and size
+                let new_corner = math::shapes::CUBE_CORNERS.to_vec().iter().map(|&x| { center + (x * size) }).collect::<Vec<glam::Vec3>>();
+                // Add the cube debug primitive
+                self.debug(DebugRendererType::CUBE(new_corner));
+            },
+        }
+    } 
 }
 
 // The types of debug renderers
@@ -120,6 +124,10 @@ pub enum DebugRendererType {
     SPHERE(glam::Vec3, f32),
     LINE(math::shapes::Line),
     MODEL(Model),
+}
+
+pub enum DefaultDebugRendererType {
+    CUBE(glam::Vec3, glam::Vec3)
 }
 
 // Trait

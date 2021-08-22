@@ -7,7 +7,7 @@ use crate::engine::core::ecs::{
     system_data::{SystemData, SystemEventData, SystemEventDataLite},
 };
 use crate::engine::core::world::World;
-use crate::engine::debug::{DebugRendererType, DebugRendererable};
+use crate::engine::debug::{DebugRendererType, DebugRendererable, DefaultDebugRendererType};
 use crate::engine::math;
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::optimizer::RenderOptimizer;
@@ -289,8 +289,9 @@ impl System for RenderingSystem {
             frustum = &camera_data.frustum;
             vp_matrix = projection_matrix * view_matrix;
         }
-        //data.debug.debug(frustum.get_debug_renderer());
-        data.debug.debug(DebugRendererType::CUBE(math::shapes::CUBE_CORNERS.to_vec()));
+        // Casually just draw the frustum
+        data.debug.debug(frustum.get_debug_renderer());
+        data.debug.debug_default(DefaultDebugRendererType::CUBE(glam::Vec3::ZERO, glam::Vec3::ONE));
         // Draw the debug primitives
         data.debug.draw_debug(vp_matrix, &data.shader_cacher.1);
 
