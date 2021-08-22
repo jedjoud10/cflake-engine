@@ -9,5 +9,5 @@ void main() {
 	frag_diffuse = vec3(0, 0, 0);
 	frag_normal = vec3(1, 1, 1);
 	frag_pos = m_position;
-	frag_emissive = debug_color;
+	frag_emissive = vec3(1, 1, 1);
 }

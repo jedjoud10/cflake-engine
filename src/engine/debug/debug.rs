@@ -8,16 +8,30 @@ pub struct DebugRenderer {
     pub debug_primitives: Vec<DebugRendererType>, 
     pub shader_name: String,
     pub vao: u32,
+    pub vertex_buffer: u32,
 }
 
 impl DebugRenderer {
     // Generate the vao and load the shader
     pub fn setup_debug_renderer(&mut self, resource_manager: &mut ResourceManager, shader_cacher: &mut (CacheManager<SubShader>, CacheManager<Shader>)) {
-        unsafe {
+        unsafe {            
+            // Generate the VAO
             gl::GenVertexArrays(1, &mut self.vao);
-            gl::BufferData(gl::ARRAY_BUFFER, 1024, null(), gl::DYNAMIC_DRAW);
-        }
+            gl::BindVertexArray(self.vao);
 
+            // Generate the vertex array
+            gl::GenBuffers(1, &mut self.vertex_buffer);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
+            gl::BufferData(gl::ARRAY_BUFFER, 1024, null(), gl::DYNAMIC_DRAW);
+
+            // Enable the attribute
+            gl::EnableVertexAttribArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+
+            gl::BindVertexArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);            
+        }
         // Set the shader name
         self.shader_name = Shader::new(vec!["shaders\\debug.vrsh.glsl", "shaders\\debug.frsh.glsl"], resource_manager, shader_cacher).1;
     }
@@ -62,29 +76,32 @@ impl DebugRenderer {
             vertices.push(line.point);
             vertices.push(line.point2);
         }
-
-        // Then edit the VAO
+        // Then edit the vertex buffer
         unsafe {
-            gl::BindVertexArray(self.vao);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
             gl::BufferSubData(gl::ARRAY_BUFFER, 0, vertices.len() as isize, vertices.as_ptr() as *const c_void);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
 
         // Set the shader
         let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();
         // Since we don't have a model matrix you can set it directly
-        shader.set_matrix_44_uniform("mvp_matrix", vp_matrix);
+        shader.set_matrix_44_uniform("vp_matrix", vp_matrix);
         shader.set_scalar_3_uniform("debug_color", (1.0, 1.0, 1.0));
 
         // Draw each line
         unsafe {
             // Remove depth testing when rendering the debug primitives
-            gl::Disable(gl::DEPTH_TEST);
-            gl::PolygonMode(gl::FRONT, gl::LINE);
-            gl::EnableVertexAttribArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.vao);
+            //gl::Disable(gl::DEPTH_TEST);
+            //gl::PolygonMode(gl::FRONT, gl::LINE);
+            
+            gl::BindVertexArray(self.vao);
             gl::DrawArrays(gl::LINES, 0, vertices.len() as i32);
-            gl::Enable(gl::DEPTH_TEST);
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            gl::BindVertexArray(0);
+            
+            
+            //gl::Enable(gl::DEPTH_TEST);
+            //gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
         }
 
         // Clear the debug primitives we already rendered
