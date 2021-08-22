@@ -1,12 +1,23 @@
-use crate::engine::{core::{
+use crate::engine::{
+    core::{
         cacher::CacheManager,
         world::{CustomWorldData, Time},
-    }, debug, input::InputManager, rendering::{
+    },
+    debug,
+    input::InputManager,
+    rendering::{
         shader::{Shader, SubShader},
         texture::Texture,
-    }, resources::ResourceManager};
+    },
+    resources::ResourceManager,
+};
 
-use super::{component::{ComponentID, ComponentManager}, entity::{Entity, EntityManager}, error::ECSError, system::EntityFilter};
+use super::{
+    component::{ComponentID, ComponentManager},
+    entity::EntityManager,
+    error::ECSError,
+    system::EntityFilter,
+};
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {

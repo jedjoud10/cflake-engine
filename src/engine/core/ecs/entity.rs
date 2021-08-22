@@ -50,7 +50,7 @@ impl EntityManager {
     // Removes an entity from the world
     pub fn remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
         if self.entities.contains_key(entity_id) {
-            let removed_entity = self.entities.remove(&entity_id).unwrap();
+            let removed_entity = self.entities.remove(entity_id).unwrap();
             Ok(removed_entity)
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
@@ -89,12 +89,12 @@ impl Entity {
     pub fn link_component<T: Component + 'static>(&mut self, component_manager: &mut ComponentManager, default_state: T) -> Result<(), ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we have the component linked on this entity
-        if !self.linked_components.contains_key(&component_id) {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(component_id) {
             // The component was not linked yet, link it
             // Add the component and get the global ID and add it to our hashmap
             let global_id = component_manager.add_linked_component::<T>(default_state)?;
             // Add the global ID to our hashmap
-            self.linked_components.insert(component_id, global_id);
+            e.insert(global_id);
         } else {
             // The component was already linked
             return Err(ECSError::new(
@@ -120,7 +120,7 @@ impl Entity {
 
         // Get the linked components and remove the component from it
         component_manager.id_remove_linked_component(global_id)?;
-        return Ok(());
+        Ok(())
     }
     // Gets a reference to a component
     pub fn get_component<'a, T: ComponentID + Component + 'static>(&self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {

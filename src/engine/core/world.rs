@@ -232,7 +232,7 @@ impl World {
         let removed_entity = self.entity_manager.remove_entity(&entity_id)?;
         // Remove all the components this entity had
         for global_component_id in removed_entity.linked_components.values() {
-            self.component_manager.id_remove_linked_component(global_component_id);
+            self.component_manager.id_remove_linked_component(global_component_id).unwrap();
         }
         Ok(removed_entity)
     }

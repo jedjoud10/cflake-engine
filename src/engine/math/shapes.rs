@@ -32,9 +32,6 @@ impl Line {
     }
     // Construct a line from two points
     pub fn construct(start: glam::Vec3, end: glam::Vec3) -> Self {
-        Self {
-            point: start,
-            point2: end,
-        }
+        Self { point: start, point2: end }
     }
 }

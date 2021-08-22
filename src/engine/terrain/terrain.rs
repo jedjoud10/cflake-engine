@@ -1,10 +1,16 @@
-use crate::engine::{core::{defaults::components::{components, transforms}, ecs::{
-            component::{Component, ComponentID, FilteredLinkedComponents},
+use crate::engine::{
+    core::{
+        defaults::components::{components, transforms},
+        ecs::{
+            component::FilteredLinkedComponents,
             entity::Entity,
             system::System,
             system_data::{SystemData, SystemEventData, SystemEventDataLite},
-        }}, math::bounds, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
-use std::collections::HashMap;
+        },
+    },
+    rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader},
+    terrain::chunk::Chunk,
+};
 
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 32;
@@ -27,11 +33,10 @@ impl Terrain {
         pos.z *= 0.02;
         let mut density = (pos.x.sin()) * 10.0 + (pos.z.sin()) * 10.0;
         density += pos.y - 32.0;
-        return density;
+        density
     }
     // Creates a single chunk entity
     fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
-        let now = std::time::Instant::now();
         // Generate the component
         let mut chunk = Chunk::default();
         chunk.position = position;
@@ -63,11 +68,13 @@ impl Terrain {
         // Link the required components to the entity
         chunk_entity.link_component::<Renderer>(data.component_manager, rc).unwrap();
         chunk_entity
-        .link_component::<transforms::Position>(data.component_manager, transforms::Position { position })
-        .unwrap();
+            .link_component::<transforms::Position>(data.component_manager, transforms::Position { position })
+            .unwrap();
         chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager).unwrap();
         chunk_entity.link_default_component::<transforms::Scale>(data.component_manager).unwrap();
-        chunk_entity.link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&chunk_entity, data.component_manager)).unwrap();
+        chunk_entity
+            .link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&chunk_entity, data.component_manager))
+            .unwrap();
 
         // This is in global coordinates btw (-30, 0, 30, 60)
         self.chunks.push(position.as_i32());

@@ -1,9 +1,6 @@
-use glam::Vec4Swizzles;
-
-use crate::engine::{core::defaults::components::components::Camera, rendering::model::Model};
+use crate::engine::rendering::model::Model;
 
 use super::frustum::Frustum;
-
 
 // An aabb bound
 #[derive(Clone, Copy)]
@@ -26,18 +23,18 @@ impl Default for AABB {
 impl AABB {
     // Get a specific corner from this AABB
     pub fn get_corner(&self, corner_index: u8) -> glam::Vec3 {
-        match corner_index {            
-            0 => glam::vec3(self.min.x, self.min.y, self.min.z), // -X, -Y, -Z            
-            1 => glam::vec3(self.max.x, self.min.y, self.min.z), // X, -Y, -Z            
-            2 => glam::vec3(self.max.x, self.min.y, self.max.z), // X, -Y, Z            
-            3 => glam::vec3(self.min.x, self.min.y, self.max.z), // -X, -Y, Z           
-            4 => glam::vec3(self.min.x, self.max.y, self.min.z), // -X, Y, -Z           
-            5 => glam::vec3(self.max.x, self.max.y, self.min.z), // X, Y, -Z           
-            6 => glam::vec3(self.max.x, self.max.y, self.max.z), // X, Y, Z           
+        match corner_index {
+            0 => glam::vec3(self.min.x, self.min.y, self.min.z), // -X, -Y, -Z
+            1 => glam::vec3(self.max.x, self.min.y, self.min.z), // X, -Y, -Z
+            2 => glam::vec3(self.max.x, self.min.y, self.max.z), // X, -Y, Z
+            3 => glam::vec3(self.min.x, self.min.y, self.max.z), // -X, -Y, Z
+            4 => glam::vec3(self.min.x, self.max.y, self.min.z), // -X, Y, -Z
+            5 => glam::vec3(self.max.x, self.max.y, self.min.z), // X, Y, -Z
+            6 => glam::vec3(self.max.x, self.max.y, self.max.z), // X, Y, Z
             7 => glam::vec3(self.min.x, self.max.y, self.max.z), // -X, Y, Z
 
             // Other; not supported
-            _ => { glam::Vec3::ZERO }
+            _ => glam::Vec3::ZERO,
         }
     }
     // Check if this AABB intersects a sphere (or is inside of it)
@@ -52,7 +49,7 @@ impl AABB {
     pub fn intersect_frustum(&self, frustum: &Frustum) -> bool {
         // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC
         for corner_index in 0..8 {
-            let corner = self.get_corner(corner_index);   
+            let corner = self.get_corner(corner_index);
             // Check if one of the corners is inside the frustum, if it isn't just skip to the next one
             if frustum.is_point_inside_frustum(corner) {
                 return true;
@@ -60,7 +57,7 @@ impl AABB {
                 continue;
             }
         }
-        return false;
+        false
     }
 }
 
@@ -74,7 +71,7 @@ impl AABB {
             aabb.min = aabb.min.min(*vertex);
             aabb.max = aabb.max.max(*vertex);
         }
-        return aabb;
+        aabb
     }
     // Offset the AABB using a position
     pub fn offset(&mut self, position: glam::Vec3) {

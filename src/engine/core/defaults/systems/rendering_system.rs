@@ -7,7 +7,7 @@ use crate::engine::core::ecs::{
     system_data::{SystemData, SystemEventData, SystemEventDataLite},
 };
 use crate::engine::core::world::World;
-use crate::engine::debug::{self, DebugRendererType, DebugRendererable, DefaultDebugRendererType};
+use crate::engine::debug::DebugRendererable;
 use crate::engine::math;
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::optimizer::RenderOptimizer;
@@ -51,7 +51,7 @@ impl RenderingSystem {
         .1;
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
-    }    
+    }
     // Bind a specific texture attachement to the frame buffer
     fn bind_attachement(attachement: u32, texture: &Texture) {
         unsafe {
@@ -185,7 +185,6 @@ impl System for RenderingSystem {
         let projection_matrix: glam::Mat4;
         let camera_position: glam::Vec3;
         let camera_data: &components::Camera;
-        let frustum: math::Frustum;
         // Get everything related to the camera
         {
             let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
@@ -193,7 +192,6 @@ impl System for RenderingSystem {
             camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
-            frustum = camera_data.frustum.clone();
         }
         let model_matrix: glam::Mat4;
         // Render the entity
@@ -221,7 +219,7 @@ impl System for RenderingSystem {
 
         let rc = components.get_component::<Renderer>(&mut data.component_manager).unwrap();
         // Calculate the mvp matrix
-        let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;        
+        let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
         // Pass the MVP and the model matrix to the shader
         shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
         shader.set_matrix_44_uniform("model_matrix", model_matrix);
@@ -280,7 +278,7 @@ impl System for RenderingSystem {
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut SystemEventData) {
         // At the end of each frame, disable the depth test and render the debug objects
-        let mut vp_matrix: glam::Mat4;
+        let vp_matrix: glam::Mat4;
         let frustum: &math::Frustum;
         // Get the (projection * view) matrix
         {

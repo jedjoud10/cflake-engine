@@ -1,5 +1,5 @@
 use super::{entity::Entity, error::ECSError};
-use std::{any::Any, collections::HashMap, hash::Hash};
+use std::{any::Any, collections::HashMap};
 
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
@@ -25,7 +25,7 @@ impl ComponentManager {
     pub fn register_component<T: ComponentID>(&mut self) -> u16 {
         let name: String = T::get_component_name();
         // Register the component
-        self.component_ids.insert(name.clone(), self.current_component_id);
+        self.component_ids.insert(name, self.current_component_id);
         // Make a copy of the id before the bit shift
         let component_id = self.current_component_id;
         // Bit shift to the left
@@ -54,7 +54,7 @@ impl ComponentManager {
         let boxed_component = Box::new(component);
         self.linked_component.insert(global_id, boxed_component);
         // Give back the global ID of the component
-        return Ok(global_id);
+        Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
     fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a Box<dyn ComponentInternal + Send + Sync>) -> &'a T {
@@ -74,18 +74,18 @@ impl ComponentManager {
         // entity_id * 16 + local_component_id
         let linked_component = self.linked_component.get(global_id).unwrap();
         let component = Self::cast_component(linked_component);
-        return Ok(component);
+        Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
     pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
         let linked_component = self.linked_component.get_mut(global_id).unwrap();
         let component = Self::cast_component_mut(linked_component);
-        return Ok(component);
+        Ok(component)
     }
     // Remove a specified component from the list
-    pub fn id_remove_linked_component(&mut self, global_id: &u16) -> Result<(), ECSError> {
+    pub fn id_remove_linked_component(&mut self, _global_id: &u16) -> Result<(), ECSError> {
         //self.linked_entity_components.remove(entity_id).unwrap();
-        return Ok(());
+        todo!();
     }
 }
 // The main component trait
@@ -123,17 +123,17 @@ impl FilteredLinkedComponents {
             .map(|(&x, &x1)| (x, x1))
             .collect();
         filted_linked_components.components = global_ids;
-        return filted_linked_components;
+        filted_linked_components
     }
     // Get a reference to a component using the component manager
     pub fn get_component<'a, T: Component + ComponentID + Sync + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
-        let id = component_manager.get_component_id::<T>()?.clone();
+        let id = component_manager.get_component_id::<T>()?;
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
             // We are allowed to get this component
             let global_id = self.components.get(&id).unwrap();
             let component = component_manager.id_get_linked_component(global_id)?;
-            return Ok(component);
+            Ok(component)
         } else {
             // We are not allowed to get this component
             return Err(ECSError::new(
@@ -143,13 +143,13 @@ impl FilteredLinkedComponents {
     }
     // Get a mutable reference to a component using the component manager
     pub fn get_component_mut<'a, T: Component + ComponentID + Sync + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
-        let id = component_manager.get_component_id::<T>()?.clone();
+        let id = component_manager.get_component_id::<T>()?;
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
             // We are allowed to get this component
             let global_id = self.components.get(&id).unwrap();
             let component = component_manager.id_get_linked_component_mut(global_id)?;
-            return Ok(component);
+            Ok(component)
         } else {
             // We are not allowed to get this component
             return Err(ECSError::new(

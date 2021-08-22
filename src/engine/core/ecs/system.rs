@@ -1,14 +1,14 @@
-use std::{any::Any, time::Instant};
-use glfw::ffi::DECORATED;
+use std::any::Any;
+
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-     component::{ComponentManager, FilteredLinkedComponents},
+    component::FilteredLinkedComponents,
     entity::Entity,
     error::ECSError,
     system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
 };
-use crate::engine::core::world::{CustomWorldData, Time};
+use crate::engine::core::world::Time;
 
 #[derive(Default)]
 // Manages the systems
@@ -152,42 +152,46 @@ pub trait System {
         let system_data = self.get_system_data_mut();
         let c_bitfield = system_data.c_bitfield;
         let entity_ppf = system_data.eppf.as_ref();
-        let entity_manager_immutable = &*data.entity_manager;        
+        let entity_manager_immutable = &*data.entity_manager;
 
         // The filtered entities tuple that also contains the linked component data
-        let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
-            let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
-            // Get the linked components
-            let mut linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
-            let valid_entity: bool = match entity_ppf {
-                // Filter
-                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &mut linked_components, data),
-                // Default
-                None => true, 
-            };
-            // Check if it is a valid entity
-            if valid_entity {
-                // This entity passed the filter
-                Some(*entity_id)
-            } else {
-                // This entity failed the filter
-                None
-            }
-        }).collect::<Vec<u16>>().clone();
+        let filtered_entity_ids = system_data
+            .entities
+            .par_iter()
+            .filter_map(|entity_id| {
+                let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
+                // Get the linked components
+                let mut linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
+                let valid_entity: bool = match entity_ppf {
+                    // Filter
+                    Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &mut linked_components, data),
+                    // Default
+                    None => true,
+                };
+                // Check if it is a valid entity
+                if valid_entity {
+                    // This entity passed the filter
+                    Some(*entity_id)
+                } else {
+                    // This entity failed the filter
+                    None
+                }
+            })
+            .collect::<Vec<u16>>();
         // Loop over all the entities and update their components
-        for entity_id in filtered_entity_ids  {
+        for entity_id in filtered_entity_ids {
             let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
             // Get the linked entity components from the current entity
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
             self.fire_entity(&linked_components, data);
         }
-        
+
         // Post fire event call
         self.post_fire(data);
     }
-    
+
     // Add an EntityPrePassFilter into the system
-    fn add_eppf<>(&mut self, eppf: Box<dyn EntityFilter + Send + Sync>) {
+    fn add_eppf(&mut self, eppf: Box<dyn EntityFilter + Send + Sync>) {
         let system_data = self.get_system_data_mut();
         system_data.eppf = Some(eppf);
     }

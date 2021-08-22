@@ -1,7 +1,13 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use super::{model::Model, model::ModelDataGPU, texture::Texture};
-use crate::engine::{core::{cacher::CacheManager, defaults::components::transforms, ecs::component::{Component, ComponentID, ComponentInternal, ComponentManager}}, resources::ResourceManager};
+use crate::engine::{
+    core::{
+        cacher::CacheManager,
+        ecs::component::{Component, ComponentID, ComponentInternal},
+    },
+    resources::ResourceManager,
+};
 use bitflags::bitflags;
 
 bitflags! {

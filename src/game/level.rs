@@ -6,8 +6,7 @@ use crate::engine::core::ecs::entity::Entity;
 use crate::engine::core::ecs::system::System;
 use crate::engine::core::ecs::system_data::SystemEventData;
 use crate::engine::core::world::World;
-use crate::engine::math::bounds;
-use crate::engine::rendering::model::Model;
+
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;
 use crate::engine::terrain::terrain::Terrain;
@@ -90,7 +89,8 @@ pub fn load_entities(world: &mut World) {
         transforms::Rotation {
             rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, -90.0_f32.to_radians(), 0.0, 0.0),
         },
-    ).unwrap();
+    )
+    .unwrap();
     quad.link_component::<transforms::Scale>(&mut world.component_manager, transforms::Scale { scale: 100.0 })
         .unwrap();
     let aabb = components::AABB::from_components(&quad, &world.component_manager);

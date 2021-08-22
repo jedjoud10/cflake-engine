@@ -1,13 +1,17 @@
-use std::collections::HashMap;
 use super::terrain::{Terrain, CHUNK_SIZE};
-use crate::engine::{core::ecs::component::{Component, ComponentID, ComponentInternal}, rendering::model::{Model, ProceduralModelGenerator}, terrain::tables::{EDGE_TABLE, TRI_TABLE, VERTEX_TABLE}};
+use crate::engine::{
+    core::ecs::component::{Component, ComponentID, ComponentInternal},
+    rendering::model::{Model, ProceduralModelGenerator},
+    terrain::tables::{EDGE_TABLE, TRI_TABLE, VERTEX_TABLE},
+};
+use std::collections::HashMap;
 
 // A component that will be added to well... chunks
 #[derive(Default)]
 pub struct Chunk {
     pub position: glam::Vec3,
     pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
-    pub isoline: f32
+    pub isoline: f32,
 }
 
 // Main traits implemented

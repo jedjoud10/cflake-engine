@@ -2,7 +2,7 @@ use crate::engine::core::defaults::components::transforms;
 use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal, ComponentManager};
 use crate::engine::core::ecs::entity::Entity;
 use crate::engine::math::{self, bounds};
-use crate::engine::rendering::model::Model;
+
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::window::Window;
 use glam::Vec4Swizzles;
@@ -48,7 +48,6 @@ impl ComponentInternal for Camera {
         self
     }
 }
-
 
 impl ComponentID for Camera {
     fn get_component_name() -> String {
@@ -96,18 +95,20 @@ impl Component for Sky {}
 #[derive(Default)]
 pub struct AABB {
     pub aabb: bounds::AABB,
-    pub generation_type: AABBGenerationType
+    pub generation_type: AABBGenerationType,
 }
 
 // How we are going to generate the AABB
 pub enum AABBGenerationType {
     RenderEntity,
-    Manual
+    Manual,
 }
 
 // Automatically try to load the AABB from the components of a render entity (Position, Scale, Render)
-impl Default for AABBGenerationType { 
-    fn default() -> Self { Self::RenderEntity }
+impl Default for AABBGenerationType {
+    fn default() -> Self {
+        Self::RenderEntity
+    }
 }
 
 // AABB component functions
@@ -118,13 +119,10 @@ impl AABB {
         let position = entity.get_component::<transforms::Position>(component_manager).unwrap().position;
         let scale = entity.get_component::<transforms::Scale>(component_manager).unwrap().scale;
         let mut aabb = bounds::AABB::from_model(model_ref);
-        aabb.offset(position);        
+        aabb.offset(position);
         aabb.scale(scale);
         println!("AABB generated from model, min: {} max: {}", aabb.min, aabb.max);
-        return Self { 
-            aabb,
-            ..Self::default() 
-        };
+        Self { aabb, ..Self::default() }
     }
 }
 
