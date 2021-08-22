@@ -39,7 +39,7 @@ pub struct World {
     pub system_manager: SystemManager,
 
     // Miscs
-    pub debug: debug::Debug,
+    pub debug: debug::DebugRenderer,
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
 }

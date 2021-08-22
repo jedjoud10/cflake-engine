@@ -1,6 +1,6 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::debug::{DebugRenderer, DebugRendererType};
+use crate::engine::debug::{DebugRendererable, DebugRendererType};
 
 // A view frustum
 #[derive(Default)]
@@ -35,7 +35,7 @@ impl Frustum {
 }
 
 // The frustum can be debug drawed
-impl DebugRenderer for Frustum {
+impl DebugRendererable for Frustum {
     // Turn the frustum into a cube and render it
     fn get_debug_renderer(&self) -> DebugRendererType {
         let corners = super::shapes::CUBE_CORNERS;   

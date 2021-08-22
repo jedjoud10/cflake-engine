@@ -1,24 +1,28 @@
 use std::{ffi::c_void, ptr::null};
 
-use crate::engine::{math, rendering::model::Model};
+use crate::engine::{core::{cacher::CacheManager, ecs::system_data::SystemEventData}, math, rendering::{model::Model, shader::{Shader, SubShader}}, resources::ResourceManager};
 
-// Debug functionality
+// Debug renderer functionality
 #[derive(Default)]
-pub struct Debug {
+pub struct DebugRenderer {
     pub debug_renderers: Vec<DebugRendererType>, 
+    pub shader_name: String,
     pub vao: u32,
 }
 
-impl Debug {
-    // Generate the vao
-    pub fn generate_gpu_data(&mut self) {
+impl DebugRenderer {
+    // Generate the vao and load the shader
+    pub fn setup_debug_renderer(&mut self, resource_manager: &mut ResourceManager, shader_cacher: &mut (CacheManager<SubShader>, CacheManager<Shader>)) {
         unsafe {
             gl::GenVertexArrays(1, &mut self.vao);
             gl::BufferData(gl::ARRAY_BUFFER, 1024, null(), gl::DYNAMIC_DRAW);
         }
+
+        // Set the shader name
+        self.shader_name = Shader::new(vec!["shaders\\debug.vrsh.glsl", "shaders\\debug.frsh.glsl"], resource_manager, shader_cacher).1;
     }
     // Draw the debug renderers
-    pub fn draw_debug(&self, vp_matrix: glam::Mat4) {
+    pub fn draw_debug(&self, vp_matrix: glam::Mat4, data: &SystemEventData) {
         // Loop each one and construct lines out of them
         let mut lines: Vec<math::shapes::Line> = Vec::new();        
         for renderer in self.debug_renderers.iter() {
@@ -65,14 +69,22 @@ impl Debug {
             gl::BufferSubData(gl::ARRAY_BUFFER, 0, vertices.len() as isize, vertices.as_ptr() as *const c_void);
         }
 
+        // Set the shader
+        let shader = data.shader_cacher.1.get_object(self.shader_name.as_str()).unwrap();
+        // Since we don't have a model matrix you can set it directly
+        shader.set_matrix_44_uniform("mvp_matrix", vp_matrix);
+        shader.set_scalar_3_uniform("debug_color", (1.0, 1.0, 1.0));
+
         // Draw each line
         unsafe {
             // Remove depth testing when rendering the debug primitives
             gl::Disable(gl::DEPTH_TEST);
+            gl::PolygonMode(gl::FRONT, gl::LINE);
             gl::EnableVertexAttribArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vao);
             gl::DrawArrays(gl::LINES, 0, vertices.len() as i32);
             gl::Enable(gl::DEPTH_TEST);
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
         }
     }
 }
@@ -86,7 +98,7 @@ pub enum DebugRendererType {
 }
 
 // Trait
-pub trait DebugRenderer {
+pub trait DebugRendererable {
     // Get the debug renderer from the current struct
     fn get_debug_renderer(&self) -> DebugRendererType;
 }

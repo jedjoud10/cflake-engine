@@ -17,7 +17,7 @@ pub struct SystemEventData<'a> {
     pub texture_cacher: &'a mut CacheManager<Texture>,
     pub resource_manager: &'a mut ResourceManager,
     pub time_manager: &'a mut Time,
-    pub debug: &'a mut debug::Debug,
+    pub debug: &'a mut debug::DebugRenderer,
     pub custom_data: &'a mut CustomWorldData,
 }
 // Data that will be passed some events in the systems that don't need all the world data

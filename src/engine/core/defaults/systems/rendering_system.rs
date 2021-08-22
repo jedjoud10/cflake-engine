@@ -49,19 +49,7 @@ impl RenderingSystem {
         .1;
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
-    }
-
-    // Setup all the settings for opengl like culling and the clear color
-    fn setup_opengl(&mut self) {
-        unsafe {
-            gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-            gl::Viewport(0, 0, self.window.size.0 as i32, self.window.size.1 as i32);
-            gl::Enable(gl::DEPTH_TEST);
-            gl::Enable(gl::CULL_FACE);
-            gl::CullFace(gl::BACK);
-        }
-    }
-
+    }    
     // Bind a specific texture attachement to the frame buffer
     fn bind_attachement(attachement: u32, texture: &Texture) {
         unsafe {
@@ -71,9 +59,16 @@ impl RenderingSystem {
             gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.id, 0);
         }
     }
+    // Setup all the settings for opengl like culling and the clear color
+    fn setup_opengl(&mut self, data: &mut SystemEventData) {
+        unsafe {
+            gl::ClearColor(0.0, 0.0, 0.0, 0.0);
+            gl::Viewport(0, 0, self.window.size.0 as i32, self.window.size.1 as i32);
+            gl::Enable(gl::DEPTH_TEST);
+            gl::Enable(gl::CULL_FACE);
+            gl::CullFace(gl::BACK);
+        }
 
-    // Setup the render buffer
-    fn setup_render_buffer(&mut self, _data: &mut SystemEventData, _multisampling: Option<u8>) {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
@@ -132,6 +127,9 @@ impl RenderingSystem {
             // Unbind
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
+
+        // Setup the debug renderer
+        data.debug.setup_debug_renderer(data.resource_manager, data.shader_cacher);
     }
 }
 
@@ -165,8 +163,7 @@ impl System for RenderingSystem {
 
         // Then setup opengl and the render buffer
         let _default_size = World::get_default_window_size();
-        self.setup_opengl();
-        self.setup_render_buffer(data, self.multisampling);
+        self.setup_opengl(data);
         self.add_eppf(Box::new(RenderOptimizer::default()));
 
         // Load the wireframe shader
@@ -289,9 +286,9 @@ impl System for RenderingSystem {
             vp_matrix = projection_matrix * view_matrix;
         }
         // Draw the debug primitives
-        data.debug.draw_debug(vp_matrix);
+        data.debug.draw_debug(vp_matrix, data);
 
-        
+
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();
         let camera_position = data
             .entity_manager
