@@ -1,14 +1,14 @@
 use glam::Vec4Swizzles;
 
-use crate::engine::core::{
-    defaults::components::{components, transforms},
+use crate::engine::{core::{
+    defaults::components,
     ecs::{
         component::FilteredLinkedComponents,
         entity::Entity,
         system::System,
         system_data::{SystemData, SystemEventData, SystemEventDataLite},
     },
-};
+}, debug::DebugRendererable};
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -29,8 +29,7 @@ impl System for CameraSystem {
     fn setup_system(&mut self, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
         system_data.link_component::<components::Camera>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Rotation>(data.component_manager).unwrap();
+        system_data.link_component::<components::Transform>(data.component_manager).unwrap();
 
         data.input_manager.bind_key(glfw::Key::W, "camera_forward");
         data.input_manager.bind_key(glfw::Key::S, "camera_backwards");
@@ -61,7 +60,7 @@ impl System for CameraSystem {
                 let forward_vector = glam::Mat4::from_quat(changed_rotation).mul_vec4(glam::vec4(0.0, 0.0, 1.0, 1.0)).xyz();
                 let up_vector = glam::Mat4::from_quat(changed_rotation).mul_vec4(glam::vec4(0.0, 1.0, 0.0, 1.0)).xyz();
                 let right_vector = glam::Mat4::from_quat(changed_rotation).mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0)).xyz();
-                let mut changed_position = components.get_component_mut::<transforms::Position>(data.component_manager).unwrap().position;
+                let mut changed_position = components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position;
                 let delta = data.time_manager.delta_time as f32;
                 // Default speed
                 let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1;
@@ -82,8 +81,8 @@ impl System for CameraSystem {
                 }
 
                 // Update the variables
-                components.get_component_mut::<transforms::Position>(data.component_manager).unwrap().position = changed_position;
-                components.get_component_mut::<transforms::Rotation>(data.component_manager).unwrap().rotation = changed_rotation;
+                components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position = changed_position;
+                components.get_component_mut::<components::Transform>(data.component_manager).unwrap().rotation = changed_rotation;
                 position = changed_position;
                 rotation = changed_rotation;
             }
@@ -92,10 +91,8 @@ impl System for CameraSystem {
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix(&data.custom_data.window);
-        if data.input_manager.map_held("update_frustum").0 {
-            // Update the frustum culling matrix
-            camera_component.update_frustum_culling_matrix();
-        }
+        // Update the frustum culling matrix
+        camera_component.update_frustum_culling_matrix();        
     }
 
     // When an entity gets added to this system
@@ -105,8 +102,8 @@ impl System for CameraSystem {
         let rotation: glam::Quat;
         {
             // Set the variables since we can't have two mutable references at once
-            rotation = entity.get_component::<transforms::Rotation>(data.component_manager).unwrap().rotation;
-            position = entity.get_component::<transforms::Position>(data.component_manager).unwrap().position;
+            rotation = entity.get_component::<components::Transform>(data.component_manager).unwrap().rotation;
+            position = entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
         }
         let camera_component = entity.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         camera_component.update_projection_matrix(&data.custom_data.window);

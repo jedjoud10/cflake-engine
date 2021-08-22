@@ -1,5 +1,5 @@
 use crate::engine::core::{
-    defaults::components::components,
+    defaults::components,
     ecs::{component::FilteredLinkedComponents, entity::Entity, system::EntityFilter, system_data::SystemEventData},
 };
 

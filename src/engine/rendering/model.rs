@@ -47,7 +47,6 @@ pub struct ModelDataGPU {
     pub vertex_array_object: u32,
     pub element_buffer_object: u32,
     pub initialized: bool,
-    pub model_matrix: glam::Mat4,
 }
 
 // Trait that allows you to make procedural models

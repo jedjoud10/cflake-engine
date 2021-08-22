@@ -1,4 +1,4 @@
-use crate::engine::core::defaults::components::{components, *};
+use crate::engine::core::defaults::components;
 use crate::engine::core::defaults::systems::camera_system::CameraSystem;
 use crate::engine::core::defaults::systems::sky_system::SkySystem;
 use crate::engine::core::defaults::systems::*;
@@ -14,8 +14,8 @@ use rendering_system::RenderingSystem;
 
 // Pre-register unused components
 pub fn register_components(world: &mut World) {
-    world.component_manager.register_component::<transforms::Position>();
-    world.component_manager.register_component::<transforms::Rotation>();
+    world.component_manager.register_component::<components::Transform>();
+    world.component_manager.register_component::<components::Transform>();
 }
 // Load the systems
 pub fn load_systems(world: &mut World) {
@@ -57,15 +57,13 @@ pub fn load_systems(world: &mut World) {
 pub fn load_entities(world: &mut World) {
     // Create a camera entity
     let mut camera = Entity::new("Default Camera");
-    camera
-        .link_component::<transforms::Position>(
-            &mut world.component_manager,
-            transforms::Position {
-                position: glam::vec3(5.0, 5.0, 5.0),
-            },
-        )
-        .unwrap();
-    camera.link_default_component::<transforms::Rotation>(&mut world.component_manager).unwrap();
+    camera.link_component::<components::Transform>(
+        &mut world.component_manager,
+        components::Transform {
+            position: glam::vec3(5.0, 5.0, 5.0),
+            ..components::Transform::default()
+        },
+    ).unwrap();
     camera.link_default_component::<components::Camera>(&mut world.component_manager).unwrap();
     // Make it the default camera
     world.custom_data.main_camera_entity_id = world.add_entity(camera);
@@ -83,16 +81,15 @@ pub fn load_entities(world: &mut World) {
     .1;
     rc.load_default_textures(&mut world.texture_cacher);
     quad.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
-    quad.link_default_component::<transforms::Position>(&mut world.component_manager).unwrap();
-    quad.link_component::<transforms::Rotation>(
+    quad.link_component::<components::Transform>(
         &mut world.component_manager,
-        transforms::Rotation {
+        components::Transform {
             rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, -90.0_f32.to_radians(), 0.0, 0.0),
+            scale: glam::Vec3::ONE * 100.0,
+            ..components::Transform::default()
         },
     )
     .unwrap();
-    quad.link_component::<transforms::Scale>(&mut world.component_manager, transforms::Scale { scale: 100.0 })
-        .unwrap();
     let aabb = components::AABB::from_components(&quad, &world.component_manager);
     quad.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
     world.add_entity(quad);
@@ -110,15 +107,14 @@ pub fn load_entities(world: &mut World) {
     );
     rc.uv_scale *= 10.0;
     cube.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
-    cube.link_component::<transforms::Position>(
+    cube.link_component::<components::Transform>(
         &mut world.component_manager,
-        transforms::Position {
+        components::Transform {
             position: glam::vec3(10.0, 0.0, 0.0),
+            ..components::Transform::default()
         },
     )
     .unwrap();
-    cube.link_default_component::<transforms::Rotation>(&mut world.component_manager).unwrap();
-    cube.link_default_component::<transforms::Scale>(&mut world.component_manager).unwrap();
     let aabb = components::AABB::from_components(&cube, &world.component_manager);
     cube.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
     world.add_entity(cube);

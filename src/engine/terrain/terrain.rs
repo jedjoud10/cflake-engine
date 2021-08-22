@@ -1,6 +1,6 @@
 use crate::engine::{
     core::{
-        defaults::components::{components, transforms},
+        defaults::components,
         ecs::{
             component::FilteredLinkedComponents,
             entity::Entity,
@@ -33,7 +33,7 @@ impl Terrain {
         pos.z *= 0.02;
         let mut density = (pos.x.sin()) * 10.0 + (pos.z.sin()) * 10.0;
         density += pos.y - 32.0;
-        density
+        pos.y - 32.0
     }
     // Creates a single chunk entity
     fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
@@ -68,10 +68,10 @@ impl Terrain {
         // Link the required components to the entity
         chunk_entity.link_component::<Renderer>(data.component_manager, rc).unwrap();
         chunk_entity
-            .link_component::<transforms::Position>(data.component_manager, transforms::Position { position })
-            .unwrap();
-        chunk_entity.link_default_component::<transforms::Rotation>(data.component_manager).unwrap();
-        chunk_entity.link_default_component::<transforms::Scale>(data.component_manager).unwrap();
+            .link_component::<components::Transform>(data.component_manager, components::Transform { 
+                position: position,
+                ..components::Transform::default() 
+            }).unwrap();
         chunk_entity
             .link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&chunk_entity, data.component_manager))
             .unwrap();
@@ -124,7 +124,7 @@ impl System for Terrain {
         // This system will loop over all the chunks and generate new ones if needed
         self.system_data.link_component::<Chunk>(data.component_manager).unwrap();
         self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
-        self.system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
+        self.system_data.link_component::<components::Transform>(data.component_manager).unwrap();
         self.generate_terrain(data);
     }
 
@@ -134,7 +134,7 @@ impl System for Terrain {
             .entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id)
             .unwrap()
-            .get_component::<transforms::Position>(data.component_manager)
+            .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
         self.update_terrain(camera_position, data);

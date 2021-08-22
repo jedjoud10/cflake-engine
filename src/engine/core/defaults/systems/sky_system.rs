@@ -1,4 +1,4 @@
-use crate::engine::core::defaults::components::{components, *};
+use crate::engine::core::defaults::components;
 
 use crate::engine::core::ecs::component::FilteredLinkedComponents;
 use crate::engine::rendering::renderer::{Renderer, RendererFlags};
@@ -30,8 +30,7 @@ impl System for SkySystem {
     fn setup_system(&mut self, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
         system_data.link_component::<components::Sky>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Scale>(data.component_manager).unwrap();
+        system_data.link_component::<components::Transform>(data.component_manager).unwrap();
 
         // Create the sky entity
         let mut sky = Entity::new("Sky");
@@ -57,18 +56,17 @@ impl System for SkySystem {
         rc.flags.remove(RendererFlags::WIREFRAME);
         // Make the skysphere inside out, so we can see the insides only
         rc.model.flip_triangles();
-        sky.link_component::<Renderer>(&mut data.component_manager, rc).unwrap();
+        sky.link_component::<Renderer>(data.component_manager, rc).unwrap();
         sky.link_default_component::<components::AABB>(data.component_manager).unwrap();
-        sky.link_default_component::<transforms::Position>(data.component_manager).unwrap();
-        sky.link_component::<transforms::Rotation>(
-            &mut data.component_manager,
-            transforms::Rotation {
+        sky.link_component::<components::Transform>(
+            data.component_manager,
+            components::Transform {
+                position: glam::Vec3::ZERO,
                 rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, 90.0_f32.to_radians(), 0.0, 0.0),
+                scale: glam::Vec3::ONE * 9000.0,
+                ..components::Transform::default()
             },
-        )
-        .unwrap();
-        sky.link_component::<transforms::Scale>(&mut data.component_manager, transforms::Scale { scale: 9000.0 })
-            .unwrap();
+        ).unwrap();
         sky.link_component::<components::Sky>(
             &mut data.component_manager,
             components::Sky {
@@ -93,15 +91,15 @@ impl System for SkySystem {
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
-        // Set the position of the sky sphere to always be the camera
+        // Set the position of the sky sphere to always be the camera's position
         let position = data
             .entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id)
             .unwrap()
-            .get_component::<transforms::Position>(data.component_manager)
+            .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
-        components.get_component_mut::<transforms::Position>(data.component_manager).unwrap().position = position;
+        components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position = position;
     }
 
     // Turn this into "Any" so we can cast into child systems

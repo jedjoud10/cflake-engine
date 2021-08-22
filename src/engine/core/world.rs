@@ -8,7 +8,7 @@ use crate::engine::debug;
 use crate::engine::input::*;
 use crate::engine::rendering::window::Window;
 
-use crate::engine::core::defaults::components::components::Camera;
+use crate::engine::core::defaults::components;
 use crate::engine::rendering::shader::Shader;
 use crate::engine::rendering::shader::SubShader;
 use crate::engine::rendering::texture::Texture;
@@ -269,7 +269,7 @@ impl World {
         }
         let camera_entity_clone = self.entity_manager.get_entity(&self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
-        let camera_component = camera_entity_clone.get_component_mut::<Camera>(&mut self.component_manager).unwrap();
+        let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(&mut self.component_manager).unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.update_projection_matrix(&self.custom_data.window);
         camera_component.update_frustum_culling_matrix();

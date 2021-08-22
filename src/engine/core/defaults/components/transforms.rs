@@ -1,66 +1,34 @@
 // Transforms components
 use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal};
-
-// A position component telling us where the entity is in the world
-#[derive(Default)]
-pub struct Position {
+// The transform component
+pub struct Transform {
     pub position: glam::Vec3,
-}
-
-impl ComponentInternal for Position {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-
-impl ComponentID for Position {
-    fn get_component_name() -> String {
-        String::from("Position")
-    }
-}
-
-impl Component for Position {}
-
-// Scale component
-pub struct Scale {
-    pub scale: f32,
-}
-
-impl ComponentInternal for Scale {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-
-impl ComponentID for Scale {
-    fn get_component_name() -> String {
-        String::from("Scale")
-    }
-}
-
-impl Default for Scale {
-    fn default() -> Self {
-        Self { scale: 1.0 }
-    }
-}
-
-impl Component for Scale {}
-
-// Rotation component
-#[derive(Default)]
-pub struct Rotation {
     pub rotation: glam::Quat,
+    pub scale: glam::Vec3,
+    pub matrix: glam::Mat4,
 }
 
-impl ComponentInternal for Rotation {
+// Default transform
+impl Default for Transform {
+    fn default() -> Self {
+        Self {
+            position: glam::Vec3::ZERO,
+            rotation: glam::Quat::IDENTITY,
+            scale: glam::Vec3::ONE,
+            matrix: glam::Mat4::IDENTITY
+        }
+    }
+}
+
+// Update the transform matrix
+impl Transform {
+    // Update the matrix
+    pub fn update_matrix(&mut self) {
+        self.matrix = glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation) * glam::Mat4::from_scale(self.scale);
+    }
+}
+
+impl ComponentInternal for Transform {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -70,10 +38,10 @@ impl ComponentInternal for Rotation {
     }
 }
 
-impl ComponentID for Rotation {
+impl ComponentID for Transform {
     fn get_component_name() -> String {
-        String::from("Rotation")
+        String::from("Transform")
     }
 }
 
-impl Component for Rotation {}
+impl Component for Transform {}

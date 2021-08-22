@@ -1,4 +1,4 @@
-use crate::engine::rendering::model::Model;
+use crate::engine::{core::defaults::components, rendering::model::Model};
 
 use super::frustum::Frustum;
 
@@ -73,16 +73,10 @@ impl AABB {
         }
         aabb
     }
-    // Offset the AABB using a position
-    pub fn offset(&mut self, position: glam::Vec3) {
-        // Offset the AABB by offsetting the min and max
-        self.min += position;
-        self.max += position;
-    }
-    // Scale the AABB using a scalar value
-    pub fn scale(&mut self, scale: f32) {
-        // Scale the AABB by scaling the min and max
-        self.min *= scale;
-        self.max *= scale;
+    // Transform the AABB by a transform
+    pub fn transform(&mut self, transform: &components::Transform) {
+        // Transform the min and max by the transform's matrix
+        self.min = transform.matrix.transform_point3(self.min);
+        self.max = transform.matrix.transform_point3(self.max);
     }
 }

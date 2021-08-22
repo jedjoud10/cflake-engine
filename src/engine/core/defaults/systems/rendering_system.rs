@@ -1,4 +1,4 @@
-use crate::engine::core::defaults::components::*;
+use crate::engine::core::defaults::components;
 
 use crate::engine::core::ecs::component::FilteredLinkedComponents;
 use crate::engine::core::ecs::{
@@ -155,9 +155,7 @@ impl System for RenderingSystem {
         self.multisampling = None;
         let system_data = self.get_system_data_mut();
         system_data.link_component::<Renderer>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Position>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Rotation>(data.component_manager).unwrap();
-        system_data.link_component::<transforms::Scale>(data.component_manager).unwrap();
+        system_data.link_component::<components::Transform>(data.component_manager).unwrap();
         system_data.link_component::<components::AABB>(data.component_manager).unwrap();
 
         // Create the screen quad
@@ -188,8 +186,8 @@ impl System for RenderingSystem {
         // Get everything related to the camera
         {
             let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
-            camera_position = camera_entity.get_component::<transforms::Position>(&mut data.component_manager).unwrap().position;
-            camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
+            camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
+            camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
         }
@@ -199,25 +197,17 @@ impl System for RenderingSystem {
             let name: String;
             // Get the model matrix
             {
-                let position: glam::Vec3;
-                let rotation: glam::Quat;
-                let scale: f32;
-                {
-                    position = components.get_component::<transforms::Position>(data.component_manager).unwrap().position;
-                    rotation = components.get_component::<transforms::Rotation>(data.component_manager).unwrap().rotation;
-                    scale = components.get_component::<transforms::Scale>(data.component_manager).unwrap().scale;
-                }
-                let rc = components.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
-                rc.update_model_matrix(position, rotation, scale);
+                let transform = components.get_component::<components::Transform>(data.component_manager).unwrap();
+                let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
                 name = rc.shader_name.clone();
-                model_matrix = rc.gpu_data.model_matrix;
+                model_matrix = glam::Mat4::from(transform.matrix);
             }
             shader = data.shader_cacher.1.get_object(&name).unwrap();
         }
         // Use the shader, and update any uniforms
         shader.use_shader();
 
-        let rc = components.get_component::<Renderer>(&mut data.component_manager).unwrap();
+        let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
         // Calculate the mvp matrix
         let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
         // Pass the MVP and the model matrix to the shader
@@ -283,7 +273,7 @@ impl System for RenderingSystem {
         // Get the (projection * view) matrix
         {
             let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
-            let camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
+            let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
             let projection_matrix = camera_data.projection_matrix;
             let view_matrix = camera_data.view_matrix;
             frustum = &camera_data.frustum;
@@ -298,7 +288,7 @@ impl System for RenderingSystem {
             .entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id)
             .unwrap()
-            .get_component::<transforms::Position>(data.component_manager)
+            .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
         shader.use_shader();
@@ -343,6 +333,8 @@ impl System for RenderingSystem {
         let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
         // Make sure we create the OpenGL data for this entity's model
         rc.refresh_model();
+        let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
+        transform.update_matrix();
     }
 
     // When an entity gets removed from this system
