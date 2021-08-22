@@ -278,6 +278,20 @@ impl System for RenderingSystem {
 
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut SystemEventData) {
+        // At the end of each frame, disable the depth test and render the debug objects
+        let mut vp_matrix: glam::Mat4 = glam::Mat4::IDENTITY;
+        // Get the (projection * view) matrix
+        {
+            let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+            let camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
+            let projection_matrix = camera_data.projection_matrix;
+            let view_matrix = camera_data.view_matrix;
+            vp_matrix = projection_matrix * view_matrix;
+        }
+        // Draw the debug primitives
+        data.debug.draw_debug(vp_matrix);
+
+        
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();
         let camera_position = data
             .entity_manager

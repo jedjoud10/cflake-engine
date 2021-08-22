@@ -4,6 +4,7 @@ use crate::engine::core::ecs::component::*;
 use crate::engine::core::ecs::entity::*;
 use crate::engine::core::ecs::system::*;
 use crate::engine::core::ecs::system_data::*;
+use crate::engine::debug;
 use crate::engine::input::*;
 use crate::engine::rendering::window::Window;
 
@@ -38,6 +39,7 @@ pub struct World {
     pub system_manager: SystemManager,
 
     // Miscs
+    pub debug: debug::Debug,
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
 }
@@ -108,8 +110,9 @@ impl World {
             input_manager: &mut self.input_manager,
             shader_cacher: &mut self.shader_cacher,
             texture_cacher: &mut self.texture_cacher,
-            time_manager: &mut self.time_manager,
             resource_manager: &mut self.resource_manager,
+            time_manager: &mut self.time_manager,
+            debug: &mut self.debug,
             custom_data: &mut self.custom_data,
         };
 

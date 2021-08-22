@@ -28,8 +28,9 @@ pub fn load_systems(world: &mut World) {
         input_manager: &mut world.input_manager,
         shader_cacher: &mut world.shader_cacher,
         texture_cacher: &mut world.texture_cacher,
-        time_manager: &mut world.time_manager,
         resource_manager: &mut world.resource_manager,
+        time_manager: &mut world.time_manager,
+        debug: &mut world.debug,
         custom_data: &mut world.custom_data,
     };
 

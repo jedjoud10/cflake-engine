@@ -1,15 +1,26 @@
+use std::{ffi::c_void, ptr::null};
+
 use crate::engine::{math, rendering::model::Model};
 
 // Debug functionality
+#[derive(Default)]
 pub struct Debug {
     pub debug_renderers: Vec<DebugRendererType>, 
+    pub vao: u32,
 }
 
 impl Debug {
+    // Generate the vao
+    pub fn generate_gpu_data(&mut self) {
+        unsafe {
+            gl::GenVertexArrays(1, &mut self.vao);
+            gl::BufferData(gl::ARRAY_BUFFER, 1024, null(), gl::DYNAMIC_DRAW);
+        }
+    }
     // Draw the debug renderers
     pub fn draw_debug(&self, vp_matrix: glam::Mat4) {
         // Loop each one and construct lines out of them
-        let mut lines: Vec<math::shapes::Line> = Vec::new();
+        let mut lines: Vec<math::shapes::Line> = Vec::new();        
         for renderer in self.debug_renderers.iter() {
             match renderer {
                 DebugRendererType::CUBE(corners) => {
@@ -39,6 +50,29 @@ impl Debug {
                 },
                 DebugRendererType::MODEL(model) => todo!(),
             }
+        }
+    
+        // Turn all the lines into vertices
+        let mut vertices: Vec<glam::Vec3> = Vec::new();
+        for line in lines {
+            vertices.push(line.point);
+            vertices.push(line.point2);
+        }
+
+        // Then edit the VAO
+        unsafe {
+            gl::BindVertexArray(self.vao);
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0, vertices.len() as isize, vertices.as_ptr() as *const c_void);
+        }
+
+        // Draw each line
+        unsafe {
+            // Remove depth testing when rendering the debug primitives
+            gl::Disable(gl::DEPTH_TEST);
+            gl::EnableVertexAttribArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.vao);
+            gl::DrawArrays(gl::LINES, 0, vertices.len() as i32);
+            gl::Enable(gl::DEPTH_TEST);
         }
     }
 }
