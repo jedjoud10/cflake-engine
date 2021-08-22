@@ -86,7 +86,8 @@ impl DebugRenderer {
         // Set the shader
         let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();
         // Since we don't have a model matrix you can set it directly
-        shader.set_matrix_44_uniform("vp_matrix", vp_matrix);
+        shader.use_shader();
+        shader.set_matrix_44_uniform("vp_matrix", vp_matrix * glam::Mat4::IDENTITY);
         shader.set_scalar_3_uniform("debug_color", (1.0, 1.0, 1.0));
 
         // Draw each line

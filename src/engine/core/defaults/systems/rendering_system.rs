@@ -289,7 +289,7 @@ impl System for RenderingSystem {
             frustum = &camera_data.frustum;
             vp_matrix = projection_matrix * view_matrix;
         }
-        data.debug.debug(frustum.get_debug_renderer());
+        //data.debug.debug(frustum.get_debug_renderer());
         data.debug.debug(DebugRendererType::CUBE(math::shapes::CUBE_CORNERS.to_vec()));
         // Draw the debug primitives
         data.debug.draw_debug(vp_matrix, &data.shader_cacher.1);

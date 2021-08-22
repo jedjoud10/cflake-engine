@@ -1,13 +1,13 @@
 // The corners of a cube
 pub const CUBE_CORNERS: [glam::Vec3; 8] = [
     glam::const_vec3!([0.0, 0.0, 0.0]),
-    glam::const_vec3!([0.0, 0.0, 1.0]),
-    glam::const_vec3!([1.0, 0.0, 1.0]),
     glam::const_vec3!([1.0, 0.0, 0.0]),
+    glam::const_vec3!([1.0, 0.0, 1.0]),
+    glam::const_vec3!([0.0, 0.0, 1.0]),
     glam::const_vec3!([0.0, 1.0, 0.0]),
-    glam::const_vec3!([0.0, 1.0, 1.0]),
-    glam::const_vec3!([1.0, 1.0, 1.0]),
     glam::const_vec3!([1.0, 1.0, 0.0]),
+    glam::const_vec3!([1.0, 1.0, 1.0]),
+    glam::const_vec3!([0.0, 1.0, 1.0]),
 ];
 
 // An infinite plane

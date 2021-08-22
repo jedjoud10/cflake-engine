@@ -113,7 +113,7 @@ pub fn load_entities(world: &mut World) {
     cube.link_component::<transforms::Position>(
         &mut world.component_manager,
         transforms::Position {
-            position: glam::vec3(0.0, 0.0, 0.0),
+            position: glam::vec3(10.0, 0.0, 0.0),
         },
     )
     .unwrap();
