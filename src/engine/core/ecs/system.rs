@@ -158,7 +158,7 @@ pub trait System {
         for entity_id in system_data.entities.iter() {
             // Get the entity
             let entity = data.entity_manager.id_get_entity(entity_id).unwrap();
-            let mut entity_data_types = (system_data.entity_filter.get_efdt)(entity, data.component_manager);
+            let mut entity_data_types = (system_data.entity_filter.get_efdt)(entity, data);
             gcdt.append(&mut entity_data_types);
             if entity_lcdt_length == -1 {
                 // Save the length of the data types vector, since it will always be the same for all the entities
@@ -178,7 +178,9 @@ pub trait System {
                 // Get the data type from the global component data types and add it
                 local_linked_data_types.push(gcdt.get(data_type_index).unwrap());
             }
-            let mut valid_entity = (entity_filter.filter_entity_fn)(local_linked_data_types);
+            let mut valid_entity = (entity_filter.filter_entity_fn)(EntityFilterData {
+                data_types: local_linked_data_types
+            });
             // Check if it is a valid entity
             if valid_entity {
                 // This entity passed the filter
@@ -228,26 +230,56 @@ pub trait System {
 
 // Some data that can be passed to the entity filter
 pub enum EntityFilterDataType {
-    F32(f32),
-    I32(i32),
-    F64(f64),
-    I54(i64),
-    U32(u32),
-    U64(u64),
+    BOOL(bool),
     AABB(math::bounds::AABB),
     MAT4(glam::Mat4),
 }
-// Entity linked dat
-pub struct PassedComponent {
-    pub test: f32
+
+// Helper struct that will cast the data types to their inner counter parts
+pub struct EntityFilterData<'a> {
+    // The data types
+    pub data_types: Vec<&'a EntityFilterDataType>,
+}
+
+impl<'a> EntityFilterData<'a> {
+    // Get and cast --Bool--
+    pub fn get_bool(&self, index: usize) -> bool {
+        // Extraction
+        match self.data_types.get(index).unwrap() {
+            EntityFilterDataType::BOOL(x) => {
+                return *x;
+            }
+            _ => { panic!("Tried to extract Bool with index '{}'", index) },
+        }
+    }
+    // Get and cast --AABB--
+    pub fn get_aabb(&self, index: usize) -> math::bounds::AABB {
+        // Extraction
+        match self.data_types.get(index).unwrap() {
+            EntityFilterDataType::AABB(x) => {
+                return *x;
+            }
+            _ => { panic!("Tried to extract AABB with index '{}'", index) },
+        }
+    }
+    // Get and cast --Mat4
+    pub fn get_mat4(&self, index: usize) -> glam::Mat4 {
+        // Extraction
+        match self.data_types.get(index).unwrap() {
+            EntityFilterDataType::MAT4(x) => {
+                return *x;
+            }
+            _ => { panic!("Tried to extract Mat4 with index '{}'", index) },
+        }
+    }
 }
 
 // The entity filter used to optimize the world
 pub struct EntityFilter {
     // The filter closure
-    pub filter_entity_fn: fn(Vec<&EntityFilterDataType>) -> bool, 
+    pub filter_entity_fn: fn(EntityFilterData) -> bool, 
     // Get the entity filter data types from a specific entity
-    pub get_efdt: fn(&Entity, &ComponentManager) -> Vec<EntityFilterDataType>,
+    pub get_efdt: fn(&Entity, &SystemEventData) -> Vec<EntityFilterDataType>,
 }
 
 // Default entity filter
@@ -259,7 +291,7 @@ impl Default for EntityFilter {
                 true
             },
             // Default data types
-            get_efdt: |entity, component_manager| {
+            get_efdt: |entity, data| {
                 Vec::new()
             }
         }
