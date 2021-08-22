@@ -2,6 +2,8 @@ use glam::Vec4Swizzles;
 
 use crate::engine::{core::defaults::components::components::Camera, rendering::model::Model};
 
+use super::frustum::Frustum;
+
 
 // An aabb bound
 pub struct AABB {
@@ -46,28 +48,14 @@ impl AABB {
         false
     }
     // Check if this AABB intersects the camera's view frustum
-    pub fn intersect_camera_view_frustum(&self, camera: &Camera) -> bool {
-        // Create the clip space matrix
-        let matrix = camera.frustum_culling_matrix;
-        // An multiplication factor just to debug the frustum culling
-        const factor: f32 = 1.3;
+    pub fn intersect_frustum(&self, frustum: &Frustum) -> bool {
         // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC
         for corner_index in 0..8 {
-            let corner = self.get_corner(corner_index);
-            let transformed_corner = matrix.mul_vec4(glam::vec4(corner.x, corner.y, corner.z, 1.0));
-            // You have to divide by the W scalar first to get the screenspace NDC
-            let transformed_corner_screen_space = transformed_corner.xy() / transformed_corner.w;
-            // Only the objects in front of us
-            if transformed_corner.z > 0.0 {
-                // Check if is inside the bounds of the 2D screenspace NDC
-                let min = (transformed_corner_screen_space * factor).cmplt(glam::Vec2::ONE).all();
-                let max = (transformed_corner_screen_space * factor).cmpgt(-glam::Vec2::ONE).all();
-                if min && max {
-                    // The AABB is inside the view frustum,.we can exit early
-                    return true;
-                }
+            let corner = self.get_corner(corner_index);   
+            // Check if one of the corners is inside the frustum, if it isn't just skip to the next one
+            if frustum.is_point_inside_frustum(corner) {
+                return true;
             } else {
-                // The projected corner was behind us
                 continue;
             }
         }

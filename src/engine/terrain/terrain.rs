@@ -10,6 +10,7 @@ use std::collections::HashMap;
 pub const CHUNK_SIZE: usize = 32;
 
 // Hehe terrain generator moment
+#[derive(Default)]
 pub struct Terrain {
     pub system_data: SystemData,
     pub chunks: Vec<glam::IVec3>,
@@ -17,24 +18,16 @@ pub struct Terrain {
     pub camera_chunk_position: glam::IVec3,
 }
 
-impl Default for Terrain {
-    fn default() -> Self {
-        Self {
-            system_data: SystemData::default(),
-            chunks: Vec::new(),
-            isoline: 0.0,
-            camera_chunk_position: glam::IVec3::ZERO,
-        }
-    }
-}
-
 // All the terrain generator code
 impl Terrain {
     // Density functions
-    fn density(&self, x: f32, y: f32, z: f32) -> f32 {
-        let mut density: f32 = glam::vec3(x, y, z).length() - 10.0;
-        density = density.min(y + (x * 0.2).sin() + (z * 0.2).sin()) - 10.0;
-        density
+    pub fn density(&self, pos: glam::Vec3) -> f32 {
+        let mut pos = pos;
+        pos.x *= 0.02;
+        pos.z *= 0.02;
+        let mut density = (pos.x.sin()) * 10.0 + (pos.z.sin()) * 10.0;
+        density += pos.y - 32.0;
+        return density;
     }
     // Creates a single chunk entity
     fn create_single_chunk(&mut self, position: glam::Vec3, data: &mut SystemEventData) -> u16 {
@@ -87,9 +80,9 @@ impl Terrain {
     pub fn generate_terrain(&mut self, data: &mut SystemEventData) {
         self.isoline = 0.0;
         // Create the entity
-        for x in -20..20 {
-            for y in 1..2 {
-                for z in -20..20 {
+        for x in -15..15 {
+            for y in 0..2 {
+                for z in -15..15 {
                     let position = glam::vec3(
                         ((CHUNK_SIZE as f32) - 2.0) * x as f32,
                         ((CHUNK_SIZE as f32) - 2.0) * y as f32,

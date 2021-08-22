@@ -156,12 +156,11 @@ pub trait System {
         
 
         // The filtered entities tuple that also contains the linked component data
-        let current_time = Instant::now();
         let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
-            let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap().clone();
+            let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
             // Get the linked components
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
-            let mut valid_entity: bool = match entity_ppf {
+            let valid_entity: bool = match entity_ppf {
                 // Filter
                 Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &linked_components, data),
                 // Default
@@ -176,7 +175,6 @@ pub trait System {
                 None
             }
         }).collect::<Vec<u16>>().clone();
-        println!("{}", current_time.elapsed().as_micros());
         // Loop over all the entities and update their components
         for entity_id in filtered_entity_ids  {
             let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();

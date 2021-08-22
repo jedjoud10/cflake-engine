@@ -1,7 +1,7 @@
 use crate::engine::core::defaults::components::transforms;
 use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal, ComponentManager};
 use crate::engine::core::ecs::entity::Entity;
-use crate::engine::math::bounds;
+use crate::engine::math::{self, bounds};
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::window::Window;
@@ -11,7 +11,7 @@ use glam::Vec4Swizzles;
 pub struct Camera {
     pub view_matrix: glam::Mat4,
     pub projection_matrix: glam::Mat4,
-    pub frustum_culling_matrix: glam::Mat4,
+    pub frustum: math::Frustum,
     pub horizontal_fov: f32,
     pub aspect_ratio: f32,
     pub clip_planes: (f32, f32), // Near, far
@@ -35,7 +35,7 @@ impl Camera {
     // Update the frustum-culling matrix
     pub fn update_frustum_culling_matrix(&mut self) {
         // Too ez m8
-        self.frustum_culling_matrix = self.projection_matrix * self.view_matrix;
+        self.frustum.matrix = self.projection_matrix * self.view_matrix;
     }
 }
 
@@ -60,7 +60,7 @@ impl Default for Camera {
         Self {
             view_matrix: glam::Mat4::IDENTITY,
             projection_matrix: glam::Mat4::IDENTITY,
-            frustum_culling_matrix: glam::Mat4::IDENTITY,
+            frustum: math::Frustum::default(),
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
             clip_planes: (3.0, 10000.0),

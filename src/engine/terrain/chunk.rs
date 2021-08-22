@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use super::terrain::{Terrain, CHUNK_SIZE};
 use crate::engine::{core::ecs::component::{Component, ComponentID, ComponentInternal}, rendering::model::{Model, ProceduralModelGenerator}, terrain::tables::{EDGE_TABLE, TRI_TABLE, VERTEX_TABLE}};
 
@@ -8,7 +7,7 @@ use crate::engine::{core::ecs::component::{Component, ComponentID, ComponentInte
 pub struct Chunk {
     pub position: glam::Vec3,
     pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
-    pub isoline: f32,
+    pub isoline: f32
 }
 
 // Main traits implemented
@@ -31,19 +30,15 @@ impl Component for Chunk {}
 // Actual model generation
 impl Chunk {
     // Generate the voxel data
-    pub fn generate_data(&mut self, terrain_generator: &Terrain) {
+    pub fn generate_data(&mut self, terrain: &Terrain) {
         // Create the data using SIMD
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    let data: f32 = y as f32 - 10.0;
-                    self.data[x][y][z] = data;
+                    self.data[x][y][z] = terrain.density(glam::vec3(x as f32 + self.position.x, y as f32 + self.position.y, z as f32 + self.position.z));
                 }
             }
         }
-
-        // Save the isoline
-        self.isoline = terrain_generator.isoline;
     }
 }
 
