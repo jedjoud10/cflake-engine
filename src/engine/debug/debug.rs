@@ -1,7 +1,8 @@
-use std::{ffi::c_void, ptr::null};
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::engine::{core::{cacher::CacheManager, ecs::system_data::SystemEventData}, math, rendering::{model::Model, shader::{Shader, SubShader}}, resources::ResourceManager};
 
+pub const MAX_LINE_COUNT: i32 = 512;
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {
@@ -23,7 +24,7 @@ impl DebugRenderer {
             // Generate the vertex array
             gl::GenBuffers(1, &mut self.vertex_buffer);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
-            gl::BufferData(gl::ARRAY_BUFFER, 1024, null(), gl::DYNAMIC_DRAW);
+            gl::BufferData(gl::ARRAY_BUFFER, (MAX_LINE_COUNT as usize * 2 * size_of::<f32>() * 3) as isize, null(), gl::DYNAMIC_DRAW);
 
             // Enable the attribute
             gl::EnableVertexAttribArray(0);
@@ -79,7 +80,7 @@ impl DebugRenderer {
         // Then edit the vertex buffer
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0, self.vertices.len() as isize, self.vertices.as_ptr() as *const c_void);
+            gl::BufferSubData(gl::ARRAY_BUFFER, 0,  (self.vertices.len() * size_of::<f32>() * 3) as isize, self.vertices.as_ptr() as *const c_void);
         }
 
         // Set the shader
@@ -97,9 +98,9 @@ impl DebugRenderer {
             gl::DrawArrays(gl::LINES, 0, self.vertices.len() as i32);           
             gl::Enable(gl::DEPTH_TEST);
         }
-
         // Clear the debug primitives we already rendered
         self.debug_primitives.clear();
+        self.vertices.clear();
     }
     // Add a debug primitive to the queue and then render it
     pub fn debug(&mut self, debug_renderer_type: DebugRendererType) {

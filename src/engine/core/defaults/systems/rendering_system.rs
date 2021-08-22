@@ -291,7 +291,7 @@ impl System for RenderingSystem {
         }
         // Casually just draw the frustum
         data.debug.debug(frustum.get_debug_renderer());
-        data.debug.debug_default(DefaultDebugRendererType::CUBE(glam::Vec3::ZERO, glam::Vec3::ONE));
+        data.debug.debug_default(DefaultDebugRendererType::CUBE(glam::Vec3::ZERO, glam::Vec3::ONE * data.time_manager.seconds_since_game_start.sin() as f32));
         // Draw the debug primitives
         data.debug.draw_debug(vp_matrix, &data.shader_cacher.1);
 
