@@ -3,6 +3,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 use crate::engine::{core::{cacher::CacheManager, ecs::system_data::SystemEventData}, math, rendering::{model::Model, shader::{Shader, SubShader}}, resources::ResourceManager};
 
 pub const MAX_LINE_COUNT: i32 = 512;
+pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {
@@ -39,6 +40,7 @@ impl DebugRenderer {
     }
     // Draw the debug renderers
     pub fn draw_debug(&mut self, vp_matrix: glam::Mat4, shader_cacher_1: &CacheManager<Shader>) {
+        if !DRAW_DEBUG { return; }
         // Loop each one and construct lines out of them
         let mut lines: Vec<math::shapes::Line> = Vec::new();        
         for renderer in self.debug_primitives.iter() {
@@ -73,14 +75,19 @@ impl DebugRenderer {
         }
     
         // Turn all the lines into vertices
+        let mut new_vertices: Vec<glam::Vec3> = Vec::new();
         for line in lines {
-            self.vertices.push(line.point);
-            self.vertices.push(line.point2);
+            new_vertices.push(line.point);
+            new_vertices.push(line.point2);
         }
-        // Then edit the vertex buffer
-        unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
-            gl::BufferSubData(gl::ARRAY_BUFFER, 0,  (self.vertices.len() * size_of::<f32>() * 3) as isize, self.vertices.as_ptr() as *const c_void);
+        if new_vertices != self.vertices {   
+            self.vertices.clear();
+            self.vertices.append(&mut new_vertices);         
+            // If the vertices changed, then edit the vertex buffer
+            unsafe {
+                gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
+                gl::BufferSubData(gl::ARRAY_BUFFER, 0,  (self.vertices.len() * size_of::<f32>() * 3) as isize, self.vertices.as_ptr() as *const c_void);
+            }
         }
 
         // Set the shader
@@ -100,20 +107,31 @@ impl DebugRenderer {
         }
         // Clear the debug primitives we already rendered
         self.debug_primitives.clear();
-        self.vertices.clear();
     }
     // Add a debug primitive to the queue and then render it
     pub fn debug(&mut self, debug_renderer_type: DebugRendererType) {
+        if !DRAW_DEBUG { return; }
         self.debug_primitives.push(debug_renderer_type);
     }
     // Add a default debug primite to the queue
     pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType) {
+        if !DRAW_DEBUG { return; }
         match default_debug_renderer_type {
             DefaultDebugRendererType::CUBE(center, size) => {
                 // Apply the center and size
                 let new_corner = math::shapes::CUBE_CORNERS.to_vec().iter().map(|&x| { center + (x * size) - size / 2.0 }).collect::<Vec<glam::Vec3>>();
                 // Add the cube debug primitive
                 self.debug(DebugRendererType::CUBE(new_corner));
+            },
+            DefaultDebugRendererType::AABB(aabb) => {
+                // Get the corners
+                let mut corners: Vec<glam::Vec3> = Vec::new();
+                for corner_index in 0..8 {
+                    // Get the corners from the AABB at the specified index 
+                    corners.push(aabb.get_corner(corner_index));
+                }
+                // Add the cube debug primitive
+                self.debug(DebugRendererType::CUBE(corners));
             },
         }
     } 
@@ -127,8 +145,10 @@ pub enum DebugRendererType {
     MODEL(Model),
 }
 
+// Kind of a wrapper around DebugRendererType, since it creates one from the data that we get
 pub enum DefaultDebugRendererType {
-    CUBE(glam::Vec3, glam::Vec3)
+    CUBE(glam::Vec3, glam::Vec3),
+    AABB(math::bounds::AABB)
 }
 
 // Trait

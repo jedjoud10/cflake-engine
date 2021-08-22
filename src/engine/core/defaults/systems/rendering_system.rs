@@ -264,7 +264,7 @@ impl System for RenderingSystem {
                 gl::BindTexture(gl::TEXTURE_2D, 0);
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             }
-        }
+        }        
     }
 
     // Called before each fire_entity event is fired
@@ -291,11 +291,8 @@ impl System for RenderingSystem {
         }
         // Casually just draw the frustum
         data.debug.debug(frustum.get_debug_renderer());
-        data.debug.debug_default(DefaultDebugRendererType::CUBE(glam::Vec3::ZERO, glam::Vec3::ONE * data.time_manager.seconds_since_game_start.sin() as f32));
         // Draw the debug primitives
         data.debug.draw_debug(vp_matrix, &data.shader_cacher.1);
-
-
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();
         let camera_position = data
             .entity_manager
@@ -313,7 +310,6 @@ impl System for RenderingSystem {
         shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
         // Sky params
         shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
-        //shader.set_scalar_3_uniform("directional_light_dir", (light_dir.x, light_dir.y, light_dir.z));
         let sky_component = data
             .entity_manager
             .get_entity(&data.custom_data.sky_entity_id)

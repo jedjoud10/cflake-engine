@@ -14,6 +14,7 @@ impl EntityPrePassFilter for RenderOptimizer {
         let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
         let camera = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
         let aabb_bound = components.get_component::<components::AABB>(data.component_manager).unwrap();
+
         // Don't render the entity if the camera cannot see it
         render_entity = aabb_bound.aabb.intersect_frustum(&camera.frustum);
         // Always render the sky

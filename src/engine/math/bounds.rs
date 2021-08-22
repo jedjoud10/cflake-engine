@@ -6,6 +6,7 @@ use super::frustum::Frustum;
 
 
 // An aabb bound
+#[derive(Clone, Copy)]
 pub struct AABB {
     pub min: glam::Vec3,
     pub max: glam::Vec3,
