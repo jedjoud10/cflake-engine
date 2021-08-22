@@ -167,7 +167,7 @@ impl System for RenderingSystem {
         let _default_size = World::get_default_window_size();
         self.setup_opengl();
         self.setup_render_buffer(data, self.multisampling);
-        self.add_eppf(Box::new(RenderOptimizer::default()));
+        self.set_entity_filter(Box::new(RenderOptimizer::default()));
 
         // Load the wireframe shader
         let wireframe_shader_name = Shader::new(

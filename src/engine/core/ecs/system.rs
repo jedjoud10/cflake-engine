@@ -1,5 +1,5 @@
 use std::any::Any;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use super::{
      component::{ComponentManager, FilteredLinkedComponents},
@@ -153,7 +153,7 @@ pub trait System {
         let entity_filter = &system_data.entity_filter;
         // The linked data types of the entity filter
         let mut entity_filter_linked_types_global: Vec<EntityFilterDataType> = Vec::new();
-        let length: i32 = -1;
+        let mut length: i32 = -1;
         // Get them by calling the get_efdt on each entity
         for entity_id in system_data.entities.iter() {
             // Get the entity
@@ -167,11 +167,13 @@ pub trait System {
         }
 
         // The filtered entities tuple that also contains the linked component data
-        let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
-            let entity_clone = &data.entity_manager.id_get_entity(entity_id).unwrap().clone();
+        let filtered_entity_ids = system_data.entities.par_iter().enumerate().filter_map(|(iteration_index, entity_id)| { 
             // Get the linked components
-            let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
-            let mut valid_entity = (entity_filter.filter_entity_fn)();
+            let linked_types_global_start_index = iteration_index * length as usize;
+            let start = linked_types_global_start_index;
+            let end = entity_filter_linked_types_global.len() + length as usize;
+            let local_linked_data_types: Vec<&EntityFilterDataType> = Vec::new();
+            let mut valid_entity = (entity_filter.filter_entity_fn)(local_linked_data_types);
             // Check if it is a valid entity
             if valid_entity {
                 // This entity passed the filter
@@ -179,7 +181,7 @@ pub trait System {
             } else {
                 // This entity failed the filter
                 None
-            }
+            }       
         }).collect::<Vec<u16>>().clone();
 
         // Loop over all the entities and update their components
@@ -195,8 +197,9 @@ pub trait System {
     }
     
     // Set the entity filter of this system
-    fn set_entity_filter(&mut self, entity_filter: EntityFilter) {
+    fn set_entity_filter(&mut self, entity_filter_wrapper: Box<dyn EntityFilterWrapper>) {
         let system_data = self.get_system_data_mut();
+        let entity_filter = entity_filter_wrapper.create_entity_filter();
         system_data.entity_filter = entity_filter;
     }
 
@@ -231,7 +234,7 @@ pub struct PassedComponent {
 // The entity filter used to optimize the world
 pub struct EntityFilter {
     // The filter closure
-    pub filter_entity_fn: fn(Vec<EntityFilterDataType>) -> bool, 
+    pub filter_entity_fn: fn(Vec<&EntityFilterDataType>) -> bool, 
     // Get the entity filter data types from a specific entity
     pub get_efdt: fn(&Entity, &ComponentManager) -> Vec<EntityFilterDataType>,
 }
@@ -242,6 +245,7 @@ impl Default for EntityFilter {
         Self {
             // Default filter closure
             filter_entity_fn: |data| {
+                let first = data.get(0).unwrap();
                 true
             },
             // Default data types
@@ -250,4 +254,9 @@ impl Default for EntityFilter {
             }
         }
     }
+}
+
+// Simple wrapper
+pub trait EntityFilterWrapper {
+    fn create_entity_filter(&self) -> EntityFilter;
 }
