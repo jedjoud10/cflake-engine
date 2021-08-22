@@ -1,7 +1,7 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use super::{model::Model, model::ModelDataGPU, texture::Texture};
-use crate::engine::{core::{cacher::CacheManager, defaults::components::transforms, ecs::component::{Component, ComponentID, ComponentManager}}, resources::ResourceManager};
+use crate::engine::{core::{cacher::CacheManager, defaults::components::transforms, ecs::component::{Component, ComponentID, ComponentInternal, ComponentManager}}, resources::ResourceManager};
 use bitflags::bitflags;
 
 bitflags! {
@@ -40,7 +40,7 @@ impl Default for Renderer {
 }
 
 // Main traits implemented
-impl Component for Renderer {
+impl ComponentInternal for Renderer {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -54,6 +54,7 @@ impl ComponentID for Renderer {
         String::from("Render")
     }
 }
+impl Component for Renderer {}
 
 // Everything related to the creation of a renderer
 impl Renderer {

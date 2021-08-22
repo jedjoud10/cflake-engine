@@ -1,5 +1,5 @@
 use crate::engine::core::defaults::components::transforms;
-use crate::engine::core::ecs::component::{Component, ComponentID, ComponentManager};
+use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal, ComponentManager};
 use crate::engine::core::ecs::entity::Entity;
 use crate::engine::math::bounds;
 use crate::engine::rendering::model::Model;
@@ -39,7 +39,7 @@ impl Camera {
     }
 }
 
-impl Component for Camera {
+impl ComponentInternal for Camera {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -47,6 +47,7 @@ impl Component for Camera {
         self
     }
 }
+
 
 impl ComponentID for Camera {
     fn get_component_name() -> String {
@@ -67,6 +68,7 @@ impl Default for Camera {
     }
 }
 
+impl Component for Camera {}
 // A component that will be linked to the skysphere
 #[derive(Default)]
 pub struct Sky {
@@ -74,7 +76,7 @@ pub struct Sky {
 }
 
 // Main traits implemented
-impl Component for Sky {
+impl ComponentInternal for Sky {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -87,6 +89,7 @@ impl ComponentID for Sky {
         String::from("Sky")
     }
 }
+impl Component for Sky {}
 
 // An AABB components
 #[derive(Default)]
@@ -125,7 +128,7 @@ impl AABB {
 }
 
 // Main traits implemented
-impl Component for AABB {
+impl ComponentInternal for AABB {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -138,3 +141,4 @@ impl ComponentID for AABB {
         String::from("AABB")
     }
 }
+impl Component for AABB {}

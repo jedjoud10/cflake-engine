@@ -39,7 +39,7 @@ pub struct SystemData {
     pub state: SystemState,
     pub stype: SystemType,
     pub entities: Vec<u16>,
-    pub eppf: Option<Box<dyn EntityPrePassFilter>>,
+    pub eppf: Option<Box<dyn EntityPrePassFilter + Sync>>,
 }
 
 impl SystemData {

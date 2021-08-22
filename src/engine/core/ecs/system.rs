@@ -1,5 +1,6 @@
 use std::any::Any;
 use glfw::ffi::DECORATED;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
      component::{ComponentManager, FilteredLinkedComponents},
@@ -151,11 +152,12 @@ pub trait System {
         let system_data = self.get_system_data_mut();
         let c_bitfield = system_data.c_bitfield;
         let entity_ppf = system_data.eppf.as_ref();
+        let entity_manager_immutable = &*data.entity_manager;
         
 
         // The filtered entities tuple that also contains the linked component data
-        let filtered_entity_ids = system_data.entities.iter().filter_map(|entity_id| {
-            let entity_clone = &data.entity_manager.get_entity_mut(entity_id).unwrap().clone();
+        let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
+            let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap().clone();
             // Get the linked components
             let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
             let mut valid_entity: bool = match entity_ppf {
@@ -187,7 +189,7 @@ pub trait System {
     }
     
     // Add an EntityPrePassFilter into the system
-    fn add_eppf<>(&mut self, eppf: Box<dyn EntityPrePassFilter>) {
+    fn add_eppf<>(&mut self, eppf: Box<dyn EntityPrePassFilter + Send + Sync>) {
         let system_data = self.get_system_data_mut();
         system_data.eppf = Some(eppf);
     }

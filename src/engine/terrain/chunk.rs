@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use super::terrain::{Terrain, CHUNK_SIZE};
-use crate::engine::{
-    core::ecs::component::{Component, ComponentID},
-    rendering::model::{Model, ProceduralModelGenerator},
-    terrain::tables::{EDGE_TABLE, TRI_TABLE, VERTEX_TABLE},
-};
+use crate::engine::{core::ecs::component::{Component, ComponentID, ComponentInternal}, rendering::model::{Model, ProceduralModelGenerator}, terrain::tables::{EDGE_TABLE, TRI_TABLE, VERTEX_TABLE}};
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -16,7 +12,7 @@ pub struct Chunk {
 }
 
 // Main traits implemented
-impl Component for Chunk {
+impl ComponentInternal for Chunk {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -30,6 +26,7 @@ impl ComponentID for Chunk {
         String::from("Chunk")
     }
 }
+impl Component for Chunk {}
 
 // Actual model generation
 impl Chunk {

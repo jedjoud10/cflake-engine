@@ -77,7 +77,7 @@ impl Entity {
         }
     }
     // Link a component to this entity and automatically set it to the default variable
-    pub fn link_default_component<T: ComponentID + Default + Component + 'static>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
+    pub fn link_default_component<T: Component + 'static>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         // Simple wrapper around the default link component
         self.link_component(component_manager, T::default())
     }
@@ -86,7 +86,7 @@ impl Entity {
         self.linked_components.contains_key(component_id)
     }
     // Link a component to this entity and also link it's default component dependencies if they are not linked yet
-    pub fn link_component<T: ComponentID + Component + 'static>(&mut self, component_manager: &mut ComponentManager, default_state: T) -> Result<(), ECSError> {
+    pub fn link_component<T: Component + 'static>(&mut self, component_manager: &mut ComponentManager, default_state: T) -> Result<(), ECSError> {
         let component_id = component_manager.get_component_id::<T>().unwrap();
         // Check if we have the component linked on this entity
         if !self.linked_components.contains_key(&component_id) {

@@ -4,7 +4,7 @@ use std::{any::Any, collections::HashMap, hash::Hash};
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
     component_ids: HashMap<String, u16>,
-    pub linked_component: HashMap<u16, Box<dyn Component>>,
+    pub linked_component: HashMap<u16, Box<dyn ComponentInternal + Send + Sync>>,
     pub current_component_id: u16,
 }
 
@@ -49,7 +49,7 @@ impl ComponentManager {
         self.component_ids.contains_key(&T::get_component_name())
     }
     // Add a specific linked componment to the component manager, returns the global IDs of the components
-    pub fn add_linked_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
+    pub fn add_linked_component<T: Component + ComponentID + Send + Sync + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
         let global_id = self.linked_component.len() as u16;
         let boxed_component = Box::new(component);
         self.linked_component.insert(global_id, boxed_component);
@@ -57,19 +57,19 @@ impl ComponentManager {
         return Ok(global_id);
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentID + Component + 'static>(boxed_component: &'a Box<dyn Component>) -> &'a T {
+    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a Box<dyn ComponentInternal + Send + Sync>) -> &'a T {
         let component_any: &dyn Any = boxed_component.as_any();
         let final_component = component_any.downcast_ref::<T>().unwrap();
         final_component
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentID + Component + 'static>(boxed_component: &'a mut Box<dyn Component>) -> &'a mut T {
+    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut Box<dyn ComponentInternal + Send + Sync>) -> &'a mut T {
         let component_any: &mut dyn Any = boxed_component.as_any_mut();
         let final_component = component_any.downcast_mut::<T>().unwrap();
         final_component
     }
     // Get a reference to a specific linked component
-    pub fn id_get_linked_component<'a, T: Component + ComponentID + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
+    pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self.linked_component.get(global_id).unwrap();
@@ -77,7 +77,7 @@ impl ComponentManager {
         return Ok(component);
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn id_get_linked_component_mut<'a, T: Component + ComponentID + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
+    pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
         let linked_component = self.linked_component.get_mut(global_id).unwrap();
         let component = Self::cast_component_mut(linked_component);
         return Ok(component);
@@ -88,8 +88,11 @@ impl ComponentManager {
         return Ok(());
     }
 }
+// The main component trait
+// We do a little bit of googling https://stackoverflow.com/questions/26983355/is-there-a-way-to-combine-multiple-traits-in-order-to-define-a-new-trait
+pub trait Component: ComponentInternal + ComponentID + Send + Sync + Default {}
 // A component trait that can be added to other components
-pub trait Component {
+pub trait ComponentInternal {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
@@ -123,7 +126,7 @@ impl FilteredLinkedComponents {
         return filted_linked_components;
     }
     // Get a reference to a component using the component manager
-    pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
+    pub fn get_component<'a, T: Component + ComponentID + Sync + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
@@ -139,7 +142,7 @@ impl FilteredLinkedComponents {
         }
     }
     // Get a mutable reference to a component using the component manager
-    pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
+    pub fn get_component_mut<'a, T: Component + ComponentID + Sync + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?.clone();
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
