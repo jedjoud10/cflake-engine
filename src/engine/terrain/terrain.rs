@@ -72,7 +72,6 @@ impl Terrain {
         // This is in global coordinates btw (-30, 0, 30, 60)
         self.chunks.push(position.as_i32());
         // Add the entity to the world
-        println!("{} ms to generate chunk entity", now.elapsed().as_millis());
         data.entity_manager.add_entity_s(chunk_entity)
     }
     // 1. Create the chunks, and generate their data

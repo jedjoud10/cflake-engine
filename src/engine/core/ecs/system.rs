@@ -152,17 +152,16 @@ pub trait System {
         let system_data = self.get_system_data_mut();
         let c_bitfield = system_data.c_bitfield;
         let entity_ppf = system_data.eppf.as_ref();
-        let entity_manager_immutable = &*data.entity_manager;
-        
+        let entity_manager_immutable = &*data.entity_manager;        
 
         // The filtered entities tuple that also contains the linked component data
         let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
             let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
             // Get the linked components
-            let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
+            let mut linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
             let valid_entity: bool = match entity_ppf {
                 // Filter
-                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &linked_components, data),
+                Some(entity_ppf) => entity_ppf.filter_entity(entity_clone, &mut linked_components, data),
                 // Default
                 None => true, 
             };
@@ -188,7 +187,7 @@ pub trait System {
     }
     
     // Add an EntityPrePassFilter into the system
-    fn add_eppf<>(&mut self, eppf: Box<dyn EntityPrePassFilter + Send + Sync>) {
+    fn add_eppf<>(&mut self, eppf: Box<dyn EntityFilter + Send + Sync>) {
         let system_data = self.get_system_data_mut();
         system_data.eppf = Some(eppf);
     }
@@ -212,6 +211,6 @@ pub trait System {
 }
 
 // Pre pass filter for the entities
-pub trait EntityPrePassFilter {
+pub trait EntityFilter {
     fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &SystemEventData) -> bool;
 }

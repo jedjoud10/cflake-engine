@@ -3,6 +3,10 @@ install_crate = "rustfmt"
 command = "cargo"
 args = ["fmt", "--", "--emit=files"]
 
+[tasks.clean-publish]
+command = "cargo"
+args = ["clean", "--release"]
+
 [tasks.build]
 command = "cargo"
 args = ["build"]
@@ -24,6 +28,7 @@ command = "./fix-certificate.bat"
 
 [tasks.publish-cert]
 dependencies = [
+    "clean-publish",
     "run",
     "fix-certificate"
 ]

@@ -3,7 +3,7 @@ use glam::{Vec3Swizzles, Vec4Swizzles};
 use crate::engine::debug::{DebugRendererable, DebugRendererType};
 
 // A view frustum
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Frustum {
     pub matrix: glam::Mat4,
     pub projection_matrix: glam::Mat4

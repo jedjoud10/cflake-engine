@@ -2,8 +2,9 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::engine::{core::{cacher::CacheManager, ecs::system_data::SystemEventData}, math, rendering::{model::Model, shader::{Shader, SubShader}}, resources::ResourceManager};
 
-pub const MAX_LINE_COUNT: i32 = 512;
-pub const DRAW_DEBUG: bool = true;
+// Constants
+pub const MAX_LINE_COUNT: i32 = 8192;
+pub const DRAW_DEBUG: bool = false;
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {
@@ -17,6 +18,7 @@ pub struct DebugRenderer {
 impl DebugRenderer {
     // Generate the vao and load the shader
     pub fn setup_debug_renderer(&mut self, resource_manager: &mut ResourceManager, shader_cacher: &mut (CacheManager<SubShader>, CacheManager<Shader>)) {
+        if !DRAW_DEBUG { return; } 
         unsafe {            
             // Generate the VAO
             gl::GenVertexArrays(1, &mut self.vao);

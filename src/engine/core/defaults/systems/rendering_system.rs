@@ -7,7 +7,7 @@ use crate::engine::core::ecs::{
     system_data::{SystemData, SystemEventData, SystemEventDataLite},
 };
 use crate::engine::core::world::World;
-use crate::engine::debug::{DebugRendererType, DebugRendererable, DefaultDebugRendererType};
+use crate::engine::debug::{self, DebugRendererType, DebugRendererable, DefaultDebugRendererType};
 use crate::engine::math;
 use crate::engine::rendering::model::Model;
 use crate::engine::rendering::optimizer::RenderOptimizer;
@@ -185,13 +185,15 @@ impl System for RenderingSystem {
         let projection_matrix: glam::Mat4;
         let camera_position: glam::Vec3;
         let camera_data: &components::Camera;
+        let frustum: math::Frustum;
         // Get everything related to the camera
         {
             let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+            camera_position = camera_entity.get_component::<transforms::Position>(&mut data.component_manager).unwrap().position;
             camera_data = camera_entity.get_component::<components::Camera>(&mut data.component_manager).unwrap();
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
-            camera_position = camera_entity.get_component::<transforms::Position>(&mut data.component_manager).unwrap().position;
+            frustum = camera_data.frustum.clone();
         }
         let model_matrix: glam::Mat4;
         // Render the entity
@@ -264,7 +266,7 @@ impl System for RenderingSystem {
                 gl::BindTexture(gl::TEXTURE_2D, 0);
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             }
-        }        
+        }
     }
 
     // Called before each fire_entity event is fired

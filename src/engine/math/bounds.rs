@@ -48,7 +48,7 @@ impl AABB {
     pub fn intersect_other(&self, _other: Self) -> bool {
         false
     }
-    // Check if this AABB intersects the camera's view frustum
+    // Check if this AABB intersects the camera's view frustum. Exit at the first valid intersection
     pub fn intersect_frustum(&self, frustum: &Frustum) -> bool {
         // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC
         for corner_index in 0..8 {
