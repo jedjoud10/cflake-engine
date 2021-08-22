@@ -1,5 +1,7 @@
 use glam::Vec4Swizzles;
 
+use crate::engine::debug::{DebugRenderer, DebugRendererType};
+
 // A view frustum
 #[derive(Default)]
 pub struct Frustum {
@@ -29,5 +31,20 @@ impl Frustum {
             // The projected corner was behind us, so it was not inside the frustum
             return false;
         }
+    }
+}
+
+// The frustum can be debug drawed
+impl DebugRenderer for Frustum {
+    // Turn the frustum into a cube and render it
+    fn get_debug_renderer(&self) -> DebugRendererType {
+        let corners = super::shapes::CUBE_CORNERS;   
+        let mut projected_corners: Vec<glam::Vec3> = Vec::new();   
+        // Project each corner of the unit cube by the frustum's matrix
+        for corner in corners.iter() {
+            let projected_corner = self.matrix.mul_vec4(glam::vec4(corner.x, corner.y, corner.z, 1.0));
+            projected_corners.push(projected_corner.xyz() / projected_corner.w);
+        }  
+        return DebugRendererType::CUBE(projected_corners);
     }
 }

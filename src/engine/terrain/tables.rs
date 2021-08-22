@@ -1,3 +1,5 @@
+use crate::engine::math;
+
 // Triangulation table
 pub const TRI_TABLE: [[i8; 16]; 256] = [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -267,13 +269,4 @@ pub const EDGE_TABLE: [usize; 24] = [
 ];
 
 // Vertex table
-pub const VERTEX_TABLE: [glam::Vec3; 8] = [
-    glam::const_vec3!([0.0, 0.0, 0.0]),
-    glam::const_vec3!([0.0, 0.0, 1.0]),
-    glam::const_vec3!([1.0, 0.0, 1.0]),
-    glam::const_vec3!([1.0, 0.0, 0.0]),
-    glam::const_vec3!([0.0, 1.0, 0.0]),
-    glam::const_vec3!([0.0, 1.0, 1.0]),
-    glam::const_vec3!([1.0, 1.0, 1.0]),
-    glam::const_vec3!([1.0, 1.0, 0.0]),
-];
+pub const VERTEX_TABLE: [glam::Vec3; 8] = math::shapes::CUBE_CORNERS;
