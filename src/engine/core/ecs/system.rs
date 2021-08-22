@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, time::Instant};
 use glfw::ffi::DECORATED;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -156,6 +156,7 @@ pub trait System {
         
 
         // The filtered entities tuple that also contains the linked component data
+        let current_time = Instant::now();
         let filtered_entity_ids = system_data.entities.par_iter().filter_map(|entity_id| {
             let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap().clone();
             // Get the linked components
@@ -175,7 +176,7 @@ pub trait System {
                 None
             }
         }).collect::<Vec<u16>>().clone();
-
+        println!("{}", current_time.elapsed().as_micros());
         // Loop over all the entities and update their components
         for entity_id in filtered_entity_ids  {
             let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
