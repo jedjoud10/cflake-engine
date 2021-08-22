@@ -1,7 +1,7 @@
-use crate::engine::core::{
+use crate::engine::{core::{
     defaults::components,
     ecs::{component::FilteredLinkedComponents, entity::Entity, system::EntityFilter, system_data::SystemEventData},
-};
+}, math::Intersection};
 
 // Optimizes the rendering of objects using multiple techniques like frustum culling and such
 #[derive(Default)]
@@ -17,7 +17,7 @@ impl EntityFilter for RenderOptimizer {
         let aabb = components.get_component::<components::AABB>(data.component_manager).unwrap().aabb;
 
         // Don't render the entity if the camera cannot see it
-        let intersection = aabb.intersect_frustum(&camera.frustum);
+        let intersection = Intersection::frustum_aabb(&camera.frustum, &aabb);
         // Always render the sky
         render_entity = intersection;
         render_entity |= entity.entity_id == data.custom_data.sky_entity_id;

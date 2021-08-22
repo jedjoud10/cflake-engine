@@ -2,34 +2,13 @@ use glam::Vec3Swizzles;
 
 use crate::engine::debug::{DebugRendererType, DebugRendererable};
 
+use super::shapes;
+
 // A view frustum
 #[derive(Default, Clone)]
 pub struct Frustum {
     pub matrix: glam::Mat4,
     pub projection_matrix: glam::Mat4,
-}
-
-// Code
-impl Frustum {
-    // Intersection code to check if a point is inside the frustum
-    pub fn is_point_inside_frustum(&self, point: glam::Vec3) -> bool {
-        // An multiplication factor just to debug the frustum culling
-        const FACTOR: f32 = 1.0;
-
-        // This automatically does the projection division for us
-        let transformed_corner = self.matrix.project_point3(point);
-        let transformed_ss = transformed_corner.xy();
-        // Check if the point is in front of us
-        if transformed_corner.z < 1.0 {
-            // Check if is inside the bounds of the 2D screenspace NDC
-            let min = (transformed_ss * FACTOR).cmplt(glam::Vec2::ONE).all();
-            let max = (transformed_ss * FACTOR).cmpgt(-glam::Vec2::ONE).all();
-            min && max
-        } else {
-            // The projected corner was behind us, so it was not inside the frustum
-            false
-        }
-    }
 }
 
 // The frustum can be debug drawed

@@ -1,6 +1,6 @@
 use crate::engine::{core::defaults::components, rendering::model::Model};
 
-use super::frustum::Frustum;
+use super::{frustum::Frustum, shapes};
 
 // An aabb bound
 #[derive(Clone, Copy)]
@@ -37,28 +37,10 @@ impl AABB {
             _ => glam::Vec3::ZERO,
         }
     }
-    // Check if this AABB intersects a sphere (or is inside of it)
-    pub fn intersect_sphere(&self, _sphere_center: glam::Vec3, _sphere_radius: f32) -> bool {
-        false
-    }
-    // Check if this AABB intersects another AABB (or is inside of it)
-    pub fn intersect_other(&self, _other: Self) -> bool {
-        false
-    }
-    // Check if this AABB intersects the camera's view frustum. Exit at the first valid intersection
-    pub fn intersect_frustum(&self, frustum: &Frustum) -> bool {
-        // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC
-        for corner_index in 0..8 {
-            let corner = self.get_corner(corner_index);
-            // Check if one of the corners is inside the frustum, if it isn't just skip to the next one
-            if frustum.is_point_inside_frustum(corner) {
-                return true;
-            } else {
-                continue;
-            }
-        }
-        false
-    }
+    // Get a specific edge from this AABB
+    pub fn get_edge(&self, edge_index: u8) -> shapes::Line {
+        return shapes::CUBE_EDGES[edge_index as usize];
+    }        
 }
 
 // Generation functions
