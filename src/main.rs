@@ -52,15 +52,17 @@ pub fn main() {
 // When the window receives a new event
 fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
     match event {        
-        glfw::WindowEvent::Key(key, _, action_type, modifiers) => {
+        glfw::WindowEvent::Key(_, key_scancode, action_type, modifiers) => {
             // Key event
             let action_id = match action_type {
                 glfw::Action::Press => 0,
                 glfw::Action::Release => 1,
                 glfw::Action::Repeat => 2,
             };
-            println!("{}", key.get_name().unwrap());
-            world.input_manager.receive_key_event(key.get_name().unwrap(), action_id);
+            // Only accept the scancode of valid keys
+            if key_scancode > 0 {
+                world.input_manager.receive_key_event(key_scancode, action_id);
+            }
         }
         glfw::WindowEvent::Size(x, y) => {
             // Size

@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fmt::{self},
 };
+use super::Keys;
 
 // Map data
 #[derive(Clone, Copy, Debug)]
@@ -38,24 +39,78 @@ pub enum MapType {
 }
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
-// Key -> Map
+// Get binding:
+// Using the name of the binding, get the map state of the key
+// Update bindings:
+// Loop through each binding, get it's scancode, use that scan code to get the MapStatus from 'keys'
 #[derive(Default)]
 pub struct InputManager {
-    pub bindings: HashMap<String, String>,
-    pub keys: HashMap<String, MapData>,
+    pub bindings: HashMap<i32, String>,
+    pub keys: HashMap<i32, MapData>,
     pub mappings: HashMap<String, MapData>,
+    scancode_cache: HashMap<Keys, i32>,
     last_mouse_pos: (i32, i32),
     last_mouse_scroll: f32,
 }
 
 impl InputManager {
+    // Get the key scancode for a specific key
+    pub fn get_key_scancode(key: Keys) -> Option<i32> {
+        match key {
+            Keys::Escape => glfw::Key::get_scancode(&glfw::Key::Escape),
+            Keys::Enter => glfw::Key::get_scancode(&glfw::Key::Enter),
+            Keys::LeftShift => glfw::Key::get_scancode(&glfw::Key::LeftShift),
+            Keys::LeftControl => glfw::Key::get_scancode(&glfw::Key::LeftControl),
+            Keys::RightShift => glfw::Key::get_scancode(&glfw::Key::RightShift),
+            Keys::RightControl => glfw::Key::get_scancode(&glfw::Key::RightControl),
+            Keys::Space => glfw::Key::get_scancode(&glfw::Key::Space),
+            Keys::A => glfw::Key::get_scancode(&glfw::Key::A),
+            Keys::B => glfw::Key::get_scancode(&glfw::Key::B),
+            Keys::C => glfw::Key::get_scancode(&glfw::Key::C),
+            Keys::D => glfw::Key::get_scancode(&glfw::Key::D),
+            Keys::E => glfw::Key::get_scancode(&glfw::Key::E),
+            Keys::F => glfw::Key::get_scancode(&glfw::Key::F),
+            Keys::G => glfw::Key::get_scancode(&glfw::Key::G),
+            Keys::H => glfw::Key::get_scancode(&glfw::Key::H),
+            Keys::I => glfw::Key::get_scancode(&glfw::Key::I),
+            Keys::J => glfw::Key::get_scancode(&glfw::Key::J),
+            Keys::K => glfw::Key::get_scancode(&glfw::Key::K),
+            Keys::L => glfw::Key::get_scancode(&glfw::Key::L),
+            Keys::M => glfw::Key::get_scancode(&glfw::Key::M),
+            Keys::N => glfw::Key::get_scancode(&glfw::Key::N),
+            Keys::O => glfw::Key::get_scancode(&glfw::Key::O),
+            Keys::P => glfw::Key::get_scancode(&glfw::Key::P),
+            Keys::Q => glfw::Key::get_scancode(&glfw::Key::Q),
+            Keys::R => glfw::Key::get_scancode(&glfw::Key::R),
+            Keys::S => glfw::Key::get_scancode(&glfw::Key::S),
+            Keys::T => glfw::Key::get_scancode(&glfw::Key::T),
+            Keys::U => glfw::Key::get_scancode(&glfw::Key::U),
+            Keys::V => glfw::Key::get_scancode(&glfw::Key::V),
+            Keys::W => glfw::Key::get_scancode(&glfw::Key::W),
+            Keys::X => glfw::Key::get_scancode(&glfw::Key::X),
+            Keys::Y => glfw::Key::get_scancode(&glfw::Key::Y),
+            Keys::Z => glfw::Key::get_scancode(&glfw::Key::Z),
+            Keys::F1 => glfw::Key::get_scancode(&glfw::Key::F1),
+            Keys::F2 => glfw::Key::get_scancode(&glfw::Key::F2),
+            Keys::F3 => glfw::Key::get_scancode(&glfw::Key::F3),
+            Keys::F4 => glfw::Key::get_scancode(&glfw::Key::F4),
+            Keys::F5 => glfw::Key::get_scancode(&glfw::Key::F5),
+            Keys::F6 => glfw::Key::get_scancode(&glfw::Key::F6),
+            Keys::F7 => glfw::Key::get_scancode(&glfw::Key::F7),
+            Keys::F8 => glfw::Key::get_scancode(&glfw::Key::F8),
+            Keys::F9 => glfw::Key::get_scancode(&glfw::Key::F9),
+            Keys::F10 => glfw::Key::get_scancode(&glfw::Key::F10),
+            Keys::F11 => glfw::Key::get_scancode(&glfw::Key::F11),
+            Keys::F12 => glfw::Key::get_scancode(&glfw::Key::F12),
+        }
+    }
     // Setup the default input bindings
     pub fn setup_default_bindings(&mut self) {
-        self.bind_key("", "quit", MapType::Button);
-        self.bind_key("", "fullscreen", MapType::Button);
-        self.bind_key("", "capture_fps", MapType::Button);
-        self.bind_key("", "change_debug_view", MapType::Button);
-        self.bind_key("", "toggle_wireframe", MapType::Button);
+        self.bind_key(Keys::Escape, "quit", MapType::Button);
+        self.bind_key(Keys::F1, "fullscreen", MapType::Button);
+        self.bind_key(Keys::F2, "capture_fps", MapType::Button);
+        self.bind_key(Keys::F3, "change_debug_view", MapType::Button);
+        self.bind_key(Keys::F, "toggle_wireframe", MapType::Button);
     }
     // Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
     pub fn update(&mut self, _window: &mut glfw::Window) {
@@ -125,10 +180,9 @@ impl InputManager {
         }
     }
     // When we receive a key event from glfw (Always at the start of the frame)
-    pub fn receive_key_event(&mut self, key_name: String, action_type: i32) {
-        // If this key does not exist in the dictionary yet, just skip
-        if !self.keys.contains_key(&key_name) { return; }   
-        let mut map_data = self.keys.get_mut(&key_name).unwrap();    
+    pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
+        // If this key does not exist in the dictionary yet, add it       
+        let mut map_data =  self.keys.entry(key_scancode).or_insert(MapData::default());
         match action_type {
             0 => {
                 // Set the map status
@@ -156,11 +210,12 @@ impl InputManager {
         }
     }
     // Binds a key to a specific mapping
-    pub fn bind_key(&mut self, key_name: &str, map_name: &str, map_type: MapType) {
+    pub fn bind_key(&mut self, key: Keys, map_name: &str, map_type: MapType) {
         // Check if the binding exists
-        if !self.bindings.contains_key(&key_name.to_string()) {
+        let key_scancode = Self::get_key_scancode(key).unwrap();
+        if !self.bindings.contains_key(&key_scancode) {
             // The binding does not exist yet, so create a new one
-            self.bindings.insert(key_name.to_string(), map_name.to_string());
+            self.bindings.insert(key_scancode, map_name.to_string());
             self.mappings.insert(map_name.to_string(), MapData::default());
         }
     }    

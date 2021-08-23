@@ -7,7 +7,7 @@ use crate::engine::{core::{
         system::System,
         system_data::{SystemData, SystemEventData, SystemEventDataLite},
     },
-}, input::MapType};
+}, input::{Keys, MapType}};
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -30,14 +30,13 @@ impl System for CameraSystem {
         system_data.link_component::<components::Camera>(data.component_manager).unwrap();
         system_data.link_component::<components::Transform>(data.component_manager).unwrap();
 
-        data.input_manager.bind_key("", "camera_forward", MapType::Button);
-        data.input_manager.bind_key("", "camera_backwards", MapType::Button);
-        data.input_manager.bind_key("", "camera_right", MapType::Button);
-        data.input_manager.bind_key("", "camera_left", MapType::Button);
-        data.input_manager.bind_key("", "camera_up", MapType::Button);
-        data.input_manager.bind_key("", "camera_down", MapType::Button);
-        data.input_manager.bind_key("", "speed_switch", MapType::Button);
-        data.input_manager.bind_key("", "update_frustum", MapType::Toggle);
+        data.input_manager.bind_key(Keys::W, "camera_forward", MapType::Button);
+        data.input_manager.bind_key(Keys::S, "camera_backwards", MapType::Button);
+        data.input_manager.bind_key(Keys::D, "camera_right", MapType::Button);
+        data.input_manager.bind_key(Keys::A, "camera_left", MapType::Button);
+        data.input_manager.bind_key(Keys::Space, "camera_up", MapType::Button);
+        data.input_manager.bind_key(Keys::LeftShift, "camera_down", MapType::Button);
+        data.input_manager.bind_key(Keys::J, "update_frustum", MapType::Toggle);
     }
 
     // Called for each entity in the system
