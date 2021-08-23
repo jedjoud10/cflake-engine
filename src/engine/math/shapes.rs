@@ -69,7 +69,7 @@ pub struct Sphere {
     pub radius: f32
 }
 // A simple square
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct Square {
     pub min: glam::Vec2,
     pub max: glam::Vec2

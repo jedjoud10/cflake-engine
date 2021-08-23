@@ -61,7 +61,7 @@ impl System for CameraSystem {
                 let mut changed_position = components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position;
                 let delta = data.time_manager.delta_time as f32;
                 // Default speed
-                let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.1;
+                let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.4;
                 if data.input_manager.map_held("camera_forward").0 {
                     changed_position -= forward_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_backwards").0 {
@@ -89,7 +89,7 @@ impl System for CameraSystem {
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix(&data.custom_data.window);
-        if data.input_manager.map_toggled("update_frustum") {
+        if !data.input_manager.map_toggled("update_frustum") {
             // Update the frustum culling matrix
             camera_component.update_frustum_culling_matrix();
         }

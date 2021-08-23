@@ -84,13 +84,14 @@ pub fn load_entities(world: &mut World) {
     quad.link_component::<components::Transform>(
         &mut world.component_manager,
         components::Transform {
-            scale: glam::vec3(100.0, 100.0, 100.0),
+            scale: glam::vec3(100.0, 1.0, 100.0),
             ..components::Transform::default()
         },
     )
     .unwrap();
-    let aabb = components::AABB::from_components(&quad, &world.component_manager);
-    println!("{:?}", aabb.aabb);
+    let mut aabb = components::AABB::from_components(&quad, &world.component_manager);
+    aabb.aabb.min.y = -0.01;
+    aabb.aabb.max.y = 0.01;
     quad.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
     world.add_entity(quad);
 
@@ -117,5 +118,5 @@ pub fn load_entities(world: &mut World) {
     .unwrap();
     let aabb = components::AABB::from_components(&cube, &world.component_manager);
     cube.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
-    world.add_entity(cube);
+    //world.add_entity(cube);
 }

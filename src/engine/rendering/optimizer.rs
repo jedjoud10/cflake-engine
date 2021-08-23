@@ -24,6 +24,6 @@ impl EntityFilter for RenderOptimizer {
         let intersection = Intersection::frustum_aabb(&camera.frustum, &aabb);
         render_entity = intersection;
         //render_entity
-        return true;
+        render_entity
     }
 }
