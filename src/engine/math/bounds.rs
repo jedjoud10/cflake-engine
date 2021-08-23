@@ -61,7 +61,7 @@ impl AABB {
     // Transform the AABB by a transform
     pub fn transform(&mut self, transform: &components::Transform) {
         // Transform the min and max by the transform's matrix
-        let matrix = glam::Mat4::from_translation(transform.position) * glam::Mat4::from_quat(transform.rotation) * glam::Mat4::from_scale(transform.scale);
+        let matrix = transform.get_matrix();
         self.min = matrix.transform_point3(self.min);
         self.max = matrix.transform_point3(self.max);
     }

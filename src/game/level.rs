@@ -72,7 +72,7 @@ pub fn load_entities(world: &mut World) {
     let mut quad = Entity::new("Quad");
     // Link the component
     let mut rc = Renderer::default();
-    rc.load_model("models\\quad.mdl3d", &mut world.resource_manager);
+    rc.load_model("models\\test.mdl3d", &mut world.resource_manager);
     rc.shader_name = Shader::new(
         vec!["shaders\\default.vrsh.glsl", "shaders\\checkerboard.frsh.glsl"],
         &mut world.resource_manager,
@@ -84,13 +84,13 @@ pub fn load_entities(world: &mut World) {
     quad.link_component::<components::Transform>(
         &mut world.component_manager,
         components::Transform {
-            rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, -90.0_f32.to_radians(), 0.0, 0.0),
-            scale: glam::vec3(100.0, 100.0, 1.0),
+            scale: glam::vec3(100.0, 100.0, 100.0),
             ..components::Transform::default()
         },
     )
     .unwrap();
     let aabb = components::AABB::from_components(&quad, &world.component_manager);
+    println!("{:?}", aabb.aabb);
     quad.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
     world.add_entity(quad);
 
@@ -98,7 +98,7 @@ pub fn load_entities(world: &mut World) {
     let mut cube = Entity::new("Cube");
     // Link the component
     let mut rc = Renderer::default();
-    rc.load_model("models\\cube.mdl3d", &mut world.resource_manager);
+    rc.load_model("models\\sphere.mdl3d", &mut world.resource_manager);
     rc.shader_name = world.shader_cacher.1.defaults[0].clone();
     rc.resource_load_textures(
         vec!["textures\\diffuse.png", "textures\\normals.png"],

@@ -22,9 +22,13 @@ impl Default for Transform {
 
 // Update the transform matrix
 impl Transform {
-    // Update the matrix and save it
+    // Calculate the matrix and save it
     pub fn update_matrix(&mut self) {
         self.matrix = glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation) * glam::Mat4::from_scale(self.scale);
+    }
+    // Calculate the matrix and return it
+    pub fn get_matrix(&self) -> glam::Mat4 {
+        glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation) * glam::Mat4::from_scale(self.scale)
     }
 }
 

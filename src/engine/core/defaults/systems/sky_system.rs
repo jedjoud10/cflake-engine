@@ -62,7 +62,6 @@ impl System for SkySystem {
             data.component_manager,
             components::Transform {
                 position: glam::Vec3::ZERO,
-                rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, 90.0_f32.to_radians(), 0.0, 0.0),
                 scale: glam::Vec3::ONE * 9000.0,
                 ..components::Transform::default()
             },

@@ -23,6 +23,7 @@ impl EntityFilter for RenderOptimizer {
         // Don't render the entity if the camera cannot see it
         let intersection = Intersection::frustum_aabb(&camera.frustum, &aabb);
         render_entity = intersection;
-        render_entity
+        //render_entity
+        return true;
     }
 }

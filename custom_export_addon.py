@@ -1,5 +1,7 @@
 import bpy
 import bmesh
+import mathutils
+from math import radians
 from bpy import context
 
 bl_info = {
@@ -22,19 +24,42 @@ def write_some_data(context, filepath, skeletal_animation):
 	tempmesh.to_mesh(mesh)
 	tempmesh.free()
 	f = open(filepath, 'w', encoding='utf-8')
-	f.write("#Object Name: " + active_object.name + "\n")        
+	f.write("#Object Name: " + active_object.name + "\n")   	 
 	
 	# Now loop for every vertex / triangle and write it to the file
 	vertex_dict = {}
 	vertex_map = {}
 	mesh.calc_tangents()
-	for i, loop in enumerate(mesh.loops):          
+	rotmat = mathutils.Matrix.Rotation(radians(-90), 4, 'X')
+	for i, loop in enumerate(mesh.loops):   	   
 		vertex = mesh.vertices[loop.vertex_index].co
-		vertex_new = [round(x, 3) for x in vertex]
-		normal = mesh.vertices[loop.vertex_index].normal
-		normal_new = [round(x, 3) for x in normal]
+		
+		vertex_new_new = mathutils.Vector((vertex[0], vertex[1], vertex[2]))
+		vertex_new_new.rotate(rotmat)
+		vertex_new = [0, 0, 0]
+		vertex_new[0] = vertex_new_new.x
+		vertex_new[1] = vertex_new_new.y
+		vertex_new[2] = vertex_new_new.z
+		vertex_new = [round(x, 3) for x in vertex_new]
+		
+		normal = mesh.vertices[loop.vertex_index].normal		
+		normal_new_new = mathutils.Vector((normal[0], normal[1], normal[2]))
+		normal_new_new.rotate(rotmat)
+		normal_new = [0, 0, 0]
+		normal_new[0] = normal_new_new.x
+		normal_new[1] = normal_new_new.y
+		normal_new[2] = normal_new_new.z
+		normal_new = [round(x, 3) for x in normal_new]
+		
 		tangent = loop.tangent
-		tangent_new = [round(x, 3) for x in tangent]
+		tangent_new_new = mathutils.Vector((tangent[0], tangent[1], tangent[2]))		
+		tangent_new_new.rotate(rotmat)
+		tangent_new = [0, 0, 0]
+		tangent_new[0] = tangent_new_new.x
+		tangent_new[1] = tangent_new_new.y
+		tangent_new[2] = tangent_new_new.z
+		tangent_new = [round(x, 3) for x in tangent_new]
+		
 		uv = mesh.uv_layers.active.data[loop.index].uv
 		uv_new = [round(x, 3) for x in uv]
 		bitangent_sign = round(loop.bitangent_sign, 3)
