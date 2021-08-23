@@ -85,14 +85,14 @@ pub fn load_entities(world: &mut World) {
         &mut world.component_manager,
         components::Transform {
             rotation: glam::Quat::from_euler(glam::EulerRot::XYZ, -90.0_f32.to_radians(), 0.0, 0.0),
-            scale: glam::Vec3::ONE * 100.0,
+            scale: glam::vec3(100.0, 100.0, 1.0),
             ..components::Transform::default()
         },
     )
     .unwrap();
     let aabb = components::AABB::from_components(&quad, &world.component_manager);
     quad.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
-    //world.add_entity(quad);
+    world.add_entity(quad);
 
     // Anime moment
     let mut cube = Entity::new("Cube");
@@ -111,6 +111,7 @@ pub fn load_entities(world: &mut World) {
         &mut world.component_manager,
         components::Transform {
             position: glam::vec3(10.0, 0.0, 0.0),
+            scale: glam::vec3(10.0, 10.0, 10.0),
             ..components::Transform::default()
         },
     )

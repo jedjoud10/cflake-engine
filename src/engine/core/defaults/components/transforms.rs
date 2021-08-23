@@ -22,7 +22,7 @@ impl Default for Transform {
 
 // Update the transform matrix
 impl Transform {
-    // Update the matrix
+    // Update the matrix and save it
     pub fn update_matrix(&mut self) {
         self.matrix = glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation) * glam::Mat4::from_scale(self.scale);
     }

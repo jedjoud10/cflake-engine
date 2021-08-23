@@ -47,7 +47,10 @@ impl AABB {
 impl AABB {
     // Generate the AABB from a model; just loop over all the vertices and keep track of the min and max ones
     pub fn from_model(model: &Model) -> Self {
-        let mut aabb: Self = AABB::default();
+        let mut aabb: Self = AABB {
+            min: glam::Vec3::ONE,
+            max: -glam::Vec3::ONE,
+        };
         // Loop over the vertices
         for vertex in model.vertices.iter() {
             aabb.min = aabb.min.min(*vertex);
@@ -58,9 +61,8 @@ impl AABB {
     // Transform the AABB by a transform
     pub fn transform(&mut self, transform: &components::Transform) {
         // Transform the min and max by the transform's matrix
-        self.min += transform.position;
-        self.max += transform.position;
-        self.min *= transform.scale;
-        self.max *= transform.scale;
+        let matrix = glam::Mat4::from_translation(transform.position) * glam::Mat4::from_quat(transform.rotation) * glam::Mat4::from_scale(transform.scale);
+        self.min = matrix.transform_point3(self.min);
+        self.max = matrix.transform_point3(self.max);
     }
 }
