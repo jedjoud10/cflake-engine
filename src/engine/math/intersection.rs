@@ -27,23 +27,6 @@ impl Intersection {
         let max = (point).cmpgt(-glam::Vec2::ONE).all();
         min && max
     }
-    // Intersection code to check if a point is inside the frustum
-    pub fn frustum_point(frustum: &Frustum, point: glam::Vec3) -> bool {
-        // An multiplication factor just to debug the frustum culling
-        const FACTOR: f32 = 1.0;
-
-        // This automatically does the projection division for us
-        let transformed_corner = frustum.matrix.project_point3(point);
-        let transformed_ss = transformed_corner.xy();
-        // Check if the point is in front of us
-        if transformed_corner.z < 1.0 {
-            // Check if is inside the bounds of the 2D screenspace NDC
-            return Self::ss_point_limits(&transformed_ss);
-        } else {
-            // The projected corner was behind us, so it was not inside the frustum
-            false
-        }
-    }
     // Intersection code to check if a line intersects the frustum
     pub fn frustum_line(frustum: &Frustum, line: &shapes::Line) -> bool {
         false
@@ -54,36 +37,41 @@ impl Intersection {
         let mut square_min: glam::Vec2 = glam::Vec2::ZERO;
         let mut square_max: glam::Vec2 = glam::Vec2::ZERO;
         let mut valid_dir: bool = false;
-        let mut test: bool = true;
+        let mut initialized: bool = true;
         for corner_index in 0..8 {
             let corner = aabb.get_corner(corner_index);
             // Check if one of the corners is inside the frustum, if it isn't just skip to the next one
-            if Self::frustum_point(frustum, corner) {
-                return true;
+            // This automatically does the projection division for us
+            let projected_corner = frustum.matrix.project_point3(corner);
+            let projected_ss = projected_corner.xy();
+            let local_valid_dir = projected_corner.z < 1.0;
+            // Check if the point is in front of us
+            if local_valid_dir {
+                // Check if is inside the bounds of the 2D screenspace NDC, if it is, then return early
+                if Self::ss_point_limits(&projected_ss) { return true; }
             }
-            let projected_point = frustum.matrix.project_point3(corner);
-            valid_dir |= projected_point.z < 1.0;
-            
+            valid_dir |= local_valid_dir;            
             // Ignore the projected points that are behind us
-            if projected_point.z < 1.0 {
-                if test {
-                    square_min = projected_point.xy();
-                    square_max = projected_point.xy();
+            if local_valid_dir {
+                if initialized {
+                    square_min = projected_ss;
+                    square_max = projected_ss;
                 }
-                square_min = square_min.min(projected_point.xy());
-                square_max = square_max.max(projected_point.xy());
-                test = false;
+                // Keep track of the screen-space min max values
+                square_min = square_min.min(projected_ss);
+                square_max = square_max.max(projected_ss);
+                initialized = false;
             }
         } 
+        // Square.
         let square = shapes::Square {
             min: square_min,
             max: square_max,
         };
         // If there where no corners on the screen, flatten them, then create a square from that and test it
-        let the_questio = Self::square_square(&square, &shapes::Square {
+        return Self::square_square(&square, &shapes::Square {
             min: glam::vec2(-1.0, -1.0),
             max: glam::vec2(1.0, 1.0),
-        });
-        return the_questio && valid_dir;
+        }) && valid_dir;
     }
 }

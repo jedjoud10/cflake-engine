@@ -27,7 +27,6 @@ pub fn main() {
             gl::Viewport(0, 0, 300, 300);
         }
     }
-    glfw.set_swap_interval(glfw::SwapInterval::None);
     // Create the world
     let mut world: World = World::default();
     world.start_world(&mut window);
@@ -52,11 +51,19 @@ pub fn main() {
 
 // When the window receives a new event
 fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
-    match event {
-        glfw::WindowEvent::Key(key, _, action_type, _) => {
-            world.input_manager.receive_key_event(key, action_type);
+    match event {        
+        glfw::WindowEvent::Key(key, _, action_type, modifiers) => {
+            // Key event
+            let action_id = match action_type {
+                glfw::Action::Press => 0,
+                glfw::Action::Release => 1,
+                glfw::Action::Repeat => 2,
+            };
+            println!("{}", key.get_name().unwrap());
+            world.input_manager.receive_key_event(key.get_name().unwrap(), action_id);
         }
         glfw::WindowEvent::Size(x, y) => {
+            // Size
             world.resize_window_event((x as u16, y as u16));
         }
         glfw::WindowEvent::Scroll(_scroll, scroll2) => world.input_manager.recieve_mouse_event(None, Some(scroll2)),
