@@ -72,7 +72,7 @@ pub fn load_entities(world: &mut World) {
     let mut quad = Entity::new("Quad");
     // Link the component
     let mut rc = Renderer::default();
-    rc.load_model("models\\test.mdl3d", &mut world.resource_manager);
+    rc.load_model("models\\quad.mdl3d", &mut world.resource_manager);
     rc.shader_name = Shader::new(
         vec!["shaders\\default.vrsh.glsl", "shaders\\checkerboard.frsh.glsl"],
         &mut world.resource_manager,
@@ -98,14 +98,14 @@ pub fn load_entities(world: &mut World) {
     let mut cube = Entity::new("Cube");
     // Link the component
     let mut rc = Renderer::default();
-    rc.load_model("models\\sphere.mdl3d", &mut world.resource_manager);
+    rc.load_model("models\\cube.mdl3d", &mut world.resource_manager);
     rc.shader_name = world.shader_cacher.1.defaults[0].clone();
     rc.resource_load_textures(
         vec!["textures\\diffuse.png", "textures\\normals.png"],
         &mut world.texture_cacher,
         &mut world.resource_manager,
     );
-    rc.uv_scale *= 10.0;
+    rc.uv_scale *= 5.0;
     cube.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     cube.link_component::<components::Transform>(
         &mut world.component_manager,

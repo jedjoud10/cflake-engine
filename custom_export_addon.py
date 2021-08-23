@@ -31,6 +31,7 @@ def write_some_data(context, filepath, skeletal_animation):
 	vertex_map = {}
 	mesh.calc_tangents()
 	rotmat = mathutils.Matrix.Rotation(radians(-90), 4, 'X')
+	rotmat2 = mathutils.Matrix.Rotation(radians(0), 2, 'X')
 	for i, loop in enumerate(mesh.loops):   	   
 		vertex = mesh.vertices[loop.vertex_index].co
 		
@@ -60,7 +61,7 @@ def write_some_data(context, filepath, skeletal_animation):
 		tangent_new[2] = tangent_new_new.z
 		tangent_new = [round(x, 3) for x in tangent_new]
 		
-		uv = mesh.uv_layers.active.data[loop.index].uv
+		uv = mesh.uv_layers.active.data[loop.index].uv		
 		uv_new = [round(x, 3) for x in uv]
 		bitangent_sign = round(loop.bitangent_sign, 3)
 		vertex_tuple = (vertex_new[0], vertex_new[1], vertex_new[2], normal_new[0], normal_new[1], normal_new[2], uv_new[0], uv_new[1])
