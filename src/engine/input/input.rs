@@ -4,31 +4,32 @@ use std::{
 };
 use super::Keys;
 
-// Map data
+// Status of a key
 #[derive(Clone, Copy, Debug)]
-pub struct MapData {
-    pub status: MapStatus,
-    pub map_type: MapType,
-}
-
-impl Default for MapData {
-    fn default() -> Self {
-        Self {
-            status: MapStatus::Nothing,
-            map_type: MapType::Button,
-        }
-    }
-}
-
-// Status of a map
-#[derive(Clone, Copy, Debug)]
-pub enum MapStatus {
+pub enum KeyStatus {
     Released,  // The frame the key was released on
     Held(f32), // If the key was held more than a frame
     Pressed,   // The frame the key was pressed on
     Nothing,   // If nothing happens in that specific frame
+}
+
+// Toggle status of a key
+#[derive(Clone, Copy, Debug)]
+pub enum ToggleKeyStatus {
     ToggleOn,
     ToggleOff,
+}
+
+impl Default for ToggleKeyStatus {
+    fn default() -> Self {
+        Self::ToggleOff
+    }
+}
+
+impl Default for KeyStatus {
+    fn default() -> Self {
+        Self::Nothing
+    }
 }
 
 // The type of map
@@ -40,14 +41,11 @@ pub enum MapType {
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Get binding:
-// Using the name of the binding, get the map state of the key
-// Update bindings:
-// Loop through each binding, get it's scancode, use that scan code to get the MapStatus from 'keys'
+// Using the name of the binding, get the scane code for each key and use that scan code to get the map state of that key
 #[derive(Default)]
 pub struct InputManager {
-    pub bindings: HashMap<i32, String>,
-    pub keys: HashMap<i32, MapData>,
-    pub mappings: HashMap<String, MapData>,
+    pub bindings: HashMap<String, i32>,
+    pub keys: HashMap<i32, (KeyStatus, ToggleKeyStatus)>,
     scancode_cache: HashMap<Keys, i32>,
     last_mouse_pos: (i32, i32),
     last_mouse_scroll: f32,
@@ -139,23 +137,21 @@ impl InputManager {
     // Update event fired from the world (fired after everything happens)
     pub fn late_update(&mut self, delta_time: f32) {
         for key in self.keys.iter_mut() {
-            match key.1.status {
-                MapStatus::Released => {
+            match key.1.0 {
+                KeyStatus::Released => {
                     // Go from "Released" to "Nothing"
-                    key.1.status = MapStatus::Nothing;
+                    key.1.0 = KeyStatus::Nothing;
                 }
-                MapStatus::Held(old_time) => {
+                KeyStatus::Held(old_time) => {
                     // Add delta time to the held seconds counter
-                    key.1.status = MapStatus::Held(old_time + delta_time);
+                    key.1.0 = KeyStatus::Held(old_time + delta_time);
                 }
-                MapStatus::Pressed => {
+                KeyStatus::Pressed => {
                     // Go from "Pressed" to "Held"
-                    key.1.status = MapStatus::Held(0.0);
+                    key.1.0 = KeyStatus::Held(0.0);
                 }
-                MapStatus::ToggleOn => todo!(),
-                MapStatus::ToggleOff => todo!(),
                 _ => {}
-            }
+            }            
         }
     }
     // Get the accumulated mouse position
@@ -168,6 +164,7 @@ impl InputManager {
     }
     // Update the maps using the keys
     fn update_mappings(&mut self) {
+        /*
         // Update the mappings
         for binding in self.bindings.iter() {
             // Make sure the keys already in the dictionary
@@ -178,33 +175,25 @@ impl InputManager {
                 *self.mappings.get_mut(binding.1).unwrap() = new_mapstatus;
             }
         }
+        */
     }
     // When we receive a key event from glfw (Always at the start of the frame)
     pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
         // If this key does not exist in the dictionary yet, add it       
-        let mut map_data =  self.keys.entry(key_scancode).or_insert(MapData::default());
+        let mut key_data =  self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));
         match action_type {
             0 => {
-                // Set the map status
-                map_data.status = MapStatus::Pressed;
+                // Set the key status
+                key_data.0 = KeyStatus::Pressed;
+                // Update the toggle on key press
+                match key_data.1 {
+                    ToggleKeyStatus::ToggleOn => key_data.1 = ToggleKeyStatus::ToggleOff,
+                    ToggleKeyStatus::ToggleOff => key_data.1 = ToggleKeyStatus::ToggleOn,
+                }
             }
             1 => {
-                // If this is a button, then set the normal map status
-                match map_data.map_type {
-                    MapType::Button => {
-                        // Set the map status
-                        map_data.status = MapStatus::Released;
-                    },
-                    MapType::Toggle => {
-                        // Invert it
-                        match map_data.status {
-                            MapStatus::ToggleOn => map_data.status = MapStatus::ToggleOff,
-                            MapStatus::ToggleOff => map_data.status = MapStatus::ToggleOn,
-                            _ => {}
-                        }
-                    },
-                }
-                
+                // Set the key status
+                key_data.0 = KeyStatus::Released;                
             }
             _ => {}
         }
@@ -213,10 +202,9 @@ impl InputManager {
     pub fn bind_key(&mut self, key: Keys, map_name: &str, map_type: MapType) {
         // Check if the binding exists
         let key_scancode = Self::get_key_scancode(key).unwrap();
-        if !self.bindings.contains_key(&key_scancode) {
+        if !self.bindings.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
-            self.bindings.insert(key_scancode, map_name.to_string());
-            self.mappings.insert(map_name.to_string(), MapData::default());
+            self.bindings.insert(map_name.to_string(), key_scancode);
         }
     }    
 }
@@ -226,10 +214,15 @@ impl InputManager {
     // Returns true when the map is pressed
     pub fn map_pressed(&self, name: &str) -> bool {
         // Make sure that mapping actually exists
-        if self.mappings.contains_key(&name.to_string()) {
-            match self.mappings[&name.to_string()].status {
-                MapStatus::Pressed => true,
-                _ => false,
+        if self.bindings.contains_key(&name.to_string()) {
+            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
+            if self.keys.contains_key(key_scancode) {
+                match self.keys.get(key_scancode).unwrap().0 {
+                    KeyStatus::Pressed => true,
+                    _ => false,
+                }
+            } else {
+                false
             }
         } else {
             false
@@ -238,10 +231,15 @@ impl InputManager {
     // Returns true when the map is being held
     pub fn map_held(&self, name: &str) -> (bool, f32) {
         // Make sure that mapping actually exists
-        if self.mappings.contains_key(&name.to_string()) {
-            match self.mappings[&name.to_string()].status {
-                MapStatus::Held(held_seconds) => (true, held_seconds),
-                _ => (false, 0.0),
+        if self.bindings.contains_key(&name.to_string()) {
+            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
+            if self.keys.contains_key(key_scancode) {
+                match self.keys.get(key_scancode).unwrap().0 {
+                    KeyStatus::Held(held_seconds) => (true, held_seconds),
+                    _ => (false, 0.0),
+                }
+            } else {
+                (false, 0.0)
             }
         } else {
             (false, 0.0)
@@ -249,10 +247,15 @@ impl InputManager {
     }
     // Returns true when the map has been released
     pub fn map_released(&self, name: &str) -> bool {
-        if self.mappings.contains_key(&name.to_string()) {
-            match self.mappings[&name.to_string()].status {
-                MapStatus::Released => true,
-                _ => false,
+        if self.bindings.contains_key(&name.to_string()) {
+            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
+            if self.keys.contains_key(key_scancode) {
+                match self.keys.get(key_scancode).unwrap().0 {
+                    KeyStatus::Released => true,
+                    _ => false,
+                }
+            } else {
+                false
             }
         } else {
             false
@@ -260,22 +263,19 @@ impl InputManager {
     }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {
-        if self.mappings.contains_key(&name.to_string()) {
-            match self.mappings[&name.to_string()].status {
-                MapStatus::ToggleOn => true,
-                MapStatus::ToggleOff => false,
-                _ => false,
+        if self.bindings.contains_key(&name.to_string()) {
+            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
+            if self.keys.contains_key(key_scancode) { 
+                match self.keys.get(key_scancode).unwrap().1 {
+                    ToggleKeyStatus::ToggleOn => true,
+                    ToggleKeyStatus::ToggleOff => false,
+                    _ => false,
+                }
+            } else {
+                false
             }
         } else {
             false
-        }
-    }
-    // Gets the status of a specific map
-    pub fn get_map_data(&self, name: String) -> MapData {
-        if self.mappings.contains_key(&name) {
-            self.mappings[&name]
-        } else {
-            return MapData::default();
         }
     }
 }

@@ -89,9 +89,9 @@ impl System for CameraSystem {
         // Update the view matrix every time we make a change
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_projection_matrix(&data.custom_data.window);
-        camera_component.update_frustum_culling_matrix();
         if data.input_manager.map_toggled("update_frustum") {
             // Update the frustum culling matrix
+            camera_component.update_frustum_culling_matrix();
         }
     }
 
