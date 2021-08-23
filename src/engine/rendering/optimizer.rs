@@ -16,12 +16,13 @@ impl EntityFilter for RenderOptimizer {
         let camera = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
         let aabb = components.get_component::<components::AABB>(data.component_manager).unwrap().aabb;
 
+        // Always render the sky
+        if entity.entity_id == data.custom_data.sky_entity_id {
+            return true;
+        }
         // Don't render the entity if the camera cannot see it
         let intersection = Intersection::frustum_aabb(&camera.frustum, &aabb);
-        // Always render the sky
         render_entity = intersection;
-        render_entity |= entity.entity_id == data.custom_data.sky_entity_id;
-
         render_entity
     }
 }

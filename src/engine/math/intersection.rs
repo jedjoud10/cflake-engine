@@ -1,3 +1,5 @@
+use std::default;
+
 use glam::Vec3Swizzles;
 
 use super::{Frustum, bounds, shapes};
@@ -13,7 +15,7 @@ impl Intersection {
     }
     // Check if an AABB intersects another AABB
     pub fn aabb_aabb(aabb: &bounds::AABB, other: &bounds::AABB) -> bool {
-        false
+        return aabb.min.cmple(other.max).all() && other.min.cmple(aabb.max).all();
     }
     // Intersection code to check if a point is inside the frustum
     pub fn frustum_point(frustum: &Frustum, point: glam::Vec3) -> bool {
@@ -41,15 +43,26 @@ impl Intersection {
     // Check if an AABB intersects the camera's view frustum. Exit at the first valid intersection
     pub fn frustum_aabb(frustum: &Frustum, aabb: &bounds::AABB) -> bool {
         // Get all the corners from this AABB and transform them by the matrix, then check if they fit inside the NDC
+        let mut square_min: glam::Vec2 = glam::Vec2::ONE;
+        let mut square_max: glam::Vec2 = -glam::Vec2::ONE;
         for corner_index in 0..8 {
             let corner = aabb.get_corner(corner_index);
             // Check if one of the corners is inside the frustum, if it isn't just skip to the next one
             if Self::frustum_point(frustum, corner) {
                 return true;
-            } else {
-                continue;
             }
-        }
+            let projected_point = frustum.matrix.project_point3(corner);
+            square_min = square_min.min(projected_point.xy());
+            square_max = square_max.max(projected_point.xy());
+        } 
+        // Remap to the 0-1 range
+        let min = square_min.cmplt(glam::Vec2::ONE).all();
+        let max = square_min.cmpgt(-glam::Vec2::ONE).all();
+        let min2 = square_max.cmplt(glam::Vec2::ONE).all();
+        let max2 = square_max.cmpgt(-glam::Vec2::ONE).all();
+
+        // If there where no corners on the screen, flatten them, then create a square from that and test it
+        println!("{}", min && max && min2 && max2);
         false
     }
 }

@@ -92,7 +92,7 @@ pub fn load_entities(world: &mut World) {
     .unwrap();
     let aabb = components::AABB::from_components(&quad, &world.component_manager);
     quad.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
-    world.add_entity(quad);
+    //world.add_entity(quad);
 
     // Anime moment
     let mut cube = Entity::new("Cube");

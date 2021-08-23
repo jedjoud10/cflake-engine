@@ -3,7 +3,7 @@ use crate::engine::{core::defaults::components, rendering::model::Model};
 use super::{frustum::Frustum, shapes};
 
 // An aabb bound
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct AABB {
     pub min: glam::Vec3,
     pub max: glam::Vec3,
