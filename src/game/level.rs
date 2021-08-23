@@ -94,7 +94,6 @@ pub fn load_entities(world: &mut World) {
     quad.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
     world.add_entity(quad);
 
-    // Anime moment
     let mut cube = Entity::new("Cube");
     // Link the component
     let mut rc = Renderer::default();
@@ -105,7 +104,7 @@ pub fn load_entities(world: &mut World) {
         &mut world.texture_cacher,
         &mut world.resource_manager,
     );
-    rc.uv_scale *= 5.0;
+    rc.uv_scale *= 4.0;
     cube.link_component::<Renderer>(&mut world.component_manager, rc).unwrap();
     cube.link_component::<components::Transform>(
         &mut world.component_manager,

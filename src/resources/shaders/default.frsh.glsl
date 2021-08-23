@@ -18,5 +18,5 @@ void main() {
 	vec3 tangent_space_normals = texture(normals_tex, m_uv * uv_scale).xyz * 2.0 - 1.0;
 	frag_normal = normalize(tbn * tangent_space_normals);
 	frag_pos = m_position;
-	frag_emissive = vec3(m_uv, 0);
+	frag_emissive = vec3(0, 0, 0);
 }
