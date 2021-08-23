@@ -59,9 +59,6 @@ pub struct Cube {
     pub center: glam::Vec3,
     pub size: glam::Vec3,
 }
-impl Cube {
-    // Intersection test with a 
-}
 // A simple sphere
 #[derive(Default, Clone, Copy)]
 pub struct Sphere {

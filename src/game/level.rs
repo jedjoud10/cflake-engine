@@ -118,5 +118,5 @@ pub fn load_entities(world: &mut World) {
     .unwrap();
     let aabb = components::AABB::from_components(&cube, &world.component_manager);
     cube.link_component::<components::AABB>(&mut world.component_manager, aabb).unwrap();
-    //world.add_entity(cube);
+    world.add_entity(cube);
 }

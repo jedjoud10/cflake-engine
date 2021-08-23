@@ -4,3 +4,4 @@ mod frustum;
 pub mod shapes;
 mod intersection;
 pub use self::intersection::Intersection;
+pub mod octree;

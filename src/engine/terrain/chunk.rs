@@ -1,4 +1,5 @@
 use super::terrain::{Terrain, CHUNK_SIZE};
+use std::collections::hash_map::Entry;
 use crate::engine::{
     core::ecs::component::{Component, ComponentID, ComponentInternal},
     rendering::model::{Model, ProceduralModelGenerator},
@@ -33,17 +34,6 @@ impl Component for Chunk {}
 
 // Actual model generation
 impl Chunk {
-    // Generate the voxel data
-    pub fn generate_data(&mut self, terrain: &Terrain) {
-        // Create the data using SIMD
-        for x in 0..CHUNK_SIZE {
-            for y in 0..CHUNK_SIZE {
-                for z in 0..CHUNK_SIZE {
-                    self.data[x][y][z] = terrain.density(glam::vec3(x as f32 + self.position.x, y as f32 + self.position.y, z as f32 + self.position.z));
-                }
-            }
-        }
-    }
 }
 
 // This is a procedural model generator
@@ -108,7 +98,7 @@ impl ProceduralModelGenerator for Chunk {
                             );
 
                             // Check if this vertex was already added
-                            if let std::collections::hash_map::Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
+                            if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
                                 // Add this vertex
                                 e.insert(model.vertices.len() as u32);
                                 model.triangles.push(model.vertices.len() as u32);

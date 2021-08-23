@@ -65,4 +65,8 @@ impl AABB {
         self.min = matrix.transform_point3(self.min);
         self.max = matrix.transform_point3(self.max);
     }
+    // Get the closest point of the AABB from a specific point
+    pub fn get_nearest_point(&self, point: &glam::Vec3) -> glam::Vec3 {
+        return self.min.max(point.min(self.max));
+    }
 }
