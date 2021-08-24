@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use glfw::Context;
 
 use crate::engine::core::ecs::component::*;
@@ -84,8 +86,10 @@ impl World {
         let mut test_entity = Entity::new("Test Entity");
         test_entity.link_default_component::<components::Transform>(&mut self.component_manager).unwrap();
         let entity_id = self.add_entity(test_entity);
-        self.remove_entity(entity_id).unwrap();
+        self.entity_manager.remove_entity_s(&entity_id);
         */
+        
+        
         register_components(self);
         load_systems(self);
         // Update entity manager
@@ -257,7 +261,7 @@ impl World {
         Ok(removed_entity)
     }
     // Remove multiple entities at once
-    pub fn remove_entities(&mut self, entity_ids: Vec<u16>) -> Vec<Entity> {
+    pub fn remove_entities(&mut self, entity_ids: HashSet<u16>) -> Vec<Entity> {
         let mut result: Vec<Entity> = Vec::new();
         // Remove the specified entities  
 

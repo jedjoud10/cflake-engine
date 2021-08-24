@@ -50,25 +50,14 @@ impl EntityManager {
            return Ok(()); 
         }
         // Temporarily add it to the entities_to_remoe vector
-        self.entities_to_remove.push(entity_id.clone());
+        self.entities_to_remove.insert(entity_id.clone());
         println!("Temp remove: {:?}", entity_id);
         // Ez check first
-        if self.entities.contains_key(entity_id) {
+        if self.entities.contains_key(&entity_id) || self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
             // We do have the entity, return early
             return Ok(());
         } else {
-            // We don't have the entity in the world, check if we have it in the temp buffers            
-            let add_position = self.entities_to_add.iter().position(|x| x.entity_id == *entity_id);
-            match add_position {
-                Some(add_position) => {
-                    // Since both cancel each other out
-                    self.entities_to_add.remove(add_position-);
-                    self.entities_to_remove.remove(entity_id);
-                },
-                None => { return Err(ECSError::new_str("Could not remove the entity from the temp buffers")) },
-            };
-            println!("Le oui");
-            return Ok(());
+            return Err(ECSError::new_str("Not good"));
         }
     }
     // Get a mutable reference to a stored entity
