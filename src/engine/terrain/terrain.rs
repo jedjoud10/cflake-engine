@@ -44,14 +44,16 @@ impl System for Terrain {
         let camera_location = data.entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<components::Transform>(data.component_manager).unwrap();
+        let test_location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32, data.time_manager.seconds_since_game_start.cos() as f32, data.time_manager.seconds_since_game_start.cos() as f32) * 8.0;
         // Generate the octree each frame and generate / delete the chunks
         self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
-            center: camera_location.position,
-            radius: 5.0,
+            center: test_location,
+            radius: 1.0,
         }});
-        for (_, octree_node) in &self.octree.nodes {
+        for (octree_node) in &self.octree.removed_nodes {
             data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
         }
+        data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(test_location, glam::Vec3::ONE));
     }
 
     // Called for each entity in the system
