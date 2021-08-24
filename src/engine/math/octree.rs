@@ -27,6 +27,7 @@ impl Octree {
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         let mut removed_nodes: Vec<OctreeNode> = Vec::new();
         let mut added_nodes: Vec<OctreeNode> = Vec::new();
+        let mut local_nodes: HashMap<glam::IVec3, OctreeNode> = HashMap::new();
         pending_nodes.push(OctreeNode { 
             position: root_position,
             extent: (root_size / 2) as u16,
@@ -97,12 +98,15 @@ impl Octree {
                     }
                 }            
             }
-
             // Add it to the nodes and remove it from pending nodes
-            self.nodes.insert(center, octree_node);
+            local_nodes.insert(center, octree_node);
             pending_nodes.remove(0);
         }
-
+        if added_nodes.len() > 0 {
+            println!("{:?}", added_nodes);
+        }
+        self.nodes.clear();
+        self.nodes.extend(local_nodes);
     }
 }
 
