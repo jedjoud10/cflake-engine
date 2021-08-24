@@ -49,7 +49,7 @@ impl System for Terrain {
             center: camera_location.position,
             radius: 5.0,
         }});
-        for octree_node in &self.octree.nodes {
+        for (_, octree_node) in &self.octree.nodes {
             data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
         }
     }
