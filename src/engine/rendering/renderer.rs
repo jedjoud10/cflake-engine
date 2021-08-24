@@ -105,9 +105,9 @@ impl Renderer {
         return self.load_default_textures(texture_cacher);
     }
     // Load textures from their texture struct
-    pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &mut CacheManager<Texture>) -> Self {
+    pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture>) -> Self {
         // Set the textures as the renderer's textures
-        for (_i, &texture_id) in texture_ids.iter().enumerate() {
+        for (&texture_id) in texture_ids.iter() {
             // Since these are loadable textures, we already know they got cached beforehand
             self.texture_cache_ids.push(texture_id);
         }
@@ -115,7 +115,7 @@ impl Renderer {
         return self.load_default_textures(texture_cacher);
     }
     // Load the default textures
-    pub fn load_default_textures(mut self, texture_cacher: &mut CacheManager<Texture>) -> Self {
+    pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture>) -> Self {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
         for _i in (self.texture_cache_ids.len())..5 {

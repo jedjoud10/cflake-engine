@@ -42,7 +42,7 @@ impl Chunk {
                     // Get the point in world coordinates
                     let point: glam::Vec3 = glam::vec3(x as f32, y as f32, z as f32) + self.position.as_f32();
                     // Set the voxel data
-                    self.data[x][y][z] = voxel_generator.get_voxel(point);
+                    self.data[x][y][z] = voxel_generator.get_voxel(glam::vec3(x as f32, y as f32, z as f32));
                 }
             }
         }

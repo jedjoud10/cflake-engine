@@ -1,4 +1,4 @@
-use crate::engine::{core::{defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
+use crate::engine::{core::{cacher::CacheManager, defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader, texture::Texture}, terrain::chunk::Chunk};
 
 use super::voxel::VoxelGenerator;
 
@@ -12,11 +12,13 @@ pub struct Terrain {
     pub isoline: f32,
     pub octree: math::octree::Octree,
     pub voxel_generator: VoxelGenerator,
+    pub shader_name: String,
+    pub texture_ids: Vec<u16>,
 }
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Entity {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Entity {
         // Create the entity
         let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
 
@@ -31,10 +33,12 @@ impl Terrain {
         chunk.link_component::<Chunk>(component_manager, chunk_cmp).unwrap();
         chunk.link_component::<components::Transform>(component_manager, components::Transform {
             position: position.as_f32(),
-            scale: glam::vec3(size as f32, size as f32, size as f32),
             ..components::Transform::default()
         }).unwrap();
-        chunk.link_component::<Renderer>(component_manager, Renderer::new().set_model(model)).unwrap();
+        chunk.link_component::<Renderer>(component_manager, Renderer::new()
+            .load_textures(self.texture_ids.clone(), texture_cacher)
+            .set_model(model)
+            .set_shader(self.shader_name.as_str())).unwrap();
         chunk.link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager)).unwrap();
         return chunk;
     }
@@ -58,12 +62,28 @@ impl System for Terrain {
         self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
         self.system_data.link_component::<components::AABB>(data.component_manager).unwrap();
 
+        // Load the shader name
+        self.shader_name = Shader::new(vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"], data.resource_manager, data.shader_cacher).1;
+
+        // Load the texture ids
+        self.texture_ids = vec![
+            Texture::new().enable_mipmaps().load_texture("textures\\rock\\Rock033_1K_Color.png", data.resource_manager, data.texture_cacher).unwrap().1,
+            Texture::new().enable_mipmaps().load_texture("textures\\rock\\Rock033_1K_Normal.png", data.resource_manager, data.texture_cacher).unwrap().1,
+        ];
         self.octree.size = 32;   
         self.octree.depth = 4;
         self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
             center: glam::Vec3::ONE,
             radius: 1.0,
         }});
+        /*
+        for octree_node in &self.octree.added_nodes {
+            let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.extent);
+            data.entity_manager.add_entity_s(chunk_entity);
+        }
+        */
+        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, glam::IVec3::ZERO, 32);
+        data.entity_manager.add_entity_s(chunk_entity);
     }
 
     // Update the camera position inside the terrain generator
@@ -79,15 +99,11 @@ impl System for Terrain {
         //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
 
         // Add all the new nodes as new chunks
-        for octree_node in &self.octree.added_nodes {
-            let chunk_entity = self.add_chunk_entity(data.component_manager, octree_node.position, octree_node.extent);
-            data.entity_manager.add_entity_s(chunk_entity);
-        }
+        
     }
 
     // Called for each entity in the system
     fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {
-        
     }
 
     // When a chunk gets added to the world

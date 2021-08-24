@@ -111,7 +111,7 @@ pub struct FilteredLinkedComponents {
 impl FilteredLinkedComponents {
     // Get the matching filtered components from a specific entity
     pub fn get_filtered_linked_components(entity: &Entity, system_c_bitfield: u16) -> Self {
-        let mut filted_linked_components: Self = Self::default();
+        let mut filtered_linked_components: Self = Self::default();
         let global_ids: HashMap<u16, u16> = entity
             .linked_components
             .iter()
@@ -122,8 +122,9 @@ impl FilteredLinkedComponents {
             })
             .map(|(&x, &x1)| (x, x1))
             .collect();
-        filted_linked_components.components = global_ids;
-        filted_linked_components
+        filtered_linked_components.components = global_ids;
+        filtered_linked_components.entity_id = entity.entity_id;
+        filtered_linked_components
     }
     // Get a reference to a component using the component manager
     pub fn get_component<'a, T: Component + ComponentID + Sync + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
