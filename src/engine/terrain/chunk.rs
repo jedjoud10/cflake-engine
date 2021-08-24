@@ -56,7 +56,6 @@ impl Chunk {
     // Generate the voxel data needed for mesh construction
     pub fn generate_data(&mut self, voxel_generator: &VoxelGenerator) {
         let mut i = 0;
-        println!("{}", self.position.as_f32());
         for y in 0..CHUNK_SIZE {
             for z in 0..CHUNK_SIZE {
                 for x in 0..CHUNK_SIZE {

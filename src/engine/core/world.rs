@@ -226,10 +226,10 @@ impl World {
     pub fn update_entity_manager(&mut self) {
 
         // Only update if it we need to
-        if self.entity_manager.entitites_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {            
+        if self.entity_manager.entities_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {            
             // Add the entities that need to be added
-            self.add_entities(self.entity_manager.entitites_to_add.clone());
-            self.entity_manager.entitites_to_add.clear();
+            self.add_entities(self.entity_manager.entities_to_add.clone());
+            self.entity_manager.entities_to_add.clear();
             
             // Remove the entities that need to be removed
             self.remove_entities(self.entity_manager.entities_to_remove.clone());

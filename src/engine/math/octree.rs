@@ -4,7 +4,7 @@ use super::Intersection;
 
 // The octree input data
 pub struct OctreeInput {
-    pub camera: shapes::Sphere,
+    pub target: glam::Vec3,
 }
 
 // The whole octree
@@ -12,6 +12,7 @@ pub struct Octree {
     pub nodes: HashMap<glam::IVec3, OctreeNode>,
     pub added_nodes: Vec<OctreeNode>,
     pub removed_nodes: Vec<OctreeNode>,
+    pub threshold: f32,
     pub size: u8,
     pub depth: u8,
 }
@@ -24,6 +25,7 @@ impl Default for Octree {
             removed_nodes: Vec::new(),
             size: 1,
             depth: 1,
+            threshold: 1.0,
         }
     }
 }
@@ -50,7 +52,7 @@ impl Octree {
             let extent_i32 = octree_node.half_extent as i32;
             // If the node contains the position, subdivide it
             let aabb = octree_node.get_aabb();            
-            if Intersection::point_aabb(&input.camera.center, &aabb) && octree_node.depth < (self.depth - 1) {
+            if input.target.distance(octree_node.get_center().as_f32()) / (octree_node.half_extent as f32 * 2.0) < self.threshold && octree_node.depth < (self.depth - 1) {
                 // If it intersects the sphere, subdivide this octree node into multiple smaller ones
                 let mut i: u16 = 0;
                 for y in 0..2 {
@@ -154,4 +156,5 @@ impl OctreeNode {
     pub fn get_center(&self) -> glam::IVec3 {
         return self.position + self.half_extent as i32;
     }
+    // Check if we can subdivide this node
 }

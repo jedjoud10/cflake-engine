@@ -4,6 +4,8 @@ use super::voxel::VoxelGenerator;
 
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 18;
+// An LOD bias used to change how how high detail chunks spawn
+pub const LOD_THRESHOLD: f32 = 1.2;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -81,7 +83,8 @@ impl System for Terrain {
 
         // Setup the octree
         self.octree.size = CHUNK_SIZE as u8 - 2;   
-        self.octree.depth = 4;   
+        self.octree.depth = 8;   
+        self.octree.threshold = LOD_THRESHOLD;
         
         // Debug controls
         data.input_manager.bind_key(input::Keys::Y, "update_terrain", input::MapType::Toggle);
@@ -104,10 +107,7 @@ impl System for Terrain {
         
         if data.input_manager.map_toggled("update_terrain") {   
             // Update the terrain
-            self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
-                center: camera_location,
-                radius: 1.0,
-            }});
+            self.octree.generate_octree(OctreeInput { target: camera_location });
             // Only do one thing, either add the nodes, or remove them
             if self.octree.added_nodes.len() > 0 {
                 // Turn all the newly added nodes into chunks and instantiate them into the world
@@ -132,8 +132,6 @@ impl System for Terrain {
                 self.octree.removed_nodes.clear();
             }            
         }
-
-        println!("{}", self.octree.nodes.len());
     }
 
     // Called for each entity in the system

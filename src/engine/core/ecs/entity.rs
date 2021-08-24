@@ -1,13 +1,13 @@
 use super::component::{Component, ComponentID, ComponentManager};
 use super::error::ECSError;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 // An entity manager that handles entities
 #[derive(Default)]
 pub struct EntityManager {
     pub entities: HashMap<u16, Entity>,
-    pub entitites_to_add: Vec<Entity>,
-    pub entities_to_remove: Vec<u16>,
+    pub entities_to_add: Vec<Entity>,
+    pub entities_to_remove: HashSet<u16>,
     pub last_entity_id: u16,
 }
 
@@ -17,7 +17,6 @@ impl EntityManager {
         entity.entity_id = self.last_entity_id;
         // Add the entity to the world
         let id = entity.entity_id;
-        //println!("Add: {:?}", entity);
         self.last_entity_id += 1;
         self.entities.insert(entity.entity_id, entity);
         id
@@ -26,7 +25,6 @@ impl EntityManager {
     pub fn internal_remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
         if self.entities.contains_key(entity_id) {
             let removed_entity = self.entities.remove(entity_id).unwrap();
-            //println!("Remove: {:?}", removed_entity);
             Ok(removed_entity)
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
@@ -37,19 +35,41 @@ impl EntityManager {
         // Temporarily add it to the entities_to_add vector
 
         // Get the id of the entity inside the temp vector (Local ID)
-        let mut id = self.entitites_to_add.len() as u16;
+        let mut id = self.entities_to_add.len() as u16;
         // Add that id to the id of the entity id (Global ID)
         id += self.last_entity_id as u16;
         entity.entity_id = id;
-        self.entitites_to_add.push(entity);
+        println!("Temp add: {:?}", entity);
+        self.entities_to_add.push(entity);
         id
     }
     // Remove an entity from the entity manager temporarily, then call the actual removal function in the world to actually remove it
     pub fn remove_entity_s(&mut self, entity_id: &u16) -> Result<(), ECSError> {
+        // If we wish to remove an entity that was already queued for removal, don't do anything
+        if self.entities_to_remove.contains(entity_id) {
+           return Ok(()); 
+        }
         // Temporarily add it to the entities_to_remoe vector
         self.entities_to_remove.push(entity_id.clone());
-        let entity = self.get_entity(entity_id)?;
-        return Ok(());
+        println!("Temp remove: {:?}", entity_id);
+        // Ez check first
+        if self.entities.contains_key(entity_id) {
+            // We do have the entity, return early
+            return Ok(());
+        } else {
+            // We don't have the entity in the world, check if we have it in the temp buffers            
+            let add_position = self.entities_to_add.iter().position(|x| x.entity_id == *entity_id);
+            match add_position {
+                Some(add_position) => {
+                    // Since both cancel each other out
+                    self.entities_to_add.remove(add_position-);
+                    self.entities_to_remove.remove(entity_id);
+                },
+                None => { return Err(ECSError::new_str("Could not remove the entity from the temp buffers")) },
+            };
+            println!("Le oui");
+            return Ok(());
+        }
     }
     // Get a mutable reference to a stored entity
     pub fn get_entity_mut(&mut self, entity_id: &u16) -> Result<&mut Entity, ECSError> {
