@@ -3,7 +3,7 @@ use crate::engine::{core::{cacher::CacheManager, defaults::components, ecs::{com
 use super::voxel::VoxelGenerator;
 
 // How many voxels in one axis in each chunk?
-pub const CHUNK_SIZE: usize = 33;
+pub const CHUNK_SIZE: usize = 32;
 
 // Hehe terrain generator moment
 #[derive(Default)]

@@ -247,12 +247,14 @@ impl System for RenderingSystem {
             wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
             wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);
             unsafe {
-                gl::PolygonMode(gl::FRONT, gl::LINE);
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                gl::Disable(gl::CULL_FACE);
                 gl::BindVertexArray(rc.gpu_data.vertex_array_object);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
                 gl::DrawElements(gl::TRIANGLES, rc.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
                 gl::BindTexture(gl::TEXTURE_2D, 0);
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+                gl::Enable(gl::CULL_FACE);
             }
         }
     }

@@ -271,14 +271,14 @@ pub const EDGE_TABLE: [usize; 24] = [
 // Data offset table
 pub const DATA_OFFSET_TABLE: [usize; 8] = [
     /* None */ 0,
-    /* Z */ CHUNK_SIZE * CHUNK_SIZE,
-    /* X+Z */ CHUNK_SIZE * CHUNK_SIZE + 1,
+    /* Z */ CHUNK_SIZE,
+    /* X+Z */ CHUNK_SIZE + 1,
     /* X */ 1,
 
-    /* Y */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE,
-    /* Y+Z */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE * CHUNK_SIZE,
-    /* X+Y+Z */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE * CHUNK_SIZE + 1,
-    /* Y+X */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE + 1,
+    /* Y */ CHUNK_SIZE * CHUNK_SIZE,
+    /* Y+Z */ CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE,
+    /* X+Y+Z */ CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE + 1,
+    /* Y+X */ CHUNK_SIZE * CHUNK_SIZE + 1,
 ];
 
 // Vertex table

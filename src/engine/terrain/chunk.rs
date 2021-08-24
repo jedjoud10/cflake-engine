@@ -51,16 +51,21 @@ impl Chunk {
     }
     // Get the index from a position
     fn flatten(position: (usize, usize, usize)) -> usize {
-        return position.0 * CHUNK_SIZE * CHUNK_SIZE + (position.1 * CHUNK_SIZE) + position.2;
+        return position.0 + (position.1 * CHUNK_SIZE * CHUNK_SIZE) + (position.2 * CHUNK_SIZE);
     }
     // Generate the voxel data needed for mesh construction
     pub fn generate_data(&mut self, voxel_generator: &VoxelGenerator) {
-        for i in 0..(CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) {
-            let local_point = Self::unflatten(i);
-            // Get the point in world coordinates
-            let point: glam::Vec3 = glam::vec3(local_point.0 as f32, local_point.1 as f32, local_point.2 as f32) + self.position.as_f32();
-            // Set the voxel data
-            self.data[0]= voxel_generator.get_voxel(glam::vec3(local_point.0 as f32, local_point.1 as f32, local_point.2 as f32));                
+        let mut i = 0;
+        for y in 0..CHUNK_SIZE {
+            for z in 0..CHUNK_SIZE {
+                for x in 0..CHUNK_SIZE {
+                    // Get the point in world coordinates
+                    let point: glam::Vec3 = glam::vec3(x as f32, y as f32, y as f32) + self.position.as_f32();
+                    // Set the voxel data
+                    self.data[i]= voxel_generator.get_voxel(glam::vec3(x as f32, y as f32, z as f32));    
+                    i += 1;
+                }
+            }
         }
     }
 }
@@ -73,9 +78,9 @@ impl ProceduralModelGenerator for Chunk {
         let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
         let mut i: usize = 0;
         // Loop over every voxel
-        for y in 0..CHUNK_SIZE - 2 {
-            for z in 0..CHUNK_SIZE - 2 {
-                for x in 0..CHUNK_SIZE - 2 {
+        for x in 0..CHUNK_SIZE - 2 {
+            for y in 0..CHUNK_SIZE - 2 {
+                for z in 0..CHUNK_SIZE - 2 {
                     // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                     let mut case_index = 0u8;
                     case_index += ((self.data[i + DATA_OFFSET_TABLE[0]].density > self.isoline) as u8) * 1;
