@@ -7,8 +7,7 @@ use std::collections::HashMap;
 pub struct Chunk {
     pub position: glam::IVec3,
     pub size: u16,
-    pub data: Box<[Voxel; (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) as usize]>,
-    pub isoline: f32,
+    pub data: Box<[Voxel; (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) as usize]>
 }
 
 impl Default for Chunk {
@@ -16,8 +15,7 @@ impl Default for Chunk {
         Self {
             position: glam::IVec3::ZERO,
             size: 0,
-            data: Box::new([Voxel::default(); (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) as usize]),
-            isoline: 0.0,
+            data: Box::new([Voxel::default(); (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) as usize])
         }
     }
 }
@@ -54,8 +52,10 @@ impl Chunk {
         return position.0 + (position.1 * CHUNK_SIZE * CHUNK_SIZE) + (position.2 * CHUNK_SIZE);
     }
     // Generate the voxel data needed for mesh construction
-    pub fn generate_data(&mut self, voxel_generator: &VoxelGenerator) {
+    pub fn generate_data(&mut self, voxel_generator: &VoxelGenerator) -> (f32, f32) {
         let mut i = 0;
+        let mut min: f32 = f32::MAX;
+        let mut max: f32 = f32::MIN;
         for y in 0..CHUNK_SIZE {
             for z in 0..CHUNK_SIZE {
                 for x in 0..CHUNK_SIZE {
@@ -63,11 +63,15 @@ impl Chunk {
                     let size = self.size as f32 / (CHUNK_SIZE as f32 - 2.0);
                     let point: glam::Vec3 = glam::vec3(x as f32, y as f32, z as f32) * size + self.position.as_f32();
                     // Set the voxel data
-                    self.data[i]= voxel_generator.get_voxel(point);    
+                    self.data[i] = voxel_generator.get_voxel(point);    
+                    // Keep track of the min max values
+                    min = min.min(self.data[i].density);
+                    max = max.max(self.data[i].density);
                     i += 1;
                 }
             }
         }
+        return (min, max)
     }
 }
 
@@ -84,14 +88,14 @@ impl ProceduralModelGenerator for Chunk {
                     let i = Self::flatten((x, y, z));
                     // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                     let mut case_index = 0u8;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[0]].density > self.isoline) as u8) * 1;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[1]].density > self.isoline) as u8) * 2;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[2]].density > self.isoline) as u8) * 4;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[3]].density > self.isoline) as u8) * 8;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[4]].density > self.isoline) as u8) * 16;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[5]].density > self.isoline) as u8) * 32;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[6]].density > self.isoline) as u8) * 64;
-                    case_index += ((self.data[i + DATA_OFFSET_TABLE[7]].density > self.isoline) as u8) * 128;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[2]].density > 0.0) as u8) * 4;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[3]].density > 0.0) as u8) * 8;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[4]].density > 0.0) as u8) * 16;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[5]].density > 0.0) as u8) * 32;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[6]].density > 0.0) as u8) * 64;
+                    case_index += ((self.data[i + DATA_OFFSET_TABLE[7]].density > 0.0) as u8) * 128;
                     // Get triangles
                     let edges: [i8; 16] = TRI_TABLE[case_index as usize];
                     for edge in edges {
@@ -109,7 +113,7 @@ impl ProceduralModelGenerator for Chunk {
                             let density1 = self.data[index1].density;
                             let density2 = self.data[index2].density;
                             // Do inverse linear interpolation to find the factor value
-                            let value: f32 = inverse_lerp(density1, density2, self.isoline);
+                            let value: f32 = inverse_lerp(density1, density2, 0.0);
 
                             // Create the vertex
                             let mut vertex = glam::Vec3::lerp(vert1, vert2, value);

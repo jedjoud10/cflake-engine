@@ -8,16 +8,17 @@ pub struct EntityManager {
     pub entities: HashMap<u16, Entity>,
     pub entities_to_add: Vec<Entity>,
     pub entities_to_remove: HashSet<u16>,
-    pub last_entity_id: u16,
+    pub last_internal_entity_id: u16
 }
 
 impl EntityManager {
     // Add an entity to the entity manager
     pub fn internal_add_entity(&mut self, mut entity: Entity) -> u16 {
-        entity.entity_id = self.last_entity_id;
+        entity.entity_id = self.last_internal_entity_id;
         // Add the entity to the world
+        self.last_internal_entity_id = entity.entity_id + 1;
+        println!("Add internal: {:?}", entity);
         let id = entity.entity_id;
-        self.last_entity_id += 1;
         self.entities.insert(entity.entity_id, entity);
         id
     }
@@ -37,9 +38,9 @@ impl EntityManager {
         // Get the id of the entity inside the temp vector (Local ID)
         let mut id = self.entities_to_add.len() as u16;
         // Add that id to the id of the entity id (Global ID)
-        id += self.last_entity_id as u16;
+        id += self.last_internal_entity_id;
         entity.entity_id = id;
-        println!("Temp add: {:?}", entity);
+        println!("Add s: {:?}", entity);
         self.entities_to_add.push(entity);
         id
     }
@@ -51,7 +52,8 @@ impl EntityManager {
         }
         // Temporarily add it to the entities_to_remoe vector
         self.entities_to_remove.insert(entity_id.clone());
-        println!("Temp remove: {:?}", entity_id);
+        // Only update the last_entity_id if this was the last entity in the hashmap
+
         // Ez check first
         if self.entities.contains_key(&entity_id) || self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
             // We do have the entity, return early

@@ -12,7 +12,6 @@ pub const LOD_THRESHOLD: f32 = 1.2;
 pub struct Terrain {
     pub system_data: SystemData,
     // Terrain generation
-    pub isoline: f32,
     pub voxel_generator: VoxelGenerator,
     
     // Chunk managing
@@ -26,7 +25,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Entity {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Option<Entity> {
         // Create the entity
         let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
 
@@ -34,7 +33,12 @@ impl Terrain {
         let mut chunk_cmp = Chunk::default();
         chunk_cmp.position = position;
         chunk_cmp.size = size;
-        chunk_cmp.generate_data(&self.voxel_generator);
+        let min_max = chunk_cmp.generate_data(&self.voxel_generator);
+        // Check if we should even generate the model
+        if min_max.0.signum() == min_max.1.signum() {
+            // No intersection
+            return None;
+        }
         let model = chunk_cmp.generate_model();
 
         // Link the components
@@ -50,7 +54,7 @@ impl Terrain {
             .set_shader(self.shader_name.as_str())).unwrap();
         chunk.link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager)).unwrap();
         
-        return chunk;
+        return Some(chunk);
     }
 }
 
@@ -115,8 +119,10 @@ impl System for Terrain {
                     // Only add the octree nodes that have no children
                     if !octree_node.children {
                         let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
-                        let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                        self.chunks.insert(octree_node.get_center(), entity_id);
+                        if let Option::Some(chunk_entity) = chunk_entity {
+                            let entity_id = data.entity_manager.add_entity_s(chunk_entity);
+                            self.chunks.insert(octree_node.get_center(), entity_id);
+                        }                        
                     }
                 }
                 self.octree.added_nodes.clear();

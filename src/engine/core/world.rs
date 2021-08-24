@@ -228,7 +228,6 @@ impl World {
     }
     // Update the entity manager with the temporary data it had saved
     pub fn update_entity_manager(&mut self) {
-
         // Only update if it we need to
         if self.entity_manager.entities_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {            
             // Add the entities that need to be added
@@ -239,6 +238,7 @@ impl World {
             self.remove_entities(self.entity_manager.entities_to_remove.clone());
             self.entity_manager.entities_to_remove.clear();
             
+            // Count the max global ID for the entity manager and component manager
             //println!("Entities count: '{}'", self.entity_manager.entities.len());
         }
     }

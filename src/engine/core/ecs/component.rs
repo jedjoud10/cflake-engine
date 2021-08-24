@@ -52,13 +52,11 @@ impl ComponentManager {
     }
     // Add a specific linked componment to the component manager, returns the global IDs of the components
     pub fn add_linked_component<T: Component + ComponentID + Send + Sync + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
-        let global_id = self.last_global_component_id + 1;
-        let boxed_component = Box::new(component);
-        if self.linked_component.contains_key(&global_id) {
-            return Err(ECSError::new_str("Tried to add a linked component to the component manager, but it already exists!"));
-        }
-        self.linked_component.insert(global_id, boxed_component);
+        let global_id = self.last_global_component_id;
         self.last_global_component_id += 1;
+        let boxed_component = Box::new(component);
+        // Remember: This also update the component if it already exists
+        self.linked_component.insert(global_id, boxed_component);
         // Give back the global ID of the component
         Ok(global_id)
     }
@@ -78,7 +76,7 @@ impl ComponentManager {
     pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
-        let linked_component = self.linked_component.get(global_id).unwrap();
+        let linked_component = self.linked_component.get(global_id).ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
         let component = Self::cast_component(linked_component)?;
         Ok(component)
     }
