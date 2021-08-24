@@ -14,11 +14,8 @@ impl Intersection {
         return aabb.min.cmple(other.max).all() && other.min.cmple(aabb.max).all();
     }
     // Check if a point is inside a sphere
-    // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
     pub fn point_sphere(point: &glam::Vec3, sphere: &shapes::Sphere) -> bool {
-        // this is the same as isPointInsideSphere
-        let distance = ((point.x - sphere.center.x).powi(2) + (point.y - sphere.center.y).powi(2) + (point.z - sphere.center.z).powi(2)).sqrt();
-        return distance < sphere.radius;
+        return point.distance(sphere.center) < sphere.radius;
     }
     // Check if an AABB is intersecting a sphere
     pub fn aabb_sphere(aabb: &bounds::AABB, sphere: &shapes::Sphere) -> bool {

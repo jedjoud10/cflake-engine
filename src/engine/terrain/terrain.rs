@@ -6,7 +6,7 @@ use crate::engine::{core::{
             system::System,
             system_data::{SystemData, SystemEventData, SystemEventDataLite},
         },
-    }, math, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
+    }, debug, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
 
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 32;
@@ -31,15 +31,33 @@ impl System for Terrain {
 
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
-        self.octree.generate_octree(math::octree::OctreeInput { camera: math::shapes::Sphere { center: glam::Vec3::ZERO, radius: 5.0 } });
+        // Link the components
+        self.system_data.link_component::<Chunk>(data.component_manager).unwrap();
+        self.system_data.link_component::<components::Transform>(data.component_manager).unwrap();
+        self.system_data.link_component::<components::AABB>(data.component_manager).unwrap();
+        self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
     }
 
     // Update the camera position inside the terrain generator
     fn pre_fire(&mut self, data: &mut SystemEventData) {
+        // Get the camera location
+        let camera_location = data.entity_manager
+            .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
+            .get_component::<components::Transform>(data.component_manager).unwrap();
+        // Generate the octree each frame and generate / delete the chunks
+        self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
+            center: camera_location.position,
+            radius: 5.0,
+        }});
+        for octree_node in &self.octree.nodes {
+            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
+        }
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {}
+    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {
+        
+    }
 
     // When a chunk gets added to the world
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {

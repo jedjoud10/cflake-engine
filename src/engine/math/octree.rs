@@ -1,3 +1,5 @@
+use crate::engine::debug::DebugRendererable;
+
 use super::shapes;
 use super::Intersection;
 
@@ -20,24 +22,29 @@ impl Octree {
         self.depth = 8;
         let root_size = 2_u16.pow(self.depth as u32) as i32;
         let root_position = glam::ivec3(-(root_size / 2), -(root_size / 2), -(root_size / 2));
-        self.nodes.push(OctreeNode { position: root_position, extent: (root_size / 2) as u16, depth: 0 });
+        let mut pending_nodes: Vec<OctreeNode> = Vec::new();
+        pending_nodes.push(OctreeNode { position: root_position, extent: (root_size / 2) as u16, depth: 0 });
         
         // Add all the other octree nodes
-        for octree_node_index in 0..self.nodes.len() {
-            let octree_node = self.nodes.get(octree_node_index).unwrap();
+        while pending_nodes.len() > 0 {
+            let octree_node = &pending_nodes[0];
             // If the node contains the position, subdivide it
             let aabb = octree_node.get_aabb();
-            if Intersection::aabb_sphere(&aabb, &input.camera) {
+            if Intersection::aabb_sphere(&aabb, &input.camera) && octree_node.depth < self.depth {
                 // If it intersects the sphere, subdivide this octree node into multiple smaller ones
                 let mut children_nodes = octree_node.subdivide();
-                self.nodes.append(&mut children_nodes);
+                pending_nodes.append(&mut children_nodes);
+            } else if octree_node.depth < self.depth {
+                // Add the node if it has no children
+                self.nodes.push(octree_node.clone());
             }
+            pending_nodes.remove(0);
         }
     }
 }
 
 // Simple node in the octree
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct OctreeNode {
     pub position: glam::IVec3,
     pub extent: u16,
@@ -49,9 +56,9 @@ impl OctreeNode {
     pub fn subdivide(&self) -> Vec<OctreeNode> {
         let mut children: Vec<OctreeNode> = Vec::new();        
         // Subdivide
-        for y in 0..1 {
-            for z in 0..1 {
-                for x in 0..1 {
+        for y in 0..2 {
+            for z in 0..2 {
+                for x in 0..2 {
                     // The position offset for the new octree node
                     let offset: glam::IVec3 = glam::ivec3(x * self.extent as i32, y * self.extent as i32, z * self.extent as i32);
                     let temp_octree_node = OctreeNode {
@@ -69,7 +76,7 @@ impl OctreeNode {
     pub fn get_aabb(&self) -> super::bounds::AABB {
         super::bounds::AABB {
             min: self.position.as_f32(),
-            max: self.position.as_f32() + glam::vec3(self.extent as f32, self.extent as f32, self.extent as f32),
+            max: self.position.as_f32() + glam::vec3(self.extent as f32, self.extent as f32, self.extent as f32) * 2.0,
         }
     }
 }
