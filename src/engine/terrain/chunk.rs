@@ -10,7 +10,8 @@ use std::collections::HashMap;
 // A component that will be added to well... chunks
 #[derive(Default)]
 pub struct Chunk {
-    pub position: glam::Vec3,
+    pub position: glam::IVec3,
+    pub size: u16,
     pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
     pub isoline: f32,
 }

@@ -42,7 +42,7 @@ impl Octree {
             let extent_i32 = octree_node.extent as i32;
             // If the node contains the position, subdivide it
             let aabb = octree_node.get_aabb();            
-            if Intersection::point_aabb(&input.camera.center, &aabb) && octree_node.depth < (self.depth - 1) {
+            if Intersection::aabb_sphere(&aabb, &input.camera) && octree_node.depth < (self.depth - 1) {
                 // If it intersects the sphere, subdivide this octree node into multiple smaller ones
                 let mut i: u16 = 0;
                 for y in 0..2 {
@@ -77,7 +77,6 @@ impl Octree {
                 // If we currently don't have children and we had them in the last run, that means that we've removed them
                 let last = self.nodes.get(&center).unwrap();
                 if !octree_node.children && last.children {
-                    println!("{:?}", octree_node);
                     // Recursively get the children and put them in the removed list
                     let mut pending_children: Vec<OctreeNode> = Vec::new();
                     for default_sub_child_center in last.children_centers {

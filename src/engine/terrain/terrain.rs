@@ -1,12 +1,4 @@
-use crate::engine::{core::{
-        defaults::components,
-        ecs::{
-            component::FilteredLinkedComponents,
-            entity::Entity,
-            system::System,
-            system_data::{SystemData, SystemEventData, SystemEventDataLite},
-        },
-    }, debug, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
+use crate::engine::{core::{defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
 
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 32;
@@ -17,6 +9,31 @@ pub struct Terrain {
     pub system_data: SystemData,
     pub isoline: f32,
     pub octree: math::octree::Octree
+}
+
+impl Terrain {
+    // Create a chunk entity
+    pub fn add_chunk_entity(&mut self, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Entity {
+        // Create the entity
+        let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
+
+        // Create the chunk component
+        let mut chunk_cmp = Chunk::default();
+        chunk_cmp.position = position;
+        chunk_cmp.size = size;
+        let model = chunk_cmp.generate_model();
+
+        // Link the components
+        chunk.link_component::<Chunk>(component_manager, chunk_cmp).unwrap();
+        chunk.link_component::<components::Transform>(component_manager, components::Transform {
+            position: position.as_f32(),
+            scale: glam::vec3(size as f32, size as f32, size as f32),
+            ..components::Transform::default()
+        }).unwrap();
+        chunk.link_component::<Renderer>(component_manager, Renderer::new().set_model(model)).unwrap();
+        chunk.link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager)).unwrap();
+        return chunk;
+    }
 }
 
 impl System for Terrain {
@@ -34,8 +51,8 @@ impl System for Terrain {
         // Link the components
         self.system_data.link_component::<Chunk>(data.component_manager).unwrap();
         self.system_data.link_component::<components::Transform>(data.component_manager).unwrap();
-        self.system_data.link_component::<components::AABB>(data.component_manager).unwrap();
         self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
+        self.system_data.link_component::<components::AABB>(data.component_manager).unwrap();
     }
 
     // Update the camera position inside the terrain generator

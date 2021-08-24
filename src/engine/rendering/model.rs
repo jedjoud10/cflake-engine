@@ -1,4 +1,4 @@
-use crate::engine::resources::Resource;
+use crate::engine::resources::{Resource, ResourceManager};
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug)]
@@ -27,6 +27,11 @@ impl Model {
             }
             _ => None,
         }
+    }
+    // Loads a model directly from a path 
+    pub fn load_model(path: &str, resource_manager: &mut ResourceManager) -> Option<Self> {
+        let resource = resource_manager.load_packed_resource(path)?;
+        return Self::from_resource(resource);
     }
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
