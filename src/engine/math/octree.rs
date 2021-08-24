@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 
 use crate::engine::debug::DebugRendererable;
 
@@ -16,6 +17,7 @@ pub struct Octree {
     pub nodes: HashMap<glam::IVec3, OctreeNode>,
     pub added_nodes: Vec<OctreeNode>,
     pub removed_nodes: Vec<OctreeNode>,
+    pub size: u8,
     pub depth: u8,
 }
 
@@ -23,8 +25,8 @@ impl Octree {
     // Generate the octree at a specific position with a specific depth
     pub fn generate_octree(&mut self, input: OctreeInput) {
         // Create the root node
-        self.depth = 4;
-        let root_size = 2_u16.pow(self.depth as u32) as i32;
+        self.depth = 8;
+        let root_size = (2_u32.pow(self.depth as u32) * self.size as u32) as i32;
         let root_position = glam::ivec3(-(root_size / 2), -(root_size / 2), -(root_size / 2));
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         let mut removed_nodes: Vec<OctreeNode> = Vec::new();
@@ -42,14 +44,14 @@ impl Octree {
             let extent_i32 = octree_node.extent as i32;
             // If the node contains the position, subdivide it
             let aabb = octree_node.get_aabb();            
-            if Intersection::aabb_sphere(&aabb, &input.camera) && octree_node.depth < (self.depth - 1) {
+            if Intersection::point_aabb(&input.camera.center, &aabb) && octree_node.depth < (self.depth - 1) {
                 // If it intersects the sphere, subdivide this octree node into multiple smaller ones
                 let mut i: u16 = 0;
                 for y in 0..2 {
                     for z in 0..2 {
                         for x in 0..2 {
                             // The position offset for the new octree node
-                            let offset: glam::IVec3 = glam::ivec3(x *extent_i32, y * extent_i32, z * extent_i32);
+                            let offset: glam::IVec3 = glam::ivec3(x * extent_i32, y * extent_i32, z * extent_i32);
                             let child = OctreeNode {
                                 position: octree_node.position + offset,
                                 extent: octree_node.extent / 2,

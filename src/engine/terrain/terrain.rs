@@ -63,10 +63,12 @@ impl System for Terrain {
             .get_component::<components::Transform>(data.component_manager).unwrap();
         let test_location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32, data.time_manager.seconds_since_game_start.cos() as f32, data.time_manager.seconds_since_game_start.cos() as f32) * 8.0;
         // Generate the octree each frame and generate / delete the chunks
+        /*
         self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
-            center: test_location,
+            center: camera_location.position,
             radius: 1.0,
         }});
+        */
         for (octree_node) in &self.octree.removed_nodes {
             data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
         }

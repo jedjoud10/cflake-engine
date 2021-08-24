@@ -67,7 +67,7 @@ impl System for SkySystem {
         sky.link_component::<components::Transform>(
             data.component_manager,
             components::Transform {
-                scale: glam::Vec3::ONE * 9000.0,
+                scale: glam::Vec3::ONE * 10.0,
                 ..components::Transform::default()
             },
         ).unwrap();
@@ -93,7 +93,10 @@ impl System for SkySystem {
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
-        components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position = position;
+        let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
+        // Update the position and update the matrix
+        transform.position = position;
+        transform.update_matrix();
     }
 
     // Turn this into "Any" so we can cast into child systems
