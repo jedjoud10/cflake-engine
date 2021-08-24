@@ -16,9 +16,19 @@ impl EntityManager {
         entity.entity_id = self.entities.len() as u16;
         // Add the entity to the world
         let id = entity.entity_id;
-        println!("{:?}", entity);
+        println!("Add: {:?}", entity);
         self.entities.insert(entity.entity_id, entity);
         id
+    }
+    // Removes an entity from the world
+    pub fn internal_remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
+        if self.entities.contains_key(entity_id) {
+            let removed_entity = self.entities.remove(entity_id).unwrap();
+            println!("Remove: {:?}", removed_entity);
+            Ok(removed_entity)
+        } else {
+            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
+        }
     }
     // Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
     pub fn add_entity_s(&mut self, mut entity: Entity) -> u16 {
@@ -44,7 +54,7 @@ impl EntityManager {
         if self.entities.contains_key(entity_id) {
             return Ok(self.entities.get_mut(entity_id).unwrap());
         } else {
-            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
+            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
         }
     }
     // Get an entity using it's entity id
@@ -52,18 +62,9 @@ impl EntityManager {
         if self.entities.contains_key(entity_id) {
             return Ok(self.entities.get(entity_id).unwrap());
         } else {
-            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
+            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
         }
-    }
-    // Removes an entity from the world
-    pub fn remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
-        if self.entities.contains_key(entity_id) {
-            let removed_entity = self.entities.remove(entity_id).unwrap();
-            Ok(removed_entity)
-        } else {
-            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id).as_str()));
-        }
-    }
+    }   
 }
 
 // A simple entity in the world
@@ -110,8 +111,7 @@ impl Entity {
                     "Cannot link component '{}' to entity '{}' because it is already linked!",
                     T::get_component_name(),
                     self.name
-                )
-                .as_str(),
+                ),
             ));
         }
         // Add the component's bitfield to the entity's bitfield
@@ -140,7 +140,7 @@ impl Entity {
             Ok(final_component)
         } else {
             return Err(ECSError::new(
-                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str(),
+                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name),
             ));
         }
     }
@@ -154,7 +154,7 @@ impl Entity {
             Ok(final_component)
         } else {
             return Err(ECSError::new(
-                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name).as_str(),
+                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name),
             ));
         }
     }

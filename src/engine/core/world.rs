@@ -87,10 +87,9 @@ impl World {
         */
         register_components(self);
         load_systems(self);
-        load_entities(self);
-
         // Update entity manager
         self.update_entity_manager();
+        load_entities(self);
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -234,18 +233,27 @@ impl World {
     }
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {
-        // Remove the entity from the world first
-        let removed_entity = self.entity_manager.remove_entity(&entity_id)?;
-        // Remove all the components this entity had
+        // Remove this entity from the systems it was in first
+        let entity = self.entity_manager.get_entity(&entity_id)?.clone();
+        let mut data = SystemEventDataLite {
+            entity_manager: &mut self.entity_manager,
+            component_manager: &mut self.component_manager,
+            custom_data: &mut self.custom_data,
+        };
+        self.system_manager.remove_entity_from_systems(&entity, entity_id, &mut data);
+        // Then remove the actual entity last, so it allows for systems to run their entity_removed event
+        let removed_entity = self.entity_manager.internal_remove_entity(&entity_id)?;
+        // Remove all the components then entity had
         for global_component_id in removed_entity.linked_components.values() {
             self.component_manager.id_remove_linked_component(global_component_id).unwrap();
-        }
+        }        
         Ok(removed_entity)
     }
     // Remove multiple entities at once
     pub fn remove_entities(&mut self, entity_ids: Vec<u16>) -> Vec<Entity> {
         let mut result: Vec<Entity> = Vec::new();
-        // Remove the specified entities
+        // Remove the specified entities  
+
         for entity_id in entity_ids {
             result.push(self.remove_entity(entity_id).unwrap());
         }

@@ -41,7 +41,7 @@ impl ComponentManager {
             let value = self.component_ids[&name];
             Ok(value)
         } else {
-            return Err(ECSError::new(format!("Component {} not registered!", name).as_str()));
+            return Err(ECSError::new(format!("Component {} not registered!", name)));
         }
     }
     // Checks if a specific component is registered
@@ -57,35 +57,35 @@ impl ComponentManager {
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a Box<dyn ComponentInternal + Send + Sync>) -> &'a T {
+    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a Box<dyn ComponentInternal + Send + Sync>) -> Result<&'a T, ECSError> {
         let component_any: &dyn Any = boxed_component.as_any();
-        let final_component = component_any.downcast_ref::<T>().unwrap();
-        final_component
+        let final_component = component_any.downcast_ref::<T>().ok_or(ECSError::new_str("Could not cast component"))?;
+        Ok(final_component)
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut Box<dyn ComponentInternal + Send + Sync>) -> &'a mut T {
+    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut Box<dyn ComponentInternal + Send + Sync>) -> Result<&'a mut T, ECSError> {
         let component_any: &mut dyn Any = boxed_component.as_any_mut();
-        let final_component = component_any.downcast_mut::<T>().unwrap();
-        final_component
+        let final_component = component_any.downcast_mut::<T>().ok_or(ECSError::new_str("Could not cast component"))?;
+        Ok(final_component)
     }
     // Get a reference to a specific linked component
     pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self.linked_component.get(global_id).unwrap();
-        let component = Self::cast_component(linked_component);
+        let component = Self::cast_component(linked_component)?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
     pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
-        let linked_component = self.linked_component.get_mut(global_id).unwrap();
-        let component = Self::cast_component_mut(linked_component);
+        let linked_component = self.linked_component.get_mut(global_id).ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
+        let component = Self::cast_component_mut(linked_component)?;
         Ok(component)
     }
     // Remove a specified component from the list
-    pub fn id_remove_linked_component(&mut self, _global_id: &u16) -> Result<(), ECSError> {
-        //self.linked_entity_components.remove(entity_id).unwrap();
-        todo!();
+    pub fn id_remove_linked_component(&mut self, global_id: &u16) -> Result<(), ECSError> {
+        self.linked_component.remove(global_id);
+        return Ok(());
     }
 }
 // The main component trait
@@ -138,7 +138,7 @@ impl FilteredLinkedComponents {
         } else {
             // We are not allowed to get this component
             return Err(ECSError::new(
-                format!("Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}", id, self.entity_id).as_str(),
+                format!("Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}", id, self.entity_id),
             ));
         }
     }
@@ -154,7 +154,7 @@ impl FilteredLinkedComponents {
         } else {
             // We are not allowed to get this component
             return Err(ECSError::new(
-                format!("Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}", id, self.entity_id).as_str(),
+                format!("Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}", id, self.entity_id),
             ));
         }
     }

@@ -24,15 +24,15 @@ impl SystemManager {
         // If the entity is valid, all the bits would be 0
         bitfield == 0
     }
-    // Remove an entity from it's corresponding systems
-    pub fn remove_entity_from_systems(&mut self, removed_entity: Entity, entity_id: u16, data: &mut SystemEventDataLite) {
+    // Remove an entity from it's corresponding systems, this is done before actually removing the entity to allow the systems to dispose of it's data
+    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: u16, data: &mut SystemEventDataLite) {
         // Remove the entity from all the systems it was in
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
 
             // Only remove the entity from the systems that it was in
-            if Self::is_entity_valid_for_system(&removed_entity, system_data) {
-                system.remove_entity(entity_id, &removed_entity, data);
+            if Self::is_entity_valid_for_system(entity, system_data) {
+                system.remove_entity(entity_id, entity, data);
             }
         }
     }
@@ -101,11 +101,11 @@ impl SystemManager {
         let system = self
             .systems
             .get_mut(system_id as usize)
-            .ok_or::<ECSError>(ECSError::new(format!("System with ID: '{}' does not exist!", system_id).as_str()))?;
+            .ok_or::<ECSError>(ECSError::new(format!("System with ID: '{}' does not exist!", system_id)))?;
         let cast_system = system
             .as_any_mut()
             .downcast_mut::<T>()
-            .ok_or::<ECSError>(ECSError::new(format!("Could not cast system to type: '{}'!", std::any::type_name::<T>()).as_str()))?;
+            .ok_or::<ECSError>(ECSError::new(format!("Could not cast system to type: '{}'!", std::any::type_name::<T>())))?;
         Ok(cast_system)
     }
 }
@@ -124,13 +124,12 @@ pub trait System {
         self.entity_added(entity, data);
     }
     // Remove an entity from the current system
-    // NOTE: The entity was already removed in the world global entities, so the "removed_entity" argument is just the clone of that removed entity
-    fn remove_entity(&mut self, entity_id: u16, removed_entity: &Entity, data: &mut SystemEventDataLite) {
+    fn remove_entity(&mut self, entity_id: u16, entity: &Entity, data: &mut SystemEventDataLite) {
         let system_data = self.get_system_data_mut();
         // Search for the entity with the matching entity_id
-        let system_entity_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
-        system_data.entities.remove(system_entity_id);
-        self.entity_removed(removed_entity, data);
+        let system_entity_local_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
+        system_data.entities.remove(system_entity_local_id);
+        self.entity_removed(entity, data);
     }
     // Stop the system permanently
     fn end_system(&mut self, data: &mut SystemEventDataLite) {
