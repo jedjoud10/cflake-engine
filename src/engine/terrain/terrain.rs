@@ -1,5 +1,7 @@
 use crate::engine::{core::{defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader}, terrain::chunk::Chunk};
 
+use super::voxel::VoxelGenerator;
+
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 32;
 
@@ -8,12 +10,13 @@ pub const CHUNK_SIZE: usize = 32;
 pub struct Terrain {
     pub system_data: SystemData,
     pub isoline: f32,
-    pub octree: math::octree::Octree
+    pub octree: math::octree::Octree,
+    pub voxel_generator: VoxelGenerator,
 }
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&mut self, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Entity {
+    pub fn add_chunk_entity(&self, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Entity {
         // Create the entity
         let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
 
@@ -21,6 +24,7 @@ impl Terrain {
         let mut chunk_cmp = Chunk::default();
         chunk_cmp.position = position;
         chunk_cmp.size = size;
+        chunk_cmp.generate_data(&self.voxel_generator);
         let model = chunk_cmp.generate_model();
 
         // Link the components
@@ -53,6 +57,13 @@ impl System for Terrain {
         self.system_data.link_component::<components::Transform>(data.component_manager).unwrap();
         self.system_data.link_component::<Renderer>(data.component_manager).unwrap();
         self.system_data.link_component::<components::AABB>(data.component_manager).unwrap();
+
+        self.octree.size = 32;   
+        self.octree.depth = 4;
+        self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
+            center: glam::Vec3::ONE,
+            radius: 1.0,
+        }});
     }
 
     // Update the camera position inside the terrain generator
@@ -61,18 +72,17 @@ impl System for Terrain {
         let camera_location = data.entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<components::Transform>(data.component_manager).unwrap();
-        let test_location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32, data.time_manager.seconds_since_game_start.cos() as f32, data.time_manager.seconds_since_game_start.cos() as f32) * 8.0;
-        // Generate the octree each frame and generate / delete the chunks
-        /*
-        self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
-            center: camera_location.position,
-            radius: 1.0,
-        }});
-        */
-        for (octree_node) in &self.octree.removed_nodes {
-            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
+        // Generate the octree each frame and generate / delete the chunks     
+        
+        
+        
+        //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
+
+        // Add all the new nodes as new chunks
+        for octree_node in &self.octree.added_nodes {
+            let chunk_entity = self.add_chunk_entity(data.component_manager, octree_node.position, octree_node.extent);
+            data.entity_manager.add_entity_s(chunk_entity);
         }
-        data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(test_location, glam::Vec3::ONE));
     }
 
     // Called for each entity in the system

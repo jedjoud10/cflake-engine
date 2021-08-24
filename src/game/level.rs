@@ -9,7 +9,7 @@ use crate::engine::core::world::World;
 
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::shader::Shader;
-use crate::engine::terrain::terrain::Terrain;
+use crate::engine::terrain::Terrain;
 use rendering_system::RenderingSystem;
 
 // Pre-register unused components

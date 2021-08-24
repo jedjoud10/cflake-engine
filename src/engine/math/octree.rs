@@ -1,8 +1,4 @@
 use std::collections::HashMap;
-use std::time::Instant;
-
-use crate::engine::debug::DebugRendererable;
-
 use super::shapes;
 use super::Intersection;
 
@@ -12,7 +8,6 @@ pub struct OctreeInput {
 }
 
 // The whole octree
-#[derive(Default)]
 pub struct Octree {
     pub nodes: HashMap<glam::IVec3, OctreeNode>,
     pub added_nodes: Vec<OctreeNode>,
@@ -21,11 +16,22 @@ pub struct Octree {
     pub depth: u8,
 }
 
+impl Default for Octree {
+    fn default() -> Self {
+        Self {
+            nodes: HashMap::new(),
+            added_nodes: Vec::new(),
+            removed_nodes: Vec::new(),
+            size: 1,
+            depth: 1,
+        }
+    }
+}
+
 impl Octree {
     // Generate the octree at a specific position with a specific depth
     pub fn generate_octree(&mut self, input: OctreeInput) {
         // Create the root node
-        self.depth = 8;
         let root_size = (2_u32.pow(self.depth as u32) * self.size as u32) as i32;
         let root_position = glam::ivec3(-(root_size / 2), -(root_size / 2), -(root_size / 2));
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
@@ -78,6 +84,8 @@ impl Octree {
                 // This node did not change / Was removed
                 // If we currently don't have children and we had them in the last run, that means that we've removed them
                 let last = self.nodes.get(&center).unwrap();
+                // Since the current node isn't a parent any more, add it as a genuine node
+                added_nodes.push(octree_node.clone());
                 if !octree_node.children && last.children {
                     // Recursively get the children and put them in the removed list
                     let mut pending_children: Vec<OctreeNode> = Vec::new();
@@ -111,12 +119,8 @@ impl Octree {
         // Update self
         self.nodes.clear();
         self.nodes.extend(local_nodes);
-        if added_nodes.len() > 0 {
-            self.added_nodes = added_nodes;
-        }
-        if removed_nodes.len() > 0 {
-            self.removed_nodes = removed_nodes;
-        }
+        self.added_nodes = added_nodes;
+        self.removed_nodes = removed_nodes;        
     }
 }
 

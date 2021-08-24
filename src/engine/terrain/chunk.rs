@@ -1,4 +1,4 @@
-use super::terrain::{Terrain, CHUNK_SIZE};
+use super::{terrain::{Terrain, CHUNK_SIZE}, voxel::{Voxel, VoxelGenerator}};
 use std::collections::hash_map::Entry;
 use crate::engine::{
     core::ecs::component::{Component, ComponentID, ComponentInternal},
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 pub struct Chunk {
     pub position: glam::IVec3,
     pub size: u16,
-    pub data: [[[f32; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
+    pub data: [[[Voxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
     pub isoline: f32,
 }
 
@@ -33,8 +33,20 @@ impl ComponentID for Chunk {
 }
 impl Component for Chunk {}
 
-// Actual model generation
 impl Chunk {
+    // Generate the voxel data needed for mesh construction
+    pub fn generate_data(&mut self, voxel_generator: &VoxelGenerator) {
+        for y in 0..CHUNK_SIZE {
+            for z in 0..CHUNK_SIZE {
+                for x in 0..CHUNK_SIZE {
+                    // Get the point in world coordinates
+                    let point: glam::Vec3 = glam::vec3(x as f32, y as f32, z as f32) + self.position.as_f32();
+                    // Set the voxel data
+                    self.data[x][y][z] = voxel_generator.get_voxel(point);
+                }
+            }
+        }
+    }
 }
 
 // This is a procedural model generator
@@ -49,14 +61,14 @@ impl ProceduralModelGenerator for Chunk {
                 for z in 0..CHUNK_SIZE - 2 {
                     // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                     let mut case_index = 0u8;
-                    case_index += ((self.data[x][y][z] > self.isoline) as u8) * 1;
-                    case_index += ((self.data[x][y][z + 1] > self.isoline) as u8) * 2;
-                    case_index += ((self.data[x + 1][y][z + 1] > self.isoline) as u8) * 4;
-                    case_index += ((self.data[x + 1][y][z] > self.isoline) as u8) * 8;
-                    case_index += ((self.data[x][y + 1][z] > self.isoline) as u8) * 16;
-                    case_index += ((self.data[x][y + 1][z + 1] > self.isoline) as u8) * 32;
-                    case_index += ((self.data[x + 1][y + 1][z + 1] > self.isoline) as u8) * 64;
-                    case_index += ((self.data[x + 1][y + 1][z] > self.isoline) as u8) * 128;
+                    case_index += ((self.data[x][y][z].density > self.isoline) as u8) * 1;
+                    case_index += ((self.data[x][y][z + 1].density > self.isoline) as u8) * 2;
+                    case_index += ((self.data[x + 1][y][z + 1].density > self.isoline) as u8) * 4;
+                    case_index += ((self.data[x + 1][y][z].density > self.isoline) as u8) * 8;
+                    case_index += ((self.data[x][y + 1][z].density > self.isoline) as u8) * 16;
+                    case_index += ((self.data[x][y + 1][z + 1].density > self.isoline) as u8) * 32;
+                    case_index += ((self.data[x + 1][y + 1][z + 1].density > self.isoline) as u8) * 64;
+                    case_index += ((self.data[x + 1][y + 1][z].density > self.isoline) as u8) * 128;
                     // Get triangles
                     let edges: [i8; 16] = TRI_TABLE[case_index as usize];
                     for edge in edges {
@@ -69,8 +81,8 @@ impl ProceduralModelGenerator for Chunk {
                             // In global space here
                             let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
                             let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
-                            let density1 = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2];
-                            let density2 = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2];
+                            let density1 = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2].density;
+                            let density2 = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2].density;
                             // Do inverse linear interpolation to find the factor value
                             let value: f32 = inverse_lerp(density1, density2, self.isoline);
 
@@ -83,12 +95,12 @@ impl ProceduralModelGenerator for Chunk {
                                 let mut normal2 = glam::Vec3::ZERO;
 
                                 // Create the normal
-                                normal1.x = self.data[vert1_usize.0 + 1][vert1_usize.1][vert1_usize.2] - density1;
-                                normal1.y = self.data[vert1_usize.0][vert1_usize.1 + 1][vert1_usize.2] - density1;
-                                normal1.z = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2 + 1] - density1;
-                                normal2.x = self.data[vert2_usize.0 + 1][vert2_usize.1][vert2_usize.2] - density2;
-                                normal2.y = self.data[vert2_usize.0][vert2_usize.1 + 1][vert2_usize.2] - density2;
-                                normal2.z = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2 + 1] - density2;
+                                normal1.x = self.data[vert1_usize.0 + 1][vert1_usize.1][vert1_usize.2].density - density1;
+                                normal1.y = self.data[vert1_usize.0][vert1_usize.1 + 1][vert1_usize.2].density - density1;
+                                normal1.z = self.data[vert1_usize.0][vert1_usize.1][vert1_usize.2 + 1].density - density1;
+                                normal2.x = self.data[vert2_usize.0 + 1][vert2_usize.1][vert2_usize.2].density - density2;
+                                normal2.y = self.data[vert2_usize.0][vert2_usize.1 + 1][vert2_usize.2].density - density2;
+                                normal2.z = self.data[vert2_usize.0][vert2_usize.1][vert2_usize.2 + 1].density - density2;
                                 glam::Vec3::lerp(normal1, normal2, value)
                             };
 

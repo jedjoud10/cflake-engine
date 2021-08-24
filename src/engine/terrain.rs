@@ -1,3 +1,6 @@
 pub mod chunk;
 pub mod tables;
-pub mod terrain;
+pub mod voxel;
+mod terrain;
+pub use terrain::Terrain;
+
