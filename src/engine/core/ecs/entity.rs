@@ -7,6 +7,7 @@ use std::collections::HashMap;
 pub struct EntityManager {
     pub entities: HashMap<u16, Entity>,
     pub entitites_to_add: Vec<Entity>,
+    pub entities_to_remove: Vec<u16>
 }
 
 impl EntityManager {
@@ -30,6 +31,13 @@ impl EntityManager {
         entity.entity_id = id;
         self.entitites_to_add.push(entity);
         id
+    }
+    // Remove an entity from the entity manager temporarily, then call the actual removal function in the world to actually remove it
+    pub fn remove_entity_s(&mut self, entity_id: &u16) -> Result<(), ECSError> {
+        // Temporarily add it to the entities_to_remoe vector
+        self.entities_to_remove.push(entity_id.clone());
+        let entity = self.get_entity(entity_id)?;
+        return Ok(());
     }
     // Get a mutable reference to a stored entity
     pub fn get_entity_mut(&mut self, entity_id: &u16) -> Result<&mut Entity, ECSError> {

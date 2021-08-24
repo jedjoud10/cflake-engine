@@ -40,14 +40,14 @@ impl Octree {
         let mut local_nodes: HashMap<glam::IVec3, OctreeNode> = HashMap::new();
         pending_nodes.push(OctreeNode { 
             position: root_position,
-            extent: (root_size / 2) as u16,
+            half_extent: (root_size / 2) as u16,
             depth: 0,
             children_centers: [glam::IVec3::ZERO; 8],
             children: false,
         });
         while pending_nodes.len() > 0 {
             let mut octree_node = pending_nodes[0].clone();
-            let extent_i32 = octree_node.extent as i32;
+            let extent_i32 = octree_node.half_extent as i32;
             // If the node contains the position, subdivide it
             let aabb = octree_node.get_aabb();            
             if Intersection::point_aabb(&input.camera.center, &aabb) && octree_node.depth < (self.depth - 1) {
@@ -60,12 +60,12 @@ impl Octree {
                             let offset: glam::IVec3 = glam::ivec3(x * extent_i32, y * extent_i32, z * extent_i32);
                             let child = OctreeNode {
                                 position: octree_node.position + offset,
-                                extent: octree_node.extent / 2,
+                                half_extent: octree_node.half_extent / 2,
                                 depth: octree_node.depth + 1,
                                 children_centers: [glam::IVec3::ZERO; 8],
                                 children: false,
                             };
-                            let center: glam::IVec3 = child.position + glam::ivec3(child.extent as i32, child.extent as i32, child.extent as i32);
+                            let center = child.get_center();
                             octree_node.children_centers[i as usize] = center; 
                             pending_nodes.push(child);
                             i += 1;
@@ -76,7 +76,7 @@ impl Octree {
                 octree_node.children = true;
             }
             // If we don't have the current node in the last run nodes, that means that we've added it
-            let center: glam::IVec3 = octree_node.position + glam::ivec3(octree_node.extent as i32, octree_node.extent as i32, octree_node.extent as i32);
+            let center = octree_node.get_center();
             if !self.nodes.contains_key(&center) {
                 // This means that this is a new node
                 added_nodes.push(octree_node.clone());
@@ -128,7 +128,7 @@ impl Octree {
 #[derive(Clone, Debug)]
 pub struct OctreeNode {
     pub position: glam::IVec3,
-    pub extent: u16,
+    pub half_extent: u16,
     pub depth: u8,
 
     // Used for the parent-children links
@@ -142,7 +142,11 @@ impl OctreeNode {
     pub fn get_aabb(&self) -> super::bounds::AABB {
         super::bounds::AABB {
             min: self.position.as_f32(),
-            max: self.position.as_f32() + glam::vec3(self.extent as f32, self.extent as f32, self.extent as f32) * 2.0,
+            max: self.position.as_f32() + glam::vec3(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
         }
+    }
+    // Get the center of this octree node
+    pub fn get_center(&self) -> glam::IVec3 {
+        return self.position + self.half_extent as i32;
     }
 }

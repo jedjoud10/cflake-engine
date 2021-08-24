@@ -1,5 +1,5 @@
+use std::collections::HashMap;
 use crate::engine::{core::{cacher::CacheManager, defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader, texture::Texture}, terrain::chunk::Chunk};
-
 use super::voxel::VoxelGenerator;
 
 // How many voxels in one axis in each chunk?
@@ -9,9 +9,15 @@ pub const CHUNK_SIZE: usize = 34;
 #[derive(Default)]
 pub struct Terrain {
     pub system_data: SystemData,
+    // Terrain generation
     pub isoline: f32,
-    pub octree: math::octree::Octree,
     pub voxel_generator: VoxelGenerator,
+    
+    // Chunk managing
+    pub octree: math::octree::Octree,
+    pub chunks: HashMap<glam::IVec3, u16>,
+
+    // Preloaded resources for chunks
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
 }
@@ -41,6 +47,7 @@ impl Terrain {
             .set_model(model)
             .set_shader(self.shader_name.as_str())).unwrap();
         chunk.link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager)).unwrap();
+        
         return chunk;
     }
 }
@@ -82,9 +89,16 @@ impl System for Terrain {
         for octree_node in &self.octree.added_nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children {
-                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.extent * 2);
+                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+                self.chunks.insert(octree_node.get_center(), chunk_entity.entity_id);
                 data.entity_manager.add_entity_s(chunk_entity);
             }
+        }
+        // Delete all the removed octree nodes from the world 
+        for octree_node in &self.octree.removed_nodes {
+            // Remove the chunk from our chunks and from the world
+            let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
+            data.entity_manager.remove_entity_s(&entity_id).unwrap();
         }
     }
 

@@ -87,12 +87,10 @@ impl World {
         */
         register_components(self);
         load_systems(self);
-        // Add the entities that need to be added
-        self.add_entities(self.entity_manager.entitites_to_add.clone());
-        // So we don't cause an infinite loop lol
-        self.entity_manager.entitites_to_add.clear();
-
         load_entities(self);
+
+        // Update entity manager
+        self.update_entity_manager();
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -126,12 +124,10 @@ impl World {
         self.system_manager.update_systems(&self.time_manager);
 
         // Update the inputs
-        self.input_manager.late_update(self.time_manager.delta_time as f32);
+        self.input_manager.late_update(self.time_manager.delta_time as f32);        
 
-        // Add the entities that need to be added
-        self.add_entities(self.entity_manager.entitites_to_add.clone());
-        // So we don't cause an infinite loop lol
-        self.entity_manager.entitites_to_add.clear();
+        // Update entity manager
+        self.update_entity_manager();
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
@@ -225,6 +221,16 @@ impl World {
             result.push(self.add_entity(entity));
         }
         result
+    }
+    // Update the entity manager with the temporary data it had saved
+    pub fn update_entity_manager(&mut self) {
+        // Add the entities that need to be added
+        self.add_entities(self.entity_manager.entitites_to_add.clone());
+        self.entity_manager.entitites_to_add.clear();
+
+        // Remove the entities that need to be removed
+        self.remove_entities(self.entity_manager.entities_to_remove.clone());
+        self.entity_manager.entities_to_remove.clear();
     }
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {
