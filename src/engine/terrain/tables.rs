@@ -1,3 +1,5 @@
+use super::terrain::CHUNK_SIZE;
+
 // Triangulation table
 pub const TRI_TABLE: [[i8; 16]; 256] = [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -264,6 +266,19 @@ pub const EDGE_TABLE: [usize; 24] = [
     0, 1, 1, 2, 2, 3, 3, 0, // Top face
     4, 5, 5, 6, 6, 7, 7, 4, // Sides
     0, 4, 1, 5, 2, 6, 3, 7,
+];
+
+// Data offset table
+pub const DATA_OFFSET_TABLE: [usize; 8] = [
+    /* None */ 0,
+    /* Z */ CHUNK_SIZE * CHUNK_SIZE,
+    /* X+Z */ CHUNK_SIZE * CHUNK_SIZE + 1,
+    /* X */ 1,
+
+    /* Y */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE,
+    /* Y+Z */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE * CHUNK_SIZE,
+    /* X+Y+Z */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE * CHUNK_SIZE + 1,
+    /* Y+X */ CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE + 1,
 ];
 
 // Vertex table

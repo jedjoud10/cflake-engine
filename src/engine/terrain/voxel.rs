@@ -7,7 +7,7 @@ pub struct VoxelGenerator {
 }
 
 // Just a simple voxel
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct Voxel {
     pub density: f32,
 }

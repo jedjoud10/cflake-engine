@@ -3,7 +3,7 @@ use crate::engine::{core::{cacher::CacheManager, defaults::components, ecs::{com
 use super::voxel::VoxelGenerator;
 
 // How many voxels in one axis in each chunk?
-pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE: usize = 33;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -33,6 +33,7 @@ impl Terrain {
         chunk.link_component::<Chunk>(component_manager, chunk_cmp).unwrap();
         chunk.link_component::<components::Transform>(component_manager, components::Transform {
             position: position.as_f32(),
+            scale: glam::vec3((size / self.octree.size as u16) as f32, (size / self.octree.size as u16) as f32, (size / self.octree.size as u16) as f32) * 2.0,
             ..components::Transform::default()
         }).unwrap();
         chunk.link_component::<Renderer>(component_manager, Renderer::new()
@@ -76,14 +77,13 @@ impl System for Terrain {
             center: glam::Vec3::ONE,
             radius: 1.0,
         }});
-        /*
+        
+        // Turn all the newly added nodes into chunks and instantiate them into the world
         for octree_node in &self.octree.added_nodes {
-            let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.extent);
+            let center: glam::IVec3 = octree_node.position + glam::ivec3(octree_node.extent as i32, octree_node.extent as i32, octree_node.extent as i32);
+            let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, center, octree_node.extent);
             data.entity_manager.add_entity_s(chunk_entity);
         }
-        */
-        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, glam::IVec3::ZERO, 32);
-        data.entity_manager.add_entity_s(chunk_entity);
     }
 
     // Update the camera position inside the terrain generator
