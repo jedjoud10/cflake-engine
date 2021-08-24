@@ -21,7 +21,8 @@ impl VoxelGenerator {
     pub fn get_voxel(&self, point: glam::Vec3) -> Voxel {
         let mut voxel: Voxel = Voxel { density: 0.0 };
         // Code goes here
-        voxel.density = point.y - 16.0;
+        voxel.density = point.y - 40.0;
+        voxel.density += (point.x * 0.05).sin() * 10.0;
         return voxel;
     }
 }
