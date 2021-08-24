@@ -156,7 +156,7 @@ pub trait System {
         // The filtered entities tuple that also contains the linked component data
         let filtered_entity_ids = system_data
             .entities
-            .par_iter()
+            .iter()
             .filter_map(|entity_id| {
                 let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
                 // Get the linked components

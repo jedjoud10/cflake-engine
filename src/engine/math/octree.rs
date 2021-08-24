@@ -82,10 +82,10 @@ impl Octree {
                 added_nodes.push(octree_node.clone());
             } else {
                 // This node did not change / Was removed
-                // If we currently don't have children and we had them in the last run, that means that we've removed them
                 let last = self.nodes.get(&center).unwrap();
-                // Since the current node isn't a parent any more, add it as a genuine node
+                // If we currently don't have children and we had them in the last run, that means that we've removed them
                 if !octree_node.children && last.children {
+                    added_nodes.push(octree_node.clone());
                     // Recursively get the children and put them in the removed list
                     let mut pending_children: Vec<OctreeNode> = Vec::new();
                     for default_sub_child_center in last.children_centers {
@@ -110,6 +110,10 @@ impl Octree {
                         removed_nodes.push(current_child);
                     }
                 }       
+                // If we current have children and didn't have them in the last run, we must remove the current node 
+                if octree_node.children && !last.children {
+                    removed_nodes.push(octree_node.clone());
+                }
             }
             // Add it to the nodes and remove it from pending nodes
             local_nodes.insert(center, octree_node);
@@ -118,9 +122,9 @@ impl Octree {
         // Update self
         self.nodes.clear();
         self.nodes.extend(local_nodes);
-        self.added_nodes.clear();
+        
+        // We clear these in the terrain
         self.added_nodes.extend(added_nodes);
-        self.removed_nodes.clear();
         self.removed_nodes.extend(removed_nodes);
     }
 }

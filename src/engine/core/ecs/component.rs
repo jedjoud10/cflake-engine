@@ -6,6 +6,7 @@ pub struct ComponentManager {
     component_ids: HashMap<String, u16>,
     pub linked_component: HashMap<u16, Box<dyn ComponentInternal + Send + Sync>>,
     pub current_component_id: u16,
+    pub last_global_component_id: u16,
 }
 
 impl Default for ComponentManager {
@@ -14,6 +15,7 @@ impl Default for ComponentManager {
             component_ids: HashMap::new(),
             linked_component: HashMap::new(),
             current_component_id: 1,
+            last_global_component_id: 0,
         }
     }
 }
@@ -50,9 +52,13 @@ impl ComponentManager {
     }
     // Add a specific linked componment to the component manager, returns the global IDs of the components
     pub fn add_linked_component<T: Component + ComponentID + Send + Sync + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
-        let global_id = self.linked_component.len() as u16;
+        let global_id = self.last_global_component_id + 1;
         let boxed_component = Box::new(component);
+        if self.linked_component.contains_key(&global_id) {
+            return Err(ECSError::new_str("Tried to add a linked component to the component manager, but it already exists!"));
+        }
         self.linked_component.insert(global_id, boxed_component);
+        self.last_global_component_id += 1;
         // Give back the global ID of the component
         Ok(global_id)
     }

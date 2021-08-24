@@ -78,12 +78,13 @@ impl World {
     pub fn start_world(&mut self, window: &mut glfw::Window) {
         // Load the default stuff
         self.load_defaults(window);
-        // Test stuff
         /*
-        self.component_manager.register_component::<Position>();
+        // Test stuff        
+        self.component_manager.register_component::<components::Transform>();
         let mut test_entity = Entity::new("Test Entity");
-        test_entity.link_default_component::<Position>(&mut self.component_manager);
+        test_entity.link_default_component::<components::Transform>(&mut self.component_manager).unwrap();
         let entity_id = self.add_entity(test_entity);
+        self.remove_entity(entity_id).unwrap();
         */
         register_components(self);
         load_systems(self);
@@ -223,13 +224,19 @@ impl World {
     }
     // Update the entity manager with the temporary data it had saved
     pub fn update_entity_manager(&mut self) {
-        // Add the entities that need to be added
-        self.add_entities(self.entity_manager.entitites_to_add.clone());
-        self.entity_manager.entitites_to_add.clear();
 
-        // Remove the entities that need to be removed
-        self.remove_entities(self.entity_manager.entities_to_remove.clone());
-        self.entity_manager.entities_to_remove.clear();
+        // Only update if it we need to
+        if self.entity_manager.entitites_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {            
+            // Add the entities that need to be added
+            self.add_entities(self.entity_manager.entitites_to_add.clone());
+            self.entity_manager.entitites_to_add.clear();
+            
+            // Remove the entities that need to be removed
+            self.remove_entities(self.entity_manager.entities_to_remove.clone());
+            self.entity_manager.entities_to_remove.clear();
+            
+            //println!("Entities count: '{}'", self.entity_manager.entities.len());
+        }
     }
     // Wrapper function around the entity manager remove_entity
     pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::engine::{self, core::{cacher::CacheManager, defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, input, math::{self, octree::OctreeInput}, rendering::{model::ProceduralModelGenerator, renderer::Renderer, shader::Shader, texture::Texture}, terrain::chunk::Chunk};
+use crate::engine::{self, core::{cacher::CacheManager, defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, input, math::{self, octree::OctreeInput}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::Shader, texture::Texture}, terrain::chunk::Chunk};
 use super::voxel::VoxelGenerator;
 
 // How many voxels in one axis in each chunk?
@@ -102,35 +102,38 @@ impl System for Terrain {
             }
         }       
         
-        if !data.input_manager.map_toggled("update_terrain") {   
+        if data.input_manager.map_toggled("update_terrain") {   
             // Update the terrain
             self.octree.generate_octree(OctreeInput { camera: math::shapes::Sphere {
                 center: camera_location,
                 radius: 1.0,
             }});
-            
-            // Turn all the newly added nodes into chunks and instantiate them into the world
-            for octree_node in &self.octree.added_nodes {
-                // Only add the octree nodes that have no children
-                if !octree_node.children {
-                    println!("Gonna add chunk");
-                    let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
-                    let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                    self.chunks.insert(octree_node.get_center(), entity_id);
+            // Only do one thing, either add the nodes, or remove them
+            if self.octree.added_nodes.len() > 0 {
+                // Turn all the newly added nodes into chunks and instantiate them into the world
+                for octree_node in &self.octree.added_nodes {
+                    // Only add the octree nodes that have no children
+                    if !octree_node.children {
+                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+                        let entity_id = data.entity_manager.add_entity_s(chunk_entity);
+                        self.chunks.insert(octree_node.get_center(), entity_id);
+                    }
                 }
-            }
-            // Delete all the removed octree nodes from the world 
-            for octree_node in &self.octree.removed_nodes {
-                if self.chunks.contains_key(&octree_node.get_center()) {
-                    // Remove the chunk from our chunks and from the world
-                    println!("Gonna delete chunk");
-                    let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
-                    data.entity_manager.remove_entity_s(&entity_id).unwrap();
-                }
-            }    
+                self.octree.added_nodes.clear();
+            } else if self.octree.removed_nodes.len() > 0 {
+                // Delete all the removed octree nodes from the world 
+                for octree_node in &self.octree.removed_nodes {
+                    if self.chunks.contains_key(&octree_node.get_center()) {
+                        // Remove the chunk from our chunks and from the world
+                        let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
+                        data.entity_manager.remove_entity_s(&entity_id).unwrap();
+                    }
+                }    
+                self.octree.removed_nodes.clear();
+            }            
         }
-            
-            println!("{}", self.chunks.len());
+
+        println!("{}", self.octree.nodes.len());
     }
 
     // Called for each entity in the system

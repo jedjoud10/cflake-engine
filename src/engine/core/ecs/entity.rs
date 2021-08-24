@@ -7,16 +7,18 @@ use std::collections::HashMap;
 pub struct EntityManager {
     pub entities: HashMap<u16, Entity>,
     pub entitites_to_add: Vec<Entity>,
-    pub entities_to_remove: Vec<u16>
+    pub entities_to_remove: Vec<u16>,
+    pub last_entity_id: u16,
 }
 
 impl EntityManager {
     // Add an entity to the entity manager
     pub fn internal_add_entity(&mut self, mut entity: Entity) -> u16 {
-        entity.entity_id = self.entities.len() as u16;
+        entity.entity_id = self.last_entity_id;
         // Add the entity to the world
         let id = entity.entity_id;
-        println!("Add: {:?}", entity);
+        //println!("Add: {:?}", entity);
+        self.last_entity_id += 1;
         self.entities.insert(entity.entity_id, entity);
         id
     }
@@ -24,7 +26,7 @@ impl EntityManager {
     pub fn internal_remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
         if self.entities.contains_key(entity_id) {
             let removed_entity = self.entities.remove(entity_id).unwrap();
-            println!("Remove: {:?}", removed_entity);
+            //println!("Remove: {:?}", removed_entity);
             Ok(removed_entity)
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
@@ -36,8 +38,8 @@ impl EntityManager {
 
         // Get the id of the entity inside the temp vector (Local ID)
         let mut id = self.entitites_to_add.len() as u16;
-        // Add that id to the id of the current vector length (Global ID)
-        id += self.entities.len() as u16;
+        // Add that id to the id of the entity id (Global ID)
+        id += self.last_entity_id as u16;
         entity.entity_id = id;
         self.entitites_to_add.push(entity);
         id
