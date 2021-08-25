@@ -152,7 +152,7 @@ impl System for Terrain {
         }      
         for octree_node in self.octree.added_nodes.iter() {
             if !octree_node.children {
-                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(0.0, 1.0, 0.0));
+                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(0.0, 1.0, 0.0));
             }
         }        
     }

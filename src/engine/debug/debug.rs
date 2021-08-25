@@ -20,7 +20,9 @@ pub struct DebugRenderer {
     pub shader_name: String,
     pub vao: u32,
     pub vertices: Vec<glam::Vec3>,
+    pub colors: Vec<glam::Vec3>,
     pub vertex_buffer: u32,
+    pub colors_buffer: u32,
 }
 
 impl DebugRenderer {
@@ -39,10 +41,20 @@ impl DebugRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
             gl::BufferData(gl::ARRAY_BUFFER, (MAX_LINE_COUNT as usize * 2 * size_of::<f32>() * 3) as isize, null(), gl::DYNAMIC_DRAW);
 
-            // Enable the attribute
+            // Generate the colors array
+            gl::GenBuffers(1, &mut self.colors_buffer);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.colors_buffer);
+            gl::BufferData(gl::ARRAY_BUFFER, (MAX_LINE_COUNT as usize * 2 * size_of::<f32>() * 3) as isize, null(), gl::DYNAMIC_DRAW);
+
+            // Enable the vertex attribute
             gl::EnableVertexAttribArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
             gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+
+            // Do the same for the color attribute
+            gl::EnableVertexAttribArray(1);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.colors_buffer);
+            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
 
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -55,10 +67,9 @@ impl DebugRenderer {
         if !DRAW_DEBUG {
             return;
         }
-        // Save the color of the debugged lines
-        let mut color: glam::Vec3 = glam::Vec3::ZERO;
         // Loop each one and construct lines out of them
-        let mut lines: Vec<math::shapes::Line> = Vec::new();
+        let mut lines: Vec<math::shapes::Line> = Vec::new();        
+        self.colors.clear();
         for renderer in self.debug_primitives.iter() {
             match renderer {
                 DebugRendererType::CUBE(corners, icolor) => {
@@ -80,45 +91,54 @@ impl DebugRenderer {
                     lines.push(math::shapes::Line::construct(corners[5], corners[6]));
                     lines.push(math::shapes::Line::construct(corners[6], corners[7]));
                     lines.push(math::shapes::Line::construct(corners[7], corners[4]));
-                    color = *icolor;
+                    for i in 0..(12*2) {
+                        self.colors.push(*icolor);
+                    }
                 }
                 DebugRendererType::SPHERE(_center, _radius, icolor) => todo!(),
                 DebugRendererType::LINE(line, icolor) => {
                     // Just use the line lol
                     lines.push(*line);
-                    color = *icolor;
+                    for i in 0..2 {
+                        self.colors.push(*icolor);
+                    }
                 }
                 DebugRendererType::MODEL(_model, icolor) => todo!(),
             }
         }
 
         // Turn all the lines into vertices
-        let mut new_vertices: Vec<glam::Vec3> = Vec::new();
+        self.vertices.clear();
         for line in lines {
-            new_vertices.push(line.point);
-            new_vertices.push(line.point2);
+            self.vertices.push(line.point);
+            self.vertices.push(line.point2);
         }
-        if new_vertices != self.vertices {
-            self.vertices.clear();
-            self.vertices.append(&mut new_vertices);
-            // If the vertices changed, then edit the vertex buffer
-            unsafe {
-                gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
-                gl::BufferSubData(
-                    gl::ARRAY_BUFFER,
-                    0,
-                    (self.vertices.len() * size_of::<f32>() * 3) as isize,
-                    self.vertices.as_ptr() as *const c_void,
-                );
-            }
+        
+        // If the vertices changed, then edit the vertex buffer and color buffer as well
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
+            gl::BufferSubData(
+                gl::ARRAY_BUFFER,
+                0,
+                (self.vertices.len() * size_of::<f32>() * 3) as isize,
+                self.vertices.as_ptr() as *const c_void,
+            );
+            // Set the colors attribute
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.colors_buffer);
+            gl::BufferSubData(
+                gl::ARRAY_BUFFER,
+                0,
+                (self.colors.len() * size_of::<f32>() * 3) as isize,
+                self.colors.as_ptr() as *const c_void,
+            );
         }
+        
 
         // Set the shader
         let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();
         // Since we don't have a model matrix you can set it directly
         shader.use_shader();
         shader.set_matrix_44_uniform("vp_matrix", vp_matrix * glam::Mat4::IDENTITY);
-        shader.set_scalar_3_uniform("debug_color", (color.x, color.y, color.z));
 
         // Draw each line
         unsafe {
