@@ -114,14 +114,7 @@ impl System for Terrain {
         
         if data.input_manager.map_toggled("update_terrain") {   
             // Update the terrain
-            self.octree.generate_incremental_octree(OctreeInput { target: camera_location });
-
-            for octree_node in self.octree.added_nodes.iter() {
-                if !octree_node.children {
-                    data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()))
-                    //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
-                }
-            }
+            self.octree.generate_incremental_octree(OctreeInput { target: camera_location });            
             /*
             // Only do one thing, either add the nodes, or remove them
             if self.octree.added_nodes.len() > 0 {
@@ -149,6 +142,13 @@ impl System for Terrain {
                 self.octree.removed_nodes.clear();
             }  
             */
+        }
+
+        for octree_node in self.octree.added_nodes.iter() {
+            if !octree_node.children {
+                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()))
+                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
+            }
         }
     }
 

@@ -77,8 +77,8 @@ impl Octree {
             }
             // Bruh
             pending_nodes.remove(0);
+            nodes.insert(octree_node.get_center(), octree_node);
         }
-        println!("{:?}", targetted_node);
         return (nodes, targetted_node);
     }
     // Generate the base octree with a target point at 0, 0, 0
@@ -94,37 +94,40 @@ impl Octree {
             children_centers: [glam::IVec3::ZERO; 8],
             children: false,
         };
-        let octree_data = self.generate_octree(&glam::Vec3::ZERO, root_node);
+        let octree_data = self.generate_octree(&glam::Vec3::ONE, root_node);
         self.nodes = octree_data.0;
         self.targetted_node = octree_data.1;
+        println!("{:?}", self.targetted_node);
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(&mut self, input: OctreeInput) {
         // If we don't have a targetted node, exit early
         if self.targetted_node.is_none() { return; }
-        let mut marked_node: Option<OctreeNode> = None;
+        let marked_node: Option<OctreeNode>;
         // Go up the tree, marking the nodes that have been removed along the way
         {
-            let mut current_node_center: glam::IVec3 = glam::IVec3::ZERO;
+            let mut current_node: OctreeNode = self.targetted_node.clone().unwrap();
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             let targetted_node = self.targetted_node.clone().unwrap();
             pending_nodes.push(targetted_node);
-            while pending_nodes.len() > 0 {
-                let parent_node = self.nodes.get(&current_node_center).unwrap();
-                let parent_center = parent_node.parent_center;
-                current_node_center = parent_center;
-                // When we reach a node where there is an intersection, we mark that node
-                if parent_node.can_subdivide(&input.target, self.depth) {
-                    marked_node = Some(parent_node.clone());
+            // Loop until you can subdivide
+            while !current_node.can_subdivide(&input.target, self.depth) {
+                // Set the current node as the current's node parent
+                current_node = self.nodes.get(&current_node.parent_center).unwrap().clone();
+
+                // If we are the root node, exit since we are sure that there must be an intersection (If the target is inside the octree that is)
+                if current_node.depth == 0 {
                     break;
                 }
             }
+            println!("Max depth: {}", current_node.depth);
+            // We did find an intersection
+            marked_node = Some(current_node);            
         }
         // Not good
         if marked_node.is_none() { return; }
         // Then we generate a local octree, using that marked node as the root
         let local_octree_data = self.generate_octree(&input.target, marked_node.unwrap());
-        println!("Trolled");
         //self.targetted_node = local_octree_data.1;
         let added_nodes = local_octree_data.0;
         self.added_nodes = added_nodes.values().map(|x| x.clone()).collect();
