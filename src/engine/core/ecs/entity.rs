@@ -6,10 +6,10 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub struct EntityManager {
     pub entities: Vec<Option<Entity>>,
-    pub entities_to_add: Vec<Entity>,
-    pub temp_entities: Vec<Option<()>>,
+    
+    // Entities to add / remove from systems
     pub entities_to_remove: HashSet<u16>,
-    pub next_valid_free_id: u16
+    pub entities_to_add: Vec<Entity>,
 }
 
 impl EntityManager {
@@ -24,59 +24,46 @@ impl EntityManager {
             }
         }).unwrap_or(self.entities.len()) as u16;
     }
-    // Calculate the next valid ID from the temporary entities buffer
-    pub fn get_next_valid_id_temp(&self) -> u16 {
-        // Calculate the next valid free ID
-        return self.temp_entities.iter().enumerate().position(|(i, e)| {
-            // We found a free spot      
-            match e {
-                Some(_) => false,
-                None => true,
-            }
-        }).unwrap_or(self.temp_entities.len()) as u16;
-    }
-    // Add an entity to the entity manager
-    pub fn internal_add_entity(&mut self, mut entity: Entity) -> u16 {
-        self.next_valid_free_id = self.get_next_valid_id();
-        entity.entity_id = self.next_valid_free_id;
-        println!("Add internal: {:?}", entity);
-        let id = entity.entity_id ;
-        // Add the entity to the world
-        self.entities.push(Some(entity));
-        id
-    }
-    // Removes an entity from the world
-    pub fn internal_remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
-        if *entity_id < self.entities.len() as u16 {
-            let removed_entity = self.get_entity(entity_id)?.clone();
-            // Clear the current entity element
-            self.entities[*entity_id as usize] = None;
-            Ok(removed_entity)
-        } else {
-            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
-        }
-    }
     // Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
     pub fn add_entity_s(&mut self, mut entity: Entity) -> u16 {
         // Get the id of the entity inside the temp vector (Local ID)
-        let id = self.get_next_valid_id_temp();
+        let id = self.get_next_valid_id();
         entity.entity_id = id;
         println!("Add s: {:?}", entity);
+        // Update
+        if id < self.entities.len() as u16 {
+            // Turn the none into a valid entity
+            self.entities[id as usize] = Some(entity.clone());
+        } else {
+            // Add this to the entities
+            self.entities.push(Some(entity.clone()));
+        }
         self.entities_to_add.push(entity);
         id
     }
     // Remove an entity from the entity manager temporarily, then call the actual removal function in the world to actually remove it
-    pub fn remove_entity_s(&mut self, entity_id: &u16) -> Result<(), ECSError> {
+    pub fn remove_entity_s(&mut self, entity_id: &u16) -> Result<Option<Entity>, ECSError> {
         // If we wish to remove an entity that was already queued for removal, don't do anything
-        if self.entities_to_remove.contains(entity_id) {
-           return Ok(()); 
+        if self.entities_to_remove.contains(&entity_id) {
+            let entity = self.entities.get(*entity_id as usize).unwrap().clone();
+            return Ok(Some(entity.unwrap())); 
         }
-        // Temporarily add it to the entities_to_remoe vector
-        self.entities_to_remove.insert(entity_id.clone());
         // Ez check first
-        if *entity_id < self.entities.len() as u16 || self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
-            // We do have the entity, return early
-            return Ok(());
+        if *entity_id < self.entities.len() as u16 {
+            // Check if we can cancel out this entity
+            if self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
+                // We have the entity in the entities_to_add vector, so we can cancel it out
+                self.entities[*entity_id as usize] = None;
+                self.entities_to_remove.remove(entity_id);
+                let pos = self.entities_to_add.iter().position(|x| x.entity_id == *entity_id).unwrap();
+                self.entities_to_add.remove(pos);
+                return Ok(None);
+            } else {
+                // Can't cancel it out, so just add it to the removed vector
+                self.entities_to_remove.insert(entity_id.clone());
+                let entity = self.entities.get(*entity_id as usize).unwrap().clone();
+                return Ok(Some(entity.unwrap()));
+            }
         } else {
             return Err(ECSError::new_str("Not good"));
         }
@@ -93,7 +80,7 @@ impl EntityManager {
     // Get an entity using it's entity id
     pub fn get_entity(&self, entity_id: &u16) -> Result<&Entity, ECSError> {
         if *entity_id < self.entities.len() as u16 {
-            let entity = self.entities.get(*entity_id as usize).unwrap().as_ref().unwrap(); 
+            let entity = self.entities.get(*entity_id as usize).unwrap().as_ref().ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?; 
             return Ok(entity);
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));

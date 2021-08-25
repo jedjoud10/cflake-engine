@@ -66,5 +66,5 @@ pub fn load_entities(world: &mut World) {
     ).unwrap();
     camera.link_default_component::<components::Camera>(&mut world.component_manager).unwrap();
     // Make it the default camera
-    world.custom_data.main_camera_entity_id = world.add_entity(camera);
+    world.custom_data.main_camera_entity_id = world.entity_manager.add_entity_s(camera);
 }

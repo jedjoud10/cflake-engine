@@ -201,10 +201,9 @@ impl World {
 
 // Impl block for the entity stuff
 impl World {
-    // Wrapper function around the entity manager's add_entity
-    pub fn add_entity(&mut self, entity: Entity) -> u16 {
-        let id = self.entity_manager.internal_add_entity(entity);
-        let entity = self.entity_manager.get_entity(&id).unwrap().clone();
+    // Add the specified entity ID to the systems that it needs
+    pub fn add_entity_to_systems(&mut self, entity_id: &u16) {
+        let entity = self.entity_manager.get_entity(entity_id).unwrap().clone();
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         self.system_manager.add_entity_to_systems(
             &entity,
@@ -214,38 +213,29 @@ impl World {
                 custom_data: &mut self.custom_data,
             },
         );
-        *self.entity_manager.get_entity_mut(&id).unwrap() = entity;
-        id
+        *self.entity_manager.get_entity_mut(entity_id).unwrap() = entity;
     }
-    // Add multiple entities at once
-    pub fn add_entities(&mut self, entities: Vec<Entity>) -> Vec<u16> {
-        let mut result: Vec<u16> = Vec::new();
-        // Add all the entities
-        for entity in entities {
-            result.push(self.add_entity(entity));
-        }
-        result
-    }
-    // Update the entity manager with the temporary data it had saved
+    // Add all the pending entities from the entity manager to the systems and remove the ones that we must destroy
     pub fn update_entity_manager(&mut self) {
         // Only update if it we need to
         if self.entity_manager.entities_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {            
-            // Add the entities that need to be added
-            self.add_entities(self.entity_manager.entities_to_add.clone());
+            // Add the entities to the systems
+            for entity in self.entity_manager.entities_to_add.clone() {
+                self.add_entity_to_systems(&entity.entity_id);
+            }
             self.entity_manager.entities_to_add.clear();
             
-            // Remove the entities that need to be removed
-            self.remove_entities(self.entity_manager.entities_to_remove.clone());
+            // Remove the entities from the systems
+            for entity_id in self.entity_manager.entities_to_remove.clone() {
+                self.remove_entity_from_systems(&entity_id).unwrap();
+            }
             self.entity_manager.entities_to_remove.clear();
-            
-            // Count the max global ID for the entity manager and component manager
-            //println!("Entities count: '{}'", self.entity_manager.entities.len());
         }
     }
-    // Wrapper function around the entity manager remove_entity
-    pub fn remove_entity(&mut self, entity_id: u16) -> Result<Entity, ECSError> {
+    // Remove the specified entity ID from the systems it was in
+    pub fn remove_entity_from_systems(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
         // Remove this entity from the systems it was in first
-        let entity = self.entity_manager.get_entity(&entity_id)?.clone();
+        let entity = self.entity_manager.get_entity(entity_id)?.clone();
         let mut data = SystemEventDataLite {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
@@ -253,22 +243,11 @@ impl World {
         };
         self.system_manager.remove_entity_from_systems(&entity, entity_id, &mut data);
         // Then remove the actual entity last, so it allows for systems to run their entity_removed event
-        let removed_entity = self.entity_manager.internal_remove_entity(&entity_id)?;
         // Remove all the components then entity had
-        for global_component_id in removed_entity.linked_components.values() {
+        for global_component_id in entity.linked_components.values() {
             self.component_manager.id_remove_linked_component(global_component_id).unwrap();
         }        
-        Ok(removed_entity)
-    }
-    // Remove multiple entities at once
-    pub fn remove_entities(&mut self, entity_ids: HashSet<u16>) -> Vec<Entity> {
-        let mut result: Vec<Entity> = Vec::new();
-        // Remove the specified entities  
-
-        for entity_id in entity_ids {
-            result.push(self.remove_entity(entity_id).unwrap());
-        }
-        result
+        Ok(entity)
     }
 }
 
