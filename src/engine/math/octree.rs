@@ -112,14 +112,19 @@ impl Octree {
             let mut current_node: OctreeNode = self.targetted_node.clone().unwrap();
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             let targetted_node = self.targetted_node.clone().unwrap();
+            let mut intersection: bool = false;
             pending_nodes.push(targetted_node);
             // Loop until you can subdivide
-            while !current_node.can_subdivide(&input.target, self.depth) {
+            while !intersection {  
                 // Set the current node as the current's node parent
-                current_node = self.nodes.get(&current_node.parent_center).unwrap().clone();
-                // Since we are moving up the tree, we will get rid of this node and all of it's children
-                node_to_remove = Some(current_node.clone());
-
+                current_node = self.nodes.get(&current_node.parent_center).unwrap().clone();  
+                // Test for intersection 
+                intersection = current_node.can_subdivide(&input.target, self.depth);
+                // If it doesn't hit, then that node must be removed
+                if !intersection {
+                    // Since we are moving up the tree, we will get rid of this node and all of it's children
+                    node_to_remove = Some(current_node.clone());
+                }                
                 // If we are the root node, exit since we are sure that there must be an intersection (If the target is inside the octree that is)
                 if current_node.depth == 0 {
                     break;
@@ -128,7 +133,7 @@ impl Octree {
             // We did find an intersection
             marked_node = Some(current_node);            
         }
-        // Not good
+        // Check if we even changed parents
         if marked_node.is_none() || node_to_remove.is_none() { return; }
         // Then we generate a local octree, using that marked node as the root
         let local_octree_data = self.generate_octree(&input.target, marked_node.unwrap());
@@ -136,11 +141,12 @@ impl Octree {
         // Get the nodes that we've added
         let added_nodes = local_octree_data.0;
         self.added_nodes = added_nodes.values().map(|x| x.clone()).collect();
+
         // Get the nodes that we've deleted
         let mut deleted_nodes: Vec<OctreeNode> = Vec::new();
         {    
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-            pending_nodes.push(node_to_remove.unwrap());
+            pending_nodes.push(node_to_remove.clone().unwrap());
             // Recursively delete the nodes
             while pending_nodes.len() > 0 {
                 let current_node = pending_nodes[0].clone();
@@ -148,8 +154,10 @@ impl Octree {
                 if current_node.children {
                     // Get the children
                     for child_center in current_node.children_centers {
-                        let child_node = self.nodes.get(&child_center).unwrap().clone();
-                        pending_nodes.push(child_node);
+                        if child_center != glam::IVec3::ZERO {
+                            let child_node = self.nodes.get(&child_center).unwrap().clone();
+                            pending_nodes.push(child_node);
+                        }
                     }
                 }
                 // Bruh the second
