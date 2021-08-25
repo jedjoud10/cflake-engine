@@ -17,9 +17,9 @@ impl Intersection {
     pub fn point_sphere(point: &glam::Vec3, sphere: &shapes::Sphere) -> bool {
         return point.distance(sphere.center) < sphere.radius;
     }
-    // Check if a point is inside an AABB
+    // Check if a point is inside an AABB (Returns true if the point in on the edge of the AABB)
     pub fn point_aabb(point: &glam::Vec3, aabb: &bounds::AABB) -> bool {
-        return aabb.min.cmplt(*point).all() && aabb.max.cmpgt(*point).all();
+        return aabb.min.cmple(*point).all() && aabb.max.cmpge(*point).all();
     }
     // Check if an AABB is intersecting a sphere
     pub fn aabb_sphere(aabb: &bounds::AABB, sphere: &shapes::Sphere) -> bool {
