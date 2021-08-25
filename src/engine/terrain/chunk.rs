@@ -6,7 +6,7 @@ use std::collections::HashMap;
 // A component that will be added to well... chunks
 pub struct Chunk {
     pub position: glam::IVec3,
-    pub size: u16,
+    pub size: u32,
     pub data: Box<[Voxel; (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) as usize]>
 }
 

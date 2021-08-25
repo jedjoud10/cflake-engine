@@ -7,7 +7,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.4;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 16;
+pub const OCTREE_DEPTH: u8 = 10;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -23,12 +23,11 @@ pub struct Terrain {
     // Preloaded resources for chunks
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
-    pub time: f32,
 }
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u16) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u32) -> Option<Entity> {
         // Create the entity
         let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
 
@@ -48,7 +47,7 @@ impl Terrain {
         chunk.link_component::<Chunk>(component_manager, chunk_cmp).unwrap();
         chunk.link_component::<components::Transform>(component_manager, components::Transform {
             position: position.as_f32(),
-            scale: glam::vec3((size / self.octree.size as u16) as f32, (size / self.octree.size as u16) as f32, (size / self.octree.size as u16) as f32),
+            scale: glam::vec3((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
             ..components::Transform::default()
         }).unwrap();
         chunk.link_component::<Renderer>(component_manager, Renderer::new()
@@ -89,10 +88,20 @@ impl System for Terrain {
         ];
 
         // Setup the octree
-        self.octree.size = CHUNK_SIZE as u16 - 2;   
+        self.octree.size = CHUNK_SIZE as u32 - 2;   
         self.octree.depth = OCTREE_DEPTH;   
         self.octree.threshold = LOD_THRESHOLD;
         self.octree.generate_base_octree();
+        for (_, octree_node) in &self.octree.nodes {
+            // Only add the octree nodes that have no children
+            if !octree_node.children && octree_node.depth == 0 {
+                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+                if let Option::Some(chunk_entity) = chunk_entity {
+                    let entity_id = data.entity_manager.add_entity_s(chunk_entity);
+                    self.chunks.insert(octree_node.get_center(), entity_id);
+                }                        
+            }
+        }  
         
         // Debug controls
         data.input_manager.bind_key(input::Keys::Y, "update_terrain", input::MapType::Toggle);
@@ -104,7 +113,7 @@ impl System for Terrain {
         let camera_location = data.entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<components::Transform>(data.component_manager).unwrap().position;
-        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 32.0, 1.0, data.time_manager.seconds_since_game_start.cos() as f32 * 32.0);
+        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 50.0, 1.0, data.time_manager.seconds_since_game_start.cos() as f32 * 50.0);
         for (_, octree_node) in &self.octree.nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children {
@@ -113,46 +122,33 @@ impl System for Terrain {
         }       
             
         // Generate the octree each frame and generate / delete the chunks     
-        if data.input_manager.map_toggled("update_terrain") {   
-            if data.time_manager.seconds_since_game_start as f32 > self.time {
-                self.time = data.time_manager.seconds_since_game_start as f32 + 1.0;
-                // Update the terrain
-                self.octree.generate_incremental_octree(OctreeInput { target: camera_location });
-            }
-            data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);      
-
-                
-            /*
-            // Only do one thing, either add the nodes, or remove them
-            if self.octree.added_nodes.len() > 0 {
-                // Turn all the newly added nodes into chunks and instantiate them into the world
-                for octree_node in &self.octree.added_nodes {
-                    // Only add the octree nodes that have no children
-                    if !octree_node.children {
-                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
-                        if let Option::Some(chunk_entity) = chunk_entity {
-                            let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                            self.chunks.insert(octree_node.get_center(), entity_id);
-                        }                        
-                    }
+        if data.input_manager.map_toggled("update_terrain") {                
+            self.octree.generate_incremental_octree(OctreeInput { target: location });              
+            
+            // Turn all the newly added nodes into chunks and instantiate them into the world
+            for octree_node in &self.octree.added_nodes {
+                // Only add the octree nodes that have no children
+                if !octree_node.children {
+                    let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+                    if let Option::Some(chunk_entity) = chunk_entity {
+                        let entity_id = data.entity_manager.add_entity_s(chunk_entity);
+                        self.chunks.insert(octree_node.get_center(), entity_id);
+                    }                        
                 }
-                self.octree.added_nodes.clear();
-            } else if self.octree.removed_nodes.len() > 0 {
-                // Delete all the removed octree nodes from the world 
-                for octree_node in &self.octree.removed_nodes {
-                    if self.chunks.contains_key(&octree_node.get_center()) {
-                        // Remove the chunk from our chunks and from the world
-                        let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
-                        data.entity_manager.remove_entity_s(&entity_id).unwrap();
-                    }
-                }    
-                self.octree.removed_nodes.clear();
-            }  
-            */
+            }        
+            // Delete all the removed octree nodes from the world 
+            for octree_node in &self.octree.removed_nodes {
+                if self.chunks.contains_key(&octree_node.get_center()) {
+                    // Remove the chunk from our chunks and from the world
+                    let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
+                    data.entity_manager.remove_entity_s(&entity_id).unwrap();
+                }
+            }             
         }  
+        data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);   
         for (_, octree_node) in self.octree.nodes.iter() {
             if !octree_node.children {
-                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 1.0, 1.0));
+                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 1.0, 1.0));
                 //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
             }
         }   

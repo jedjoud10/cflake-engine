@@ -16,7 +16,7 @@ pub struct Octree {
     pub added_nodes: Vec<OctreeNode>,
     pub removed_nodes: Vec<OctreeNode>,
     pub threshold: f32,
-    pub size: u16,
+    pub size: u32,
     pub depth: u8,
 }
 
@@ -95,10 +95,9 @@ impl Octree {
             children_centers: [glam::IVec3::ZERO; 8],
             children: false,
         };
-        let octree_data = self.generate_octree(&glam::Vec3::ONE, root_node);
+        let octree_data = self.generate_octree(&glam::Vec3::ZERO, root_node);
         self.nodes = octree_data.0;
         self.targetted_node = octree_data.1;
-        println!("{:?}", self.targetted_node);
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(&mut self, input: OctreeInput) {
@@ -164,6 +163,7 @@ impl Octree {
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             pending_nodes.push(node_to_remove.clone().unwrap());
             // Recursively delete the nodes
+            let mut i = 0;
             while pending_nodes.len() > 0 {
                 let current_node = pending_nodes[0].clone();
                 // Just in case
@@ -177,12 +177,15 @@ impl Octree {
                     }
                 }
                 deleted_center.push(current_node.get_center());
-                deleted_nodes.push(current_node);
+                if i != 0 {
+                    deleted_nodes.push(current_node);
+                }
                 pending_nodes.remove(0);
+                i += 1;
             }
         }
         self.removed_nodes = deleted_nodes;        
-
+        
         // Remove the nodes
         self.nodes.retain(|k, _| !deleted_center.contains(k) || *k == node_to_remove
             .as_ref()
@@ -192,10 +195,10 @@ impl Octree {
         let mut node_to_remove = node_to_remove.unwrap();
         node_to_remove.children = false;
         node_to_remove.children_centers = [glam::IVec3::ZERO; 8];
+        self.added_nodes.push(node_to_remove.clone());
         self.nodes.insert(node_to_remove.get_center(), node_to_remove);    
 
         println!("{}", instant.elapsed().as_micros());
-        println!("{}", self.nodes.len());
     }
 }
 
@@ -229,6 +232,8 @@ impl OctreeNode {
     }
     // Check if we can subdivide this node
     pub fn can_subdivide(&self, target: &glam::Vec3, max_depth: u8) -> bool {
-        return Intersection::point_aabb(target, &self.get_aabb()) && self.depth < (max_depth - 1);
+        // AABB intersection, return true if point in on the min edge though
+        let aabb = self.get_aabb().min.cmple(*target).all() && self.get_aabb().max.cmpgt(*target).all();
+        return aabb&& self.depth < (max_depth - 1);
     }
 }
