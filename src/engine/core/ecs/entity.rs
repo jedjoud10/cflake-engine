@@ -29,7 +29,6 @@ impl EntityManager {
         // Get the id of the entity inside the temp vector (Local ID)
         let id = self.get_next_valid_id();
         entity.entity_id = id;
-        println!("Add s: {:?}", entity);
         // Update
         if id < self.entities.len() as u16 {
             // Turn the none into a valid entity
