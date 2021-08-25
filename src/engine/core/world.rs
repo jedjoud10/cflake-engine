@@ -228,6 +228,8 @@ impl World {
             // Remove the entities from the systems
             for entity_id in self.entity_manager.entities_to_remove.clone() {
                 self.remove_entity_from_systems(&entity_id).unwrap();
+                // After removing it from the systems, we can actually remove the entity
+                self.entity_manager.entities[entity_id as usize] = None;
             }
             self.entity_manager.entities_to_remove.clear();
         }

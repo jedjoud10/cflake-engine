@@ -49,11 +49,10 @@ impl EntityManager {
             return Ok(Some(entity.unwrap())); 
         }
         // Ez check first
-        if *entity_id < self.entities.len() as u16 {
+        if *entity_id < self.entities.len() as u16 {            
             // Check if we can cancel out this entity
             if self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
                 // We have the entity in the entities_to_add vector, so we can cancel it out
-                self.entities[*entity_id as usize] = None;
                 self.entities_to_remove.remove(entity_id);
                 let pos = self.entities_to_add.iter().position(|x| x.entity_id == *entity_id).unwrap();
                 self.entities_to_add.remove(pos);
