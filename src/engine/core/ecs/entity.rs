@@ -5,27 +5,52 @@ use std::collections::{HashMap, HashSet};
 // An entity manager that handles entities
 #[derive(Default)]
 pub struct EntityManager {
-    pub entities: HashMap<u16, Entity>,
+    pub entities: Vec<Option<Entity>>,
     pub entities_to_add: Vec<Entity>,
+    pub temp_entities: Vec<Option<()>>,
     pub entities_to_remove: HashSet<u16>,
-    pub last_internal_entity_id: u16
+    pub next_valid_free_id: u16
 }
 
 impl EntityManager {
+    // Calculate the next valid ID from the actual entities
+    pub fn get_next_valid_id(&self) -> u16 {
+        // Calculate the next valid free ID
+        return self.entities.iter().enumerate().position(|(i, e)| {
+            // We found a free spot      
+            match e {
+                Some(entity) => false,
+                None => true,
+            }
+        }).unwrap_or(self.entities.len()) as u16;
+    }
+    // Calculate the next valid ID from the temporary entities buffer
+    pub fn get_next_valid_id_temp(&self) -> u16 {
+        // Calculate the next valid free ID
+        return self.temp_entities.iter().enumerate().position(|(i, e)| {
+            // We found a free spot      
+            match e {
+                Some(_) => false,
+                None => true,
+            }
+        }).unwrap_or(self.temp_entities.len()) as u16;
+    }
     // Add an entity to the entity manager
     pub fn internal_add_entity(&mut self, mut entity: Entity) -> u16 {
-        entity.entity_id = self.last_internal_entity_id;
-        // Add the entity to the world
-        self.last_internal_entity_id = entity.entity_id + 1;
+        self.next_valid_free_id = self.get_next_valid_id();
+        entity.entity_id = self.next_valid_free_id;
         println!("Add internal: {:?}", entity);
-        let id = entity.entity_id;
-        self.entities.insert(entity.entity_id, entity);
+        let id = entity.entity_id ;
+        // Add the entity to the world
+        self.entities.push(Some(entity));
         id
     }
     // Removes an entity from the world
     pub fn internal_remove_entity(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
-        if self.entities.contains_key(entity_id) {
-            let removed_entity = self.entities.remove(entity_id).unwrap();
+        if *entity_id < self.entities.len() as u16 {
+            let removed_entity = self.get_entity(entity_id)?.clone();
+            // Clear the current entity element
+            self.entities[*entity_id as usize] = None;
             Ok(removed_entity)
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
@@ -33,12 +58,8 @@ impl EntityManager {
     }
     // Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
     pub fn add_entity_s(&mut self, mut entity: Entity) -> u16 {
-        // Temporarily add it to the entities_to_add vector
-
         // Get the id of the entity inside the temp vector (Local ID)
-        let mut id = self.entities_to_add.len() as u16;
-        // Add that id to the id of the entity id (Global ID)
-        id += self.last_internal_entity_id;
+        let id = self.get_next_valid_id_temp();
         entity.entity_id = id;
         println!("Add s: {:?}", entity);
         self.entities_to_add.push(entity);
@@ -52,10 +73,8 @@ impl EntityManager {
         }
         // Temporarily add it to the entities_to_remoe vector
         self.entities_to_remove.insert(entity_id.clone());
-        // Only update the last_entity_id if this was the last entity in the hashmap
-
         // Ez check first
-        if self.entities.contains_key(&entity_id) || self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
+        if *entity_id < self.entities.len() as u16 || self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
             // We do have the entity, return early
             return Ok(());
         } else {
@@ -64,16 +83,18 @@ impl EntityManager {
     }
     // Get a mutable reference to a stored entity
     pub fn get_entity_mut(&mut self, entity_id: &u16) -> Result<&mut Entity, ECSError> {
-        if self.entities.contains_key(entity_id) {
-            return Ok(self.entities.get_mut(entity_id).unwrap());
+        if *entity_id < self.entities.len() as u16 {
+            let entity = self.entities.get_mut(*entity_id as usize).unwrap().as_mut().unwrap(); 
+            return Ok(entity);
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
         }
     }
     // Get an entity using it's entity id
     pub fn get_entity(&self, entity_id: &u16) -> Result<&Entity, ECSError> {
-        if self.entities.contains_key(entity_id) {
-            return Ok(self.entities.get(entity_id).unwrap());
+        if *entity_id < self.entities.len() as u16 {
+            let entity = self.entities.get(*entity_id as usize).unwrap().as_ref().unwrap(); 
+            return Ok(entity);
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
         }

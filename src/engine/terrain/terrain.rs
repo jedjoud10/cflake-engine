@@ -6,6 +6,8 @@ use super::voxel::VoxelGenerator;
 pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.2;
+// The octree depth
+pub const OCTREE_DEPTH: u8 = 4;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -87,7 +89,7 @@ impl System for Terrain {
 
         // Setup the octree
         self.octree.size = CHUNK_SIZE as u8 - 2;   
-        self.octree.depth = 8;   
+        self.octree.depth = OCTREE_DEPTH;   
         self.octree.threshold = LOD_THRESHOLD;
         
         // Debug controls
