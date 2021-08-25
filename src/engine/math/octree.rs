@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 use super::shapes;
 use super::Intersection;
 use super::shapes::Sphere;
@@ -15,7 +16,7 @@ pub struct Octree {
     pub added_nodes: Vec<OctreeNode>,
     pub removed_nodes: Vec<OctreeNode>,
     pub threshold: f32,
-    pub size: u8,
+    pub size: u16,
     pub depth: u8,
 }
 
@@ -88,7 +89,7 @@ impl Octree {
         // Create the root node
         let root_node = OctreeNode { 
             position: root_position,
-            half_extent: (root_size / 2) as u16,
+            half_extent: (root_size / 2) as u32,
             depth: 0,
             parent_center: glam::IVec3::ZERO,
             children_centers: [glam::IVec3::ZERO; 8],
@@ -101,6 +102,7 @@ impl Octree {
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(&mut self, input: OctreeInput) {
+        let instant = Instant::now();
         // If we don't have a targetted node, exit early
         if self.targetted_node.is_none() { return; }
         let marked_node: Option<OctreeNode>;
@@ -139,17 +141,25 @@ impl Octree {
         if marked_node.is_none() || node_to_remove.is_none() { return; }
         // Then we generate a local octree, using that marked node as the root
         let local_octree_data = self.generate_octree(&input.target, marked_node.unwrap());
-        //self.targetted_node = local_octree_data.1;
+        self.targetted_node = local_octree_data.1;
         // Get the nodes that we've added
         let added_nodes = local_octree_data.0;
-        self.added_nodes = added_nodes.values().map(|x| x.clone()).filter(|x| {
-            let parent_node = added_nodes.get(&x.parent_center).unwrap();
-            // Filter out parent nodes that have the target inside their bounds, ignore if the parent is the root node though
-            return parent_node.depth != 0 && (parent_node.can_subdivide(&input.target, self.depth) || x.depth == self.depth - 1) && !x.children
+        // Add the delta to the nodes
+        self.nodes.extend(added_nodes.clone());
+        self.added_nodes = added_nodes.values().map(|x| x.clone()).filter(|x| {        
+            let parent_node = added_nodes.get(&x.parent_center);
+            match parent_node {
+                Some(parent_node) => {
+                    // Filter out parent nodes that have the target inside their bounds, ignore if the parent is the root node though                    
+                    parent_node.depth != 0 && (parent_node.can_subdivide(&input.target, self.depth) || x.depth == self.depth - 1)
+                },
+                None => true
+            }           
         }).collect();
 
         // Get the nodes that we've deleted
         let mut deleted_nodes: Vec<OctreeNode> = Vec::new();
+        let mut deleted_center: Vec<glam::IVec3> = Vec::new();
         {    
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             pending_nodes.push(node_to_remove.clone().unwrap());
@@ -166,12 +176,26 @@ impl Octree {
                         }
                     }
                 }
-                // Bruh the second
+                deleted_center.push(current_node.get_center());
                 deleted_nodes.push(current_node);
                 pending_nodes.remove(0);
             }
         }
-        self.removed_nodes = deleted_nodes;
+        self.removed_nodes = deleted_nodes;        
+
+        // Remove the nodes
+        self.nodes.retain(|k, _| !deleted_center.contains(k) || *k == node_to_remove
+            .as_ref()
+            .unwrap()
+            .get_center());
+        // Update the removed node
+        let mut node_to_remove = node_to_remove.unwrap();
+        node_to_remove.children = false;
+        node_to_remove.children_centers = [glam::IVec3::ZERO; 8];
+        self.nodes.insert(node_to_remove.get_center(), node_to_remove);    
+
+        println!("{}", instant.elapsed().as_micros());
+        println!("{}", self.nodes.len());
     }
 }
 
@@ -179,7 +203,7 @@ impl Octree {
 #[derive(Clone, Debug)]
 pub struct OctreeNode {
     pub position: glam::IVec3,
-    pub half_extent: u16,
+    pub half_extent: u32,
     pub depth: u8,
 
 

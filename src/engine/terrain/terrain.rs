@@ -7,7 +7,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.4;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 4;
+pub const OCTREE_DEPTH: u8 = 16;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -23,6 +23,7 @@ pub struct Terrain {
     // Preloaded resources for chunks
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
+    pub time: f32,
 }
 
 impl Terrain {
@@ -88,7 +89,7 @@ impl System for Terrain {
         ];
 
         // Setup the octree
-        self.octree.size = CHUNK_SIZE as u8 - 2;   
+        self.octree.size = CHUNK_SIZE as u16 - 2;   
         self.octree.depth = OCTREE_DEPTH;   
         self.octree.threshold = LOD_THRESHOLD;
         self.octree.generate_base_octree();
@@ -113,9 +114,14 @@ impl System for Terrain {
             
         // Generate the octree each frame and generate / delete the chunks     
         if data.input_manager.map_toggled("update_terrain") {   
-            // Update the terrain
-            self.octree.generate_incremental_octree(OctreeInput { target: location });  
-            data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);          
+            if data.time_manager.seconds_since_game_start as f32 > self.time {
+                self.time = data.time_manager.seconds_since_game_start as f32 + 1.0;
+                // Update the terrain
+                self.octree.generate_incremental_octree(OctreeInput { target: camera_location });
+            }
+            data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);      
+
+                
             /*
             // Only do one thing, either add the nodes, or remove them
             if self.octree.added_nodes.len() > 0 {
@@ -144,6 +150,12 @@ impl System for Terrain {
             }  
             */
         }  
+        for (_, octree_node) in self.octree.nodes.iter() {
+            if !octree_node.children {
+                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 1.0, 1.0));
+                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
+            }
+        }   
         for octree_node in self.octree.removed_nodes.iter() {
             if !octree_node.children {
                 data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 0.0, 0.0));
