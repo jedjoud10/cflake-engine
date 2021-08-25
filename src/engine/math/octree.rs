@@ -51,7 +51,6 @@ impl Octree {
             let mut octree_node = pending_nodes[0].clone();
             let extent_i32 = octree_node.half_extent as i32;
             // If the node contains the position, subdivide it
-            let aabb = octree_node.get_aabb();            
             if input.target.distance(octree_node.get_center().as_f32()) / (octree_node.half_extent as f32 * 2.0) < self.threshold && octree_node.depth < (self.depth - 1) {
                 // If it intersects the sphere, subdivide this octree node into multiple smaller ones
                 let mut i: u16 = 0;
