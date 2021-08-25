@@ -67,7 +67,7 @@ impl Octree {
                             };                            
                             let center = child.get_center();
                             octree_node.children_centers[i as usize] = center; 
-                            pending_nodes.push(child);                            
+                            pending_nodes.push(child);
                             i += 1;
                         }
                     }
@@ -133,6 +133,8 @@ impl Octree {
             // We did find an intersection
             marked_node = Some(current_node);            
         }
+        self.added_nodes.clear();
+        self.removed_nodes.clear();
         // Check if we even changed parents
         if marked_node.is_none() || node_to_remove.is_none() { return; }
         // Then we generate a local octree, using that marked node as the root
@@ -140,7 +142,11 @@ impl Octree {
         //self.targetted_node = local_octree_data.1;
         // Get the nodes that we've added
         let added_nodes = local_octree_data.0;
-        self.added_nodes = added_nodes.values().map(|x| x.clone()).collect();
+        self.added_nodes = added_nodes.values().map(|x| x.clone()).filter(|x| {
+            let parent_node = added_nodes.get(&x.parent_center).unwrap();
+            // Filter out parent nodes that have the target inside their bounds, ignore if the parent is the root node though
+            return parent_node.depth != 0 && (parent_node.can_subdivide(&input.target, self.depth) || x.depth == self.depth - 1) && !x.children
+        }).collect();
 
         // Get the nodes that we've deleted
         let mut deleted_nodes: Vec<OctreeNode> = Vec::new();
