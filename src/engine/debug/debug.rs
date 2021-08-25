@@ -55,11 +55,13 @@ impl DebugRenderer {
         if !DRAW_DEBUG {
             return;
         }
+        // Save the color of the debugged lines
+        let mut color: glam::Vec3 = glam::Vec3::ZERO;
         // Loop each one and construct lines out of them
         let mut lines: Vec<math::shapes::Line> = Vec::new();
         for renderer in self.debug_primitives.iter() {
             match renderer {
-                DebugRendererType::CUBE(corners) => {
+                DebugRendererType::CUBE(corners, icolor) => {
                     // Turn the corners into lines
                     // Bottom
                     lines.push(math::shapes::Line::construct(corners[0], corners[1]));
@@ -78,13 +80,15 @@ impl DebugRenderer {
                     lines.push(math::shapes::Line::construct(corners[5], corners[6]));
                     lines.push(math::shapes::Line::construct(corners[6], corners[7]));
                     lines.push(math::shapes::Line::construct(corners[7], corners[4]));
+                    color = *icolor;
                 }
-                DebugRendererType::SPHERE(_center, _radius) => todo!(),
-                DebugRendererType::LINE(line) => {
+                DebugRendererType::SPHERE(_center, _radius, icolor) => todo!(),
+                DebugRendererType::LINE(line, icolor) => {
                     // Just use the line lol
                     lines.push(*line);
+                    color = *icolor;
                 }
-                DebugRendererType::MODEL(_model) => todo!(),
+                DebugRendererType::MODEL(_model, icolor) => todo!(),
             }
         }
 
@@ -114,7 +118,7 @@ impl DebugRenderer {
         // Since we don't have a model matrix you can set it directly
         shader.use_shader();
         shader.set_matrix_44_uniform("vp_matrix", vp_matrix * glam::Mat4::IDENTITY);
-        shader.set_scalar_3_uniform("debug_color", (1.0, 1.0, 1.0));
+        shader.set_scalar_3_uniform("debug_color", (color.x, color.y, color.z));
 
         // Draw each line
         unsafe {
@@ -135,7 +139,7 @@ impl DebugRenderer {
         self.debug_primitives.push(debug_renderer_type);
     }
     // Add a default debug primite to the queue
-    pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType) {
+    pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType, color: glam::Vec3) {
         if !DRAW_DEBUG {
             return;
         }
@@ -148,7 +152,7 @@ impl DebugRenderer {
                     .map(|&x| center + (x * size) - size / 2.0)
                     .collect::<Vec<glam::Vec3>>();
                 // Add the cube debug primitive
-                self.debug(DebugRendererType::CUBE(new_corner));
+                self.debug(DebugRendererType::CUBE(new_corner, color));
             }
             DefaultDebugRendererType::AABB(aabb) => {
                 // Get the corners
@@ -158,7 +162,7 @@ impl DebugRenderer {
                     corners.push(aabb.get_corner(corner_index));
                 }
                 // Add the cube debug primitive
-                self.debug(DebugRendererType::CUBE(corners));
+                self.debug(DebugRendererType::CUBE(corners, color));
             }
         }
     }
@@ -166,10 +170,10 @@ impl DebugRenderer {
 
 // The types of debug renderers
 pub enum DebugRendererType {
-    CUBE(Vec<glam::Vec3>),
-    SPHERE(glam::Vec3, f32),
-    LINE(math::shapes::Line),
-    MODEL(Model),
+    CUBE(Vec<glam::Vec3>, glam::Vec3),
+    SPHERE(glam::Vec3, f32, glam::Vec3),
+    LINE(math::shapes::Line, glam::Vec3),
+    MODEL(Model, glam::Vec3),
 }
 
 // Kind of a wrapper around DebugRendererType, since it creates one from the data that we get

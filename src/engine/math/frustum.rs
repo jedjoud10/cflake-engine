@@ -25,6 +25,6 @@ impl DebugRendererable for Frustum {
             let projected_corner = self.matrix.inverse().project_point3(new_corner);
             projected_corners.push(projected_corner);
         }
-        DebugRendererType::CUBE(projected_corners)
+        return DebugRendererType::CUBE(projected_corners, glam::Vec3::ONE);
     }
 }

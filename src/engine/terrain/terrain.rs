@@ -142,14 +142,19 @@ impl System for Terrain {
                 self.octree.removed_nodes.clear();
             }  
             */
-        }
-
-        for octree_node in self.octree.added_nodes.iter() {
+        }  
+        for octree_node in self.octree.removed_nodes.iter() {
             if !octree_node.children {
-                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()))
+                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 0.0, 0.0));
                 //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
             }
-        }
+        }      
+        for octree_node in self.octree.added_nodes.iter() {
+            if !octree_node.children {
+                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(0.0, 1.0, 0.0));
+                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
+            }
+        }        
     }
 
     // Called for each entity in the system
