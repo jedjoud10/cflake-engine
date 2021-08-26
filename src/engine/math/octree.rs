@@ -149,8 +149,8 @@ impl Octree {
         self.targetted_node = local_octree_data.1;
         // Get the nodes that we've added
         let added_nodes = local_octree_data.0;        
-        // Add the delta to the nodes
-        self.nodes.extend(added_nodes.clone());
+
+        // Set the added nodes
         self.added_nodes = added_nodes.values().map(|x| x.clone()).filter(|x| {    
             let valid_in_nodes = self.nodes.get(&x.get_center());
             match valid_in_nodes {
@@ -158,9 +158,10 @@ impl Octree {
                 None => { true }
             }
         }).collect();
+        // Add the delta to the nodes
+        self.nodes.extend(added_nodes.clone());
 
         // Get the nodes that we've deleted
-        let mut deleted_nodes: Vec<OctreeNode> = Vec::new();
         let mut deleted_centers: Vec<glam::IVec3> = Vec::new();
         {    
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
@@ -180,12 +181,10 @@ impl Octree {
                     }
                 }
                 deleted_centers.push(current_node.get_center());
-                deleted_nodes.push(current_node);
                 pending_nodes.remove(0);
                 i += 1;
             }
         }
-        self.removed_nodes = deleted_nodes;        
         
         // Update the removed node
         let mut node_to_remove = node_to_remove.unwrap();
@@ -193,10 +192,17 @@ impl Octree {
         node_to_remove.children_centers = [glam::IVec3::ZERO; 8];        
         self.added_nodes.push(node_to_remove.clone());
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());    
-
+        
         // Remove the nodes
+        self.removed_nodes = self.nodes.iter().filter_map(|(coord, node)| {
+            if !deleted_centers.contains(coord) || *coord == node_to_remove.get_center() {
+                None
+            } else {
+                Some(node.clone())
+            }
+        }).collect();        
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
-        println!("Time in micros: {}", instant.elapsed().as_micros());
+        //println!("Time in micros: {}", instant.elapsed().as_micros());
     }
 }
 

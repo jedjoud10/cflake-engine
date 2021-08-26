@@ -113,12 +113,12 @@ impl System for Terrain {
         let camera_location = data.entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<components::Transform>(data.component_manager).unwrap().position;
-        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 500.0, data.time_manager.seconds_since_game_start.cos() as f32 * 500.0, data.time_manager.seconds_since_game_start.cos() as f32 * 500.0);      
+        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 1000.0, 30.0, data.time_manager.seconds_since_game_start.cos() as f32 * 1000.0);      
             
         // Generate the octree each frame and generate / delete the chunks     
         if data.input_manager.map_toggled("update_terrain") {                
             self.octree.generate_incremental_octree(OctreeInput { target: location });              
-            /*
+            
             // Turn all the newly added nodes into chunks and instantiate them into the world
             for octree_node in &self.octree.added_nodes {
                 // Only add the octree nodes that have no children
@@ -136,9 +136,11 @@ impl System for Terrain {
                     // Remove the chunk from our chunks and from the world
                     let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
+                } else {
+                    println!("Le bruh");
                 }
             }   
-            */         
+                    
         }  
         data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);   
         for (_, octree_node) in self.octree.nodes.iter() {
