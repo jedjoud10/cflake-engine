@@ -7,7 +7,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.4;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 4;
+pub const OCTREE_DEPTH: u8 = 6;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -27,7 +27,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u32) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u32, depth: u8) -> Option<Entity> {
         // Create the entity
         let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
 
@@ -48,7 +48,7 @@ impl Terrain {
         // Link the components
         chunk.link_component::<Chunk>(component_manager, chunk_cmp).unwrap();
         chunk.link_component::<components::Transform>(component_manager, components::Transform {
-            position: position.as_f32(),
+            position: position.as_f32() + glam::Vec3::Y * depth as f32 * (CHUNK_SIZE-2) as f32,
             scale: glam::vec3((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
             ..components::Transform::default()
         }).unwrap();
@@ -98,7 +98,7 @@ impl System for Terrain {
         for (_, octree_node) in &self.octree.nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children && octree_node.depth == 0 {
-                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2, octree_node.depth);
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
@@ -127,7 +127,7 @@ impl System for Terrain {
                 // Only add the octree nodes that have no children
                 if !octree_node.children {
                     if !self.chunks.contains_key(&octree_node.get_center()) {
-                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2).unwrap();
+                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2, octree_node.depth).unwrap();
                         let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                         self.chunks.insert(octree_node.get_center(), entity_id);                        
                     }                

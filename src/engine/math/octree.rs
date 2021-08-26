@@ -108,6 +108,7 @@ impl Octree {
         // If we don't have a targetted node, exit early
         if self.targetted_node.is_none() { return; }
         let marked_node: Option<OctreeNode>;
+        let mut old_octree_node_center: Option<glam::IVec3> = None;
 
         // We'll have only one main octree node that we will remove, and we will recursively remove it's children as well
         let mut node_to_remove: Option<OctreeNode> = None;
@@ -120,6 +121,8 @@ impl Octree {
             pending_nodes.push(targetted_node);
             // Loop until you can subdivide
             while !intersection {  
+                // Get the parent node for later
+                old_octree_node_center = Some(current_node.get_center());
                 // Set the current node as the current's node parent
                 current_node = self.nodes.get(&current_node.parent_center).unwrap().clone();  
                 // Test for intersection 
@@ -195,8 +198,17 @@ impl Octree {
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());    
         
         // Remove the nodes
-        self.removed_nodes = self.nodes.iter().filter_map(|(coord, node)| {
-            if deleted_centers.contains(coord) && *coord != node_to_remove.get_center() || *coord == marked_node.as_ref().unwrap().get_center() {
+        self.removed_nodes = self.nodes.iter().filter_map(|(&coord, node)| {
+            // If it's the marked node or one of it's children in case it's the root node
+            let local_marked_node = marked_node.as_ref().unwrap();
+            let mut valid: bool = false;
+            if local_marked_node.depth == 0 {
+                //valid = local_marked_node.children_centers.contains(&coord) && node.can_subdivide(&input.target, self.depth);
+            } else {
+                valid |= node.parent_center == local_marked_node.get_center() && node.can_subdivide(&input.target, self.depth);
+            }
+            valid |= local_marked_node.get_center() == coord;
+            if deleted_centers.contains(&coord) && coord != node_to_remove.get_center() || valid || node.children {
                 Some(node.clone())
             } else { None }
         }).collect();        
