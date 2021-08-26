@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::time::Instant;
 use super::shapes;
 use super::Intersection;
@@ -96,20 +97,19 @@ impl Octree {
             children_centers: [glam::IVec3::ZERO; 8],
             children: false,
         };
-        let octree_data = self.generate_octree(&glam::Vec3::ZERO, root_node);
+        let octree_data = self.generate_octree(&glam::Vec3::ONE, root_node);
         self.nodes = octree_data.0;
         self.targetted_node = octree_data.1;
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(&mut self, input: OctreeInput) {
-        self.added_nodes.clear();
-        self.removed_nodes.clear();
         let instant = Instant::now();
+        self.added_nodes.clear();
+        self.removed_nodes.clear();        
         // If we don't have a targetted node, exit early
         if self.targetted_node.is_none() { return; }
         let marked_node: Option<OctreeNode>;
-        let mut old_octree_node_center: Option<glam::IVec3> = None;
-
+        
         // We'll have only one main octree node that we will remove, and we will recursively remove it's children as well
         let mut node_to_remove: Option<OctreeNode> = None;
         // Go up the tree, marking the nodes that have been removed along the way
@@ -121,8 +121,6 @@ impl Octree {
             pending_nodes.push(targetted_node);
             // Loop until you can subdivide
             while !intersection {  
-                // Get the parent node for later
-                old_octree_node_center = Some(current_node.get_center());
                 // Set the current node as the current's node parent
                 current_node = self.nodes.get(&current_node.parent_center).unwrap().clone();  
                 // Test for intersection 
@@ -166,7 +164,7 @@ impl Octree {
         self.nodes.extend(added_nodes.clone());
 
         // Get the nodes that we've deleted
-        let mut deleted_centers: Vec<glam::IVec3> = Vec::new();
+        let mut deleted_centers: HashSet<glam::IVec3> = HashSet::new();
         {    
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             pending_nodes.push(node_to_remove.clone().unwrap());
@@ -184,7 +182,7 @@ impl Octree {
                         }
                     }
                 }
-                deleted_centers.push(current_node.get_center());
+                deleted_centers.insert(current_node.get_center());
                 pending_nodes.remove(0);
                 i += 1;
             }
@@ -197,23 +195,22 @@ impl Octree {
         self.added_nodes.push(node_to_remove.clone());
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());    
         
+        let center: glam::IVec3 = marked_node.as_ref().unwrap().get_center();
+        let depth: u8 = marked_node.as_ref().unwrap().depth;
+        
+        println!("Time in micros: {}", instant.elapsed().as_micros());
         // Remove the nodes
         self.removed_nodes = self.nodes.iter().filter_map(|(&coord, node)| {
-            // If it's the marked node or one of it's children in case it's the root node
-            let local_marked_node = marked_node.as_ref().unwrap();
-            let mut valid: bool = false;
-            if local_marked_node.depth == 0 {
-                //valid = local_marked_node.children_centers.contains(&coord) && node.can_subdivide(&input.target, self.depth);
-            } else {
-                valid |= node.parent_center == local_marked_node.get_center() && node.can_subdivide(&input.target, self.depth);
+            // Check if this node should be removed
+            let mut valid: bool = node.children || center == coord;
+            if depth != 0 {
+                valid |= node.parent_center == center && node.can_subdivide(&input.target, self.depth);
             }
-            valid |= local_marked_node.get_center() == coord;
-            if deleted_centers.contains(&coord) && coord != node_to_remove.get_center() || valid || node.children {
+            if deleted_centers.contains(&coord) && coord != node_to_remove.get_center() || valid  {
                 Some(node.clone())
             } else { None }
         }).collect();        
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
-        //println!("Time in micros: {}", instant.elapsed().as_micros());
     }
 }
 
