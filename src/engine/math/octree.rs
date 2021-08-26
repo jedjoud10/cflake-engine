@@ -37,6 +37,7 @@ impl Default for Octree {
 impl Octree {
     // Generate an octree from a root and a target point
     pub fn generate_octree(&self, target: &glam::Vec3, root_node: OctreeNode) -> (HashMap<glam::IVec3, OctreeNode>, Option<OctreeNode>) {
+        //let target = ((target_n.as_i32() - glam::ivec3(self.size as i32, self.size as i32, self.size as i32)).as_f32() / self.size as f32).round() * self.size as f32 + (self.size as f32 / 2.0);
         let mut nodes: HashMap<glam::IVec3, OctreeNode> = HashMap::new();
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         pending_nodes.push(root_node.clone());
@@ -101,6 +102,8 @@ impl Octree {
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(&mut self, input: OctreeInput) {
+        self.added_nodes.clear();
+        self.removed_nodes.clear();
         let instant = Instant::now();
         // If we don't have a targetted node, exit early
         if self.targetted_node.is_none() { return; }
@@ -124,8 +127,13 @@ impl Octree {
                 // If it doesn't hit, then that node must be removed
                 if !intersection {
                     // Since we are moving up the tree, we will get rid of this node and all of it's children
-                    node_to_remove = Some(current_node.clone());
-                }                
+                    if current_node.children {                        
+                        node_to_remove = Some(current_node.clone());
+                    }
+                } else {
+                    // It hit
+                    break;
+                }
                 // If we are the root node, exit since we are sure that there must be an intersection (If the target is inside the octree that is)
                 if current_node.depth == 0 {
                     break;
@@ -133,32 +141,27 @@ impl Octree {
             }
             // We did find an intersection
             marked_node = Some(current_node);            
-        }
-        self.added_nodes.clear();
-        self.removed_nodes.clear();
+        }        
         // Check if we even changed parents
         if marked_node.is_none() || node_to_remove.is_none() { return; }
         // Then we generate a local octree, using that marked node as the root
         let local_octree_data = self.generate_octree(&input.target, marked_node.unwrap());
         self.targetted_node = local_octree_data.1;
         // Get the nodes that we've added
-        let added_nodes = local_octree_data.0;
+        let added_nodes = local_octree_data.0;        
         // Add the delta to the nodes
         self.nodes.extend(added_nodes.clone());
-        self.added_nodes = added_nodes.values().map(|x| x.clone()).filter(|x| {        
-            let parent_node = added_nodes.get(&x.parent_center);
-            match parent_node {
-                Some(parent_node) => {
-                    // Filter out parent nodes that have the target inside their bounds, ignore if the parent is the root node though                    
-                    parent_node.depth != 0 && (parent_node.can_subdivide(&input.target, self.depth) || x.depth == self.depth - 1)
-                },
-                None => true
-            }           
+        self.added_nodes = added_nodes.values().map(|x| x.clone()).filter(|x| {    
+            let valid_in_nodes = self.nodes.get(&x.get_center());
+            match valid_in_nodes {
+                Some(_) => { false }
+                None => { true }
+            }
         }).collect();
 
         // Get the nodes that we've deleted
         let mut deleted_nodes: Vec<OctreeNode> = Vec::new();
-        let mut deleted_center: Vec<glam::IVec3> = Vec::new();
+        let mut deleted_centers: Vec<glam::IVec3> = Vec::new();
         {    
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             pending_nodes.push(node_to_remove.clone().unwrap());
@@ -166,6 +169,7 @@ impl Octree {
             let mut i = 0;
             while pending_nodes.len() > 0 {
                 let current_node = pending_nodes[0].clone();
+                println!("{:?}", current_node);
                 // Just in case
                 if current_node.children {
                     // Get the children
@@ -176,29 +180,24 @@ impl Octree {
                         }
                     }
                 }
-                deleted_center.push(current_node.get_center());
-                if i != 0 {
-                    deleted_nodes.push(current_node);
-                }
+                deleted_centers.push(current_node.get_center());
+                deleted_nodes.push(current_node);
                 pending_nodes.remove(0);
                 i += 1;
             }
         }
         self.removed_nodes = deleted_nodes;        
         
-        // Remove the nodes
-        self.nodes.retain(|k, _| !deleted_center.contains(k) || *k == node_to_remove
-            .as_ref()
-            .unwrap()
-            .get_center());
         // Update the removed node
         let mut node_to_remove = node_to_remove.unwrap();
         node_to_remove.children = false;
-        node_to_remove.children_centers = [glam::IVec3::ZERO; 8];
+        node_to_remove.children_centers = [glam::IVec3::ZERO; 8];        
         self.added_nodes.push(node_to_remove.clone());
-        self.nodes.insert(node_to_remove.get_center(), node_to_remove);    
+        self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());    
 
-        println!("{}", instant.elapsed().as_micros());
+        // Remove the nodes
+        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
+        println!("{}", deleted_centers.len());
     }
 }
 
@@ -234,6 +233,6 @@ impl OctreeNode {
     pub fn can_subdivide(&self, target: &glam::Vec3, max_depth: u8) -> bool {
         // AABB intersection, return true if point in on the min edge though
         let aabb = self.get_aabb().min.cmple(*target).all() && self.get_aabb().max.cmpgt(*target).all();
-        return aabb&& self.depth < (max_depth - 1);
+        return aabb && self.depth < (max_depth - 1);
     }
 }

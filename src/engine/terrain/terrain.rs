@@ -7,7 +7,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.4;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 10;
+pub const OCTREE_DEPTH: u8 = 8;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -113,18 +113,12 @@ impl System for Terrain {
         let camera_location = data.entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<components::Transform>(data.component_manager).unwrap().position;
-        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 50.0, 1.0, data.time_manager.seconds_since_game_start.cos() as f32 * 50.0);
-        for (_, octree_node) in &self.octree.nodes {
-            // Only add the octree nodes that have no children
-            if !octree_node.children {
-                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
-            }
-        }       
+        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 125.0, data.time_manager.seconds_since_game_start.cos() as f32 * 50.0, data.time_manager.seconds_since_game_start.cos() as f32 * 125.0);      
             
         // Generate the octree each frame and generate / delete the chunks     
         if data.input_manager.map_toggled("update_terrain") {                
             self.octree.generate_incremental_octree(OctreeInput { target: location });              
-            
+            /*
             // Turn all the newly added nodes into chunks and instantiate them into the world
             for octree_node in &self.octree.added_nodes {
                 // Only add the octree nodes that have no children
@@ -143,25 +137,18 @@ impl System for Terrain {
                     let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
                 }
-            }             
+            }   
+            */         
         }  
         data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);   
         for (_, octree_node) in self.octree.nodes.iter() {
-            if !octree_node.children {
-                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 1.0, 1.0));
-                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
-            }
+            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 1.0, 1.0));            
         }   
-        for octree_node in self.octree.removed_nodes.iter() {
-            if !octree_node.children {
-                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 0.0, 0.0));
-                //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()));
-            }
+        for octree_node in self.octree.removed_nodes.iter() {            
+            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 0.0, 0.0));            
         }      
         for octree_node in self.octree.added_nodes.iter() {
-            if !octree_node.children {
-                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(0.0, 1.0, 0.0));
-            }
+            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(0.0, 1.0, 0.0));
         }        
     }
 

@@ -113,8 +113,8 @@ impl ProceduralModelGenerator for Chunk {
                             let density1 = self.data[index1].density;
                             let density2 = self.data[index2].density;
                             // Do inverse linear interpolation to find the factor value
-                            let value: f32 = inverse_lerp(density1, density2, 0.0);
-
+                            let mut value: f32 = inverse_lerp(density1, density2, 0.0);
+                            //value = 0.5;
                             // Create the vertex
                             let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
                             // Offset the vertex
