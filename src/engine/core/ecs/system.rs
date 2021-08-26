@@ -13,7 +13,7 @@ use crate::engine::core::world::Time;
 #[derive(Default)]
 // Manages the systems
 pub struct SystemManager {
-    systems: Vec<Box<dyn System>>,
+    pub systems: Vec<Box<dyn System>>,
 }
 
 impl SystemManager {

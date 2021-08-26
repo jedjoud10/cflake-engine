@@ -50,7 +50,13 @@ impl World {
     // Load everything that needs to be loaded by default
     fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load all the default things
-        self.input_manager.setup_default_bindings();
+        // Load default bindings 
+        self.input_manager.bind_key(Keys::Escape, "quit", MapType::Button);
+        self.input_manager.bind_key(Keys::F1, "fullscreen", MapType::Button);
+        self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
+        self.input_manager.bind_key(Keys::F3, "change_debug_view", MapType::Button);
+        self.input_manager.bind_key(Keys::F, "toggle_wireframe", MapType::Button);
+
         self.custom_data.window.size = Self::get_default_window_size();
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
@@ -143,9 +149,12 @@ impl World {
         if self.input_manager.map_pressed("fullscreen") {
             self.toggle_fullscreen(glfw, window);
         }
-        // Capture the fps
-        if self.input_manager.map_pressed("capture_fps") {
-            println!("Current FPS: '{}', Delta: '{}'", self.time_manager.fps, self.time_manager.delta_time);
+        // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
+        if self.input_manager.map_pressed("debug_info") {
+            println!("Component count: '{}'", self.component_manager.linked_components.len());
+            println!("Entity count: '{}'", self.entity_manager.entities.len());
+            println!("System count: '{}'", self.system_manager.systems.len());
+            println!("Time: '{}', Delta Time: '{}', FPS: '{}'", self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps);
         }
         // Change the debug view
         if self.input_manager.map_pressed("change_debug_view") {

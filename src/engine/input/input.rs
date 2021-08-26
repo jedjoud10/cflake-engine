@@ -102,14 +102,6 @@ impl InputManager {
             Keys::F12 => glfw::Key::get_scancode(&glfw::Key::F12),
         }
     }
-    // Setup the default input bindings
-    pub fn setup_default_bindings(&mut self) {
-        self.bind_key(Keys::Escape, "quit", MapType::Button);
-        self.bind_key(Keys::F1, "fullscreen", MapType::Button);
-        self.bind_key(Keys::F2, "capture_fps", MapType::Button);
-        self.bind_key(Keys::F3, "change_debug_view", MapType::Button);
-        self.bind_key(Keys::F, "toggle_wireframe", MapType::Button);
-    }
     // Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
     pub fn update(&mut self, _window: &mut glfw::Window) {
         // Update mappings first
