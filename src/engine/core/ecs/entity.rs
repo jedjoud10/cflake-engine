@@ -17,8 +17,8 @@ impl EntityManager {
     pub fn get_next_valid_id(&self) -> u16 {
         // Calculate the next valid free ID
         return self.entities.iter().enumerate().position(|(i, e)| {
-            // We found a free spot      
             match e {
+                // We found a free spot      
                 Some(entity) => false,
                 None => true,
             }

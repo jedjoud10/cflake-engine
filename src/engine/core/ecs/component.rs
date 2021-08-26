@@ -4,25 +4,33 @@ use std::{any::Any, collections::HashMap};
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
     component_ids: HashMap<String, u16>,
-    pub linked_component: HashMap<u16, Box<dyn ComponentInternal + Send + Sync>>,
+    pub linked_components: Vec<Option<Box<dyn ComponentInternal + Send + Sync>>>,
     pub current_component_id: u16,
-    pub last_global_component_id: u16,
 }
 
 impl Default for ComponentManager {
     fn default() -> Self {
         Self {
             component_ids: HashMap::new(),
-            linked_component: HashMap::new(),
+            linked_components: Vec::new(),
             current_component_id: 1,
-            last_global_component_id: 0,
         }
     }
 }
 
 // Implement all the functions
 impl ComponentManager {
-    // Gets a mutable reference to a component using it's component ID
+    // Calculate the next valid ID from the actual components
+    pub fn get_next_valid_id(&self) -> u16 {
+        // Calculate the next valid free ID
+        return self.linked_components.iter().enumerate().position(|(i, c)| {
+            match c {
+                // We found a free spot      
+                Some(component) => false,
+                None => true,
+            }
+        }).unwrap_or(self.linked_components.len()) as u16;
+    }
     // Registers a specific component
     pub fn register_component<T: ComponentID>(&mut self) -> u16 {
         let name: String = T::get_component_name();
@@ -52,11 +60,16 @@ impl ComponentManager {
     }
     // Add a specific linked componment to the component manager, returns the global IDs of the components
     pub fn add_linked_component<T: Component + ComponentID + Send + Sync + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
-        let global_id = self.last_global_component_id;
-        self.last_global_component_id += 1;
+        let global_id = self.get_next_valid_id();
         let boxed_component = Box::new(component);
         // Remember: This also update the component if it already exists
-        self.linked_component.insert(global_id, boxed_component);
+        if global_id < self.linked_components.len() as u16 {
+            // It found a smart free spot, update it
+            self.linked_components[global_id as usize] = Some(boxed_component);
+        } else {
+            // The free spot is at the end, so push a new component
+            self.linked_components.push(Some(boxed_component));
+        }
         // Give back the global ID of the component
         Ok(global_id)
     }
@@ -76,19 +89,20 @@ impl ComponentManager {
     pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
-        let linked_component = self.linked_component.get(global_id).ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component(linked_component)?;
+        let linked_component = self.linked_components.get(*global_id as usize).ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
+        let component = Self::cast_component(linked_component.as_ref().ok_or(ECSError::new(format!("The component at global ID: '{}' is None!", global_id)))?)?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
     pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
-        let linked_component = self.linked_component.get_mut(global_id).ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component_mut(linked_component)?;
+        let linked_component = self.linked_components.get_mut(*global_id as usize).ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
+        let component = Self::cast_component_mut(linked_component.as_mut().ok_or(ECSError::new(format!("The component at global ID: '{}' is None!", global_id)))?)?;
         Ok(component)
     }
     // Remove a specified component from the list
     pub fn id_remove_linked_component(&mut self, global_id: &u16) -> Result<(), ECSError> {
-        self.linked_component.remove(global_id);
+        // To remove a specific component just set it's component slot to None
+        self.linked_components[*global_id as usize] = None;
         return Ok(());
     }
 }

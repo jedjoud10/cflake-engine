@@ -36,11 +36,13 @@ impl Terrain {
         chunk_cmp.position = position;
         chunk_cmp.size = size;
         let min_max = chunk_cmp.generate_data(&self.voxel_generator);
+        /*
         // Check if we should even generate the model        
         if min_max.0.signum() == min_max.1.signum() {
             // No intersection
             return None;
         }        
+        */
         let model = chunk_cmp.generate_model();
 
         // Link the components
