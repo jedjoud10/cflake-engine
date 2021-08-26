@@ -53,6 +53,7 @@ impl Terrain {
         chunk.link_component::<Renderer>(component_manager, Renderer::new()
             .load_textures(self.texture_ids.clone(), texture_cacher)
             .set_model(model)
+            .set_wireframe(true)
             .set_shader(self.shader_name.as_str())).unwrap();
         chunk.link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager)).unwrap();
         
@@ -123,10 +124,12 @@ impl System for Terrain {
             for octree_node in &self.octree.added_nodes {
                 // Only add the octree nodes that have no children
                 if !octree_node.children {
-                    let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
-                    if let Option::Some(chunk_entity) = chunk_entity {
-                        let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                        self.chunks.insert(octree_node.get_center(), entity_id);
+                    if !self.chunks.contains_key(&octree_node.get_center()) {
+                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+                        if let Option::Some(chunk_entity) = chunk_entity {
+                            let entity_id = data.entity_manager.add_entity_s(chunk_entity);
+                            self.chunks.insert(octree_node.get_center(), entity_id);
+                        }
                     }                        
                 }
             }        
@@ -136,11 +139,8 @@ impl System for Terrain {
                     // Remove the chunk from our chunks and from the world
                     let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
-                } else {
-                    println!("Le bruh");
-                }
-            }   
-                    
+                }                
+            }    
         }  
         data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);   
         for (_, octree_node) in self.octree.nodes.iter() {
