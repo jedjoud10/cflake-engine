@@ -68,7 +68,7 @@ impl DebugRenderer {
             return;
         }
         // Loop each one and construct lines out of them
-        let mut lines: Vec<math::shapes::Line> = Vec::new();        
+        let mut lines: Vec<math::shapes::Line> = Vec::new();
         self.colors.clear();
         for renderer in self.debug_primitives.iter() {
             match renderer {
@@ -91,7 +91,7 @@ impl DebugRenderer {
                     lines.push(math::shapes::Line::construct(corners[5], corners[6]));
                     lines.push(math::shapes::Line::construct(corners[6], corners[7]));
                     lines.push(math::shapes::Line::construct(corners[7], corners[4]));
-                    for i in 0..(12*2) {
+                    for i in 0..(12 * 2) {
                         self.colors.push(*icolor);
                     }
                 }
@@ -113,7 +113,7 @@ impl DebugRenderer {
             self.vertices.push(line.point);
             self.vertices.push(line.point2);
         }
-        
+
         // If the vertices changed, then edit the vertex buffer and color buffer as well
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vertex_buffer);
@@ -132,7 +132,6 @@ impl DebugRenderer {
                 self.colors.as_ptr() as *const c_void,
             );
         }
-        
 
         // Set the shader
         let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();

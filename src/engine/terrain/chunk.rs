@@ -1,13 +1,20 @@
-use super::{terrain::{Terrain, CHUNK_SIZE}, voxel::{Voxel, VoxelGenerator}};
+use super::{
+    terrain::{Terrain, CHUNK_SIZE},
+    voxel::{Voxel, VoxelGenerator},
+};
+use crate::engine::{
+    core::ecs::component::{Component, ComponentID, ComponentInternal},
+    rendering::model::{Model, ProceduralModelGenerator},
+    terrain::tables::{DATA_OFFSET_TABLE, EDGE_TABLE, TRI_TABLE, VERTEX_TABLE},
+};
 use std::collections::hash_map::Entry;
-use crate::engine::{core::ecs::component::{Component, ComponentID, ComponentInternal}, rendering::model::{Model, ProceduralModelGenerator}, terrain::tables::{DATA_OFFSET_TABLE, EDGE_TABLE, TRI_TABLE, VERTEX_TABLE}};
 use std::collections::HashMap;
 
 // A component that will be added to well... chunks
 pub struct Chunk {
     pub position: glam::IVec3,
     pub size: u32,
-    pub data: Box<[Voxel; (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) as usize]>
+    pub data: Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>,
 }
 
 impl Default for Chunk {
@@ -15,7 +22,7 @@ impl Default for Chunk {
         Self {
             position: glam::IVec3::ZERO,
             size: 0,
-            data: Box::new([Voxel::default(); (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE) as usize])
+            data: Box::new([Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]),
         }
     }
 }
@@ -38,10 +45,10 @@ impl ComponentID for Chunk {
 impl Component for Chunk {}
 
 impl Chunk {
-    // Casually stole my old code lol 
+    // Casually stole my old code lol
     // Get the position from an index
     fn unflatten(mut index: usize) -> (usize, usize, usize) {
-        let z = index / ((CHUNK_SIZE));
+        let z = index / (CHUNK_SIZE);
         index -= z * (CHUNK_SIZE);
         let y = index / (CHUNK_SIZE * CHUNK_SIZE);
         let x = index % (CHUNK_SIZE);
@@ -63,7 +70,7 @@ impl Chunk {
                     let size = self.size as f32 / (CHUNK_SIZE as f32 - 2.0);
                     let point: glam::Vec3 = glam::vec3(x as f32, y as f32, z as f32) * size + self.position.as_f32();
                     // Set the voxel data
-                    self.data[i] = voxel_generator.get_voxel(point);    
+                    self.data[i] = voxel_generator.get_voxel(point);
                     // Keep track of the min max values
                     min = min.min(self.data[i].density);
                     max = max.max(self.data[i].density);
@@ -71,7 +78,7 @@ impl Chunk {
                 }
             }
         }
-        return (min, max)
+        return (min, max);
     }
 }
 

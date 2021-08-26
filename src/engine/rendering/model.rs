@@ -28,7 +28,7 @@ impl Model {
             _ => None,
         }
     }
-    // Loads a model directly from a path 
+    // Loads a model directly from a path
     pub fn load_model(path: &str, resource_manager: &mut ResourceManager) -> Option<Self> {
         let resource = resource_manager.load_packed_resource(path)?;
         return Self::from_resource(resource);

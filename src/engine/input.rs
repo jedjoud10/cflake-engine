@@ -1,5 +1,5 @@
-mod input;
 mod error;
+mod input;
 mod keys;
 pub use input::InputManager;
 pub use input::KeyStatus;

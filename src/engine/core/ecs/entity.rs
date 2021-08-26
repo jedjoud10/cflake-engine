@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub struct EntityManager {
     pub entities: Vec<Option<Entity>>,
-    
+
     // Entities to add / remove from systems
     pub entities_to_remove: HashSet<u16>,
     pub entities_to_add: Vec<Entity>,
@@ -16,13 +16,18 @@ impl EntityManager {
     // Calculate the next valid ID from the actual entities
     pub fn get_next_valid_id(&self) -> u16 {
         // Calculate the next valid free ID
-        return self.entities.iter().enumerate().position(|(i, e)| {
-            match e {
-                // We found a free spot      
-                Some(entity) => false,
-                None => true,
-            }
-        }).unwrap_or(self.entities.len()) as u16;
+        return self
+            .entities
+            .iter()
+            .enumerate()
+            .position(|(i, e)| {
+                match e {
+                    // We found a free spot
+                    Some(entity) => false,
+                    None => true,
+                }
+            })
+            .unwrap_or(self.entities.len()) as u16;
     }
     // Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
     pub fn add_entity_s(&mut self, mut entity: Entity) -> u16 {
@@ -45,10 +50,10 @@ impl EntityManager {
         // If we wish to remove an entity that was already queued for removal, don't do anything
         if self.entities_to_remove.contains(&entity_id) {
             let entity = self.entities.get(*entity_id as usize).unwrap().clone();
-            return Ok(Some(entity.unwrap())); 
+            return Ok(Some(entity.unwrap()));
         }
         // Ez check first
-        if *entity_id < self.entities.len() as u16 {            
+        if *entity_id < self.entities.len() as u16 {
             // Check if we can cancel out this entity
             if self.entities_to_add.iter().any(|x| x.entity_id == *entity_id) {
                 // We have the entity in the entities_to_add vector, so we can cancel it out
@@ -69,7 +74,7 @@ impl EntityManager {
     // Get a mutable reference to a stored entity
     pub fn get_entity_mut(&mut self, entity_id: &u16) -> Result<&mut Entity, ECSError> {
         if *entity_id < self.entities.len() as u16 {
-            let entity = self.entities.get_mut(*entity_id as usize).unwrap().as_mut().unwrap(); 
+            let entity = self.entities.get_mut(*entity_id as usize).unwrap().as_mut().unwrap();
             return Ok(entity);
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
@@ -78,12 +83,17 @@ impl EntityManager {
     // Get an entity using it's entity id
     pub fn get_entity(&self, entity_id: &u16) -> Result<&Entity, ECSError> {
         if *entity_id < self.entities.len() as u16 {
-            let entity = self.entities.get(*entity_id as usize).unwrap().as_ref().ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?; 
+            let entity = self
+                .entities
+                .get(*entity_id as usize)
+                .unwrap()
+                .as_ref()
+                .ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?;
             return Ok(entity);
         } else {
             return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
         }
-    }   
+    }
 }
 
 // A simple entity in the world
@@ -125,13 +135,11 @@ impl Entity {
             e.insert(global_id);
         } else {
             // The component was already linked
-            return Err(ECSError::new(
-                format!(
-                    "Cannot link component '{}' to entity '{}' because it is already linked!",
-                    T::get_component_name(),
-                    self.name
-                ),
-            ));
+            return Err(ECSError::new(format!(
+                "Cannot link component '{}' to entity '{}' because it is already linked!",
+                T::get_component_name(),
+                self.name
+            )));
         }
         // Add the component's bitfield to the entity's bitfield
         self.c_bitfield |= component_id;
@@ -158,9 +166,7 @@ impl Entity {
             let final_component = component_manager.id_get_linked_component::<T>(global_id)?;
             Ok(final_component)
         } else {
-            return Err(ECSError::new(
-                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name),
-            ));
+            return Err(ECSError::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name)));
         }
     }
     // Gets a specific component, mutably
@@ -172,9 +178,7 @@ impl Entity {
             let final_component = component_manager.id_get_linked_component_mut::<T>(global_id)?;
             Ok(final_component)
         } else {
-            return Err(ECSError::new(
-                format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name),
-            ));
+            return Err(ECSError::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name)));
         }
     }
 }

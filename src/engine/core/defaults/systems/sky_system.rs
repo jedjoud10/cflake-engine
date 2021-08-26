@@ -50,19 +50,22 @@ impl System for SkySystem {
             .set_wrapping_mode(TextureWrapping::ClampToEdge)
             .load_texture("textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
             .unwrap()
-            .1;        
-        
+            .1;
+
         // Load model
         let mut model = Model::load_model("models\\sphere.mdl3d", data.resource_manager).unwrap();
         model.flip_triangles();
 
         // Link components
-        sky.link_component::<Renderer>(data.component_manager, Renderer::default()
-            .load_textures(vec![cached_texture_id], &mut data.texture_cacher)
-            .set_model(model)
-            .set_wireframe(false)
-            .set_shader(sky_shader_name.as_str())
-        ).unwrap();
+        sky.link_component::<Renderer>(
+            data.component_manager,
+            Renderer::default()
+                .load_textures(vec![cached_texture_id], &mut data.texture_cacher)
+                .set_model(model)
+                .set_wireframe(false)
+                .set_shader(sky_shader_name.as_str()),
+        )
+        .unwrap();
         sky.link_default_component::<components::AABB>(data.component_manager).unwrap();
         sky.link_component::<components::Transform>(
             data.component_manager,
@@ -70,7 +73,8 @@ impl System for SkySystem {
                 scale: glam::Vec3::ONE * 9000.0,
                 ..components::Transform::default()
             },
-        ).unwrap();
+        )
+        .unwrap();
         sky.link_component::<components::Sky>(
             &mut data.component_manager,
             components::Sky {

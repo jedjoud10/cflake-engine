@@ -57,13 +57,15 @@ pub fn load_systems(world: &mut World) {
 pub fn load_entities(world: &mut World) {
     // Create a camera entity
     let mut camera = Entity::new("Default Camera");
-    camera.link_component::<components::Transform>(
-        &mut world.component_manager,
-        components::Transform {
-            position: glam::vec3(5.0, 5.0, 5.0),
-            ..components::Transform::default()
-        },
-    ).unwrap();
+    camera
+        .link_component::<components::Transform>(
+            &mut world.component_manager,
+            components::Transform {
+                position: glam::vec3(5.0, 5.0, 5.0),
+                ..components::Transform::default()
+            },
+        )
+        .unwrap();
     camera.link_default_component::<components::Camera>(&mut world.component_manager).unwrap();
     // Make it the default camera
     world.custom_data.main_camera_entity_id = world.entity_manager.add_entity_s(camera);

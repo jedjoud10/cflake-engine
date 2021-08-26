@@ -1,8 +1,8 @@
+use super::Keys;
 use std::{
     collections::HashMap,
     fmt::{self},
 };
-use super::Keys;
 
 // Status of a key
 #[derive(Clone, Copy, Debug)]
@@ -36,7 +36,7 @@ impl Default for KeyStatus {
 #[derive(Clone, Copy, Debug)]
 pub enum MapType {
     Button, // You can press and release it, or even hold it
-    Toggle // Just a toggle
+    Toggle, // Just a toggle
 }
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
@@ -129,21 +129,21 @@ impl InputManager {
     // Update event fired from the world (fired after everything happens)
     pub fn late_update(&mut self, delta_time: f32) {
         for key in self.keys.iter_mut() {
-            match key.1.0 {
+            match key.1 .0 {
                 KeyStatus::Released => {
                     // Go from "Released" to "Nothing"
-                    key.1.0 = KeyStatus::Nothing;
+                    key.1 .0 = KeyStatus::Nothing;
                 }
                 KeyStatus::Held(old_time) => {
                     // Add delta time to the held seconds counter
-                    key.1.0 = KeyStatus::Held(old_time + delta_time);
+                    key.1 .0 = KeyStatus::Held(old_time + delta_time);
                 }
                 KeyStatus::Pressed => {
                     // Go from "Pressed" to "Held"
-                    key.1.0 = KeyStatus::Held(0.0);
+                    key.1 .0 = KeyStatus::Held(0.0);
                 }
                 _ => {}
-            }            
+            }
         }
     }
     // Get the accumulated mouse position
@@ -171,8 +171,8 @@ impl InputManager {
     }
     // When we receive a key event from glfw (Always at the start of the frame)
     pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
-        // If this key does not exist in the dictionary yet, add it       
-        let mut key_data =  self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));
+        // If this key does not exist in the dictionary yet, add it
+        let mut key_data = self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));
         match action_type {
             0 => {
                 // Set the key status
@@ -185,7 +185,7 @@ impl InputManager {
             }
             1 => {
                 // Set the key status
-                key_data.0 = KeyStatus::Released;                
+                key_data.0 = KeyStatus::Released;
             }
             _ => {}
         }
@@ -198,10 +198,10 @@ impl InputManager {
             // The binding does not exist yet, so create a new one
             self.bindings.insert(map_name.to_string(), key_scancode);
         }
-    }    
+    }
 }
 
-// The get-map events 
+// The get-map events
 impl InputManager {
     // Returns true when the map is pressed
     pub fn map_pressed(&self, name: &str) -> bool {
@@ -257,7 +257,7 @@ impl InputManager {
     pub fn map_toggled(&self, name: &str) -> bool {
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
-            if self.keys.contains_key(key_scancode) { 
+            if self.keys.contains_key(key_scancode) {
                 match self.keys.get(key_scancode).unwrap().1 {
                     ToggleKeyStatus::ToggleOn => true,
                     ToggleKeyStatus::ToggleOff => false,

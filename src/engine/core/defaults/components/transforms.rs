@@ -15,7 +15,7 @@ impl Default for Transform {
             position: glam::Vec3::ZERO,
             rotation: glam::Quat::IDENTITY,
             scale: glam::Vec3::ONE,
-            matrix: glam::Mat4::IDENTITY
+            matrix: glam::Mat4::IDENTITY,
         }
     }
 }

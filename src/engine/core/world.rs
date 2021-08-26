@@ -50,7 +50,7 @@ impl World {
     // Load everything that needs to be loaded by default
     fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load all the default things
-        // Load default bindings 
+        // Load default bindings
         self.input_manager.bind_key(Keys::Escape, "quit", MapType::Button);
         self.input_manager.bind_key(Keys::F1, "fullscreen", MapType::Button);
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
@@ -87,15 +87,14 @@ impl World {
         // Load the default stuff
         self.load_defaults(window);
         /*
-        // Test stuff        
+        // Test stuff
         self.component_manager.register_component::<components::Transform>();
         let mut test_entity = Entity::new("Test Entity");
         test_entity.link_default_component::<components::Transform>(&mut self.component_manager).unwrap();
         let entity_id = self.add_entity(test_entity);
         self.entity_manager.remove_entity_s(&entity_id);
         */
-        
-        
+
         register_components(self);
         load_systems(self);
         // Update entity manager
@@ -134,7 +133,7 @@ impl World {
         self.system_manager.update_systems(&self.time_manager);
 
         // Update the inputs
-        self.input_manager.late_update(self.time_manager.delta_time as f32);        
+        self.input_manager.late_update(self.time_manager.delta_time as f32);
 
         // Update entity manager
         self.update_entity_manager();
@@ -154,7 +153,10 @@ impl World {
             println!("Component count: '{}'", self.component_manager.linked_components.len());
             println!("Entity count: '{}'", self.entity_manager.entities.len());
             println!("System count: '{}'", self.system_manager.systems.len());
-            println!("Time: '{}', Delta Time: '{}', FPS: '{}'", self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps);
+            println!(
+                "Time: '{}', Delta Time: '{}', FPS: '{}'",
+                self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps
+            );
         }
         // Change the debug view
         if self.input_manager.map_pressed("change_debug_view") {
@@ -227,13 +229,13 @@ impl World {
     // Add all the pending entities from the entity manager to the systems and remove the ones that we must destroy
     pub fn update_entity_manager(&mut self) {
         // Only update if it we need to
-        if self.entity_manager.entities_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {            
+        if self.entity_manager.entities_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {
             // Add the entities to the systems
             for entity in self.entity_manager.entities_to_add.clone() {
                 self.add_entity_to_systems(&entity.entity_id);
             }
             self.entity_manager.entities_to_add.clear();
-            
+
             // Remove the entities from the systems
             for entity_id in self.entity_manager.entities_to_remove.clone() {
                 self.remove_entity_from_systems(&entity_id).unwrap();
@@ -257,7 +259,7 @@ impl World {
         // Remove all the components then entity had
         for global_component_id in entity.linked_components.values() {
             self.component_manager.id_remove_linked_component(global_component_id).unwrap();
-        }        
+        }
         Ok(entity)
     }
 }

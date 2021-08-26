@@ -274,7 +274,6 @@ pub const DATA_OFFSET_TABLE: [usize; 8] = [
     /* Z */ CHUNK_SIZE,
     /* X+Z */ CHUNK_SIZE + 1,
     /* X */ 1,
-
     /* Y */ CHUNK_SIZE * CHUNK_SIZE,
     /* Y+Z */ CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE,
     /* X+Y+Z */ CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE + 1,

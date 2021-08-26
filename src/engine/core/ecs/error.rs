@@ -8,10 +8,10 @@ pub struct ECSError {
 
 impl ECSError {
     pub fn new(msg: String) -> Self {
-        Self { details: msg, }
+        Self { details: msg }
     }
     pub fn new_str(msg: &str) -> Self {
-        Self { details: msg.to_string(), }
+        Self { details: msg.to_string() }
     }
 }
 

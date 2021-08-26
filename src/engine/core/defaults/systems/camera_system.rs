@@ -1,13 +1,16 @@
-use glam::Vec4Swizzles;
-use crate::engine::{core::{
-    defaults::components,
-    ecs::{
-        component::FilteredLinkedComponents,
-        entity::Entity,
-        system::System,
-        system_data::{SystemData, SystemEventData, SystemEventDataLite},
+use crate::engine::{
+    core::{
+        defaults::components,
+        ecs::{
+            component::FilteredLinkedComponents,
+            entity::Entity,
+            system::System,
+            system_data::{SystemData, SystemEventData, SystemEventDataLite},
+        },
     },
-}, input::{Keys, MapType}};
+    input::{Keys, MapType},
+};
+use glam::Vec4Swizzles;
 
 #[derive(Default)]
 pub struct CameraSystem {

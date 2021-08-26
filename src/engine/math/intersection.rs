@@ -2,7 +2,7 @@ use std::default;
 
 use glam::Vec3Swizzles;
 
-use super::{Frustum, bounds, shapes};
+use super::{bounds, shapes, Frustum};
 
 // Intersection tests
 pub struct Intersection {}

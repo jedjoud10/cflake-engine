@@ -1,7 +1,10 @@
-use crate::engine::{core::{
-    defaults::components,
-    ecs::{component::FilteredLinkedComponents, entity::Entity, system::EntityFilter, system_data::SystemEventData},
-}, math::Intersection};
+use crate::engine::{
+    core::{
+        defaults::components,
+        ecs::{component::FilteredLinkedComponents, entity::Entity, system::EntityFilter, system_data::SystemEventData},
+    },
+    math::Intersection,
+};
 
 // Optimizes the rendering of objects using multiple techniques like frustum culling and such
 #[derive(Default)]

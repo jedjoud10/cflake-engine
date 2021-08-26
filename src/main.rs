@@ -52,7 +52,7 @@ pub fn main() {
 
 // When the window receives a new event
 fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
-    match event {        
+    match event {
         glfw::WindowEvent::Key(_, key_scancode, action_type, modifiers) => {
             // Key event
             let action_id = match action_type {

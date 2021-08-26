@@ -1,6 +1,27 @@
-use std::collections::HashMap;
-use crate::engine::{self, core::{cacher::CacheManager, defaults::components, ecs::{component::{ComponentManager, FilteredLinkedComponents}, entity::Entity, system::System, system_data::{SystemData, SystemEventData, SystemEventDataLite}}}, debug, input, math::{self, octree::OctreeInput}, rendering::{model::{Model, ProceduralModelGenerator}, renderer::Renderer, shader::Shader, texture::Texture}, terrain::chunk::Chunk};
 use super::voxel::VoxelGenerator;
+use crate::engine::{
+    self,
+    core::{
+        cacher::CacheManager,
+        defaults::components,
+        ecs::{
+            component::{ComponentManager, FilteredLinkedComponents},
+            entity::Entity,
+            system::System,
+            system_data::{SystemData, SystemEventData, SystemEventDataLite},
+        },
+    },
+    debug, input,
+    math::{self, octree::OctreeInput},
+    rendering::{
+        model::{Model, ProceduralModelGenerator},
+        renderer::Renderer,
+        shader::Shader,
+        texture::Texture,
+    },
+    terrain::chunk::Chunk,
+};
+use std::collections::HashMap;
 
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 18;
@@ -15,7 +36,7 @@ pub struct Terrain {
     pub system_data: SystemData,
     // Terrain generation
     pub voxel_generator: VoxelGenerator,
-    
+
     // Chunk managing
     pub octree: math::octree::Octree,
     pub chunks: HashMap<glam::IVec3, u16>,
@@ -37,28 +58,40 @@ impl Terrain {
         chunk_cmp.size = size;
         let min_max = chunk_cmp.generate_data(&self.voxel_generator);
         /*
-        // Check if we should even generate the model        
+        // Check if we should even generate the model
         if min_max.0.signum() == min_max.1.signum() {
             // No intersection
             return None;
-        }        
+        }
         */
         let model = chunk_cmp.generate_model();
 
         // Link the components
         chunk.link_component::<Chunk>(component_manager, chunk_cmp).unwrap();
-        chunk.link_component::<components::Transform>(component_manager, components::Transform {
-            position: position.as_f32(),
-            scale: glam::vec3((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
-            ..components::Transform::default()
-        }).unwrap();
-        chunk.link_component::<Renderer>(component_manager, Renderer::new()
-            .load_textures(self.texture_ids.clone(), texture_cacher)
-            .set_model(model)
-            .set_wireframe(true)
-            .set_shader(self.shader_name.as_str())).unwrap();
-        chunk.link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager)).unwrap();
-        
+        chunk
+            .link_component::<components::Transform>(
+                component_manager,
+                components::Transform {
+                    position: position.as_f32(),
+                    scale: glam::vec3((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
+                    ..components::Transform::default()
+                },
+            )
+            .unwrap();
+        chunk
+            .link_component::<Renderer>(
+                component_manager,
+                Renderer::new()
+                    .load_textures(self.texture_ids.clone(), texture_cacher)
+                    .set_model(model)
+                    .set_wireframe(true)
+                    .set_shader(self.shader_name.as_str()),
+            )
+            .unwrap();
+        chunk
+            .link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager))
+            .unwrap();
+
         return Some(chunk);
     }
 }
@@ -82,17 +115,30 @@ impl System for Terrain {
         self.system_data.link_component::<components::AABB>(data.component_manager).unwrap();
 
         // Load the shader name
-        self.shader_name = Shader::new(vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"], data.resource_manager, data.shader_cacher).1;
+        self.shader_name = Shader::new(
+            vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
+            data.resource_manager,
+            data.shader_cacher,
+        )
+        .1;
 
         // Load the texture ids
         self.texture_ids = vec![
-            Texture::new().enable_mipmaps().load_texture("textures\\rock\\Rock033_1K_Color.png", data.resource_manager, data.texture_cacher).unwrap().1,
-            Texture::new().enable_mipmaps().load_texture("textures\\rock\\Rock033_1K_Normal.png", data.resource_manager, data.texture_cacher).unwrap().1,
+            Texture::new()
+                .enable_mipmaps()
+                .load_texture("textures\\rock\\Rock033_1K_Color.png", data.resource_manager, data.texture_cacher)
+                .unwrap()
+                .1,
+            Texture::new()
+                .enable_mipmaps()
+                .load_texture("textures\\rock\\Rock033_1K_Normal.png", data.resource_manager, data.texture_cacher)
+                .unwrap()
+                .1,
         ];
 
         // Setup the octree
-        self.octree.size = CHUNK_SIZE as u32 - 2;   
-        self.octree.depth = OCTREE_DEPTH;   
+        self.octree.size = CHUNK_SIZE as u32 - 2;
+        self.octree.depth = OCTREE_DEPTH;
         self.octree.threshold = LOD_THRESHOLD;
         self.octree.generate_base_octree();
         for (_, octree_node) in &self.octree.nodes {
@@ -102,7 +148,7 @@ impl System for Terrain {
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
-                }                        
+                }
             }
         }
 
@@ -113,44 +159,52 @@ impl System for Terrain {
     // Update the camera position inside the terrain generator
     fn pre_fire(&mut self, data: &mut SystemEventData) {
         // Get the camera location
-        let camera_location = data.entity_manager
-            .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
-            .get_component::<components::Transform>(data.component_manager).unwrap().position;
-        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 200.0, 30.0, (data.time_manager.seconds_since_game_start / 10.0).cos() as f32 * 200.0);      
-            
-        // Generate the octree each frame and generate / delete the chunks     
-        if data.input_manager.map_toggled("update_terrain") {                
-            self.octree.generate_incremental_octree(OctreeInput { target: camera_location });              
-            
+        let camera_location = data
+            .entity_manager
+            .get_entity(&data.custom_data.main_camera_entity_id)
+            .unwrap()
+            .get_component::<components::Transform>(data.component_manager)
+            .unwrap()
+            .position;
+        let location = glam::vec3(
+            data.time_manager.seconds_since_game_start.sin() as f32 * 200.0,
+            30.0,
+            (data.time_manager.seconds_since_game_start / 10.0).cos() as f32 * 200.0,
+        );
+
+        // Generate the octree each frame and generate / delete the chunks
+        if data.input_manager.map_toggled("update_terrain") {
+            self.octree.generate_incremental_octree(OctreeInput { target: camera_location });
+
             // Turn all the newly added nodes into chunks and instantiate them into the world
             for octree_node in &self.octree.added_nodes {
                 // Only add the octree nodes that have no children
                 if !octree_node.children {
                     if !self.chunks.contains_key(&octree_node.get_center()) {
-                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2).unwrap();
+                        let chunk_entity = self
+                            .add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2)
+                            .unwrap();
                         let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                        self.chunks.insert(octree_node.get_center(), entity_id);                        
-                    }                
+                        self.chunks.insert(octree_node.get_center(), entity_id);
+                    }
                 }
-            }        
-            // Delete all the removed octree nodes from the world 
+            }
+            // Delete all the removed octree nodes from the world
             for octree_node in &self.octree.removed_nodes {
                 if self.chunks.contains_key(&octree_node.get_center()) {
                     // Remove the chunk from our chunks and from the world
                     let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
-                }     
-            }    
-        }     
+                }
+            }
+        }
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {
-    }
+    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {}
 
     // When a chunk gets added to the world
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
-    }
+    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {}
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
