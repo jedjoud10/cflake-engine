@@ -113,7 +113,7 @@ impl System for Terrain {
         let camera_location = data.entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<components::Transform>(data.component_manager).unwrap().position;
-        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 125.0, data.time_manager.seconds_since_game_start.cos() as f32 * 50.0, data.time_manager.seconds_since_game_start.cos() as f32 * 125.0);      
+        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 500.0, data.time_manager.seconds_since_game_start.cos() as f32 * 500.0, data.time_manager.seconds_since_game_start.cos() as f32 * 500.0);      
             
         // Generate the octree each frame and generate / delete the chunks     
         if data.input_manager.map_toggled("update_terrain") {                

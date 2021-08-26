@@ -169,7 +169,6 @@ impl Octree {
             let mut i = 0;
             while pending_nodes.len() > 0 {
                 let current_node = pending_nodes[0].clone();
-                println!("{:?}", current_node);
                 // Just in case
                 if current_node.children {
                     // Get the children
@@ -197,7 +196,7 @@ impl Octree {
 
         // Remove the nodes
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
-        println!("{}", deleted_centers.len());
+        println!("Time in micros: {}", instant.elapsed().as_micros());
     }
 }
 
