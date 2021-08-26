@@ -7,7 +7,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.4;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 8;
+pub const OCTREE_DEPTH: u8 = 4;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -37,10 +37,12 @@ impl Terrain {
         chunk_cmp.size = size;
         let min_max = chunk_cmp.generate_data(&self.voxel_generator);
         // Check if we should even generate the model
+        /*
         if min_max.0.signum() == min_max.1.signum() {
             // No intersection
             return None;
         }
+        */
         let model = chunk_cmp.generate_model();
 
         // Link the components
@@ -114,7 +116,7 @@ impl System for Terrain {
         let camera_location = data.entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id).unwrap()
             .get_component::<components::Transform>(data.component_manager).unwrap().position;
-        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 1000.0, 30.0, data.time_manager.seconds_since_game_start.cos() as f32 * 1000.0);      
+        let location = glam::vec3(data.time_manager.seconds_since_game_start.sin() as f32 * 100.0, 30.0, data.time_manager.seconds_since_game_start.cos() as f32 * 100.0);      
             
         // Generate the octree each frame and generate / delete the chunks     
         if data.input_manager.map_toggled("update_terrain") {                
@@ -125,12 +127,10 @@ impl System for Terrain {
                 // Only add the octree nodes that have no children
                 if !octree_node.children {
                     if !self.chunks.contains_key(&octree_node.get_center()) {
-                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
-                        if let Option::Some(chunk_entity) = chunk_entity {
-                            let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                            self.chunks.insert(octree_node.get_center(), entity_id);
-                        }
-                    }                        
+                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2).unwrap();
+                        let entity_id = data.entity_manager.add_entity_s(chunk_entity);
+                        self.chunks.insert(octree_node.get_center(), entity_id);                        
+                    }                
                 }
             }        
             // Delete all the removed octree nodes from the world 
@@ -139,19 +139,11 @@ impl System for Terrain {
                     // Remove the chunk from our chunks and from the world
                     let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
-                }                
+                } else {
+                    println!("Bananahead");
+                }            
             }    
-        }  
-        data.debug.debug_default(debug::DefaultDebugRendererType::CUBE(location, glam::Vec3::ONE), glam::Vec3::Z);   
-        for (_, octree_node) in self.octree.nodes.iter() {
-            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 1.0, 1.0));            
-        }   
-        for octree_node in self.octree.removed_nodes.iter() {            
-            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(1.0, 0.0, 0.0));            
-        }      
-        for octree_node in self.octree.added_nodes.iter() {
-            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), glam::vec3(0.0, 1.0, 0.0));
-        }        
+        }     
     }
 
     // Called for each entity in the system

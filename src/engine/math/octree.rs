@@ -145,10 +145,10 @@ impl Octree {
         // Check if we even changed parents
         if marked_node.is_none() || node_to_remove.is_none() { return; }
         // Then we generate a local octree, using that marked node as the root
-        let local_octree_data = self.generate_octree(&input.target, marked_node.unwrap());
+        let local_octree_data = self.generate_octree(&input.target, marked_node.clone().unwrap());
         self.targetted_node = local_octree_data.1;
         // Get the nodes that we've added
-        let added_nodes = local_octree_data.0;        
+        let added_nodes = local_octree_data.0;            
 
         // Set the added nodes
         self.added_nodes = added_nodes.values().map(|x| x.clone()).filter(|x| {    
@@ -158,6 +158,7 @@ impl Octree {
                 None => { true }
             }
         }).collect();
+
         // Add the delta to the nodes
         self.nodes.extend(added_nodes.clone());
 
@@ -195,11 +196,9 @@ impl Octree {
         
         // Remove the nodes
         self.removed_nodes = self.nodes.iter().filter_map(|(coord, node)| {
-            if !deleted_centers.contains(coord) || *coord == node_to_remove.get_center() {
-                None
-            } else {
+            if deleted_centers.contains(coord) && *coord != node_to_remove.get_center() || *coord == marked_node.as_ref().unwrap().get_center() {
                 Some(node.clone())
-            }
+            } else { None }
         }).collect();        
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
         //println!("Time in micros: {}", instant.elapsed().as_micros());
