@@ -8,7 +8,7 @@ build = "build.rs"
 
 [dependencies]
 gl = "0.14.0"
-cgmath = "0.18.0"
+veclib = { git = "https://github.com/jedjoud10/veclib" }
 glfw = "0.41.0"
 walkdir = "2.3.2"
 byteorder = "1.4.3"

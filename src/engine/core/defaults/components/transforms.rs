@@ -13,7 +13,7 @@ impl Default for Transform {
     fn default() -> Self {
         Self {
             position: cgmath::Point3::new(0.0, 0.0, 0.0),
-            rotation: cgmath::Quaternion::,
+            rotation: cgmath::Point3::new(0.0, 0.0, 0.0),
             scale: glam::Vec3::ONE,
             matrix: glam::Mat4::IDENTITY,
         }
