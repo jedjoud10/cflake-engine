@@ -27,7 +27,7 @@ pub struct Renderer {
     // Rendering stuff
     pub texture_cache_ids: Vec<u16>,
     // Default parameters for the shader
-    pub uv_scale: glam::Vec2,
+    pub uv_scale: veclib::Vector2<f32>,
     // Flags
     pub flags: RendererFlags,
 }
@@ -40,7 +40,7 @@ impl Default for Renderer {
             shader_name: String::default(),
             model: Model::default(),
             texture_cache_ids: Vec::new(),
-            uv_scale: glam::Vec2::ONE,
+            uv_scale: veclib::Vector2::<f32>::ONE,
             flags: RendererFlags::DEFAULT,
         }
     }

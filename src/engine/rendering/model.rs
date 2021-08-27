@@ -3,10 +3,10 @@ use crate::engine::resources::{Resource, ResourceManager};
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug)]
 pub struct Model {
-    pub vertices: Vec<glam::Vec3>,
-    pub normals: Vec<glam::Vec3>,
-    pub tangents: Vec<glam::Vec4>,
-    pub uvs: Vec<glam::Vec2>,
+    pub vertices: Vec<veclib::Vector3<f32>>,
+    pub normals: Vec<veclib::Vector3<f32>>,
+    pub tangents: Vec<veclib::Vector4<f32>>,
+    pub uvs: Vec<veclib::Vector2<f32>>,
     pub triangles: Vec<u32>,
 }
 

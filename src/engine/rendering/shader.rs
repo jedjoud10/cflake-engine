@@ -136,9 +136,9 @@ impl Shader {
         }
     }
     // Set a matrix 4x4
-    pub fn set_matrix_44_uniform(&self, name: &str, matrix: glam::Mat4) {
+    pub fn set_matrix_44_uniform(&self, name: &str, matrix: veclib::Matrix4x4<f32>) {
         unsafe {
-            let ptr: *const f32 = &matrix.as_ref()[0];
+            let ptr: *const f32 = &matrix[0][0];
             gl::UniformMatrix4fv(self.get_uniform_location(name), 1, gl::FALSE, ptr);
         }
     }

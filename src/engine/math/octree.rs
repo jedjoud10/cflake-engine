@@ -7,12 +7,12 @@ use std::time::Instant;
 
 // The octree input data
 pub struct OctreeInput {
-    pub target: glam::Vec3,
+    pub target: veclib::Vector3<f32>,
 }
 
 // The whole octree
 pub struct Octree {
-    pub nodes: HashMap<glam::IVec3, OctreeNode>,
+    pub nodes: HashMap<veclib::Vector3<i32>, OctreeNode>,
     pub targetted_node: Option<OctreeNode>,
     pub added_nodes: Vec<OctreeNode>,
     pub removed_nodes: Vec<OctreeNode>,
@@ -37,9 +37,9 @@ impl Default for Octree {
 
 impl Octree {
     // Generate an octree from a root and a target point
-    pub fn generate_octree(&self, target: &glam::Vec3, root_node: OctreeNode) -> (HashMap<glam::IVec3, OctreeNode>, Option<OctreeNode>) {
-        //let target = ((target_n.as_i32() - glam::ivec3(self.size as i32, self.size as i32, self.size as i32)).as_f32() / self.size as f32).round() * self.size as f32 + (self.size as f32 / 2.0);
-        let mut nodes: HashMap<glam::IVec3, OctreeNode> = HashMap::new();
+    pub fn generate_octree(&self, target: &veclib::Vector3<f32>, root_node: OctreeNode) -> (HashMap<veclib::Vector3<i32>, OctreeNode>, Option<OctreeNode>) {
+        //let target = ((target_n.as_i32() - veclib::Vector3<i32>(self.size as i32, self.size as i32, self.size as i32)).as_f32() / self.size as f32).round() * self.size as f32 + (self.size as f32 / 2.0);
+        let mut nodes: HashMap<veclib::Vector3<i32>, OctreeNode> = HashMap::new();
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         pending_nodes.push(root_node.clone());
         nodes.insert(root_node.get_center(), root_node);
@@ -59,13 +59,13 @@ impl Octree {
                     for z in 0..2 {
                         for x in 0..2 {
                             // The position offset for the new octree node
-                            let offset: glam::IVec3 = glam::ivec3(x * extent_i32, y * extent_i32, z * extent_i32);
+                            let offset: veclib::Vector3<i32> = veclib::Vector3::<i32>::new(x * extent_i32, y * extent_i32, z * extent_i32);
                             let child = OctreeNode {
                                 position: octree_node.position + offset,
                                 half_extent: octree_node.half_extent / 2,
                                 depth: octree_node.depth + 1,
                                 parent_center: octree_node.get_center(),
-                                children_centers: [glam::IVec3::ZERO; 8],
+                                children_centers: [veclib::Vector3::<i32>::ZERO; 8],
                                 children: false,
                             };
                             let center = child.get_center();
@@ -87,17 +87,17 @@ impl Octree {
     // Generate the base octree with a target point at 0, 0, 0
     pub fn generate_base_octree(&mut self) {
         let root_size = (2_u32.pow(self.depth as u32) * self.size as u32) as i32;
-        let root_position = glam::ivec3(-(root_size / 2), -(root_size / 2), -(root_size / 2));
+        let root_position = veclib::Vector3::<i32>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
         // Create the root node
         let root_node = OctreeNode {
             position: root_position,
             half_extent: (root_size / 2) as u32,
             depth: 0,
-            parent_center: glam::IVec3::ZERO,
-            children_centers: [glam::IVec3::ZERO; 8],
+            parent_center: veclib::Vector3::<i32>::ZERO,
+            children_centers: [veclib::Vector3::<i32>::ZERO; 8],
             children: false,
         };
-        let octree_data = self.generate_octree(&glam::Vec3::ONE, root_node);
+        let octree_data = self.generate_octree(&veclib::Vector3::<f32>::ONE, root_node);
         self.nodes = octree_data.0;
         self.targetted_node = octree_data.1;
     }
@@ -172,7 +172,7 @@ impl Octree {
         self.nodes.extend(added_nodes.clone());
 
         // Get the nodes that we've deleted
-        let mut deleted_centers: HashSet<glam::IVec3> = HashSet::new();
+        let mut deleted_centers: HashSet<veclib::Vector3<i32>> = HashSet::new();
         {
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             pending_nodes.push(node_to_remove.clone().unwrap());
@@ -183,7 +183,7 @@ impl Octree {
                 if current_node.children {
                     // Get the children
                     for child_center in current_node.children_centers {
-                        if child_center != glam::IVec3::ZERO {
+                        if child_center != veclib::Vector3::<i32>::ZERO {
                             let child_node = self.nodes.get(&child_center).unwrap().clone();
                             pending_nodes.push(child_node);
                         }
@@ -197,11 +197,11 @@ impl Octree {
         // Update the removed node
         let mut node_to_remove = node_to_remove.unwrap();
         node_to_remove.children = false;
-        node_to_remove.children_centers = [glam::IVec3::ZERO; 8];
+        node_to_remove.children_centers = [veclib::Vector3<i32>::ZERO; 8];
         self.added_nodes.push(node_to_remove.clone());
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
 
-        let center: glam::IVec3 = marked_node.as_ref().unwrap().get_center();
+        let center: veclib::Vector3<i32> = marked_node.as_ref().unwrap().get_center();
         let depth: u8 = marked_node.as_ref().unwrap().depth;
 
         println!("Time in micros: {}", instant.elapsed().as_micros());
@@ -229,14 +229,14 @@ impl Octree {
 // Simple node in the octree
 #[derive(Clone, Debug)]
 pub struct OctreeNode {
-    pub position: glam::IVec3,
+    pub position: veclib::Vector3<i32>,
     pub half_extent: u32,
     pub depth: u8,
 
     // Used for the parent-children links
     // TODO: Change this to it uses IDs instead of coordinates
-    pub parent_center: glam::IVec3,
-    pub children_centers: [glam::IVec3; 8],
+    pub parent_center: veclib::Vector3<i32>,
+    pub children_centers: [veclib::Vector3<i32>; 8],
     // Check if we had children
     pub children: bool,
 }
@@ -246,21 +246,21 @@ impl OctreeNode {
     pub fn get_aabb(&self) -> super::bounds::AABB {
         super::bounds::AABB {
             min: self.position.as_f32(),
-            max: self.position.as_f32() + glam::vec3(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
+            max: self.position.as_f32() + veclib::Vector3::<f32>::new(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
         }
     }
     // Get the center of this octree node
-    pub fn get_center(&self) -> glam::IVec3 {
+    pub fn get_center(&self) -> veclib::Vector3<i32> {
         return self.position + self.half_extent as i32;
     }
     // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &glam::Vec3, max_depth: u8) -> bool {
+    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
         // AABB intersection, return true if point in on the min edge though
-        let aabb = self.get_aabb().min.cmple(*target).all() && self.get_aabb().max.cmpgt(*target).all();
+        let aabb = self.get_aabb().min.elem_lte(target).all() && self.get_aabb().max.elem_gte(target).all();
         return aabb && self.depth < (max_depth - 1);
     }
     // Check if we can subdivide this node in the postprocess stage
-    pub fn can_subdivide_postprocess(&self, target: &glam::Vec3, max_depth: u8) -> bool {
+    pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
         // Do some funky maths
         return self.depth < (max_depth - 1);
     } 

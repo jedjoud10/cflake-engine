@@ -1,20 +1,19 @@
-use glam::Vec3Swizzles;
-
 use crate::engine::debug::{DebugRendererType, DebugRendererable};
-
 use super::shapes;
 
 // A view frustum
 #[derive(Default, Clone)]
 pub struct Frustum {
-    pub matrix: glam::Mat4,
-    pub projection_matrix: glam::Mat4,
+    pub matrix: veclib::Matrix4x4<f32>,
+    pub projection_matrix: veclib::Matrix4x4<f32>,
 }
 
 // The frustum can be debug drawed
 impl DebugRendererable for Frustum {
     // Turn the frustum into a cube and render it
     fn get_debug_renderer(&self) -> DebugRendererType {
+        todo!();
+        /*
         let corners = super::shapes::CUBE_CORNERS;
         let mut projected_corners: Vec<glam::Vec3> = Vec::new();
         // Extract the near / far planes from the projection matrix
@@ -26,5 +25,6 @@ impl DebugRendererable for Frustum {
             projected_corners.push(projected_corner);
         }
         return DebugRendererType::CUBE(projected_corners, glam::Vec3::ONE);
+        */
     }
 }
