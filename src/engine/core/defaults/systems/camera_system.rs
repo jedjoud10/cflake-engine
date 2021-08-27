@@ -10,7 +10,6 @@ use crate::engine::{
     },
     input::{Keys, MapType},
 };
-use glam::Vec4Swizzles;
 
 #[derive(Default)]
 pub struct CameraSystem {
@@ -44,13 +43,15 @@ impl System for CameraSystem {
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
-        let position: glam::Vec3;
-        let rotation: glam::Quat;
+        let position: veclib::Vector3<f32>;
+        let rotation: veclib::Quaternion<f32>;
         {
+            todo!();
+            /*
             // Create some movement using user input
             {
                 let _delta_time = data.time_manager.delta_time as f32;
-                let changed_rotation: glam::Quat;
+                let changed_rotation: veclib::Quaternion<f32>;
 
                 // Rotate the camera around
                 let mouse_pos = data.input_manager.get_accumulated_mouse_position();
@@ -87,6 +88,7 @@ impl System for CameraSystem {
                 position = changed_position;
                 rotation = changed_rotation;
             }
+            */
         }
         let camera_component = components.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         // Update the view matrix every time we make a change
@@ -100,6 +102,8 @@ impl System for CameraSystem {
 
     // When an entity gets added to this system
     fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+        todo!();
+        /*
         // First time we initialize the camera, setup the matrices
         let position: glam::Vec3;
         let rotation: glam::Quat;
@@ -112,6 +116,7 @@ impl System for CameraSystem {
         camera_component.update_projection_matrix(&data.custom_data.window);
         camera_component.update_view_matrix(position, rotation);
         camera_component.update_frustum_culling_matrix();
+        */
     }
 
     // Turn this into "Any" so we can cast into child systems

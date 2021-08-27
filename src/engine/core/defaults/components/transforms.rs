@@ -1,21 +1,22 @@
 // Transforms components
 use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal};
+use veclib::*;
 // The transform component
 pub struct Transform {
-    pub position: cgmath::Point3<f32>,
-    pub rotation: cgmath::Quaternion<f32>,
-    pub scale: cgmath::Vector3<f32>,
-    pub matrix: cgmath::Matrix4<f32>,
+    pub position: veclib::Vector3<f32>,
+    pub rotation: veclib::Quaternion<f32>,
+    pub scale: veclib::Vector3<f32>,
+    pub matrix: veclib::Matrix4x4<f32>,
 }
 
 // Default transform
 impl Default for Transform {
     fn default() -> Self {
         Self {
-            position: cgmath::Point3::new(0.0, 0.0, 0.0),
-            rotation: cgmath::Point3::new(0.0, 0.0, 0.0),
-            scale: glam::Vec3::ONE,
-            matrix: glam::Mat4::IDENTITY,
+            position: veclib::Vector3::ZERO,
+            rotation: veclib::Quaternion::IDENTITY,
+            scale: veclib::Vector3::ONE,
+            matrix: veclib::Matrix4x4::IDENTITY,
         }
     }
 }
@@ -24,11 +25,12 @@ impl Default for Transform {
 impl Transform {
     // Calculate the matrix and save it
     pub fn update_matrix(&mut self) {
-        self.matrix = glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation) * glam::Mat4::from_scale(self.scale);
+        //self.matrix = veclib::Matrix4x4::from_translation(self.position) * veclib::Matrix4x4::from_quaternion(&self.rotation) * veclib::Matrix4x4::from_scale(self.scale);
     }
     // Calculate the matrix and return it
-    pub fn get_matrix(&self) -> glam::Mat4 {
-        glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation) * glam::Mat4::from_scale(self.scale)
+    pub fn get_matrix(&self) -> veclib::Matrix4x4<f32> {
+        todo!();
+        //glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation) * glam::Mat4::from_scale(self.scale)
     }
 }
 

@@ -67,6 +67,7 @@ impl System for SkySystem {
         )
         .unwrap();
         sky.link_default_component::<components::AABB>(data.component_manager).unwrap();
+        /*
         sky.link_component::<components::Transform>(
             data.component_manager,
             components::Transform {
@@ -75,6 +76,7 @@ impl System for SkySystem {
             },
         )
         .unwrap();
+        */
         sky.link_component::<components::Sky>(
             &mut data.component_manager,
             components::Sky {

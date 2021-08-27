@@ -459,15 +459,15 @@ dependencies = [
 [[package]]
 name = "veclib"
 version = "0.1.0"
-source = "git+https://github.com/jedjoud10/veclib#912c9456a33726074993b15645f7a0967de606c8"
+source = "git+https://github.com/jedjoud10/veclib#7d7b6655fe8dd5435ff11b97d39c8e1ce75356c6"
 dependencies = [
- "veclib-derive",
+ "veclib-proc-macros",
 ]
 
 [[package]]
-name = "veclib-derive"
+name = "veclib-proc-macros"
 version = "0.1.0"
-source = "git+https://github.com/jedjoud10/veclib#912c9456a33726074993b15645f7a0967de606c8"
+source = "git+https://github.com/jedjoud10/veclib#7d7b6655fe8dd5435ff11b97d39c8e1ce75356c6"
 
 [[package]]
 name = "walkdir"

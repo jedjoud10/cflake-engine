@@ -178,6 +178,8 @@ impl System for RenderingSystem {
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
+        todo!();
+        /*
         let shader: &Shader;
         let view_matrix: glam::Mat4;
         let projection_matrix: glam::Mat4;
@@ -257,6 +259,7 @@ impl System for RenderingSystem {
                 gl::Enable(gl::CULL_FACE);
             }
         }
+        */
     }
 
     // Called before each fire_entity event is fired
@@ -269,6 +272,8 @@ impl System for RenderingSystem {
 
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut SystemEventData) {
+        todo!();
+        /*
         // At the end of each frame, disable the depth test and render the debug objects
         let vp_matrix: glam::Mat4;
         let frustum: &math::Frustum;
@@ -326,6 +331,7 @@ impl System for RenderingSystem {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.quad_renderer.gpu_data.element_buffer_object);
             gl::DrawElements(gl::TRIANGLES, self.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
         }
+        */
     }
 
     // When an entity gets added to this system

@@ -19,8 +19,8 @@ pub struct DebugRenderer {
     pub debug_primitives: Vec<DebugRendererType>,
     pub shader_name: String,
     pub vao: u32,
-    pub vertices: Vec<glam::Vec3>,
-    pub colors: Vec<glam::Vec3>,
+    pub vertices: Vec<veclib::Vector3<f32>>,
+    pub colors: Vec<veclib::Vector3<f32>>,
     pub vertex_buffer: u32,
     pub colors_buffer: u32,
 }
@@ -63,7 +63,7 @@ impl DebugRenderer {
         self.shader_name = Shader::new(vec!["shaders\\debug.vrsh.glsl", "shaders\\debug.frsh.glsl"], resource_manager, shader_cacher).1;
     }
     // Draw the debug renderers
-    pub fn draw_debug(&mut self, vp_matrix: glam::Mat4, shader_cacher_1: &CacheManager<Shader>) {
+    pub fn draw_debug(&mut self, vp_matrix: veclib::Matrix4x4<f32>, shader_cacher_1: &CacheManager<Shader>) {
         if !DRAW_DEBUG {
             return;
         }
@@ -137,7 +137,7 @@ impl DebugRenderer {
         let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();
         // Since we don't have a model matrix you can set it directly
         shader.use_shader();
-        shader.set_matrix_44_uniform("vp_matrix", vp_matrix * glam::Mat4::IDENTITY);
+        shader.set_matrix_44_uniform("vp_matrix", vp_matrix);
 
         // Draw each line
         unsafe {
@@ -158,7 +158,7 @@ impl DebugRenderer {
         self.debug_primitives.push(debug_renderer_type);
     }
     // Add a default debug primite to the queue
-    pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType, color: glam::Vec3) {
+    pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType, color: veclib::Vector3<f32>) {
         if !DRAW_DEBUG {
             return;
         }
@@ -169,13 +169,13 @@ impl DebugRenderer {
                     .to_vec()
                     .iter()
                     .map(|&x| center + (x * size) - size / 2.0)
-                    .collect::<Vec<glam::Vec3>>();
+                    .collect::<Vec<veclib::Vector3<f32>>>();
                 // Add the cube debug primitive
                 self.debug(DebugRendererType::CUBE(new_corner, color));
             }
             DefaultDebugRendererType::AABB(aabb) => {
                 // Get the corners
-                let mut corners: Vec<glam::Vec3> = Vec::new();
+                let mut corners: Vec<veclib::Vector3<f32>> = Vec::new();
                 for corner_index in 0..8 {
                     // Get the corners from the AABB at the specified index
                     corners.push(aabb.get_corner(corner_index));
@@ -189,15 +189,15 @@ impl DebugRenderer {
 
 // The types of debug renderers
 pub enum DebugRendererType {
-    CUBE(Vec<glam::Vec3>, glam::Vec3),
-    SPHERE(glam::Vec3, f32, glam::Vec3),
-    LINE(math::shapes::Line, glam::Vec3),
-    MODEL(Model, glam::Vec3),
+    CUBE(Vec<veclib::Vector3<f32>>, veclib::Vector3<f32>),
+    SPHERE(veclib::Vector3<f32>, f32, veclib::Vector3<f32>),
+    LINE(math::shapes::Line, veclib::Vector3<f32>),
+    MODEL(Model, veclib::Vector3<f32>),
 }
 
 // Kind of a wrapper around DebugRendererType, since it creates one from the data that we get
 pub enum DefaultDebugRendererType {
-    CUBE(glam::Vec3, glam::Vec3),
+    CUBE(veclib::Vector3<f32>, veclib::Vector3<f32>),
     AABB(math::bounds::AABB),
 }
 

@@ -5,7 +5,6 @@ use crate::engine::math::{self, bounds};
 
 use crate::engine::rendering::renderer::Renderer;
 use crate::engine::rendering::window::Window;
-use glam::Vec4Swizzles;
 
 // A component that will be linked to the skysphere
 #[derive(Default)]
