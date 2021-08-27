@@ -177,7 +177,6 @@ impl Octree {
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             pending_nodes.push(node_to_remove.clone().unwrap());
             // Recursively delete the nodes
-            let mut i = 0;
             while pending_nodes.len() > 0 {
                 let current_node = pending_nodes[0].clone();
                 // Just in case
@@ -192,7 +191,6 @@ impl Octree {
                 }
                 deleted_centers.insert(current_node.get_center());
                 pending_nodes.remove(0);
-                i += 1;
             }
         }
 
@@ -261,4 +259,9 @@ impl OctreeNode {
         let aabb = self.get_aabb().min.cmple(*target).all() && self.get_aabb().max.cmpgt(*target).all();
         return aabb && self.depth < (max_depth - 1);
     }
+    // Check if we can subdivide this node in the postprocess stage
+    pub fn can_subdivide_postprocess(&self, target: &glam::Vec3, max_depth: u8) -> bool {
+        // Do some funky maths
+        return self.depth < (max_depth - 1);
+    } 
 }
