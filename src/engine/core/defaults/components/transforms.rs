@@ -2,18 +2,18 @@
 use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal};
 // The transform component
 pub struct Transform {
-    pub position: glam::Vec3,
-    pub rotation: glam::Quat,
-    pub scale: glam::Vec3,
-    pub matrix: glam::Mat4,
+    pub position: cgmath::Point3<f32>,
+    pub rotation: cgmath::Quaternion<f32>,
+    pub scale: cgmath::Vector3<f32>,
+    pub matrix: cgmath::Matrix4<f32>,
 }
 
 // Default transform
 impl Default for Transform {
     fn default() -> Self {
         Self {
-            position: glam::Vec3::ZERO,
-            rotation: glam::Quat::IDENTITY,
+            position: cgmath::Point3::new(0.0, 0.0, 0.0),
+            rotation: cgmath::Quaternion::,
             scale: glam::Vec3::ONE,
             matrix: glam::Mat4::IDENTITY,
         }
