@@ -65,7 +65,7 @@ impl Octree {
                                 half_extent: octree_node.half_extent / 2,
                                 depth: octree_node.depth + 1,
                                 parent_center: octree_node.get_center(),
-                                children_centers: [veclib::Vector3::<i32>::ZERO; 8],
+                                children_centers: [veclib::Vector3::<i32>::default_zero(); 8],
                                 children: false,
                             };
                             let center = child.get_center();
@@ -93,11 +93,11 @@ impl Octree {
             position: root_position,
             half_extent: (root_size / 2) as u32,
             depth: 0,
-            parent_center: veclib::Vector3::<i32>::ZERO,
-            children_centers: [veclib::Vector3::<i32>::ZERO; 8],
+            parent_center: veclib::Vector3::<i32>::default_zero(),
+            children_centers: [veclib::Vector3::<i32>::default_zero(); 8],
             children: false,
         };
-        let octree_data = self.generate_octree(&veclib::Vector3::<f32>::ONE, root_node);
+        let octree_data = self.generate_octree(&veclib::Vector3::<f32>::default_one(), root_node);
         self.nodes = octree_data.0;
         self.targetted_node = octree_data.1;
     }
@@ -183,7 +183,7 @@ impl Octree {
                 if current_node.children {
                     // Get the children
                     for child_center in current_node.children_centers {
-                        if child_center != veclib::Vector3::<i32>::ZERO {
+                        if child_center != veclib::Vector3::<i32>::default_zero() {
                             let child_node = self.nodes.get(&child_center).unwrap().clone();
                             pending_nodes.push(child_node);
                         }
@@ -197,14 +197,16 @@ impl Octree {
         // Update the removed node
         let mut node_to_remove = node_to_remove.unwrap();
         node_to_remove.children = false;
-        node_to_remove.children_centers = [veclib::Vector3<i32>::ZERO; 8];
+        node_to_remove.children_centers = [veclib::Vector3::<i32>::default_zero(); 8];
         self.added_nodes.push(node_to_remove.clone());
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
 
         let center: veclib::Vector3<i32> = marked_node.as_ref().unwrap().get_center();
         let depth: u8 = marked_node.as_ref().unwrap().depth;
 
-        println!("Time in micros: {}", instant.elapsed().as_micros());
+        unsafe {
+            println!("Time in micros: {}", instant.elapsed().as_micros());
+        }
         // Remove the nodes
         self.removed_nodes = self
             .nodes

@@ -20,7 +20,7 @@ pub struct Chunk {
 impl Default for Chunk {
     fn default() -> Self {
         Self {
-            position: veclib::Vector3::<i32>::ZERO,
+            position: veclib::Vector3::<i32>::default_zero(),
             size: 0,
             data: Box::new([Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]),
         }
@@ -123,12 +123,12 @@ impl ProceduralModelGenerator for Chunk {
                             let mut value: f32 = inverse_lerp(density1, density2, 0.0);
                             //value = 0.5;
                             // Create the vertex
-                            let mut vertex = veclib::Vector3::<f32>::lerp(&vert1, &vert2, value);
+                            let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                             // Offset the vertex
                             vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                             let normal: veclib::Vector3<f32> = {
-                                let mut normal1 = veclib::Vector3::<f32>::ZERO;
-                                let mut normal2 = veclib::Vector3::<f32>::ZERO;
+                                let mut normal1 = veclib::Vector3::<f32>::default_zero();
+                                let mut normal2 = veclib::Vector3::<f32>::default_zero();
 
                                 // Create the normal
                                 normal1.set_x(self.data[index1 + DATA_OFFSET_TABLE[3]].density - density1);
@@ -137,7 +137,7 @@ impl ProceduralModelGenerator for Chunk {
                                 normal2.set_x(self.data[index2 + DATA_OFFSET_TABLE[3]].density - density2);
                                 normal2.set_y(self.data[index2 + DATA_OFFSET_TABLE[4]].density - density2);
                                 normal2.set_z(self.data[index2 + DATA_OFFSET_TABLE[1]].density - density2);
-                                veclib::Vector3::<f32>::lerp(&normal1, &normal2, value)
+                                veclib::Vector3::<f32>::lerp(normal1, normal2, value)
                             };
 
                             let edge_tuple: (u32, u32, u32) = (
@@ -152,9 +152,9 @@ impl ProceduralModelGenerator for Chunk {
                                 e.insert(model.vertices.len() as u32);
                                 model.triangles.push(model.vertices.len() as u32);
                                 model.vertices.push(vertex);
-                                model.uvs.push(veclib::Vector2::<f32>::ZERO);
+                                model.uvs.push(veclib::Vector2::<f32>::default_zero());
                                 model.normals.push(normal.normalized());
-                                model.tangents.push(veclib::Vector4::<f32>::ZERO);
+                                model.tangents.push(veclib::Vector4::<f32>::default_zero());
                             } else {
                                 // The vertex already exists
                                 model.triangles.push(duplicate_vertices[&edge_tuple]);

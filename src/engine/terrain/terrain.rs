@@ -50,7 +50,10 @@ impl Terrain {
     // Create a chunk entity
     pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i32>, size: u32) -> Option<Entity> {
         // Create the entity
-        let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
+        let name = unsafe {
+            format!("Chunk {:?} {:?}", position, size)
+        };
+        let mut chunk = Entity::new(name.as_str());
 
         // Create the chunk component
         let mut chunk_cmp = Chunk::default();

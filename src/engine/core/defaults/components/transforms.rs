@@ -13,10 +13,10 @@ pub struct Transform {
 impl Default for Transform {
     fn default() -> Self {
         Self {
-            position: veclib::Vector3::ZERO,
-            rotation: veclib::Quaternion::IDENTITY,
-            scale: veclib::Vector3::ONE,
-            matrix: veclib::Matrix4x4::IDENTITY,
+            position: veclib::Vector3::default_zero(),
+            rotation: veclib::Quaternion::default_identity(),
+            scale: veclib::Vector3::default_one(),
+            matrix: veclib::Matrix4x4::default_identity(),
         }
     }
 }

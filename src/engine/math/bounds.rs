@@ -13,8 +13,8 @@ pub struct AABB {
 impl Default for AABB {
     fn default() -> Self {
         Self {
-            min: (veclib::Vector3::ONE / 2.0) - 1.0,
-            max: (veclib::Vector3::ONE / 2.0),
+            min: (veclib::Vector3::default_one() / 2.0) - 1.0,
+            max: (veclib::Vector3::default_one() / 2.0),
         }
     }
 }
@@ -34,7 +34,7 @@ impl AABB {
             7 => veclib::Vector3::new(self.min.x(), self.max.y(), self.max.z()), // -X, Y, Z
 
             // Other; not supported
-            _ => veclib::Vector3::ZERO,
+            _ => veclib::Vector3::default_zero(),
         }
     }
     // Get a specific edge from this AABB
@@ -48,13 +48,13 @@ impl AABB {
     // Generate the AABB from a model; just loop over all the vertices and keep track of the min and max ones
     pub fn from_model(model: &Model) -> Self {
         let mut aabb: Self = AABB {
-            min: veclib::Vector3::ONE,
-            max: -veclib::Vector3::ONE,
+            min: veclib::Vector3::default_one(),
+            max: -veclib::Vector3::default_one(),
         };
         // Loop over the vertices
         for vertex in model.vertices.iter() {
-            aabb.min = aabb.min.min(vertex);
-            aabb.max = aabb.max.max(vertex);
+            aabb.min = aabb.min.min(*vertex);
+            aabb.max = aabb.max.max(*vertex);
         }
         aabb
     }
@@ -67,6 +67,6 @@ impl AABB {
     }
     // Get the closest point of the AABB from a specific point
     pub fn get_nearest_point(&self, point: &veclib::Vector3<f32>) -> veclib::Vector3<f32> {
-        return self.min.max(&point.min(&self.max));
+        return self.min.max(point.min(self.max));
     }
 }

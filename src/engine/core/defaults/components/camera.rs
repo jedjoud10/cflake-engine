@@ -26,7 +26,7 @@ impl Camera {
         let rotation_matrix = veclib::Matrix4x4::from_quaternion(&rotation);
         let forward_vector = rotation_matrix.transform_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
         let up_vector = rotation_matrix.transform_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
-        self.view_matrix = glam::Mat4::look_at_rh(position, forward_vector + position, up_vector);        
+        self.view_matrix = veclib::Matrix4x4::look_at(&position, &up_vector, &(forward_vector + position));        
     }
     // Update the frustum-culling matrix
     pub fn update_frustum_culling_matrix(&mut self) {
@@ -57,8 +57,8 @@ impl ComponentID for Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            view_matrix: veclib::Matrix4x4::IDENTITY,
-            projection_matrix: veclib::Matrix4x4::IDENTITY,
+            view_matrix: veclib::Matrix4x4::default_identity(),
+            projection_matrix: veclib::Matrix4x4::default_identity(),
             frustum: math::Frustum::default(),
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,

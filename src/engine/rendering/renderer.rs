@@ -40,7 +40,7 @@ impl Default for Renderer {
             shader_name: String::default(),
             model: Model::default(),
             texture_cache_ids: Vec::new(),
-            uv_scale: veclib::Vector2::<f32>::ONE,
+            uv_scale: veclib::Vector2::<f32>::default_one(),
             flags: RendererFlags::DEFAULT,
         }
     }

@@ -25,12 +25,12 @@ impl Intersection {
     }
     // Check if a square intersects another square
     pub fn square_square(square: &shapes::Square, other: &shapes::Square) -> bool {
-        return square.min.cmple(other.max).all() && other.min.cmple(square.max).all();
+        return square.min.elem_lte(&other.max).all() && other.min.elem_lte(&square.max).all();
     }
     // Check if a screen space point is inside the NDC
     pub fn ss_point_limits(point: &veclib::Vector2<f32>) -> bool {
-        let min = (point).elem_lt(&veclib::Vector2::ONE).all();
-        let max = (point).elem_gt(&-veclib::Vector2::ONE).all();
+        let min = (point).elem_lt(&veclib::Vector2::default_one()).all();
+        let max = (point).elem_gt(&-veclib::Vector2::default_one()).all();
         min && max
     }
     // Intersection code to check if a line intersects the frustum
