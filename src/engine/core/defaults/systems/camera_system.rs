@@ -101,12 +101,10 @@ impl System for CameraSystem {
     }
 
     // When an entity gets added to this system
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
-        todo!();
-        /*
+    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {        
         // First time we initialize the camera, setup the matrices
-        let position: glam::Vec3;
-        let rotation: glam::Quat;
+        let position: veclib::Vector3<f32>;
+        let rotation: veclib::Quaternion<f32>;
         {
             // Set the variables since we can't have two mutable references at once
             rotation = entity.get_component::<components::Transform>(data.component_manager).unwrap().rotation;
@@ -115,8 +113,7 @@ impl System for CameraSystem {
         let camera_component = entity.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         camera_component.update_projection_matrix(&data.custom_data.window);
         camera_component.update_view_matrix(position, rotation);
-        camera_component.update_frustum_culling_matrix();
-        */
+        camera_component.update_frustum_culling_matrix();        
     }
 
     // Turn this into "Any" so we can cast into child systems

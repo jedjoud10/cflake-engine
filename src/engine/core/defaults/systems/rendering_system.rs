@@ -272,10 +272,8 @@ impl System for RenderingSystem {
 
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut SystemEventData) {
-        todo!();
-        /*
         // At the end of each frame, disable the depth test and render the debug objects
-        let vp_matrix: glam::Mat4;
+        let vp_matrix: veclib::Matrix4x4<f32>;
         let frustum: &math::Frustum;
         // Get the (projection * view) matrix
         {
@@ -320,7 +318,7 @@ impl System for RenderingSystem {
         );
 
         // Other params
-        shader.set_scalar_3_uniform("view_pos", (camera_position.x, camera_position.y, camera_position.z));
+        shader.set_scalar_3_uniform("view_pos", (camera_position.x(), camera_position.y(), camera_position.z()));
         shader.set_int_uniform("debug_view", self.debug_view as i32);
         shader.set_scalar_2_uniform("resolution", (self.window.size.0 as f32, self.window.size.1 as f32));
         // Render the screen quad
@@ -330,8 +328,7 @@ impl System for RenderingSystem {
             gl::BindVertexArray(self.quad_renderer.gpu_data.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.quad_renderer.gpu_data.element_buffer_object);
             gl::DrawElements(gl::TRIANGLES, self.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
-        }
-        */
+        }        
     }
 
     // When an entity gets added to this system

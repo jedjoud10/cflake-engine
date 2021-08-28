@@ -62,8 +62,8 @@ impl AABB {
     pub fn transform(&mut self, transform: &components::Transform) {
         // Transform the min and max by the transform's matrix
         let matrix = transform.get_matrix();
-        self.min = matrix.transform_point(&self.min);
-        self.max = matrix.transform_point(&self.max);
+        self.min = matrix.mul_point(&self.min);
+        self.max = matrix.mul_point(&self.max);
     }
     // Get the closest point of the AABB from a specific point
     pub fn get_nearest_point(&self, point: &veclib::Vector3<f32>) -> veclib::Vector3<f32> {

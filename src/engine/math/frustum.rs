@@ -11,11 +11,10 @@ pub struct Frustum {
 // The frustum can be debug drawed
 impl DebugRendererable for Frustum {
     // Turn the frustum into a cube and render it
-    fn get_debug_renderer(&self) -> DebugRendererType {
-        todo!();
-        /*
+    fn get_debug_renderer(&self) -> DebugRendererType {        
         let corners = super::shapes::CUBE_CORNERS;
-        let mut projected_corners: Vec<glam::Vec3> = Vec::new();
+        /*
+        let mut projected_corners: Vec<veclib::Vector3<f32>> = Vec::new();
         // Extract the near / far planes from the projection matrix
         //let near = self.projection_matrix.row(index)[14] / (self.projection_matrix[10] - 1.0);
         // Project each corner of the unit cube by the frustum's matrix
@@ -24,7 +23,7 @@ impl DebugRendererable for Frustum {
             let projected_corner = self.matrix.inverse().project_point3(new_corner);
             projected_corners.push(projected_corner);
         }
-        return DebugRendererType::CUBE(projected_corners, glam::Vec3::ONE);
         */
+        return DebugRendererType::CUBE(corners.to_vec(), veclib::Vector3::default_one());        
     }
 }

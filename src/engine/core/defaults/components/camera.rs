@@ -24,18 +24,15 @@ impl Camera {
     // Update the view matrix using a rotation and a position
     pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {        
         let rotation_matrix = veclib::Matrix4x4::from_quaternion(&rotation);
-        let forward_vector = rotation_matrix.transform_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
-        let up_vector = rotation_matrix.transform_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
+        let forward_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
+        let up_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
         self.view_matrix = veclib::Matrix4x4::look_at(&position, &up_vector, &(forward_vector + position));        
     }
     // Update the frustum-culling matrix
-    pub fn update_frustum_culling_matrix(&mut self) {
-        todo!();
-        /*
+    pub fn update_frustum_culling_matrix(&mut self) {        
         // Too ez m8
         self.frustum.matrix = self.projection_matrix * self.view_matrix;
-        self.frustum.projection_matrix = self.projection_matrix;
-        */
+        self.frustum.projection_matrix = self.projection_matrix;        
     }
 }
 
