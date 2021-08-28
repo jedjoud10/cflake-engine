@@ -281,13 +281,13 @@ pub const DATA_OFFSET_TABLE: [usize; 8] = [
 ];
 
 // Vertex table
-pub const VERTEX_TABLE: [glam::Vec3; 8] = [
-    glam::const_vec3!([0.0, 0.0, 0.0]),
-    glam::const_vec3!([0.0, 0.0, 1.0]),
-    glam::const_vec3!([1.0, 0.0, 1.0]),
-    glam::const_vec3!([1.0, 0.0, 0.0]),
-    glam::const_vec3!([0.0, 1.0, 0.0]),
-    glam::const_vec3!([0.0, 1.0, 1.0]),
-    glam::const_vec3!([1.0, 1.0, 1.0]),
-    glam::const_vec3!([1.0, 1.0, 0.0]),
+pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
+    veclib::Vector3::<f32>::new(0.0, 0.0, 0.0),
+    veclib::Vector3::<f32>::new(0.0, 0.0, 1.0),
+    veclib::Vector3::<f32>::new(1.0, 0.0, 1.0),
+    veclib::Vector3::<f32>::new(1.0, 0.0, 0.0),
+    veclib::Vector3::<f32>::new(0.0, 1.0, 0.0),
+    veclib::Vector3::<f32>::new(0.0, 1.0, 1.0),
+    veclib::Vector3::<f32>::new(1.0, 1.0, 1.0),
+    veclib::Vector3::<f32>::new(1.0, 1.0, 0.0),
 ];

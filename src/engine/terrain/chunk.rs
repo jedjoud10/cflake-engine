@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 // A component that will be added to well... chunks
 pub struct Chunk {
-    pub position: glam::IVec3,
+    pub position: veclib::Vector3<i32>,
     pub size: u32,
     pub data: Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>,
 }
@@ -20,7 +20,7 @@ pub struct Chunk {
 impl Default for Chunk {
     fn default() -> Self {
         Self {
-            position: glam::IVec3::ZERO,
+            position: veclib::Vector3::<i32>::ZERO,
             size: 0,
             data: Box::new([Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]),
         }
@@ -68,7 +68,7 @@ impl Chunk {
                 for x in 0..CHUNK_SIZE {
                     // Get the point in world coordinates
                     let size = self.size as f32 / (CHUNK_SIZE as f32 - 2.0);
-                    let point: glam::Vec3 = glam::vec3(x as f32, y as f32, z as f32) * size + self.position.as_f32();
+                    let point: veclib::Vector3<f32> = veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32) * size + self.position.as_f32();
                     // Set the voxel data
                     self.data[i] = voxel_generator.get_voxel(point);
                     // Keep track of the min max values
@@ -113,8 +113,8 @@ impl ProceduralModelGenerator for Chunk {
                             let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
 
                             // In global space here
-                            let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
-                            let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
+                            let vert1_usize = (vert1.x() as usize + x, vert1.y() as usize + y, vert1.z() as usize + z);
+                            let vert2_usize = (vert2.x() as usize + x, vert2.y() as usize + y, vert2.z() as usize + z);
                             let index1 = Self::flatten(vert1_usize);
                             let index2 = Self::flatten(vert2_usize);
                             let density1 = self.data[index1].density;
@@ -123,27 +123,27 @@ impl ProceduralModelGenerator for Chunk {
                             let mut value: f32 = inverse_lerp(density1, density2, 0.0);
                             //value = 0.5;
                             // Create the vertex
-                            let mut vertex = glam::Vec3::lerp(vert1, vert2, value);
+                            let mut vertex = veclib::Vector3::<f32>::lerp(&vert1, &vert2, value);
                             // Offset the vertex
-                            vertex += glam::vec3(x as f32, y as f32, z as f32);
-                            let normal: glam::Vec3 = {
-                                let mut normal1 = glam::Vec3::ZERO;
-                                let mut normal2 = glam::Vec3::ZERO;
+                            vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
+                            let normal: veclib::Vector3<f32> = {
+                                let mut normal1 = veclib::Vector3::<f32>::ZERO;
+                                let mut normal2 = veclib::Vector3::<f32>::ZERO;
 
                                 // Create the normal
-                                normal1.x = self.data[index1 + DATA_OFFSET_TABLE[3]].density - density1;
-                                normal1.y = self.data[index1 + DATA_OFFSET_TABLE[4]].density - density1;
-                                normal1.z = self.data[index1 + DATA_OFFSET_TABLE[1]].density - density1;
-                                normal2.x = self.data[index2 + DATA_OFFSET_TABLE[3]].density - density2;
-                                normal2.y = self.data[index2 + DATA_OFFSET_TABLE[4]].density - density2;
-                                normal2.z = self.data[index2 + DATA_OFFSET_TABLE[1]].density - density2;
-                                glam::Vec3::lerp(normal1, normal2, value)
+                                normal1.set_x(self.data[index1 + DATA_OFFSET_TABLE[3]].density - density1);
+                                normal1.set_y(self.data[index1 + DATA_OFFSET_TABLE[4]].density - density1);
+                                normal1.set_z(self.data[index1 + DATA_OFFSET_TABLE[1]].density - density1);
+                                normal2.set_x(self.data[index2 + DATA_OFFSET_TABLE[3]].density - density2);
+                                normal2.set_y(self.data[index2 + DATA_OFFSET_TABLE[4]].density - density2);
+                                normal2.set_z(self.data[index2 + DATA_OFFSET_TABLE[1]].density - density2);
+                                veclib::Vector3::<f32>::lerp(&normal1, &normal2, value)
                             };
 
                             let edge_tuple: (u32, u32, u32) = (
-                                2 * x as u32 + vert1.x as u32 + vert2.x as u32,
-                                2 * y as u32 + vert1.y as u32 + vert2.y as u32,
-                                2 * z as u32 + vert1.z as u32 + vert2.z as u32,
+                                2 * x as u32 + vert1.x() as u32 + vert2.x() as u32,
+                                2 * y as u32 + vert1.y() as u32 + vert2.y() as u32,
+                                2 * z as u32 + vert1.z() as u32 + vert2.z() as u32,
                             );
 
                             // Check if this vertex was already added
@@ -152,9 +152,9 @@ impl ProceduralModelGenerator for Chunk {
                                 e.insert(model.vertices.len() as u32);
                                 model.triangles.push(model.vertices.len() as u32);
                                 model.vertices.push(vertex);
-                                model.uvs.push(glam::Vec2::ZERO);
-                                model.normals.push(normal.normalize());
-                                model.tangents.push(glam::Vec4::ZERO);
+                                model.uvs.push(veclib::Vector2::<f32>::ZERO);
+                                model.normals.push(normal.normalized());
+                                model.tangents.push(veclib::Vector4::<f32>::ZERO);
                             } else {
                                 // The vertex already exists
                                 model.triangles.push(duplicate_vertices[&edge_tuple]);

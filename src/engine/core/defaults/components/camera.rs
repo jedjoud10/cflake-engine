@@ -3,7 +3,6 @@ use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInter
 use crate::engine::core::ecs::entity::Entity;
 use crate::engine::math::{self, bounds};
 use crate::engine::rendering::window::Window;
-
 // A simple camera component
 pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,
@@ -23,14 +22,11 @@ impl Camera {
         self.projection_matrix = veclib::Matrix4x4::from_perspective(vertical_fov, self.aspect_ratio, self.clip_planes.0, self.clip_planes.1);
     }
     // Update the view matrix using a rotation and a position
-    pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
-        todo!();
-        /*
-        let rotation_matrix = glam::Mat4::from_quat(rotation);
-        let forward_vector = rotation_matrix.mul_vec4(glam::vec4(0.0, 0.0, -1.0, 1.0)).xyz();
-        let up_vector = rotation_matrix.mul_vec4(glam::vec4(0.0, 1.0, 0.0, 1.0)).xyz();
-        self.view_matrix = glam::Mat4::look_at_rh(position, forward_vector + position, up_vector);
-        */
+    pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {        
+        let rotation_matrix = veclib::Matrix4x4::from_quaternion(&rotation);
+        let forward_vector = rotation_matrix.transform_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
+        let up_vector = rotation_matrix.transform_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
+        self.view_matrix = glam::Mat4::look_at_rh(position, forward_vector + position, up_vector);        
     }
     // Update the frustum-culling matrix
     pub fn update_frustum_culling_matrix(&mut self) {

@@ -61,7 +61,7 @@ pub fn load_entities(world: &mut World) {
         .link_component::<components::Transform>(
             &mut world.component_manager,
             components::Transform {
-                position: glam::vec3(5.0, 5.0, 5.0),
+                position: veclib::Vector3::<f32>::new(5.0, 5.0, 5.0),
                 ..components::Transform::default()
             },
         )

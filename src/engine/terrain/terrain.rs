@@ -39,7 +39,7 @@ pub struct Terrain {
 
     // Chunk managing
     pub octree: math::octree::Octree,
-    pub chunks: HashMap<glam::IVec3, u16>,
+    pub chunks: HashMap<veclib::Vector3<i32>, u16>,
 
     // Preloaded resources for chunks
     pub shader_name: String,
@@ -48,7 +48,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: glam::IVec3, size: u32) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i32>, size: u32) -> Option<Entity> {
         // Create the entity
         let mut chunk = Entity::new(format!("Chunk {:?} {:?}", position, size).as_str());
 
@@ -73,7 +73,7 @@ impl Terrain {
                 component_manager,
                 components::Transform {
                     position: position.as_f32(),
-                    scale: glam::vec3((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
+                    scale: veclib::Vector3::new((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
                     ..components::Transform::default()
                 },
             )
@@ -166,7 +166,7 @@ impl System for Terrain {
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
-        let location = glam::vec3(
+        let location = veclib::Vector3::<f32>::new(
             data.time_manager.seconds_since_game_start.sin() as f32 * 200.0,
             30.0,
             (data.time_manager.seconds_since_game_start / 10.0).cos() as f32 * 200.0,

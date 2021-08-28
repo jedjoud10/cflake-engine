@@ -28,14 +28,14 @@ impl ResourceManager {
     pub fn load_model(reader: &mut BufReader<File>) -> Option<Resource> {
         let vertices_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
         let triangles_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
-        let mut vertices: Vec<glam::Vec3> = Vec::new();
+        let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
         let mut triangles: Vec<u32> = Vec::new();
-        let mut normals: Vec<glam::Vec3> = Vec::new();
-        let mut uvs: Vec<glam::Vec2> = Vec::new();
-        let mut tangents: Vec<glam::Vec4> = Vec::new();
+        let mut normals: Vec<veclib::Vector3<f32>> = Vec::new();
+        let mut uvs: Vec<veclib::Vector2<f32>> = Vec::new();
+        let mut tangents: Vec<veclib::Vector4<f32>> = Vec::new();
         // Load the vertices
         for _ in 0..vertices_size {
-            vertices.push(glam::vec3(
+            vertices.push(veclib::Vector3::<f32>::new(
                 reader.read_f32::<LittleEndian>().ok()?,
                 reader.read_f32::<LittleEndian>().ok()?,
                 reader.read_f32::<LittleEndian>().ok()?,
@@ -43,7 +43,7 @@ impl ResourceManager {
         }
         // Load the normals
         for _ in 0..vertices_size {
-            normals.push(glam::vec3(
+            normals.push(veclib::Vector3::<f32>::new(
                 reader.read_f32::<LittleEndian>().ok()?,
                 reader.read_f32::<LittleEndian>().ok()?,
                 reader.read_f32::<LittleEndian>().ok()?,
@@ -51,7 +51,7 @@ impl ResourceManager {
         }
         // Load the tangents
         for _ in 0..vertices_size {
-            tangents.push(glam::vec4(
+            tangents.push(veclib::Vector4::<f32>::new(
                 reader.read_f32::<LittleEndian>().ok()?,
                 reader.read_f32::<LittleEndian>().ok()?,
                 reader.read_f32::<LittleEndian>().ok()?,
@@ -60,7 +60,7 @@ impl ResourceManager {
         }
         // Load the uvs
         for _ in 0..vertices_size {
-            uvs.push(glam::vec2(reader.read_f32::<LittleEndian>().ok()?, reader.read_f32::<LittleEndian>().ok()?));
+            uvs.push(veclib::Vector2::<f32>::new(reader.read_f32::<LittleEndian>().ok()?, reader.read_f32::<LittleEndian>().ok()?));
         }
 
         // Load the triangles
@@ -215,10 +215,10 @@ impl Default for Resource {
 // A loaded model resource
 #[derive(Debug)]
 pub struct LoadedModel {
-    pub vertices: Vec<glam::Vec3>,
-    pub normals: Vec<glam::Vec3>,
-    pub tangents: Vec<glam::Vec4>,
-    pub uvs: Vec<glam::Vec2>,
+    pub vertices: Vec<veclib::Vector3<f32>>,
+    pub normals: Vec<veclib::Vector3<f32>>,
+    pub tangents: Vec<veclib::Vector4<f32>>,
+    pub uvs: Vec<veclib::Vector2<f32>>,
     pub indices: Vec<u32>,
 }
 // A loaded texture resource
