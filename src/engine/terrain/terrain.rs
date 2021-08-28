@@ -75,7 +75,7 @@ impl Terrain {
             .link_component::<components::Transform>(
                 component_manager,
                 components::Transform {
-                    position: position.as_f32(),
+                    position: veclib::Vector3::<f32>::from(position),
                     scale: veclib::Vector3::new((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
                     ..components::Transform::default()
                 },

@@ -68,7 +68,7 @@ impl Chunk {
                 for x in 0..CHUNK_SIZE {
                     // Get the point in world coordinates
                     let size = self.size as f32 / (CHUNK_SIZE as f32 - 2.0);
-                    let point: veclib::Vector3<f32> = veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32) * size + self.position.as_f32();
+                    let point: veclib::Vector3<f32> = veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32) * size + veclib::Vector3::<f32>::from(self.position);
                     // Set the voxel data
                     self.data[i] = voxel_generator.get_voxel(point);
                     // Keep track of the min max values
