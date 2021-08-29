@@ -85,6 +85,7 @@ impl Octree {
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide_postprocess(&target, self.lod_factor, self.depth) {
                 pending_nodes.extend(octree_node.subdivide());
+                octree_node.postprocess = true;
             }
             // Bruh
             nodes.insert(octree_node.get_center(), octree_node);
@@ -101,6 +102,7 @@ impl Octree {
             position: root_position,
             half_extent: (root_size / 2) as u64,
             depth: 0,
+            postprocess: false,
             parent_center: veclib::Vector3::<i64>::default_zero(),
             children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
             children: false,
@@ -237,20 +239,37 @@ impl Octree {
         // Filter out the nodes that are already in the postprocess tree
         let mut nodes_clones = self.nodes.clone();
         let postprocess_nodes = self.generate_postprocess(&nodes_clones, &input.target);
-        nodes_clones.extend(postprocess_nodes.clone());
+        // The filtered postprocess node
+        let mut added_postprocess_nodes: Vec<OctreeNode> = Vec::new();
+        let mut removed_postprocess_nodes: Vec<OctreeNode> = Vec::new();
 
-        // The filtered newly added postprocessing nodes
-        let new_postprocess_nodes = postprocess_nodes.iter().filter_map(|(coord, node)| {
+        // Find the nodes that where added/removed
+        self.nodes.iter().for_each(|(coord, node)| {
+            // Check if the node passed the postprocess test
+            let node = node.clone();            
             if self.nodes.contains_key(coord) {
                 // This node already exists, that means that it didn't change
-                None
+                let new = postprocess_nodes.contains_key(coord);
+                if new && !node.postprocess {
+                    // This node already exists, though in this iteration it became a a postprocess node
+                    added_postprocess_nodes.push(node);
+                } else if !new && node.postprocess {
+                    // We failed the new postprocess check, so we've removed this node 
+                    removed_postprocess_nodes.push(node);
+                    return 
+                }
             } else {
-                // This node is a new node
-                Some((*coord, node.clone()))
+                // This is a completely new node
+                added_postprocess_nodes.push(node);
             }
-        }).collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
+        });
         
-        self.final_nodes = nodes_clones;
+        // Update the octree
+        let added_postprocess_nodes: HashMap<veclib::Vector3::<i64>, OctreeNode> = self.added_nodes.iter().map(|x| { (x.get_center(), x.clone()) }).collect();
+        let removed_postprocess_nodes: HashMap<veclib::Vector3::<i64>, OctreeNode> = self.removed_nodes.iter().map(|x| { (x.get_center(), x.clone()) }).collect();
+        self.final_nodes = self.nodes.clone();
+        self.final_nodes.extend(added_postprocess_nodes);
+        self.final_nodes.retain(|k, _| !removed_postprocess_nodes.contains_key(k));
     }
 }
 
@@ -265,6 +284,8 @@ pub struct OctreeNode {
     // TODO: Change this to it uses IDs instead of coordinates
     pub parent_center: veclib::Vector3<i64>,
     pub children_centers: [veclib::Vector3<i64>; 8],
+    // Check if we passed the postprocess test
+    pub postprocess: bool,
     // Check if we had children
     pub children: bool,
 }
@@ -308,6 +329,7 @@ impl OctreeNode {
                         half_extent: self.half_extent / 2,
                         depth: self.depth + 1,
                         parent_center: self.get_center(),
+                        postprocess: false,
                         children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
                         children: false,
                     };
