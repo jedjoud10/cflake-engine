@@ -16,6 +16,9 @@ pub struct Octree {
     pub targetted_node: Option<OctreeNode>,
     pub added_nodes: Vec<OctreeNode>,
     pub removed_nodes: Vec<OctreeNode>,
+    pub final_added_nodes: Vec<OctreeNode>,
+    pub final_removed_nodes: Vec<OctreeNode>,
+    pub final_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     pub threshold: f32,
     pub size: u64,
     pub depth: u8,
@@ -27,6 +30,9 @@ impl Default for Octree {
             nodes: HashMap::new(),
             added_nodes: Vec::new(),
             removed_nodes: Vec::new(),
+            final_nodes: HashMap::new(),
+            final_added_nodes: Vec::new(),
+            final_removed_nodes: Vec::new(),
             targetted_node: None,
             size: 1,
             depth: 1,
@@ -38,52 +44,53 @@ impl Default for Octree {
 impl Octree {
     // Generate an octree from a root and a target point
     pub fn generate_octree(&self, target: &veclib::Vector3<f32>, root_node: OctreeNode) -> (HashMap<veclib::Vector3<i64>, OctreeNode>, Option<OctreeNode>) {
-        //let target = ((target_n.as_i32() - veclib::Vector3<i32>(self.size as i32, self.size as i32, self.size as i32)).as_f32() / self.size as f32).round() * self.size as f32 + (self.size as f32 / 2.0);
         let mut nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         pending_nodes.push(root_node.clone());
         nodes.insert(root_node.get_center(), root_node);
         let mut targetted_node: Option<OctreeNode> = None;
+        let mut closest_dist: f32 = f32::MAX;
         while pending_nodes.len() > 0 {
             let mut octree_node = pending_nodes[0].clone();
-            let extent_i64 = octree_node.half_extent as i64;
             // Check if this octree node is the targeted node
-            if octree_node.depth == self.depth - 1 {
+            let dist = veclib::Vector3::<f32>::from(octree_node.get_center()).distance(*target);
+            if octree_node.depth == self.depth - 1 && dist < closest_dist {
                 targetted_node = Some(octree_node.clone());
+                closest_dist = dist;
             }
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth) {
-                // If it intersects the sphere, subdivide this octree node into multiple smaller ones
-                let mut i: u16 = 0;
-                for y in 0..2 {
-                    for z in 0..2 {
-                        for x in 0..2 {
-                            // The position offset for the new octree node
-                            let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * extent_i64, y * extent_i64, z * extent_i64);
-                            let child = OctreeNode {
-                                position: octree_node.position + offset,
-                                half_extent: octree_node.half_extent / 2,
-                                depth: octree_node.depth + 1,
-                                postprocess_pass: false,
-                                parent_center: octree_node.get_center(),
-                                children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
-                                children: false,
-                            };
-                            let center = child.get_center();
-                            octree_node.children_centers[i as usize] = center;
-                            pending_nodes.push(child);
-                            i += 1;
-                        }
-                    }
-                }
-                // Update the octree node
-                octree_node.children = true;
+                pending_nodes.extend(octree_node.subdivide());
             }
             // Bruh
             pending_nodes.remove(0);
             nodes.insert(octree_node.get_center(), octree_node);
         }
         return (nodes, targetted_node);
+    }
+    // Use an already existing octree to generate new nodes based if each node passes the postprocess pass 
+    pub fn generate_postprocess(&self, octree: &HashMap<veclib::Vector3<i64>, OctreeNode>, target: &veclib::Vector3<f32>) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
+        let mut nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
+        let mut pending_nodes: Vec<OctreeNode> = Vec::new();
+        // Add all the nodes that aren't the max-depth nodes
+        pending_nodes.extend(octree.iter().filter_map(|(_, node)| { 
+            if node.depth < self.depth - 1 {
+                Some(node.clone())
+            } else {
+                None
+            }
+        }));
+        while pending_nodes.len() > 0 {
+            let mut octree_node = pending_nodes[0].clone();
+            // If the node contains the position, subdivide it
+            if octree_node.can_subdivide_postprocess(&target, self.depth) {
+                pending_nodes.extend(octree_node.subdivide());
+                nodes.insert(octree_node.get_center(), octree_node);
+            }
+            // Bruh
+            pending_nodes.remove(0);
+        }
+        return nodes;
     }
     // Generate the base octree with a target point at 0, 0, 0
     pub fn generate_base_octree(&mut self) {
@@ -94,7 +101,6 @@ impl Octree {
             position: root_position,
             half_extent: (root_size / 2) as u64,
             depth: 0,
-            postprocess_pass: false,
             parent_center: veclib::Vector3::<i64>::default_zero(),
             children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
             children: false,
@@ -112,6 +118,7 @@ impl Octree {
         if self.targetted_node.is_none() {
             return;
         }
+        println!("Step 1");    
         let marked_node: Option<OctreeNode>;
 
         // We'll have only one main octree node that we will remove, and we will recursively remove it's children as well
@@ -151,6 +158,7 @@ impl Octree {
         if marked_node.is_none() || node_to_remove.is_none() {
             return;
         }
+        println!("Step 2");
         // Then we generate a local octree, using that marked node as the root
         let local_octree_data = self.generate_octree(&input.target, marked_node.clone().unwrap());
         self.targetted_node = local_octree_data.1;
@@ -207,6 +215,7 @@ impl Octree {
         let depth: u8 = marked_node.as_ref().unwrap().depth;
         println!("Time in micros: {}", instant.elapsed().as_micros());        
         // Remove the nodes
+        // TODO: Optimize this
         self.removed_nodes = self
             .nodes
             .iter()
@@ -225,25 +234,19 @@ impl Octree {
             .collect();
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
 
-        // Loop over all the newly update nodes and check if they pass the postprocess subdivision pass
-        for (coord, node) in self.nodes {
-            // Skip this node if it already has children
-            if node.children { continue; }
-
-            // Check if the node passed the check before
-            let old = node.postprocess_pass;
-            // Check if the node passes the check
-            let new = node.can_subdivide_postprocess(&input.target, self.depth);
-
-            // This node passed the check when it didn't last time, so we've added nodes
-            if !old && new {
-
+        // Filter out the nodes that are already in the postprocess tree
+        let postprocess_nodes = self.generate_postprocess(&self.nodes, &input.target);
+        let mut new_postprocess_nodes = postprocess_nodes.iter().filter_map(|(coord, node)| {
+            if self.nodes.contains_key(coord) {
+                // This node already exists, that means that it didn't change
+                None
+            } else {
+                // This node is a new node
+                Some(node.clone())
             }
-            // This node failed the check when it did last time, so we've removed nodes
-            if old && !new {
-
-            }
-        }
+        }).collect::<Vec<OctreeNode>>();
+        new_postprocess_nodes.append(&mut self.added_nodes);
+        self.final_added_nodes = new_postprocess_nodes;
     }
 }
 
@@ -260,8 +263,6 @@ pub struct OctreeNode {
     pub children_centers: [veclib::Vector3<i64>; 8],
     // Check if we had children
     pub children: bool,
-    // Check if we passed the subdivision postprocess check last time
-    pub postprocess_pass: bool,
 }
 
 impl OctreeNode {
@@ -277,19 +278,46 @@ impl OctreeNode {
         return self.position + self.half_extent as i64;
     }
     // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
+    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {        
         // AABB intersection, return true if point in on the min edge though
         let aabb = self.get_aabb().min.elem_lte(target).all() && self.get_aabb().max.elem_gte(target).all();
         return aabb && self.depth < (max_depth - 1);
     }
-    // Check if we can subdivide this node in the postprocess stage
+    // Check if we can subdivide this node during the postprocessing loop
     pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
-        // Do some funky maths
-        // Test for s + s/2.0
-        let mut aabb = self.get_aabb();
-        aabb.scale(veclib::Vector3::default_one() * 1.5);
-        let aabb_test = Intersection::point_aabb(target, &aabb);
-        let depth_test = self.depth + 2 < max_depth;
-        return aabb_test && depth_test;
+        let sphere = shapes::Sphere {
+            center: *target,
+            radius: 1.0,
+        };
+        return Intersection::aabb_sphere(&self.get_aabb(), &sphere) && self.depth < (max_depth - 1);
+    }
+    // Subdivide this node into 8 smaller nodes
+    pub fn subdivide(&mut self) -> Vec<OctreeNode> {
+        let extent_i64 = self.half_extent as i64;
+        let mut output: Vec<OctreeNode> = Vec::new();
+        let mut i: u16 = 0;
+        for y in 0..2 {
+            for z in 0..2 {
+                for x in 0..2 {
+                    // The position offset for the new octree node
+                    let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * extent_i64, y * extent_i64, z * extent_i64);
+                    let child = OctreeNode {
+                        position: self.position + offset,
+                        half_extent: self.half_extent / 2,
+                        depth: self.depth + 1,
+                        parent_center: self.get_center(),
+                        children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
+                        children: false,
+                    };
+                    let center = child.get_center();
+                    self.children_centers[i as usize] = center;
+                    output.push(child);
+                    i += 1;
+                }
+            }
+        }
+        // Update the octree node
+        self.children = true;
+        return output;
     }
 }

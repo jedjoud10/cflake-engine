@@ -28,7 +28,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.4;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 16;
+pub const OCTREE_DEPTH: u8 = 6;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -61,7 +61,7 @@ impl Terrain {
         // Check if we should even generate the model
         if min_max.0.signum() == min_max.1.signum() {
             // No intersection
-            return None;
+            //return None;
         }
         
         let model = chunk_cmp.generate_model();
@@ -151,6 +151,11 @@ impl System for Terrain {
                 }
             }
         }
+        /*
+        self.octree.generate_incremental_octree(math::octree::OctreeInput {
+            target: veclib::Vector3::default_one() * 30.0,
+        });
+        */
 
         // Debug controls
         data.input_manager.bind_key(input::Keys::Y, "update_terrain", input::MapType::Toggle);
@@ -170,7 +175,7 @@ impl System for Terrain {
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") {
             self.octree.generate_incremental_octree(OctreeInput { target: camera_location });
-
+            /*
             // Turn all the newly added nodes into chunks and instantiate them into the world
             for octree_node in &self.octree.added_nodes {
                 // Only add the octree nodes that have no children
@@ -194,11 +199,12 @@ impl System for Terrain {
                     let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
                 }
-            }
-            for (_, octree_node) in self.octree.nodes.iter() {
-                if !octree_node.children {
-                    data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one())
-                }
+            }     
+            */       
+        }
+        for (_, octree_node) in self.octree.nodes.iter() {
+            if !octree_node.children {
+                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one())
             }
         }
     }

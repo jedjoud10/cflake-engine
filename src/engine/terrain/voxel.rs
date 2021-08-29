@@ -19,7 +19,7 @@ impl VoxelGenerator {
         // Code goes here
         voxel.density = point.y() - 40.0;
         voxel.density += (point.x() * 0.05).sin() * 10.0;
-        //voxel.density = point.y() - 5.0;
+        voxel.density = point.y() - 5.0;
         return voxel;
     }
 }
