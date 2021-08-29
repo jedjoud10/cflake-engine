@@ -203,10 +203,7 @@ impl Octree {
 
         let center: veclib::Vector3<i32> = marked_node.as_ref().unwrap().get_center();
         let depth: u8 = marked_node.as_ref().unwrap().depth;
-
-        unsafe {
-            println!("Time in micros: {}", instant.elapsed().as_micros());
-        }
+        println!("Time in micros: {}", instant.elapsed().as_micros());        
         // Remove the nodes
         self.removed_nodes = self
             .nodes
