@@ -1,5 +1,5 @@
-use std::default;
 use super::{bounds, shapes, Frustum};
+use std::default;
 
 // Intersection tests
 pub struct Intersection {}

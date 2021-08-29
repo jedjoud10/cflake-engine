@@ -265,5 +265,5 @@ impl OctreeNode {
     pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
         // Do some funky maths
         return self.depth < (max_depth - 1);
-    } 
+    }
 }

@@ -1,13 +1,13 @@
 // The corners of a cube
 pub const CUBE_CORNERS: [veclib::Vector3<f32>; 8] = [
-    veclib::Vector3::<f32> {data: [0.0, 0.0, 0.0]},
-    veclib::Vector3::<f32> {data: [1.0, 0.0, 0.0]},
-    veclib::Vector3::<f32> {data: [1.0, 0.0, 1.0]},
-    veclib::Vector3::<f32> {data: [0.0, 0.0, 1.0]},
-    veclib::Vector3::<f32> {data: [0.0, 1.0, 0.0]},
-    veclib::Vector3::<f32> {data: [1.0, 1.0, 0.0]},
-    veclib::Vector3::<f32> {data: [1.0, 1.0, 1.0]},
-    veclib::Vector3::<f32> {data: [0.0, 1.0, 1.0]},
+    veclib::Vector3::<f32> { data: [0.0, 0.0, 0.0] },
+    veclib::Vector3::<f32> { data: [1.0, 0.0, 0.0] },
+    veclib::Vector3::<f32> { data: [1.0, 0.0, 1.0] },
+    veclib::Vector3::<f32> { data: [0.0, 0.0, 1.0] },
+    veclib::Vector3::<f32> { data: [0.0, 1.0, 0.0] },
+    veclib::Vector3::<f32> { data: [1.0, 1.0, 0.0] },
+    veclib::Vector3::<f32> { data: [1.0, 1.0, 1.0] },
+    veclib::Vector3::<f32> { data: [0.0, 1.0, 1.0] },
 ];
 
 pub const CUBE_EDGES: [Line; 12] = [

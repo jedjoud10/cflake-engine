@@ -54,7 +54,10 @@ impl System for CameraSystem {
                 // Rotate the camera around
                 let mouse_pos = data.input_manager.get_accumulated_mouse_position();
                 let sensitivity = 0.001_f32;
-                changed_rotation = veclib::Quaternion::<f32>::from_euler_angles(veclib::EulerAnglesOrder::YXZ, veclib::Vector3::new(-mouse_pos.1 as f32 * sensitivity, -mouse_pos.0 as f32 * sensitivity, 0.0));
+                changed_rotation = veclib::Quaternion::<f32>::from_euler_angles(
+                    veclib::EulerAnglesOrder::YXZ,
+                    veclib::Vector3::new(-mouse_pos.1 as f32 * sensitivity, -mouse_pos.0 as f32 * sensitivity, 0.0),
+                );
 
                 // Keyboard input
                 let forward_vector = veclib::Matrix4x4::from_quaternion(&changed_rotation).mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, 1.0));
@@ -85,7 +88,7 @@ impl System for CameraSystem {
                 components.get_component_mut::<components::Transform>(data.component_manager).unwrap().rotation = changed_rotation;
                 position = changed_position;
                 rotation = changed_rotation;
-            }            
+            }
         }
         let camera_component = components.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         // Update the view matrix every time we make a change
@@ -98,7 +101,7 @@ impl System for CameraSystem {
     }
 
     // When an entity gets added to this system
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {        
+    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
         // First time we initialize the camera, setup the matrices
         let position: veclib::Vector3<f32>;
         let rotation: veclib::Quaternion<f32>;
@@ -110,7 +113,7 @@ impl System for CameraSystem {
         let camera_component = entity.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         camera_component.update_projection_matrix(&data.custom_data.window);
         camera_component.update_view_matrix(position, rotation);
-        camera_component.update_frustum_culling_matrix();        
+        camera_component.update_frustum_culling_matrix();
     }
 
     // Turn this into "Any" so we can cast into child systems

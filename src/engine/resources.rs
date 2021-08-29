@@ -60,7 +60,10 @@ impl ResourceManager {
         }
         // Load the uvs
         for _ in 0..vertices_size {
-            uvs.push(veclib::Vector2::<f32>::new(reader.read_f32::<LittleEndian>().ok()?, reader.read_f32::<LittleEndian>().ok()?));
+            uvs.push(veclib::Vector2::<f32>::new(
+                reader.read_f32::<LittleEndian>().ok()?,
+                reader.read_f32::<LittleEndian>().ok()?,
+            ));
         }
 
         // Load the triangles

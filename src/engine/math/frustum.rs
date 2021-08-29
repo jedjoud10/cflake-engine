@@ -1,5 +1,5 @@
-use crate::engine::debug::{DebugRendererType, DebugRendererable};
 use super::shapes;
+use crate::engine::debug::{DebugRendererType, DebugRendererable};
 
 // A view frustum
 #[derive(Default, Clone)]
@@ -11,7 +11,7 @@ pub struct Frustum {
 // The frustum can be debug drawed
 impl DebugRendererable for Frustum {
     // Turn the frustum into a cube and render it
-    fn get_debug_renderer(&self) -> DebugRendererType {        
+    fn get_debug_renderer(&self) -> DebugRendererType {
         let corners = super::shapes::CUBE_CORNERS;
         /*
         let mut projected_corners: Vec<veclib::Vector3<f32>> = Vec::new();
@@ -24,6 +24,6 @@ impl DebugRendererable for Frustum {
             projected_corners.push(projected_corner);
         }
         */
-        return DebugRendererType::CUBE(corners.to_vec(), veclib::Vector3::default_one());        
+        return DebugRendererType::CUBE(corners.to_vec(), veclib::Vector3::default_one());
     }
 }

@@ -256,7 +256,7 @@ impl System for RenderingSystem {
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
                 gl::Enable(gl::CULL_FACE);
             }
-        }        
+        }
     }
 
     // Called before each fire_entity event is fired
@@ -325,7 +325,7 @@ impl System for RenderingSystem {
             gl::BindVertexArray(self.quad_renderer.gpu_data.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.quad_renderer.gpu_data.element_buffer_object);
             gl::DrawElements(gl::TRIANGLES, self.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
-        }        
+        }
     }
 
     // When an entity gets added to this system
