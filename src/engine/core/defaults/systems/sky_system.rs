@@ -67,16 +67,16 @@ impl System for SkySystem {
         )
         .unwrap();
         sky.link_default_component::<components::AABB>(data.component_manager).unwrap();
-        /*
+        
         sky.link_component::<components::Transform>(
             data.component_manager,
             components::Transform {
-                scale: glam::Vec3::ONE * 9000.0,
+                scale: veclib::Vector3::default_one() * 9000.0,
                 ..components::Transform::default()
             },
         )
         .unwrap();
-        */
+        
         sky.link_component::<components::Sky>(
             &mut data.component_manager,
             components::Sky {
