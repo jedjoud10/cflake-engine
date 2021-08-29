@@ -54,7 +54,7 @@ impl System for CameraSystem {
                 // Rotate the camera around
                 let mouse_pos = data.input_manager.get_accumulated_mouse_position();
                 let sensitivity = 0.001_f32;
-                changed_rotation = veclib::Quaternion::<f32>::from_euler_angles(veclib::EulerAnglesOrder::YXZ, veclib::Vector3::new(-mouse_pos.0 as f32 * sensitivity, -mouse_pos.1 as f32 * sensitivity, 0.0));
+                changed_rotation = veclib::Quaternion::<f32>::from_euler_angles(veclib::EulerAnglesOrder::YXZ, veclib::Vector3::new(-mouse_pos.1 as f32 * sensitivity, -mouse_pos.0 as f32 * sensitivity, 0.0));
 
                 // Keyboard input
                 let forward_vector = veclib::Matrix4x4::from_quaternion(&changed_rotation).mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, 1.0));

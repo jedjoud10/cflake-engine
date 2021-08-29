@@ -243,9 +243,6 @@ impl System for RenderingSystem {
         if self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::WIREFRAME) {
             let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
             wireframe_shader.use_shader();
-            println!("mvp: {:?}", mvp_matrix);
-            println!("model: {:?}", model_matrix);
-            println!("view: {:?}", view_matrix);
             wireframe_shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
             wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
             wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);

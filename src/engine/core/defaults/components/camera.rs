@@ -24,14 +24,14 @@ impl Camera {
     // Update the view matrix using a rotation and a position
     pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, mut rotation: veclib::Quaternion<f32>) {      
 
-        let rotation_matrix = veclib::Matrix4x4::default_identity();
+        let rotation_matrix = veclib::Matrix4x4::from_quaternion(&rotation);
         let mut forward_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0));
         forward_vector.normalize();
         let mut up_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
         up_vector.normalize();
         self.view_matrix = veclib::Matrix4x4::from_translation(veclib::Vector3::new(4.0, 5.0, 6.0));
         //println!("{:?}", forward_vector);
-        //self.view_matrix = veclib::Matrix4x4::look_at(&position, &up_vector, &(forward_vector + position));     
+        self.view_matrix = veclib::Matrix4x4::look_at(&position, &up_vector, &(forward_vector + position));     
         //self.view_matrix = veclib::Matrix4x4::look_at(&veclib::Vector3::<f32>::new(5.0, 5.0, 0.0), &veclib::Vector3::default_y(), &veclib::Vector3::default_zero());     
         //self.view_matrix = veclib::Matrix4x4::default_identity();   
     }
