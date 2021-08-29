@@ -64,6 +64,7 @@ impl Octree {
                                 position: octree_node.position + offset,
                                 half_extent: octree_node.half_extent / 2,
                                 depth: octree_node.depth + 1,
+                                postprocess_pass: false,
                                 parent_center: octree_node.get_center(),
                                 children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
                                 children: false,
@@ -93,6 +94,7 @@ impl Octree {
             position: root_position,
             half_extent: (root_size / 2) as u64,
             depth: 0,
+            postprocess_pass: false,
             parent_center: veclib::Vector3::<i64>::default_zero(),
             children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
             children: false,
@@ -222,6 +224,26 @@ impl Octree {
             })
             .collect();
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
+
+        // Loop over all the newly update nodes and check if they pass the postprocess subdivision pass
+        for (coord, node) in self.nodes {
+            // Skip this node if it already has children
+            if node.children { continue; }
+
+            // Check if the node passed the check before
+            let old = node.postprocess_pass;
+            // Check if the node passes the check
+            let new = node.can_subdivide_postprocess(&input.target, self.depth);
+
+            // This node passed the check when it didn't last time, so we've added nodes
+            if !old && new {
+
+            }
+            // This node failed the check when it did last time, so we've removed nodes
+            if old && !new {
+
+            }
+        }
     }
 }
 
@@ -238,6 +260,8 @@ pub struct OctreeNode {
     pub children_centers: [veclib::Vector3<i64>; 8],
     // Check if we had children
     pub children: bool,
+    // Check if we passed the subdivision postprocess check last time
+    pub postprocess_pass: bool,
 }
 
 impl OctreeNode {
@@ -261,6 +285,11 @@ impl OctreeNode {
     // Check if we can subdivide this node in the postprocess stage
     pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
         // Do some funky maths
-        return self.depth < (max_depth - 1);
+        // Test for s + s/2.0
+        let mut aabb = self.get_aabb();
+        aabb.scale(veclib::Vector3::default_one() * 1.5);
+        let aabb_test = Intersection::point_aabb(target, &aabb);
+        let depth_test = self.depth + 2 < max_depth;
+        return aabb_test && depth_test;
     }
 }

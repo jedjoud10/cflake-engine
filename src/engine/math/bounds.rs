@@ -69,4 +69,10 @@ impl AABB {
     pub fn get_nearest_point(&self, point: &veclib::Vector3<f32>) -> veclib::Vector3<f32> {
         return self.min.max(point.min(self.max));
     }
+    // Scale the AABB by a vector
+    pub fn scale(&mut self, scale: veclib::Vector3<f32>) {
+        // Scale the AABB
+        self.min *= scale;
+        self.max *= scale;
+    }
 }
