@@ -26,9 +26,9 @@ use std::collections::HashMap;
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
-pub const LOD_THRESHOLD: f32 = 1.4;
+pub const LOD_FACTOR: f32 = 1.0;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 4;
+pub const OCTREE_DEPTH: u8 = 8;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -61,7 +61,7 @@ impl Terrain {
         // Check if we should even generate the model
         if min_max.0.signum() == min_max.1.signum() {
             // No intersection
-            //return None;
+            return None;
         }
         
         let model = chunk_cmp.generate_model();
@@ -139,11 +139,11 @@ impl System for Terrain {
         // Setup the octree
         self.octree.size = CHUNK_SIZE as u64 - 2;
         self.octree.depth = OCTREE_DEPTH;
-        self.octree.threshold = LOD_THRESHOLD;
+        self.octree.lod_factor = LOD_FACTOR;
         self.octree.generate_base_octree();     
         // Gotta call this so it generates the post processing octree as well
         self.octree.generate_incremental_octree(math::octree::OctreeInput {
-            target: veclib::Vector3::default_one() * -1.0,
+            target: veclib::Vector3::<f32>::new(160.0, 0.2, 160.0),
         });
 
         for (_, octree_node) in &self.octree.final_nodes {
@@ -203,8 +203,10 @@ impl System for Terrain {
             }     
             */       
         }
-        for (_, octree_node) in self.octree.final_nodes.iter() {            
-            //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());            
+        for (k, octree_node) in self.octree.final_nodes.iter() {          
+            if self.chunks.contains_key(&k) {
+                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());            
+            }  
         }
     }
 

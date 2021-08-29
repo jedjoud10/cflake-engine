@@ -19,7 +19,7 @@ pub struct Octree {
     pub final_added_nodes: Vec<OctreeNode>,
     pub final_removed_nodes: Vec<OctreeNode>,
     pub final_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
-    pub threshold: f32,
+    pub lod_factor: f32,
     pub size: u64,
     pub depth: u8,
 }
@@ -36,7 +36,7 @@ impl Default for Octree {
             targetted_node: None,
             size: 1,
             depth: 1,
-            threshold: 1.0,
+            lod_factor: 1.0,
         }
     }
 }
@@ -74,7 +74,7 @@ impl Octree {
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         // Add all the nodes that aren't the max-depth nodes
         pending_nodes.extend(octree.iter().filter_map(|(_, node)| { 
-            if node.depth < self.depth - 2 {
+            if node.depth < self.depth - 1 {
                 Some(node.clone())
             } else {
                 None
@@ -83,7 +83,7 @@ impl Octree {
         while pending_nodes.len() > 0 {
             let mut octree_node = pending_nodes[0].clone();
             // If the node contains the position, subdivide it
-            if octree_node.can_subdivide_postprocess(&target, self.depth) {
+            if octree_node.can_subdivide_postprocess(&target, self.lod_factor, self.depth) {
                 pending_nodes.extend(octree_node.subdivide());
             }
             // Bruh
@@ -288,12 +288,10 @@ impl OctreeNode {
         return aabb && self.depth < (max_depth - 1);
     }
     // Check if we can subdivide this node during the postprocessing loop
-    pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
-        let sphere = shapes::Sphere {
-            center: *target,
-            radius: 30.0,
-        };
-        return Intersection::aabb_sphere(&self.get_aabb(), &sphere) && self.depth < (max_depth - 1) && !self.children;
+    pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
+        let mut aabb = self.get_aabb();
+        aabb.expand(lod_factor * self.half_extent as f32);
+        return Intersection::point_aabb(target, &aabb) && self.depth < (max_depth - 1) && !self.children;
     }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide(&mut self) -> Vec<OctreeNode> {
