@@ -26,7 +26,7 @@ use std::collections::HashMap;
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
-pub const LOD_FACTOR: f32 = 1.0;
+pub const LOD_FACTOR: f32 = 2.1;
 // The octree depth
 pub const OCTREE_DEPTH: u8 = 8;
 
