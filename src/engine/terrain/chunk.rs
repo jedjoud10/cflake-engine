@@ -12,15 +12,15 @@ use std::collections::HashMap;
 
 // A component that will be added to well... chunks
 pub struct Chunk {
-    pub position: veclib::Vector3<i32>,
-    pub size: u32,
+    pub position: veclib::Vector3<i64>,
+    pub size: u64,
     pub data: Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>,
 }
 
 impl Default for Chunk {
     fn default() -> Self {
         Self {
-            position: veclib::Vector3::<i32>::default_zero(),
+            position: veclib::Vector3::<i64>::default_zero(),
             size: 0,
             data: Box::new([Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]),
         }
@@ -120,8 +120,7 @@ impl ProceduralModelGenerator for Chunk {
                             let density1 = self.data[index1].density;
                             let density2 = self.data[index2].density;
                             // Do inverse linear interpolation to find the factor value
-                            let mut value: f32 = inverse_lerp(density1, density2, 0.0);
-                            //value = 0.5;
+                            let value: f32 = inverse_lerp(density1, density2, 0.0);
                             // Create the vertex
                             let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                             // Offset the vertex

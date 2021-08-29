@@ -62,7 +62,7 @@ impl System for SkySystem {
             Renderer::default()
                 .load_textures(vec![cached_texture_id], &mut data.texture_cacher)
                 .set_model(model)
-                .set_wireframe(true)
+                .set_wireframe(false)
                 .set_shader(sky_shader_name.as_str()),
         )
         .unwrap();
