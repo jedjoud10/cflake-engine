@@ -46,8 +46,6 @@ impl System for CameraSystem {
         let position: veclib::Vector3<f32>;
         let rotation: veclib::Quaternion<f32>;
         {
-            todo!();
-            /*
             // Create some movement using user input
             {
                 let _delta_time = data.time_manager.delta_time as f32;
@@ -56,12 +54,12 @@ impl System for CameraSystem {
                 // Rotate the camera around
                 let mouse_pos = data.input_manager.get_accumulated_mouse_position();
                 let sensitivity = 0.001_f32;
-                changed_rotation = glam::Quat::from_euler(glam::EulerRot::YXZ, -mouse_pos.0 as f32 * sensitivity, -mouse_pos.1 as f32 * sensitivity, 0.0);
+                changed_rotation = veclib::Quaternion::<f32>::from_euler_angles(veclib::EulerAnglesOrder::YXZ, veclib::Vector3::new(-mouse_pos.0 as f32 * sensitivity, -mouse_pos.1 as f32 * sensitivity, 0.0));
 
                 // Keyboard input
-                let forward_vector = glam::Mat4::from_quat(changed_rotation).mul_vec4(glam::vec4(0.0, 0.0, 1.0, 1.0)).xyz();
-                let up_vector = glam::Mat4::from_quat(changed_rotation).mul_vec4(glam::vec4(0.0, 1.0, 0.0, 1.0)).xyz();
-                let right_vector = glam::Mat4::from_quat(changed_rotation).mul_vec4(glam::vec4(1.0, 0.0, 0.0, 1.0)).xyz();
+                let forward_vector = veclib::Matrix4x4::from_quaternion(&changed_rotation).mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, 1.0));
+                let up_vector = veclib::Matrix4x4::from_quaternion(&changed_rotation).mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
+                let right_vector = veclib::Matrix4x4::from_quaternion(&changed_rotation).mul_point(&veclib::Vector3::<f32>::new(1.0, 0.0, 0.0));
                 let mut changed_position = components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position;
                 let delta = data.time_manager.delta_time as f32;
                 // Default speed
@@ -87,8 +85,7 @@ impl System for CameraSystem {
                 components.get_component_mut::<components::Transform>(data.component_manager).unwrap().rotation = changed_rotation;
                 position = changed_position;
                 rotation = changed_rotation;
-            }
-            */
+            }            
         }
         let camera_component = components.get_component_mut::<components::Camera>(data.component_manager).unwrap();
         // Update the view matrix every time we make a change

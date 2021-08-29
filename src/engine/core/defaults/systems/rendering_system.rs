@@ -178,12 +178,10 @@ impl System for RenderingSystem {
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
-        todo!();
-        /*
         let shader: &Shader;
-        let view_matrix: glam::Mat4;
-        let projection_matrix: glam::Mat4;
-        let camera_position: glam::Vec3;
+        let view_matrix: veclib::Matrix4x4<f32>;
+        let projection_matrix: veclib::Matrix4x4<f32>;
+        let camera_position: veclib::Vector3<f32>;
         let camera_data: &components::Camera;
         // Get everything related to the camera
         {
@@ -193,7 +191,7 @@ impl System for RenderingSystem {
             projection_matrix = camera_data.projection_matrix;
             view_matrix = camera_data.view_matrix;
         }
-        let model_matrix: glam::Mat4;
+        let model_matrix: veclib::Matrix4x4<f32>;
         // Render the entity
         {
             let name: String;
@@ -202,7 +200,7 @@ impl System for RenderingSystem {
                 let transform = components.get_component::<components::Transform>(data.component_manager).unwrap();
                 let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
                 name = rc.shader_name.clone();
-                model_matrix = glam::Mat4::from(transform.matrix);
+                model_matrix = transform.matrix.clone();
             }
             shader = data.shader_cacher.1.get_object(&name).unwrap();
         }
@@ -211,13 +209,13 @@ impl System for RenderingSystem {
 
         let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
         // Calculate the mvp matrix
-        let mvp_matrix: glam::Mat4 = projection_matrix * view_matrix * model_matrix;
+        let mvp_matrix: veclib::Matrix4x4<f32> = projection_matrix * view_matrix * model_matrix;
         // Pass the MVP and the model matrix to the shader
         shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
         shader.set_matrix_44_uniform("model_matrix", model_matrix);
         shader.set_matrix_44_uniform("view_matrix", view_matrix);
-        shader.set_scalar_3_uniform("view_pos", (camera_position.x, camera_position.y, camera_position.z));
-        shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x, rc.uv_scale.y));
+        shader.set_scalar_3_uniform("view_pos", (camera_position.x(), camera_position.y(), camera_position.z()));
+        shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x(), rc.uv_scale.y()));
         shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
 
         // Get the OpenGL texture id so we can bind it to the shader
@@ -258,8 +256,7 @@ impl System for RenderingSystem {
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
                 gl::Enable(gl::CULL_FACE);
             }
-        }
-        */
+        }        
     }
 
     // Called before each fire_entity event is fired
