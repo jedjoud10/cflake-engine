@@ -28,7 +28,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_THRESHOLD: f32 = 1.4;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 6;
+pub const OCTREE_DEPTH: u8 = 4;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -48,7 +48,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i64>, size: u64) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i64>, depth: u8, size: u64) -> Option<Entity> {
         // Create the entity
         let name = format!("Chunk {:?} {:?}", position, size);
         let mut chunk = Entity::new(name.as_str());
@@ -72,7 +72,7 @@ impl Terrain {
             .link_component::<components::Transform>(
                 component_manager,
                 components::Transform {
-                    position: veclib::Vector3::<f32>::from(position),
+                    position: veclib::Vector3::<f32>::from(position + veclib::Vector3::<i64>::default_y() * depth as i64 * 16),
                     scale: veclib::Vector3::new((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
                     ..components::Transform::default()
                 },
@@ -140,22 +140,23 @@ impl System for Terrain {
         self.octree.size = CHUNK_SIZE as u64 - 2;
         self.octree.depth = OCTREE_DEPTH;
         self.octree.threshold = LOD_THRESHOLD;
-        self.octree.generate_base_octree();
-        for (_, octree_node) in &self.octree.nodes {
+        self.octree.generate_base_octree();     
+        // Gotta call this so it generates the post processing octree as well
+        self.octree.generate_incremental_octree(math::octree::OctreeInput {
+            target: veclib::Vector3::default_one() * -1.0,
+        });
+
+        for (_, octree_node) in &self.octree.final_nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children {
-                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.depth, octree_node.half_extent * 2);
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
                 }
             }
         }
-        /*
-        self.octree.generate_incremental_octree(math::octree::OctreeInput {
-            target: veclib::Vector3::default_one() * 30.0,
-        });
-        */
+        
 
         // Debug controls
         data.input_manager.bind_key(input::Keys::Y, "update_terrain", input::MapType::Toggle);
@@ -202,10 +203,8 @@ impl System for Terrain {
             }     
             */       
         }
-        for (_, octree_node) in self.octree.nodes.iter() {
-            if !octree_node.children {
-                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one())
-            }
+        for (_, octree_node) in self.octree.final_nodes.iter() {            
+            //data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());            
         }
     }
 

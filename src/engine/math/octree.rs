@@ -74,7 +74,7 @@ impl Octree {
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         // Add all the nodes that aren't the max-depth nodes
         pending_nodes.extend(octree.iter().filter_map(|(_, node)| { 
-            if node.depth < self.depth - 1 {
+            if node.depth < self.depth - 2 {
                 Some(node.clone())
             } else {
                 None
@@ -85,9 +85,9 @@ impl Octree {
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide_postprocess(&target, self.depth) {
                 pending_nodes.extend(octree_node.subdivide());
-                nodes.insert(octree_node.get_center(), octree_node);
             }
             // Bruh
+            nodes.insert(octree_node.get_center(), octree_node);
             pending_nodes.remove(0);
         }
         return nodes;
@@ -235,18 +235,22 @@ impl Octree {
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
 
         // Filter out the nodes that are already in the postprocess tree
-        let postprocess_nodes = self.generate_postprocess(&self.nodes, &input.target);
-        let mut new_postprocess_nodes = postprocess_nodes.iter().filter_map(|(coord, node)| {
+        let mut nodes_clones = self.nodes.clone();
+        let postprocess_nodes = self.generate_postprocess(&nodes_clones, &input.target);
+        nodes_clones.extend(postprocess_nodes.clone());
+
+        // The filtered newly added postprocessing nodes
+        let new_postprocess_nodes = postprocess_nodes.iter().filter_map(|(coord, node)| {
             if self.nodes.contains_key(coord) {
                 // This node already exists, that means that it didn't change
                 None
             } else {
                 // This node is a new node
-                Some(node.clone())
+                Some((*coord, node.clone()))
             }
-        }).collect::<Vec<OctreeNode>>();
-        new_postprocess_nodes.append(&mut self.added_nodes);
-        self.final_added_nodes = new_postprocess_nodes;
+        }).collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
+        
+        self.final_nodes = nodes_clones;
     }
 }
 
@@ -287,9 +291,9 @@ impl OctreeNode {
     pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
         let sphere = shapes::Sphere {
             center: *target,
-            radius: 1.0,
+            radius: 30.0,
         };
-        return Intersection::aabb_sphere(&self.get_aabb(), &sphere) && self.depth < (max_depth - 1);
+        return Intersection::aabb_sphere(&self.get_aabb(), &sphere) && self.depth < (max_depth - 1) && !self.children;
     }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide(&mut self) -> Vec<OctreeNode> {
