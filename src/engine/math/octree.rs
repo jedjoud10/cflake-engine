@@ -49,7 +49,6 @@ impl Octree {
             // If the node passes the postprocess check, subdivide it, though only if it has no children
             if octree_node.can_subdivide_postprocess(target, self.lod_factor, self.depth) && !octree_node.children {
                 let t = octree_node.subdivide();
-                output.extend(t.iter().map(|x| { (x.get_center(), x.clone()) }));
                 pending_nodes.extend(t);
             }
             // Bruh
@@ -191,6 +190,10 @@ impl Octree {
                     // We don't have children anymore, so this node counts as a new node
                     added_postprocess_nodes.push(node.clone());
                 }
+                if node.children && !self.postprocess_nodes[k].children {
+                    // We didn't have children but now we do
+                    removed_postprocess_nodes.push(node.clone());
+                }
             }
         }
         // Detect the removed nodes
@@ -204,15 +207,21 @@ impl Octree {
                 if !node.children && postprocess_nodes[k].children {
                     // We have children now, so this counts as a removed node
                     removed_postprocess_nodes.push(node.clone());
-                }
+                }  
+                if node.children && !self.postprocess_nodes[k].children {
+                    // We don't have children but now we do
+                    removed_postprocess_nodes.push(node.clone());
+                }              
             }
         }
 
         // Update
         self.postprocess_nodes = postprocess_nodes;
-        
+        self.removed_nodes = removed_postprocess_nodes;
+        self.added_nodes = added_postprocess_nodes;
+
         // Update the added nodes since that contains the postprocessed nodes, though it will not affect the base nodes      
-        self.added_nodes = added_postprocess_nodes;   
+        //self.added_nodes = added_postprocess_nodes;   
         // Get the nodes that we've deleted
         let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
         {
@@ -241,13 +250,13 @@ impl Octree {
         let mut node_to_remove = node_to_remove.unwrap();
         node_to_remove.children = false;
         node_to_remove.children_centers = [veclib::Vector3::<i64>::default_zero(); 8];        
-        self.added_nodes.push(node_to_remove.clone());
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
 
         let center: veclib::Vector3<i64> = marked_node.as_ref().unwrap().get_center();
         let depth: u8 = marked_node.as_ref().unwrap().depth;
         println!("Time in micros: {}", instant.elapsed().as_micros());        
         // Remove the nodes
+        /*
         // TODO: Optimize this
         self.removed_nodes = self
             .nodes
@@ -265,8 +274,8 @@ impl Octree {
                 }
             })
             .collect();
-        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());        
-        self.removed_nodes = removed_postprocess_nodes;
+        */
+        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());              
     }
 }
 
