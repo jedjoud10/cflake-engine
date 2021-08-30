@@ -145,11 +145,13 @@ impl System for Terrain {
         for (_, octree_node) in nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children {
+                /*
                 let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.depth, octree_node.half_extent * 2);
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
                 }
+                */
             }
         }
         
