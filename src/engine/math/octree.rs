@@ -37,7 +37,7 @@ impl Default for Octree {
 
 impl Octree {
     // Get the subdivided nodes that have passed through the post process check
-    pub fn calculate_postprocess_node(&self, input: &OctreeInput, root_node: OctreeNode) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
+    pub fn calculate_postprocess_nodes(&self, input: &OctreeInput, root_node: OctreeNode) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         let mut output: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         pending_nodes.push(root_node.clone());
@@ -166,14 +166,10 @@ impl Octree {
 
         // Subdivide each added node at least once
         let other_added_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>;
-        other_added_nodes = self.calculate_postprocess_node(&input, marked_node.clone().unwrap());
-        println!("{}", other_added_nodes.len());
-        self.nodes = other_added_nodes;
-        /*    
-        added_nodes.extend(other_added_nodes);
+        other_added_nodes = self.calculate_postprocess_nodes(&input, marked_node.clone().unwrap());
         // Add the delta to the nodes
+        added_nodes.extend(other_added_nodes);
         self.nodes.extend(added_nodes.clone());   
-        */
         // Get the nodes that we've deleted
         let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
         {

@@ -204,9 +204,11 @@ impl System for Terrain {
             */       
         }
         for (k, octree_node) in self.octree.nodes.iter() {          
+            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());            
+            /* 
             if self.chunks.contains_key(&k) {
-                data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());            
-            }  
+            }
+            */
         }
     }
 
