@@ -140,13 +140,9 @@ impl System for Terrain {
         self.octree.size = CHUNK_SIZE as u64 - 2;
         self.octree.depth = OCTREE_DEPTH;
         self.octree.lod_factor = LOD_FACTOR;
-        self.octree.generate_base_octree();     
-        // Gotta call this so it generates the post processing octree as well
-        self.octree.generate_incremental_octree(math::octree::OctreeInput {
-            target: veclib::Vector3::<f32>::new(180.0, 0.2, 180.0),
-        });
-
-        for (_, octree_node) in &self.octree.nodes {
+        let nodes = self.octree.generate_base_octree();     
+        
+        for (_, octree_node) in nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children {
                 let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.depth, octree_node.half_extent * 2);

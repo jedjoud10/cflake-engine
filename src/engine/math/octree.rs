@@ -37,14 +37,14 @@ impl Default for Octree {
 
 impl Octree {
     // Get the subdivided nodes that have passed through the post process check
-    pub fn calculate_postprocess_nodes(&self, input: &OctreeInput, root_node: OctreeNode) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
+    pub fn calculate_postprocess_nodes(&self, target: &veclib::Vector3<f32>, root_node: OctreeNode) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         let mut output: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         pending_nodes.push(root_node.clone());
         while pending_nodes.len() > 0 {
             let mut octree_node = pending_nodes[0].clone();
             // If the node contains the position, subdivide it
-            if octree_node.can_subdivide_postprocess(&input.target, self.lod_factor, self.depth) {
+            if octree_node.can_subdivide_postprocess(target, self.lod_factor, self.depth) {
                 pending_nodes.extend(octree_node.subdivide());
             }
             // Bruh
@@ -80,7 +80,8 @@ impl Octree {
         return (nodes, targetted_node);
     }
     // Generate the base octree with a target point at 0, 0, 0
-    pub fn generate_base_octree(&mut self) {
+    pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3::<i64>, OctreeNode> {
+        let input: OctreeInput = OctreeInput { target: veclib::Vector3::default_one() };
         let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
         let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
         // Create the root node
@@ -93,16 +94,20 @@ impl Octree {
             children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
             children: false,
         };
-        let octree_data = self.generate_octree(&veclib::Vector3::<f32>::default_one(), root_node);
+        let octree_data = self.generate_octree(&input.target, root_node.clone());
+        let postprocess_nodes = self.calculate_postprocess_nodes(&input.target, root_node);
+        let mut nodes = octree_data.0.clone();
+        nodes.extend(postprocess_nodes);
         self.nodes = octree_data.0;
         self.targetted_node = octree_data.1;
+        return nodes;
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(&mut self, input: OctreeInput) {
         let instant = Instant::now();
         self.added_nodes.clear();
         self.removed_nodes.clear();
-        // If we don't have a targetted node, exit early
+        // If we don't have a targetted node try to create the base octree
         if self.targetted_node.is_none() {
             return;
         }
@@ -166,10 +171,10 @@ impl Octree {
 
         // Subdivide each added node at least once
         let other_added_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>;
-        other_added_nodes = self.calculate_postprocess_nodes(&input, marked_node.clone().unwrap());
-        // Add the delta to the nodes
-        added_nodes.extend(other_added_nodes);
-        self.nodes.extend(added_nodes.clone());   
+        other_added_nodes = self.calculate_postprocess_nodes(&input.target, marked_node.clone().unwrap());
+        self.nodes.extend(added_nodes.clone());
+        self.added_nodes.extend(other_added_nodes.iter().map(|x|  { x.1.clone() }).collect::<Vec<OctreeNode>>());   
+        // Add the delta to the nodes        
         //self.nodes = added_nodes;
         // Get the nodes that we've deleted
         let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
