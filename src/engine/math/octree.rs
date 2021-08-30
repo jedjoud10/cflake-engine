@@ -16,9 +16,6 @@ pub struct Octree {
     pub targetted_node: Option<OctreeNode>,
     pub added_nodes: Vec<OctreeNode>,
     pub removed_nodes: Vec<OctreeNode>,
-    pub final_added_nodes: Vec<OctreeNode>,
-    pub final_removed_nodes: Vec<OctreeNode>,
-    pub postprocessing_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     pub lod_factor: f32,
     pub size: u64,
     pub depth: u8,
@@ -30,9 +27,6 @@ impl Default for Octree {
             nodes: HashMap::new(),
             added_nodes: Vec::new(),
             removed_nodes: Vec::new(),
-            postprocessing_nodes: HashMap::new(),
-            final_added_nodes: Vec::new(),
-            final_removed_nodes: Vec::new(),
             targetted_node: None,
             size: 1,
             depth: 1,
@@ -229,48 +223,7 @@ impl Octree {
             })
             .collect();
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
-
-        // Filter out the nodes that are already in the postprocess tree
-        let postprocess_nodes = self.generate_postprocess(&self.nodes.clone(), &input.target);
-
-        // Find the nodes that were added/removed
-        // Check the nodes that were removed
-        let removed_postprocess_nodes = self.postprocessing_nodes.iter().filter_map(|(k, v)| {
-            // Check if we already had the node before
-            if postprocess_nodes.contains_key(k) {
-                // We already have the old node in the postprocessed nodes, so we didn't change anything
-                None
-            } else {
-                // We removed the current node from the nodes
-                Some(v.clone())
-            }
-            // If this node didn't have children before and now it has children, that means that we've removed the node
-            
-        }).collect::<Vec<OctreeNode>>(); 
-        // Check the node that were added
-        let added_postprocess_nodes = postprocess_nodes.iter().filter_map(|(k, v)| {
-            // Check if we alreadyt had the node before
-            if self.postprocessing_nodes.contains_key(k) {
-                // The newly added node already exists
-                None
-            } else {
-                // The node doesn't exist, so we've added it
-                Some(v.clone())
-            }            
-        }).collect::<Vec<OctreeNode>>();
-
-        // Update the octree
-        let added_postprocess_nodes: HashMap<veclib::Vector3::<i64>, OctreeNode> = added_postprocess_nodes.iter().map(|x| { (x.get_center(), x.clone()) }).collect();
-        let removed_postprocess_nodes: HashMap<veclib::Vector3::<i64>, OctreeNode> = removed_postprocess_nodes.iter().map(|x| { (x.get_center(), x.clone()) }).collect();
-        self.postprocessing_nodes = self.nodes.clone();
-        println!("{}", added_postprocess_nodes.len());
-        println!("{}", removed_postprocess_nodes.len());
-        // Add the nodes
-        self.postprocessing_nodes.extend(added_postprocess_nodes);
-        // Remove the nodes
-        self.postprocessing_nodes.retain(|k, x| { 
-            !removed_postprocess_nodes.contains_key(k)
-        });
+        
     }
 }
 

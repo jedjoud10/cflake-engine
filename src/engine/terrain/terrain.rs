@@ -28,7 +28,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 1.2;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 8;
+pub const OCTREE_DEPTH: u8 = 4;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -143,10 +143,10 @@ impl System for Terrain {
         self.octree.generate_base_octree();     
         // Gotta call this so it generates the post processing octree as well
         self.octree.generate_incremental_octree(math::octree::OctreeInput {
-            target: veclib::Vector3::<f32>::new(160.0, 0.2, 160.0),
+            target: veclib::Vector3::<f32>::new(80.0, 0.2, 160.0),
         });
 
-        for (_, octree_node) in &self.octree.postprocessing_nodes {
+        for (_, octree_node) in &self.octree.nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children {
                 let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.depth, octree_node.half_extent * 2);
@@ -203,7 +203,7 @@ impl System for Terrain {
             }     
             */       
         }
-        for (k, octree_node) in self.octree.postprocessing_nodes.iter() {          
+        for (k, octree_node) in self.octree.nodes.iter() {          
             if self.chunks.contains_key(&k) {
                 data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());            
             }  
