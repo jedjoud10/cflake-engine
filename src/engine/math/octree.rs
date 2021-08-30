@@ -244,17 +244,19 @@ impl Octree {
                 // We removed the current node from the nodes
                 Some(v.clone())
             }
+            // If this node didn't have children before and now it has children, that means that we've removed the node
+            
         }).collect::<Vec<OctreeNode>>(); 
         // Check the node that were added
         let added_postprocess_nodes = postprocess_nodes.iter().filter_map(|(k, v)| {
             // Check if we alreadyt had the node before
-            if self.nodes.contains_key(k) {
+            if self.postprocessing_nodes.contains_key(k) {
                 // The newly added node already exists
                 None
             } else {
                 // The node doesn't exist, so we've added it
                 Some(v.clone())
-            }
+            }            
         }).collect::<Vec<OctreeNode>>();
 
         // Update the octree
@@ -311,7 +313,8 @@ impl OctreeNode {
     pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
         let mut aabb = self.get_aabb();
         aabb.expand(lod_factor * self.half_extent as f32);
-        return Intersection::point_aabb(target, &aabb) && self.depth < (max_depth - 1) && !self.children;
+        let aabb = aabb.min.elem_lte(target).all() && aabb.max.elem_gte(target).all();
+        return aabb && self.depth < (max_depth - 1);
     }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide(&mut self) -> Vec<OctreeNode> {
