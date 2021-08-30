@@ -178,7 +178,7 @@ impl System for Terrain {
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") {
             self.octree.generate_incremental_octree(OctreeInput { target: location });   
-               
+        
             // Turn all the newly added nodes into chunks and instantiate them into the world
             for octree_node in &self.octree.added_nodes {
                 // Only add the octree nodes that have no children
@@ -203,9 +203,9 @@ impl System for Terrain {
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
                 }
             }    
-                              
+            
         }        
-        for (k, octree_node) in (self.octree.postprocess_nodes.iter()) {          
+        for (k, octree_node) in self.octree.nodes.iter().chain(self.octree.postprocess_nodes.iter()) {          
             data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());
         }        
         /*

@@ -50,6 +50,7 @@ impl Octree {
             if octree_node.can_subdivide_postprocess(target, self.lod_factor, self.depth) && !octree_node.children {
                 let t = octree_node.subdivide();
                 output.extend(t.iter().map(|x| { (x.get_center(), x.clone()) }));
+                pending_nodes.extend(t);
             }
             // Bruh
             pending_nodes.remove(0);
@@ -159,7 +160,7 @@ impl Octree {
         let local_octree_data = self.generate_octree(&input.target, marked_node.clone().unwrap());
         self.targetted_node = local_octree_data.1;
         // Get the nodes that we've added
-        let mut added_nodes = local_octree_data.0;
+        let added_nodes = local_octree_data.0;
 
         // Set the added nodes
         self.added_nodes = added_nodes
@@ -184,6 +185,12 @@ impl Octree {
             if !self.postprocess_nodes.contains_key(k) {
                 // We added the node
                 added_postprocess_nodes.push(node.clone());
+            } else {
+                // We didn't change the node / it changed it's children status
+                if !node.children && self.postprocess_nodes[k].children {
+                    // We don't have children anymore, so this node counts as a new node
+                    added_postprocess_nodes.push(node.clone());
+                }
             }
         }
         // Detect the removed nodes
@@ -192,6 +199,12 @@ impl Octree {
             if !postprocess_nodes.contains_key(k) {
                 // We removed the node
                 removed_postprocess_nodes.push(node.clone());
+            } else {
+                // We didn't change the node / it changed it's children status
+                if !node.children && postprocess_nodes[k].children {
+                    // We have children now, so this counts as a removed node
+                    removed_postprocess_nodes.push(node.clone());
+                }
             }
         }
 
@@ -199,7 +212,7 @@ impl Octree {
         self.postprocess_nodes = postprocess_nodes;
         
         // Update the added nodes since that contains the postprocessed nodes, though it will not affect the base nodes      
-        self.added_nodes.extend(added_postprocess_nodes);   
+        self.added_nodes = added_postprocess_nodes;   
         // Get the nodes that we've deleted
         let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
         {
@@ -252,8 +265,8 @@ impl Octree {
                 }
             })
             .collect();
-        self.removed_nodes.extend(removed_postprocess_nodes);
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());        
+        self.removed_nodes = removed_postprocess_nodes;
     }
 }
 
