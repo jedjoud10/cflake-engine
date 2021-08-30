@@ -170,6 +170,7 @@ impl Octree {
         // Add the delta to the nodes
         added_nodes.extend(other_added_nodes);
         self.nodes.extend(added_nodes.clone());   
+        //self.nodes = added_nodes;
         // Get the nodes that we've deleted
         let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
         {
