@@ -46,9 +46,10 @@ impl Octree {
         pending_nodes.extend(nodes.iter().map(|x| { x.1.clone() }));
         while pending_nodes.len() > 0 {
             let mut octree_node = pending_nodes[0].clone();
-            // If the node contains the position, subdivide it
-            if octree_node.can_subdivide_postprocess(target, self.lod_factor, self.depth) {
-                pending_nodes.extend(octree_node.subdivide());
+            // If the node passes the postprocess check, subdivide it, though only if it has no children
+            if octree_node.can_subdivide_postprocess(target, self.lod_factor, self.depth) && !octree_node.children {
+                let t = octree_node.subdivide();
+                output.extend(t.iter().map(|x| { (x.get_center(), x.clone()) }));
             }
             // Bruh
             pending_nodes.remove(0);
@@ -98,12 +99,12 @@ impl Octree {
             children: false,
         };
         let octree_data = self.generate_octree(&input.target, root_node.clone());
-        let mut nodes = octree_data.0.clone();
+        self.nodes = octree_data.0.clone();
+        self.targetted_node = octree_data.1;
+        let mut nodes = octree_data.0;
         let postprocess_nodes = self.calculate_postprocess_nodes(&input.target, &nodes);
         self.postprocess_nodes = postprocess_nodes.clone();
         nodes.extend(postprocess_nodes);
-        self.nodes = octree_data.0;
-        self.targetted_node = octree_data.1;
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth
@@ -193,10 +194,12 @@ impl Octree {
                 removed_postprocess_nodes.push(node.clone());
             }
         }
+
+        // Update
+        self.postprocess_nodes = postprocess_nodes;
         
         // Update the added nodes since that contains the postprocessed nodes, though it will not affect the base nodes      
         self.added_nodes.extend(added_postprocess_nodes);   
-        //self.nodes = added_nodes;
         // Get the nodes that we've deleted
         let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
         {
@@ -250,8 +253,7 @@ impl Octree {
             })
             .collect();
         self.removed_nodes.extend(removed_postprocess_nodes);
-        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
-        
+        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());        
     }
 }
 
@@ -288,14 +290,15 @@ impl OctreeNode {
     pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {        
         // AABB intersection, return true if point in on the min edge though
         let aabb = self.get_aabb().min.elem_lte(target) & self.get_aabb().max.elem_gt(target);
-        let aabb = (aabb | veclib::Vector3::<bool>::new(false, true, false)).all();
+        let aabb = (aabb | veclib::Vector3::<bool>::new(false, false, false)).all();
         return aabb && self.depth < (max_depth - 1);
     }
     // Check if we can subdivide this node during the postprocessing loop
     pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
         let mut aabb = self.get_aabb();
         aabb.expand(lod_factor * self.half_extent as f32);
-        let aabb = aabb.min.elem_lte(target).all() && aabb.max.elem_gt(target).all();
+        let aabb = aabb.min.elem_lte(target) & aabb.max.elem_gt(target);
+        let aabb = (aabb | veclib::Vector3::<bool>::new(false, false, false)).all();
         return aabb && self.depth < (max_depth - 1);
     }
     // Subdivide this node into 8 smaller nodes
