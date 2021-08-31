@@ -3,17 +3,19 @@ use super::{
     entity::EntityManager,
     error::ECSError,
     system::EntityFilter,
+    super::world::World,
+    super::world::CustomWorldData,
 };
 
 // Data that will be passed to the fire events in systems
 pub struct SystemEventData<'a> {
     pub entity_manager: &'a mut EntityManager,
     pub component_manager: &'a mut ComponentManager,
-    pub input_manager: &'a mut InputManager,
-    pub shader_cacher: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
-    pub texture_cacher: &'a mut CacheManager<Texture>,
+    pub input_manager: &'a mut hypo_input::InputManager,
+    pub shader_cacher: &'a mut (hypo_others::CacheManager<SubShader>, hypo_others::CacheManager<Shader>),
+    pub texture_cacher: &'a mut hypo_others::CacheManager<Texture>,
     pub resource_manager: &'a mut ResourceManager,
-    pub time_manager: &'a mut Time,
+    pub time_manager: &'a mut hypo_others::Time,
     pub debug: &'a mut debug::DebugRenderer,
     pub custom_data: &'a mut CustomWorldData,
 }

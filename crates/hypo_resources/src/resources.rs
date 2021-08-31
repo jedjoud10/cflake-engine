@@ -1,4 +1,3 @@
-use crate::engine::rendering::shader::SubShaderType;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 use std::{
@@ -81,17 +80,17 @@ impl ResourceManager {
     }
     // Load back the data from the reader and turn it into a LoadedSubShader resource
     pub fn load_shader(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
-        let shader_type: SubShaderType;
+        let shader_type: u8;
         let shader_name: String;
         match reader.read_u8().ok()? {
             0 => {
                 // This is a vertex subshader so the name of the shader will have a 'vertex' appended
-                shader_type = SubShaderType::Vertex;
+                shader_type = 0;
                 shader_name = local_path;
             }
             1 => {
                 // This is a vertex subshader so the name of the shader will have a 'fragmnet' appended
-                shader_type = SubShaderType::Fragment;
+                shader_type = 1;
                 shader_name = local_path;
             }
             _ => {
@@ -234,7 +233,7 @@ pub struct LoadedTexture {
 #[derive(Clone)]
 pub struct LoadedSubShader {
     pub source: String,
-    pub subshader_type: SubShaderType,
+    pub subshader_type: u8,
 }
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {}

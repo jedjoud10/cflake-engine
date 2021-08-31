@@ -1,4 +1,3 @@
-// Export
 mod component;
 mod entity;
 mod error;

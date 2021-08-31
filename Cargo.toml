@@ -19,9 +19,13 @@ rayon = "1.5.1"
 [workspace]
 
 members = [
-    "crates\\hypo_ecs",
+    "crates\\hypo_core",
     "crates\\hypo_math",
+    "crates\\hypo_rendering",
     "crates\\hypo_input",
+    "crates\\hypo_default",
+    "crates\\hypo_others",
+    "crates\\hypo_resources"
 ]
 
 [build-dependencies]
