@@ -1,4 +1,4 @@
-use super::component::{Component, ComponentID, ComponentManager};
+use super::{Component, ComponentID, ComponentManager};
 use super::error::ECSError;
 use std::collections::{HashMap, HashSet};
 

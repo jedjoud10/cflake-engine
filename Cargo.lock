@@ -210,6 +210,10 @@ name = "hypo_default"
 version = "0.1.0"
 
 [[package]]
+name = "hypo_ecs"
+version = "0.1.0"
+
+[[package]]
 name = "hypo_input"
 version = "0.1.0"
 
@@ -228,6 +232,7 @@ version = "0.1.0"
 name = "hypo_rendering"
 version = "0.1.0"
 dependencies = [
+ "hypo_resources",
  "veclib",
 ]
 

@@ -1,4 +1,5 @@
-use crate::engine::resources::{Resource, ResourceManager};
+use hypo_resources::Resource;
+use hypo_resources::ResourceManager;
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug)]

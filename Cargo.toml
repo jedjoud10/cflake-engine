@@ -20,6 +20,7 @@ rayon = "1.5.1"
 
 members = [
     "crates\\hypo_core",
+    "crates\\hypo_ecs",
     "crates\\hypo_math",
     "crates\\hypo_rendering",
     "crates\\hypo_input",
