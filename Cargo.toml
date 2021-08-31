@@ -19,6 +19,7 @@ rayon = "1.5.1"
 [workspace]
 
 members = [
+    "crates\\hypo",
     "crates\\hypo_core",
     "crates\\hypo_ecs",
     "crates\\hypo_math",

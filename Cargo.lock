@@ -198,12 +198,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "hypo_core"
+name = "hypo"
 version = "0.1.0"
 dependencies = [
+ "hypo_ecs",
  "hypo_input",
  "hypo_others",
 ]
+
+[[package]]
+name = "hypo_core"
+version = "0.1.0"
 
 [[package]]
 name = "hypo_default"
