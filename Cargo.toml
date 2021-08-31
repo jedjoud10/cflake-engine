@@ -20,7 +20,8 @@ rayon = "1.5.1"
 
 members = [
     "crates\\hypo_ecs",
-    "crates\\hypo_math"
+    "crates\\hypo_math",
+    "crates\\hypo_input",
 ]
 
 [build-dependencies]

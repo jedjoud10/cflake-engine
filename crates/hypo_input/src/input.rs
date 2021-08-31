@@ -42,18 +42,32 @@ pub enum MapType {
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Get binding:
 // Using the name of the binding, get the scane code for each key and use that scan code to get the map state of that key
-#[derive(Default)]
 pub struct InputManager {
     pub bindings: HashMap<String, i32>,
     pub keys: HashMap<i32, (KeyStatus, ToggleKeyStatus)>,
     scancode_cache: HashMap<Keys, i32>,
     last_mouse_pos: (i32, i32),
     last_mouse_scroll: f32,
+    glfw_get_scancode: fn(key: Keys) -> i32,
+}
+
+impl Default for InputManager {
+    fn default() -> Self {
+        Self { 
+            bindings: Default::default(), 
+            keys: Default::default(), 
+            scancode_cache: Default::default(), 
+            last_mouse_pos: Default::default(), 
+            last_mouse_scroll: Default::default(), 
+            glfw_get_scancode: |x| { -1 }
+        }
+    }
 }
 
 impl InputManager {
     // Get the key scancode for a specific key
-    pub fn get_key_scancode(key: Keys) -> Option<i32> {
+    pub fn get_key_scancode(&self, key: Keys) -> Option<i32> {
+        /*
         match key {
             Keys::Escape => glfw::Key::get_scancode(&glfw::Key::Escape),
             Keys::Enter => glfw::Key::get_scancode(&glfw::Key::Enter),
@@ -101,9 +115,11 @@ impl InputManager {
             Keys::F11 => glfw::Key::get_scancode(&glfw::Key::F11),
             Keys::F12 => glfw::Key::get_scancode(&glfw::Key::F12),
         }
+        */
+        return Some((self.glfw_get_scancode)(key));
     }
     // Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
-    pub fn update(&mut self, _window: &mut glfw::Window) {
+    pub fn update(&mut self) {
         // Update mappings first
         self.update_mappings();
         // Calculate the mouse delta
@@ -193,7 +209,7 @@ impl InputManager {
     // Binds a key to a specific mapping
     pub fn bind_key(&mut self, key: Keys, map_name: &str, map_type: MapType) {
         // Check if the binding exists
-        let key_scancode = Self::get_key_scancode(key).unwrap();
+        let key_scancode = self.get_key_scancode(key).unwrap();
         if !self.bindings.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
             self.bindings.insert(map_name.to_string(), key_scancode);
