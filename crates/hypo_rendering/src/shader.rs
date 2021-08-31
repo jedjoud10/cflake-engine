@@ -1,10 +1,8 @@
-use crate::engine::core::cacher::CacheManager;
-use crate::engine::resources::Resource;
-use crate::engine::resources::ResourceManager;
 use gl;
-
 use std::{ffi::CString, ptr::null};
-
+use hypo_others::CacheManager;
+use hypo_resources::ResourceManager;
+use hypo_resources::Resource;
 use super::texture::Texture;
 
 // A shader that contains two sub shaders that are compiled independently
@@ -184,7 +182,8 @@ impl SubShader {
                     name: shader_name.clone(),
                     program: 0,
                     source: shader.source.clone(),
-                    subshader_type: shader.subshader_type.clone(),
+                    // TODO: Fix this
+                    subshader_type: SubShaderType::Vertex,
                 };
                 Some(subshader)
             }

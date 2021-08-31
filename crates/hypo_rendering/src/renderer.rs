@@ -1,15 +1,9 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
-
-use super::{model::Model, model::ModelDataGPU, texture::Texture};
-use crate::engine::{
-    core::{
-        cacher::CacheManager,
-        defaults::components,
-        ecs::component::{Component, ComponentID, ComponentInternal},
-    },
-    resources::ResourceManager,
-};
 use bitflags::bitflags;
+use super::{model::Model, model::ModelDataGPU, texture::Texture};
+use hypo_ecs::{ ComponentInternal, Component, ComponentID };
+use hypo_others::CacheManager;
+use hypo_resources::ResourceManager;
 
 bitflags! {
     pub struct RendererFlags: u8 {

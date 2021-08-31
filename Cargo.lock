@@ -202,6 +202,7 @@ name = "hypo"
 version = "0.1.0"
 dependencies = [
  "hypo_ecs",
+ "hypo_errors",
  "hypo_input",
  "hypo_others",
 ]
@@ -250,7 +251,13 @@ version = "0.1.0"
 name = "hypo_rendering"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
+ "gl",
+ "hypo_default",
+ "hypo_ecs",
+ "hypo_others",
  "hypo_resources",
+ "image",
  "veclib",
 ]
 

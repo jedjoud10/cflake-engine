@@ -1,4 +1,4 @@
-use crate::engine::core::world::World;
+use hypo_default::get_default_window_size;
 
 // A window class to organize things
 #[derive(Clone)]
@@ -11,7 +11,7 @@ impl Default for Window {
     fn default() -> Self {
         Self {
             fullscreen: false,
-            size: World::get_default_window_size(),
+            size: get_default_window_size(),
         }
     }
 }

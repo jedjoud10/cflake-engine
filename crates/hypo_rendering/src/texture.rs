@@ -1,6 +1,5 @@
-use crate::engine::core::cacher::CacheManager;
-use crate::engine::resources::ResourceManager;
-use crate::engine::resources::{LoadableResource, Resource};
+use hypo_others::CacheManager;
+use hypo_resources::{ ResourceManager, LoadableResource, Resource };
 use bitflags::bitflags;
 use gl;
 use image::EncodableLayout;

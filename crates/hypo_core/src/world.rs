@@ -242,11 +242,7 @@ impl World {
 }
 
 // Impl block related to the windowing / rendering stuff
-impl World {
-    // Get the default width and height of the starting window
-    pub fn get_default_window_size() -> (u16, u16) {
-        (1280, 720)
-    }
+impl World {    
     // When we resize the window
     pub fn resize_window_event(&mut self, size: (u16, u16)) {
         unsafe {
