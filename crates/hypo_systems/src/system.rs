@@ -1,14 +1,11 @@
 use std::any::Any;
 
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-
 use super::{
     component::FilteredLinkedComponents,
     entity::Entity,
     error::ECSError,
-    system_data::{SystemData, SystemEventData, SystemEventDataLite, SystemState, SystemType},
+    system_data::{SystemData, SystemState, SystemType},
 };
-use crate::engine::core::world::Time;
 
 #[derive(Default)]
 // Manages the systems

@@ -209,6 +209,12 @@ dependencies = [
 [[package]]
 name = "hypo_core"
 version = "0.1.0"
+dependencies = [
+ "hypo",
+ "hypo_ecs",
+ "hypo_input",
+ "hypo_resources",
+]
 
 [[package]]
 name = "hypo_default"
@@ -216,6 +222,13 @@ version = "0.1.0"
 
 [[package]]
 name = "hypo_ecs"
+version = "0.1.0"
+dependencies = [
+ "hypo_errors",
+]
+
+[[package]]
+name = "hypo_errors"
 version = "0.1.0"
 
 [[package]]
@@ -249,6 +262,10 @@ dependencies = [
  "veclib",
  "walkdir",
 ]
+
+[[package]]
+name = "hypo_systems"
+version = "0.1.0"
 
 [[package]]
 name = "hypothermia"

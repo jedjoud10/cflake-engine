@@ -1,6 +1,6 @@
 use super::{Component, ComponentID, ComponentManager};
-use super::error::ECSError;
 use std::collections::{HashMap, HashSet};
+use hypo_errors::ECSError;
 
 // An entity manager that handles entities
 #[derive(Default)]

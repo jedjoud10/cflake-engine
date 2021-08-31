@@ -3,8 +3,6 @@ use super::{
     entity::EntityManager,
     error::ECSError,
     system::EntityFilter,
-    super::world::World,
-    super::world::CustomWorldData,
 };
 
 

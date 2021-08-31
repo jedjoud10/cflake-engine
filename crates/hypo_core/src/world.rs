@@ -1,31 +1,8 @@
 use std::collections::HashSet;
 
-use glfw::Context;
-
-use crate::engine::core::ecs::component::*;
-use crate::engine::core::ecs::entity::*;
-use crate::engine::core::ecs::system::*;
-use crate::engine::core::ecs::system_data::*;
-use crate::engine::debug;
-use crate::engine::input::*;
-use crate::engine::rendering::window::Window;
-
-use crate::engine::core::defaults::components;
-use crate::engine::rendering::shader::Shader;
-use crate::engine::rendering::shader::SubShader;
-use crate::engine::rendering::texture::Texture;
-use crate::engine::resources::ResourceManager;
-
-use crate::engine::core::ecs::error::ECSError;
-use crate::game::level::*;
-
-// Import stuff from the rendering module
-
-use super::cacher::CacheManager;
-
-use super::defaults::systems::rendering_system::RenderingSystem;
-use super::ecs::entity::EntityManager;
-
+use hypo_ecs::*;
+use hypo_input::*;
+use hypo_resources::*;
 //  The actual world
 #[derive(Default)]
 pub struct World {
@@ -107,7 +84,7 @@ impl World {
     // 3. We render the entities onto the screen using the RenderSystem
     pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
         // Check for input events
-        self.input_manager.update(window);
+        self.input_manager.update();
         // Check for default input events
         self.check_default_input_events(window, glfw);
         // Create the data for the systems
