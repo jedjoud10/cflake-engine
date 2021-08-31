@@ -1,4 +1,5 @@
-use super::{entity::Entity, error::ECSError};
+use super::{entity::Entity};
+use 
 use std::{any::Any, collections::HashMap};
 
 // Struct used to get the component ID of specific components, entities, and systems
