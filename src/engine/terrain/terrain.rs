@@ -28,7 +28,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 1.0;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 5;
+pub const OCTREE_DEPTH: u8 = 24;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -169,15 +169,10 @@ impl System for Terrain {
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
-        let location = veclib::Vector3::<f32>::new(
-            data.time_manager.seconds_since_game_start.sin() as f32 * 200.0,
-            30.0,
-            (data.time_manager.seconds_since_game_start / 10.0).cos() as f32 * 200.0,
-        );  
 
         // Generate the octree each frame and generate / delete the chunks
-        if data.input_manager.map_pressed("update_terrain") {
-            self.octree.generate_incremental_octree(OctreeInput { target: location });   
+        if data.input_manager.map_toggled("update_terrain") {
+            self.octree.generate_incremental_octree(OctreeInput { target: camera_location });   
             
             // Turn all the newly added nodes into chunks and instantiate them into the world
             for octree_node in &self.octree.added_nodes {
@@ -208,14 +203,6 @@ impl System for Terrain {
         for (k, octree_node) in self.octree.postprocess_nodes.iter() {          
             data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());
         }        
-        /*
-        for (octree_node) in self.octree.added_nodes.iter() {          
-            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_y());  
-        }
-        for (octree_node) in self.octree.removed_nodes.iter() {          
-            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_x());      
-        }
-        */
     }
 
     // Called for each entity in the system
