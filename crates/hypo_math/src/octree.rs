@@ -1,6 +1,6 @@
 use super::shapes;
 use super::shapes::Sphere;
-use super::Intersection;
+use super::intersection::Intersection;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::time::Instant;

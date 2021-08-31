@@ -1,5 +1,3 @@
-use crate::engine::{core::defaults::components, rendering::model::Model};
-
 use super::{frustum::Frustum, shapes};
 
 // An aabb bound
@@ -46,22 +44,22 @@ impl AABB {
 // Generation functions
 impl AABB {
     // Generate the AABB from a model; just loop over all the vertices and keep track of the min and max ones
-    pub fn from_model(model: &Model) -> Self {
+    pub fn from_model(vertices: Vec<veclib::Vector3<f32>>) -> Self {
         let mut aabb: Self = AABB {
             min: veclib::Vector3::default_one(),
             max: -veclib::Vector3::default_one(),
         };
         // Loop over the vertices
-        for vertex in model.vertices.iter() {
+        for vertex in vertices.iter() {
             aabb.min = aabb.min.min(*vertex);
             aabb.max = aabb.max.max(*vertex);
         }
         aabb
     }
     // Transform the AABB by a transform
-    pub fn transform(&mut self, transform: &components::Transform) {
+    pub fn transform(&mut self, transform_matrix: &veclib::Matrix4x4<f32>) {
         // Transform the min and max by the transform's matrix
-        let matrix = transform.get_matrix();
+        let matrix = transform_matrix;
         self.min = matrix.mul_point(&self.min);
         self.max = matrix.mul_point(&self.max);
     }

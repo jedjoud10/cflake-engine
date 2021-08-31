@@ -1,17 +1,3 @@
-use crate::engine::{
-    core::{
-        cacher::CacheManager,
-        world::{CustomWorldData, Time},
-    },
-    debug,
-    input::InputManager,
-    rendering::{
-        shader::{Shader, SubShader},
-        texture::Texture,
-    },
-    resources::ResourceManager,
-};
-
 use super::{
     component::{ComponentID, ComponentManager},
     entity::EntityManager,

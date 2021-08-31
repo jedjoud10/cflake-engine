@@ -1,4 +1,4 @@
-use super::{bounds, shapes, Frustum};
+use super::{bounds, shapes};
 use std::default;
 
 // Intersection tests
@@ -32,14 +32,5 @@ impl Intersection {
         let min = (point).elem_lt(&veclib::Vector2::default_one()).all();
         let max = (point).elem_gt(&-veclib::Vector2::default_one()).all();
         min && max
-    }
-    // Intersection code to check if a line intersects the frustum
-    pub fn frustum_line(frustum: &Frustum, line: &shapes::Line) -> bool {
-        false
-    }
-    // Check if an AABB intersects the camera's view frustum. Exit at the first valid intersection
-    pub fn frustum_aabb(frustum: &Frustum, aabb: &bounds::AABB) -> bool {
-        // TODO
-        true
     }
 }
