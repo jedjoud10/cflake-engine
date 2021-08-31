@@ -28,7 +28,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 1.0;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 24;
+pub const OCTREE_DEPTH: u8 = 8;
 
 // Hehe terrain generator moment
 #[derive(Default)]
@@ -48,7 +48,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i64>, depth: u8, size: u64) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i64>, size: u64) -> Option<Entity> {
         // Create the entity
         let name = format!("Chunk {:?} {:?}", position, size);
         let mut chunk = Entity::new(name.as_str());
@@ -72,7 +72,7 @@ impl Terrain {
             .link_component::<components::Transform>(
                 component_manager,
                 components::Transform {
-                    position: veclib::Vector3::<f32>::from(position + veclib::Vector3::<i64>::default_y() * depth as i64 * 16),
+                    position: veclib::Vector3::<f32>::from(position),
                     scale: veclib::Vector3::new((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
                     ..components::Transform::default()
                 },
@@ -84,6 +84,7 @@ impl Terrain {
                 Renderer::new()
                     .load_textures(self.texture_ids.clone(), texture_cacher)
                     .set_model(model)
+                    .set_uv_scale(veclib::Vector2::<f32>::default_one() * 0.05)
                     .set_wireframe(true)
                     .set_shader(self.shader_name.as_str()),
             )
@@ -145,16 +146,13 @@ impl System for Terrain {
         for (_, octree_node) in nodes {
             // Only add the octree nodes that have no children
             if !octree_node.children {                
-                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.depth, octree_node.half_extent * 2);
+                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
                 }                
             }
         }
-        
-        
-
         // Debug controls
         data.input_manager.bind_key(input::Keys::Y, "update_terrain", input::MapType::Button);
     }
@@ -179,7 +177,7 @@ impl System for Terrain {
                 // Only add the octree nodes that have no children
                 if !octree_node.children {
                     if !self.chunks.contains_key(&octree_node.get_center()) {
-                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.depth, octree_node.half_extent * 2);
+                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
                         match chunk_entity {
                             Some(chunk_entity) => {
                                 let entity_id = data.entity_manager.add_entity_s(chunk_entity);
@@ -197,12 +195,9 @@ impl System for Terrain {
                     let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
                     data.entity_manager.remove_entity_s(&entity_id).unwrap();
                 }
-            }    
+            }   
             
-        }        
-        for (k, octree_node) in self.octree.postprocess_nodes.iter() {          
-            data.debug.debug_default(debug::DefaultDebugRendererType::AABB(octree_node.get_aabb()), veclib::Vector3::default_one());
-        }        
+        }       
     }
 
     // Called for each entity in the system

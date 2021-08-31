@@ -12,7 +12,7 @@ use crate::engine::{
 
 // Constants
 pub const MAX_LINE_COUNT: i32 = 8192;
-pub const DRAW_DEBUG: bool = true;
+pub const DRAW_DEBUG: bool = false;
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {

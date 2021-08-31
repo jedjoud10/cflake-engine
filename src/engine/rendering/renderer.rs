@@ -95,6 +95,11 @@ impl Renderer {
         }
         return self;
     }
+    // Set the uv scale
+    pub fn set_uv_scale(mut self, new_scale: veclib::Vector2<f32>) -> Self {
+        self.uv_scale = new_scale;
+        return self;
+    }
     // Load textures from their resource paths
     pub fn resource_load_textures(mut self, texture_paths: Vec<&str>, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
         // Load the textures
