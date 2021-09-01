@@ -2,10 +2,10 @@ use super::{
     terrain::{Terrain, CHUNK_SIZE},
     voxel::{Voxel, VoxelGenerator},
 };
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
 use hypo_ecs::*;
 use hypo_rendering::{Model, ProceduralModelGenerator};
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 
 // Tables
 use super::tables::*;

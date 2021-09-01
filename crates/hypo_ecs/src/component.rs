@@ -1,6 +1,6 @@
-use super::{entity::Entity};
-use std::{any::Any, collections::HashMap};
+use super::entity::Entity;
 use hypo_errors::ECSError;
+use std::{any::Any, collections::HashMap};
 
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {

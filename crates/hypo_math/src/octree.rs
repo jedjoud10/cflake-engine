@@ -1,10 +1,10 @@
+use super::intersection::Intersection;
 use super::shapes;
 use super::shapes::Sphere;
-use super::intersection::Intersection;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::ops::{BitAnd, BitOr};
 use std::time::Instant;
-use std::ops::{BitOr, BitAnd};
 
 // The octree input data
 pub struct OctreeInput {
@@ -43,7 +43,7 @@ impl Octree {
     pub fn calculate_postprocess_nodes(&self, target: &veclib::Vector3<f32>, nodes: &HashMap<veclib::Vector3<i64>, OctreeNode>) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         let mut output: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-        pending_nodes.extend(nodes.iter().map(|x| { x.1.clone() }));
+        pending_nodes.extend(nodes.iter().map(|x| x.1.clone()));
         while pending_nodes.len() > 0 {
             let mut octree_node = pending_nodes[0].clone();
             // If the node passes the postprocess check, subdivide it, though only if it has no children
@@ -84,8 +84,10 @@ impl Octree {
         return (nodes, targetted_node);
     }
     // Generate the base octree with a target point at 0, 0, 0
-    pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3::<i64>, OctreeNode> {
-        let input: OctreeInput = OctreeInput { target: veclib::Vector3::default_one() };
+    pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
+        let input: OctreeInput = OctreeInput {
+            target: veclib::Vector3::default_one(),
+        };
         let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
         let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
         // Create the root node
@@ -161,7 +163,7 @@ impl Octree {
         // Get the nodes that we've added
         let added_nodes = local_octree_data.0;
         // Update the actual nodes before we calculate the postprocessed nodes
-        self.nodes.extend(added_nodes.clone());        
+        self.nodes.extend(added_nodes.clone());
 
         // Get the nodes that we've deleted
         let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
@@ -190,12 +192,12 @@ impl Octree {
         // Update the removed node
         let mut node_to_remove = node_to_remove.unwrap();
         node_to_remove.children = false;
-        node_to_remove.children_centers = [veclib::Vector3::<i64>::default_zero(); 8];        
+        node_to_remove.children_centers = [veclib::Vector3::<i64>::default_zero(); 8];
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
 
         let center: veclib::Vector3<i64> = marked_node.as_ref().unwrap().get_center();
         let depth: u8 = marked_node.as_ref().unwrap().depth;
-        println!("Time in micros: {}", instant.elapsed().as_micros());        
+        println!("Time in micros: {}", instant.elapsed().as_micros());
         // Remove the nodes
         /*
         // TODO: Optimize this
@@ -216,8 +218,8 @@ impl Octree {
             })
             .collect();
         */
-        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());   
-        
+        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
+
         // Subdivide each added node at least once
         let postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = self.calculate_postprocess_nodes(&input.target, &self.nodes);
         let mut removed_postprocess_nodes: Vec<OctreeNode> = Vec::new();
@@ -245,7 +247,7 @@ impl Octree {
                 if !node.children && postprocess_nodes[k].children {
                     // We have children now, so this counts as a removed node
                     removed_postprocess_nodes.push(node.clone());
-                }          
+                }
             }
         }
 
@@ -286,7 +288,7 @@ impl OctreeNode {
         return self.position + self.half_extent as i64;
     }
     // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {        
+    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
         // AABB intersection, return true if point in on the min edge though
         let aabb = self.get_aabb().min.elem_lte(target) & self.get_aabb().max.elem_gt(target);
         let aabb = (aabb | veclib::Vector3::<bool>::new(false, false, false)).all();

@@ -1,7 +1,7 @@
-use hypo_others::CacheManager;
-use hypo_resources::{ ResourceManager, LoadableResource, Resource };
 use bitflags::bitflags;
 use gl;
+use hypo_others::CacheManager;
+use hypo_resources::{LoadableResource, Resource, ResourceManager};
 use image::EncodableLayout;
 
 use std::{ffi::c_void, ptr::null};

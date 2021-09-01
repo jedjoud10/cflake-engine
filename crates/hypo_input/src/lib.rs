@@ -2,5 +2,5 @@
 mod input;
 mod keys;
 
-pub use keys::Keys;
 pub use input::*;
+pub use keys::Keys;

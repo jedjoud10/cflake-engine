@@ -1,17 +1,17 @@
-use std::collections::HashSet;
+use gl;
+use glfw::{self, Context};
+use hypo::*;
+use hypo_debug::*;
+use hypo_defaults::components;
+use hypo_defaults::systems;
 use hypo_ecs::*;
 use hypo_errors::*;
 use hypo_input::*;
-use hypo_resources::*;
 use hypo_others::*;
 use hypo_rendering::*;
-use hypo_debug::*;
+use hypo_resources::*;
 use hypo_systems::*;
-use hypo::*;
-use glfw::{self, Context};
-use hypo_defaults::systems;
-use hypo_defaults::components;
-use gl;
+use std::collections::HashSet;
 //  The actual world
 #[derive(Default)]
 pub struct World {
@@ -83,7 +83,7 @@ impl World {
         load_systems_callback(self);
         // Update entity manager
         self.update_entity_manager();
-        load_entities_callback(self);        
+        load_entities_callback(self);
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -174,7 +174,7 @@ impl World {
             // Set the glfw window as a windowed window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                let default_window_size =  hypo_others::get_default_window_size();
+                let default_window_size = hypo_others::get_default_window_size();
                 window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
                 unsafe {
                     // Update the OpenGL viewport
@@ -249,7 +249,7 @@ impl World {
 }
 
 // Impl block related to the windowing / rendering stuff
-impl World {    
+impl World {
     // When we resize the window
     pub fn resize_window_event(&mut self, size: (u16, u16)) {
         unsafe {

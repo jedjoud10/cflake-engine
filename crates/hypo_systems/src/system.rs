@@ -1,13 +1,11 @@
 use std::any::Any;
 
+use hypo::*;
 use hypo_ecs::*;
 use hypo_errors::ECSError;
 use hypo_others::Time;
-use hypo::*;
 
-use super::{
-    system_data::{SystemData, SystemState, SystemType},
-};
+use super::system_data::{SystemData, SystemState, SystemType};
 
 #[derive(Default)]
 // Manages the systems

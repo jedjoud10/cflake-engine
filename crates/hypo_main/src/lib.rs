@@ -7,6 +7,8 @@ extern crate glfw;
 pub use hypo_core::World;
 
 // Export
+use glfw::Context;
+pub use hypo::*;
 pub use hypo_debug;
 pub use hypo_defaults::components;
 pub use hypo_defaults::systems;
@@ -18,9 +20,7 @@ pub use hypo_rendering::*;
 pub use hypo_resources::*;
 pub use hypo_systems::*;
 pub use hypo_terrain::*;
-pub use hypo::*;
 pub use veclib;
-use glfw::Context;
 
 pub fn start(load_systems_callback: fn(&mut World), load_entities_callback: fn(&mut World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();

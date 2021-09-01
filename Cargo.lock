@@ -276,6 +276,9 @@ version = "0.1.0"
 [[package]]
 name = "hypo_input"
 version = "0.1.0"
+dependencies = [
+ "glfw",
+]
 
 [[package]]
 name = "hypo_main"

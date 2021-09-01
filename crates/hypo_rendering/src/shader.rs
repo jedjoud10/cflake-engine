@@ -1,9 +1,9 @@
-use gl;
-use std::{ffi::CString, ptr::null};
-use hypo_others::CacheManager;
-use hypo_resources::ResourceManager;
-use hypo_resources::Resource;
 use super::texture::Texture;
+use gl;
+use hypo_others::CacheManager;
+use hypo_resources::Resource;
+use hypo_resources::ResourceManager;
+use std::{ffi::CString, ptr::null};
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
@@ -181,11 +181,11 @@ impl SubShader {
                 let subshader = Self {
                     name: shader_name.clone(),
                     program: 0,
-                    source: shader.source.clone(),                    
+                    source: shader.source.clone(),
                     subshader_type: match shader.subshader_type {
                         0 => SubShaderType::Vertex,
                         1 => SubShaderType::Fragment,
-                        _ => SubShaderType::Vertex
+                        _ => SubShaderType::Vertex,
                     },
                 };
                 Some(subshader)

@@ -7,21 +7,9 @@ args = ["fmt", "--", "--emit=files"]
 command = "cargo"
 args = ["clean", "--release"]
 
-[tasks.build]
-command = "cargo"
-args = ["build"]
-
-[tasks.build-publish]
-command = "cargo"
-args = ["build", "--release"]
-
-[tasks.run]
+[tasks.run-release]
 command = "cargo"
 args = ["run", "--release"]
-
-[tasks.debug]
-command = "cargo"
-args = ["run"]
 
 [tasks.fix-certificate]
 command = "./fix-certificate.bat"
@@ -29,6 +17,6 @@ command = "./fix-certificate.bat"
 [tasks.publish-cert]
 dependencies = [
     "clean-publish",
-    "run",
+    "run-release",
     "fix-certificate"
 ]

@@ -1,11 +1,11 @@
-use hypo_systems::{System, SystemData};
+use super::super::components;
+use gl;
 use hypo::{SystemEventData, SystemEventDataLite};
-use hypo_rendering::{Texture, Window, Renderer, Model, Shader, RendererFlags};
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
-use super::super::components;
+use hypo_rendering::{Model, Renderer, RendererFlags, Shader, Texture, Window};
+use hypo_systems::{System, SystemData};
 use std::ptr::null;
-use gl;
 
 #[derive(Default)]
 pub struct RenderingSystem {
