@@ -2,7 +2,7 @@ use hypo_resources::Resource;
 use hypo_resources::ResourceManager;
 
 // A simple model that holds vertex, normal, and color data
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Model {
     pub vertices: Vec<veclib::Vector3<f32>>,
     pub normals: Vec<veclib::Vector3<f32>>,
@@ -40,6 +40,22 @@ impl Model {
             // Swap the first and last index of each triangle
             self.triangles.swap(i, i + 2);
         }
+    }
+    // Combine a model with this one, and return the new model
+    // TODO: Implement vertex merging while combining models
+    pub fn combine(&self, other: &Self) -> Self {
+        let mut output_model = self.clone();
+        let last_triangle_index = self.triangles.len() as u32;
+        let mut other_tris = other.triangles.clone();
+        for x in other_tris.iter_mut() {
+            *x += last_triangle_index;
+        }
+        output_model.triangles.extend(other_tris);
+        output_model.vertices.extend(other.vertices.clone());
+        output_model.normals.extend(other.normals.clone());
+        output_model.uvs.extend(other.uvs.clone());
+        output_model.tangents.extend(other.tangents.clone());
+        return output_model;
     }
 }
 
