@@ -7,6 +7,7 @@ use hypo_others::*;
 use hypo_rendering::*;
 use hypo_debug::*;
 use hypo_systems::*;
+use hypo::*;
 //  The actual world
 #[derive(Default)]
 pub struct World {
@@ -22,7 +23,7 @@ pub struct World {
     pub system_manager: SystemManager,
 
     // Miscs
-    pub debug: debug::DebugRenderer,
+    pub debug: DebugRenderer,
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
 }
@@ -171,7 +172,7 @@ impl World {
             // Set the glfw window as a windowed window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                let default_window_size = Self::get_default_window_size();
+                let default_window_size = hypo_defaults:: get_default_window_size();
                 window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
                 unsafe {
                     // Update the OpenGL viewport

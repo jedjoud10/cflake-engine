@@ -1,4 +1,4 @@
-use hypo_default::get_default_window_size;
+use hypo_defaults::get_default_window_size;
 
 // A window class to organize things
 #[derive(Clone)]

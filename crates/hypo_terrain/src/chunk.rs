@@ -2,13 +2,13 @@ use super::{
     terrain::{Terrain, CHUNK_SIZE},
     voxel::{Voxel, VoxelGenerator},
 };
-use crate::engine::{
-    core::ecs::component::{Component, ComponentID, ComponentInternal},
-    rendering::model::{Model, ProceduralModelGenerator},
-    terrain::tables::{DATA_OFFSET_TABLE, EDGE_TABLE, TRI_TABLE, VERTEX_TABLE},
-};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use hypo_ecs::*;
+use hypo_rendering::{Model, ProceduralModelGenerator};
+
+// Tables
+use super::tables::*;
 
 // A component that will be added to well... chunks
 pub struct Chunk {

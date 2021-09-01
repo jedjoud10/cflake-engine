@@ -15,3 +15,4 @@ hypo_errors = { path = "../hypo_errors" }
 hypo_rendering = { path = "../hypo_rendering" }
 hypo_resources = { path = "../hypo_resources" }
 hypo_debug = { path = "../hypo_debug" }
+hypo_defaults = { path = "../hypo_defaults" }

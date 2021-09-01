@@ -1,27 +1,12 @@
 use super::voxel::VoxelGenerator;
-use crate::engine::{
-    self,
-    core::{
-        cacher::CacheManager,
-        defaults::components,
-        ecs::{
-            component::{ComponentManager, FilteredLinkedComponents},
-            entity::Entity,
-            system::System,
-            system_data::{SystemData, SystemEventData, SystemEventDataLite},
-        },
-    },
-    debug, input,
-    math::{self, octree::OctreeInput},
-    rendering::{
-        model::{Model, ProceduralModelGenerator},
-        renderer::Renderer,
-        shader::Shader,
-        texture::Texture,
-    },
-    terrain::chunk::Chunk,
-};
+use super::chunk::Chunk;
 use std::collections::HashMap;
+use hypo_systems::*;
+use hypo_math as math;
+use hypo_ecs::*;
+use hypo_rendering::*;
+use hypo_others::CacheManager;
+
 
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 18;

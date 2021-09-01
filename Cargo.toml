@@ -9,7 +9,7 @@ build = "build.rs"
 [dependencies]
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-glfw = "0.41.0"
+
 walkdir = "2.3.2"
 byteorder = "1.4.3"
 image = "0.23.14"
@@ -28,9 +28,10 @@ members = [
     "crates\\hypo_math",
     "crates\\hypo_rendering",
     "crates\\hypo_input",
-    "crates\\hypo_default",
+    "crates\\hypo_defaults",
     "crates\\hypo_others",
-    "crates\\hypo_resources"
+    "crates\\hypo_resources",
+    "crates\\hypo_terrain"
 ]
 
 [build-dependencies]
