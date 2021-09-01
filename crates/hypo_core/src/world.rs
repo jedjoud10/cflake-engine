@@ -3,6 +3,10 @@ use std::collections::HashSet;
 use hypo_ecs::*;
 use hypo_input::*;
 use hypo_resources::*;
+use hypo_others::*;
+use hypo_rendering::*;
+use hypo_debug::*;
+use hypo_systems::*;
 //  The actual world
 #[derive(Default)]
 pub struct World {
@@ -267,13 +271,4 @@ impl World {
         *self.entity_manager.get_entity_mut(&entity_clone_id).unwrap() = camera_entity_clone;
         self.custom_data.window.size = size;
     }
-}
-
-// Some custom data that will be passed to systems
-#[derive(Default)]
-pub struct CustomWorldData {
-    pub main_camera_entity_id: u16,
-    pub sky_entity_id: u16,
-    pub render_system_id: u8,
-    pub window: Window,
 }

@@ -7,6 +7,11 @@ edition = "2018"
 
 [dependencies]
 hypo = { path = "../hypo" }
-hypo_ecs = { path = "../hypo_ecs" }
+hypo_systems = { path = "../hypo_systems" }
 hypo_input = { path = "../hypo_input" }
+hypo_others = { path = "../hypo_others" }
+hypo_ecs = { path = "../hypo_ecs" }
+hypo_errors = { path = "../hypo_errors" }
+hypo_rendering = { path = "../hypo_rendering" }
 hypo_resources = { path = "../hypo_resources" }
+hypo_debug = { path = "../hypo_debug" }

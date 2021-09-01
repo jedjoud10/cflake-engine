@@ -12,7 +12,15 @@ pub struct SystemEventData<'a> {
 }
 // Data that will be passed some events in the systems that don't need all the world data
 pub struct SystemEventDataLite<'a> {
-    pub entity_manager: &'a mut EntityManager,
-    pub component_manager: &'a mut ComponentManager,
+    pub entity_manager: &'a mut hypo_ecs::EntityManager,
+    pub component_manager: &'a mut hypo_ecs::ComponentManager,
     pub custom_data: &'a mut CustomWorldData,
+}
+// Some custom data that will be passed to systems
+#[derive(Default)]
+pub struct CustomWorldData {
+    pub main_camera_entity_id: u16,
+    pub sky_entity_id: u16,
+    pub render_system_id: u8,
+    pub window: hypo_rendering::Window,
 }

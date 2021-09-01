@@ -1,11 +1,6 @@
-use super::{
-    component::{ComponentID, ComponentManager},
-    entity::EntityManager,
-    error::ECSError,
-    system::EntityFilter,
-};
-
-
+use super::EntityFilter;
+use hypo_ecs::*;
+use hypo_errors::ECSError;
 // Some system data that is part of a system and wrapped around System trait getter functions
 #[derive(Default)]
 pub struct SystemData {
