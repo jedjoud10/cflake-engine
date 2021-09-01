@@ -181,9 +181,12 @@ impl SubShader {
                 let subshader = Self {
                     name: shader_name.clone(),
                     program: 0,
-                    source: shader.source.clone(),
-                    // TODO: Fix this
-                    subshader_type: SubShaderType::Vertex,
+                    source: shader.source.clone(),                    
+                    subshader_type: match shader.subshader_type {
+                        0 => SubShaderType::Vertex,
+                        1 => SubShaderType::Fragment,
+                        _ => SubShaderType::Vertex
+                    },
                 };
                 Some(subshader)
             }

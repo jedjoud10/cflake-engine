@@ -256,6 +256,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hypo_dev_game"
+version = "0.1.0"
+dependencies = [
+ "hypo_main",
+]
+
+[[package]]
 name = "hypo_ecs"
 version = "0.1.0"
 dependencies = [
@@ -269,6 +276,27 @@ version = "0.1.0"
 [[package]]
 name = "hypo_input"
 version = "0.1.0"
+
+[[package]]
+name = "hypo_main"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "glfw",
+ "hypo",
+ "hypo_core",
+ "hypo_debug",
+ "hypo_defaults",
+ "hypo_ecs",
+ "hypo_errors",
+ "hypo_input",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
+ "hypo_systems",
+ "hypo_terrain",
+ "veclib",
+]
 
 [[package]]
 name = "hypo_math"

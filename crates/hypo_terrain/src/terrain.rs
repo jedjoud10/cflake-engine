@@ -77,12 +77,11 @@ impl Terrain {
                     .set_shader(self.shader_name.as_str()),
             )
             .unwrap();
-        // TODO: Fix this
-        /*
-            chunk
-            .link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager))
-            .unwrap();
-        */
+        // TODO: Fix this        
+        chunk
+        .link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager))
+        .unwrap();
+        
         return Some(chunk);
     }
 }

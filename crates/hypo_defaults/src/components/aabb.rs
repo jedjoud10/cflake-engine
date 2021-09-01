@@ -22,17 +22,15 @@ impl Default for AABBGenerationType {
 }
 
 // AABB component functions
-impl AABB {
-    /*
+impl AABB {    
     // Generate the AABB from a renderer entity
     pub fn from_components(entity: &Entity, component_manager: &ComponentManager) -> Self {
-        let model_ref = &entity.get_component::<Renderer>(component_manager).unwrap().model;
-        let transform = entity.get_component::<transforms::Transform>(component_manager).unwrap();
-        let mut aabb = bounds::AABB::from_model(model_ref);
-        aabb.transform(transform);
+        let model_ref = &entity.get_component::<hypo_rendering::Renderer>(component_manager).unwrap().model;
+        let transform = entity.get_component::<super::Transform>(component_manager).unwrap();
+        let mut aabb = math::bounds::AABB::from_model(model_ref.vertices.clone());
+        aabb.transform(&transform.get_matrix());
         Self { aabb, ..Self::default() }
-    }
-    */
+    }    
 }
 
 // Main traits implemented

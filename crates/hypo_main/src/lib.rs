@@ -1,13 +1,30 @@
 //#![windows_subsystem = "windows"]
 extern crate gl;
 // include the OpenGL type aliases
-
 extern crate glfw;
+
+// World
+pub use hypo_core::World;
+
+// Export
+pub use hypo_debug;
+pub use hypo_defaults::components;
+pub use hypo_defaults::systems;
+pub use hypo_ecs::*;
+pub use hypo_errors::*;
+pub use hypo_input::*;
+pub use hypo_others::*;
+pub use hypo_rendering::*;
+pub use hypo_resources::*;
+pub use hypo_systems::*;
+pub use hypo_terrain::*;
+pub use hypo::*;
+pub use veclib;
 use glfw::Context;
 
-pub fn main() {
+pub fn start(load_systems_callback: fn(&mut World), load_entities_callback: fn(&mut World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-    let default_size = World::get_default_window_size();
+    let default_size = hypo_others::get_default_window_size();
     let (mut window, events) = glfw
         .create_window(default_size.0 as u32, default_size.1 as u32, "Hypothermia", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
@@ -26,7 +43,7 @@ pub fn main() {
     }
     // Create the world
     let mut world: World = World::default();
-    world.start_world(&mut window);
+    world.start_world(&mut window, load_systems_callback, load_entities_callback);
 
     while !window.should_close() {
         // Update the delta_time

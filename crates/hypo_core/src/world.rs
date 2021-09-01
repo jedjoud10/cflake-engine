@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-
 use hypo_ecs::*;
 use hypo_errors::*;
 use hypo_input::*;
@@ -70,7 +69,7 @@ impl World {
         self.shader_cacher.1.generate_defaults(vec![default_shader_name.as_str()]);
     }
     // When the world started initializing
-    pub fn start_world(&mut self, window: &mut glfw::Window) {
+    pub fn start_world(&mut self, window: &mut glfw::Window, load_systems_callback: fn(&mut Self), load_entities_callback: fn(&mut Self)) {
         // Load the default stuff
         self.load_defaults(window);
         /*
@@ -81,14 +80,10 @@ impl World {
         let entity_id = self.add_entity(test_entity);
         self.entity_manager.remove_entity_s(&entity_id);
         */
-        // TODO: Fix this
-        /*        
-        register_components(self);
-        load_systems(self);
+        load_systems_callback(self);
         // Update entity manager
         self.update_entity_manager();
-        load_entities(self);
-        */
+        load_entities_callback(self);        
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem

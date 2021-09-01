@@ -10,6 +10,8 @@ edition = "2018"
 [workspace]
 
 members = [
+    "crates\\hypo_dev_game",
+    "crates\\hypo_main",
     "crates\\hypo",
     "crates\\hypo_errors",
     "crates\\hypo_debug",
