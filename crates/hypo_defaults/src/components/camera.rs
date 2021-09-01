@@ -1,8 +1,4 @@
-use crate::engine::core::defaults::components::transforms;
-use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal, ComponentManager};
-use crate::engine::core::ecs::entity::Entity;
-use crate::engine::math::{self, bounds};
-use crate::engine::rendering::window::Window;
+use hypo_math as math;
 // A simple camera component
 pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,

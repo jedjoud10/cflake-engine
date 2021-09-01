@@ -1,15 +1,10 @@
-use crate::engine::core::defaults::components::transforms;
-use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal, ComponentManager};
-use crate::engine::core::ecs::entity::Entity;
-use crate::engine::math::{self, bounds};
-
-use crate::engine::rendering::renderer::Renderer;
-use crate::engine::rendering::window::Window;
+use hypo_math as math;
+use hypo_ecs::*;
 
 // An AABB components
 #[derive(Default)]
 pub struct AABB {
-    pub aabb: bounds::AABB,
+    pub aabb: math::bounds::AABB,
     pub generation_type: AABBGenerationType,
 }
 
@@ -28,6 +23,7 @@ impl Default for AABBGenerationType {
 
 // AABB component functions
 impl AABB {
+    /*
     // Generate the AABB from a renderer entity
     pub fn from_components(entity: &Entity, component_manager: &ComponentManager) -> Self {
         let model_ref = &entity.get_component::<Renderer>(component_manager).unwrap().model;
@@ -36,6 +32,7 @@ impl AABB {
         aabb.transform(transform);
         Self { aabb, ..Self::default() }
     }
+    */
 }
 
 // Main traits implemented

@@ -202,6 +202,11 @@ dependencies = [
 [[package]]
 name = "hypo_defaults"
 version = "0.1.0"
+dependencies = [
+ "hypo_ecs",
+ "hypo_math",
+ "veclib",
+]
 
 [[package]]
 name = "hypo_ecs"
@@ -235,7 +240,6 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "gl",
- "hypo_defaults",
  "hypo_ecs",
  "hypo_others",
  "hypo_resources",

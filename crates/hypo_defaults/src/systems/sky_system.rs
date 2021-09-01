@@ -1,17 +1,3 @@
-use crate::engine::core::defaults::components;
-
-use crate::engine::core::ecs::component::FilteredLinkedComponents;
-use crate::engine::rendering::model::Model;
-use crate::engine::rendering::renderer::{Renderer, RendererFlags};
-use crate::engine::rendering::shader::Shader;
-
-use crate::engine::core::ecs::{
-    entity::Entity,
-    system::System,
-    system_data::{SystemData, SystemEventData},
-};
-use crate::engine::rendering::texture::{Texture, TextureWrapping};
-
 #[derive(Default)]
 pub struct SkySystem {
     pub system_data: SystemData,
