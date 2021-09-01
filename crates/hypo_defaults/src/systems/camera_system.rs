@@ -1,16 +1,8 @@
-use crate::engine::{
-    core::{
-        defaults::components,
-        ecs::{
-            component::FilteredLinkedComponents,
-            entity::Entity,
-            system::System,
-            system_data::{SystemData, SystemEventData, SystemEventDataLite},
-        },
-    },
-    input::{Keys, MapType},
-};
-
+use hypo_systems::{System, SystemData};
+use hypo::{SystemEventData, SystemEventDataLite};
+use hypo_ecs::{Entity, FilteredLinkedComponents};
+use super::super::components;
+use hypo_input::*;
 #[derive(Default)]
 pub struct CameraSystem {
     pub system_data: SystemData,

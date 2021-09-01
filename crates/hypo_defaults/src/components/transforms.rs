@@ -1,6 +1,5 @@
 // Transforms components
-use crate::engine::core::ecs::component::{Component, ComponentID, ComponentInternal};
-use veclib::*;
+use hypo_ecs::{Component, ComponentID, ComponentInternal};
 // The transform component
 pub struct Transform {
     pub position: veclib::Vector3<f32>,

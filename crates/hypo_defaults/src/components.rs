@@ -1,6 +1,9 @@
 // Default components
-pub mod aabb;
-pub mod camera;
-pub mod sky;
-pub mod transforms;
-pub mod renderer;
+mod aabb;
+mod camera;
+mod sky;
+mod transforms;
+pub use aabb::*;
+pub use camera::*;
+pub use sky::*;
+pub use transforms::*;

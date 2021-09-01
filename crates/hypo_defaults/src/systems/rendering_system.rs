@@ -1,23 +1,11 @@
-use crate::engine::core::defaults::components;
-
-use crate::engine::core::ecs::component::FilteredLinkedComponents;
-use crate::engine::core::ecs::{
-    entity::Entity,
-    system::System,
-    system_data::{SystemData, SystemEventData, SystemEventDataLite},
-};
-use crate::engine::core::world::World;
-use crate::engine::debug::DebugRendererable;
-use crate::engine::math;
-use crate::engine::rendering::model::Model;
-use crate::engine::rendering::optimizer::RenderOptimizer;
-use crate::engine::rendering::renderer::{Renderer, RendererFlags};
-use crate::engine::rendering::shader::Shader;
-use crate::engine::rendering::texture::Texture;
-use crate::engine::rendering::window::Window;
-use crate::gl;
-
+use hypo_systems::{System, SystemData};
+use hypo::{SystemEventData, SystemEventDataLite};
+use hypo_rendering::{Texture, Window, Renderer, Model, Shader, RendererFlags};
+use hypo_ecs::{Entity, FilteredLinkedComponents};
+use hypo_math as math;
+use super::super::components;
 use std::ptr::null;
+use gl;
 
 #[derive(Default)]
 pub struct RenderingSystem {
@@ -162,9 +150,8 @@ impl System for RenderingSystem {
         self.create_screen_quad(data);
 
         // Then setup opengl and the render buffer
-        let _default_size = World::get_default_window_size();
+        let _default_size = hypo_others::get_default_window_size();
         self.setup_opengl(data);
-        self.add_eppf(Box::new(RenderOptimizer::default()));
 
         // Load the wireframe shader
         let wireframe_shader_name = Shader::new(

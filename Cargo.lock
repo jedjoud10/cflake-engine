@@ -203,8 +203,14 @@ dependencies = [
 name = "hypo_defaults"
 version = "0.1.0"
 dependencies = [
+ "gl",
+ "hypo",
  "hypo_ecs",
+ "hypo_input",
  "hypo_math",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_systems",
  "veclib",
 ]
 
