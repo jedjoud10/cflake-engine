@@ -17,7 +17,7 @@ pub const LOD_FACTOR: f32 = 3.0;
 // The octree depth
 pub const OCTREE_DEPTH: u8 = 8;
 
-// Hehe terrain generator moment
+// Hehe terrain generator momenta
 #[derive(Default)]
 pub struct Terrain {
     pub system_data: SystemData,
