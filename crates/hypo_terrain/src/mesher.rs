@@ -88,6 +88,8 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
         (x - a) / (b - a)
     }
+    let skirt_base_x = generate_x_skirt(data, 2);
+    model = model.combine(&skirt_base_x);
     // Return the model
     model
 }
@@ -106,7 +108,8 @@ pub fn generate_x_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
     for y in 0..CHUNK_SIZE - 2 {
         for z in 0..CHUNK_SIZE - 2 {
             let local_data = get_local_data_x(data, (y, z), slice);
-            let output_local_model = solve_case(local_data);
+            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, slice);
+            output_model = output_model.combine(&local_model);
         }
     }
     output_model
@@ -116,15 +119,35 @@ pub fn generate_x_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
     let local_data: [f32; 4] = [
         data[super::flatten((slice, origin.0, origin.1))].density,
-        data[super::flatten((slice, origin.0, origin.1))].density,
-        data[super::flatten((slice, origin.0, origin.1))].density,
-        data[super::flatten((slice, origin.0, origin.1))].density       
+        data[super::flatten((slice, origin.0 + 1, origin.1))].density,
+        data[super::flatten((slice, origin.0 + 1, origin.1 + 1))].density,
+        data[super::flatten((slice, origin.0, origin.1 + 1))].density       
     ];
     return local_data;
 }
 
 // Using the local data, solve the marching square case
-pub fn solve_case(local_data: [f32; 4]) -> (Vec<veclib::Vector3<f32>>, Vec<u8>) {
-    let output: (Vec<veclib::Vector3::<f32>>, Vec<u8>) = (Vec::new(), Vec::new());
+pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], slice: usize) -> Model {
+    let mut output: Model = Model::default();
+    let mut case = ((local_data[0] > 0.0) as u8) * 1;
+    case += ((local_data[1] > 0.0) as u8) * 2;
+    case += ((local_data[2] > 0.0) as u8) * 4;
+    case += ((local_data[3] > 0.0) as u8) * 8;
+    let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
+    let mut tris_output: Vec<u32> = Vec::new();
+    // The vertices to connect
+    let tris = super::SQUARES_TRI_TABLE[case as usize];
+    for tri in tris {
+        // The bertex
+        let vertex = verts[tri as usize];
+        vertices.push(veclib::Vector3::<f32>::new(vertex.x(), vertex.y(), slice as f32));
+        tris_output.push(tris.len() as u32);
+    }
+    // TODO: Implement linea interpolation here
+    output.vertices = vertices;
+    output.triangles = tris_output;
+    output.normals = Vec::new();
+    output.tangents = Vec::new();
+    output.uvs = Vec::new();
     return output;
 }
