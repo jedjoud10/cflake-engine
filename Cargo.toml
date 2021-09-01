@@ -21,6 +21,7 @@ rayon = "1.5.1"
 members = [
     "crates\\hypo",
     "crates\\hypo_errors",
+    "crates\\hypo_debug",
     "crates\\hypo_core",
     "crates\\hypo_systems",
     "crates\\hypo_ecs",

@@ -1,3 +1,3 @@
 // Export
 mod world;
-mod ecs;
+pub use world::*;

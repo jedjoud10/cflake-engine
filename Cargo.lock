@@ -201,10 +201,13 @@ dependencies = [
 name = "hypo"
 version = "0.1.0"
 dependencies = [
+ "hypo_debug",
  "hypo_ecs",
  "hypo_errors",
  "hypo_input",
  "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
 ]
 
 [[package]]
@@ -215,6 +218,18 @@ dependencies = [
  "hypo_ecs",
  "hypo_input",
  "hypo_resources",
+]
+
+[[package]]
+name = "hypo_debug"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "hypo_math",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
+ "veclib",
 ]
 
 [[package]]
