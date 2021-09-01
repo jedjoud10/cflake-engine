@@ -7,14 +7,25 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gl = "0.14.0"
-veclib = { git = "https://github.com/jedjoud10/veclib" }
-glfw = "0.41.0"
-walkdir = "2.3.2"
-byteorder = "1.4.3"
-image = "0.23.14"
-bitflags = "1.3.1"
-rayon = "1.5.1"
+[workspace]
+
+members = [
+    "crates\\hypo_dev_game",
+    "crates\\hypo_main",
+    "crates\\hypo_system_event_data",
+    "crates\\hypo_errors",
+    "crates\\hypo_debug",
+    "crates\\hypo_core",
+    "crates\\hypo_systems",
+    "crates\\hypo_ecs",
+    "crates\\hypo_math",
+    "crates\\hypo_rendering",
+    "crates\\hypo_input",
+    "crates\\hypo_defaults",
+    "crates\\hypo_others",
+    "crates\\hypo_resources",
+    "crates\\hypo_terrain"
+]
 
 [build-dependencies]
 image = "0.23.14"

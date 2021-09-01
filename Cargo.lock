@@ -40,9 +40,9 @@ checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
 name = "cc"
-version = "1.0.69"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e70cc2f62c6ce1868963827bd677764c62d07c3d9a3e1fb1177ee1a9ab199eb2"
+checksum = "d26a6ce4b6a484fa3edb70f7efa6fc430fd2b87285fe8b84304fd0936faa0dc0"
 
 [[package]]
 name = "cfg-if"
@@ -198,16 +198,174 @@ dependencies = [
 ]
 
 [[package]]
-name = "hypothermia"
+name = "hypo_core"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "glfw",
+ "hypo_debug",
+ "hypo_defaults",
+ "hypo_ecs",
+ "hypo_errors",
+ "hypo_input",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
+ "hypo_system_event_data",
+ "hypo_systems",
+]
+
+[[package]]
+name = "hypo_debug"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "hypo_math",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
+ "veclib",
+]
+
+[[package]]
+name = "hypo_defaults"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "hypo_ecs",
+ "hypo_input",
+ "hypo_math",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_system_event_data",
+ "hypo_systems",
+ "veclib",
+]
+
+[[package]]
+name = "hypo_dev_game"
+version = "0.1.0"
+dependencies = [
+ "hypo_main",
+]
+
+[[package]]
+name = "hypo_ecs"
+version = "0.1.0"
+dependencies = [
+ "hypo_errors",
+ "hypo_others",
+]
+
+[[package]]
+name = "hypo_errors"
+version = "0.1.0"
+
+[[package]]
+name = "hypo_input"
+version = "0.1.0"
+dependencies = [
+ "glfw",
+]
+
+[[package]]
+name = "hypo_main"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "glfw",
+ "hypo_core",
+ "hypo_debug",
+ "hypo_defaults",
+ "hypo_ecs",
+ "hypo_errors",
+ "hypo_input",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
+ "hypo_system_event_data",
+ "hypo_systems",
+ "hypo_terrain",
+ "veclib",
+]
+
+[[package]]
+name = "hypo_math"
+version = "0.1.0"
+dependencies = [
+ "veclib",
+]
+
+[[package]]
+name = "hypo_others"
+version = "0.1.0"
+
+[[package]]
+name = "hypo_rendering"
 version = "0.1.0"
 dependencies = [
  "bitflags",
- "byteorder",
  "gl",
- "glfw",
+ "hypo_ecs",
+ "hypo_others",
+ "hypo_resources",
  "image",
- "rayon",
  "veclib",
+]
+
+[[package]]
+name = "hypo_resources"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "veclib",
+ "walkdir",
+]
+
+[[package]]
+name = "hypo_system_event_data"
+version = "0.1.0"
+dependencies = [
+ "hypo_debug",
+ "hypo_ecs",
+ "hypo_errors",
+ "hypo_input",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
+]
+
+[[package]]
+name = "hypo_systems"
+version = "0.1.0"
+dependencies = [
+ "hypo_ecs",
+ "hypo_errors",
+ "hypo_others",
+ "hypo_system_event_data",
+]
+
+[[package]]
+name = "hypo_terrain"
+version = "0.1.0"
+dependencies = [
+ "hypo_defaults",
+ "hypo_ecs",
+ "hypo_input",
+ "hypo_math",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_system_event_data",
+ "hypo_systems",
+ "veclib",
+]
+
+[[package]]
+name = "hypothermia"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "image",
  "walkdir",
 ]
 
