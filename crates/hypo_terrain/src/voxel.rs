@@ -1,5 +1,4 @@
-use super::Terrain;
-
+use super::terrain::Terrain;
 // Handles the generation of voxel data
 #[derive(Default)]
 pub struct VoxelGenerator {}

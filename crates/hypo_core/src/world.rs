@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use hypo_ecs::*;
+use hypo_errors::*;
 use hypo_input::*;
 use hypo_resources::*;
 use hypo_others::*;
@@ -8,6 +9,10 @@ use hypo_rendering::*;
 use hypo_debug::*;
 use hypo_systems::*;
 use hypo::*;
+use glfw::{self, Context};
+use hypo_defaults::systems;
+use hypo_defaults::components;
+use gl;
 //  The actual world
 #[derive(Default)]
 pub struct World {
@@ -39,7 +44,7 @@ impl World {
         self.input_manager.bind_key(Keys::F3, "change_debug_view", MapType::Button);
         self.input_manager.bind_key(Keys::F, "toggle_wireframe", MapType::Button);
 
-        self.custom_data.window.size = Self::get_default_window_size();
+        self.custom_data.window.size = hypo_others::get_default_window_size();
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
 
@@ -76,12 +81,14 @@ impl World {
         let entity_id = self.add_entity(test_entity);
         self.entity_manager.remove_entity_s(&entity_id);
         */
-
+        // TODO: Fix this
+        /*        
         register_components(self);
         load_systems(self);
         // Update entity manager
         self.update_entity_manager();
         load_entities(self);
+        */
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem
@@ -142,13 +149,13 @@ impl World {
         }
         // Change the debug view
         if self.input_manager.map_pressed("change_debug_view") {
-            let render_system = self.system_manager.get_system_mut::<RenderingSystem>(self.custom_data.render_system_id).unwrap();
+            let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.debug_view += 1;
             render_system.debug_view %= 4;
         }
         // Enable / Disable wireframe
         if self.input_manager.map_pressed("toggle_wireframe") {
-            let render_system = self.system_manager.get_system_mut::<RenderingSystem>(self.custom_data.render_system_id).unwrap();
+            let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.wireframe = !render_system.wireframe;
         }
 
@@ -172,7 +179,7 @@ impl World {
             // Set the glfw window as a windowed window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                let default_window_size = hypo_defaults:: get_default_window_size();
+                let default_window_size =  hypo_others::get_default_window_size();
                 window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
                 unsafe {
                     // Update the OpenGL viewport
@@ -253,7 +260,7 @@ impl World {
         unsafe {
             gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
 
-            let render_system = self.system_manager.get_system_mut::<RenderingSystem>(self.custom_data.render_system_id).unwrap();
+            let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             // Update the size of each texture that is bound to the framebuffer
             render_system.window.size = size;
             render_system.diffuse_texture.update_size(size.0, size.1);

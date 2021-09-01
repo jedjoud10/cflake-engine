@@ -6,6 +6,9 @@ use hypo_math as math;
 use hypo_ecs::*;
 use hypo_rendering::*;
 use hypo_others::CacheManager;
+use hypo_defaults::components;
+use hypo::{SystemEventData, SystemEventDataLite};
+use hypo_input::*;
 
 
 // How many voxels in one axis in each chunk?
@@ -74,10 +77,12 @@ impl Terrain {
                     .set_shader(self.shader_name.as_str()),
             )
             .unwrap();
-        chunk
+        // TODO: Fix this
+        /*
+            chunk
             .link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager))
             .unwrap();
-
+        */
         return Some(chunk);
     }
 }
@@ -139,7 +144,7 @@ impl System for Terrain {
             }
         }
         // Debug controls
-        data.input_manager.bind_key(input::Keys::Y, "update_terrain", input::MapType::Button);
+        data.input_manager.bind_key(Keys::Y, "update_terrain", MapType::Button);
     }
 
     // Update the camera position inside the terrain generator
@@ -155,7 +160,7 @@ impl System for Terrain {
 
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") {
-            self.octree.generate_incremental_octree(OctreeInput { target: camera_location });   
+            self.octree.generate_incremental_octree(math::octree::OctreeInput { target: camera_location });   
             
             // Turn all the newly added nodes into chunks and instantiate them into the world
             for octree_node in &self.octree.added_nodes {
