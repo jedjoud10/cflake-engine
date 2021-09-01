@@ -332,12 +332,8 @@ dependencies = [
 name = "hypothermia"
 version = "0.1.0"
 dependencies = [
- "bitflags",
  "byteorder",
- "gl",
  "image",
- "rayon",
- "veclib",
  "walkdir",
 ]
 
