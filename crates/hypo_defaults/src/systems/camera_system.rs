@@ -1,5 +1,5 @@
 use super::super::components;
-use hypo::{SystemEventData, SystemEventDataLite};
+use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_input::*;
 use hypo_systems::{System, SystemData};

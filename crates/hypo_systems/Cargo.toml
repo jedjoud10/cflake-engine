@@ -9,4 +9,4 @@ edition = "2018"
 hypo_ecs = { path = "../hypo_ecs" }
 hypo_errors = { path = "../hypo_errors" }
 hypo_others = { path = "../hypo_others" }
-hypo = { path = "../hypo" }
+hypo_system_event_data = { path = "../hypo_system_event_data" }

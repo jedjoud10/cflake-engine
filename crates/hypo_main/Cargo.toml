@@ -9,9 +9,9 @@ edition = "2018"
 glfw = "0.41.0"
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-hypo = { path = "../hypo" }
+hypo_system_event_data = { path = "../hypo_system_event_data" }
+hypo_systems = { path = "../hypo_systems"  }
 hypo_core = { path = "../hypo_core" }
-hypo_systems = { path = "../hypo_systems" }
 hypo_input = { path = "../hypo_input" }
 hypo_others = { path = "../hypo_others" }
 hypo_ecs = { path = "../hypo_ecs" }

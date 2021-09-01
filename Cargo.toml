@@ -12,7 +12,7 @@ build = "build.rs"
 members = [
     "crates\\hypo_dev_game",
     "crates\\hypo_main",
-    "crates\\hypo",
+    "crates\\hypo_system_event_data",
     "crates\\hypo_errors",
     "crates\\hypo_debug",
     "crates\\hypo_core",

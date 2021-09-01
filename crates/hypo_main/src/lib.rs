@@ -8,7 +8,7 @@ pub use hypo_core::World;
 
 // Export
 use glfw::Context;
-pub use hypo::*;
+pub use hypo_system_event_data::*;
 pub use hypo_debug;
 pub use hypo_defaults::components;
 pub use hypo_defaults::systems;

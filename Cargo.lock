@@ -198,25 +198,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "hypo"
-version = "0.1.0"
-dependencies = [
- "hypo_debug",
- "hypo_ecs",
- "hypo_errors",
- "hypo_input",
- "hypo_others",
- "hypo_rendering",
- "hypo_resources",
-]
-
-[[package]]
 name = "hypo_core"
 version = "0.1.0"
 dependencies = [
  "gl",
  "glfw",
- "hypo",
  "hypo_debug",
  "hypo_defaults",
  "hypo_ecs",
@@ -225,6 +211,7 @@ dependencies = [
  "hypo_others",
  "hypo_rendering",
  "hypo_resources",
+ "hypo_system_event_data",
  "hypo_systems",
 ]
 
@@ -245,12 +232,12 @@ name = "hypo_defaults"
 version = "0.1.0"
 dependencies = [
  "gl",
- "hypo",
  "hypo_ecs",
  "hypo_input",
  "hypo_math",
  "hypo_others",
  "hypo_rendering",
+ "hypo_system_event_data",
  "hypo_systems",
  "veclib",
 ]
@@ -267,6 +254,7 @@ name = "hypo_ecs"
 version = "0.1.0"
 dependencies = [
  "hypo_errors",
+ "hypo_others",
 ]
 
 [[package]]
@@ -286,7 +274,6 @@ version = "0.1.0"
 dependencies = [
  "gl",
  "glfw",
- "hypo",
  "hypo_core",
  "hypo_debug",
  "hypo_defaults",
@@ -296,6 +283,7 @@ dependencies = [
  "hypo_others",
  "hypo_rendering",
  "hypo_resources",
+ "hypo_system_event_data",
  "hypo_systems",
  "hypo_terrain",
  "veclib",
@@ -335,26 +323,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "hypo_system_event_data"
+version = "0.1.0"
+dependencies = [
+ "hypo_debug",
+ "hypo_ecs",
+ "hypo_errors",
+ "hypo_input",
+ "hypo_others",
+ "hypo_rendering",
+ "hypo_resources",
+]
+
+[[package]]
 name = "hypo_systems"
 version = "0.1.0"
 dependencies = [
- "hypo",
  "hypo_ecs",
  "hypo_errors",
  "hypo_others",
+ "hypo_system_event_data",
 ]
 
 [[package]]
 name = "hypo_terrain"
 version = "0.1.0"
 dependencies = [
- "hypo",
  "hypo_defaults",
  "hypo_ecs",
  "hypo_input",
  "hypo_math",
  "hypo_others",
  "hypo_rendering",
+ "hypo_system_event_data",
  "hypo_systems",
  "veclib",
 ]

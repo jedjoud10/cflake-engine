@@ -1,6 +1,5 @@
 use std::any::Any;
-
-use hypo::*;
+use hypo_system_event_data::*;
 use hypo_ecs::*;
 use hypo_errors::ECSError;
 use hypo_others::Time;

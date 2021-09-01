@@ -1,6 +1,6 @@
 use gl;
 use glfw::{self, Context};
-use hypo::*;
+use hypo_system_event_data::*;
 use hypo_debug::*;
 use hypo_defaults::components;
 use hypo_defaults::systems;

@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 hypo_errors = { path = "../hypo_errors" }
+hypo_others = { path = "../hypo_others" }

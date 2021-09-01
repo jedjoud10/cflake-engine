@@ -1,6 +1,6 @@
 use super::chunk::Chunk;
 use super::voxel::VoxelGenerator;
-use hypo::{SystemEventData, SystemEventDataLite};
+use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_defaults::components;
 use hypo_ecs::*;
 use hypo_input::*;
