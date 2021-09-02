@@ -90,15 +90,25 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
         }
     }    
     // Create the X skirt
-    let skirt_base_x = generate_skirt(data, transform_x_local, get_local_data_x, 0, false);
-    let skirt_end_x = generate_skirt(data, transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
+    let skirt_base_x = generate_skirt(data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
+    let skirt_end_x = generate_skirt(data, veclib::Vector3::new(1.0, 0.0, 0.0), transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
     let skirt_x = Model::combine(&skirt_base_x, &skirt_end_x);
+    // Create the Y skirt
+    let skirt_base_y = generate_skirt(data, veclib::Vector3::new(0.0, -1.0, 0.0), transform_y_local, get_local_data_y, 0, true);
+    let skirt_end_y = generate_skirt(data, veclib::Vector3::new(0.0, 1.0, 0.0), transform_y_local, get_local_data_y, CHUNK_SIZE - 2, false);
+    let skirt_y = Model::combine(&skirt_base_y, &skirt_end_y);
+    // Create the Y skirt
+    let skirt_base_z = generate_skirt(data, veclib::Vector3::new(0.0, 0.0, -1.0), transform_z_local, get_local_data_z, 0, false);
+    let skirt_end_z = generate_skirt(data, veclib::Vector3::new(0.0, 0.0, 1.0), transform_z_local, get_local_data_z, CHUNK_SIZE - 2, true);
+    let skirt_z = Model::combine(&skirt_base_z, &skirt_end_z);
     model = model.combine(&skirt_x);
+    model = model.combine(&skirt_y);
+    model = model.combine(&skirt_z);
     // Return the model
     model
 }
 // Generate a skirt from the data and using a slice index and a custom function that will map the two indexed values to their corresponding vector coordinates
-pub fn generate_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
+pub fn generate_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, axis: veclib::Vector3<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
     /*
         2------3------4
         |             |
@@ -112,13 +122,15 @@ pub fn generate_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     for a in 0..CHUNK_SIZE - 2 {
         for b in 0..CHUNK_SIZE - 2 {
             let local_data = data_function(data, (a, b), slice);
-            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(a as f32, b as f32), transform_function, slice, flip);
+            let local_model = solve_case(local_data, axis, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(a as f32, b as f32), transform_function, slice, flip);
             output_model = output_model.combine(&local_model);
         }
     }
     output_model
 }
 
+
+// TODO: Turn this better
 // Get the local data for the X axis using a origin coordinate
 pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
     let local_data: [f32; 4] = [
@@ -135,8 +147,41 @@ fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &vecli
     veclib::Vector3::<f32>::new(slice as f32, vertex.y() + offset.x(), vertex.x() + offset.y())
 }
 
+// Get the local data for the Y axis using a origin coordinate
+pub fn get_local_data_y(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
+    let local_data: [f32; 4] = [
+        data[super::flatten((origin.0, slice, origin.1))].density,
+        data[super::flatten((origin.0, slice, origin.1 + 1))].density,
+        data[super::flatten((origin.0 + 1, slice, origin.1 + 1))].density,
+        data[super::flatten((origin.0 + 1, slice, origin.1))].density       
+    ];
+    return local_data;
+}
+
+// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis
+fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
+    veclib::Vector3::<f32>::new(vertex.y() + offset.x(), slice as f32, vertex.x() + offset.y())
+}
+
+// Get the local data for the Z axis using a origin coordinate
+pub fn get_local_data_z(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
+    let local_data: [f32; 4] = [
+        data[super::flatten((origin.0, origin.1, slice))].density,
+        data[super::flatten((origin.0, origin.1 + 1, slice))].density,
+        data[super::flatten((origin.0 + 1, origin.1 + 1, slice))].density,
+        data[super::flatten((origin.0 + 1, origin.1, slice))].density       
+    ];
+    return local_data;
+}
+
+// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
+fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
+    veclib::Vector3::<f32>::new(vertex.y() + offset.x(), vertex.x() + offset.y(), slice as f32)
+}
+
+
 // Using the local data, solve the marching square case
-pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, slice: usize, flip: bool) -> Model {
+pub fn solve_case(local_data: [f32; 4], axis: veclib::Vector3<f32>, verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, slice: usize, flip: bool) -> Model {
     let mut output: Model = Model::default();
     let mut case = 0_u8;
     //  3---2
@@ -147,7 +192,10 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
     case += ((local_data[1] < 0.0) as u8) * 2;
     case += ((local_data[2] < 0.0) as u8) * 4;
     case += ((local_data[3] < 0.0) as u8) * 8;
-    println!("{:?}", local_data);
+    // Skip the full and empty cases
+    if case == 0 || case == 15 {
+        return Model::default();
+    }
     let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
     let mut tris_output: Vec<u32> = Vec::new();
     // The vertices to connect
@@ -204,8 +252,8 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
             tris_output.extend(tri_global_switched);
         }
     }
-    output.normals = vec![veclib::Vector3::default(); vertices.len()];
-    output.tangents = vec![veclib::Vector4::default(); vertices.len()];
+    output.normals = vec![axis; vertices.len()];
+    output.tangents = vec![veclib::Vector4::default_one(); vertices.len()];
     output.uvs = vec![veclib::Vector2::default(); vertices.len()];
     output.vertices = vertices;
     output.triangles = tris_output;

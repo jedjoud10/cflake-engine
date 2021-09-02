@@ -13,9 +13,9 @@ use std::collections::HashMap;
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
-pub const LOD_FACTOR: f32 = 3.0;
+pub const LOD_FACTOR: f32 = 1.0;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 2;
+pub const OCTREE_DEPTH: u8 = 8;
 
 // Hehe terrain generator momenta
 #[derive(Default)]
@@ -130,21 +130,14 @@ impl System for Terrain {
         self.octree.depth = OCTREE_DEPTH;
         self.octree.lod_factor = LOD_FACTOR;
         let nodes = self.octree.generate_base_octree();
-
-        if let Option::Some(chunk_entity) = self.add_chunk_entity(data.texture_cacher, data.component_manager, veclib::Vector3::default_zero(), 16) {
-            let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-        }
-
         for (_, octree_node) in nodes {
             // Only add the octree nodes that have no children
-            if !octree_node.children {
-                /*
+            if !octree_node.children {                
                 let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
-                }   
-                */             
+                }                         
             }
         }
         // Debug controls
