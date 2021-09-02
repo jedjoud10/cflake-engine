@@ -181,14 +181,24 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                 // TODO: Turn this into a more generalized algorithm
                                 1 => {
                                     println!("{} {}", a, b);
-                                    // First edge, gotta lerp between corner 0 and 1
+                                    // First edge, gotta lerp between corner 0 and 3
                                     // This vertex already exists in the main mesh, so no need to duplicate it
-                                    let mut even_more_test = veclib::Vector2::<f32>::default();
-                                    if b == 0 {
-                                        even_more_test = veclib::Vector2::<f32>::default_y()
+                                    /*
+                                    
+                                    let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
+                                    vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
+                                    println!("Good: {:?}", transform_function(slice, &vertex, &offset));
+                                    println!("A {:?}", edge_tuple);
+                                    println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]); 
+                                    */
+                                    let local_offset: veclib::Vector2<f32>;
+                                    if local_data[3] > local_data[0] {
+                                        local_offset = veclib::Vector2::default_y();
+                                    } else {
+                                        local_offset = -veclib::Vector2::default_y();
                                     }
-                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[0] + even_more_test), &offset);
-                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[2] + even_more_test), &offset);
+                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[0] + local_offset), &offset);
+                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[2] + local_offset), &offset);
                                     println!("{:?}", first);
                                     println!("{:?}", second);
                                     let edge_tuple: (u32, u32, u32) = (
@@ -196,18 +206,13 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                         first.y() as u32 + second.y() as u32,
                                         first.z() as u32 + second.z() as u32,
                                     );
-                                    let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
-                                    vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
-                                    println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     
                                     //println!("{} {}", 2 * a, 2 * b);
-                                    println!("A {:?}", edge_tuple);
-                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];         
-                                    println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]);         
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];                                            
                                 }
                                 3 => {
                                     /*
-                                    // Second edge, gotta lerp between corner 1 and 2
+                                    // Second edge, gotta lerp between corner 3 and 2
                                     /*
                                     let value =  inverse_lerp(local_data[3], local_data[2], 0.0);
                                     vertex = verts[2].lerp(verts[4], value);
@@ -222,12 +227,14 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                     println!("A {:?}", edge_tuple);
                                     tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];     
                                     */
-                                    let mut even_more_test = veclib::Vector2::<f32>::default();
-                                    if a == 0 {
-                                        //seven_more_test = -veclib::Vector2::<f32>::default_x()
+                                    let local_offset: veclib::Vector2<f32>;
+                                    if local_data[2] > local_data[3] {
+                                        local_offset = veclib::Vector2::default_x();
+                                    } else {
+                                        local_offset = -veclib::Vector2::default_x();
                                     }
-                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[2] + even_more_test), &offset);
-                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[4] + even_more_test), &offset);
+                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[2] + local_offset), &offset);
+                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[4] + local_offset), &offset);
                                     println!("{:?}", first);
                                     println!("{:?}", second);
                                     let edge_tuple: (u32, u32, u32) = (
@@ -235,19 +242,14 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                         first.y() as u32 + second.y() as u32,
                                         first.z() as u32 + second.z() as u32,
                                     );
-                                    let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
-                                    vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
-                                    println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     
                                     //println!("{} {}", 2 * a, 2 * b);
-                                    println!("A {:?}", edge_tuple);
-                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];         
-                                    println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]);  
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];     
                                 }
                                 5 => {
                                     /*
                                     println!("{} {}", 2 * a, 2 * b);
-                                    // Third edge, gotta lerp between corner 2 and 3
+                                    // Third edge, gotta lerp between corner 2 and 1
                                     
                                     let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
                                     vertex = SQUARES_VERTEX_TABLE[4].lerp(SQUARES_VERTEX_TABLE[6], value);                 
@@ -262,13 +264,15 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                     println!("B {:?}", edge_tuple);
                                     tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];                                   
                                     println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]);       
-                                    */ 
-                                    let mut even_more_test = veclib::Vector2::<f32>::default();
-                                    if b == 0 {
-                                        //even_more_test = -veclib::Vector2::<f32>::default_y()
+                                    */  
+                                    let local_offset: veclib::Vector2<f32>;
+                                    if local_data[2] > local_data[1] {
+                                        local_offset = veclib::Vector2::default_y();
+                                    } else {
+                                        local_offset = -veclib::Vector2::default_y();
                                     }
-                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[4] + even_more_test), &offset);
-                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[6] + even_more_test), &offset);
+                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[4] + local_offset), &offset);
+                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[6] + local_offset), &offset);
                                     println!("{:?}", first);
                                     println!("{:?}", second);
                                     let edge_tuple: (u32, u32, u32) = (
@@ -276,18 +280,13 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                         first.y() as u32 + second.y() as u32,
                                         first.z() as u32 + second.z() as u32,
                                     );
-                                    let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
-                                    vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
-                                    println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     
                                     //println!("{} {}", 2 * a, 2 * b);
-                                    println!("A {:?}", edge_tuple);
                                     tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];         
-                                    println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]);  
                                 }
                                 7 => {
                                     /*
-                                    // Fourth edge, gotta lerp between corner 3 and 0
+                                    // Fourth edge, gotta lerp between corner 1 and 0
                                     /*
                                     let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
                                     vertex = verts[6].lerp(verts[0], value);
@@ -302,12 +301,14 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                     println!("A {:?}", edge_tuple);
                                     tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];
                                     */
-                                    let mut even_more_test = veclib::Vector2::<f32>::default();
-                                    if a == 0 {
-                                        //even_more_test = -veclib::Vector2::<f32>::default_y()
+                                    let local_offset: veclib::Vector2<f32>;
+                                    if local_data[1] > local_data[0] {
+                                        local_offset = veclib::Vector2::default_x();
+                                    } else {
+                                        local_offset = -veclib::Vector2::default_x();
                                     }
-                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[6] + even_more_test), &offset);
-                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[0] + even_more_test), &offset);
+                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[6] + local_offset), &offset);
+                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[0] + local_offset), &offset);
                                     println!("{:?}", first);
                                     println!("{:?}", second);
                                     let edge_tuple: (u32, u32, u32) = (
@@ -315,14 +316,9 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                                         first.y() as u32 + second.y() as u32,
                                         first.z() as u32 + second.z() as u32,
                                     );
-                                    let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
-                                    vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
-                                    println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     
                                     //println!("{} {}", 2 * a, 2 * b);
-                                    println!("A {:?}", edge_tuple);
-                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];         
-                                    println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]);  
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];     
                                 }
                                 _ => {}
                             }                            
