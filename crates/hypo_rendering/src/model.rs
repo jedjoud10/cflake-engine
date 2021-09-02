@@ -45,12 +45,13 @@ impl Model {
     // TODO: Implement vertex merging while combining models
     pub fn combine(&self, other: &Self) -> Self {
         let mut output_model = self.clone();
-        let last_triangle_index = self.triangles.len() as u32;
-        let mut other_tris = other.triangles.clone();
-        for x in other_tris.iter_mut() {
-            *x += last_triangle_index;
+        let max_triangle_index: u32 = self.vertices.len() as u32;
+        // Get the max triangle inde
+        let mut final_tris = other.triangles.clone();
+        for x in final_tris.iter_mut() {
+            *x += max_triangle_index;
         }
-        output_model.triangles.extend(other_tris);
+        output_model.triangles.extend(final_tris);
         output_model.vertices.extend(other.vertices.clone());
         output_model.normals.extend(other.normals.clone());
         output_model.uvs.extend(other.uvs.clone());
