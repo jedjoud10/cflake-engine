@@ -131,11 +131,18 @@ pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, slice: usize) -> Model {
     let mut output: Model = Model::default();
     let mut case = 0_u8;
+    //  3---2
+    //  |   |
+    //  |   |
+    //  0---1
     case += ((local_data[0] < 0.0) as u8) * 1;
     case += ((local_data[1] < 0.0) as u8) * 2;
     case += ((local_data[2] < 0.0) as u8) * 4;
     case += ((local_data[3] < 0.0) as u8) * 8;
-    println!("{}", case);
+    if case != 7 && case != 11 && case != 13 && case != 14 {
+        return Model::default();
+    }
+    println!("{:?}", local_data);
     let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
     let mut tris_output: Vec<u32> = Vec::new();
     // The vertices to connect
@@ -150,24 +157,24 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
             if vertex == -veclib::Vector2::default_one() {
                 match tri {
                     // TODO: Turn this into a more generalized algorithm
-                    3 => {
+                    1 => {
                         // First edge, gotta lerp between corner 0 and 1
-                        let value =  inverse_lerp(local_data[0], local_data[1], 0.0);
+                        let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
                         vertex = verts[0].lerp(verts[2], value);
                     }
-                    1 => {
+                    3 => {
                         // Second edge, gotta lerp between corner 1 and 2
-                        let value =  inverse_lerp(local_data[1], local_data[2], 0.0);
+                        let value =  inverse_lerp(local_data[3], local_data[2], 0.0);
                         vertex = verts[2].lerp(verts[4], value);
                     }
-                    7 => {
+                    5 => {
                         // Third edge, gotta lerp between corner 2 and 3
-                        let value =  inverse_lerp(local_data[2], local_data[3], 0.0);
+                        let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
                         vertex = verts[4].lerp(verts[6], value);
                     }
-                    5 => {
+                    7 => {
                         // Fourth edge, gotta lerp between corner 3 and 0
-                        let value =  inverse_lerp(local_data[3], local_data[0], 0.0);
+                        let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
                         vertex = verts[6].lerp(verts[0], value);
                     }
                     _ => {}
