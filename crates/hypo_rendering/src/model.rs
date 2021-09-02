@@ -64,6 +64,11 @@ impl Model {
     // NOTE: This assumes that the second model uses vertices from the first model
     pub fn combine_smart(&self, other: &Self) -> Self {
         let mut output_model: Self = self.clone();
+        for &i in other.triangles.iter() {
+            if (i as usize) < self.vertices.len() {
+                println!("{:?}", [self.vertices[i as usize]]);
+            }
+        }
         output_model.triangles.extend(other.triangles.clone());
         output_model.vertices.extend(other.vertices.clone());
         output_model.normals.extend(other.normals.clone());

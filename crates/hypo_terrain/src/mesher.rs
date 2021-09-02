@@ -89,8 +89,8 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
 
                         // Save the edge intersection vertices' indices
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            println!("{:?}", model.vertices[duplicate_vertices[&edge_tuple] as usize]);
                             base_x_skirt_intersection_vertices.push(duplicate_vertices[&edge_tuple]);
+                            println!("{}", base_x_skirt_intersection_vertices[base_x_skirt_intersection_vertices.len() as usize - 1]);
                         }
                     }
                 }
@@ -221,9 +221,6 @@ pub fn solve_case(vertex_count: u32, intersection_vertices: &Vec<u32>, intersect
             if tri != -1 {
                 // The bertex
                 let mut vertex = verts[tri as usize];
-                // Set it at the start since we might edit this later in this iteration
-                tri_global_switched[tri_i] = vertices.len() as u32 + vertex_count;
-
                 // Interpolation            
                 if vertex == -veclib::Vector2::default_one() {
                     match tri {
@@ -251,7 +248,7 @@ pub fn solve_case(vertex_count: u32, intersection_vertices: &Vec<u32>, intersect
                             // Third edge, gotta lerp between corner 2 and 3
                             /*
                             let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
-                            vertex = verts[4].lerp(verts[6], value);
+                            vertex = verts[4].lerp(verts[6], value);                 
                             */
                             tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count.clone() as usize];
                             *intersection_vertices_count += 1;
@@ -262,31 +259,32 @@ pub fn solve_case(vertex_count: u32, intersection_vertices: &Vec<u32>, intersect
                             let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
                             vertex = verts[6].lerp(verts[0], value);
                             */
-                            tri_global_switched[tri_i] = intersection_vertices_count.clone();
+                            tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count.clone() as usize];
                             *intersection_vertices_count += 1;
                         }
-                        // This is a vertex that is not present in the main mesh
-                        _ => {
-                            vertices.push(transform_function(slice, &vertex, &offset));
-                        }
+                        _ => {}
                     }
+                } else {
+                    tri_global_switched[tri_i] = vertices.len() as u32 + vertex_count;
+                    // This is a vertex that is not present in the main mesh                    
+                    vertices.push(transform_function(slice, &vertex, &offset));
                     hit = true;
-                }                
+                }               
             }
         }        
         if hit {
             // Flip the triangle 
             if flip {
                 // Swap the first and last indices
-                tri_global_switched.swap(0, 2);
+                //tri_global_switched.swap(0, 2);
             }
             // Add it
             tris_output.extend(tri_global_switched);
         }
     }
-    output.normals = vec![axis; vertices.len()];
-    output.tangents = vec![veclib::Vector4::default_one(); vertices.len()];
-    output.uvs = vec![veclib::Vector2::default(); vertices.len()];
+    output.normals = vec![axis; vertices.len() as usize + vertex_count as usize];
+    output.tangents = vec![veclib::Vector4::default_one(); vertices.len() as usize + vertex_count as usize];
+    output.uvs = vec![veclib::Vector2::default(); vertices.len() as usize + vertex_count as usize];
     output.vertices = vertices;
     output.triangles = tris_output;
     return output;
