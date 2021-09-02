@@ -66,7 +66,7 @@ impl Model {
         let mut output_model: Self = self.clone();
         for &i in other.triangles.iter() {
             if (i as usize) < self.vertices.len() {
-                println!("{:?}", [self.vertices[i as usize]]);
+                println!("{} {:?}", i, [self.vertices[i as usize]]);
             }
         }
         output_model.triangles.extend(other.triangles.clone());

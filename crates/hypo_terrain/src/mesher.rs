@@ -90,16 +90,15 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         // Save the edge intersection vertices' indices
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                             base_x_skirt_intersection_vertices.push(duplicate_vertices[&edge_tuple]);
-                            println!("{}", base_x_skirt_intersection_vertices[base_x_skirt_intersection_vertices.len() as usize - 1]);
                         }
                     }
                 }
             }
         }
     }    
+
     // Create the X skirt
     let skirt_base_x = generate_skirt(model.vertices.len() as u32, &base_x_skirt_intersection_vertices, data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
-    println!("{}", base_x_skirt_intersection_vertices.len());
     /*
     let skirt_end_x = generate_skirt(data, veclib::Vector3::new(1.0, 0.0, 0.0), transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
     let skirt_x = Model::combine(&skirt_base_x, &skirt_end_x);
@@ -129,16 +128,108 @@ pub fn generate_skirt(vertex_count: u32, intersection_vertices: &Vec<u32>, data:
         |             |
         0------7------6
     */
-    let mut output_model = Model::default();
     let mut intersection_vertices_count: u32 = 0;
+    let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
+    let mut triangles: Vec<u32> = Vec::new();
     for a in 0..CHUNK_SIZE - 2 {
         for b in 0..CHUNK_SIZE - 2 {
             let local_data = data_function(data, (a, b), slice);
-            let local_model = solve_case(vertex_count, intersection_vertices, &mut intersection_vertices_count, local_data, axis, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(a as f32, b as f32), transform_function, slice, flip);
-            output_model = output_model.combine(&local_model);
+            let mut case = 0_u8;
+            //  3---2
+            //  |   |
+            //  |   |
+            //  0---1
+            case += ((local_data[0] < 0.0) as u8) * 1;
+            case += ((local_data[1] < 0.0) as u8) * 2;
+            case += ((local_data[2] < 0.0) as u8) * 4;
+            case += ((local_data[3] < 0.0) as u8) * 8;
+            // Skip the full and empty cases
+            if case == 0 || case == 15 {
+                continue;
+            }
+            let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
+            // The vertices to connect
+            let tris = super::SQUARES_TRI_TABLE[case as usize];    
+            for tri_group in 0..3 {
+                let mut tri_global_switched: [u32; 3] = [0; 3];
+                let mut hit: bool = false;
+                for tri_i in 0..3 {
+                    let tri = tris[tri_i+tri_group*3];
+                    // Check if the value is negative first
+                    if tri != -1 {
+                        // The bertex
+                        let mut vertex = SQUARES_VERTEX_TABLE[tri as usize];
+                        // Interpolation            
+                        if vertex == -veclib::Vector2::default_one() {                            
+                            match tri {
+                                // TODO: Turn this into a more generalized algorithm
+                                1 => {
+                                    // First edge, gotta lerp between corner 0 and 1
+                                    // This vertex already exists in the main mesh, so no need to duplicate it
+                                    /*
+                                    let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
+                                    vertex = verts[0].lerp(verts[2], value);
+                                    */
+                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
+                                    intersection_vertices_count += 1;
+                                }
+                                3 => {
+                                    // Second edge, gotta lerp between corner 1 and 2
+                                    /*
+                                    let value =  inverse_lerp(local_data[3], local_data[2], 0.0);
+                                    vertex = verts[2].lerp(verts[4], value);
+                                    */
+                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
+                                    intersection_vertices_count += 1;
+                                }
+                                5 => {
+                                    // Third edge, gotta lerp between corner 2 and 3
+                                    /*
+                                    let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
+                                    vertex = verts[4].lerp(verts[6], value);                 
+                                    */
+                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
+                                    intersection_vertices_count += 1;
+                                }
+                                7 => {
+                                    // Fourth edge, gotta lerp between corner 3 and 0
+                                    /*
+                                    let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
+                                    vertex = verts[6].lerp(verts[0], value);
+                                    */
+                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
+                                    intersection_vertices_count += 1;
+                                }
+                                _ => {}
+                            }
+                        } else {
+                            tri_global_switched[tri_i] = vertices.len() as u32 + vertex_count;
+                            // This is a vertex that is not present in the main mesh                    
+                            vertices.push(transform_function(slice, &vertex, &offset));
+                        }               
+                        hit = true;
+                    }
+                }        
+                if hit {
+                    // Flip the triangle 
+                    if flip {
+                        // Swap the first and last indices
+                        //tri_global_switched.swap(0, 2);
+                    }
+                    // Add it
+                    triangles.extend(tri_global_switched);
+                }
+            }
         }
     }
-    output_model
+    println!("{}", triangles.len());
+    Model { 
+        normals: vec![axis; vertices.len()],
+        tangents: vec![veclib::Vector4::default(); vertices.len()],
+        uvs: vec![veclib::Vector2::default(); vertices.len()],
+        triangles: triangles,
+        vertices: vertices, 
+    }
 }
 
 
@@ -189,103 +280,4 @@ pub fn get_local_data_z(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
 fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
     veclib::Vector3::<f32>::new(vertex.y() + offset.x(), vertex.x() + offset.y(), slice as f32)
-}
-
-
-// Using the local data, solve the marching square case
-pub fn solve_case(vertex_count: u32, intersection_vertices: &Vec<u32>, intersection_vertices_count: &mut u32, local_data: [f32; 4], axis: veclib::Vector3<f32>, verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, slice: usize, flip: bool) -> Model {
-    let mut output: Model = Model::default();
-    let mut case = 0_u8;
-    //  3---2
-    //  |   |
-    //  |   |
-    //  0---1
-    case += ((local_data[0] < 0.0) as u8) * 1;
-    case += ((local_data[1] < 0.0) as u8) * 2;
-    case += ((local_data[2] < 0.0) as u8) * 4;
-    case += ((local_data[3] < 0.0) as u8) * 8;
-    // Skip the full and empty cases
-    if case == 0 || case == 15 {
-        return Model::default();
-    }
-    let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
-    let mut tris_output: Vec<u32> = Vec::new();
-    // The vertices to connect
-    let tris = super::SQUARES_TRI_TABLE[case as usize];    
-    for tri_group in 0..3 {
-        let mut tri_global_switched: [u32; 3] = [0; 3];
-        let mut hit: bool = false;
-        for tri_i in 0..3 {
-            let tri = tris[tri_i+tri_group*3];
-            // Check if the value is negative first
-            if tri != -1 {
-                // The bertex
-                let mut vertex = verts[tri as usize];
-                // Interpolation            
-                if vertex == -veclib::Vector2::default_one() {
-                    match tri {
-                        // TODO: Turn this into a more generalized algorithm
-                        1 => {
-                            // First edge, gotta lerp between corner 0 and 1
-                            // This vertex already exists in the main mesh, so no need to duplicate it
-                            /*
-                            let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
-                            vertex = verts[0].lerp(verts[2], value);
-                            */
-                            tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count.clone() as usize];
-                            *intersection_vertices_count += 1;
-                        }
-                        3 => {
-                            // Second edge, gotta lerp between corner 1 and 2
-                            /*
-                            let value =  inverse_lerp(local_data[3], local_data[2], 0.0);
-                            vertex = verts[2].lerp(verts[4], value);
-                            */
-                            tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count.clone() as usize];
-                            *intersection_vertices_count += 1;
-                        }
-                        5 => {
-                            // Third edge, gotta lerp between corner 2 and 3
-                            /*
-                            let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
-                            vertex = verts[4].lerp(verts[6], value);                 
-                            */
-                            tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count.clone() as usize];
-                            *intersection_vertices_count += 1;
-                        }
-                        7 => {
-                            // Fourth edge, gotta lerp between corner 3 and 0
-                            /*
-                            let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
-                            vertex = verts[6].lerp(verts[0], value);
-                            */
-                            tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count.clone() as usize];
-                            *intersection_vertices_count += 1;
-                        }
-                        _ => {}
-                    }
-                } else {
-                    tri_global_switched[tri_i] = vertices.len() as u32 + vertex_count;
-                    // This is a vertex that is not present in the main mesh                    
-                    vertices.push(transform_function(slice, &vertex, &offset));
-                    hit = true;
-                }               
-            }
-        }        
-        if hit {
-            // Flip the triangle 
-            if flip {
-                // Swap the first and last indices
-                //tri_global_switched.swap(0, 2);
-            }
-            // Add it
-            tris_output.extend(tri_global_switched);
-        }
-    }
-    output.normals = vec![axis; vertices.len() as usize + vertex_count as usize];
-    output.tangents = vec![veclib::Vector4::default_one(); vertices.len() as usize + vertex_count as usize];
-    output.uvs = vec![veclib::Vector2::default(); vertices.len() as usize + vertex_count as usize];
-    output.vertices = vertices;
-    output.triangles = tris_output;
-    return output;
 }
