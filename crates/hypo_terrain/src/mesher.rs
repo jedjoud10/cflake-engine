@@ -91,7 +91,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         }
 
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            println!("{:?}", edge_tuple);
+                            println!("Start tuple: {:?} {:?}", edge_tuple, (2 * x, 2 * y, 2 * z));
                         }
                     }
                 }
@@ -162,7 +162,8 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
                         let mut vertex = SQUARES_VERTEX_TABLE[tri as usize];
                         let new_offset = veclib::Vector2::<f32>::new(b as f32, a as f32);
                         // Interpolation            
-                        if vertex == -veclib::Vector2::default_one() {                            
+                        if vertex == -veclib::Vector2::default_one() {    
+                            println!("{} {}", 2 * a, 2 * b);                        
                             match tri {
                                 // TODO: Turn this into a more generalized algorithm
                                 1 => {
@@ -173,15 +174,16 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
                                     vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     */
-                                    let test = transform_function(slice, &veclib::Vector2::<f32> { data: [0.0, 0.0] }, &new_offset);
+                                    //println!("{} {}", 2 * a, 2 * b);
+                                    let edge_tuple: (u32, u32, u32) = (
+                                        0,
+                                        2 * a as u32 + SQUARES_VERTEX_TABLE[0].y() as u32 + SQUARES_VERTEX_TABLE[2].y() as u32,
+                                        2 * b as u32 + SQUARES_VERTEX_TABLE[0].x() as u32 + SQUARES_VERTEX_TABLE[2].x() as u32,
+                                    );
+                                    let test = transform_function(slice, &(SQUARES_VERTEX_TABLE[0] + SQUARES_VERTEX_TABLE[2]), &(offset*2.0));
+                                    println!("A {:?}", edge_tuple);                              
                                     let mut test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
-                                    test *= 2;
-                                    test += edge_offset;    
-                                    let flip = test.z();
-                                    test.set_z(test.y());
-                                    test.set_y(flip);
-                                    println!("{:?}", test);                              
-                                    tri_global_switched[tri_i] = duplicated_vertices[&(test.x(), test.y(), test.z())];
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];
                                 }
                                 3 => {
                                     // Second edge, gotta lerp between corner 1 and 2
@@ -197,15 +199,16 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
                                     vertex = SQUARES_VERTEX_TABLE[4].lerp(SQUARES_VERTEX_TABLE[6], value);                 
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     */
-                                    let test = transform_function(slice, &veclib::Vector2::<f32> { data: [1.0, 0.0] }, &new_offset);
+                                    //println!("{} {}", 2 * a, 2 * b);
+                                    let edge_tuple: (u32, u32, u32) = (
+                                        0,
+                                        2 * a as u32 + SQUARES_VERTEX_TABLE[4].y() as u32 + SQUARES_VERTEX_TABLE[6].y() as u32,
+                                        2 * b as u32 + SQUARES_VERTEX_TABLE[4].x() as u32 + SQUARES_VERTEX_TABLE[6].x() as u32,
+                                    );
+                                    let test = transform_function(slice, &(SQUARES_VERTEX_TABLE[4] + SQUARES_VERTEX_TABLE[6]), &(offset*2.0));
                                     let mut test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
-                                    test *= 2;
-                                    test += edge_offset;    
-                                    let flip = test.z();
-                                    test.set_z(test.y());
-                                    test.set_y(flip);
-                                    println!("{:?}", test);                              
-                                    tri_global_switched[tri_i] = duplicated_vertices[&(test.x(), test.y(), test.z())];
+                                    println!("B {:?}", edge_tuple);                              
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];
                                 }
                                 7 => {
                                     // Fourth edge, gotta lerp between corner 3 and 0
@@ -215,7 +218,7 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
                                     */
                                 }
                                 _ => {}
-                            }
+                            }                            
                         } else {
                             tri_global_switched[tri_i] = vertices.len() as u32 + vertex_count;
                             // This is a vertex that is not present in the main mesh                    
