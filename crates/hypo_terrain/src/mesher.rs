@@ -89,6 +89,10 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
                         }
+
+                        if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
+                            println!("{:?}", edge_tuple);
+                        }
                     }
                 }
             }
@@ -96,7 +100,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     }    
 
     // Create the X skirt
-    let skirt_base_x = generate_skirt(&duplicate_vertices, model.vertices.len() as u32, data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
+    let skirt_base_x = generate_skirt(&duplicate_vertices, veclib::Vector3::new(0, 1, 0), model.vertices.len() as u32, data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
     /*
     let skirt_end_x = generate_skirt(data, veclib::Vector3::new(1.0, 0.0, 0.0), transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
     let skirt_x = Model::combine(&skirt_base_x, &skirt_end_x);
@@ -116,7 +120,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     model
 }
 // Generate a skirt from the data and using a slice index and a custom function that will map the two indexed values to their corresponding vector coordinates
-pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, vertex_count: u32, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, axis: veclib::Vector3<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
+pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_offset: veclib::Vector3::<u32>, vertex_count: u32, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, axis: veclib::Vector3<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
     /*
         2------3------4
         |             |
@@ -156,6 +160,7 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, verte
                     if tri != -1 {
                         // The bertex
                         let mut vertex = SQUARES_VERTEX_TABLE[tri as usize];
+                        let new_offset = veclib::Vector2::<f32>::new(b as f32, a as f32);
                         // Interpolation            
                         if vertex == -veclib::Vector2::default_one() {                            
                             match tri {
@@ -168,10 +173,14 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, verte
                                     vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     */
-                                    // We do a little trolling    
-                                    let mut test = transform_function(slice, &veclib::Vector2::<f32> { data: [0.0, 1.5] }, &offset);
-                                    test *= 2.0;               
-                                    let test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
+                                    let test = transform_function(slice, &veclib::Vector2::<f32> { data: [0.0, 0.0] }, &new_offset);
+                                    let mut test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
+                                    test *= 2;
+                                    test += edge_offset;    
+                                    let flip = test.z();
+                                    test.set_z(test.y());
+                                    test.set_y(flip);
+                                    println!("{:?}", test);                              
                                     tri_global_switched[tri_i] = duplicated_vertices[&(test.x(), test.y(), test.z())];
                                 }
                                 3 => {
@@ -188,9 +197,14 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, verte
                                     vertex = SQUARES_VERTEX_TABLE[4].lerp(SQUARES_VERTEX_TABLE[6], value);                 
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     */
-                                    let mut test = transform_function(slice, &veclib::Vector2::<f32> { data: [1.0, 1.5] }, &offset);
-                                    test *= 2.0;               
-                                    let test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
+                                    let test = transform_function(slice, &veclib::Vector2::<f32> { data: [1.0, 0.0] }, &new_offset);
+                                    let mut test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
+                                    test *= 2;
+                                    test += edge_offset;    
+                                    let flip = test.z();
+                                    test.set_z(test.y());
+                                    test.set_y(flip);
+                                    println!("{:?}", test);                              
                                     tri_global_switched[tri_i] = duplicated_vertices[&(test.x(), test.y(), test.z())];
                                 }
                                 7 => {
