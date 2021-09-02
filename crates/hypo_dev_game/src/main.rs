@@ -58,6 +58,7 @@ pub fn load_entities(world: &mut World) {
     world.custom_data.main_camera_entity_id = world.entity_manager.add_entity_s(camera);
 
     // Simple cube
+    /*
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(
         &mut world.component_manager,
@@ -86,4 +87,5 @@ pub fn load_entities(world: &mut World) {
     .unwrap();
     cube.link_default_component::<components::AABB>(&mut world.component_manager).unwrap();
     world.entity_manager.add_entity_s(cube);
+    */
 }

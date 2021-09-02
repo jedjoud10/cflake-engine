@@ -88,7 +88,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
         (x - a) / (b - a)
     }
-    let skirt_base_x = generate_x_skirt(data, 5);
+    let skirt_base_x = generate_x_skirt(data, 0);
     model = model.combine(&skirt_base_x);
     // Return the model
     model
@@ -130,10 +130,10 @@ pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, slice: usize) -> Model {
     let mut output: Model = Model::default();
     let mut case = 0_u8;
-    case += ((local_data[0] > 0.0) as u8) * 1;
-    case += ((local_data[1] > 0.0) as u8) * 2;
-    case += ((local_data[2] > 0.0) as u8) * 4;
-    case += ((local_data[3] > 0.0) as u8) * 8;
+    case += ((local_data[0] < 0.0) as u8) * 1;
+    case += ((local_data[1] < 0.0) as u8) * 2;
+    case += ((local_data[2] < 0.0) as u8) * 4;
+    case += ((local_data[3] < 0.0) as u8) * 8;
     let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
     let mut tris_output: Vec<u32> = Vec::new();
     // The vertices to connect
@@ -143,8 +143,8 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
         if tri != -1 {
             // The bertex
             let vertex = verts[tri as usize];
-            vertices.push(veclib::Vector3::<f32>::new(vertex.x() + offset.x(), vertex.y() + offset.y(), slice as f32));
-            tris_output.push(tris.len() as u32);
+            vertices.push(veclib::Vector3::<f32>::new(slice as f32, vertex.x() + offset.x(), vertex.y() + offset.y(), ));
+            tris_output.push(tris_output.len() as u32);
         }
     }
     // TODO: Implement linea interpolation here

@@ -35,7 +35,7 @@ impl VoxelGenerator {
         voxel.density = point.y() - 40.0;
         voxel.density += (point.x() * 0.05).sin() * 10.0;
         voxel.density += (point.z() * 0.05).sin() * 3.0;
-        voxel.density = point.y() - 5.0;
+        voxel.density = point.y() - 5.0 + (point.x() * 0.05).sin() * 5.0;
         return voxel;
     }
 }
