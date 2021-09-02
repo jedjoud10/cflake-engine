@@ -63,12 +63,15 @@ pub fn load_entities(world: &mut World) {
         &mut world.component_manager,
         components::Transform {
             position: veclib::Vector3::default_one() * 10.0,
-            rotation: veclib::Quaternion::<f32>::from_euler_angles(veclib::EulerAnglesOrder::XYZ, veclib::Vector3::default_x() * 45_f32.to_radians()),
-            scale: veclib::Vector3::new(20.0, 1.0, 20.0),
+            rotation: veclib::Quaternion::<f32>::from_euler_angles(veclib::EulerAnglesOrder::XYZ, veclib::Vector3::default_x() * 0_f32.to_radians()),
+            scale: veclib::Vector3::new(20.0, 20.0, 20.0),
             ..components::Transform::default()
         },
     )
     .unwrap();
+    let cube_model = Model::load_model("models\\cube.mdl3d", &mut world.resource_manager).unwrap();
+    let sphere_model = Model::load_model("models\\sphere.mdl3d", &mut world.resource_manager).unwrap();
+    let final_model = cube_model.combine(&sphere_model);
     cube.link_component::<Renderer>(
         &mut world.component_manager,
         Renderer::default()
@@ -77,7 +80,7 @@ pub fn load_entities(world: &mut World) {
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
             )
-            .load_model("models\\cube.mdl3d", &mut world.resource_manager)
+            .set_model(final_model)
             .set_shader(world.shader_cacher.1.id_get_default_object(0).unwrap().name.as_str()),
     )
     .unwrap();

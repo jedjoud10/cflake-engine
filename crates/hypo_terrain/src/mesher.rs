@@ -88,7 +88,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
         (x - a) / (b - a)
     }
-    let skirt_base_x = generate_x_skirt(data, 2);
+    let skirt_base_x = generate_x_skirt(data, 5);
     model = model.combine(&skirt_base_x);
     // Return the model
     model
@@ -108,7 +108,7 @@ pub fn generate_x_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
     for y in 0..CHUNK_SIZE - 2 {
         for z in 0..CHUNK_SIZE - 2 {
             let local_data = get_local_data_x(data, (y, z), slice);
-            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, slice);
+            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(y as f32, z as f32), slice);
             output_model = output_model.combine(&local_model);
         }
     }
@@ -127,9 +127,10 @@ pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 }
 
 // Using the local data, solve the marching square case
-pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], slice: usize) -> Model {
+pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, slice: usize) -> Model {
     let mut output: Model = Model::default();
-    let mut case = ((local_data[0] > 0.0) as u8) * 1;
+    let mut case = 0_u8;
+    case += ((local_data[0] > 0.0) as u8) * 1;
     case += ((local_data[1] > 0.0) as u8) * 2;
     case += ((local_data[2] > 0.0) as u8) * 4;
     case += ((local_data[3] > 0.0) as u8) * 8;
@@ -138,16 +139,19 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], slice:
     // The vertices to connect
     let tris = super::SQUARES_TRI_TABLE[case as usize];
     for tri in tris {
-        // The bertex
-        let vertex = verts[tri as usize];
-        vertices.push(veclib::Vector3::<f32>::new(vertex.x(), vertex.y(), slice as f32));
-        tris_output.push(tris.len() as u32);
+        // Check if the value is negative first
+        if tri != -1 {
+            // The bertex
+            let vertex = verts[tri as usize];
+            vertices.push(veclib::Vector3::<f32>::new(vertex.x() + offset.x(), vertex.y() + offset.y(), slice as f32));
+            tris_output.push(tris.len() as u32);
+        }
     }
     // TODO: Implement linea interpolation here
+    output.normals = vec![veclib::Vector3::default(); vertices.len()];
+    output.tangents = vec![veclib::Vector4::default(); vertices.len()];
+    output.uvs = vec![veclib::Vector2::default(); vertices.len()];
     output.vertices = vertices;
     output.triangles = tris_output;
-    output.normals = Vec::new();
-    output.tangents = Vec::new();
-    output.uvs = Vec::new();
     return output;
 }
