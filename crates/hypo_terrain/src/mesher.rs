@@ -22,7 +22,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
             for z in 0..CHUNK_SIZE - 2 {
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
-                let mut case_index = 0u8;
+                let mut case_index = 0u8;                
                 case_index += ((data[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
                 case_index += ((data[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
                 case_index += ((data[i + DATA_OFFSET_TABLE[2]].density > 0.0) as u8) * 4;
@@ -31,6 +31,11 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 case_index += ((data[i + DATA_OFFSET_TABLE[5]].density > 0.0) as u8) * 32;
                 case_index += ((data[i + DATA_OFFSET_TABLE[6]].density > 0.0) as u8) * 64;
                 case_index += ((data[i + DATA_OFFSET_TABLE[7]].density > 0.0) as u8) * 128;
+
+                // Skip the completely empty and completely filled cases
+                if case_index == 0 || case_index == 255 {
+                    continue;
+                }
                 // Get triangles
                 let edges: [i8; 16] = TRI_TABLE[case_index as usize];
                 for edge in edges {
@@ -89,12 +94,12 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
 
                         // Save the edge intersection vertices' indices
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            if vert1_usize.2 > vert2_usize.2 {
-                                base_x_skirt_intersection_vertices.push(duplicate_vertices[&edge_tuple]);
-
-                            } else {
-                                
-                            }
+                            let edge_tuple_new: (u32, u32, u32) = (
+                                2 * x as u32 + vert1.x() as u32 + vert2.x() as u32,
+                                2 * y as u32 + ((vert1.y() as u32 + vert2.y() as u32)),
+                                2 * z as u32 + (2 - (vert1.z() as u32 + vert2.z() as u32)),
+                            );
+                            base_x_skirt_intersection_vertices.push(duplicate_vertices[&edge_tuple_new]);
                         }
                     }
                 }
@@ -176,6 +181,7 @@ pub fn generate_skirt(in_vertices: &Vec<veclib::Vector3<f32>>, vertex_count: u32
                                     vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     
+                                    // We do a little trolling                                    
                                     tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
                                     intersection_vertices_count += 1;
                                     println!("Bad: {:?}", in_vertices[tri_global_switched[tri_i] as usize]);
@@ -196,8 +202,8 @@ pub fn generate_skirt(in_vertices: &Vec<veclib::Vector3<f32>>, vertex_count: u32
                                     vertex = SQUARES_VERTEX_TABLE[4].lerp(SQUARES_VERTEX_TABLE[6], value);                 
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
                                     
-                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
                                     intersection_vertices_count += 1;
+                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
                                     println!("Bad: {:?}", in_vertices[tri_global_switched[tri_i] as usize]);
                                 }
                                 7 => {

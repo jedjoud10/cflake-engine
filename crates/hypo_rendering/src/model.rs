@@ -65,9 +65,7 @@ impl Model {
     pub fn combine_smart(&self, other: &Self) -> Self {
         let mut output_model: Self = self.clone();
         for &i in other.triangles.iter() {
-            if (i as usize) < self.vertices.len() {
-                println!("{} {:?}", i, [self.vertices[i as usize]]);
-            }
+            println!("{}", i);            
         }
         output_model.triangles.extend(other.triangles.clone());
         output_model.vertices.extend(other.vertices.clone());
