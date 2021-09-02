@@ -5,6 +5,11 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use hypo_rendering::Model;
 
+// Inverse of lerp
+fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
+    (x - a) / (b - a)
+}
+
 // Generate the Marching Cubes model
 pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Model {
     let mut model: Model = Model::default();
@@ -83,11 +88,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 }
             }
         }
-    }
-    // Inverse of lerp
-    fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
-        (x - a) / (b - a)
-    }
+    }    
     let skirt_base_x = generate_x_skirt(data, 0);
     model = model.combine(&skirt_base_x);
     // Return the model
@@ -119,9 +120,9 @@ pub fn generate_x_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
     let local_data: [f32; 4] = [
         data[super::flatten((slice, origin.0, origin.1))].density,
-        data[super::flatten((slice, origin.0 + 1, origin.1))].density,
+        data[super::flatten((slice, origin.0, origin.1 + 1))].density,
         data[super::flatten((slice, origin.0 + 1, origin.1 + 1))].density,
-        data[super::flatten((slice, origin.0, origin.1 + 1))].density       
+        data[super::flatten((slice, origin.0 + 1, origin.1))].density       
     ];
     return local_data;
 }
@@ -134,20 +135,49 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
     case += ((local_data[1] < 0.0) as u8) * 2;
     case += ((local_data[2] < 0.0) as u8) * 4;
     case += ((local_data[3] < 0.0) as u8) * 8;
+    println!("{}", case);
     let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
     let mut tris_output: Vec<u32> = Vec::new();
     // The vertices to connect
-    let tris = super::SQUARES_TRI_TABLE[case as usize];
+    let tris = super::SQUARES_TRI_TABLE[case as usize];    
     for tri in tris {
         // Check if the value is negative first
         if tri != -1 {
             // The bertex
-            let vertex = verts[tri as usize];
-            vertices.push(veclib::Vector3::<f32>::new(slice as f32, vertex.x() + offset.x(), vertex.y() + offset.y(), ));
+            let mut vertex = verts[tri as usize];
+            
+            // Interpolation            
+            if vertex == -veclib::Vector2::default_one() {
+                match tri {
+                    // TODO: Turn this into a more generalized algorithm
+                    3 => {
+                        // First edge, gotta lerp between corner 0 and 1
+                        let value =  inverse_lerp(local_data[0], local_data[1], 0.0);
+                        vertex = verts[0].lerp(verts[2], value);
+                    }
+                    1 => {
+                        // Second edge, gotta lerp between corner 1 and 2
+                        let value =  inverse_lerp(local_data[1], local_data[2], 0.0);
+                        vertex = verts[2].lerp(verts[4], value);
+                    }
+                    7 => {
+                        // Third edge, gotta lerp between corner 2 and 3
+                        let value =  inverse_lerp(local_data[2], local_data[3], 0.0);
+                        vertex = verts[4].lerp(verts[6], value);
+                    }
+                    5 => {
+                        // Fourth edge, gotta lerp between corner 3 and 0
+                        let value =  inverse_lerp(local_data[3], local_data[0], 0.0);
+                        vertex = verts[6].lerp(verts[0], value);
+                    }
+                    _ => {}
+                }
+            }
+            
+            vertices.push(veclib::Vector3::<f32>::new(slice as f32, vertex.y() + offset.x(), vertex.x() + offset.y()));
             tris_output.push(tris_output.len() as u32);
         }
     }
-    // TODO: Implement linea interpolation here
     output.normals = vec![veclib::Vector3::default(); vertices.len()];
     output.tangents = vec![veclib::Vector4::default(); vertices.len()];
     output.uvs = vec![veclib::Vector2::default(); vertices.len()];
