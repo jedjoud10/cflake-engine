@@ -89,15 +89,16 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
             }
         }
     }    
-    let skirt_base_x = generate_x_skirt(data, 0);
-    let skirt_end_x = generate_x_skirt(data, CHUNK_SIZE - 2);
+    // Create the X skirt
+    let skirt_base_x = generate_skirt(data, transform_x_local, get_local_data_x, 0, false);
+    let skirt_end_x = generate_skirt(data, transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
     let skirt_x = Model::combine(&skirt_base_x, &skirt_end_x);
     model = model.combine(&skirt_x);
     // Return the model
     model
 }
-// Generate the X skirt from the data and using a slice index
-pub fn generate_x_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, slice: usize) -> Model {
+// Generate a skirt from the data and using a slice index and a custom function that will map the two indexed values to their corresponding vector coordinates
+pub fn generate_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
     /*
         2------3------4
         |             |
@@ -108,10 +109,10 @@ pub fn generate_x_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
         0------7------6
     */
     let mut output_model = Model::default();
-    for y in 0..CHUNK_SIZE - 2 {
-        for z in 0..CHUNK_SIZE - 2 {
-            let local_data = get_local_data_x(data, (y, z), slice);
-            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(y as f32, z as f32), transform_x_local, slice);
+    for a in 0..CHUNK_SIZE - 2 {
+        for b in 0..CHUNK_SIZE - 2 {
+            let local_data = data_function(data, (a, b), slice);
+            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(a as f32, b as f32), transform_function, slice, flip);
             output_model = output_model.combine(&local_model);
         }
     }
@@ -135,7 +136,7 @@ fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &vecli
 }
 
 // Using the local data, solve the marching square case
-pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, axis_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, slice: usize) -> Model {
+pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, slice: usize, flip: bool) -> Model {
     let mut output: Model = Model::default();
     let mut case = 0_u8;
     //  3---2
@@ -151,41 +152,56 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
     let mut tris_output: Vec<u32> = Vec::new();
     // The vertices to connect
     let tris = super::SQUARES_TRI_TABLE[case as usize];    
-    for tri in tris {
-        // Check if the value is negative first
-        if tri != -1 {
-            // The bertex
-            let mut vertex = verts[tri as usize];
-            
-            // Interpolation            
-            if vertex == -veclib::Vector2::default_one() {
-                match tri {
-                    // TODO: Turn this into a more generalized algorithm
-                    1 => {
-                        // First edge, gotta lerp between corner 0 and 1
-                        let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
-                        vertex = verts[0].lerp(verts[2], value);
+    for tri_group in 0..3 {
+        let mut tri_global_switched: [u32; 3] = [0; 3];
+        let mut hit: bool = false;
+        for tri_i in 0..3 {
+            let tri = tris[tri_i+tri_group*3];
+            // Check if the value is negative first
+            if tri != -1 {
+                // The bertex
+                let mut vertex = verts[tri as usize];
+
+                // Interpolation            
+                if vertex == -veclib::Vector2::default_one() {
+                    match tri {
+                        // TODO: Turn this into a more generalized algorithm
+                        1 => {
+                            // First edge, gotta lerp between corner 0 and 1
+                            let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
+                            vertex = verts[0].lerp(verts[2], value);
+                        }
+                        3 => {
+                            // Second edge, gotta lerp between corner 1 and 2
+                            let value =  inverse_lerp(local_data[3], local_data[2], 0.0);
+                            vertex = verts[2].lerp(verts[4], value);
+                        }
+                        5 => {
+                            // Third edge, gotta lerp between corner 2 and 3
+                            let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
+                            vertex = verts[4].lerp(verts[6], value);
+                        }
+                        7 => {
+                            // Fourth edge, gotta lerp between corner 3 and 0
+                            let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
+                            vertex = verts[6].lerp(verts[0], value);
+                        }
+                        _ => {}
                     }
-                    3 => {
-                        // Second edge, gotta lerp between corner 1 and 2
-                        let value =  inverse_lerp(local_data[3], local_data[2], 0.0);
-                        vertex = verts[2].lerp(verts[4], value);
-                    }
-                    5 => {
-                        // Third edge, gotta lerp between corner 2 and 3
-                        let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
-                        vertex = verts[4].lerp(verts[6], value);
-                    }
-                    7 => {
-                        // Fourth edge, gotta lerp between corner 3 and 0
-                        let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
-                        vertex = verts[6].lerp(verts[0], value);
-                    }
-                    _ => {}
                 }
+                tri_global_switched[tri_i] = vertices.len() as u32;
+                vertices.push(transform_function(slice, &vertex, &offset));
+                hit = true;
             }
-            vertices.push(axis_function(slice, &vertex, &offset));
-            tris_output.push(tris_output.len() as u32);
+        }        
+        if hit {
+            // Flip the triangle 
+            if flip {
+                // Swap the first and last indices
+                tri_global_switched.swap(0, 2);
+            }
+            // Add it
+            tris_output.extend(tri_global_switched);
         }
     }
     output.normals = vec![veclib::Vector3::default(); vertices.len()];
