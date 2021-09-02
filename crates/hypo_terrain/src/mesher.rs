@@ -90,8 +90,17 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
                         }
 
-                        if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            println!("Start tuple: {:?} {:?}", edge_tuple, (2 * y, 2 * z));
+                        if vert1_usize.0 == 0 && vert2_usize.0 == 0 && (vert2_usize.1 > vert1_usize.1) {
+                            println!("{:?}", vert1_usize);
+                            println!("{:?}", vert2_usize);
+                            println!("Start tuple: {:?} {:?}", edge_tuple, (y, z));
+                            let edge_tuple: (u32, u32, u32) = (
+                                vert1_usize.0 as u32 + vert2_usize.0 as u32,
+                                vert1_usize.1 as u32 + vert2_usize.1 as u32,
+                                vert1_usize.2 as u32 + vert2_usize.2 as u32,
+                            ); 
+                            println!("Test: {:?}", edge_tuple);
+                            println!("Test: {:?}", edge_tuple);
                         }
                     }
                 }
@@ -100,7 +109,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     }    
 
     // Create the X skirt
-    let skirt_base_x = generate_skirt(&duplicate_vertices, veclib::Vector3::new(0, 1, 0), model.vertices.len() as u32, data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
+    let skirt_base_x = generate_skirt(&model.vertices, &duplicate_vertices, veclib::Vector3::new(0, 1, 0), model.vertices.len() as u32, data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
     /*
     let skirt_end_x = generate_skirt(data, veclib::Vector3::new(1.0, 0.0, 0.0), transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
     let skirt_x = Model::combine(&skirt_base_x, &skirt_end_x);
@@ -120,7 +129,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     model
 }
 // Generate a skirt from the data and using a slice index and a custom function that will map the two indexed values to their corresponding vector coordinates
-pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_offset: veclib::Vector3::<u32>, vertex_count: u32, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, axis: veclib::Vector3<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
+pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_offset: veclib::Vector3::<u32>, vertex_count: u32, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, axis: veclib::Vector3<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
     /*
         2------3------4
         |             |
@@ -132,9 +141,9 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
     */
     let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
     let mut triangles: Vec<u32> = Vec::new();
-    for a in 1..CHUNK_SIZE - 2 {
-        for b in 1..CHUNK_SIZE - 2 {
-            let local_data = data_function(data, (a-1, b-1), slice);
+    for a in 0..CHUNK_SIZE - 2 {
+        for b in 0..CHUNK_SIZE - 2 {
+            let local_data = data_function(data, (a, b), slice);
             let mut case = 0_u8;
             //  3---2
             //  |   |
@@ -149,7 +158,6 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
                 continue;
             }
             let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
-            let test_offset = (a, b);
             // The vertices to connect
             let tris = super::SQUARES_TRI_TABLE[case as usize];    
             for tri_group in 0..3 {
@@ -164,25 +172,28 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
                         // Interpolation            
                         if vertex == -veclib::Vector2::default_one() {    
                                                   
+                              
                             match tri {
                                 // TODO: Turn this into a more generalized algorithm
                                 1 => {
-                                    println!("{} {}", 2 * a, 2 * b);  
+                                    println!("{} {}", 2 * a, 2 * b);
                                     // First edge, gotta lerp between corner 0 and 1
                                     // This vertex already exists in the main mesh, so no need to duplicate it
-                                    /*
+                                    let first = transform_function(slice, &SQUARES_VERTEX_TABLE[0], &offset);
+                                    let second = transform_function(slice, &SQUARES_VERTEX_TABLE[2], &offset);
+                                    let edge_tuple: (u32, u32, u32) = (
+                                        0,
+                                        first.y() as u32 + second.y() as u32,
+                                        first.z() as u32 + second.z() as u32,
+                                    );
                                     let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
                                     vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
-                                    */
+                                    
                                     //println!("{} {}", 2 * a, 2 * b);
-                                    let edge_tuple: (u32, u32, u32) = (
-                                        0,
-                                        2 * test_offset.0 as u32 + 1 as u32,
-                                        2 * test_offset.1 as u32 + 0 as u32,
-                                    );
                                     println!("A {:?}", edge_tuple);
-                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];                                    
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];         
+                                    println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]);         
                                 }
                                 3 => {
                                     /*
@@ -204,23 +215,23 @@ pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, edge_
                                 }
                                 5 => {
                                     /*
-                                    println!("{} {}", 2 * a, 2 * b);  
+                                    println!("{} {}", 2 * a, 2 * b);
                                     // Third edge, gotta lerp between corner 2 and 3
-                                    /*
+                                    
                                     let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
                                     vertex = SQUARES_VERTEX_TABLE[4].lerp(SQUARES_VERTEX_TABLE[6], value);                 
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
-                                    */
-                                    */
+                                    
                                     
                                     let edge_tuple: (u32, u32, u32) = (
                                         0,
-                                        2 * test_offset.0 as u32 + 1 as u32,
-                                        2 * test_offset.1 as u32 + 2 as u32,
+                                        2 * a as u32 + 1 as u32,
+                                        2 * b as u32 + 2 as u32,
                                     );
                                     println!("B {:?}", edge_tuple);
                                     tri_global_switched[tri_i] = duplicated_vertices[&(edge_tuple)];                                   
-                                    
+                                    println!("Bad: {:?}", verts[tri_global_switched[tri_i] as usize]);       
+                                    */ 
                                 }
                                 7 => {
                                     /*
