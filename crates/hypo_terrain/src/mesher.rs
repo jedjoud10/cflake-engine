@@ -14,8 +14,6 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Model {
     let mut model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
-    // Base X skirt intersection vertices
-    let mut base_x_skirt_intersection_vertices: Vec<u32> = Vec::new();
     // Loop over every voxel
     for x in 0..CHUNK_SIZE - 2 {
         for y in 0..CHUNK_SIZE - 2 {
@@ -91,16 +89,6 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
                         }
-
-                        // Save the edge intersection vertices' indices
-                        if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            let edge_tuple_new: (u32, u32, u32) = (
-                                2 * x as u32 + vert1.x() as u32 + vert2.x() as u32,
-                                2 * y as u32 + ((vert1.y() as u32 + vert2.y() as u32)),
-                                2 * z as u32 + (2 - (vert1.z() as u32 + vert2.z() as u32)),
-                            );
-                            base_x_skirt_intersection_vertices.push(duplicate_vertices[&edge_tuple_new]);
-                        }
                     }
                 }
             }
@@ -108,7 +96,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     }    
 
     // Create the X skirt
-    let skirt_base_x = generate_skirt(&model.vertices, model.vertices.len() as u32, &base_x_skirt_intersection_vertices, data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
+    let skirt_base_x = generate_skirt(&duplicate_vertices, model.vertices.len() as u32, data, veclib::Vector3::new(-1.0, 0.0, 0.0), transform_x_local, get_local_data_x, 0, false);
     /*
     let skirt_end_x = generate_skirt(data, veclib::Vector3::new(1.0, 0.0, 0.0), transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
     let skirt_x = Model::combine(&skirt_base_x, &skirt_end_x);
@@ -128,7 +116,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     model
 }
 // Generate a skirt from the data and using a slice index and a custom function that will map the two indexed values to their corresponding vector coordinates
-pub fn generate_skirt(in_vertices: &Vec<veclib::Vector3<f32>>, vertex_count: u32, intersection_vertices: &Vec<u32>, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, axis: veclib::Vector3<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
+pub fn generate_skirt(duplicated_vertices: &HashMap<(u32, u32, u32), u32>, vertex_count: u32, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, axis: veclib::Vector3<f32>, transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, data_function: fn(&Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, (usize, usize), usize) -> [f32; 4], slice: usize, flip: bool) -> Model {
     /*
         2------3------4
         |             |
@@ -138,7 +126,6 @@ pub fn generate_skirt(in_vertices: &Vec<veclib::Vector3<f32>>, vertex_count: u32
         |             |
         0------7------6
     */
-    let mut intersection_vertices_count: u32 = 0;
     let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
     let mut triangles: Vec<u32> = Vec::new();
     for a in 0..CHUNK_SIZE - 2 {
@@ -176,15 +163,16 @@ pub fn generate_skirt(in_vertices: &Vec<veclib::Vector3<f32>>, vertex_count: u32
                                 1 => {
                                     // First edge, gotta lerp between corner 0 and 1
                                     // This vertex already exists in the main mesh, so no need to duplicate it
-                                    
+                                    /*
                                     let value =  inverse_lerp(local_data[0], local_data[3], 0.0);
                                     vertex = SQUARES_VERTEX_TABLE[0].lerp(SQUARES_VERTEX_TABLE[2], value);
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
-                                    
-                                    // We do a little trolling                                    
-                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
-                                    intersection_vertices_count += 1;
-                                    println!("Bad: {:?}", in_vertices[tri_global_switched[tri_i] as usize]);
+                                    */
+                                    // We do a little trolling    
+                                    let mut test = transform_function(slice, &veclib::Vector2::<f32> { data: [0.0, 1.5] }, &offset);
+                                    test *= 2.0;               
+                                    let test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(test.x(), test.y(), test.z())];
                                 }
                                 3 => {
                                     // Second edge, gotta lerp between corner 1 and 2
@@ -192,28 +180,25 @@ pub fn generate_skirt(in_vertices: &Vec<veclib::Vector3<f32>>, vertex_count: u32
                                     let value =  inverse_lerp(local_data[3], local_data[2], 0.0);
                                     vertex = verts[2].lerp(verts[4], value);
                                     */
-                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
-                                    intersection_vertices_count += 1;
                                 }
                                 5 => {
                                     // Third edge, gotta lerp between corner 2 and 3
-                                    
+                                    /*
                                     let value =  inverse_lerp(local_data[2], local_data[1], 0.0);
                                     vertex = SQUARES_VERTEX_TABLE[4].lerp(SQUARES_VERTEX_TABLE[6], value);                 
                                     println!("Good: {:?}", transform_function(slice, &vertex, &offset));
-                                    
-                                    intersection_vertices_count += 1;
-                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
-                                    println!("Bad: {:?}", in_vertices[tri_global_switched[tri_i] as usize]);
+                                    */
+                                    let mut test = transform_function(slice, &veclib::Vector2::<f32> { data: [1.0, 1.5] }, &offset);
+                                    test *= 2.0;               
+                                    let test = veclib::Vector3::<u32>::new(test.x().round() as u32, test.y().round() as u32, test.z().round() as u32);
+                                    tri_global_switched[tri_i] = duplicated_vertices[&(test.x(), test.y(), test.z())];
                                 }
                                 7 => {
                                     // Fourth edge, gotta lerp between corner 3 and 0
-                                    /*
+                                    /* 
                                     let value =  inverse_lerp(local_data[1], local_data[0], 0.0);
                                     vertex = verts[6].lerp(verts[0], value);
                                     */
-                                    tri_global_switched[tri_i] = intersection_vertices[intersection_vertices_count as usize];
-                                    intersection_vertices_count += 1;
                                 }
                                 _ => {}
                             }
