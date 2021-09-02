@@ -90,7 +90,9 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
         }
     }    
     let skirt_base_x = generate_x_skirt(data, 0);
-    model = model.combine(&skirt_base_x);
+    let skirt_end_x = generate_x_skirt(data, CHUNK_SIZE - 2);
+    let skirt_x = Model::combine(&skirt_base_x, &skirt_end_x);
+    model = model.combine(&skirt_x);
     // Return the model
     model
 }
@@ -109,7 +111,7 @@ pub fn generate_x_skirt(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
     for y in 0..CHUNK_SIZE - 2 {
         for z in 0..CHUNK_SIZE - 2 {
             let local_data = get_local_data_x(data, (y, z), slice);
-            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(y as f32, z as f32), slice);
+            let local_model = solve_case(local_data, SQUARES_VERTEX_TABLE, veclib::Vector2::<f32>::new(y as f32, z as f32), transform_x_local, slice);
             output_model = output_model.combine(&local_model);
         }
     }
@@ -127,8 +129,13 @@ pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
     return local_data;
 }
 
+// Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
+fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
+    veclib::Vector3::<f32>::new(slice as f32, vertex.y() + offset.x(), vertex.x() + offset.y())
+}
+
 // Using the local data, solve the marching square case
-pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, slice: usize) -> Model {
+pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset: veclib::Vector2<f32>, axis_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>, slice: usize) -> Model {
     let mut output: Model = Model::default();
     let mut case = 0_u8;
     //  3---2
@@ -139,9 +146,6 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
     case += ((local_data[1] < 0.0) as u8) * 2;
     case += ((local_data[2] < 0.0) as u8) * 4;
     case += ((local_data[3] < 0.0) as u8) * 8;
-    if case != 7 && case != 11 && case != 13 && case != 14 {
-        return Model::default();
-    }
     println!("{:?}", local_data);
     let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
     let mut tris_output: Vec<u32> = Vec::new();
@@ -180,8 +184,7 @@ pub fn solve_case(local_data: [f32; 4], verts: [veclib::Vector2<f32>; 8], offset
                     _ => {}
                 }
             }
-            
-            vertices.push(veclib::Vector3::<f32>::new(slice as f32, vertex.y() + offset.x(), vertex.x() + offset.y()));
+            vertices.push(axis_function(slice, &vertex, &offset));
             tris_output.push(tris_output.len() as u32);
         }
     }
