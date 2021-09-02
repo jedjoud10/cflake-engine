@@ -94,13 +94,17 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                             println!("{:?}", vert1_usize);
                             println!("{:?}", vert2_usize);
                             println!("Start tuple: {:?} {:?}", edge_tuple, (y, z));
+
+                            println!("Test: {:?}", edge_tuple);
+                            /*
+                            // TODO: Use this later after fixing this bug
                             let edge_tuple: (u32, u32, u32) = (
                                 vert1_usize.0 as u32 + vert2_usize.0 as u32,
                                 vert1_usize.1 as u32 + vert2_usize.1 as u32,
                                 vert1_usize.2 as u32 + vert2_usize.2 as u32,
                             ); 
                             println!("Test: {:?}", edge_tuple);
-                            println!("Test: {:?}", edge_tuple);
+                            */
                         }
                     }
                 }
@@ -176,11 +180,17 @@ pub fn generate_skirt(verts: &Vec<veclib::Vector3<f32>>, duplicated_vertices: &H
                             match tri {
                                 // TODO: Turn this into a more generalized algorithm
                                 1 => {
-                                    println!("{} {}", 2 * a, 2 * b);
+                                    println!("{} {}", a, b);
                                     // First edge, gotta lerp between corner 0 and 1
                                     // This vertex already exists in the main mesh, so no need to duplicate it
-                                    let first = transform_function(slice, &SQUARES_VERTEX_TABLE[0], &offset);
-                                    let second = transform_function(slice, &SQUARES_VERTEX_TABLE[2], &offset);
+                                    let mut even_more_test = veclib::Vector2::<f32>::default();
+                                    if b == 0 {
+                                        even_more_test = veclib::Vector2::<f32>::default_y()
+                                    }
+                                    let first = transform_function(slice, &(SQUARES_VERTEX_TABLE[0] + even_more_test), &offset);
+                                    let second = transform_function(slice, &(SQUARES_VERTEX_TABLE[2] + even_more_test), &offset);
+                                    println!("{:?}", first);
+                                    println!("{:?}", second);
                                     let edge_tuple: (u32, u32, u32) = (
                                         0,
                                         first.y() as u32 + second.y() as u32,
