@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::ops::Index;
+
 use hypo_resources::Resource;
 use hypo_resources::ResourceManager;
 
@@ -42,7 +45,6 @@ impl Model {
         }
     }
     // Combine a model with this one, and return the new model
-    // TODO: Implement vertex merging while combining models
     pub fn combine(&self, other: &Self) -> Self {
         let mut output_model = self.clone();
         let max_triangle_index: u32 = self.vertices.len() as u32;
@@ -56,6 +58,17 @@ impl Model {
         output_model.normals.extend(other.normals.clone());
         output_model.uvs.extend(other.uvs.clone());
         output_model.tangents.extend(other.tangents.clone());
+        return output_model;
+    }
+    // Comebine a model with this one
+    // NOTE: This assumes that the second model uses vertices from the first model
+    pub fn combine_smart(&self, other: &Self) -> Self {
+        let mut output_model: Self = self.clone();
+        output_model.triangles.extend(other.triangles.clone());
+        output_model.vertices.extend(other.vertices.clone());
+        output_model.normals.extend(other.normals.clone());
+        output_model.uvs.extend(other.uvs.clone());
+        output_model.tangents.extend(other.tangents.clone());        
         return output_model;
     }
 }

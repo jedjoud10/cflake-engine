@@ -101,9 +101,9 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     let skirt_base_z = generate_skirt(data, veclib::Vector3::new(0.0, 0.0, -1.0), transform_z_local, get_local_data_z, 0, false);
     let skirt_end_z = generate_skirt(data, veclib::Vector3::new(0.0, 0.0, 1.0), transform_z_local, get_local_data_z, CHUNK_SIZE - 2, true);
     let skirt_z = Model::combine(&skirt_base_z, &skirt_end_z);
-    model = model.combine(&skirt_x);
-    model = model.combine(&skirt_y);
-    model = model.combine(&skirt_z);
+    model = model.combine_smart(&skirt_x);
+    model = model.combine_smart(&skirt_y);
+    model = model.combine_smart(&skirt_z);
     // Return the model
     model
 }
