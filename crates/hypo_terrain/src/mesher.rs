@@ -114,10 +114,17 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                     //  |   |
                     //  |   |
                     //  0---1
-                    case += ((data[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
-                    case += ((data[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
-                    case += ((data[i + DATA_OFFSET_TABLE[5]].density > 0.0) as u8) * 4;
-                    case += ((data[i + DATA_OFFSET_TABLE[4]].density > 0.0) as u8) * 8;
+                    let local_densities: [f32; 4] = [
+                        data[i + DATA_OFFSET_TABLE[0]].density,
+                        data[i + DATA_OFFSET_TABLE[1]].density,
+                        data[i + DATA_OFFSET_TABLE[5]].density,
+                        data[i + DATA_OFFSET_TABLE[4]].density,
+                    ];
+                    println!("{:?}", local_densities);
+                    case += (!(local_densities[0] > 0.0) as u8) * 1;
+                    case += (!(local_densities[1] > 0.0) as u8) * 2;
+                    case += (!(local_densities[2] > 0.0) as u8) * 4;
+                    case += (!(local_densities[3] > 0.0) as u8) * 8;
                     println!("{}", case);
                     // Skip the full and empty cases
                     if case == 0 || case == 15 {
@@ -127,7 +134,6 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                     // The vertices to connect
                     let tris = super::SQUARES_TRI_TABLE[case as usize];    
                     for tri_group in 0..3 {
-                        let mut hit: bool = false;
                         for tri_i in 0..3 {
                             let tri = tris[tri_i+tri_group*3];
                             // Check if the value is negative first
@@ -150,24 +156,12 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                                 } else {
                                     // Check if this vertex was already added
                                     //tri_global_switched[tri_i] = model.triangles.len() as u32 + skirts_model.vertices.len() as u32;
-                                    // This is a vertex that is not present in the main mesh                  
+                                    // This is a vertex that is not present in the main mesh    
                                     let vertex = veclib::Vector3::<f32>::new(0 as f32, vertex.y() + offset.x(), vertex.x() + offset.y());
                                     shared_vertices.push(SkirtVertex::Vertex(vertex));
-                                }               
-                                hit = true;
+                                }           
                             }
-                        }        
-                        if hit {
-                            /*
-                            // Flip the triangle 
-                            if flip {
-                                // Swap the first and last indices
-                                //tri_global_switched.swap(0, 2);
-                            }
-                            // Add it
-                            triangles.extend(tri_global_switched);
-                            */
-                        }
+                        }  
                     }
                 }
             }
@@ -179,12 +173,13 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
         match shared_vertex {
             SkirtVertex::Vertex(vertex) => {
                 // This vertex isn't a shared vertex
+                println!("Vert: {:?}", vertex);
+                skirts_model.triangles.push(skirts_model.vertices.len() as u32 + model.vertices.len() as u32);
                 skirts_model.vertices.push(vertex.clone());
-                skirts_model.triangles.push(skirts_model.triangles.len() as u32 + model.vertices.len() as u32);
             },
             SkirtVertex::SharedVertex(coord_tuple) => {    
                 let tri = duplicate_vertices[coord_tuple];
-                println!("{:?}", tri);
+                println!("Shared: {:?}", model.vertices[duplicate_vertices[coord_tuple] as usize]);
                 // This vertex is a vertex that already exists in the main model
                 skirts_model.triangles.push(tri);
             },
