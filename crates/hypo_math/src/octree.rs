@@ -111,13 +111,12 @@ impl Octree {
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth
-    pub fn generate_incremental_octree(&mut self, input: OctreeInput) {
-        let instant = Instant::now();
+    pub fn generate_incremental_octree(&mut self, input: OctreeInput) -> Option<(&Vec<OctreeNode>, &Vec<OctreeNode>)> {
         self.added_nodes.clear();
         self.removed_nodes.clear();
         // If we don't have a targetted node try to create the base octree
         if self.targetted_node.is_none() {
-            return;
+            return None;
         }
         let marked_node: Option<OctreeNode>;
 
@@ -156,7 +155,7 @@ impl Octree {
         }
         // Check if we even changed parents
         if marked_node.is_none() || node_to_remove.is_none() {
-            return;
+            return None;
         }
         // Then we generate a local octree, using that marked node as the root
         let local_octree_data = self.generate_octree(&input.target, marked_node.clone().unwrap());
@@ -255,6 +254,9 @@ impl Octree {
         self.postprocess_nodes = postprocess_nodes;
         self.removed_nodes = removed_postprocess_nodes;
         self.added_nodes = added_postprocess_nodes;
+
+        // Return
+        return Some((&self.added_nodes, &self.removed_nodes));
     }
 }
 

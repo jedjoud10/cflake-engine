@@ -1,3 +1,5 @@
+use crate::chunk_data::ChunkCoords;
+
 use super::voxel::VoxelGenerator;
 use hypo_defaults::components;
 use hypo_ecs::*;
@@ -52,15 +54,14 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i64>, size: u64) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, coords: ChunkCoords) -> Option<Entity> {
         // Create the entity
-        let name = format!("Chunk {:?} {:?}", position, size);
+        let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
         let mut entity = Entity::new(name.as_str());
 
         // Create the chunk component
         let mut chunk = Chunk::default();
-        chunk.chunk_data.position = position;
-        chunk.chunk_data.size = size;
+        chunk.chunk_data.coords = coords;
         let min_max = chunk.chunk_data.generate_data(&self.voxel_generator);
         // Check if we should even generate the model
         if min_max.0.signum() == min_max.1.signum() {
@@ -76,8 +77,8 @@ impl Terrain {
             .link_component::<components::Transform>(
                 component_manager,
                 components::Transform {
-                    position: veclib::Vector3::<f32>::from(position),
-                    scale: veclib::Vector3::new((size / self.octree.size) as f32, (size / self.octree.size) as f32, (size / self.octree.size) as f32),
+                    position: veclib::Vector3::<f32>::from(coords.position),
+                    scale: veclib::Vector3::new((coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32),
                     ..components::Transform::default()
                 },
             )
@@ -147,15 +148,14 @@ impl System for Terrain {
         self.octree.depth = OCTREE_DEPTH;
         self.octree.lod_factor = LOD_FACTOR;
         let nodes = self.octree.generate_base_octree();
-        /*
-        if let Option::Some(chunk_entity) = self.add_chunk_entity(data.texture_cacher, data.component_manager, veclib::Vector3::default_zero(), 16) {
-            let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-        }
-        */
         for (_, octree_node) in nodes {
             // Only add the octree nodes that have no children
-            if !octree_node.children {                
-                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
+            if !octree_node.children {      
+                let coords = ChunkCoords {
+                    position: octree_node.position,
+                    size: octree_node.half_extent * 2,
+                };
+                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, coords);
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
@@ -179,32 +179,43 @@ impl System for Terrain {
 
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") {
-            self.octree.generate_incremental_octree(math::octree::OctreeInput { target: camera_location });
-
-            // Turn all the newly added nodes into chunks and instantiate them into the world
-            for octree_node in &self.octree.added_nodes {
-                // Only add the octree nodes that have no children
-                if !octree_node.children {
-                    if !self.chunks.contains_key(&octree_node.get_center()) {
-                        let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
-                        match chunk_entity {
-                            Some(chunk_entity) => {
-                                let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                                self.chunks.insert(octree_node.get_center(), entity_id);
+            match self.octree.generate_incremental_octree(math::octree::OctreeInput { target: camera_location }) {
+                Some((added, removed)) => {
+                    let generation_instant = std::time::Instant::now();
+                    // Turn all the newly added nodes into chunks and instantiate them into the world
+                    for octree_node in added {
+                        // Only add the octree nodes that have no children
+                        if !octree_node.children {
+                            if !self.chunks.contains_key(&octree_node.get_center()) {
+                                let coords = ChunkCoords {
+                                    position: octree_node.position,
+                                    size: octree_node.half_extent * 2,
+                                };
+                                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, coords);
+                                match chunk_entity {
+                                    Some(chunk_entity) => {
+                                        let entity_id = data.entity_manager.add_entity_s(chunk_entity);
+                                        self.chunks.insert(octree_node.get_center(), entity_id);
+                                    }
+                                    _ => {}
+                                }
                             }
-                            _ => {}
                         }
                     }
+                    println!("Took: {}micros to generate new chunks", generation_instant.elapsed().as_micros());
+                    // Delete all the removed octree nodes from the world
+                    let deletion_instant = std::time::Instant::now();
+                    for octree_node in removed {
+                        if self.chunks.contains_key(&octree_node.get_center()) {
+                            // Remove the chunk from our chunks and from the world
+                            let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
+                            data.entity_manager.remove_entity_s(&entity_id).unwrap();
+                        }
+                    }
+                     println!("Took: {}micros to delete old chunks", deletion_instant.elapsed().as_micros());
                 }
-            }
-            // Delete all the removed octree nodes from the world
-            for octree_node in &self.octree.removed_nodes {
-                if self.chunks.contains_key(&octree_node.get_center()) {
-                    // Remove the chunk from our chunks and from the world
-                    let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
-                    data.entity_manager.remove_entity_s(&entity_id).unwrap();
-                }
-            }
+                None => { /* Nothing happened */ }
+            }            
         }
     }
 
