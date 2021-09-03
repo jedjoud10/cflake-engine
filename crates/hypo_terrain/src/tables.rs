@@ -312,6 +312,7 @@ pub const SQUARES_TRI_TABLE: [[i32; 9]; 16] = [
 ];
 
 // Marching squares vertex table
+/*
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
     veclib::Vector2::<f32> { data: [0.0, 0.0] },
     veclib::Vector2::<f32> { data: [-1.0, -1.0] },
@@ -321,4 +322,15 @@ pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
     veclib::Vector2::<f32> { data: [-1.0, -1.0] },
     veclib::Vector2::<f32> { data: [1.0, 0.0] },
     veclib::Vector2::<f32> { data: [-1.0, -1.0] },
+];
+*/
+pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
+    veclib::Vector2::<f32> { data: [0.0, 0.0] },
+    veclib::Vector2::<f32> { data: [0.0, 0.5] },
+    veclib::Vector2::<f32> { data: [0.0, 1.0] },
+    veclib::Vector2::<f32> { data: [0.5, 1.0] },
+    veclib::Vector2::<f32> { data: [1.0, 1.0] },
+    veclib::Vector2::<f32> { data: [1.0, 0.5] },
+    veclib::Vector2::<f32> { data: [1.0, 0.0] },
+    veclib::Vector2::<f32> { data: [0.5, 0.0] },
 ];
