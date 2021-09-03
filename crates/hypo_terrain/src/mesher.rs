@@ -15,6 +15,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     let mut model: Model = Model::default();
     let mut skirts_model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
+    let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
     // Loop over every voxel
     for x in 0..CHUNK_SIZE - 2 {
         for y in 0..CHUNK_SIZE - 2 {
@@ -39,8 +40,6 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 let edges: [i8; 16] = TRI_TABLE[case_index as usize];
 
                 // The vertex indices that are gonna be used for the skirts
-                let mut skirt_vert_indices: HashMap<(u32, u32), u32> = HashMap::new();
-                let mut skirt_vert_count: u32 = 0;
                 for edge in edges {
                     // Make sure the triangle is valid
                     if edge != -1 {
@@ -80,7 +79,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                             2 * y as u32 + vert1.y() as u32 + vert2.y() as u32,
                             2 * z as u32 + vert1.z() as u32 + vert2.z() as u32,
                         );
-
+                        
                         // Check if this vertex was already added
                         if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
                             // Add this vertex
@@ -96,14 +95,16 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         }
 
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            skirt_vert_indices.insert((edge_tuple.1, edge_tuple.2), duplicate_vertices[&edge_tuple]);
-                            skirt_vert_count += 1;
+                            println!("First");
+                            println!("A: {:?}", edge_tuple);
+                            println!("B: {} {}", 2 * y, 2 * x);
                         }
                     }
                 }
             
                 // If this is the base skirt X
                 if x == 0 {
+                    println!("Second");
                     let mut case = 0_u8;
                     //  3---2
                     //  |   |
@@ -113,7 +114,6 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                     case += ((data[i + DATA_OFFSET_TABLE[1]].density < 0.0) as u8) * 2;
                     case += ((data[i + DATA_OFFSET_TABLE[5]].density < 0.0) as u8) * 4;
                     case += ((data[i + DATA_OFFSET_TABLE[4]].density < 0.0) as u8) * 8;
-                    println!("{}", case);
                     // Skip the full and empty cases
                     if case == 0 || case == 15 {
                         //continue;
@@ -122,37 +122,37 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                     // The vertices to connect
                     let tris = super::SQUARES_TRI_TABLE[case as usize];    
                     for tri_group in 0..3 {
-                        let mut tri_global_switched: [u32; 3] = [0; 3];
                         let mut hit: bool = false;
                         for tri_i in 0..3 {
                             let tri = tris[tri_i+tri_group*3];
                             // Check if the value is negative first
                             if tri != -1 {
                                 // The bertex
-                                let mut vertex = SQUARES_VERTEX_TABLE[tri as usize];
+                                let vertex = SQUARES_VERTEX_TABLE[tri as usize];
                                 // Interpolation            
                                 if vertex == -veclib::Vector2::default_one() {    
                                     match tri {
                                         // TODO: Turn this into a more generalized algorithm
-                                        1 | 3 | 5 | 7 => {                                            
-                                            // From 0 to 3
+                                        1 | 3 | 5 | 7 => {             
                                             let last = SQUARES_VERTEX_TABLE[tri as usize - 1];
                                             let next = SQUARES_VERTEX_TABLE[((tri - 1) % 8) as usize];      
-                                            let edge_tuple: (u32, u32) = (
+                                            let edge_tuple: (u32, u32, u32) = (
+                                                0,
                                                 2 * y as u32 + last.x() as u32 + next.x() as u32,
                                                 2 * z as u32 + last.y() as u32 + next.y() as u32,
                                             );
-                                            tri_global_switched[tri_i] = skirt_vert_indices[&edge_tuple];
+                                            println!("{} {}", 2 * y, 2 * z);
+                                            shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
+                                            //tri_global_switched[tri_i] = skirt_vert_indices[&edge_tuple];
                                         }
                                         _ => {}
                                     }                            
                                 } else {
                                     // Check if this vertex was already added
-                                    tri_global_switched[tri_i] = model.triangles.len() as u32 + skirts_model.vertices.len() as u32;
-                                    skirts_model.triangles.push(skirts_model.vertices.len() as u32);
+                                    //tri_global_switched[tri_i] = model.triangles.len() as u32 + skirts_model.vertices.len() as u32;
                                     // This is a vertex that is not present in the main mesh                  
-                                    let vertex = veclib::Vector3::<f32>::new(0 as f32, vertex.y() + offset.x(), vertex.x() + offset.y()); 
-                                    skirts_model.vertices.push(vertex);
+                                    let vertex = veclib::Vector3::<f32>::new(0 as f32, vertex.y() + offset.x(), vertex.x() + offset.y());
+                                    shared_vertices.push(SkirtVertex::Vertex(vertex));
                                 }               
                                 hit = true;
                             }
@@ -174,6 +174,22 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
         }    
     }    
 
+    // Turn the shared vertices into triangle indices
+    for shared_vertex in shared_vertices.iter() {
+        match shared_vertex {
+            SkirtVertex::Vertex(vertex) => {
+                // This vertex isn't a shared vertex
+                skirts_model.vertices.push(vertex.clone());
+                skirts_model.triangles.push(skirts_model.triangles.len() as u32);
+            },
+            SkirtVertex::SharedVertex(coord_tuple) => {                
+                println!("{:?}", coord_tuple);
+                // This vertex is a vertex that already exists in the main model
+                skirts_model.triangles.push(duplicate_vertices[coord_tuple]);
+            },
+        }
+    } 
+
     // Create the X skirt
     /*
     let skirt_end_x = generate_skirt(data, veclib::Vector3::new(1.0, 0.0, 0.0), transform_x_local, get_local_data_x, CHUNK_SIZE - 2, true);
@@ -187,11 +203,17 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
     let skirt_end_z = generate_skirt(data, veclib::Vector3::new(0.0, 0.0, 1.0), transform_z_local, get_local_data_z, CHUNK_SIZE - 2, true);
     let skirt_z = Model::combine(&skirt_base_z, &skirt_end_z);
     */
-    model = model.combine(&skirts_model);
+    model = model.combine_smart(&skirts_model);
     //model = model.combine_smart(&skirt_y);
     //model = model.combine_smart(&skirt_z);
     // Return the model
     model
+}
+
+// The type of skirt vertex, normal or shared
+pub enum SkirtVertex {
+    Vertex(veclib::Vector3<f32>),
+    SharedVertex((u32, u32, u32))
 }
 
 
