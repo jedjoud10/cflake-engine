@@ -99,7 +99,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         }
 
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            local_edges[MC_EDGES_TO_LOCAL_VERTS[edge as usize] as usize] = edge_tuple;
+                            local_edges[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
                             local_edges_hit = true;
                             println!("B: {}", case_index);
                         }
@@ -108,61 +108,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
             
                 // If this is the base skirt X
                 if local_edges_hit {
-                    println!("Second");
-                    let mut case = 0_u8;
-                    //  3---2
-                    //  |   |
-                    //  |   |
-                    //  0---1
-                    let local_densities: [f32; 4] = [
-                        data[i + DATA_OFFSET_TABLE[0]].density,
-                        data[i + DATA_OFFSET_TABLE[1]].density,
-                        data[i + DATA_OFFSET_TABLE[5]].density,
-                        data[i + DATA_OFFSET_TABLE[4]].density,
-                    ];
-                    println!("{:?}", local_densities);
-                    case += (!(local_densities[0] > 0.0) as u8) * 1;
-                    case += (!(local_densities[1] > 0.0) as u8) * 2;
-                    case += (!(local_densities[2] > 0.0) as u8) * 4;
-                    case += (!(local_densities[3] > 0.0) as u8) * 8;
-                    println!("{}", case);
-                    // Skip the full and empty cases
-                    if case == 0 || case == 15 {
-                        continue;
-                    }
-                    let offset = veclib::Vector2::<f32>::new(y as f32, z as f32);
-                    // The vertices to connect
-                    let tris = super::SQUARES_TRI_TABLE[case as usize];    
-                    for tri_group in 0..3 {
-                        for tri_i in 0..3 {
-                            let tri = tris[tri_i+tri_group*3];
-                            // Check if the value is negative first
-                            if tri != -1 {
-                                // The bertex
-                                let vertex = SQUARES_VERTEX_TABLE[tri as usize];
-                                // Interpolation            
-                                if vertex == -veclib::Vector2::default_one() {    
-                                    match tri {
-                                        // TODO: Turn this into a more generalized algorithm
-                                        1 | 3 | 5 | 7 => {             
-                                            let index = (tri - 1) / 2;
-                                            let edge_tuple = local_edges[index as usize];
-                                            shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
-                                            println!("Run");
-                                            //tri_global_switched[tri_i] = skirt_vert_indices[&edge_tuple];
-                                        }
-                                        _ => {}
-                                    }                            
-                                } else {
-                                    // Check if this vertex was already added
-                                    //tri_global_switched[tri_i] = model.triangles.len() as u32 + skirts_model.vertices.len() as u32;
-                                    // This is a vertex that is not present in the main mesh    
-                                    let vertex = veclib::Vector3::<f32>::new(0 as f32, vertex.y() + offset.x(), vertex.x() + offset.y());
-                                    shared_vertices.push(SkirtVertex::Vertex(vertex));
-                                }           
-                            }
-                        }  
-                    }
+                    
                 }
             }
         }    
@@ -213,17 +159,66 @@ pub enum SkirtVertex {
 }
 
 
-// TODO: Turn this better
-// Get the local data for the X axis using a origin coordinate
-pub fn get_local_data_x(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
-    let local_data: [f32; 4] = [
-        data[super::flatten((slice, origin.0, origin.1))].density,
-        data[super::flatten((slice, origin.0, origin.1 + 1))].density,
-        data[super::flatten((slice, origin.0 + 1, origin.1 + 1))].density,
-        data[super::flatten((slice, origin.0 + 1, origin.1))].density       
+// Solve a single marching squares case using a passed function for 
+pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, local_edges: [(u32, u32, u32); 4], shared_vertices: &mut Vec<SkirtVertex>, ) {
+    println!("Second");
+    let mut case = 0_u8;
+    //  3---2
+    //  |   |
+    //  |   |
+    //  0---1
+    let local_densities: [f32; 4] = [
+        data[i + DENSITY_OFFSET_X[0]].density,
+        data[i + DENSITY_OFFSET_X[1]].density,
+        data[i + DENSITY_OFFSET_X[5]].density,
+        data[i + DENSITY_OFFSET_X[4]].density,
     ];
-    return local_data;
+    println!("{:?}", local_densities);
+    case += (!(local_densities[0] > 0.0) as u8) * 1;
+    case += (!(local_densities[1] > 0.0) as u8) * 2;
+    case += (!(local_densities[2] > 0.0) as u8) * 4;
+    case += (!(local_densities[3] > 0.0) as u8) * 8;
+    println!("{}", case);
+    // Skip the full and empty cases
+    if case == 0 || case == 15 {
+        return;
+    }
+    let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
+    // The vertices to connect
+    let tris = super::SQUARES_TRI_TABLE[case as usize];    
+    for tri_group in 0..3 {
+        for tri_i in 0..3 {
+            let tri = tris[tri_i+tri_group*3];
+            // Check if the value is negative first
+            if tri != -1 {
+                // The bertex
+                let vertex = SQUARES_VERTEX_TABLE[tri as usize];
+                // Interpolation            
+                if vertex == -veclib::Vector2::default_one() {    
+                    match tri {
+                        // TODO: Turn this into a more generalized algorithm
+                        1 | 3 | 5 | 7 => {             
+                            let index = (tri - 1) / 2;
+                            let edge_tuple = local_edges[index as usize];
+                            shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
+                            println!("Run");
+                            //tri_global_switched[tri_i] = skirt_vert_indices[&edge_tuple];
+                        }
+                        _ => {}
+                    }                            
+                } else {
+                    // Check if this vertex was already added
+                    //tri_global_switched[tri_i] = model.triangles.len() as u32 + skirts_model.vertices.len() as u32;
+                    // This is a vertex that is not present in the main mesh    
+                    let vertex = veclib::Vector3::<f32>::new(0 as f32, vertex.y() + offset.x(), vertex.x() + offset.y());
+                    shared_vertices.push(SkirtVertex::Vertex(vertex));
+                }           
+            }
+        }  
+    }
 }
+
+// TODO: Turn this better
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
 fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
