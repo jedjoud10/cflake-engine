@@ -108,13 +108,15 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         }
 
                         // This edge is at the X base
-                        
+                        /*
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                             local_edges_x_base[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_x_base = true;
-                        }                        
-                        if vert1_usize.0 == CHUNK_SIZE-2 && vert2_usize.0 == CHUNK_SIZE-2 && x == CHUNK_SIZE-3 {
-                            local_edges_x_end[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;                            
+                        }          
+                        */              
+                        if vert1_usize.0 == CHUNK_SIZE - 2 && vert2_usize.0 == CHUNK_SIZE - 2 && x == CHUNK_SIZE - 3 {
+                            local_edges_x_end[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;          
+                            println!("HIT {:?}", local_edges_x_end);                  
                             local_edges_hit_x_end = true;                            
                         }
                         /*
@@ -134,7 +136,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
             
                 // If this is the base skirt X
                 //if local_edges_hit_x_base { solve_marching_squares(y, z, i, &data, &local_edges_x_base, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X); }
-                if local_edges_hit_x_end { solve_marching_squares(y, z, i, &data, &local_edges_x_end, &mut shared_vertices, veclib::Vec3Axis::X, CHUNK_SIZE-2, DENSITY_OFFSET_X); }
+                if local_edges_hit_x_end { solve_marching_squares(y, z, super::flatten((x + 1, y, z)), &data, &local_edges_x_end, &mut shared_vertices, veclib::Vec3Axis::X, CHUNK_SIZE-2, DENSITY_OFFSET_X); }
                 //if local_edges_hit_y { solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, DENSITY_OFFSET_Y); }
                 //if local_edges_hit_z { solve_marching_squares(y, x, i, &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, DENSITY_OFFSET_Z); }
             }
