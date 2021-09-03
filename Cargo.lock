@@ -247,6 +247,7 @@ name = "hypo_dev_game"
 version = "0.1.0"
 dependencies = [
  "hypo_main",
+ "hypo_resources_packer",
 ]
 
 [[package]]
@@ -318,7 +319,17 @@ name = "hypo_resources"
 version = "0.1.0"
 dependencies = [
  "byteorder",
+ "image",
  "veclib",
+ "walkdir",
+]
+
+[[package]]
+name = "hypo_resources_packer"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "image",
  "walkdir",
 ]
 
@@ -363,11 +374,6 @@ dependencies = [
 [[package]]
 name = "hypothermia"
 version = "0.1.0"
-dependencies = [
- "byteorder",
- "image",
- "walkdir",
-]
 
 [[package]]
 name = "image"

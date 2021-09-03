@@ -2,8 +2,12 @@
 name = "hypo_dev_game"
 version = "0.1.0"
 edition = "2018"
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 hypo_main = { path = "../hypo_main" }
+
+[build-dependencies]
+hypo_resources_packer = { path = "../hypo_resources_packer" }
