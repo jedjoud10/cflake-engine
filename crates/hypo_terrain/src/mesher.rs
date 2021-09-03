@@ -126,7 +126,8 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 }
             
                 // If this is the base skirt X
-                if local_edges_hit_x { solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, DENSITY_OFFSET_X); }
+                //if local_edges_hit_x { solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, DENSITY_OFFSET_X); }
+                if local_edges_hit_y { solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, DENSITY_OFFSET_Y); }
             }
         }    
     }    
@@ -180,6 +181,7 @@ pub enum SkirtVertex {
 pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, local_edges: &[(u32, u32, u32); 4], shared_vertices: &mut Vec<SkirtVertex>, axis: veclib::Vec3Axis, density_offset: [usize; 4]) {
     println!("Second");
     let mut case = 0_u8;
+    // For axis X:
     //  3---2
     //  |   |
     //  |   |
@@ -225,6 +227,7 @@ pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (
                         veclib::Vec3Axis::Y => transform_y_local(0, &vertex, &offset),
                         veclib::Vec3Axis::Z => transform_z_local(0, &vertex, &offset),
                     };
+                    println!("Before {:?} After {:?}", vertex, new_vertex);
                     shared_vertices.push(SkirtVertex::Vertex(new_vertex));
                 }           
             }
@@ -232,38 +235,14 @@ pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (
     }
 }
 
-// TODO: Turn this better
-
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
 fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
     veclib::Vector3::<f32>::new(slice as f32, vertex.y() + offset.x(), vertex.x() + offset.y())
 }
 
-// Get the local data for the Y axis using a origin coordinate
-pub fn get_local_data_y(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
-    let local_data: [f32; 4] = [
-        data[super::flatten((origin.0, slice, origin.1))].density,
-        data[super::flatten((origin.0, slice, origin.1 + 1))].density,
-        data[super::flatten((origin.0 + 1, slice, origin.1 + 1))].density,
-        data[super::flatten((origin.0 + 1, slice, origin.1))].density       
-    ];
-    return local_data;
-}
-
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis
 fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(vertex.y() + offset.x(), slice as f32, vertex.x() + offset.y())
-}
-
-// Get the local data for the Z axis using a origin coordinate
-pub fn get_local_data_z(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, origin: (usize, usize), slice: usize) -> [f32; 4] {
-    let local_data: [f32; 4] = [
-        data[super::flatten((origin.0, origin.1, slice))].density,
-        data[super::flatten((origin.0, origin.1 + 1, slice))].density,
-        data[super::flatten((origin.0 + 1, origin.1 + 1, slice))].density,
-        data[super::flatten((origin.0 + 1, origin.1, slice))].density       
-    ];
-    return local_data;
+    veclib::Vector3::<f32>::new(vertex.x() + offset.x(), slice as f32, vertex.y() + offset.y())
 }
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
