@@ -311,13 +311,12 @@ pub const SQUARES_TRI_TABLE: [[i32; 9]; 16] = [
     [6, 2, 0, 6, 4, 2, -1, -1, -1],       // 15
 ];
 
-// Turn the marching cubes edges into the indices for the two local vertices that the edge uses in 2D, for the all the axii
-pub const MC_EDGES_TO_LOCAL_VERTS: [i32; 12] = [
-    -1,     // 0
+pub const MC_EDGES_TO_LOCAL_VERTS_X: [i32; 12] = [
+    3,     // 0
     -1,     // 1 
     -1,     // 2
     -1,     // 3
-    -1,     // 4
+    1,     // 4
     -1,     // 5
     -1,     // 6
     -1,     // 7
@@ -327,6 +326,13 @@ pub const MC_EDGES_TO_LOCAL_VERTS: [i32; 12] = [
     -1,     // 11
 ];
 
+// Density offset for the X axis
+pub const DENSITY_OFFSET_X: [usize; 4] = [
+    DATA_OFFSET_TABLE[0],
+    DATA_OFFSET_TABLE[1],
+    DATA_OFFSET_TABLE[5],
+    DATA_OFFSET_TABLE[4],
+];
 
 // Marching squares vertex table
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
