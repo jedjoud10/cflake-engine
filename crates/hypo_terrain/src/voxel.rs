@@ -36,9 +36,9 @@ impl VoxelGenerator {
         voxel.density += (point.x() * 0.05).sin() * 10.0;
         voxel.density += (point.z() * 0.05).sin() * 3.0;
         voxel.density = (point.x() * 0.4).sin() + (point.y() * 0.4).sin() + (point.z() * 0.4).sin();
-        //voxel.density = (point.x() - 5.0).min(point.y() - 5.0).min(point.z() - 5.0);
+        voxel.density = (point.x() - 5.0).min(point.y() - 5.0).min(point.z() - 5.0);
         //voxel.density = (-point.z() + 5.0).min(-point.x() + 5.0);
-        voxel.density = point.z() + point.y() + point.x() - 24.0;
+        //voxel.density = point.z() + point.y() + point.x() - 24.0;
         voxel.density -= 0.5;
         //voxel.density = point.y() - 8.5;
         // BIG NOTE: If the density value has no decimal, the skirts won't show up!
