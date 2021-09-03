@@ -3,6 +3,7 @@ mod chunk;
 mod tables;
 mod terrain;
 mod voxel;
+pub mod mesher;
 
 pub use chunk::Chunk;
 pub use tables::*;

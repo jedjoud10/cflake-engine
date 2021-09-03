@@ -261,11 +261,10 @@ pub const TRI_TABLE: [[i8; 16]; 256] = [
 ];
 
 // Edge table
-pub const EDGE_TABLE: [usize; 24] = [
-    // Bottom face
-    0, 1, 1, 2, 2, 3, 3, 0, // Top face
-    4, 5, 5, 6, 6, 7, 7, 4, // Sides
-    0, 4, 1, 5, 2, 6, 3, 7,
+pub const EDGE_TABLE: [usize; 24] = [    
+    0, 1, 1, 2, 2, 3, 3, 0, // Bottom face
+    4, 5, 5, 6, 6, 7, 7, 4, // Top face
+    0, 4, 1, 5, 2, 6, 3, 7, // Sides
 ];
 
 // Data offset table
@@ -291,3 +290,70 @@ pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
     veclib::Vector3::<f32> { data: [1.0, 1.0, 1.0] },
     veclib::Vector3::<f32> { data: [1.0, 1.0, 0.0] },
 ];
+
+// Marching squares table
+pub const SQUARES_TRI_TABLE: [[i32; 9]; 16] = [
+    [-1, -1, -1, -1, -1, -1, -1, -1, -1], // 0
+    [7, 1, 0, -1, -1, -1, -1, -1, -1],    // 1
+    [6, 5, 7, -1, -1, -1, -1, -1, -1],    // 2
+    [6, 1, 0, 6, 5, 1, -1, -1, -1],       // 3
+    [5, 4, 3, -1, -1, -1, -1, -1, -1],    // 4
+    [5, 4, 3, 7, 1, 0, -1, -1, -1],       // 5
+    [6, 4, 3, 6, 3, 7, -1, -1, -1],       // 6
+    [6, 4, 3, 0, 6, 1, 1, 6, 3],          // 7
+    [3, 2, 1, -1, -1, -1, -1, -1, -1],    // 8
+    [3, 2, 0, 0, 7, 3, -1, -1, -1],       // 9
+    [3, 2, 1, 6, 5, 7, -1, -1, -1],       // 10
+    [3, 2, 0, 5, 3, 0, 6, 5, 0],          // 11
+    [5, 2, 1, 5, 4, 2, -1, -1, -1],       // 12
+    [7, 2, 0, 5, 4, 2, 5, 2, 7],          // 13
+    [4, 2, 1, 6, 4, 7, 7, 4, 1],          // 14
+    [6, 2, 0, 6, 4, 2, -1, -1, -1],       // 15
+];
+
+pub const MC_EDGES_TO_LOCAL_VERTS_X: [i32; 12] = [
+    3,     // 0
+    -1,     // 1 
+    -1,     // 2
+    -1,     // 3
+    1,     // 4
+    -1,     // 5
+    -1,     // 6
+    -1,     // 7
+    0,     // 8
+    2,     // 9
+    -1,     // 10
+    -1,     // 11
+];
+
+// Density offset for the X axis
+pub const DENSITY_OFFSET_X: [usize; 4] = [
+    DATA_OFFSET_TABLE[0],
+    DATA_OFFSET_TABLE[1],
+    DATA_OFFSET_TABLE[5],
+    DATA_OFFSET_TABLE[4],
+];
+
+// Marching squares vertex table
+pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
+    veclib::Vector2::<f32> { data: [0.0, 0.0] },
+    veclib::Vector2::<f32> { data: [-1.0, -1.0] },
+    veclib::Vector2::<f32> { data: [0.0, 1.0] },
+    veclib::Vector2::<f32> { data: [-1.0, -1.0] },
+    veclib::Vector2::<f32> { data: [1.0, 1.0] },
+    veclib::Vector2::<f32> { data: [-1.0, -1.0] },
+    veclib::Vector2::<f32> { data: [1.0, 0.0] },
+    veclib::Vector2::<f32> { data: [-1.0, -1.0] },
+];
+/*
+pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
+    veclib::Vector2::<f32> { data: [0.0, 0.0] },
+    veclib::Vector2::<f32> { data: [0.0, 0.5] },
+    veclib::Vector2::<f32> { data: [0.0, 1.0] },
+    veclib::Vector2::<f32> { data: [0.5, 1.0] },
+    veclib::Vector2::<f32> { data: [1.0, 1.0] },
+    veclib::Vector2::<f32> { data: [1.0, 0.5] },
+    veclib::Vector2::<f32> { data: [1.0, 0.0] },
+    veclib::Vector2::<f32> { data: [0.5, 0.0] },
+    ];
+*/

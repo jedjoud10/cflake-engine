@@ -11,6 +11,7 @@ pub const DRAW_DEBUG: bool = false;
 #[derive(Default)]
 pub struct DebugRenderer {
     pub debug_primitives: Vec<DebugRendererType>,
+    pub permanent_debug_primitives: Vec<DebugRendererType>,
     pub shader_name: String,
     pub vao: u32,
     pub vertices: Vec<veclib::Vector3<f32>>,
@@ -145,14 +146,18 @@ impl DebugRenderer {
         self.debug_primitives.clear();
     }
     // Add a debug primitive to the queue and then render it
-    pub fn debug(&mut self, debug_renderer_type: DebugRendererType) {
+    pub fn debug(&mut self, debug_renderer_type: DebugRendererType, permanent: bool) {
         if !DRAW_DEBUG {
             return;
         }
-        self.debug_primitives.push(debug_renderer_type);
+        if permanent {
+            self.permanent_debug_primitives.push(debug_renderer_type);
+        } else {
+            self.debug_primitives.push(debug_renderer_type);
+        }
     }
-    // Add a default debug primite to the queue
-    pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType, color: veclib::Vector3<f32>) {
+    // Add a default debug primitive to the queue
+    pub fn debug_default(&mut self, default_debug_renderer_type: DefaultDebugRendererType, color: veclib::Vector3<f32>, permanent: bool) {
         if !DRAW_DEBUG {
             return;
         }
@@ -165,7 +170,7 @@ impl DebugRenderer {
                     .map(|&x| center + (x * size) - size / 2.0)
                     .collect::<Vec<veclib::Vector3<f32>>>();
                 // Add the cube debug primitive
-                self.debug(DebugRendererType::CUBE(new_corner, color));
+                self.debug(DebugRendererType::CUBE(new_corner, color), permanent);
             }
             DefaultDebugRendererType::AABB(aabb) => {
                 // Get the corners
@@ -175,7 +180,7 @@ impl DebugRenderer {
                     corners.push(aabb.get_corner(corner_index));
                 }
                 // Add the cube debug primitive
-                self.debug(DebugRendererType::CUBE(corners, color));
+                self.debug(DebugRendererType::CUBE(corners, color), permanent);
             }
         }
     }

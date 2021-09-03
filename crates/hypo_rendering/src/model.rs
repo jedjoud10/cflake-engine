@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+use std::ops::Index;
+
 use hypo_resources::Resource;
 use hypo_resources::ResourceManager;
 
 // A simple model that holds vertex, normal, and color data
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Model {
     pub vertices: Vec<veclib::Vector3<f32>>,
     pub normals: Vec<veclib::Vector3<f32>>,
@@ -40,6 +43,33 @@ impl Model {
             // Swap the first and last index of each triangle
             self.triangles.swap(i, i + 2);
         }
+    }
+    // Combine a model with this one, and return the new model
+    pub fn combine(&self, other: &Self) -> Self {
+        let mut output_model = self.clone();
+        let max_triangle_index: u32 = self.vertices.len() as u32;
+        // Get the max triangle inde
+        let mut final_tris = other.triangles.clone();
+        for x in final_tris.iter_mut() {
+            *x += max_triangle_index;
+        }
+        output_model.triangles.extend(final_tris);
+        output_model.vertices.extend(other.vertices.clone());
+        output_model.normals.extend(other.normals.clone());
+        output_model.uvs.extend(other.uvs.clone());
+        output_model.tangents.extend(other.tangents.clone());
+        return output_model;
+    }
+    // Comebine a model with this one
+    // NOTE: This assumes that the second model uses vertices from the first model
+    pub fn combine_smart(&self, other: &Self) -> Self {
+        let mut output_model: Self = self.clone();
+        output_model.triangles.extend(other.triangles.clone());
+        output_model.vertices.extend(other.vertices.clone());
+        output_model.normals.extend(other.normals.clone());
+        output_model.uvs.extend(other.uvs.clone());
+        output_model.tangents.extend(other.tangents.clone());        
+        return output_model;
     }
 }
 
