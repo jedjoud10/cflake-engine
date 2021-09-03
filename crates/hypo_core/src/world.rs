@@ -1,6 +1,5 @@
 use gl;
 use glfw::{self, Context};
-use hypo_system_event_data::*;
 use hypo_debug::*;
 use hypo_defaults::components;
 use hypo_defaults::systems;
@@ -10,6 +9,7 @@ use hypo_input::*;
 use hypo_others::*;
 use hypo_rendering::*;
 use hypo_resources::*;
+use hypo_system_event_data::*;
 use hypo_systems::*;
 use std::collections::HashSet;
 //  The actual world
@@ -54,7 +54,8 @@ impl World {
         let _black_texture = Texture::new()
             .load_texture("defaults\\textures\\black.png", &mut self.resource_manager, &mut self.texture_cacher)
             .unwrap();
-        self.texture_cacher.generate_defaults(vec!["defaults\\textures\\white.png", "defaults\\textures\\black.png"]);
+        self.texture_cacher
+            .generate_defaults(vec!["defaults\\textures\\white.png", "defaults\\textures\\black.png"]);
 
         // Copy the default shader name
         let default_shader_name: String;

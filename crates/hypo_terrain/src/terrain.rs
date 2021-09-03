@@ -1,12 +1,12 @@
 use super::chunk::Chunk;
 use super::voxel::VoxelGenerator;
-use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_defaults::components;
 use hypo_ecs::*;
 use hypo_input::*;
 use hypo_math as math;
 use hypo_others::CacheManager;
 use hypo_rendering::*;
+use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::*;
 use std::collections::HashMap;
 
@@ -143,8 +143,8 @@ impl System for Terrain {
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
-                }   
-                */             
+                }
+                */
             }
         }
         // Debug controls

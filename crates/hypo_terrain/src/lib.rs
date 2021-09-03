@@ -1,9 +1,9 @@
 // Export
 mod chunk;
+pub mod mesher;
 mod tables;
 mod terrain;
 mod voxel;
-pub mod mesher;
 
 pub use chunk::Chunk;
 pub use tables::*;

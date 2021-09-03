@@ -8,7 +8,6 @@ pub use hypo_core::World;
 
 // Export
 use glfw::Context;
-pub use hypo_system_event_data::*;
 pub use hypo_debug;
 pub use hypo_defaults::components;
 pub use hypo_defaults::systems;
@@ -18,6 +17,7 @@ pub use hypo_input::*;
 pub use hypo_others::*;
 pub use hypo_rendering::*;
 pub use hypo_resources::*;
+pub use hypo_system_event_data::*;
 pub use hypo_systems::*;
 pub use hypo_terrain::*;
 pub use veclib;

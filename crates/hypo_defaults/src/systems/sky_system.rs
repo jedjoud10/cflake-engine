@@ -1,7 +1,7 @@
 use super::super::components;
-use hypo_system_event_data::{SystemEventData};
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_rendering::{Model, Renderer, Shader, Texture, TextureWrapping};
+use hypo_system_event_data::SystemEventData;
 use hypo_systems::{System, SystemData};
 
 #[derive(Default)]

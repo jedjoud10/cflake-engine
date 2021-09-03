@@ -1,9 +1,9 @@
-use super::CHUNK_SIZE;
 use super::tables::*;
 use super::Voxel;
+use super::CHUNK_SIZE;
+use hypo_rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use hypo_rendering::Model;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -22,7 +22,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
             for z in 0..CHUNK_SIZE - 2 {
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
-                let mut case_index = 0u8;                
+                let mut case_index = 0u8;
                 case_index += ((data[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
                 case_index += ((data[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
                 case_index += ((data[i + DATA_OFFSET_TABLE[2]].density > 0.0) as u8) * 4;
@@ -51,7 +51,6 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 let mut local_edges_z: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
                 let mut local_edges_hit_z_base: bool = false;
                 let mut local_edges_hit_z_end: bool = false;
-                
 
                 // The vertex indices that are gonna be used for the skirts
                 for edge in edges {
@@ -93,7 +92,7 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                             2 * y as u32 + vert1.y() as u32 + vert2.y() as u32,
                             2 * z as u32 + vert1.z() as u32 + vert2.z() as u32,
                         );
-                        
+
                         // Check if this vertex was already added
                         if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
                             // Add this vertex
@@ -112,47 +111,92 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                             local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_x_base = true;
-                        }                   
+                        }
                         if vert1_usize.0 == CHUNK_SIZE - 2 && vert2_usize.0 == CHUNK_SIZE - 2 && x == CHUNK_SIZE - 3 {
-                            local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;          
-                            println!("HIT {:?}", local_edges_x);                  
-                            local_edges_hit_x_end = true;                            
+                            local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
+                            println!("HIT {:?}", local_edges_x);
+                            local_edges_hit_x_end = true;
                         }
                         // For the Y axis
                         if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
                             local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_y_base = true;
-                        } 
+                        }
                         if vert1_usize.1 == CHUNK_SIZE - 2 && vert2_usize.1 == CHUNK_SIZE - 2 && y == CHUNK_SIZE - 3 {
                             local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_y_end = true;
-                        }                                    
+                        }
                         // For the Z axis
                         if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
                             local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_z_base = true;
-                        } 
+                        }
                         if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
                             local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_z_end = true;
-                        }              
+                        }
                     }
                 }
-            
+
                 // Skirts for the X axis
-                if local_edges_hit_x_base { solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false); }
-                if local_edges_hit_x_end { solve_marching_squares(y, z, super::flatten((x + 1, y, z)), &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, CHUNK_SIZE-2, DENSITY_OFFSET_X, true); }
-                
+                if local_edges_hit_x_base {
+                    solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
+                }
+                if local_edges_hit_x_end {
+                    solve_marching_squares(
+                        y,
+                        z,
+                        super::flatten((x + 1, y, z)),
+                        &data,
+                        &local_edges_x,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::X,
+                        CHUNK_SIZE - 2,
+                        DENSITY_OFFSET_X,
+                        true,
+                    );
+                }
+
                 // Skirts for the Y axis
-                if local_edges_hit_y_base { solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false); }
-                if local_edges_hit_y_end { solve_marching_squares(x, z, super::flatten((x, y+1, z)), &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, CHUNK_SIZE-2, DENSITY_OFFSET_Y, true); }
-                
+                if local_edges_hit_y_base {
+                    solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
+                }
+                if local_edges_hit_y_end {
+                    solve_marching_squares(
+                        x,
+                        z,
+                        super::flatten((x, y + 1, z)),
+                        &data,
+                        &local_edges_y,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::Y,
+                        CHUNK_SIZE - 2,
+                        DENSITY_OFFSET_Y,
+                        true,
+                    );
+                }
+
                 // Skirts for the Y axis
-                if local_edges_hit_z_base { solve_marching_squares(y, x, i, &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false); }
-                if local_edges_hit_z_end { solve_marching_squares(y, x, super::flatten((x, y, z+1)), &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, CHUNK_SIZE-2, DENSITY_OFFSET_Z, true); }
+                if local_edges_hit_z_base {
+                    solve_marching_squares(y, x, i, &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);
+                }
+                if local_edges_hit_z_end {
+                    solve_marching_squares(
+                        y,
+                        x,
+                        super::flatten((x, y, z + 1)),
+                        &data,
+                        &local_edges_z,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::Z,
+                        CHUNK_SIZE - 2,
+                        DENSITY_OFFSET_Z,
+                        true,
+                    );
+                }
             }
-        }    
-    }    
+        }
+    }
 
     // Turn the shared vertices into triangle indices
     for shared_vertex in shared_vertices {
@@ -162,14 +206,14 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 skirts_model.triangles.push(skirts_model.vertices.len() as u32 + model.vertices.len() as u32);
                 skirts_model.vertices.push(vertex.clone());
                 skirts_model.normals.push(normal);
-            },
-            SkirtVertex::SharedVertex(coord_tuple) => {   
+            }
+            SkirtVertex::SharedVertex(coord_tuple) => {
                 let tri = duplicate_vertices[&coord_tuple];
                 // This vertex is a vertex that already exists in the main model
                 skirts_model.triangles.push(tri);
-            },
+            }
         }
-    } 
+    }
     model = model.combine_smart(&skirts_model);
     // Return the model
     model
@@ -178,12 +222,22 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
 // The type of skirt vertex, normal or shared
 pub enum SkirtVertex {
     Vertex(veclib::Vector3<f32>, veclib::Vector3<f32>),
-    SharedVertex((u32, u32, u32))
+    SharedVertex((u32, u32, u32)),
 }
 
-
-// Solve a single marching squares case using a passed function for 
-pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, local_edges: &[(u32, u32, u32); 4], shared_vertices: &mut Vec<SkirtVertex>, axis: veclib::Vec3Axis, slice: usize, density_offset: [usize; 4], flip: bool) {
+// Solve a single marching squares case using a passed function for
+pub fn solve_marching_squares(
+    a: usize,
+    b: usize,
+    i: usize,
+    data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>,
+    local_edges: &[(u32, u32, u32); 4],
+    shared_vertices: &mut Vec<SkirtVertex>,
+    axis: veclib::Vec3Axis,
+    slice: usize,
+    density_offset: [usize; 4],
+    flip: bool,
+) {
     let mut case = 0_u8;
     // For axis X:
     //  3---2
@@ -200,37 +254,45 @@ pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (
     }
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
     // The vertices to connect
-    let tris = if flip { SQUARES_FLIPPED_TRI_TABLE[case as usize] } else { SQUARES_TRI_TABLE[case as usize] };    
+    let tris = if flip {
+        SQUARES_FLIPPED_TRI_TABLE[case as usize]
+    } else {
+        SQUARES_TRI_TABLE[case as usize]
+    };
     for tri_group in 0..3 {
         for tri_i in 0..3 {
-            let tri = tris[tri_i+tri_group*3];
+            let tri = tris[tri_i + tri_group * 3];
             // Check if the value is negative first
             if tri != -1 {
                 // The bertex
                 let vertex = SQUARES_VERTEX_TABLE[tri as usize];
-                // Interpolation            
-                if vertex == -veclib::Vector2::default_one() {    
+                // Interpolation
+                if vertex == -veclib::Vector2::default_one() {
                     match tri {
                         // TODO: Turn this into a more generalized algorithm
-                        1 | 3 | 5 | 7 => {             
+                        1 | 3 | 5 | 7 => {
                             let index = (tri - 1) / 2;
                             let edge_tuple = local_edges[index as usize];
                             shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
                         }
                         _ => {}
-                    }                            
+                    }
                 } else {
-                    // This is a vertex that is not present in the main mesh    
+                    // This is a vertex that is not present in the main mesh
                     let new_vertex: veclib::Vector3<f32> = match axis {
                         veclib::Vec3Axis::X => transform_x_local(slice, &vertex, &offset),
                         veclib::Vec3Axis::Y => transform_y_local(slice, &vertex, &offset),
                         veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
                     };
-                    let normal = if flip { -veclib::Vector3::<f32>::get_default_axis(&axis) } else { veclib::Vector3::<f32>::get_default_axis(&axis) };
+                    let normal = if flip {
+                        -veclib::Vector3::<f32>::get_default_axis(&axis)
+                    } else {
+                        veclib::Vector3::<f32>::get_default_axis(&axis)
+                    };
                     shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
-                }           
+                }
             }
-        }  
+        }
     }
 }
 

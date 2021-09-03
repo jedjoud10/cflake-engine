@@ -261,7 +261,7 @@ pub const TRI_TABLE: [[i8; 16]; 256] = [
 ];
 
 // Edge table
-pub const EDGE_TABLE: [usize; 24] = [    
+pub const EDGE_TABLE: [usize; 24] = [
     0, 1, 1, 2, 2, 3, 3, 0, // Bottom face
     4, 5, 5, 6, 6, 7, 7, 4, // Top face
     0, 4, 1, 5, 2, 6, 3, 7, // Sides
@@ -331,73 +331,58 @@ pub const SQUARES_FLIPPED_TRI_TABLE: [[i32; 9]; 16] = [
 ];
 
 pub const MC_EDGES_TO_LOCAL_VERTS_X: [i32; 12] = [
-    3,     // 0
-    -1,     // 1 
-    3,     // 2
-    -1,     // 3
-    1,     // 4
-    -1,     // 5
-    1,     // 6
-    -1,     // 7
-    0,     // 8
-    2,     // 9
-    2,     // 10
-    0,     // 11
+    3,  // 0
+    -1, // 1
+    3,  // 2
+    -1, // 3
+    1,  // 4
+    -1, // 5
+    1,  // 6
+    -1, // 7
+    0,  // 8
+    2,  // 9
+    2,  // 10
+    0,  // 11
 ];
 
 pub const MC_EDGES_TO_LOCAL_VERTS_Y: [i32; 12] = [
-    0,     // 0
-    1,     // 1 
-    2,     // 2
-    3,     // 3
-    0,     // 4
-    1,     // 5
-    2,     // 6
-    3,     // 7
-    -1,     // 8
-    -1,     // 9
-    -1,     // 10
-    -1,     // 11
+    0,  // 0
+    1,  // 1
+    2,  // 2
+    3,  // 3
+    0,  // 4
+    1,  // 5
+    2,  // 6
+    3,  // 7
+    -1, // 8
+    -1, // 9
+    -1, // 10
+    -1, // 11
 ];
 
 pub const MC_EDGES_TO_LOCAL_VERTS_Z: [i32; 12] = [
-    -1,     // 0
-    0,     // 1 
-    -1,     // 2
-    0,     // 3
-    -1,     // 4
-    2,     // 5
-    -1,     // 6
-    2,     // 7
-    3,     // 8
-    3,     // 9
-    1,     // 10
-    1,     // 11
+    -1, // 0
+    0,  // 1
+    -1, // 2
+    0,  // 3
+    -1, // 4
+    2,  // 5
+    -1, // 6
+    2,  // 7
+    3,  // 8
+    3,  // 9
+    1,  // 10
+    1,  // 11
 ];
 
 // Density offset for the X axis
-pub const DENSITY_OFFSET_X: [usize; 4] = [
-    DATA_OFFSET_TABLE[0],
-    DATA_OFFSET_TABLE[1],
-    DATA_OFFSET_TABLE[5],
-    DATA_OFFSET_TABLE[4],
-];
+pub const DENSITY_OFFSET_X: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[1], DATA_OFFSET_TABLE[5], DATA_OFFSET_TABLE[4]];
 
 // Density offset for the Y axis
-pub const DENSITY_OFFSET_Y: [usize; 4] = [
-    DATA_OFFSET_TABLE[0],
-    DATA_OFFSET_TABLE[3],
-    DATA_OFFSET_TABLE[2],
-    DATA_OFFSET_TABLE[1],
-];
+pub const DENSITY_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[3], DATA_OFFSET_TABLE[2], DATA_OFFSET_TABLE[1]];
 
 // Density offset for the Z axis
-pub const DENSITY_OFFSET_Z: [usize; 4] = [
-    DATA_OFFSET_TABLE[0],
-    DATA_OFFSET_TABLE[4],
-    DATA_OFFSET_TABLE[7],
-    DATA_OFFSET_TABLE[3],
-];
+pub const DENSITY_OFFSET_Z: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[7], DATA_OFFSET_TABLE[3]];
 
 // Marching squares vertex table
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [

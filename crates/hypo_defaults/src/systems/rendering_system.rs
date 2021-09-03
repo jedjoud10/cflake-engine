@@ -1,9 +1,9 @@
 use super::super::components;
 use gl;
-use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
 use hypo_rendering::{Model, Renderer, RendererFlags, Shader, Texture, Window};
+use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData};
 use std::ptr::null;
 

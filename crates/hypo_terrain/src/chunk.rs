@@ -42,7 +42,7 @@ impl ComponentID for Chunk {
 }
 impl Component for Chunk {}
 
-impl Chunk {    
+impl Chunk {
     // Generate the voxel data needed for mesh construction
     pub fn generate_data(&mut self, voxel_generator: &VoxelGenerator) -> (f32, f32) {
         let mut i = 0;

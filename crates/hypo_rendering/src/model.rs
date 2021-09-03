@@ -68,7 +68,7 @@ impl Model {
         output_model.vertices.extend(other.vertices.clone());
         output_model.normals.extend(other.normals.clone());
         output_model.uvs.extend(other.uvs.clone());
-        output_model.tangents.extend(other.tangents.clone());        
+        output_model.tangents.extend(other.tangents.clone());
         return output_model;
     }
 }

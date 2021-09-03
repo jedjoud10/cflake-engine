@@ -465,8 +465,19 @@ pub fn pack(target_dir: String, project_dir: String) {
     println!("{}", format!("{}\\resources\\packed_resources", project_dir).as_str());
     println!("{}", format!("{}packed-resources\\", target_dir).as_str());
     let output = Command::new("robocopy")
-        .args(&[format!("{}\\resources\\packed-resources", project_dir).as_str(), format!("{}packed-resources\\", target_dir).as_str(), "/mir", "/njh", "/njs", "/ndl", "/nc", "/ns"]).spawn().expect("Da bruh");
-        /*
+        .args(&[
+            format!("{}\\resources\\packed-resources", project_dir).as_str(),
+            format!("{}packed-resources\\", target_dir).as_str(),
+            "/mir",
+            "/njh",
+            "/njs",
+            "/ndl",
+            "/nc",
+            "/ns",
+        ])
+        .spawn()
+        .expect("Da bruh");
+    /*
     let target_path: Vec<&str> = target_path.split('\\').collect();
     // The src path
     let src_path = target_path[..(target_path.len() - 5)].join("\\");
