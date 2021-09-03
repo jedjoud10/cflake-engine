@@ -136,6 +136,7 @@ impl ResourceManager {
 impl ResourceManager {
     // Loads a specific resource and caches it so we can use it next time
     pub fn load_packed_resource(&mut self, local_path: &str) -> Option<&Resource> {
+        println!("{}", local_path);
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
         let exe_path = exe_path.to_str().unwrap();

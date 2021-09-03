@@ -49,18 +49,18 @@ impl World {
 
         // Load the default objects for the CacheManagers
         let _white_texture = Texture::new()
-            .load_texture("textures\\white.png", &mut self.resource_manager, &mut self.texture_cacher)
+            .load_texture("defaults\\textures\\white.png", &mut self.resource_manager, &mut self.texture_cacher)
             .unwrap();
         let _black_texture = Texture::new()
-            .load_texture("textures\\black.png", &mut self.resource_manager, &mut self.texture_cacher)
+            .load_texture("defaults\\textures\\black.png", &mut self.resource_manager, &mut self.texture_cacher)
             .unwrap();
-        self.texture_cacher.generate_defaults(vec!["textures\\white.png", "textures\\black.png"]);
+        self.texture_cacher.generate_defaults(vec!["defaults\\textures\\white.png", "defaults\\textures\\black.png"]);
 
         // Copy the default shader name
         let default_shader_name: String;
         {
             let default_shader = Shader::new(
-                vec!["shaders\\default.vrsh.glsl", "shaders\\default.frsh.glsl"],
+                vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\default.frsh.glsl"],
                 &mut self.resource_manager,
                 &mut self.shader_cacher,
             );

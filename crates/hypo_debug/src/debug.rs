@@ -55,7 +55,7 @@ impl DebugRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
         // Set the shader name
-        self.shader_name = Shader::new(vec!["shaders\\debug.vrsh.glsl", "shaders\\debug.frsh.glsl"], resource_manager, shader_cacher).1;
+        self.shader_name = Shader::new(vec!["defaults\\shaders\\debug.vrsh.glsl", "defaults\\shaders\\debug.frsh.glsl"], resource_manager, shader_cacher).1;
     }
     // Draw the debug renderers
     pub fn draw_debug(&mut self, vp_matrix: veclib::Matrix4x4<f32>, shader_cacher_1: &CacheManager<Shader>) {

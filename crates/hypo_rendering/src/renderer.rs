@@ -125,7 +125,7 @@ impl Renderer {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
         for _i in (self.texture_cache_ids.len())..5 {
-            self.texture_cache_ids.push(texture_cacher.get_object_id("textures\\white.png").unwrap());
+            self.texture_cache_ids.push(texture_cacher.get_object_id("defaults\\textures\\white.png").unwrap());
         }
         return self;
     }

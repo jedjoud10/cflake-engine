@@ -70,14 +70,14 @@ pub fn load_entities(world: &mut World) {
         },
     )
     .unwrap();
-    let cube_model = Model::load_model("models\\cube.mdl3d", &mut world.resource_manager).unwrap();
-    let sphere_model = Model::load_model("models\\sphere.mdl3d", &mut world.resource_manager).unwrap();
+    let cube_model = Model::load_model("defaults\\models\\cube.mdl3d", &mut world.resource_manager).unwrap();
+    let sphere_model = Model::load_model("defaults\\models\\sphere.mdl3d", &mut world.resource_manager).unwrap();
     let final_model = cube_model.combine(&sphere_model);
     cube.link_component::<Renderer>(
         &mut world.component_manager,
         Renderer::default()
             .resource_load_textures(
-                vec!["textures\\diffuse.png", "textures\\normals.png"],
+                vec!["defaults\\textures\\diffuse.png", "defaults\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
             )

@@ -30,9 +30,9 @@ impl RenderingSystem {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut SystemEventData) {
         let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::from_resource(data.resource_manager.load_packed_resource("models\\screen_quad.mdl3d").unwrap()).unwrap();
+        quad_renderer_component.model = Model::from_resource(data.resource_manager.load_packed_resource("defaults\\models\\screen_quad.mdl3d").unwrap()).unwrap();
         quad_renderer_component.shader_name = Shader::new(
-            vec!["shaders\\passthrough.vrsh.glsl", "shaders\\screen_quad.frsh.glsl"],
+            vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen_quad.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
         )
@@ -155,7 +155,7 @@ impl System for RenderingSystem {
 
         // Load the wireframe shader
         let wireframe_shader_name = Shader::new(
-            vec!["shaders\\default.vrsh.glsl", "shaders\\wireframe.frsh.glsl"],
+            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\wireframe.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
         )

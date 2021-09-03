@@ -105,7 +105,7 @@ impl System for Terrain {
 
         // Load the shader name
         self.shader_name = Shader::new(
-            vec!["shaders\\default.vrsh.glsl", "shaders\\triplanar.frsh.glsl"],
+            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\triplanar.frsh.glsl"],
             data.resource_manager,
             data.shader_cacher,
         )
@@ -115,12 +115,12 @@ impl System for Terrain {
         self.texture_ids = vec![
             Texture::new()
                 .enable_mipmaps()
-                .load_texture("textures\\rock\\Rock033_1K_Color.png", data.resource_manager, data.texture_cacher)
+                .load_texture("user\\textures\\rock\\Rock033_1K_Color.png", data.resource_manager, data.texture_cacher)
                 .unwrap()
                 .1,
             Texture::new()
                 .enable_mipmaps()
-                .load_texture("textures\\rock\\Rock033_1K_Normal.png", data.resource_manager, data.texture_cacher)
+                .load_texture("user\\textures\\rock\\Rock033_1K_Normal.png", data.resource_manager, data.texture_cacher)
                 .unwrap()
                 .1,
         ];

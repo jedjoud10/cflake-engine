@@ -30,7 +30,7 @@ impl System for SkySystem {
 
         // Get shader name
         let sky_shader_name = Shader::new(
-            vec!["shaders\\default.vrsh.glsl", "shaders\\sky.frsh.glsl"],
+            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\sky.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
         )
@@ -40,12 +40,12 @@ impl System for SkySystem {
         let cached_texture_id = Texture::new()
             .enable_mipmaps()
             .set_wrapping_mode(TextureWrapping::ClampToEdge)
-            .load_texture("textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
+            .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
             .unwrap()
             .1;
 
         // Load model
-        let mut model = Model::load_model("models\\sphere.mdl3d", data.resource_manager).unwrap();
+        let mut model = Model::load_model("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
         model.flip_triangles();
 
         // Link components

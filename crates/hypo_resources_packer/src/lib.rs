@@ -296,7 +296,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
     let env_path = src_path.clone();
     let env_path: Vec<&str> = env_path.split('\\').collect();
     let _env_path: String = format!("{}\\", &env_path[..(env_path.len() - 2)].join("\\"));
-    let resources_path = format!("{}\\resources\\resources\\defaults\\", src_path);
+    let resources_path = format!("{}\\resources\\resources\\", src_path);
     let packed_resources_path = format!("{}\\resources\\packed-resources\\", src_path);
     println!("Resource path '{}'", resources_path);
     // Make the log file that will be used later to save time when packing resources
