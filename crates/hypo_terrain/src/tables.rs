@@ -381,7 +381,7 @@ pub const DENSITY_OFFSET_X: [usize; 4] = [
 
 pub const DENSITY_OFFSET_X2: [usize; 4] = [
     DATA_OFFSET_TABLE[0],
-    DATA_OFFSET_TABLE[2],
+    DATA_OFFSET_TABLE[3],
     DATA_OFFSET_TABLE[6],
     DATA_OFFSET_TABLE[7],
 ];
