@@ -34,17 +34,4 @@ impl AABB {
 }
 
 // Main traits implemented
-impl ComponentInternal for AABB {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-impl ComponentID for AABB {
-    fn get_component_name() -> String {
-        String::from("AABB")
-    }
-}
-impl Component for AABB {}
+hypo_ecs::impl_component!(AABB);

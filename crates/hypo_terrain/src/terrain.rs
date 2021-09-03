@@ -1,4 +1,3 @@
-use super::chunk::Chunk;
 use super::voxel::VoxelGenerator;
 use hypo_defaults::components;
 use hypo_ecs::*;
@@ -15,7 +14,25 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 3.0;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 2;
+pub const OCTREE_DEPTH: u8 = 8;
+
+// A component that will be added to well... chunks
+#[derive(Default)]
+pub struct Chunk {
+    pub chunk_data: super::ChunkData,
+}
+
+// Main traits implemented
+hypo_ecs::impl_component!(Chunk);
+
+// This is a procedural model generator
+impl ProceduralModelGenerator for Chunk {
+    // Generate a procedural marching cube model
+    fn generate_model(&self) -> Model {
+        super::mesher::generate_model(&self.chunk_data.data, true)
+    }
+}
+
 
 // Hehe terrain generator momenta
 #[derive(Default)]
@@ -38,24 +55,24 @@ impl Terrain {
     pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, position: veclib::Vector3<i64>, size: u64) -> Option<Entity> {
         // Create the entity
         let name = format!("Chunk {:?} {:?}", position, size);
-        let mut chunk = Entity::new(name.as_str());
+        let mut entity = Entity::new(name.as_str());
 
         // Create the chunk component
-        let mut chunk_cmp = Chunk::default();
-        chunk_cmp.position = position;
-        chunk_cmp.size = size;
-        let min_max = chunk_cmp.generate_data(&self.voxel_generator);
+        let mut chunk = Chunk::default();
+        chunk.chunk_data.position = position;
+        chunk.chunk_data.size = size;
+        let min_max = chunk.chunk_data.generate_data(&self.voxel_generator);
         // Check if we should even generate the model
         if min_max.0.signum() == min_max.1.signum() {
             // No intersection
             return None;
         }
 
-        let model = chunk_cmp.generate_model();
+        let model = chunk.generate_model();
 
         // Link the components
-        chunk.link_component::<Chunk>(component_manager, chunk_cmp).unwrap();
-        chunk
+        entity.link_component::<Chunk>(component_manager, chunk).unwrap();
+        entity
             .link_component::<components::Transform>(
                 component_manager,
                 components::Transform {
@@ -65,7 +82,7 @@ impl Terrain {
                 },
             )
             .unwrap();
-        chunk
+        entity
             .link_component::<Renderer>(
                 component_manager,
                 Renderer::new()
@@ -77,11 +94,11 @@ impl Terrain {
             )
             .unwrap();
         // TODO: Fix this
-        chunk
-            .link_component::<components::AABB>(component_manager, components::AABB::from_components(&chunk, component_manager))
+        entity
+            .link_component::<components::AABB>(component_manager, components::AABB::from_components(&entity, component_manager))
             .unwrap();
 
-        return Some(chunk);
+        return Some(entity);
     }
 }
 
@@ -130,21 +147,19 @@ impl System for Terrain {
         self.octree.depth = OCTREE_DEPTH;
         self.octree.lod_factor = LOD_FACTOR;
         let nodes = self.octree.generate_base_octree();
-
+        /*
         if let Option::Some(chunk_entity) = self.add_chunk_entity(data.texture_cacher, data.component_manager, veclib::Vector3::default_zero(), 16) {
             let entity_id = data.entity_manager.add_entity_s(chunk_entity);
         }
-
+        */
         for (_, octree_node) in nodes {
             // Only add the octree nodes that have no children
-            if !octree_node.children {
-                /*
+            if !octree_node.children {                
                 let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, octree_node.position, octree_node.half_extent * 2);
                 if let Option::Some(chunk_entity) = chunk_entity {
                     let entity_id = data.entity_manager.add_entity_s(chunk_entity);
                     self.chunks.insert(octree_node.get_center(), entity_id);
-                }
-                */
+                }                
             }
         }
         // Debug controls

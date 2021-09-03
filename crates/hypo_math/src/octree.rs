@@ -38,6 +38,7 @@ impl Default for Octree {
     }
 }
 
+// TODO: Rewrite this
 impl Octree {
     // Get the subdivided nodes that have passed through the post process check
     pub fn calculate_postprocess_nodes(&self, target: &veclib::Vector3<f32>, nodes: &HashMap<veclib::Vector3<i64>, OctreeNode>) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
@@ -197,7 +198,6 @@ impl Octree {
 
         let center: veclib::Vector3<i64> = marked_node.as_ref().unwrap().get_center();
         let depth: u8 = marked_node.as_ref().unwrap().depth;
-        println!("Time in micros: {}", instant.elapsed().as_micros());
         // Remove the nodes
         /*
         // TODO: Optimize this

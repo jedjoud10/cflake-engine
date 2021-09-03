@@ -7,17 +7,4 @@ pub struct Sky {
 }
 
 // Main traits implemented
-impl ComponentInternal for Sky {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-impl ComponentID for Sky {
-    fn get_component_name() -> String {
-        String::from("Sky")
-    }
-}
-impl Component for Sky {}
+hypo_ecs::impl_component!(Sky);

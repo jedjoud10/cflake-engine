@@ -36,20 +36,4 @@ impl Transform {
     }
 }
 
-impl ComponentInternal for Transform {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-
-impl ComponentID for Transform {
-    fn get_component_name() -> String {
-        String::from("Transform")
-    }
-}
-
-impl Component for Transform {}
+hypo_ecs::impl_component!(Transform);

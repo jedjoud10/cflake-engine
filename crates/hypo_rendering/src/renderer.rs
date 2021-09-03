@@ -41,21 +41,7 @@ impl Default for Renderer {
 }
 
 // Main traits implemented
-impl ComponentInternal for Renderer {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-impl ComponentID for Renderer {
-    fn get_component_name() -> String {
-        String::from("Render")
-    }
-}
-impl Component for Renderer {}
+hypo_ecs::impl_component!(Renderer);
 
 // Everything related to the creation of a renderer
 impl Renderer {

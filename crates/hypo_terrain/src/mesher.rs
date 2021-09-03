@@ -11,11 +11,12 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Model {
+pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, skirts: bool) -> Model {
     let mut model: Model = Model::default();
     let mut skirts_model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
+    let instant = std::time::Instant::now();
     // Loop over every voxel
     for x in 0..CHUNK_SIZE - 2 {
         for y in 0..CHUNK_SIZE - 2 {
@@ -108,32 +109,33 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         }
 
                         // For the X axis
-                        if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
-                            local_edges_hit_x_base = true;
-                        }
-                        if vert1_usize.0 == CHUNK_SIZE - 2 && vert2_usize.0 == CHUNK_SIZE - 2 && x == CHUNK_SIZE - 3 {
-                            local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
-                            println!("HIT {:?}", local_edges_x);
-                            local_edges_hit_x_end = true;
-                        }
-                        // For the Y axis
-                        if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
-                            local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
-                            local_edges_hit_y_base = true;
-                        }
-                        if vert1_usize.1 == CHUNK_SIZE - 2 && vert2_usize.1 == CHUNK_SIZE - 2 && y == CHUNK_SIZE - 3 {
-                            local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
-                            local_edges_hit_y_end = true;
-                        }
-                        // For the Z axis
-                        if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
-                            local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
-                            local_edges_hit_z_base = true;
-                        }
-                        if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
-                            local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
-                            local_edges_hit_z_end = true;
+                        if skirts {                            
+                            if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
+                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
+                                local_edges_hit_x_base = true;
+                            }
+                            if vert1_usize.0 == CHUNK_SIZE - 2 && vert2_usize.0 == CHUNK_SIZE - 2 && x == CHUNK_SIZE - 3 {
+                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
+                                local_edges_hit_x_end = true;
+                            }
+                            // For the Y axis
+                            if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
+                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
+                                local_edges_hit_y_base = true;
+                            }
+                            if vert1_usize.1 == CHUNK_SIZE - 2 && vert2_usize.1 == CHUNK_SIZE - 2 && y == CHUNK_SIZE - 3 {
+                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
+                                local_edges_hit_y_end = true;
+                            }
+                            // For the Z axis
+                            if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
+                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
+                                local_edges_hit_z_base = true;
+                            }
+                            if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
+                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
+                                local_edges_hit_z_end = true;
+                            }
                         }
                     }
                 }
