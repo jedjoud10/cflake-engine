@@ -114,20 +114,19 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
                             local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_y = true;
-                        }
-                        /*
+                        }                        
                         // This edge is at the Z base
                         if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
-                            local_edges_x[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
-                            local_edges_hit_x = true;
-                        }
-                        */
+                            local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
+                            local_edges_hit_z = true;
+                        }                        
                     }
                 }
             
                 // If this is the base skirt X
                 //if local_edges_hit_x { solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, DENSITY_OFFSET_X); }
-                if local_edges_hit_y { solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, DENSITY_OFFSET_Y); }
+                //if local_edges_hit_y { solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, DENSITY_OFFSET_Y); }
+                if local_edges_hit_z { solve_marching_squares(y, x, i, &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, DENSITY_OFFSET_Z); }
             }
         }    
     }    
@@ -247,5 +246,5 @@ fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &vecli
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
 fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(vertex.y() + offset.x(), vertex.x() + offset.y(), slice as f32)
+    veclib::Vector3::<f32>::new(vertex.y() + offset.y(), vertex.x() + offset.x(), slice as f32)
 }

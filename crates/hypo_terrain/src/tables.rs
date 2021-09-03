@@ -328,9 +328,9 @@ pub const MC_EDGES_TO_LOCAL_VERTS_X: [i32; 12] = [
 
 pub const MC_EDGES_TO_LOCAL_VERTS_Y: [i32; 12] = [
     0,     // 0
-    -1,     // 1 
+    1,     // 1 
     2,     // 2
-    -1,     // 3
+    3,     // 3
     -1,     // 4
     -1,     // 5
     -1,     // 6
@@ -339,6 +339,21 @@ pub const MC_EDGES_TO_LOCAL_VERTS_Y: [i32; 12] = [
     -1,     // 9
     -1,     // 10
     -1,     // 11
+];
+
+pub const MC_EDGES_TO_LOCAL_VERTS_Z: [i32; 12] = [
+    -1,     // 0
+    -1,     // 1 
+    -1,     // 2
+    0,     // 3
+    -1,     // 4
+    -1,     // 5
+    -1,     // 6
+    2,     // 7
+    3,     // 8
+    -1,     // 9
+    -1,     // 10
+    1,     // 11
 ];
 
 // Density offset for the X axis
@@ -355,6 +370,14 @@ pub const DENSITY_OFFSET_Y: [usize; 4] = [
     DATA_OFFSET_TABLE[3],
     DATA_OFFSET_TABLE[2],
     DATA_OFFSET_TABLE[1],
+];
+
+// Density offset for the Z axis
+pub const DENSITY_OFFSET_Z: [usize; 4] = [
+    DATA_OFFSET_TABLE[0],
+    DATA_OFFSET_TABLE[4],
+    DATA_OFFSET_TABLE[7],
+    DATA_OFFSET_TABLE[3],
 ];
 
 // Marching squares vertex table
