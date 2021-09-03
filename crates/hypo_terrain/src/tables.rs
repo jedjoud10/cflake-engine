@@ -311,8 +311,24 @@ pub const SQUARES_TRI_TABLE: [[i32; 9]; 16] = [
     [6, 2, 0, 6, 4, 2, -1, -1, -1],       // 15
 ];
 
-// Marching squares vertex table
+// Turn the marching cubes edges into the indices for the two local vertices that the edge uses in 2D, for the all the axii
+pub const MC_EDGES_TO_LOCAL_VERTS: [i32; 12] = [
+    -1,     // 0
+    -1,     // 1 
+    -1,     // 2
+    -1,     // 3
+    -1,     // 4
+    -1,     // 5
+    -1,     // 6
+    -1,     // 7
+    0,     // 8
+    2,     // 9
+    -1,     // 10
+    -1,     // 11
+];
 
+
+// Marching squares vertex table
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
     veclib::Vector2::<f32> { data: [0.0, 0.0] },
     veclib::Vector2::<f32> { data: [-1.0, -1.0] },

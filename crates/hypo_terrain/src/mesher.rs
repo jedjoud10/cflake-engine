@@ -39,6 +39,10 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 // Get triangles
                 let edges: [i8; 16] = TRI_TABLE[case_index as usize];
 
+                // Local edges
+                let mut local_edges: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
+                let mut local_edges_hit: bool = false;
+
                 // The vertex indices that are gonna be used for the skirts
                 for edge in edges {
                     // Make sure the triangle is valid
@@ -95,28 +99,29 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         }
 
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                            println!("First");
-                            println!("A: {:?}", edge_tuple);
-                            println!("B: {} {}", 2 * y, 2 * x);
+                            local_edges[MC_EDGES_TO_LOCAL_VERTS[edge as usize] as usize] = edge_tuple;
+                            local_edges_hit = true;
+                            println!("B: {}", case_index);
                         }
                     }
                 }
             
                 // If this is the base skirt X
-                if x == 0 {
+                if local_edges_hit {
                     println!("Second");
                     let mut case = 0_u8;
                     //  3---2
                     //  |   |
                     //  |   |
                     //  0---1
-                    case += ((data[i + DATA_OFFSET_TABLE[0]].density < 0.0) as u8) * 1;
-                    case += ((data[i + DATA_OFFSET_TABLE[1]].density < 0.0) as u8) * 2;
-                    case += ((data[i + DATA_OFFSET_TABLE[5]].density < 0.0) as u8) * 4;
-                    case += ((data[i + DATA_OFFSET_TABLE[4]].density < 0.0) as u8) * 8;
+                    case += ((data[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
+                    case += ((data[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
+                    case += ((data[i + DATA_OFFSET_TABLE[5]].density > 0.0) as u8) * 4;
+                    case += ((data[i + DATA_OFFSET_TABLE[4]].density > 0.0) as u8) * 8;
+                    println!("{}", case);
                     // Skip the full and empty cases
                     if case == 0 || case == 15 {
-                        //continue;
+                        continue;
                     }
                     let offset = veclib::Vector2::<f32>::new(y as f32, z as f32);
                     // The vertices to connect
@@ -134,15 +139,10 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                                     match tri {
                                         // TODO: Turn this into a more generalized algorithm
                                         1 | 3 | 5 | 7 => {             
-                                            let last = SQUARES_VERTEX_TABLE[tri as usize - 1];
-                                            let next = SQUARES_VERTEX_TABLE[((tri - 1) % 8) as usize];      
-                                            let edge_tuple: (u32, u32, u32) = (
-                                                0,
-                                                2 * y as u32 + last.x() as u32 + next.x() as u32,
-                                                2 * z as u32 + last.y() as u32 + next.y() as u32,
-                                            );
-                                            println!("{} {}", 2 * y, 2 * z);
+                                            let index = (tri - 1) / 2;
+                                            let edge_tuple = local_edges[index as usize];
                                             shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
+                                            println!("Run");
                                             //tri_global_switched[tri_i] = skirt_vert_indices[&edge_tuple];
                                         }
                                         _ => {}
@@ -180,12 +180,13 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
             SkirtVertex::Vertex(vertex) => {
                 // This vertex isn't a shared vertex
                 skirts_model.vertices.push(vertex.clone());
-                skirts_model.triangles.push(skirts_model.triangles.len() as u32);
+                skirts_model.triangles.push(skirts_model.triangles.len() as u32 + model.vertices.len() as u32);
             },
-            SkirtVertex::SharedVertex(coord_tuple) => {                
-                println!("{:?}", coord_tuple);
+            SkirtVertex::SharedVertex(coord_tuple) => {    
+                let tri = duplicate_vertices[coord_tuple];
+                println!("{:?}", tri);
                 // This vertex is a vertex that already exists in the main model
-                skirts_model.triangles.push(duplicate_vertices[coord_tuple]);
+                skirts_model.triangles.push(tri);
             },
         }
     } 
