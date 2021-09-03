@@ -326,6 +326,21 @@ pub const MC_EDGES_TO_LOCAL_VERTS_X: [i32; 12] = [
     -1,     // 11
 ];
 
+pub const MC_EDGES_TO_LOCAL_VERTS_Y: [i32; 12] = [
+    0,     // 0
+    1,     // 1 
+    2,     // 2
+    3,     // 3
+    -1,     // 4
+    -1,     // 5
+    -1,     // 6
+    -1,     // 7
+    -1,     // 8
+    -1,     // 9
+    -1,     // 10
+    -1,     // 11
+];
+
 // Density offset for the X axis
 pub const DENSITY_OFFSET_X: [usize; 4] = [
     DATA_OFFSET_TABLE[0],

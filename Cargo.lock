@@ -617,7 +617,7 @@ dependencies = [
 [[package]]
 name = "veclib"
 version = "0.1.0"
-source = "git+https://github.com/jedjoud10/veclib#691bbd7eebc51d3e0236c2365920a8ca862ac46a"
+source = "git+https://github.com/jedjoud10/veclib#72fe77aa5a9580d8f39fe286e0e8079963e87539"
 
 [[package]]
 name = "walkdir"
