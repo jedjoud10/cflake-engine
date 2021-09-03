@@ -314,16 +314,31 @@ pub const SQUARES_TRI_TABLE: [[i32; 9]; 16] = [
 pub const MC_EDGES_TO_LOCAL_VERTS_X: [i32; 12] = [
     3,     // 0
     -1,     // 1 
-    -1,     // 2
+    3,     // 2
     -1,     // 3
     1,     // 4
     -1,     // 5
-    -1,     // 6
+    1,     // 6
     -1,     // 7
     0,     // 8
     2,     // 9
-    -1,     // 10
-    -1,     // 11
+    2,     // 10
+    0,     // 11
+];
+
+pub const MC_EDGES_TO_LOCAL_VERTS_X2: [i32; 12] = [
+    -1,     // 0
+    -1,     // 1 
+    1,     // 2
+    -1,     // 3
+    -1,     // 4
+    -1,     // 5
+    3,     // 6
+    -1,     // 7
+    -1,     // 8
+    -1,     // 9
+    0,     // 10
+    2,     // 11
 ];
 
 pub const MC_EDGES_TO_LOCAL_VERTS_Y: [i32; 12] = [
@@ -362,6 +377,13 @@ pub const DENSITY_OFFSET_X: [usize; 4] = [
     DATA_OFFSET_TABLE[1],
     DATA_OFFSET_TABLE[5],
     DATA_OFFSET_TABLE[4],
+];
+
+pub const DENSITY_OFFSET_X2: [usize; 4] = [
+    DATA_OFFSET_TABLE[0],
+    DATA_OFFSET_TABLE[2],
+    DATA_OFFSET_TABLE[6],
+    DATA_OFFSET_TABLE[7],
 ];
 
 // Density offset for the Y axis

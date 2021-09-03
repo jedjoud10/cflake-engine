@@ -41,13 +41,14 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
 
                 // Local edges for the X axis
                 let mut local_edges_x: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                let mut local_edges_hit_x: bool = false;
+                let mut local_edges_hit_x_base: bool = false;
+                let mut local_edges_hit_x_end: bool = false;
                 // Local edges for the X axis
                 let mut local_edges_y: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                let mut local_edges_hit_y: bool = false;
+                let mut local_edges_hit_y_base: bool = false;
                 // Local edges for the X axis
                 let mut local_edges_z: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                let mut local_edges_hit_z: bool = false;
+                let mut local_edges_hit_z_base: bool = false;
                 
 
                 // The vertex indices that are gonna be used for the skirts
@@ -106,10 +107,17 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         }
 
                         // This edge is at the X base
+                        
                         if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                             local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
-                            local_edges_hit_x = true;
+                            local_edges_hit_x_base = true;
                         }
+                        
+                        if vert1_usize.0 == CHUNK_SIZE-2 && vert2_usize.0 == CHUNK_SIZE-2 {
+                            local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X2[edge as usize] as usize] = edge_tuple;
+                            local_edges_hit_x_end = true;
+                        }
+                        /*
                         // This edge is at the Y base
                         if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
                             local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
@@ -119,14 +127,16 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
                             local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
                             local_edges_hit_z = true;
-                        }                        
+                        }  
+                        */                      
                     }
                 }
             
                 // If this is the base skirt X
-                //if local_edges_hit_x { solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, DENSITY_OFFSET_X); }
+                //if local_edges_hit_x_base { solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X); }
+                if local_edges_hit_x_end { solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, CHUNK_SIZE-2, DENSITY_OFFSET_X); }
                 //if local_edges_hit_y { solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, DENSITY_OFFSET_Y); }
-                if local_edges_hit_z { solve_marching_squares(y, x, i, &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, DENSITY_OFFSET_Z); }
+                //if local_edges_hit_z { solve_marching_squares(y, x, i, &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, DENSITY_OFFSET_Z); }
             }
         }    
     }    
@@ -177,7 +187,7 @@ pub enum SkirtVertex {
 
 
 // Solve a single marching squares case using a passed function for 
-pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, local_edges: &[(u32, u32, u32); 4], shared_vertices: &mut Vec<SkirtVertex>, axis: veclib::Vec3Axis, density_offset: [usize; 4]) {
+pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, local_edges: &[(u32, u32, u32); 4], shared_vertices: &mut Vec<SkirtVertex>, axis: veclib::Vec3Axis, slice: usize, density_offset: [usize; 4]) {
     println!("Second");
     let mut case = 0_u8;
     // For axis X:
@@ -222,9 +232,9 @@ pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (
                     //tri_global_switched[tri_i] = model.triangles.len() as u32 + skirts_model.vertices.len() as u32;
                     // This is a vertex that is not present in the main mesh    
                     let new_vertex: veclib::Vector3<f32> = match axis {
-                        veclib::Vec3Axis::X => transform_x_local(0, &vertex, &offset),
-                        veclib::Vec3Axis::Y => transform_y_local(0, &vertex, &offset),
-                        veclib::Vec3Axis::Z => transform_z_local(0, &vertex, &offset),
+                        veclib::Vec3Axis::X => transform_x_local(slice, &vertex, &offset),
+                        veclib::Vec3Axis::Y => transform_y_local(slice, &vertex, &offset),
+                        veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
                     };
                     println!("Before {:?} After {:?}", vertex, new_vertex);
                     shared_vertices.push(SkirtVertex::Vertex(new_vertex));
@@ -236,7 +246,7 @@ pub fn solve_marching_squares(a: usize, b: usize, i: usize, data: &Box<[Voxel; (
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
 fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(slice as f32, vertex.y() + offset.x(), vertex.x() + offset.y())
+    veclib::Vector3::<f32>::new(slice as f32 + 1.0, vertex.y() + offset.x(), vertex.x() + offset.y())
 }
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis
