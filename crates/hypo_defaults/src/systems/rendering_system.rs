@@ -196,7 +196,9 @@ impl RenderingSystem {
             wireframe_shader.set_mat44("view_matrix", view_matrix);
             unsafe {
                 // Set the wireframe rendering
-                gl::PolygonMode(gl::FRONT, gl::LINE);
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                gl::Disable(gl::CULL_FACE);
+                
 
                 gl::BindVertexArray(renderer.gpu_data.vertex_array_object);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, renderer.gpu_data.element_buffer_object);
@@ -204,6 +206,7 @@ impl RenderingSystem {
 
                 // Reset the wireframe settings
                 gl::BindTexture(gl::TEXTURE_2D, 0);
+                gl::Enable(gl::CULL_FACE);
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             }
         }
