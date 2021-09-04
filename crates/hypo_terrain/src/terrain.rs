@@ -163,9 +163,7 @@ impl System for Terrain {
                         match self.chunk_manager.remove_chunk(&chunk_coords) {
                             Some(_) => {
                                 // Get the entity id
-                                let entity_id = self.chunk_manager.remove_chunk_entity(&chunk_coords);
-                                // Remove the chunk from the world
-                                data.entity_manager.remove_entity_s(&entity_id);
+                                self.chunk_manager.remove_chunk_entity(&chunk_coords);                               
                             },
                             None => {},
                         }                        
@@ -175,12 +173,16 @@ impl System for Terrain {
             }            
         }
         // Update the chunk manager
-        let added_chunks = self.chunk_manager.update(&self.voxel_generator);
+        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator);
         for (coords, model) in added_chunks {
             // Add the entity
             let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, &coords, model);
             let entity_id = data.entity_manager.add_entity_s(entity);
             self.chunk_manager.add_chunk_entity(&coords, entity_id);
+        }
+        for entity_id in removed_chunks {
+            // Removal the entity from the world
+            data.entity_manager.remove_entity_s(&entity_id).unwrap();
         }
     }
 
