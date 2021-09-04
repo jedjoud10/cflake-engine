@@ -116,31 +116,31 @@ impl Shader {
         unsafe { gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr()) }
     }
     // Set a f32 uniform
-    pub fn set_f32(&self, name: &str, value: f32) {
+    pub fn set_f32(&self, name: &str, value: &f32) {
         unsafe {
-            gl::Uniform1f(self.get_uniform_location(name), value);
+            gl::Uniform1f(self.get_uniform_location(name), *value);
         }
     }
     // Set a vec2 f32 uniform
-    pub fn set_vec2f32(&self, name: &str, vec: veclib::Vector2<f32>) {
+    pub fn set_vec2f32(&self, name: &str, vec: &veclib::Vector2<f32>) {
         unsafe {
             gl::Uniform2f(self.get_uniform_location(name), vec[0], vec[1]);
         }
     }
     // Set a vec3 f32 uniform
-    pub fn set_vec3f32(&self, name: &str, vec: veclib::Vector3<f32>) {
+    pub fn set_vec3f32(&self, name: &str, vec: &veclib::Vector3<f32>) {
         unsafe {
             gl::Uniform3f(self.get_uniform_location(name), vec[0], vec[1], vec[2]);
         }
     }
     // Set a vec4 f32 uniform
-    pub fn set_vec4f32(&self, name: &str, vec: veclib::Vector4<f32>) {
+    pub fn set_vec4f32(&self, name: &str, vec: &veclib::Vector4<f32>) {
         unsafe {
             gl::Uniform4f(self.get_uniform_location(name), vec[0], vec[1], vec[2], vec[3]);
         }
     }
     // Set a matrix 4x4 f32
-    pub fn set_mat44(&self, name: &str, matrix: veclib::Matrix4x4<f32>) {
+    pub fn set_mat44(&self, name: &str, matrix: &veclib::Matrix4x4<f32>) {
         unsafe {
             let ptr: *const f32 = &matrix[0][0];
             gl::UniformMatrix4fv(self.get_uniform_location(name), 1, gl::FALSE, ptr);
@@ -155,25 +155,25 @@ impl Shader {
         }
     }
     // Set a i32
-    pub fn set_i32(&self, name: &str, value: i32) {
+    pub fn set_i32(&self, name: &str, value: &i32) {
         unsafe {
-            gl::Uniform1i(self.get_uniform_location(name), value);
+            gl::Uniform1i(self.get_uniform_location(name), *value);
         }
     }
     // Set a vec2 i32 uniform
-    pub fn set_vec2i32(&self, name: &str, vec: veclib::Vector2<i32>) {
+    pub fn set_vec2i32(&self, name: &str, vec: &veclib::Vector2<i32>) {
         unsafe {
             gl::Uniform2i(self.get_uniform_location(name), vec[0], vec[1]);
         }
     }
     // Set a vec3 i32 uniform
-    pub fn set_vec3i32(&self, name: &str, vec: veclib::Vector3<i32>) {
+    pub fn set_vec3i32(&self, name: &str, vec: &veclib::Vector3<i32>) {
         unsafe {
             gl::Uniform3i(self.get_uniform_location(name), vec[0], vec[1], vec[2]);
         }
     }
     // Set a vec4 i32 uniform
-    pub fn set_vec4i32(&self, name: &str, vec: veclib::Vector4<i32>) {
+    pub fn set_vec4i32(&self, name: &str, vec: &veclib::Vector4<i32>) {
         unsafe {
             gl::Uniform4i(self.get_uniform_location(name), vec[0], vec[1], vec[2], vec[3]);
         }

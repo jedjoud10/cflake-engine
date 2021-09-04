@@ -12,7 +12,6 @@ bitflags! {
     }
 }
 // A component that will be linked to entities that are renderable
-#[derive(Debug)]
 pub struct Renderer {
     pub render_state: EntityRenderState,
     pub gpu_data: ModelDataGPU,
@@ -20,6 +19,7 @@ pub struct Renderer {
     pub model: Model,
     // Rendering stuff
     pub texture_cache_ids: Vec<u16>,
+    pub uniform_setter: ShaderUniformSetter,
     // Default parameters for the shader
     pub uv_scale: veclib::Vector2<f32>,
     // Flags
@@ -34,6 +34,7 @@ impl Default for Renderer {
             shader_name: String::default(),
             model: Model::default(),
             texture_cache_ids: Vec::new(),
+            uniform_setter: ShaderUniformSetter::default(),
             uv_scale: veclib::Vector2::<f32>::default_one(),
             flags: RendererFlags::DEFAULT,
         }
@@ -115,6 +116,10 @@ impl Renderer {
         }
         return self;
     }
+    // Set a specific uniform, wrapper around ShaderUniformSetter
+    pub fn set_uniform(&mut self, uniform_name: &str, value: ShaderArg) {
+        self.uniform_setter.set_uniform(uniform_name, value);
+    }   
 }
 
 impl Renderer {
@@ -229,4 +234,31 @@ impl Default for EntityRenderState {
     fn default() -> Self {
         Self::Visible
     }
+}
+
+// Used to manually set some uniforms for the shaders
+#[derive(Default)]
+pub struct ShaderUniformSetter {
+    // The arguments that are going to be written to
+    pub uniforms: Vec<(String, ShaderArg)>,
+}
+
+impl ShaderUniformSetter {
+    // Set a specific uniform to a specific value
+    pub fn set_uniform(&mut self, uniform_name: &str, value: ShaderArg) {
+        self.uniforms.push((uniform_name.to_string(), value));
+    }    
+}
+
+// The type of shader argument
+pub enum ShaderArg {
+    F32(f32),
+    I32(i32),
+    V2F32(veclib::Vector2<f32>),
+    V3F32(veclib::Vector3<f32>),
+    V4F32(veclib::Vector4<f32>),
+    V2I32(veclib::Vector2<i32>),
+    V3I32(veclib::Vector3<i32>),
+    V4I32(veclib::Vector4<i32>),
+    MAT44(veclib::Matrix4x4<f32>),
 }

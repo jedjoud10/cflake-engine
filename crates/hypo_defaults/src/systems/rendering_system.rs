@@ -27,6 +27,28 @@ pub struct RenderingSystem {
 
 // Everything custom
 impl RenderingSystem {
+    // Read the set uniforms from a renderer's ShaderUniformSetter and update the shader
+    fn set_uniforms_from_custom_setter(&self, shader: &Shader, renderer: &Renderer) {
+        // Use the shader first
+        shader.use_shader();
+        // Loop over all the set uniforms
+        for (name, data) in renderer.uniform_setter.uniforms.iter() {
+            // Now it's the painful part
+            unsafe {
+                match data {
+                    hypo_rendering::ShaderArg::F32(v) => shader.set_f32(name, v),
+                    hypo_rendering::ShaderArg::I32(v) => shader.set_i32(name, v),
+                    hypo_rendering::ShaderArg::V2F32(v) => shader.set_vec2f32(name, v),
+                    hypo_rendering::ShaderArg::V3F32(v) => shader.set_vec3f32(name, v),
+                    hypo_rendering::ShaderArg::V4F32(v) => shader.set_vec4f32(name, v),
+                    hypo_rendering::ShaderArg::V2I32(v) => shader.set_vec2i32(name, v),
+                    hypo_rendering::ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
+                    hypo_rendering::ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
+                    hypo_rendering::ShaderArg::MAT44(v) => shader.set_mat44(name, v),
+                }
+            }
+        }
+    }
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut SystemEventData) {
         let mut quad_renderer_component = Renderer::default();
@@ -131,12 +153,12 @@ impl RenderingSystem {
         let mvp_matrix: veclib::Matrix4x4<f32> = projection_matrix * view_matrix * model_matrix;
         
         // Pass the MVP and the model matrix to the shader
-        shader.set_mat44("mvp_matrix", mvp_matrix);
-        shader.set_mat44("model_matrix", model_matrix);
-        shader.set_mat44("view_matrix", view_matrix);
-        shader.set_vec3f32("view_pos", camera_position);
-        shader.set_vec2f32("uv_scale", renderer.uv_scale);
-        shader.set_f32("time", data.time_manager.seconds_since_game_start as f32);
+        shader.set_mat44("mvp_matrix", &mvp_matrix);
+        shader.set_mat44("model_matrix", &model_matrix);
+        shader.set_mat44("view_matrix", &view_matrix);
+        shader.set_vec3f32("view_pos", &camera_position);
+        shader.set_vec2f32("uv_scale", &renderer.uv_scale);
+        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
 
         // Get the OpenGL texture id so we can bind it to the shader
         let mut textures: Vec<&Texture> = Vec::new();
@@ -251,7 +273,7 @@ impl System for RenderingSystem {
             vp_matrix = projection_matrix * view_matrix;
         }
         // Draw the debug primitives
-        data.debug.draw_debug(vp_matrix, &data.shader_cacher.1);
+        data.debug.draw_debug(&vp_matrix, &data.shader_cacher.1);
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();
         let camera_position = data
             .entity_manager
@@ -265,10 +287,10 @@ impl System for RenderingSystem {
         shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
         shader.set_t2d("position_texture", &self.position_texture, gl::TEXTURE2);
         shader.set_t2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);
-        shader.set_vec2i32("resolution", veclib::Vector2::new(self.window.size.0 as i32, self.window.size.1 as i32));
-        shader.set_f32("time", data.time_manager.seconds_since_game_start as f32);
+        shader.set_vec2i32("resolution", &veclib::Vector2::new(self.window.size.0 as i32, self.window.size.1 as i32));
+        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         // Sky params
-        shader.set_vec3f32("directional_light_dir", veclib::Vector3::new(0.0, 1.0, 0.0));
+        shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
         let sky_component = data
             .entity_manager
             .get_entity(&data.custom_data.sky_entity_id)
@@ -284,8 +306,8 @@ impl System for RenderingSystem {
         );
 
         // Other params
-        shader.set_vec3f32("view_pos", camera_position);
-        shader.set_i32("debug_view", self.debug_view as i32);        
+        shader.set_vec3f32("view_pos", &camera_position);
+        shader.set_i32("debug_view", &(self.debug_view as i32));        
         // Render the screen quad
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
