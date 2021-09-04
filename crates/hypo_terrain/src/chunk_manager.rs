@@ -8,7 +8,9 @@ use crate::{ChunkData, VoxelGenerator, chunk_data::ChunkCoords, mesher};
 #[derive(Default)]
 pub struct ChunkManager {
     pub chunks_to_generate: Vec<ChunkData>,
-    pub chunks: HashMap<veclib::Vector3<i64>, ChunkData>
+    // Just the chunk data
+    pub chunks: HashMap<veclib::Vector3<i64>, ChunkData>,
+    pub entities: HashMap<veclib::Vector3<i64>, u16>
 }
 
 // Chunk manager. This is how each chunk entity is created
@@ -25,15 +27,23 @@ impl ChunkManager {
         println!("Add chunk for generation");
     }
     // Remove a chunk
-    pub fn remove_chunk(&mut self, coords: ChunkCoords) -> bool {
+    pub fn remove_chunk(&mut self, coords: &ChunkCoords) -> Option<()> {
         println!("Remove chunk");
         if self.chunks.contains_key(&coords.center) {
             // Only remove the chunk if it exists in the first place
             self.chunks.remove(&coords.center);
-            return true;
+            return Some(());
         } else {
-            return false;
+            return None;
         }
+    }
+    // Add a chunk entity
+    pub fn add_chunk_entity(&mut self, coords: &ChunkCoords, entity_id: u16) {
+        self.entities.insert(coords.position, entity_id);
+    }
+    // Remove a chunk entity
+    pub fn remove_chunk_entity(&mut self, coords: &ChunkCoords) -> u16 {
+        self.entities.remove(&coords.position).unwrap()
     }
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &VoxelGenerator) -> Vec<(ChunkCoords, Model)> {

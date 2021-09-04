@@ -17,7 +17,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 3.0;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 8;
+pub const OCTREE_DEPTH: u8 = 6;
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -46,7 +46,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, coords: ChunkCoords, model: Model) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, coords: &ChunkCoords, model: Model) -> Entity {
         // Create the entity
         let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
         let mut entity = Entity::new(name.as_str());
@@ -81,7 +81,7 @@ impl Terrain {
             .link_component::<components::AABB>(component_manager, components::AABB::from_components(&entity, component_manager))
             .unwrap();
 
-        return Some(entity);
+        return entity;
     }
 }
 
@@ -158,9 +158,17 @@ impl System for Terrain {
                     }
                     // Delete all the removed octree nodes from the world
                     for octree_node in removed {
+                        let chunk_coords = ChunkCoords::new(&octree_node);
                         // Remove the chunk from the chunk manager
-                        self.chunk_manager.remove_chunk(ChunkCoords::new(&octree_node));
-                        // Remove the chunk from the world
+                        match self.chunk_manager.remove_chunk(&chunk_coords) {
+                            Some(_) => {
+                                // Get the entity id
+                                let entity_id = self.chunk_manager.remove_chunk_entity(&chunk_coords);
+                                // Remove the chunk from the world
+                                data.entity_manager.remove_entity_s(&entity_id);
+                            },
+                            None => {},
+                        }                        
                     }
                 }
                 None => { /* Nothing happened */ }
@@ -168,16 +176,11 @@ impl System for Terrain {
         }
         // Update the chunk manager
         let added_chunks = self.chunk_manager.update(&self.voxel_generator);
-        for (coord, model) in added_chunks {
+        for (coords, model) in added_chunks {
             // Add the entity
-            let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, coord, model);
-            match entity {
-                Some(entity) => {
-                    // Add the entity
-                    data.entity_manager.add_entity_s(entity);
-                },
-                None => todo!(),
-            }
+            let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, &coords, model);
+            let entity_id = data.entity_manager.add_entity_s(entity);
+            self.chunk_manager.add_chunk_entity(&coords, entity_id);
         }
     }
 
