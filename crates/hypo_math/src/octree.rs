@@ -31,7 +31,7 @@ impl Default for Octree {
             size: 1,
             depth: 1,
             lod_factor: 1.0,
-            generated_base_octree: true,
+            generated_base_octree: false,
         }
     }
 }
@@ -106,6 +106,7 @@ impl Octree {
         let postprocess_nodes = self.calculate_postprocess_nodes(&input.target, &nodes);
         self.postprocess_nodes = postprocess_nodes.clone();
         nodes.extend(postprocess_nodes);
+        println!("Generated the base octree");
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth

@@ -25,20 +25,26 @@ impl ChunkManager {
         println!("Add chunk for generation");
     }
     // Remove a chunk
-    pub fn remove_chunk(&mut self, coords: ChunkCoords) {
+    pub fn remove_chunk(&mut self, coords: ChunkCoords) -> bool {
         println!("Remove chunk");
         if self.chunks.contains_key(&coords.center) {
             // Only remove the chunk if it exists in the first place
             self.chunks.remove(&coords.center);
+            return true;
+        } else {
+            return false;
         }
     }
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &VoxelGenerator) -> Vec<(ChunkCoords, Model)> {
         // Generate the data for some chunks, then create their model
         let mut output_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
+        // We don't have any chunks to generate
+        if self.chunks_to_generate.len() == 0 { return Vec::new() }
+
         for i in 0..1 {
             // Get the first chunk in the list
-            let mut chunk_data = self.chunks_to_generate.swap_remove(0);
+            let mut chunk_data = self.chunks_to_generate.remove(0);
             // Generate the data for this chunk
             let has_surface = voxel_generator.generate_voxels(chunk_data.coords.size, chunk_data.coords.position, &mut chunk_data.voxels);
             // If we don't have a surface, no need to create a model for this chunk
@@ -53,6 +59,7 @@ impl ChunkManager {
             self.chunks.insert(chunk_data.coords.center, chunk_data);
             output_chunks.push((coords, model));
         }
+        println!("{}", self.chunks_to_generate.len());
         return output_chunks;
     }
 }

@@ -46,21 +46,21 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, chunk_data: ChunkData, model: Model) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, coords: ChunkCoords, model: Model) -> Option<Entity> {
         // Create the entity
-        let name = format!("Chunk {:?} {:?}", chunk_data.coords.position, chunk_data.coords.size);
+        let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
         let mut entity = Entity::new(name.as_str());
 
         // Create the chunk component
-        let chunk = Chunk { coords: chunk_data.coords.clone() };
+        let chunk = Chunk { coords: coords.clone() };
         // Link the components
         entity.link_component::<Chunk>(component_manager, chunk).unwrap();
         entity
             .link_component::<components::Transform>(
                 component_manager,
                 components::Transform {
-                    position: veclib::Vector3::<f32>::from(chunk_data.coords.position),
-                    scale: veclib::Vector3::new((chunk_data.coords.size / self.octree.size) as f32, (chunk_data.coords.size / self.octree.size) as f32, (chunk_data.coords.size / self.octree.size) as f32),
+                    position: veclib::Vector3::<f32>::from(coords.position),
+                    scale: veclib::Vector3::new((coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32),
                     ..components::Transform::default()
                 },
             )
@@ -148,7 +148,6 @@ impl System for Terrain {
         if data.input_manager.map_toggled("update_terrain") {
             match self.octree.generate_incremental_octree(math::octree::OctreeInput { target: camera_location }) {
                 Some((added, removed)) => {
-                    let generation_instant = std::time::Instant::now();
                     // Turn all the newly added nodes into chunks and instantiate them into the world
                     for octree_node in added {
                         // Only add the octree nodes that have no children
@@ -157,17 +156,28 @@ impl System for Terrain {
                             self.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));
                         }
                     }
-                    println!("Took: {}micros to generate new chunks", generation_instant.elapsed().as_micros());
                     // Delete all the removed octree nodes from the world
-                    let deletion_instant = std::time::Instant::now();
                     for octree_node in removed {
                         // Remove the chunk from the chunk manager
                         self.chunk_manager.remove_chunk(ChunkCoords::new(&octree_node));
+                        // Remove the chunk from the world
                     }
-                     println!("Took: {}micros to delete old chunks", deletion_instant.elapsed().as_micros());
                 }
                 None => { /* Nothing happened */ }
             }            
+        }
+        // Update the chunk manager
+        let added_chunks = self.chunk_manager.update(&self.voxel_generator);
+        for (coord, model) in added_chunks {
+            // Add the entity
+            let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, coord, model);
+            match entity {
+                Some(entity) => {
+                    // Add the entity
+                    data.entity_manager.add_entity_s(entity);
+                },
+                None => todo!(),
+            }
         }
     }
 
