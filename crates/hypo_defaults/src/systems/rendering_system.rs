@@ -121,6 +121,49 @@ impl RenderingSystem {
         // Setup the debug renderer
         data.debug.setup_debug_renderer(data.resource_manager, data.shader_cacher);
     }
+    // Draw an entity normally
+    fn draw_normal(&self, renderer: &Renderer, data: &SystemEventData, camera_position: veclib::Vector3<f32>, projection_matrix: veclib::Matrix4x4<f32>, view_matrix: veclib::Matrix4x4<f32>, model_matrix: veclib::Matrix4x4<f32>) {
+        // Load the shader
+        let shader = data.shader_cacher.1.get_object(&renderer.shader_name).unwrap();
+        // Use the shader, and update any uniforms
+        shader.use_shader();
+        // Calculate the mvp matrix
+        let mvp_matrix: veclib::Matrix4x4<f32> = projection_matrix * view_matrix * model_matrix;
+        
+        // Pass the MVP and the model matrix to the shader
+        shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
+        shader.set_matrix_44_uniform("model_matrix", model_matrix);
+        shader.set_matrix_44_uniform("view_matrix", view_matrix);
+        shader.set_scalar_3_uniform("view_pos", (camera_position.x(), camera_position.y(), camera_position.z()));
+        shader.set_scalar_2_uniform("uv_scale", (renderer.uv_scale.x(), renderer.uv_scale.y()));
+        shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
+
+        // Get the OpenGL texture id so we can bind it to the shader
+        let mut textures: Vec<&Texture> = Vec::new();
+
+        // Load the default ones
+        for &id in renderer.texture_cache_ids.iter() {
+            // If this is a negative number, it means we've gotta use the default texture
+            textures.push(data.texture_cacher.id_get_object(id).unwrap());
+        }
+        shader.set_texture2d("diffuse_tex", textures[0], gl::TEXTURE0);
+        shader.set_texture2d("normals_tex", textures[1], gl::TEXTURE1);
+
+        // Draw normally
+        if renderer.gpu_data.initialized {
+            unsafe {
+                // Actually draw the array
+                gl::BindVertexArray(renderer.gpu_data.vertex_array_object);
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, renderer.gpu_data.element_buffer_object);
+
+                gl::DrawElements(gl::TRIANGLES, renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
+            }
+        }  
+    }
+    // Draw a wireframe entity
+    fn draw_wireframe(&self, renderer: &Renderer) {
+
+    }
 }
 
 impl System for RenderingSystem {
@@ -165,85 +208,18 @@ impl System for RenderingSystem {
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
-        let shader: &Shader;
-        let view_matrix: veclib::Matrix4x4<f32>;
-        let projection_matrix: veclib::Matrix4x4<f32>;
-        let camera_position: veclib::Vector3<f32>;
-        let camera_data: &components::Camera;
-        // Get everything related to the camera
-        {
-            let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
-            camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
-            camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
-            projection_matrix = camera_data.projection_matrix;
-            view_matrix = camera_data.view_matrix;
-        }
-        let model_matrix: veclib::Matrix4x4<f32>;
-        // Render the entity
-        {
-            let name: String;
-            // Get the model matrix
-            {
-                let transform = components.get_component::<components::Transform>(data.component_manager).unwrap();
-                let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
-                name = rc.shader_name.clone();
-                model_matrix = transform.matrix.clone();
-            }
-            shader = data.shader_cacher.1.get_object(&name).unwrap();
-        }
-        // Use the shader, and update any uniforms
-        shader.use_shader();
+        // Get the camera stuff
+        let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+        let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
+        let view_matrix: veclib::Matrix4x4<f32> = camera_data.view_matrix;
+        let projection_matrix: veclib::Matrix4x4<f32> = camera_data.projection_matrix;
+        let camera_position: veclib::Vector3<f32> = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
 
-        let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
-        // Calculate the mvp matrix
-        let mvp_matrix: veclib::Matrix4x4<f32> = projection_matrix * view_matrix * model_matrix;
-        // Pass the MVP and the model matrix to the shader
-        shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
-        shader.set_matrix_44_uniform("model_matrix", model_matrix);
-        shader.set_matrix_44_uniform("view_matrix", view_matrix);
-        shader.set_scalar_3_uniform("view_pos", (camera_position.x(), camera_position.y(), camera_position.z()));
-        shader.set_scalar_2_uniform("uv_scale", (rc.uv_scale.x(), rc.uv_scale.y()));
-        shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
+        let model_matrix: veclib::Matrix4x4<f32> = components.get_component::<components::Transform>(data.component_manager).unwrap().matrix;
+        let rc = components.get_component::<Renderer>(data.component_manager).unwrap();    
 
-        // Get the OpenGL texture id so we can bind it to the shader
-        let mut textures: Vec<&Texture> = Vec::new();
-
-        // Load the default ones
-        for &id in rc.texture_cache_ids.iter() {
-            // If this is a negative number, it means we've gotta use the default texture
-            textures.push(data.texture_cacher.id_get_object(id).unwrap());
-        }
-        shader.set_texture2d("diffuse_tex", textures[0], gl::TEXTURE0);
-        shader.set_texture2d("normals_tex", textures[1], gl::TEXTURE1);
-
-        // Draw normally
-        if !self.wireframe && rc.gpu_data.initialized {
-            unsafe {
-                // Actually draw the array
-                gl::BindVertexArray(rc.gpu_data.vertex_array_object);
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
-
-                gl::DrawElements(gl::TRIANGLES, rc.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
-            }
-        }
-        // Draw the wireframe
-        if self.wireframe && rc.gpu_data.initialized && rc.flags.contains(RendererFlags::WIREFRAME) {
-            let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
-            wireframe_shader.use_shader();
-            wireframe_shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
-            wireframe_shader.set_matrix_44_uniform("model_matrix", model_matrix);
-            wireframe_shader.set_matrix_44_uniform("view_matrix", view_matrix);
-            unsafe {
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-                gl::Disable(gl::CULL_FACE);
-                gl::BindVertexArray(rc.gpu_data.vertex_array_object);
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, rc.gpu_data.element_buffer_object);
-                gl::DrawElements(gl::TRIANGLES, rc.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
-                gl::BindTexture(gl::TEXTURE_2D, 0);
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-                gl::Enable(gl::CULL_FACE);
-            }
-        }
+        // Draw the entity normally
+        self.draw_normal(components.get_component(data.component_manager).unwrap(), data, camera_position, projection_matrix, view_matrix, model_matrix);      
     }
 
     // Called before each fire_entity event is fired
@@ -256,6 +232,12 @@ impl System for RenderingSystem {
 
     // Called after each fire_entity event has been fired
     fn post_fire(&mut self, data: &mut SystemEventData) {
+        // Draw the wireframe        
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            gl::Enable(gl::CULL_FACE);
+        }
         // At the end of each frame, disable the depth test and render the debug objects
         let vp_matrix: veclib::Matrix4x4<f32>;
         let frustum: &math::Frustum;
