@@ -145,7 +145,7 @@ impl System for Terrain {
             .position;
 
         // Generate the octree each frame and generate / delete the chunks
-        if data.input_manager.map_toggled("update_terrain") {
+        if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(math::octree::OctreeInput { target: camera_location }) {
                 Some((added, removed)) => {
                     // Turn all the newly added nodes into chunks and instantiate them into the world

@@ -24,6 +24,13 @@ pub const CHUNK_GENERATIONS_PER_FRAME: usize = 4;
 // 2. Generate the model for that chunk in another frame
 // 3. Get the 
 impl ChunkManager {
+    // Are we allowed to update the octree?
+    pub fn octree_update_valid(&self) -> bool {
+        // Only update the octree if we don't have entities to remove and we don't have chunks to generate
+        let entities_to_remove = self.entities_to_remove.len();
+        let chunks_to_generate = self.chunks_to_generate.len();
+        return (entities_to_remove == 0 && chunks_to_generate == 0);
+    }
     // Add a chunk
     pub fn add_chunk(&mut self, coords: ChunkCoords) {
         let chunk_data = ChunkData::new(coords.clone());
