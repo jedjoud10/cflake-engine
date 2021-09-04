@@ -11,7 +11,7 @@ uniform sampler2D default_sky_gradient;
 uniform vec3 directional_light_dir;
 uniform vec3 view_pos;
 uniform int debug_view;
-uniform vec2 resolution;
+uniform ivec2 resolution;
 uniform float time;
 in vec2 uv_coordinates;
 

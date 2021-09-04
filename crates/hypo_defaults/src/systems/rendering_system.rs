@@ -131,12 +131,12 @@ impl RenderingSystem {
         let mvp_matrix: veclib::Matrix4x4<f32> = projection_matrix * view_matrix * model_matrix;
         
         // Pass the MVP and the model matrix to the shader
-        shader.set_matrix_44_uniform("mvp_matrix", mvp_matrix);
-        shader.set_matrix_44_uniform("model_matrix", model_matrix);
-        shader.set_matrix_44_uniform("view_matrix", view_matrix);
-        shader.set_scalar_3_uniform("view_pos", (camera_position.x(), camera_position.y(), camera_position.z()));
-        shader.set_scalar_2_uniform("uv_scale", (renderer.uv_scale.x(), renderer.uv_scale.y()));
-        shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
+        shader.set_mat44("mvp_matrix", mvp_matrix);
+        shader.set_mat44("model_matrix", model_matrix);
+        shader.set_mat44("view_matrix", view_matrix);
+        shader.set_vec3f32("view_pos", camera_position);
+        shader.set_vec2f32("uv_scale", renderer.uv_scale);
+        shader.set_f32("time", data.time_manager.seconds_since_game_start as f32);
 
         // Get the OpenGL texture id so we can bind it to the shader
         let mut textures: Vec<&Texture> = Vec::new();
@@ -146,8 +146,8 @@ impl RenderingSystem {
             // If this is a negative number, it means we've gotta use the default texture
             textures.push(data.texture_cacher.id_get_object(id).unwrap());
         }
-        shader.set_texture2d("diffuse_tex", textures[0], gl::TEXTURE0);
-        shader.set_texture2d("normals_tex", textures[1], gl::TEXTURE1);
+        shader.set_t2d("diffuse_tex", textures[0], gl::TEXTURE0);
+        shader.set_t2d("normals_tex", textures[1], gl::TEXTURE1);
 
         // Draw normally
         if renderer.gpu_data.initialized {
@@ -261,14 +261,14 @@ impl System for RenderingSystem {
             .unwrap()
             .position;
         shader.use_shader();
-        shader.set_texture2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
-        shader.set_texture2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
-        shader.set_texture2d("position_texture", &self.position_texture, gl::TEXTURE2);
-        shader.set_texture2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);
-        shader.set_scalar_2_uniform("resolution", (self.window.size.0 as f32, self.window.size.1 as f32));
-        shader.set_scalar_1_uniform("time", data.time_manager.seconds_since_game_start as f32);
+        shader.set_t2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
+        shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
+        shader.set_t2d("position_texture", &self.position_texture, gl::TEXTURE2);
+        shader.set_t2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);
+        shader.set_vec2i32("resolution", veclib::Vector2::new(self.window.size.0 as i32, self.window.size.1 as i32));
+        shader.set_f32("time", data.time_manager.seconds_since_game_start as f32);
         // Sky params
-        shader.set_scalar_3_uniform("directional_light_dir", (0.0, 1.0, 0.0));
+        shader.set_vec3f32("directional_light_dir", veclib::Vector3::new(0.0, 1.0, 0.0));
         let sky_component = data
             .entity_manager
             .get_entity(&data.custom_data.sky_entity_id)
@@ -277,16 +277,15 @@ impl System for RenderingSystem {
             .unwrap();
 
         // Set the sky gradient
-        shader.set_texture2d(
+        shader.set_t2d(
             "default_sky_gradient",
             data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
             gl::TEXTURE4,
         );
 
         // Other params
-        shader.set_scalar_3_uniform("view_pos", (camera_position.x(), camera_position.y(), camera_position.z()));
-        shader.set_int_uniform("debug_view", self.debug_view as i32);
-        shader.set_scalar_2_uniform("resolution", (self.window.size.0 as f32, self.window.size.1 as f32));
+        shader.set_vec3f32("view_pos", camera_position);
+        shader.set_i32("debug_view", self.debug_view as i32);        
         // Render the screen quad
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);

@@ -105,7 +105,7 @@ impl System for Terrain {
 
         // Load the shader name
         self.shader_name = Shader::new(
-            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\triplanar.frsh.glsl"],
+            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\terrain_debug.frsh.frsh.glsl"],
             data.resource_manager,
             data.shader_cacher,
         )
