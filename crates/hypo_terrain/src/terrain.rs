@@ -1,4 +1,4 @@
-use crate::chunk_data::ChunkCoords;
+use crate::{ChunkData, ChunkManager, chunk_data::ChunkCoords};
 
 use super::voxel::VoxelGenerator;
 use hypo_defaults::components;
@@ -9,6 +9,7 @@ use hypo_others::CacheManager;
 use hypo_rendering::*;
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::*;
+use math::octree;
 use std::collections::HashMap;
 
 // How many voxels in one axis in each chunk?
@@ -21,20 +22,11 @@ pub const OCTREE_DEPTH: u8 = 8;
 // A component that will be added to well... chunks
 #[derive(Default)]
 pub struct Chunk {
-    pub chunk_data: super::ChunkData,
+    pub coords: ChunkCoords,
 }
 
 // Main traits implemented
 hypo_ecs::impl_component!(Chunk);
-
-// This is a procedural model generator
-impl ProceduralModelGenerator for Chunk {
-    // Generate a procedural marching cube model
-    fn generate_model(&self) -> Model {
-        super::mesher::generate_model(&self.chunk_data.data, true)
-    }
-}
-
 
 // Hehe terrain generator momenta
 #[derive(Default)]
@@ -45,7 +37,7 @@ pub struct Terrain {
 
     // Chunk managing
     pub octree: math::octree::Octree,
-    pub chunks: HashMap<veclib::Vector3<i64>, u16>,
+    pub chunk_manager: ChunkManager,
 
     // Preloaded resources for chunks
     pub shader_name: String,
@@ -54,31 +46,21 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, coords: ChunkCoords) -> Option<Entity> {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, chunk_data: ChunkData, model: Model) -> Option<Entity> {
         // Create the entity
-        let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
+        let name = format!("Chunk {:?} {:?}", chunk_data.coords.position, chunk_data.coords.size);
         let mut entity = Entity::new(name.as_str());
 
         // Create the chunk component
-        let mut chunk = Chunk::default();
-        chunk.chunk_data.coords = coords;
-        let min_max = chunk.chunk_data.generate_data(&self.voxel_generator);
-        // Check if we should even generate the model
-        if min_max.0.signum() == min_max.1.signum() {
-            // No intersection
-            return None;
-        }
-
-        let model = chunk.generate_model();
-
+        let chunk = Chunk { coords: chunk_data.coords.clone() };
         // Link the components
         entity.link_component::<Chunk>(component_manager, chunk).unwrap();
         entity
             .link_component::<components::Transform>(
                 component_manager,
                 components::Transform {
-                    position: veclib::Vector3::<f32>::from(coords.position),
-                    scale: veclib::Vector3::new((coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32),
+                    position: veclib::Vector3::<f32>::from(chunk_data.coords.position),
+                    scale: veclib::Vector3::new((chunk_data.coords.size / self.octree.size) as f32, (chunk_data.coords.size / self.octree.size) as f32, (chunk_data.coords.size / self.octree.size) as f32),
                     ..components::Transform::default()
                 },
             )
@@ -147,21 +129,6 @@ impl System for Terrain {
         self.octree.size = CHUNK_SIZE as u64 - 2;
         self.octree.depth = OCTREE_DEPTH;
         self.octree.lod_factor = LOD_FACTOR;
-        let nodes = self.octree.generate_base_octree();
-        for (_, octree_node) in nodes {
-            // Only add the octree nodes that have no children
-            if !octree_node.children {      
-                let coords = ChunkCoords {
-                    position: octree_node.position,
-                    size: octree_node.half_extent * 2,
-                };
-                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, coords);
-                if let Option::Some(chunk_entity) = chunk_entity {
-                    let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                    self.chunks.insert(octree_node.get_center(), entity_id);
-                }                
-            }
-        }
         // Debug controls
         data.input_manager.bind_key(Keys::Y, "update_terrain", MapType::Button);
     }
@@ -186,31 +153,16 @@ impl System for Terrain {
                     for octree_node in added {
                         // Only add the octree nodes that have no children
                         if !octree_node.children {
-                            if !self.chunks.contains_key(&octree_node.get_center()) {
-                                let coords = ChunkCoords {
-                                    position: octree_node.position,
-                                    size: octree_node.half_extent * 2,
-                                };
-                                let chunk_entity = self.add_chunk_entity(data.texture_cacher, data.component_manager, coords);
-                                match chunk_entity {
-                                    Some(chunk_entity) => {
-                                        let entity_id = data.entity_manager.add_entity_s(chunk_entity);
-                                        self.chunks.insert(octree_node.get_center(), entity_id);
-                                    }
-                                    _ => {}
-                                }
-                            }
+                            // Add the chunk in the chunk manager
+                            self.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));
                         }
                     }
                     println!("Took: {}micros to generate new chunks", generation_instant.elapsed().as_micros());
                     // Delete all the removed octree nodes from the world
                     let deletion_instant = std::time::Instant::now();
                     for octree_node in removed {
-                        if self.chunks.contains_key(&octree_node.get_center()) {
-                            // Remove the chunk from our chunks and from the world
-                            let entity_id = self.chunks.remove(&octree_node.get_center()).unwrap();
-                            data.entity_manager.remove_entity_s(&entity_id).unwrap();
-                        }
+                        // Remove the chunk from the chunk manager
+                        self.chunk_manager.remove_chunk(ChunkCoords::new(&octree_node));
                     }
                      println!("Took: {}micros to delete old chunks", deletion_instant.elapsed().as_micros());
                 }

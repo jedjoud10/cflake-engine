@@ -20,8 +20,8 @@ pub fn flatten(position: (usize, usize, usize)) -> usize {
 pub struct VoxelGenerator {}
 
 impl VoxelGenerator {
-    // Generate the data
-    pub fn generate_data(&self, size: u64, position: veclib::Vector3::<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> (f32, f32) {
+    // Generate the voxels
+    pub fn generate_voxels(&self, size: u64, position: veclib::Vector3::<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Option<()> {
         let mut i = 0;
         let mut min: f32 = f32::MAX;
         let mut max: f32 = f32::MIN;
@@ -40,7 +40,14 @@ impl VoxelGenerator {
                 }
             }
         }
-        return (min, max);
+        // Check if this data has a surface
+        if min.signum() != max.signum() {
+            // We have a surface
+            return Some(());
+        } else {
+            // We do not have a surface
+            return None;
+        }
     }
 }
 

@@ -6,7 +6,7 @@ mod tables;
 mod terrain;
 mod voxel;
 
-pub use chunk_data::ChunkData;
+pub use chunk_data::*;
 pub use chunk_manager::*;
 pub use tables::*;
 pub use terrain::*;

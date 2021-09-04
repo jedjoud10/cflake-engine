@@ -15,25 +15,23 @@ pub struct OctreeInput {
 pub struct Octree {
     pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     pub targetted_node: Option<OctreeNode>,
-    pub added_nodes: Vec<OctreeNode>,
-    pub removed_nodes: Vec<OctreeNode>,
     pub postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     pub lod_factor: f32,
     pub size: u64,
     pub depth: u8,
+    pub generated_base_octree: bool,
 }
 
 impl Default for Octree {
     fn default() -> Self {
         Self {
             nodes: HashMap::new(),
-            added_nodes: Vec::new(),
-            removed_nodes: Vec::new(),
             postprocess_nodes: HashMap::new(),
             targetted_node: None,
             size: 1,
             depth: 1,
             lod_factor: 1.0,
+            generated_base_octree: true,
         }
     }
 }
@@ -111,9 +109,15 @@ impl Octree {
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth
-    pub fn generate_incremental_octree(&mut self, input: OctreeInput) -> Option<(&Vec<OctreeNode>, &Vec<OctreeNode>)> {
-        self.added_nodes.clear();
-        self.removed_nodes.clear();
+    pub fn generate_incremental_octree(&mut self, input: OctreeInput) -> Option<(Vec<OctreeNode>, Vec<OctreeNode>)> {
+        // Check if we even have the base octree generated
+        if !self.generated_base_octree {
+            // The base octree is not generated, so generate it
+            let added_nodes = self.generate_base_octree();
+            let added_nodes: Vec<OctreeNode> = added_nodes.iter().map(|(center, node)| { node.clone() }).collect();
+            self.generated_base_octree = true;
+            return Some((added_nodes, Vec::new()));
+        }
         // If we don't have a targetted node try to create the base octree
         if self.targetted_node.is_none() {
             return None;
@@ -252,11 +256,8 @@ impl Octree {
 
         // Update
         self.postprocess_nodes = postprocess_nodes;
-        self.removed_nodes = removed_postprocess_nodes;
-        self.added_nodes = added_postprocess_nodes;
-
         // Return
-        return Some((&self.added_nodes, &self.removed_nodes));
+        return Some((added_postprocess_nodes, removed_postprocess_nodes));
     }
 }
 

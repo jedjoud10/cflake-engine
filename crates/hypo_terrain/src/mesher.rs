@@ -11,7 +11,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, skirts: bool) -> Model {
+pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, skirts: bool) -> Model {
     let mut model: Model = Model::default();
     let mut skirts_model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
@@ -24,14 +24,14 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
-                case_index += ((data[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
-                case_index += ((data[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
-                case_index += ((data[i + DATA_OFFSET_TABLE[2]].density > 0.0) as u8) * 4;
-                case_index += ((data[i + DATA_OFFSET_TABLE[3]].density > 0.0) as u8) * 8;
-                case_index += ((data[i + DATA_OFFSET_TABLE[4]].density > 0.0) as u8) * 16;
-                case_index += ((data[i + DATA_OFFSET_TABLE[5]].density > 0.0) as u8) * 32;
-                case_index += ((data[i + DATA_OFFSET_TABLE[6]].density > 0.0) as u8) * 64;
-                case_index += ((data[i + DATA_OFFSET_TABLE[7]].density > 0.0) as u8) * 128;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density > 0.0) as u8) * 4;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[3]].density > 0.0) as u8) * 8;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[4]].density > 0.0) as u8) * 16;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[5]].density > 0.0) as u8) * 32;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[6]].density > 0.0) as u8) * 64;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[7]].density > 0.0) as u8) * 128;
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -66,8 +66,8 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                         let vert2_usize = (vert2.x() as usize + x, vert2.y() as usize + y, vert2.z() as usize + z);
                         let index1 = super::flatten(vert1_usize);
                         let index2 = super::flatten(vert2_usize);
-                        let density1 = data[index1].density;
-                        let density2 = data[index2].density;
+                        let density1 = voxels[index1].density;
+                        let density2 = voxels[index2].density;
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = inverse_lerp(density1, density2, 0.0);
                         // Create the vertex
@@ -79,12 +79,12 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
                             let mut normal2 = veclib::Vector3::<f32>::default_zero();
 
                             // Create the normal
-                            normal1.set_x(data[index1 + DATA_OFFSET_TABLE[3]].density - density1);
-                            normal1.set_y(data[index1 + DATA_OFFSET_TABLE[4]].density - density1);
-                            normal1.set_z(data[index1 + DATA_OFFSET_TABLE[1]].density - density1);
-                            normal2.set_x(data[index2 + DATA_OFFSET_TABLE[3]].density - density2);
-                            normal2.set_y(data[index2 + DATA_OFFSET_TABLE[4]].density - density2);
-                            normal2.set_z(data[index2 + DATA_OFFSET_TABLE[1]].density - density2);
+                            normal1.set_x(voxels[index1 + DATA_OFFSET_TABLE[3]].density - density1);
+                            normal1.set_y(voxels[index1 + DATA_OFFSET_TABLE[4]].density - density1);
+                            normal1.set_z(voxels[index1 + DATA_OFFSET_TABLE[1]].density - density1);
+                            normal2.set_x(voxels[index2 + DATA_OFFSET_TABLE[3]].density - density2);
+                            normal2.set_y(voxels[index2 + DATA_OFFSET_TABLE[4]].density - density2);
+                            normal2.set_z(voxels[index2 + DATA_OFFSET_TABLE[1]].density - density2);
                             veclib::Vector3::<f32>::lerp(normal1, normal2, value)
                         };
 
@@ -142,14 +142,14 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
 
                 // Skirts for the X axis
                 if local_edges_hit_x_base {
-                    solve_marching_squares(y, z, i, &data, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
+                    solve_marching_squares(y, z, i, &voxels, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
                 }
                 if local_edges_hit_x_end {
                     solve_marching_squares(
                         y,
                         z,
                         super::flatten((x + 1, y, z)),
-                        &data,
+                        &voxels,
                         &local_edges_x,
                         &mut shared_vertices,
                         veclib::Vec3Axis::X,
@@ -161,14 +161,14 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
 
                 // Skirts for the Y axis
                 if local_edges_hit_y_base {
-                    solve_marching_squares(x, z, i, &data, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
+                    solve_marching_squares(x, z, i, &voxels, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
                 }
                 if local_edges_hit_y_end {
                     solve_marching_squares(
                         x,
                         z,
                         super::flatten((x, y + 1, z)),
-                        &data,
+                        &voxels,
                         &local_edges_y,
                         &mut shared_vertices,
                         veclib::Vec3Axis::Y,
@@ -180,14 +180,14 @@ pub fn generate_model(data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) 
 
                 // Skirts for the Y axis
                 if local_edges_hit_z_base {
-                    solve_marching_squares(y, x, i, &data, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);
+                    solve_marching_squares(y, x, i, &voxels, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);
                 }
                 if local_edges_hit_z_end {
                     solve_marching_squares(
                         y,
                         x,
                         super::flatten((x, y, z + 1)),
-                        &data,
+                        &voxels,
                         &local_edges_z,
                         &mut shared_vertices,
                         veclib::Vec3Axis::Z,
