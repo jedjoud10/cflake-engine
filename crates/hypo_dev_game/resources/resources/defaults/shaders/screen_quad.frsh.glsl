@@ -63,7 +63,11 @@ void main() {
 	final_color += specular * specular_strength;
 
 	if (debug_view == 0) {
-		color = max(final_color, emissive);
+		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
+			color = emissive;
+		} else {
+			color = final_color;
+		}
 		//color = ambient_lighting;
 	} else if (debug_view == 1) {
 		color = normal;

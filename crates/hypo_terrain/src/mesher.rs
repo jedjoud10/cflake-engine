@@ -140,61 +140,54 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                 }
 
                 // Skirts for the X axis
-                if local_edges_hit_x_base {
-                    solve_marching_squares(y, z, i, &voxels, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
-                }
-                if local_edges_hit_x_end {
-                    solve_marching_squares(
-                        y,
-                        z,
-                        super::flatten((x + 1, y, z)),
-                        &voxels,
-                        &local_edges_x,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::X,
-                        CHUNK_SIZE - 2,
-                        DENSITY_OFFSET_X,
-                        true,
-                    );
-                }
+                solve_marching_squares(local_edges_hit_x_base, y, z, i, &voxels, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
+                solve_marching_squares(
+                    local_edges_hit_x_end,
+                    y,
+                    z,
+                    super::flatten((x + 1, y, z)),
+                    &voxels,
+                    &local_edges_x,
+                    &mut shared_vertices,
+                    veclib::Vec3Axis::X,
+                    CHUNK_SIZE - 2,
+                    DENSITY_OFFSET_X,
+                    true,
+                );
+                
 
                 // Skirts for the Y axis
-                if local_edges_hit_y_base {
-                    solve_marching_squares(x, z, i, &voxels, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
-                }
-                if local_edges_hit_y_end {
-                    solve_marching_squares(
-                        x,
-                        z,
-                        super::flatten((x, y + 1, z)),
-                        &voxels,
-                        &local_edges_y,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::Y,
-                        CHUNK_SIZE - 2,
-                        DENSITY_OFFSET_Y,
-                        true,
-                    );
-                }
+                solve_marching_squares(local_edges_hit_y_base, x, z, i, &voxels, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
+                solve_marching_squares(
+                    local_edges_hit_y_end,
+                    x,
+                    z,
+                    super::flatten((x, y + 1, z)),
+                    &voxels,
+                    &local_edges_y,
+                    &mut shared_vertices,
+                    veclib::Vec3Axis::Y,
+                    CHUNK_SIZE - 2,
+                    DENSITY_OFFSET_Y,
+                    true,
+                );
+                
 
                 // Skirts for the Y axis
-                if local_edges_hit_z_base {
-                    solve_marching_squares(y, x, i, &voxels, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);
-                }
-                if local_edges_hit_z_end {
-                    solve_marching_squares(
-                        y,
-                        x,
-                        super::flatten((x, y, z + 1)),
-                        &voxels,
-                        &local_edges_z,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::Z,
-                        CHUNK_SIZE - 2,
-                        DENSITY_OFFSET_Z,
-                        true,
-                    );
-                }
+                solve_marching_squares(local_edges_hit_z_base, y, x, i, &voxels, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);                
+                solve_marching_squares(
+                    local_edges_hit_z_end,
+                    y,
+                    x,
+                    super::flatten((x, y, z + 1)),
+                    &voxels,
+                    &local_edges_z,
+                    &mut shared_vertices,
+                    veclib::Vec3Axis::Z,
+                    CHUNK_SIZE - 2,
+                    DENSITY_OFFSET_Z,
+                    true,
+                );                
             }
         }
     }
@@ -228,6 +221,7 @@ pub enum SkirtVertex {
 
 // Solve a single marching squares case using a passed function for
 pub fn solve_marching_squares(
+    hit: bool,
     a: usize,
     b: usize,
     i: usize,
@@ -245,13 +239,28 @@ pub fn solve_marching_squares(
     //  |   |
     //  |   |
     //  0---1
-    case += (!(data[i + density_offset[0]].density > 0.0) as u8) * 1;
-    case += (!(data[i + density_offset[1]].density > 0.0) as u8) * 2;
-    case += (!(data[i + density_offset[2]].density > 0.0) as u8) * 4;
-    case += (!(data[i + density_offset[3]].density > 0.0) as u8) * 8;
-    // Skip the full and empty cases
-    if case == 0 || case == 15 {
-        return;
+    let d0 = data[i + density_offset[0]].density;
+    let d1 = data[i + density_offset[1]].density;
+    let d2 = data[i + density_offset[2]].density;
+    let d3 = data[i + density_offset[3]].density;
+    let average_density = (d0 + d1 + d2 + d3) / 4.0;
+    case += (!(d0 > 0.0) as u8) * 1;
+    case += (!(d1 > 0.0) as u8) * 2;
+    case += (!(d2 > 0.0) as u8) * 4;
+    case += (!(d3 > 0.0) as u8) * 8;
+    // Threshold
+    const AVERAGE_DENSITY_THRESHOLD: f32 = 4.0;
+
+    if case == 0 { return; /* Always skip if it's empty */ }
+    // If there is no surface, no need to create the skirt square, unless...
+    if !hit {        
+        // Skip the full and empty cases unless the average density is below the threshold, then we are allowed create the case 15 model        
+        if case == 15 {
+            // We can create the model
+        } else {
+            // We failed
+            return;
+        }
     }
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
     // The vertices to connect

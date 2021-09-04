@@ -117,8 +117,9 @@ impl Renderer {
         return self;
     }
     // Set a specific uniform, wrapper around ShaderUniformSetter
-    pub fn set_uniform(&mut self, uniform_name: &str, value: ShaderArg) {
+    pub fn set_uniform(mut self, uniform_name: &str, value: ShaderArg) -> Self {
         self.uniform_setter.set_uniform(uniform_name, value);
+        return self;
     }   
 }
 

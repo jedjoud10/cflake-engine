@@ -73,7 +73,8 @@ impl Terrain {
                     .set_model(model)
                     .set_uv_scale(veclib::Vector2::<f32>::default_one() * 0.05)
                     .set_wireframe(true)
-                    .set_shader(self.shader_name.as_str()),
+                    .set_shader(self.shader_name.as_str())
+                    .set_uniform("depth_level", ShaderArg::F32(coords.depth as f32 / OCTREE_DEPTH as f32)),
             )
             .unwrap();
         // TODO: Fix this
@@ -105,7 +106,7 @@ impl System for Terrain {
 
         // Load the shader name
         self.shader_name = Shader::new(
-            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\terrain_debug.frsh.frsh.glsl"],
+            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\triplanar.frsh.glsl"],
             data.resource_manager,
             data.shader_cacher,
         )

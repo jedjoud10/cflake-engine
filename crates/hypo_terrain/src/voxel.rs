@@ -67,8 +67,9 @@ impl VoxelGenerator {
         // Code goes here
         voxel.density = point.y() - 40.0;
         voxel.density += (point.x() * 0.05).sin() * 10.0;
-        voxel.density += (point.z() * 0.05).sin() * 3.0;
-        //voxel.density = (point.x() * 0.4).sin() + (point.y() * 0.4).sin() + (point.z() * 0.4).sin();
+        voxel.density += (point.y() * 0.05).sin() * 3.0;
+        voxel.density = (point.z() * 0.02).sin() * 20.0 + (point.y() * 0.02).sin() * 60.0 + (point.z() * 0.04).sin() * 60.0 + point.y() * 0.5;
+        voxel.density = voxel.density.max(point.y() - 40.0);
         //voxel.density = (point.x() - 5.0).min(point.y() - 5.0).min(point.z() - 5.0);
         //voxel.density = (-point.z() + 5.0).min(-point.x() + 5.0);
         //voxel.density = point.z() + point.y() + point.x() - 24.0;
