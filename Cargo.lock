@@ -368,6 +368,7 @@ dependencies = [
  "hypo_rendering",
  "hypo_system_event_data",
  "hypo_systems",
+ "rayon",
  "veclib",
 ]
 

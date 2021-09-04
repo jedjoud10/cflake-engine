@@ -17,7 +17,7 @@ pub const CHUNK_SIZE: usize = 18;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 3.0;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 6;
+pub const OCTREE_DEPTH: u8 = 8;
 
 // A component that will be added to well... chunks
 #[derive(Default)]

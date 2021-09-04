@@ -31,7 +31,7 @@ impl ChunkData {
 }
 
 // The data that will be used to store the position/scale of the chunk
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct ChunkCoords {
     pub position: veclib::Vector3<i64>,
     pub center: veclib::Vector3<i64>,
