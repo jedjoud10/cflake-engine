@@ -47,11 +47,11 @@ void main() {
 	float specular = pow(max(dot(view_dir, reflect_dir), 0), 32);
 	
 	// Calculate the diffuse lighting
-	const float directional_light_strength = 2;
+	const float directional_light_strength = 1;
 	float light_val = max(dot(normal, normalize(directional_light_dir)), 0) * directional_light_strength;
 
 	// Used for ambient lighting
-	float ambient_lighting_strength = 1;
+	float ambient_lighting_strength = 0.8;
 	float light_val_inverted = max(-dot(normal, normalize(directional_light_dir)), 0);
 	float sky_light_val = dot(normal, vec3(0, 1, 0)); 
 	vec3 ambient_lighting_color = texture(default_sky_gradient, vec2(1, 1 - sky_light_val)).xyz;
