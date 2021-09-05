@@ -132,100 +132,102 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                     }
                 }
 
-                // Skirts for the X axis
-                if x == 0 {
-                    solve_marching_squares(
-                        y,
-                        z,
-                        i,
-                        &voxels,
-                        &local_edges_x,
-                        density_threshold,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::X,
-                        0,
-                        DENSITY_OFFSET_X,
-                        false,
-                    );
-                }
-                if x == CHUNK_SIZE - 3 {
-                    solve_marching_squares(
-                        y,
-                        z,
-                        super::flatten((x + 1, y, z)),
-                        &voxels,
-                        &local_edges_x,
-                        density_threshold,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::X,
-                        CHUNK_SIZE - 2,
-                        DENSITY_OFFSET_X,
-                        true,
-                    );
-                }
+                if skirts {               
+                    // Skirts for the X axis
+                    if x == 0 {
+                        solve_marching_squares(
+                            y,
+                            z,
+                            i,
+                            &voxels,
+                            &local_edges_x,
+                            density_threshold,
+                            &mut shared_vertices,
+                            veclib::Vec3Axis::X,
+                            0,
+                            DENSITY_OFFSET_X,
+                            false,
+                        );
+                    }
+                    if x == CHUNK_SIZE - 3 {
+                        solve_marching_squares(
+                            y,
+                            z,
+                            super::flatten((x + 1, y, z)),
+                            &voxels,
+                            &local_edges_x,
+                            density_threshold,
+                            &mut shared_vertices,
+                            veclib::Vec3Axis::X,
+                            CHUNK_SIZE - 2,
+                            DENSITY_OFFSET_X,
+                            true,
+                        );
+                    }
 
-                // Skirts for the Y axis
-                if y == 0 {
-                    solve_marching_squares(
-                        x,
-                        z,
-                        i,
-                        &voxels,
-                        &local_edges_y,
-                        density_threshold,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::Y,
-                        0,
-                        DENSITY_OFFSET_Y,
-                        false,
-                    );
-                }
-                if y == CHUNK_SIZE - 3 {
-                    solve_marching_squares(
-                        x,
-                        z,
-                        super::flatten((x, y + 1, z)),
-                        &voxels,
-                        &local_edges_y,
-                        density_threshold,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::Y,
-                        CHUNK_SIZE - 2,
-                        DENSITY_OFFSET_Y,
-                        true,
-                    );
-                }
+                    // Skirts for the Y axis
+                    if y == 0 {
+                        solve_marching_squares(
+                            x,
+                            z,
+                            i,
+                            &voxels,
+                            &local_edges_y,
+                            density_threshold,
+                            &mut shared_vertices,
+                            veclib::Vec3Axis::Y,
+                            0,
+                            DENSITY_OFFSET_Y,
+                            false,
+                        );
+                    }
+                    if y == CHUNK_SIZE - 3 {
+                        solve_marching_squares(
+                            x,
+                            z,
+                            super::flatten((x, y + 1, z)),
+                            &voxels,
+                            &local_edges_y,
+                            density_threshold,
+                            &mut shared_vertices,
+                            veclib::Vec3Axis::Y,
+                            CHUNK_SIZE - 2,
+                            DENSITY_OFFSET_Y,
+                            true,
+                        );
+                    }
 
-                // Skirts for the Y axis
-                if z == 0 {
-                    solve_marching_squares(
-                        y,
-                        x,
-                        i,
-                        &voxels,
-                        &local_edges_z,
-                        density_threshold,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::Z,
-                        0,
-                        DENSITY_OFFSET_Z,
-                        false,
-                    );
-                }
-                if z == CHUNK_SIZE - 3 {
-                    solve_marching_squares(
-                        y,
-                        x,
-                        super::flatten((x, y, z + 1)),
-                        &voxels,
-                        &local_edges_z,
-                        density_threshold,
-                        &mut shared_vertices,
-                        veclib::Vec3Axis::Z,
-                        CHUNK_SIZE - 2,
-                        DENSITY_OFFSET_Z,
-                        true,
-                    );
+                    // Skirts for the Y axis
+                    if z == 0 {
+                        solve_marching_squares(
+                            y,
+                            x,
+                            i,
+                            &voxels,
+                            &local_edges_z,
+                            density_threshold,
+                            &mut shared_vertices,
+                            veclib::Vec3Axis::Z,
+                            0,
+                            DENSITY_OFFSET_Z,
+                            false,
+                        );
+                    }
+                    if z == CHUNK_SIZE - 3 {
+                        solve_marching_squares(
+                            y,
+                            x,
+                            super::flatten((x, y, z + 1)),
+                            &voxels,
+                            &local_edges_z,
+                            density_threshold,
+                            &mut shared_vertices,
+                            veclib::Vec3Axis::Z,
+                            CHUNK_SIZE - 2,
+                            DENSITY_OFFSET_Z,
+                            true,
+                        );
+                    }
                 }
             }
         }
