@@ -111,29 +111,23 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         if skirts {                            
                             if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                                 local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
-                                local_edges_hit_x_base = true;
                             }
                             if vert1_usize.0 == CHUNK_SIZE - 2 && vert2_usize.0 == CHUNK_SIZE - 2 && x == CHUNK_SIZE - 3 {
                                 local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
-                                local_edges_hit_x_end = true;
                             }
                             // For the Y axis
                             if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
                                 local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
-                                local_edges_hit_y_base = true;
                             }
                             if vert1_usize.1 == CHUNK_SIZE - 2 && vert2_usize.1 == CHUNK_SIZE - 2 && y == CHUNK_SIZE - 3 {
                                 local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
-                                local_edges_hit_y_end = true;
                             }
                             // For the Z axis
                             if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
                                 local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
-                                local_edges_hit_z_base = true;
                             }
                             if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
                                 local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
-                                local_edges_hit_z_end = true;
                             }
                         }
                     }
@@ -142,7 +136,6 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                 // Skirts for the X axis
                 //solve_marching_squares(local_edges_hit_x_base, y, z, i, &voxels, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
                 solve_marching_squares(
-                    local_edges_hit_x_end,
                     y,
                     z,
                     super::flatten((x + 1, y, z)),
@@ -202,6 +195,7 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                 skirts_model.normals.push(normal);
             }
             SkirtVertex::SharedVertex(coord_tuple) => {
+                println!("{:?}", coord_tuple);
                 let tri = duplicate_vertices[&coord_tuple];
                 // This vertex is a vertex that already exists in the main model
                 skirts_model.triangles.push(tri);
@@ -219,9 +213,14 @@ pub enum SkirtVertex {
     SharedVertex((u32, u32, u32)),
 }
 
+impl Default for SkirtVertex {
+    fn default() -> Self {
+        Self::SharedVertex((0, 0, 0))
+    }
+}
+
 // Solve a single marching squares case using a passed function for
 pub fn solve_marching_squares(
-    hit: bool,
     a: usize,
     b: usize,
     i: usize,
@@ -252,17 +251,8 @@ pub fn solve_marching_squares(
     const AVERAGE_DENSITY_THRESHOLD: f32 = 4.0;
 
     if case == 0 { return; /* Always skip if it's empty */ }
-    if hit && case == 15 { return; }
-    // If there is no surface, no need to create the skirt square, unless...
-    if !hit {        
-        // Skip the full and empty cases unless the average density is below the threshold, then we are allowed create the case 15 model        
-        if case == 15 && average_density > -2.0  {
-            // We can create the model
-        } else {
-            // We failed
-            return;
-        }
-    }
+    if case == 15 { return; }
+    println!("{}", case);
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
     // The vertices to connect
     let tris = if flip {
@@ -270,6 +260,10 @@ pub fn solve_marching_squares(
     } else {
         SQUARES_TRI_TABLE[case as usize]
     };
+    // The local skirt vertex array since we gotta store them since they might break
+    // TODO: Please fix this
+    let mut local_shared_vertices: [SkirtVertex; 9] = Default::default();
+    let mut valid: [bool; 9] = [false; 9]; 
     for tri_group in 0..3 {
         for tri_i in 0..3 {
             let tri = tris[tri_i + tri_group * 3];
@@ -284,7 +278,13 @@ pub fn solve_marching_squares(
                         1 | 3 | 5 | 7 => {
                             let index = (tri - 1) / 2;
                             let edge_tuple = local_edges[index as usize];
-                            shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
+                            if edge_tuple != (0, 0, 0) {
+                                local_shared_vertices[tri_i + tri_group * 3] = SkirtVertex::SharedVertex(edge_tuple);
+                                valid[tri_i + tri_group * 3] = true;
+                            } else {
+                                // Bruh
+                                valid[tri_i + tri_group * 3] = false;
+                            }
                         }
                         _ => {}
                     }
@@ -300,10 +300,16 @@ pub fn solve_marching_squares(
                     } else {
                         veclib::Vector3::<f32>::get_default_axis(&axis)
                     };
-                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
+                    local_shared_vertices[tri_i + tri_group * 3] = SkirtVertex::Vertex(new_vertex, normal);
+                    valid[tri_i + tri_group * 3] = true;
                 }
             }
         }
+    }
+    println!("{}", valid);
+    // Only add the shared vertices if they are valid
+    if valid.iter().all(|x| *x) {
+        shared_vertices.extend(local_shared_vertices);
     }
 }
 

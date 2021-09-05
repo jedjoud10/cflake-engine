@@ -38,6 +38,20 @@ impl Default for Octree {
 
 // TODO: Rewrite this
 impl Octree {
+    // Get the root node of this octree
+    pub fn get_root_node(&self) -> OctreeNode {
+        let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
+        let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
+        OctreeNode {
+            position: root_position,
+            half_extent: (root_size / 2) as u64,
+            depth: 0,
+            postprocess: false,
+            parent_center: veclib::Vector3::<i64>::default_zero(),
+            children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
+            children: false,
+        }
+    }
     // Get the subdivided nodes that have passed through the post process check
     pub fn calculate_postprocess_nodes(&self, target: &veclib::Vector3<f32>, nodes: &HashMap<veclib::Vector3<i64>, OctreeNode>) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         let mut output: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
@@ -86,19 +100,9 @@ impl Octree {
     pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         let input: OctreeInput = OctreeInput {
             target: veclib::Vector3::default_one(),
-        };
-        let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
-        let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
+        };        
         // Create the root node
-        let root_node = OctreeNode {
-            position: root_position,
-            half_extent: (root_size / 2) as u64,
-            depth: 0,
-            postprocess: false,
-            parent_center: veclib::Vector3::<i64>::default_zero(),
-            children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
-            children: false,
-        };
+        let root_node = self.get_root_node();
         let octree_data = self.generate_octree(&input.target, root_node.clone());
         self.nodes = octree_data.0.clone();
         self.targetted_node = octree_data.1;
