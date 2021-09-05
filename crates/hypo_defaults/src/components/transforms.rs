@@ -36,7 +36,7 @@ impl Transform {
     pub fn with_scale(mut self, scale: veclib::Vector3<f32>) -> Self {
         self.scale = scale;
         self
-    } 
+    }
 }
 
 // Update the transform matrix

@@ -21,7 +21,7 @@ pub struct VoxelGenerator {}
 
 impl VoxelGenerator {
     // Generate the voxels
-    pub fn generate_voxels(&self, size: u64, position: veclib::Vector3::<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Option<()> {
+    pub fn generate_voxels(&self, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Option<()> {
         let mut i = 0;
         let mut min: f32 = f32::MAX;
         let mut max: f32 = f32::MIN;
@@ -63,7 +63,10 @@ impl VoxelGenerator {
     pub fn set_values(&mut self, terrain: &Terrain) {}
     // Get the voxel at a specific point
     pub fn get_voxel(&self, point: veclib::Vector3<f32>) -> Voxel {
-        let mut voxel: Voxel = Voxel { density: 0.0, color: veclib::Vector3::default_zero() };
+        let mut voxel: Voxel = Voxel {
+            density: 0.0,
+            color: veclib::Vector3::default_zero(),
+        };
         // Code goes here
         voxel.density = point.y() - 40.0;
         voxel.density += (point.x() * 0.05).sin() * 10.0;

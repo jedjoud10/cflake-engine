@@ -107,7 +107,7 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         }
 
                         // For the X axis
-                        if skirts {                            
+                        if skirts {
                             if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                                 local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
                             }
@@ -134,7 +134,19 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 
                 // Skirts for the X axis
                 if x == 0 {
-                    solve_marching_squares(y, z, i, &voxels, &local_edges_x, density_threshold, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
+                    solve_marching_squares(
+                        y,
+                        z,
+                        i,
+                        &voxels,
+                        &local_edges_x,
+                        density_threshold,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::X,
+                        0,
+                        DENSITY_OFFSET_X,
+                        false,
+                    );
                 }
                 if x == CHUNK_SIZE - 3 {
                     solve_marching_squares(
@@ -151,14 +163,25 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         true,
                     );
                 }
-                
 
                 // Skirts for the Y axis
                 if y == 0 {
-                    solve_marching_squares(x, z, i, &voxels, &local_edges_y, density_threshold, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
+                    solve_marching_squares(
+                        x,
+                        z,
+                        i,
+                        &voxels,
+                        &local_edges_y,
+                        density_threshold,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::Y,
+                        0,
+                        DENSITY_OFFSET_Y,
+                        false,
+                    );
                 }
-                if y == CHUNK_SIZE - 3 {               
-                    solve_marching_squares(                        
+                if y == CHUNK_SIZE - 3 {
+                    solve_marching_squares(
                         x,
                         z,
                         super::flatten((x, y + 1, z)),
@@ -171,13 +194,25 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         DENSITY_OFFSET_Y,
                         true,
                     );
-                }                
+                }
 
                 // Skirts for the Y axis
                 if z == 0 {
-                    solve_marching_squares(y, x, i, &voxels, &local_edges_z, density_threshold, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);                
+                    solve_marching_squares(
+                        y,
+                        x,
+                        i,
+                        &voxels,
+                        &local_edges_z,
+                        density_threshold,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::Z,
+                        0,
+                        DENSITY_OFFSET_Z,
+                        false,
+                    );
                 }
-                if z == CHUNK_SIZE - 3 {                
+                if z == CHUNK_SIZE - 3 {
                     solve_marching_squares(
                         y,
                         x,
@@ -191,7 +226,7 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         DENSITY_OFFSET_Z,
                         true,
                     );
-                }              
+                }
             }
         }
     }
@@ -244,10 +279,10 @@ pub fn solve_marching_squares(
     //  |   |
     //  |   |
     //  0---1
-    let mut local_densities: [f32; 4] = [0.0; 4]; 
+    let mut local_densities: [f32; 4] = [0.0; 4];
 
     // Get the local densities
-    for j in 0..4 { 
+    for j in 0..4 {
         let density = data[i + density_offset[j]].density;
         local_densities[j] = density;
         // Update the case index
@@ -258,9 +293,13 @@ pub fn solve_marching_squares(
 
     // ----This is where the actual mesh generation starts----
 
-    if case == 0 { return; /* Always skip if it's empty */ }
+    if case == 0 {
+        return; /* Always skip if it's empty */
+    }
     // Check if it's full and it's out of range of the threshold
-    if case == 15 && average_density < -density_threshold { return; }
+    if case == 15 && average_density < -density_threshold {
+        return;
+    }
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
     // The vertices to connect
     let tris = if flip {

@@ -2,8 +2,8 @@ use hypo_math::octree;
 use hypo_math::octree::OctreeNode;
 
 use super::Voxel;
-use super::CHUNK_SIZE;
 use super::VoxelGenerator;
+use super::CHUNK_SIZE;
 
 // Some chunk data
 pub struct ChunkData {
@@ -46,7 +46,7 @@ impl ChunkCoords {
         Self {
             position: octree_node.position,
             center: octree_node.get_center(),
-            size: octree_node.half_extent*2,
+            size: octree_node.half_extent * 2,
             depth: octree_node.depth,
         }
     }

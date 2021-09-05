@@ -144,14 +144,22 @@ impl RenderingSystem {
         data.debug.setup_debug_renderer(data.resource_manager, data.shader_cacher);
     }
     // Draw an entity normally
-    fn draw_normal(&self, renderer: &Renderer, data: &SystemEventData, camera_position: veclib::Vector3<f32>, projection_matrix: &veclib::Matrix4x4<f32>, view_matrix: &veclib::Matrix4x4<f32>, model_matrix: &veclib::Matrix4x4<f32>) {
+    fn draw_normal(
+        &self,
+        renderer: &Renderer,
+        data: &SystemEventData,
+        camera_position: veclib::Vector3<f32>,
+        projection_matrix: &veclib::Matrix4x4<f32>,
+        view_matrix: &veclib::Matrix4x4<f32>,
+        model_matrix: &veclib::Matrix4x4<f32>,
+    ) {
         // Load the shader
         let shader = data.shader_cacher.1.get_object(&renderer.shader_name).unwrap();
         // Use the shader, and update any uniforms
         shader.use_shader();
         // Calculate the mvp matrix
         let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
-        
+
         // Pass the MVP and the model matrix to the shader
         shader.set_mat44("mvp_matrix", &mvp_matrix);
         shader.set_mat44("model_matrix", model_matrix);
@@ -182,10 +190,18 @@ impl RenderingSystem {
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, renderer.gpu_data.element_buffer_object);
                 gl::DrawElements(gl::TRIANGLES, renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
             }
-        }  
+        }
     }
     // Draw a wireframe entity
-    fn draw_wireframe(&self, renderer: &Renderer, data: &SystemEventData, camera_position: veclib::Vector3<f32>, projection_matrix: &veclib::Matrix4x4<f32>, view_matrix: &veclib::Matrix4x4<f32>, model_matrix: &veclib::Matrix4x4<f32>) {
+    fn draw_wireframe(
+        &self,
+        renderer: &Renderer,
+        data: &SystemEventData,
+        camera_position: veclib::Vector3<f32>,
+        projection_matrix: &veclib::Matrix4x4<f32>,
+        view_matrix: &veclib::Matrix4x4<f32>,
+        model_matrix: &veclib::Matrix4x4<f32>,
+    ) {
         if renderer.gpu_data.initialized && renderer.flags.contains(RendererFlags::WIREFRAME) {
             let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
             wireframe_shader.use_shader();
@@ -198,7 +214,6 @@ impl RenderingSystem {
                 // Set the wireframe rendering
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
                 gl::Disable(gl::CULL_FACE);
-                
 
                 gl::BindVertexArray(renderer.gpu_data.vertex_array_object);
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, renderer.gpu_data.element_buffer_object);
@@ -263,13 +278,13 @@ impl System for RenderingSystem {
         let camera_position: veclib::Vector3<f32> = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
 
         let model_matrix: veclib::Matrix4x4<f32> = components.get_component::<components::Transform>(data.component_manager).unwrap().matrix;
-        let rc = components.get_component::<Renderer>(data.component_manager).unwrap();    
+        let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
 
         // Draw the entity normally
         if self.wireframe {
             self.draw_wireframe(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
         } else {
-            self.draw_normal(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);      
+            self.draw_normal(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
         }
     }
 
@@ -330,7 +345,7 @@ impl System for RenderingSystem {
 
         // Other params
         shader.set_vec3f32("view_pos", &camera_position);
-        shader.set_i32("debug_view", &(self.debug_view as i32));        
+        shader.set_i32("debug_view", &(self.debug_view as i32));
         // Render the screen quad
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);

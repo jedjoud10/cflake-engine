@@ -150,7 +150,12 @@ impl Texture {
         }
     }
     // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
-    pub fn load_texture<'a>(self, local_path: &str, resource_manager: &mut ResourceManager, texture_cacher: &'a mut CacheManager<Texture>) -> Result<(&'a Self, u16), hypo_errors::ResourceError> {
+    pub fn load_texture<'a>(
+        self,
+        local_path: &str,
+        resource_manager: &mut ResourceManager,
+        texture_cacher: &'a mut CacheManager<Texture>,
+    ) -> Result<(&'a Self, u16), hypo_errors::ResourceError> {
         // Load the resource
         let resource = resource_manager.load_packed_resource(local_path)?;
         // If the texture was already cached, just loaded from cache

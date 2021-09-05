@@ -56,11 +56,11 @@ pub fn load_entities(world: &mut World) {
     // Make it the default camera
     world.custom_data.main_camera_entity_id = world.entity_manager.add_entity_s(camera);
 
-    // Simple cube    
+    // Simple cube
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(
         &mut world.component_manager,
-        components::Transform::default().with_position(veclib::Vector3::default_x() * 10.0)
+        components::Transform::default().with_position(veclib::Vector3::default_x() * 10.0),
     )
     .unwrap();
     let cube_model = Model::load_model("defaults\\models\\cube.mdl3d", &mut world.resource_manager).unwrap();
@@ -73,18 +73,19 @@ pub fn load_entities(world: &mut World) {
                 vec!["user\\textures\\diffuse.png", "user\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
-            ).unwrap()
+            )
+            .unwrap()
             .set_model(final_model)
             .set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::new(1.0, 0.0, 0.0)))
             .set_shader(world.shader_cacher.1.id_get_default_object(0).unwrap().name.as_str()),
     )
     .unwrap();
     cube.link_default_component::<components::AABB>(&mut world.component_manager).unwrap();
-    world.entity_manager.add_entity_s(cube);        
+    world.entity_manager.add_entity_s(cube);
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(
         &mut world.component_manager,
-        components::Transform::default().with_position(veclib::Vector3::default_y() * 10.0)
+        components::Transform::default().with_position(veclib::Vector3::default_y() * 10.0),
     )
     .unwrap();
     let cube_model = Model::load_model("defaults\\models\\cube.mdl3d", &mut world.resource_manager).unwrap();
@@ -97,18 +98,19 @@ pub fn load_entities(world: &mut World) {
                 vec!["user\\textures\\diffuse.png", "user\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
-            ).unwrap()
+            )
+            .unwrap()
             .set_model(final_model)
             .set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::new(0.0, 1.0, 0.0)))
             .set_shader(world.shader_cacher.1.id_get_default_object(0).unwrap().name.as_str()),
     )
     .unwrap();
     cube.link_default_component::<components::AABB>(&mut world.component_manager).unwrap();
-    world.entity_manager.add_entity_s(cube);        
+    world.entity_manager.add_entity_s(cube);
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(
         &mut world.component_manager,
-        components::Transform::default().with_position(veclib::Vector3::default_z() * 10.0)
+        components::Transform::default().with_position(veclib::Vector3::default_z() * 10.0),
     )
     .unwrap();
     let cube_model = Model::load_model("defaults\\models\\cube.mdl3d", &mut world.resource_manager).unwrap();
@@ -121,12 +123,13 @@ pub fn load_entities(world: &mut World) {
                 vec!["user\\textures\\diffuse.png", "user\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
-            ).unwrap()
+            )
+            .unwrap()
             .set_model(final_model)
             .set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::new(0.0, 0.0, 1.0)))
             .set_shader(world.shader_cacher.1.id_get_default_object(0).unwrap().name.as_str()),
     )
     .unwrap();
     cube.link_default_component::<components::AABB>(&mut world.component_manager).unwrap();
-    world.entity_manager.add_entity_s(cube);        
+    world.entity_manager.add_entity_s(cube);
 }

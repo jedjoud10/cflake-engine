@@ -147,7 +147,14 @@ impl ResourceManager {
         // Now split the local path into the extension and name
         let name: Vec<&str> = local_path.split('\\').collect();
         let name_and_extension = name[name.len() - 1];
-        let _name = name_and_extension.split('.').next().ok_or(hypo_errors::ResourceError::new(format!("Name or extension are not valid for resource file '{}'", local_path)))?.to_string();
+        let _name = name_and_extension
+            .split('.')
+            .next()
+            .ok_or(hypo_errors::ResourceError::new(format!(
+                "Name or extension are not valid for resource file '{}'",
+                local_path
+            )))?
+            .to_string();
         let extension: Vec<&str> = name_and_extension.split('.').collect();
         let extension = extension[1..].join(".");
         // Hash the local path and then use it to load the file
@@ -169,7 +176,9 @@ impl ResourceManager {
 
         // Since the resource was not in the cache, load it and then put it in the cache
         // Open the file
-        let packed_file = File::open(file_path).ok().ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
+        let packed_file = File::open(file_path)
+            .ok()
+            .ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
         let mut reader = BufReader::new(packed_file);
 
         // Update the resource type

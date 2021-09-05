@@ -100,7 +100,7 @@ impl Octree {
     pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         let input: OctreeInput = OctreeInput {
             target: veclib::Vector3::default_one(),
-        };        
+        };
         // Create the root node
         let root_node = self.get_root_node();
         let octree_data = self.generate_octree(&input.target, root_node.clone());
@@ -119,7 +119,7 @@ impl Octree {
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it
             let added_nodes = self.generate_base_octree();
-            let added_nodes: Vec<OctreeNode> = added_nodes.iter().map(|(center, node)| { node.clone() }).collect();
+            let added_nodes: Vec<OctreeNode> = added_nodes.iter().map(|(center, node)| node.clone()).collect();
             self.generated_base_octree = true;
             return Some((added_nodes, Vec::new()));
         }

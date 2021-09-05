@@ -9,7 +9,7 @@ args = ["clean", "--release"]
 
 [tasks.run-release]
 command = "cargo"
-args = ["run", "--release"]
+args = ["run", "-p", "hypo_dev_game", "--release"]
 
 [tasks.fix-certificate]
 command = "./fix-certificate.bat"

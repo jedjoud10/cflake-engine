@@ -6,7 +6,7 @@ macro_rules! impl_component {
         impl ComponentInternal for $t {
             fn as_any(&self) -> &dyn std::any::Any {
                 self
-            }        
+            }
             fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
                 self
             }

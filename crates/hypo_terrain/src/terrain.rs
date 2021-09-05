@@ -1,4 +1,4 @@
-use crate::{ChunkData, ChunkManager, chunk_data::ChunkCoords};
+use crate::{chunk_data::ChunkCoords, ChunkData, ChunkManager};
 
 use super::voxel::VoxelGenerator;
 use hypo_defaults::components;
@@ -62,7 +62,11 @@ impl Terrain {
                 component_manager,
                 components::Transform {
                     position: veclib::Vector3::<f32>::from(coords.position),
-                    scale: veclib::Vector3::new((coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32, (coords.size / self.octree.size) as f32),
+                    scale: veclib::Vector3::new(
+                        (coords.size / self.octree.size) as f32,
+                        (coords.size / self.octree.size) as f32,
+                        (coords.size / self.octree.size) as f32,
+                    ),
                     ..components::Transform::default()
                 },
             )
@@ -166,14 +170,14 @@ impl System for Terrain {
                         match self.chunk_manager.remove_chunk(&chunk_coords) {
                             Some(_) => {
                                 // Get the entity id
-                                self.chunk_manager.remove_chunk_entity(&chunk_coords);                               
-                            },
-                            None => {},
-                        }                        
+                                self.chunk_manager.remove_chunk_entity(&chunk_coords);
+                            }
+                            None => {}
+                        }
                     }
                 }
                 None => { /* Nothing happened */ }
-            }            
+            }
         }
         // Update the chunk manager
         let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator);

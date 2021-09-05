@@ -85,7 +85,12 @@ impl Renderer {
         return self;
     }
     // Load textures from their resource paths
-    pub fn resource_load_textures(mut self, texture_paths: Vec<&str>, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Result<Self, hypo_errors::ResourceError> {
+    pub fn resource_load_textures(
+        mut self,
+        texture_paths: Vec<&str>,
+        texture_cacher: &mut CacheManager<Texture>,
+        resource_manager: &mut ResourceManager,
+    ) -> Result<Self, hypo_errors::ResourceError> {
         // Load the textures
         for (_i, &texture_path) in texture_paths.iter().enumerate() {
             let _resource = resource_manager.load_packed_resource(texture_path)?;
@@ -123,7 +128,7 @@ impl Renderer {
     pub fn set_uniform(mut self, uniform_name: &str, value: ShaderArg) -> Self {
         self.uniform_setter.set_uniform(uniform_name, value);
         return self;
-    }   
+    }
 }
 
 impl Renderer {
@@ -251,7 +256,7 @@ impl ShaderUniformSetter {
     // Set a specific uniform to a specific value
     pub fn set_uniform(&mut self, uniform_name: &str, value: ShaderArg) {
         self.uniforms.push((uniform_name.to_string(), value));
-    }    
+    }
 }
 
 // The type of shader argument
