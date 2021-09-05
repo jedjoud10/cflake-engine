@@ -16,7 +16,7 @@ pub struct ChunkManager {
 }
 
 // How many chunks to generate per frame
-pub const CHUNK_GENERATIONS_PER_FRAME: usize = 16;
+pub const CHUNK_GENERATIONS_PER_FRAME: usize = 4;
 
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
@@ -71,8 +71,8 @@ impl ChunkManager {
             match has_surface {
                 Some(_) => {
                     // We have a surface, create the model
-                    let model = mesher::generate_model(&voxels, true);
                     let coords = chunk_coords.clone();
+                    let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true);
                     // Save the chunk's data, though don't save the mode
                     let chunk_data = ChunkData { coords: coords, voxels: voxels };
                     Some((chunk_data, model))

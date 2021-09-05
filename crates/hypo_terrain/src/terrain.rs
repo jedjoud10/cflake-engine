@@ -12,12 +12,14 @@ use hypo_systems::*;
 use math::octree;
 use std::collections::HashMap;
 
+// The actual chunk size number that you change
+pub const MAIN_CHUNK_SIZE: usize = 32;
 // How many voxels in one axis in each chunk?
-pub const CHUNK_SIZE: usize = 18;
+pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
-pub const LOD_FACTOR: f32 = 3.0;
+pub const LOD_FACTOR: f32 = 1.1;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 1;
+pub const OCTREE_DEPTH: u8 = 16;
 
 // A component that will be added to well... chunks
 #[derive(Default)]
