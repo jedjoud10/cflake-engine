@@ -109,7 +109,6 @@ impl Octree {
     pub fn generate_incremental_octree(&mut self, input: veclib::Vector3<f32>) -> Option<(Vec<OctreeNode>, Vec<OctreeNode>)> {
         // Clamp the input position
         let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(input, veclib::Vector3::<f32>::from(self.get_root_node().position) + 32.0, veclib::Vector3::<f32>::from(self.get_root_node().position + (self.get_root_node().half_extent * 2) as i64) - 32.0);
-        println!("{:?}", input);
         // Check if we even have the base octree generated
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it

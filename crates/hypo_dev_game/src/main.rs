@@ -55,4 +55,34 @@ pub fn load_entities(world: &mut World) {
     camera.link_default_component::<components::Camera>(&mut world.component_manager).unwrap();
     // Make it the default camera
     world.custom_data.main_camera_entity_id = world.entity_manager.add_entity_s(camera);
+
+    let mut entity = Entity::new("Sphere");
+
+    let texture_ids = vec![
+        Texture::new()
+            .enable_mipmaps()
+            .load_texture("user\\textures\\sandstone_cracks_diff_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
+            .unwrap()
+            .1,
+        Texture::new()
+            .enable_mipmaps()
+            .load_texture("user\\textures\\sandstone_cracks_nor_gl_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
+            .unwrap()
+            .1,
+    ];
+
+    // Create a sky material
+    let material = Material::default().load_textures(texture_ids, &mut world.texture_cacher).set_shader(&world.shader_cacher.1.id_get_default_object(0).unwrap().name);
+
+    // Link components
+    entity.link_component::<Renderer>(
+        &mut world.component_manager,
+        Renderer::default()
+            .load_model("defaults\\models\\sphere.mdl3d", &mut world.resource_manager)
+            .set_material(material)
+    )
+    .unwrap();
+    entity.link_default_component::<components::AABB>(&mut world.component_manager).unwrap();
+    entity.link_default_component::<components::Transform>(&mut world.component_manager).unwrap();
+    world.entity_manager.add_entity_s(entity);
 }

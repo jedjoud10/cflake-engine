@@ -93,7 +93,7 @@ impl RenderingSystem {
             // Create the normals render texture
             self.normals_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
-                .set_idf(gl::RGB16_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
+                .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the position render texture
             self.position_texture = Texture::new()
@@ -103,7 +103,7 @@ impl RenderingSystem {
             // Create the emissive render texture
             self.emissive_texture = Texture::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
-                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
+                .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the depth-stencil render texture
             self.depth_stencil_texture = Texture::new()
@@ -168,7 +168,6 @@ impl RenderingSystem {
         shader.set_mat44("model_matrix", model_matrix);
         shader.set_mat44("view_matrix", view_matrix);
         shader.set_vec3f32("view_pos", &camera_position);
-        shader.set_vec2f32("uv_scale", &material.uv_scale);
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
 
         // Get the OpenGL texture id so we can bind it to the shader

@@ -38,7 +38,6 @@ impl System for SkySystem {
 
         // Load texture
         let cached_texture_id = Texture::new()
-            .enable_mipmaps()
             .set_wrapping_mode(TextureWrapping::ClampToEdge)
             .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
             .unwrap()

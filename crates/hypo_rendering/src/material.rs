@@ -3,21 +3,27 @@ use hypo_resources::ResourceManager;
 use super::{Texture};
 
 // A material that can have multiple parameters and such
-#[derive(Default)]
 pub struct Material {
     // Rendering stuff
     pub shader_name: String,    
     pub texture_cache_ids: Vec<u16>,
     pub uniform_setter: ShaderUniformSetter,
-    pub uv_scale: veclib::Vector2<f32>,    
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        let mut material: Self = Material { 
+            shader_name: String::default(), 
+            texture_cache_ids: Vec::new(), 
+            uniform_setter: ShaderUniformSetter::default()
+        };
+        let material = material.set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::default_one()));
+        let material = material.set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::default_one()));
+        return material;
+    }
 }
 
 impl Material {    
-    // Set the uv scale
-    pub fn set_uv_scale(mut self, new_scale: veclib::Vector2<f32>) -> Self {
-        self.uv_scale = new_scale;
-        return self;
-    }
      // Load textures from their texture struct
      pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture>) -> Self {
         // Set the textures as the renderer's textures
