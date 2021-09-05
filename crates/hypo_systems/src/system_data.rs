@@ -1,4 +1,3 @@
-use super::EntityFilter;
 use hypo_ecs::*;
 use hypo_errors::ECSError;
 // Some system data that is part of a system and wrapped around System trait getter functions
@@ -9,7 +8,6 @@ pub struct SystemData {
     pub state: SystemState,
     pub stype: SystemType,
     pub entities: Vec<u16>,
-    pub eppf: Option<Box<dyn EntityFilter + Sync>>,
 }
 
 impl SystemData {
