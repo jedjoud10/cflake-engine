@@ -58,7 +58,8 @@ impl System for CameraSystem {
                 let mut changed_position = components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position;
                 let delta = data.time_manager.delta_time as f32;
                 // Default speed
-                let speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.4;
+                let original_speed = 1.0 + data.input_manager.get_accumulated_mouse_scroll() * 0.4;
+                let speed = original_speed.abs().powf(2.0) * original_speed.signum();
                 if data.input_manager.map_held("camera_forward").0 {
                     changed_position -= forward_vector * delta * speed;
                 } else if data.input_manager.map_held("camera_backwards").0 {

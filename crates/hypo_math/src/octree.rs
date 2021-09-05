@@ -6,11 +6,6 @@ use std::collections::HashSet;
 use std::ops::{BitAnd, BitOr};
 use std::time::Instant;
 
-// The octree input data
-pub struct OctreeInput {
-    pub target: veclib::Vector3<f32>,
-}
-
 // The whole octree
 pub struct Octree {
     pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
@@ -98,23 +93,23 @@ impl Octree {
     }
     // Generate the base octree with a target point at 0, 0, 0
     pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
-        let input: OctreeInput = OctreeInput {
-            target: veclib::Vector3::default_one(),
-        };
         // Create the root node
         let root_node = self.get_root_node();
-        let octree_data = self.generate_octree(&input.target, root_node.clone());
+        let octree_data = self.generate_octree(&veclib::Vector3::default_one(), root_node.clone());
         self.nodes = octree_data.0.clone();
         self.targetted_node = octree_data.1;
         let mut nodes = octree_data.0;
-        let postprocess_nodes = self.calculate_postprocess_nodes(&input.target, &nodes);
+        let postprocess_nodes = self.calculate_postprocess_nodes(&veclib::Vector3::default_one(), &nodes);
         self.postprocess_nodes = postprocess_nodes.clone();
         nodes.extend(postprocess_nodes);
         println!("Generated the base octree");
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth
-    pub fn generate_incremental_octree(&mut self, input: OctreeInput) -> Option<(Vec<OctreeNode>, Vec<OctreeNode>)> {
+    pub fn generate_incremental_octree(&mut self, input: veclib::Vector3<f32>) -> Option<(Vec<OctreeNode>, Vec<OctreeNode>)> {
+        // Clamp the input position
+        let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(input, veclib::Vector3::<f32>::from(self.get_root_node().position) + 32.0, veclib::Vector3::<f32>::from(self.get_root_node().position + (self.get_root_node().half_extent * 2) as i64) - 32.0);
+        println!("{:?}", input);
         // Check if we even have the base octree generated
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it
@@ -143,7 +138,7 @@ impl Octree {
                 // Set the current node as the current's node parent
                 current_node = self.nodes.get(&current_node.parent_center).unwrap().clone();
                 // Test for intersection
-                intersection = current_node.can_subdivide(&input.target, self.depth);
+                intersection = current_node.can_subdivide(&input, self.depth);
                 // If it doesn't hit, then that node must be removed
                 if !intersection {
                     // Since we are moving up the tree, we will get rid of this node and all of it's children
@@ -167,7 +162,7 @@ impl Octree {
             return None;
         }
         // Then we generate a local octree, using that marked node as the root
-        let local_octree_data = self.generate_octree(&input.target, marked_node.clone().unwrap());
+        let local_octree_data = self.generate_octree(&input, marked_node.clone().unwrap());
         self.targetted_node = local_octree_data.1;
         // Get the nodes that we've added
         let added_nodes = local_octree_data.0;
@@ -203,33 +198,10 @@ impl Octree {
         node_to_remove.children = false;
         node_to_remove.children_centers = [veclib::Vector3::<i64>::default_zero(); 8];
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
-
-        let center: veclib::Vector3<i64> = marked_node.as_ref().unwrap().get_center();
-        let depth: u8 = marked_node.as_ref().unwrap().depth;
-        // Remove the nodes
-        /*
-        // TODO: Optimize this
-        self.removed_nodes = self
-            .nodes
-            .iter()
-            .filter_map(|(&coord, node)| {
-                // Check if this node should be removed
-                let mut valid: bool = node.children || center == coord;
-                if depth != 0 {
-                    valid |= node.parent_center == center && node.can_subdivide(&input.target, self.depth);
-                }
-                if deleted_centers.contains(&coord) && coord != node_to_remove.get_center() || valid {
-                    Some(node.clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-        */
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
 
         // Subdivide each added node at least once
-        let postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = self.calculate_postprocess_nodes(&input.target, &self.nodes);
+        let postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = self.calculate_postprocess_nodes(&input, &self.nodes);
         let mut removed_postprocess_nodes: Vec<OctreeNode> = Vec::new();
         // Detect the newly made postprocess-nodes
         let mut added_postprocess_nodes: Vec<OctreeNode> = Vec::new();

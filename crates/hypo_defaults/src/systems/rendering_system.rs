@@ -55,7 +55,7 @@ impl RenderingSystem {
         quad_renderer_component.model = Model::from_resource(data.resource_manager.load_packed_resource("defaults\\models\\screen_quad.mdl3d").unwrap()).unwrap();
         // Create the screen quad material
         let material: Material = Material::default().set_shader(Shader::new(
-            vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen_quad.frsh.glsl"],
+            vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
         ).1.as_str());

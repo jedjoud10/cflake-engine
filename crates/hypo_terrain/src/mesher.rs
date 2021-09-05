@@ -164,7 +164,6 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                             true,
                         );
                     }
-
                     // Skirts for the Y axis
                     if y == 0 {
                         solve_marching_squares(
@@ -227,7 +226,7 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                             DENSITY_OFFSET_Z,
                             true,
                         );
-                    }
+                    }                    
                 }
             }
         }
@@ -338,10 +337,10 @@ pub fn solve_marching_squares(
                         veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
                     };
                     // Get the normal of the skirt vertex
-                    let normal = if flip {
-                        veclib::Vector3::<f32>::get_default_axis(&axis)
-                    } else {
-                        -veclib::Vector3::<f32>::get_default_axis(&axis)
+                    let normal: veclib::Vector3<f32> = match axis {
+                        veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, local_densities[3] - local_densities[0], local_densities[1] - local_densities[0]).normalized(),
+                        veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(local_densities[1] - local_densities[0], 0.0, local_densities[3] - local_densities[0]).normalized(),
+                        veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(local_densities[3] - local_densities[0], local_densities[1] - local_densities[0], 0.0).normalized(),
                     };
                     // Add it
                     shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
