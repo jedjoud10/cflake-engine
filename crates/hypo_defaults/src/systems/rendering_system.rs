@@ -372,6 +372,18 @@ impl System for RenderingSystem {
         rc.dispose_model();
     }
 
+    // Filter the entities with their AABB (TODO: Make this work with the octree hierarchy for faster culling)
+    fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &SystemEventData) -> bool {
+        /*
+        let camera = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+        let camera_transform = camera.get_component::<components::Transform>(data.component_manager).unwrap();
+        let normal = camera_transform.rotation.mul_point(veclib::Vector3::default_z());
+        let diff = components.get_component::<components::Transform>(data.component_manager).unwrap();
+        return ((camera_transform.position - diff.position).normalized()).dot(normal) > 0.8;
+        */
+        return true;
+    }
+
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
         self
