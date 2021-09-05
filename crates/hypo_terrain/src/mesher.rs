@@ -135,18 +135,20 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 
                 // Skirts for the X axis
                 //solve_marching_squares(local_edges_hit_x_base, y, z, i, &voxels, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
-                solve_marching_squares(
-                    y,
-                    z,
-                    super::flatten((x + 1, y, z)),
-                    &voxels,
-                    &local_edges_x,
-                    &mut shared_vertices,
-                    veclib::Vec3Axis::X,
-                    CHUNK_SIZE - 2,
-                    DENSITY_OFFSET_X,
-                    true,
-                );
+                if x == CHUNK_SIZE - 3 {
+                    solve_marching_squares(
+                        y,
+                        z,
+                        super::flatten((x + 1, y, z)),
+                        &voxels,
+                        &local_edges_x,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::X,
+                        CHUNK_SIZE - 2,
+                        DENSITY_OFFSET_X,
+                        true,
+                    );
+                }
                 /*
 
                 // Skirts for the Y axis
@@ -253,6 +255,7 @@ pub fn solve_marching_squares(
     if case == 0 { return; /* Always skip if it's empty */ }
     if case == 15 { return; }
     println!("{}", case);
+    println!("{:?}", local_edges);
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
     // The vertices to connect
     let tris = if flip {
