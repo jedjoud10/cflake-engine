@@ -48,7 +48,10 @@ hypo_ecs::impl_component!(Renderer);
 impl Renderer {
     // Create a renderer
     pub fn new() -> Self {
-        Self::default()
+        let newed = Self::default();
+        // Load all the default args that will be used later on
+        let newed = newed.set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::default_one()));
+        return newed;
     }
     // Load a model
     pub fn load_model(mut self, model_path: &str, resource_manager: &mut ResourceManager) -> Self {

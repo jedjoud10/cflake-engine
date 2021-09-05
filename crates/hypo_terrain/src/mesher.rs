@@ -6,7 +6,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
-const AVERAGE_DENSITY_THRESHOLD: f32 = 4.0;
+const AVERAGE_DENSITY_THRESHOLD: f32 = 10.0;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -44,16 +44,10 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 
                 // Local edges for the X axis
                 let mut local_edges_x: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                let mut local_edges_hit_x_base: bool = false;
-                let mut local_edges_hit_x_end: bool = false;
                 // Local edges for the X axis
                 let mut local_edges_y: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                let mut local_edges_hit_y_base: bool = false;
-                let mut local_edges_hit_y_end: bool = false;
                 // Local edges for the X axis
                 let mut local_edges_z: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                let mut local_edges_hit_z_base: bool = false;
-                let mut local_edges_hit_z_end: bool = false;
 
                 // The vertex indices that are gonna be used for the skirts
                 for edge in edges {
@@ -137,7 +131,9 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                 }
 
                 // Skirts for the X axis
-                //solve_marching_squares(local_edges_hit_x_base, y, z, i, &voxels, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
+                if x == 0 {
+                    solve_marching_squares(y, z, i, &voxels, &local_edges_x, &mut shared_vertices, veclib::Vec3Axis::X, 0, DENSITY_OFFSET_X, false);
+                }
                 if x == CHUNK_SIZE - 3 {
                     solve_marching_squares(
                         y,
@@ -152,40 +148,45 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         true,
                     );
                 }
-                /*
-
-                // Skirts for the Y axis
-                solve_marching_squares(local_edges_hit_y_base, x, z, i, &voxels, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
-                solve_marching_squares(
-                    local_edges_hit_y_end,
-                    x,
-                    z,
-                    super::flatten((x, y + 1, z)),
-                    &voxels,
-                    &local_edges_y,
-                    &mut shared_vertices,
-                    veclib::Vec3Axis::Y,
-                    CHUNK_SIZE - 2,
-                    DENSITY_OFFSET_Y,
-                    true,
-                );
                 
 
                 // Skirts for the Y axis
-                solve_marching_squares(local_edges_hit_z_base, y, x, i, &voxels, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);                
-                solve_marching_squares(
-                    local_edges_hit_z_end,
-                    y,
-                    x,
-                    super::flatten((x, y, z + 1)),
-                    &voxels,
-                    &local_edges_z,
-                    &mut shared_vertices,
-                    veclib::Vec3Axis::Z,
-                    CHUNK_SIZE - 2,
-                    DENSITY_OFFSET_Z,
-                    true,
-                ); */               
+                if y == 0 {
+                    solve_marching_squares(x, z, i, &voxels, &local_edges_y, &mut shared_vertices, veclib::Vec3Axis::Y, 0, DENSITY_OFFSET_Y, false);
+                }
+                if y == CHUNK_SIZE - 3 {               
+                    solve_marching_squares(                        
+                        x,
+                        z,
+                        super::flatten((x, y + 1, z)),
+                        &voxels,
+                        &local_edges_y,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::Y,
+                        CHUNK_SIZE - 2,
+                        DENSITY_OFFSET_Y,
+                        true,
+                    );
+                }                
+
+                // Skirts for the Y axis
+                if z == 0 {
+                    solve_marching_squares(y, x, i, &voxels, &local_edges_z, &mut shared_vertices, veclib::Vec3Axis::Z, 0, DENSITY_OFFSET_Z, false);                
+                }
+                if z == CHUNK_SIZE - 3 {                
+                    solve_marching_squares(
+                        y,
+                        x,
+                        super::flatten((x, y, z + 1)),
+                        &voxels,
+                        &local_edges_z,
+                        &mut shared_vertices,
+                        veclib::Vec3Axis::Z,
+                        CHUNK_SIZE - 2,
+                        DENSITY_OFFSET_Z,
+                        true,
+                    );
+                }              
             }
         }
     }
@@ -200,7 +201,6 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                 skirts_model.normals.push(normal);
             }
             SkirtVertex::SharedVertex(coord_tuple) => {
-                println!("{:?}", coord_tuple);
                 let tri = duplicate_vertices[&coord_tuple];
                 // This vertex is a vertex that already exists in the main model
                 skirts_model.triangles.push(tri);
@@ -218,14 +218,9 @@ pub enum SkirtVertex {
     SharedVertex((u32, u32, u32)),
 }
 
-impl Default for SkirtVertex {
-    fn default() -> Self {
-        Self::SharedVertex((0, 0, 0))
-    }
-}
-
 // Solve a single marching squares case using a passed function for
 pub fn solve_marching_squares(
+    // TODO: Comment deez
     a: usize,
     b: usize,
     i: usize,
@@ -250,9 +245,8 @@ pub fn solve_marching_squares(
         let density = data[i + density_offset[j]].density;
         local_densities[j] = density;
         // Update the case index
-        case += (!((density > 0.0) as u8) * 2_u8.pow(j as u32));
+        case += ((density < 0.0) as u8) * 2_u8.pow(j as u32);
     }
-    println!("{}", case);
     // Get the average density
     let average_density: f32 = local_densities.iter().sum::<f32>() / 4.0;
 
@@ -268,7 +262,9 @@ pub fn solve_marching_squares(
     } else {
         SQUARES_TRI_TABLE[case as usize]
     };
+    // Triangle group, basically just 3 indices
     for tri_group in 0..3 {
+        // Each local triangle inside the triangle group
         for tri_i in 0..3 {
             let tri = tris[tri_i + tri_group * 3];
             // Check if the value is negative first
@@ -294,11 +290,13 @@ pub fn solve_marching_squares(
                         veclib::Vec3Axis::Y => transform_y_local(slice, &vertex, &offset),
                         veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
                     };
+                    // Get the normal of the skirt vertex
                     let normal = if flip {
                         -veclib::Vector3::<f32>::get_default_axis(&axis)
                     } else {
                         veclib::Vector3::<f32>::get_default_axis(&axis)
                     };
+                    // Add it
                     shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
                 }
             }

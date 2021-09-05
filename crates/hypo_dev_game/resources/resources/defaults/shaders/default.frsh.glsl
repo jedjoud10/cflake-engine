@@ -7,6 +7,7 @@ uniform sampler2D diffuse_tex;
 uniform sampler2D normals_tex;
 uniform vec2 uv_scale;
 uniform vec3 view_pos;
+uniform vec3 tint;
 in vec3 m_position;
 in vec3 m_normal;
 in vec4 m_tangent;
@@ -14,7 +15,7 @@ in vec2 m_uv;
 in vec2 screen_space_pos;
 in mat3 tbn;
 void main() {
-	frag_diffuse = texture(diffuse_tex, m_uv * uv_scale).xyz;
+	frag_diffuse = texture(diffuse_tex, m_uv * uv_scale).xyz * tint;
 	vec3 tangent_space_normals = texture(normals_tex, m_uv * uv_scale).xyz * 2.0 - 1.0;
 	frag_normal = normalize(tbn * tangent_space_normals);
 	frag_pos = m_position;
