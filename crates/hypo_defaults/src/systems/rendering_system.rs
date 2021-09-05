@@ -2,7 +2,7 @@ use super::super::components;
 use gl;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
-use hypo_rendering::{Model, Renderer, RendererFlags, Shader, Texture, Window};
+use hypo_rendering::{Model, Renderer, RendererFlags, Shader, Texture, Window, Material};
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData};
 use std::ptr::null;
@@ -32,7 +32,7 @@ impl RenderingSystem {
         // Use the shader first
         shader.use_shader();
         // Loop over all the set uniforms
-        for (name, data) in renderer.uniform_setter.uniforms.iter() {
+        for (name, data) in renderer.material.uniform_setter.uniforms.iter() {
             // Now it's the painful part
             unsafe {
                 match data {
@@ -53,12 +53,13 @@ impl RenderingSystem {
     fn create_screen_quad(&mut self, data: &mut SystemEventData) {
         let mut quad_renderer_component = Renderer::default();
         quad_renderer_component.model = Model::from_resource(data.resource_manager.load_packed_resource("defaults\\models\\screen_quad.mdl3d").unwrap()).unwrap();
-        quad_renderer_component.shader_name = Shader::new(
+        // Create the screen quad material
+        let material: Material = Material::default().set_shader(Shader::new(
             vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen_quad.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
-        )
-        .1;
+        ).1.as_str());
+        let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
     }
@@ -153,8 +154,10 @@ impl RenderingSystem {
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
     ) {
+        // Get the material for this entity
+        let material = &renderer.material;
         // Load the shader
-        let shader = data.shader_cacher.1.get_object(&renderer.shader_name).unwrap();
+        let shader = data.shader_cacher.1.get_object(&material.shader_name).unwrap();
         // Use the shader, and update any uniforms
         shader.use_shader();
         // Calculate the mvp matrix
@@ -165,14 +168,14 @@ impl RenderingSystem {
         shader.set_mat44("model_matrix", model_matrix);
         shader.set_mat44("view_matrix", view_matrix);
         shader.set_vec3f32("view_pos", &camera_position);
-        shader.set_vec2f32("uv_scale", &renderer.uv_scale);
+        shader.set_vec2f32("uv_scale", &material.uv_scale);
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
 
         // Get the OpenGL texture id so we can bind it to the shader
         let mut textures: Vec<&Texture> = Vec::new();
 
         // Load the default ones
-        for &id in renderer.texture_cache_ids.iter() {
+        for &id in material.texture_cache_ids.iter() {
             // If this is a negative number, it means we've gotta use the default texture
             textures.push(data.texture_cacher.id_get_object(id).unwrap());
         }
@@ -312,7 +315,7 @@ impl System for RenderingSystem {
         }
         // Draw the debug primitives
         data.debug.draw_debug(&vp_matrix, &data.shader_cacher.1);
-        let shader = data.shader_cacher.1.get_object(&self.quad_renderer.shader_name).unwrap();
+        let shader = data.shader_cacher.1.get_object(&self.quad_renderer.material.shader_name).unwrap();
         let camera_position = data
             .entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id)

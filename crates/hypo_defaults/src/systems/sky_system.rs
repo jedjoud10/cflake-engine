@@ -1,6 +1,6 @@
 use super::super::components;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
-use hypo_rendering::{Model, Renderer, Shader, Texture, TextureWrapping};
+use hypo_rendering::{Material, Model, Renderer, Shader, Texture, TextureWrapping};
 use hypo_system_event_data::SystemEventData;
 use hypo_systems::{System, SystemData};
 
@@ -48,14 +48,16 @@ impl System for SkySystem {
         let mut model = Model::load_model("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
         model.flip_triangles();
 
+        // Create a sky material
+        let material = Material::default().load_textures(vec![cached_texture_id], &mut data.texture_cacher).set_shader(sky_shader_name.as_str());
+
         // Link components
         sky.link_component::<Renderer>(
             data.component_manager,
             Renderer::default()
-                .load_textures(vec![cached_texture_id], &mut data.texture_cacher)
+                .set_material(material)
                 .set_model(model)
                 .set_wireframe(false)
-                .set_shader(sky_shader_name.as_str()),
         )
         .unwrap();
         sky.link_default_component::<components::AABB>(data.component_manager).unwrap();

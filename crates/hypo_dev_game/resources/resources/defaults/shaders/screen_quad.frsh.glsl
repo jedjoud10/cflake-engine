@@ -15,24 +15,6 @@ uniform ivec2 resolution;
 uniform float time;
 in vec2 uv_coordinates;
 
-// Some tonemapping
-vec3 aces(vec3 x) {
-  const float a = 2.51;
-  const float b = 0.03;
-  const float c = 2.43;
-  const float d = 0.59;
-  const float e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
-}
-
-vec3 czm_saturation(vec3 rgb, float adjustment)
-{
-    // Algorithm from Chapter 16 of OpenGL Shading Language
-    const vec3 W = vec3(0.2125, 0.7154, 0.0721);
-    vec3 intensity = vec3(dot(rgb, W));
-    return mix(intensity, rgb, adjustment);
-}
-
 void main() {	
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uv_coordinates).xyz);
