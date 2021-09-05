@@ -70,7 +70,7 @@ pub fn load_entities(world: &mut World) {
         &mut world.component_manager,
         Renderer::default()
             .resource_load_textures(
-                vec!["defaults\\textures\\diffuse.png", "defaults\\textures\\normals.png"],
+                vec!["user\\textures\\diffuse.png", "user\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
             ).unwrap()
@@ -94,7 +94,7 @@ pub fn load_entities(world: &mut World) {
         &mut world.component_manager,
         Renderer::default()
             .resource_load_textures(
-                vec!["defaults\\textures\\diffuse.png", "defaults\\textures\\normals.png"],
+                vec!["user\\textures\\diffuse.png", "user\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
             ).unwrap()
@@ -118,7 +118,7 @@ pub fn load_entities(world: &mut World) {
         &mut world.component_manager,
         Renderer::default()
             .resource_load_textures(
-                vec!["defaults\\textures\\diffuse.png", "defaults\\textures\\normals.png"],
+                vec!["user\\textures\\diffuse.png", "user\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
             ).unwrap()
