@@ -308,6 +308,7 @@ dependencies = [
  "bitflags",
  "gl",
  "hypo_ecs",
+ "hypo_errors",
  "hypo_others",
  "hypo_resources",
  "image",
@@ -319,6 +320,7 @@ name = "hypo_resources"
 version = "0.1.0"
 dependencies = [
  "byteorder",
+ "hypo_errors",
  "image",
  "veclib",
  "walkdir",

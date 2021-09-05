@@ -73,7 +73,7 @@ pub fn load_entities(world: &mut World) {
                 vec!["defaults\\textures\\diffuse.png", "defaults\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
-            )
+            ).unwrap()
             .set_model(final_model)
             .set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::new(1.0, 0.0, 0.0)))
             .set_shader(world.shader_cacher.1.id_get_default_object(0).unwrap().name.as_str()),
@@ -97,7 +97,7 @@ pub fn load_entities(world: &mut World) {
                 vec!["defaults\\textures\\diffuse.png", "defaults\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
-            )
+            ).unwrap()
             .set_model(final_model)
             .set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::new(0.0, 1.0, 0.0)))
             .set_shader(world.shader_cacher.1.id_get_default_object(0).unwrap().name.as_str()),
@@ -121,7 +121,7 @@ pub fn load_entities(world: &mut World) {
                 vec!["defaults\\textures\\diffuse.png", "defaults\\textures\\normals.png"],
                 &mut world.texture_cacher,
                 &mut world.resource_manager,
-            )
+            ).unwrap()
             .set_model(final_model)
             .set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::new(0.0, 0.0, 1.0)))
             .set_shader(world.shader_cacher.1.id_get_default_object(0).unwrap().name.as_str()),

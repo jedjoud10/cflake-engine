@@ -85,10 +85,10 @@ impl Renderer {
         return self;
     }
     // Load textures from their resource paths
-    pub fn resource_load_textures(mut self, texture_paths: Vec<&str>, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
+    pub fn resource_load_textures(mut self, texture_paths: Vec<&str>, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Result<Self, hypo_errors::ResourceError> {
         // Load the textures
         for (_i, &texture_path) in texture_paths.iter().enumerate() {
-            let _resource = resource_manager.load_packed_resource(texture_path).unwrap();
+            let _resource = resource_manager.load_packed_resource(texture_path)?;
             let _texture = Texture::new()
                 .set_mutable(true)
                 .enable_mipmaps()
@@ -98,7 +98,7 @@ impl Renderer {
             self.texture_cache_ids.push(texture_cacher.get_object_id(texture_path).unwrap());
         }
         // Load the default textures
-        return self.load_default_textures(texture_cacher);
+        return Ok(self.load_default_textures(texture_cacher));
     }
     // Load textures from their texture struct
     pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture>) -> Self {

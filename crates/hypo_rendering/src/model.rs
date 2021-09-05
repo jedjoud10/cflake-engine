@@ -33,9 +33,9 @@ impl Model {
         }
     }
     // Loads a model directly from a path
-    pub fn load_model(path: &str, resource_manager: &mut ResourceManager) -> Option<Self> {
+    pub fn load_model(path: &str, resource_manager: &mut ResourceManager) -> Result<Self, hypo_errors::ResourceError> {
         let resource = resource_manager.load_packed_resource(path)?;
-        return Self::from_resource(resource);
+        return Ok(Self::from_resource(resource).unwrap());
     }
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {

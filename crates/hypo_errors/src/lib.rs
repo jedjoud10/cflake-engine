@@ -1,3 +1,3 @@
 // Export
 mod error;
-pub use error::ECSError;
+pub use error::*;

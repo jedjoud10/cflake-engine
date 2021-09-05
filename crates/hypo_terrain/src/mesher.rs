@@ -292,9 +292,9 @@ pub fn solve_marching_squares(
                     };
                     // Get the normal of the skirt vertex
                     let normal = if flip {
-                        -veclib::Vector3::<f32>::get_default_axis(&axis)
-                    } else {
                         veclib::Vector3::<f32>::get_default_axis(&axis)
+                    } else {
+                        -veclib::Vector3::<f32>::get_default_axis(&axis)
                     };
                     // Add it
                     shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));

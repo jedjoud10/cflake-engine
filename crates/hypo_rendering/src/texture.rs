@@ -150,7 +150,7 @@ impl Texture {
         }
     }
     // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
-    pub fn load_texture<'a>(self, local_path: &str, resource_manager: &mut ResourceManager, texture_cacher: &'a mut CacheManager<Texture>) -> Option<(&'a Self, u16)> {
+    pub fn load_texture<'a>(self, local_path: &str, resource_manager: &mut ResourceManager, texture_cacher: &'a mut CacheManager<Texture>) -> Result<(&'a Self, u16), hypo_errors::ResourceError> {
         // Load the resource
         let resource = resource_manager.load_packed_resource(local_path)?;
         // If the texture was already cached, just loaded from cache
@@ -158,11 +158,11 @@ impl Texture {
             // It is indeed cached
             let texture = texture_cacher.get_object(local_path).unwrap();
             let texture_id = texture_cacher.get_object_id(local_path).unwrap();
-            Some((texture, texture_id))
+            Ok((texture, texture_id))
         } else {
             // If it not cached, then load the texture from that resource
             let texture = self.from_resource(resource).cache_texture(texture_cacher).unwrap();
-            Some(texture)
+            Ok(texture)
         }
     }
     // Set the mag and min filters

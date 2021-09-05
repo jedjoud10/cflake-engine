@@ -116,12 +116,12 @@ impl System for Terrain {
         self.texture_ids = vec![
             Texture::new()
                 .enable_mipmaps()
-                .load_texture("user\\textures\\rock\\Rock033_1K_Color.png", data.resource_manager, data.texture_cacher)
+                .load_texture("user\\textures\\diffuse.png", data.resource_manager, data.texture_cacher)
                 .unwrap()
                 .1,
             Texture::new()
                 .enable_mipmaps()
-                .load_texture("user\\textures\\rock\\Rock033_1K_Normal.png", data.resource_manager, data.texture_cacher)
+                .load_texture("user\\textures\\normals.png", data.resource_manager, data.texture_cacher)
                 .unwrap()
                 .1,
         ];

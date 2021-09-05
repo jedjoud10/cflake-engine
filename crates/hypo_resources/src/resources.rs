@@ -135,11 +135,11 @@ impl ResourceManager {
 // Date: 2021-08-13. Basically rewrote the whole thing. It's good now
 impl ResourceManager {
     // Loads a specific resource and caches it so we can use it next time
-    pub fn load_packed_resource(&mut self, local_path: &str) -> Option<&Resource> {
+    pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, hypo_errors::ResourceError> {
         println!("{}", local_path);
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
-        let exe_path = exe_path.to_str().unwrap();
+        let exe_path = exe_path.to_str().ok_or(hypo_errors::ResourceError::new_str("Exe path not valid!"))?;
         let client_folder: Vec<&str> = exe_path.split('\\').collect();
         let client_folder = format!("{}\\", &client_folder[..(client_folder.len() - 1)].join("\\"));
         let packed_resources_path = format!("{}packed-resources\\", client_folder);
@@ -147,7 +147,7 @@ impl ResourceManager {
         // Now split the local path into the extension and name
         let name: Vec<&str> = local_path.split('\\').collect();
         let name_and_extension = name[name.len() - 1];
-        let _name = name_and_extension.split('.').next().unwrap().to_string();
+        let _name = name_and_extension.split('.').next().ok_or(hypo_errors::ResourceError::new(format!("Name or extension are not valid for resource file '{}'", local_path)))?.to_string();
         let extension: Vec<&str> = name_and_extension.split('.').collect();
         let extension = extension[1..].join(".");
         // Hash the local path and then use it to load the file
@@ -159,8 +159,8 @@ impl ResourceManager {
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!
-            let resource = self.cached_resources.get(&hashed_name)?;
-            return Some(resource);
+            let resource = self.cached_resources.get(&hashed_name).unwrap();
+            return Ok(resource);
         }
 
         // The global file path for the hashed packed resource
@@ -169,7 +169,7 @@ impl ResourceManager {
 
         // Since the resource was not in the cache, load it and then put it in the cache
         // Open the file
-        let packed_file = File::open(file_path).unwrap();
+        let packed_file = File::open(file_path).ok().ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
         let mut reader = BufReader::new(packed_file);
 
         // Update the resource type
@@ -193,7 +193,7 @@ impl ResourceManager {
         self.cached_resources.insert(hashed_name, resource);
         let resource = self.cached_resources.get(&hashed_name).unwrap();
 
-        Some(resource)
+        Ok(resource)
     }
     // Unloads a resource to save on memory
     pub fn unload_resouce(&mut self) {}
