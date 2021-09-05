@@ -14,6 +14,11 @@ args = ["run", "-p", "hypo_dev_game", "--release"]
 [tasks.fix-certificate]
 command = "./fix-certificate.bat"
 
+[tasks.test123]
+command = "cargo"
+args = ["test"]
+dependencies = ["build"]
+
 [tasks.publish-cert]
 dependencies = [
     "clean-publish",
