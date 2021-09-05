@@ -5,6 +5,9 @@ use hypo_rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
+// If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
+const AVERAGE_DENSITY_THRESHOLD: f32 = 4.0;
+
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
     (x - a) / (b - a)
@@ -240,22 +243,24 @@ pub fn solve_marching_squares(
     //  |   |
     //  |   |
     //  0---1
-    let d0 = data[i + density_offset[0]].density;
-    let d1 = data[i + density_offset[1]].density;
-    let d2 = data[i + density_offset[2]].density;
-    let d3 = data[i + density_offset[3]].density;
-    let average_density = (d0 + d1 + d2 + d3) / 4.0;
-    case += (!(d0 > 0.0) as u8) * 1;
-    case += (!(d1 > 0.0) as u8) * 2;
-    case += (!(d2 > 0.0) as u8) * 4;
-    case += (!(d3 > 0.0) as u8) * 8;
-    // Threshold
-    const AVERAGE_DENSITY_THRESHOLD: f32 = 4.0;
+    let mut local_densities: [f32; 4] = [0.0; 4]; 
+
+    // Get the local densities
+    for j in 0..4 { 
+        let density = data[i + density_offset[j]].density;
+        local_densities[j] = density;
+        // Update the case index
+        case += (!((density > 0.0) as u8) * 2_u8.pow(j as u32));
+    }
+    println!("{}", case);
+    // Get the average density
+    let average_density: f32 = local_densities.iter().sum::<f32>() / 4.0;
+
+    // ----This is where the actual mesh generation starts----
 
     if case == 0 { return; /* Always skip if it's empty */ }
-    if case == 15 { return; }
-    println!("{}", case);
-    println!("{:?}", local_edges);
+    // Check if it's full and it's out of range of the threshold
+    if case == 15 && average_density < -AVERAGE_DENSITY_THRESHOLD { return; }
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
     // The vertices to connect
     let tris = if flip {
@@ -263,10 +268,6 @@ pub fn solve_marching_squares(
     } else {
         SQUARES_TRI_TABLE[case as usize]
     };
-    // The local skirt vertex array since we gotta store them since they might break
-    // TODO: Please fix this
-    let mut local_shared_vertices: Vec<SkirtVertex> = Vec::new();
-    let mut valid: Vec<bool> = Vec::new(); 
     for tri_group in 0..3 {
         for tri_i in 0..3 {
             let tri = tris[tri_i + tri_group * 3];
@@ -281,13 +282,8 @@ pub fn solve_marching_squares(
                         1 | 3 | 5 | 7 => {
                             let index = (tri - 1) / 2;
                             let edge_tuple = local_edges[index as usize];
-                            if edge_tuple != (0, 0, 0) {
-                                local_shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
-                                valid.push(true);
-                            } else {
-                                // Bruh
-                                valid.push(false);
-                            }
+                            // Since I fixed the bug we don't have to worry about the tuple being (0, 0, 0)
+                            shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
                         }
                         _ => {}
                     }
@@ -303,15 +299,10 @@ pub fn solve_marching_squares(
                     } else {
                         veclib::Vector3::<f32>::get_default_axis(&axis)
                     };
-                    local_shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
-                    valid.push(true);
+                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
                 }
             }
         }
-    }
-    // Only add the shared vertices if they are valid
-    if valid.iter().all(|x| *x) {
-        shared_vertices.extend(local_shared_vertices);
     }
 }
 
