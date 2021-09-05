@@ -262,8 +262,8 @@ pub fn solve_marching_squares(
     };
     // The local skirt vertex array since we gotta store them since they might break
     // TODO: Please fix this
-    let mut local_shared_vertices: [SkirtVertex; 9] = Default::default();
-    let mut valid: [bool; 9] = [false; 9]; 
+    let mut local_shared_vertices: Vec<SkirtVertex> = Vec::new();
+    let mut valid: Vec<bool> = Vec::new(); 
     for tri_group in 0..3 {
         for tri_i in 0..3 {
             let tri = tris[tri_i + tri_group * 3];
@@ -279,11 +279,11 @@ pub fn solve_marching_squares(
                             let index = (tri - 1) / 2;
                             let edge_tuple = local_edges[index as usize];
                             if edge_tuple != (0, 0, 0) {
-                                local_shared_vertices[tri_i + tri_group * 3] = SkirtVertex::SharedVertex(edge_tuple);
-                                valid[tri_i + tri_group * 3] = true;
+                                local_shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
+                                valid.push(true);
                             } else {
                                 // Bruh
-                                valid[tri_i + tri_group * 3] = false;
+                                valid.push(false);
                             }
                         }
                         _ => {}
@@ -300,13 +300,12 @@ pub fn solve_marching_squares(
                     } else {
                         veclib::Vector3::<f32>::get_default_axis(&axis)
                     };
-                    local_shared_vertices[tri_i + tri_group * 3] = SkirtVertex::Vertex(new_vertex, normal);
-                    valid[tri_i + tri_group * 3] = true;
+                    local_shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
+                    valid.push(true);
                 }
             }
         }
     }
-    println!("{}", valid);
     // Only add the shared vertices if they are valid
     if valid.iter().all(|x| *x) {
         shared_vertices.extend(local_shared_vertices);
