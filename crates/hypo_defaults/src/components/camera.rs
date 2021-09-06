@@ -29,7 +29,7 @@ impl Camera {
         self.view_matrix = veclib::Matrix4x4::from_translation(veclib::Vector3::new(4.0, 5.0, 6.0));
         //println!("{:?}", forward_vector);
         self.view_matrix = veclib::Matrix4x4::look_at(&position, &up_vector, &(forward_vector + position));
-        //self.view_matrix = veclib::Matrix4x4::look_at(&veclib::Vector3::<f32>::new(5.0, 5.0, 0.0), &veclib::Vector3::default_y(), &veclib::Vector3::default_zero());
+        //self.view_matrix = veclib::Matrix4x4::look_at(&veclib::Vector3::<f32>::new(5.0, 5.0, 0.0), &veclib::Vector3::default_y(), &veclib::Vector3::ZERO);
         //self.view_matrix = veclib::Matrix4x4::default_identity();
     }
     // Update the frustum-culling matrix

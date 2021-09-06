@@ -64,7 +64,7 @@ impl System for SkySystem {
         sky.link_component::<components::Transform>(
             data.component_manager,
             components::Transform {
-                scale: veclib::Vector3::default_one() * 9000.0,
+                scale: veclib::Vector3::ONE * 9000.0,
                 ..components::Transform::default()
             },
         )

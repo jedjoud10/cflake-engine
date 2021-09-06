@@ -42,8 +42,8 @@ impl Octree {
             half_extent: (root_size / 2) as u64,
             depth: 0,
             postprocess: false,
-            parent_center: veclib::Vector3::<i64>::default_zero(),
-            children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
+            parent_center: veclib::Vector3::<i64>::ZERO,
+            children_centers: [veclib::Vector3::<i64>::ZERO; 8],
             children: false,
         }
     }
@@ -95,11 +95,11 @@ impl Octree {
     pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         // Create the root node
         let root_node = self.get_root_node();
-        let octree_data = self.generate_octree(&veclib::Vector3::default_one(), root_node.clone());
+        let octree_data = self.generate_octree(&veclib::Vector3::ONE, root_node.clone());
         self.nodes = octree_data.0.clone();
         self.targetted_node = octree_data.1;
         let mut nodes = octree_data.0;
-        let postprocess_nodes = self.calculate_postprocess_nodes(&veclib::Vector3::default_one(), &nodes);
+        let postprocess_nodes = self.calculate_postprocess_nodes(&veclib::Vector3::ONE, &nodes);
         self.postprocess_nodes = postprocess_nodes.clone();
         nodes.extend(postprocess_nodes);
         println!("Generated the base octree");
@@ -181,7 +181,7 @@ impl Octree {
                     // Get the children
                     for child_center in current_node.children_centers {
                         // Just in case
-                        if child_center != veclib::Vector3::<i64>::default_zero() {
+                        if child_center != veclib::Vector3::<i64>::ZERO {
                             let child_node = self.nodes.get(&child_center).unwrap().clone();
                             pending_nodes.push(child_node);
                         }
@@ -195,7 +195,7 @@ impl Octree {
         // Update the removed node
         let mut node_to_remove = node_to_remove.unwrap();
         node_to_remove.children = false;
-        node_to_remove.children_centers = [veclib::Vector3::<i64>::default_zero(); 8];
+        node_to_remove.children_centers = [veclib::Vector3::<i64>::ZERO; 8];
         self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
         self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
 
@@ -297,7 +297,7 @@ impl OctreeNode {
                         depth: self.depth + 1,
                         parent_center: self.get_center(),
                         postprocess: false,
-                        children_centers: [veclib::Vector3::<i64>::default_zero(); 8],
+                        children_centers: [veclib::Vector3::<i64>::ZERO; 8],
                         children: false,
                     };
                     let center = child.get_center();

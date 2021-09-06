@@ -65,20 +65,20 @@ impl VoxelGenerator {
     pub fn get_voxel(&self, point: veclib::Vector3<f32>) -> Voxel {
         let mut voxel: Voxel = Voxel {
             density: 0.0,
-            color: veclib::Vector3::default_zero(),
+            color: veclib::Vector3::ZERO,
         };
         // Code goes here
-        voxel.density = point.y() - 40.0;
-        voxel.density += (point.x() * 0.05).sin() * 10.0;
-        //voxel.density += (point.y() * 0.05).sin() * 3.0;
-        voxel.density = (point.x() * 0.02).sin() * 20.0 + (point.y() * 0.02).sin() * 60.0 + (point.z() * 0.04).sin() * 60.0 + point.y() * 2.0;
-        //voxel.density = voxel.density.max(point.y() - 40.0);
-        //voxel.density = (point.x() - 5.0).min(point.y() - 5.0).min(point.z() - 5.0);
-        //voxel.density = (-point.z() + 5.0).min(-point.x() + 5.0);
-        //voxel.density = point.z() + point.y() + point.x() - 10.0;
+        voxel.density = point.y - 40.0;
+        voxel.density += (point.x * 0.05).sin() * 10.0;
+        //voxel.density += (point.y * 0.05).sin() * 3.0;
+        voxel.density = (point.x * 0.02).sin() * 20.0 + (point.y * 0.02).sin() * 60.0 + (point.z * 0.04).sin() * 60.0 + point.y * 2.0;
+        //voxel.density = voxel.density.max(point.y - 40.0);
+        //voxel.density = (point.x - 5.0).min(point.y - 5.0).min(point.z - 5.0);
+        //voxel.density = (-point.z + 5.0).min(-point.x + 5.0);
+        //voxel.density = point.z + point.y + point.x - 10.0;
         voxel.density -= 0.5;
-        //voxel.density = point.y() - 5.5;
-        //voxel.density = point.y() - 14.5 + (point.x() * 0.123).sin() * 30.0;
+        //voxel.density = point.y - 5.5;
+        //voxel.density = point.y - 14.5 + (point.x * 0.123).sin() * 30.0;
         // BIG NOTE: If the density value has no decimal, the skirts won't show up!
         return voxel;
     }

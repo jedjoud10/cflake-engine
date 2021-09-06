@@ -60,8 +60,8 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
 
                         // In global space here
-                        let vert1_usize = (vert1.x() as usize + x, vert1.y() as usize + y, vert1.z() as usize + z);
-                        let vert2_usize = (vert2.x() as usize + x, vert2.y() as usize + y, vert2.z() as usize + z);
+                        let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
+                        let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
                         let index1 = super::flatten(vert1_usize);
                         let index2 = super::flatten(vert2_usize);
                         let density1 = voxels[index1].density;
@@ -73,23 +73,23 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         let normal: veclib::Vector3<f32> = {
-                            let mut normal1 = veclib::Vector3::<f32>::default_zero();
-                            let mut normal2 = veclib::Vector3::<f32>::default_zero();
+                            let mut normal1 = veclib::Vector3::<f32>::ZERO;
+                            let mut normal2 = veclib::Vector3::<f32>::ZERO;
 
                             // Create the normal
-                            normal1.set_x(voxels[index1 + DATA_OFFSET_TABLE[3]].density - density1);
-                            normal1.set_y(voxels[index1 + DATA_OFFSET_TABLE[4]].density - density1);
-                            normal1.set_z(voxels[index1 + DATA_OFFSET_TABLE[1]].density - density1);
-                            normal2.set_x(voxels[index2 + DATA_OFFSET_TABLE[3]].density - density2);
-                            normal2.set_y(voxels[index2 + DATA_OFFSET_TABLE[4]].density - density2);
-                            normal2.set_z(voxels[index2 + DATA_OFFSET_TABLE[1]].density - density2);
+                            normal1.x = (voxels[index1 + DATA_OFFSET_TABLE[3]].density - density1);
+                            normal1.y = (voxels[index1 + DATA_OFFSET_TABLE[4]].density - density1);
+                            normal1.z = (voxels[index1 + DATA_OFFSET_TABLE[1]].density - density1);
+                            normal2.x = (voxels[index2 + DATA_OFFSET_TABLE[3]].density - density2);
+                            normal2.y = (voxels[index2 + DATA_OFFSET_TABLE[4]].density - density2);
+                            normal2.z = (voxels[index2 + DATA_OFFSET_TABLE[1]].density - density2);
                             veclib::Vector3::<f32>::lerp(normal1, normal2, value)
                         };
 
                         let edge_tuple: (u32, u32, u32) = (
-                            2 * x as u32 + vert1.x() as u32 + vert2.x() as u32,
-                            2 * y as u32 + vert1.y() as u32 + vert2.y() as u32,
-                            2 * z as u32 + vert1.z() as u32 + vert2.z() as u32,
+                            2 * x as u32 + vert1.x as u32 + vert2.x as u32,
+                            2 * y as u32 + vert1.y as u32 + vert2.y as u32,
+                            2 * z as u32 + vert1.z as u32 + vert2.z as u32,
                         );
 
                         // Check if this vertex was already added
@@ -98,9 +98,9 @@ pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
                             e.insert(model.vertices.len() as u32);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
-                            model.uvs.push(veclib::Vector2::<f32>::default_zero());
+                            model.uvs.push(veclib::Vector2::<f32>::ZERO);
                             model.normals.push(normal.normalized());
-                            model.tangents.push(veclib::Vector4::<f32>::default_zero());
+                            model.tangents.push(veclib::Vector4::<f32>::ZERO);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
@@ -318,7 +318,7 @@ pub fn solve_marching_squares(
                 // The bertex
                 let vertex = SQUARES_VERTEX_TABLE[tri as usize];
                 // Interpolation
-                if vertex == -veclib::Vector2::default_one() {
+                if vertex == -veclib::Vector2::ONE {
                     match tri {
                         // TODO: Turn this into a more generalized algorithm
                         1 | 3 | 5 | 7 => {
@@ -352,15 +352,15 @@ pub fn solve_marching_squares(
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
 fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(slice as f32, vertex.y() + offset.x(), vertex.x() + offset.y())
+    veclib::Vector3::<f32>::new(slice as f32, vertex.y + offset.x, vertex.x + offset.y)
 }
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis
 fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(vertex.x() + offset.x(), slice as f32, vertex.y() + offset.y())
+    veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y)
 }
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
 fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(vertex.y() + offset.y(), vertex.x() + offset.x(), slice as f32)
+    veclib::Vector3::<f32>::new(vertex.y + offset.y, vertex.x + offset.x, slice as f32)
 }

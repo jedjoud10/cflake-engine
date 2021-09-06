@@ -18,8 +18,8 @@ impl Default for Material {
             uniform_setter: ShaderUniformSetter::default()
         };
         // Set the default shader args
-        let material = material.set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::default_one()));
-        let material = material.set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::default_one()));
+        let material = material.set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE));
+        let material = material.set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::ONE));
         let material = material.set_uniform("normals_strength", ShaderArg::F32(1.0));
         return material;
     }

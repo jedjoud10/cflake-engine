@@ -11,8 +11,8 @@ pub struct AABB {
 impl Default for AABB {
     fn default() -> Self {
         Self {
-            min: (veclib::Vector3::default_one() / 2.0) - 1.0,
-            max: (veclib::Vector3::default_one() / 2.0),
+            min: (veclib::Vector3::ONE / 2.0) - 1.0,
+            max: (veclib::Vector3::ONE / 2.0),
         }
     }
 }
@@ -22,17 +22,17 @@ impl AABB {
     // Get a specific corner from this AABB
     pub fn get_corner(&self, corner_index: u8) -> veclib::Vector3<f32> {
         match corner_index {
-            0 => veclib::Vector3::new(self.min.x(), self.min.y(), self.min.z()), // -X, -Y, -Z
-            1 => veclib::Vector3::new(self.max.x(), self.min.y(), self.min.z()), // X, -Y, -Z
-            2 => veclib::Vector3::new(self.max.x(), self.min.y(), self.max.z()), // X, -Y, Z
-            3 => veclib::Vector3::new(self.min.x(), self.min.y(), self.max.z()), // -X, -Y, Z
-            4 => veclib::Vector3::new(self.min.x(), self.max.y(), self.min.z()), // -X, Y, -Z
-            5 => veclib::Vector3::new(self.max.x(), self.max.y(), self.min.z()), // X, Y, -Z
-            6 => veclib::Vector3::new(self.max.x(), self.max.y(), self.max.z()), // X, Y, Z
-            7 => veclib::Vector3::new(self.min.x(), self.max.y(), self.max.z()), // -X, Y, Z
+            0 => veclib::Vector3::new(self.min.x, self.min.y, self.min.z), // -X, -Y, -Z
+            1 => veclib::Vector3::new(self.max.x, self.min.y, self.min.z), // X, -Y, -Z
+            2 => veclib::Vector3::new(self.max.x, self.min.y, self.max.z), // X, -Y, Z
+            3 => veclib::Vector3::new(self.min.x, self.min.y, self.max.z), // -X, -Y, Z
+            4 => veclib::Vector3::new(self.min.x, self.max.y, self.min.z), // -X, Y, -Z
+            5 => veclib::Vector3::new(self.max.x, self.max.y, self.min.z), // X, Y, -Z
+            6 => veclib::Vector3::new(self.max.x, self.max.y, self.max.z), // X, Y, Z
+            7 => veclib::Vector3::new(self.min.x, self.max.y, self.max.z), // -X, Y, Z
 
             // Other; not supported
-            _ => veclib::Vector3::default_zero(),
+            _ => veclib::Vector3::ZERO,
         }
     }
     // Get a specific edge from this AABB
@@ -46,8 +46,8 @@ impl AABB {
     // Generate the AABB from a model; just loop over all the vertices and keep track of the min and max ones
     pub fn from_model(vertices: Vec<veclib::Vector3<f32>>) -> Self {
         let mut aabb: Self = AABB {
-            min: veclib::Vector3::default_one(),
-            max: -veclib::Vector3::default_one(),
+            min: veclib::Vector3::ONE,
+            max: -veclib::Vector3::ONE,
         };
         // Loop over the vertices
         for vertex in vertices.iter() {
