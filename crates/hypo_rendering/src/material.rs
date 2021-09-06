@@ -1,6 +1,6 @@
 use hypo_others::CacheManager;
 use hypo_resources::ResourceManager;
-use super::{Texture};
+use super::{Texture2D};
 
 // A material that can have multiple parameters and such
 pub struct Material {
@@ -27,7 +27,7 @@ impl Default for Material {
 
 impl Material {    
      // Load textures from their texture struct
-     pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture>) -> Self {
+     pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture2D>) -> Self {
         // Set the textures as the renderer's textures
         for (&texture_id) in texture_ids.iter() {
             // Since these are loadable textures, we already know they got cached beforehand
@@ -37,7 +37,7 @@ impl Material {
         return self.load_default_textures(texture_cacher);
     }
     // Load the default textures
-    pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture>) -> Self {
+    pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture2D>) -> Self {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals, Roughness, Metallic, AO
         for _i in (self.texture_cache_ids.len())..5 {
@@ -54,13 +54,13 @@ impl Material {
     pub fn resource_load_textures(
         mut self,
         texture_paths: Vec<&str>,
-        texture_cacher: &mut CacheManager<Texture>,
+        texture_cacher: &mut CacheManager<Texture2D>,
         resource_manager: &mut ResourceManager,
     ) -> Result<Self, hypo_errors::ResourceError> {
         // Load the textures
         for (_i, &texture_path) in texture_paths.iter().enumerate() {
             let _resource = resource_manager.load_packed_resource(texture_path)?;
-            let _texture = Texture::new()
+            let _texture = Texture2D::new()
                 .set_mutable(true)
                 .enable_mipmaps()
                 .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)

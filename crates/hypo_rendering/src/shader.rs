@@ -1,4 +1,4 @@
-use super::texture::Texture;
+use super::{Texture2D};
 use gl;
 use hypo_others::CacheManager;
 use hypo_resources::Resource;
@@ -156,8 +156,8 @@ impl Shader {
             gl::UniformMatrix4fv(self.get_uniform_location(name), 1, gl::FALSE, ptr);
         }
     }
-    // Set a texture
-    pub fn set_t2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
+    // Set a 2D texture
+    pub fn set_t2d(&self, name: &str, texture: &Texture2D, active_texture_id: u32) {
         unsafe {
             gl::ActiveTexture(active_texture_id);
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
