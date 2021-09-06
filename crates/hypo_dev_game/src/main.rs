@@ -83,6 +83,6 @@ pub fn load_entities(world: &mut World) {
     )
     .unwrap();
     entity.link_default_component::<components::AABB>(&mut world.component_manager).unwrap();
-    entity.link_default_component::<components::Transform>(&mut world.component_manager).unwrap();
+    entity.link_component::<components::Transform>(&mut world.component_manager, components::Transform::default().with_scale(veclib::Vector3::default_one() * 10.0)).unwrap();
     world.entity_manager.add_entity_s(entity);
 }
