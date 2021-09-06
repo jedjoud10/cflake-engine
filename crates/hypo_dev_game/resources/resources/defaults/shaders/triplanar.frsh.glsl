@@ -8,6 +8,7 @@ uniform sampler2D normals_tex;
 uniform vec2 uv_scale;
 uniform vec3 view_pos;
 uniform float normals_strength;
+uniform float depth_level;
 in vec3 m_position;
 in vec3 m_normal;
 in vec4 m_tangent;
@@ -34,7 +35,7 @@ void main() {
 	normalz = vec3(vec2(normalz.x, -normalz.y) * normals_strength + world_normal.xy, world_normal.z) * blending.z;
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
 
-	frag_diffuse = diffuse_final;
+	frag_diffuse = diffuse_final * depth_level;
 	frag_normal = normal_final;
 	frag_pos = m_position;
 	frag_emissive = vec3(0, 0, 0);

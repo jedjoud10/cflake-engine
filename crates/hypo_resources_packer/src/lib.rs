@@ -113,33 +113,25 @@ pub fn convert_shader(file: &File, extension: &str) -> Resource {
     let mut shader: Resource = Resource::None;
     // String holding the extension of the file
     let mut reader = BufReader::new(file);
+    let subshader_type: i8;
     match extension {
-        "vrsh.glsl" => {
-            // This is a vertex shader
-            let mut string_source: String = String::new();
-            reader.read_to_string(&mut string_source).unwrap();
-            shader = Resource::Shader(
-                LoadedSubShader {
-                    source: string_source,
-                    subshader_type: 0,
-                },
-                String::new(),
-            );
-        }
-        "frsh.glsl" => {
-            // This is a fragment shader
-            let mut string_source: String = String::new();
-            reader.read_to_string(&mut string_source).unwrap();
-            shader = Resource::Shader(
-                LoadedSubShader {
-                    source: string_source,
-                    subshader_type: 1,
-                },
-                String::new(),
-            );
-        }
-        _ => {}
+        "vrsh.glsl" => subshader_type = 0,
+        "frsh.glsl" => subshader_type = 1,
+        "cmpt.glsl" => subshader_type = 2,
+        _ => { subshader_type = -1 }
     }
+    // Check if the subshader is even valid in the first place
+    if subshader_type == -1 { panic!("Invalid subshader type!") }
+    // Convert the shader
+    let mut string_source: String = String::new();
+    reader.read_to_string(&mut string_source).unwrap();
+    shader = Resource::Shader(
+        LoadedSubShader {
+            source: string_source,
+            subshader_type: subshader_type as u8,
+        },
+        String::new(),
+    );
     shader
 }
 // Turn a texture file to a LoadedTexture resource
@@ -394,7 +386,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
 
         // Now convert each resource in it's own way
         match file_extension.as_str() {
-            "vrsh.glsl" | "frsh.glsl" => {
+            "vrsh.glsl" | "frsh.glsl" | "cmpt.glsl" => {
                 // This is a shader
                 resource = convert_shader(&file, file_extension.as_str());
             }

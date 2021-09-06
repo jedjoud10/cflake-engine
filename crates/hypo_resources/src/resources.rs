@@ -80,23 +80,12 @@ impl ResourceManager {
     }
     // Load back the data from the reader and turn it into a LoadedSubShader resource
     pub fn load_shader(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
-        let shader_type: u8;
-        let shader_name: String;
-        match reader.read_u8().ok()? {
-            0 => {
-                // This is a vertex subshader so the name of the shader will have a 'vertex' appended
-                shader_type = 0;
-                shader_name = local_path;
-            }
-            1 => {
-                // This is a vertex subshader so the name of the shader will have a 'fragmnet' appended
-                shader_type = 1;
-                shader_name = local_path;
-            }
-            _ => {
-                panic!("Shader type not supported!");
-            }
-        }
+        let shader_type: u8 = reader.read_u8().ok()?;
+        let shader_name = local_path;
+        match shader_type {
+            0 | 1 | 2 => {},
+            _ => { panic!("Shader type not supported!") }
+        }        
         // Read all the bytes until the end of the file, and then turn them into a utf8 string
         let mut bytes: Vec<u8> = Vec::new();
         reader.read_to_end(&mut bytes).unwrap();
@@ -183,7 +172,7 @@ impl ResourceManager {
 
         // Update the resource type
         match extension.as_str() {
-            "vrsh.glsl" | "frsh.glsl" => {
+            "vrsh.glsl" | "frsh.glsl" | "cmpt.glsl" => {
                 // Load the packed resource as a subshader
                 resource = Self::load_shader(&mut reader, local_path.to_string()).unwrap();
             }

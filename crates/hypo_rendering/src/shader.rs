@@ -10,7 +10,7 @@ pub struct Shader {
     pub name: String,
     pub program: u32,
     pub finalized: bool,
-    pub linked_subshaders_programs: Vec<u32>,
+    pub linked_subshaders_programs: Vec<(SubShaderType, u32)>,
 }
 
 impl Default for Shader {
@@ -85,7 +85,7 @@ impl Shader {
             }
 
             for subshader_program in self.linked_subshaders_programs.iter() {
-                gl::DetachShader(self.program, *subshader_program);
+                gl::DetachShader(self.program, subshader_program.1);
             }
             self.finalized = true;
         }
@@ -101,9 +101,19 @@ impl Shader {
     }
     // Link a specific subshader to this shader
     pub fn link_subshader(&mut self, subshader: &SubShader) {
-        self.linked_subshaders_programs.push(subshader.program);
+        self.linked_subshaders_programs.push((subshader.subshader_type, subshader.program));
         unsafe {
             gl::AttachShader(self.program, subshader.program);
+        }
+    }
+    // Run the compute shader if this shader is a compute shader
+    pub fn run_compute(&mut self, num_groups: (u32, u32, u32)) {
+        if let SubShaderType::Compute = self.linked_subshaders_programs[0].0 {
+            self.use_shader();
+            unsafe {
+                gl::DispatchCompute(num_groups.0, num_groups.1, num_groups.2);
+                gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            }
         }
     }
 }
@@ -181,10 +191,11 @@ impl Shader {
 }
 
 // Sub shader type
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum SubShaderType {
     Vertex,
     Fragment,
+    Compute,
 }
 
 // A sub shader, could be a geometry, vertex, or fragment shader
@@ -209,7 +220,8 @@ impl SubShader {
                     subshader_type: match shader.subshader_type {
                         0 => SubShaderType::Vertex,
                         1 => SubShaderType::Fragment,
-                        _ => SubShaderType::Vertex,
+                        2 => SubShaderType::Compute,
+                        _ => panic!("Subshader type not valid!"),
                     },
                 };
                 Some(subshader)
@@ -223,6 +235,7 @@ impl SubShader {
         match self.subshader_type {
             SubShaderType::Vertex => shader_type = gl::VERTEX_SHADER,
             SubShaderType::Fragment => shader_type = gl::FRAGMENT_SHADER,
+            SubShaderType::Compute => shader_type = gl::COMPUTE_SHADER,
         }
         unsafe {
             self.program = gl::CreateShader(shader_type);
