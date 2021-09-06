@@ -59,12 +59,12 @@ pub fn load_entities(world: &mut World) {
     let mut entity = Entity::new("Sphere");
 
     let texture_ids = vec![
-        Texture::new()
+        Texture2D::new()
             .enable_mipmaps()
             .load_texture("user\\textures\\sandstone_cracks_diff_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
             .unwrap()
             .1,
-        Texture::new()
+            Texture2D::new()
             .enable_mipmaps()
             .load_texture("user\\textures\\sandstone_cracks_nor_gl_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
             .unwrap()

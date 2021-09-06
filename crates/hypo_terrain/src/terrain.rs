@@ -48,7 +48,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a chunk entity
-    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture>, component_manager: &mut ComponentManager, coords: &ChunkCoords, model: Model) -> Entity {
+    pub fn add_chunk_entity(&self, texture_cacher: &CacheManager<Texture2D>, component_manager: &mut ComponentManager, coords: &ChunkCoords, model: Model) -> Entity {
         // Create the entity
         let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
         let mut entity = Entity::new(name.as_str());
@@ -118,12 +118,12 @@ impl System for Terrain {
 
         // Load the texture ids
         self.texture_ids = vec![
-            Texture::new()
+            Texture2D::new()
                 .enable_mipmaps()
                 .load_texture("user\\textures\\sandstone_cracks_diff_4k.png", data.resource_manager, data.texture_cacher)
                 .unwrap()
                 .1,
-            Texture::new()
+            Texture2D::new()
                 .enable_mipmaps()
                 .load_texture("user\\textures\\sandstone_cracks_nor_gl_4k.png", data.resource_manager, data.texture_cacher)
                 .unwrap()

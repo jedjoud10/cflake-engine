@@ -1,6 +1,6 @@
 use super::super::components;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
-use hypo_rendering::{Material, Model, Renderer, Shader, Texture, TextureWrapping};
+use hypo_rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
 use hypo_system_event_data::SystemEventData;
 use hypo_systems::{System, SystemData};
 
@@ -37,7 +37,7 @@ impl System for SkySystem {
         .1;
 
         // Load texture
-        let cached_texture_id = Texture::new()
+        let cached_texture_id = Texture2D::new()
             .set_wrapping_mode(TextureWrapping::ClampToEdge)
             .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
             .unwrap()

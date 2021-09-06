@@ -4,7 +4,7 @@ pub struct SystemEventData<'a> {
     pub component_manager: &'a mut hypo_ecs::ComponentManager,
     pub input_manager: &'a mut hypo_input::InputManager,
     pub shader_cacher: &'a mut (hypo_others::CacheManager<hypo_rendering::SubShader>, hypo_others::CacheManager<hypo_rendering::Shader>),
-    pub texture_cacher: &'a mut hypo_others::CacheManager<hypo_rendering::Texture>,
+    pub texture_cacher: &'a mut hypo_others::CacheManager<hypo_rendering::Texture2D>,
     pub resource_manager: &'a mut hypo_resources::ResourceManager,
     pub time_manager: &'a mut hypo_others::Time,
     pub debug: &'a mut hypo_debug::DebugRenderer,

@@ -2,7 +2,7 @@ use super::super::components;
 use gl;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
-use hypo_rendering::{Model, Renderer, RendererFlags, Shader, Texture, Window, Material};
+use hypo_rendering::{Material, Model, Renderer, RendererFlags, Shader, Texture, Texture2D, Window};
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData};
 use std::ptr::null;
@@ -11,11 +11,11 @@ use std::ptr::null;
 pub struct RenderingSystem {
     pub system_data: SystemData,
     pub framebuffer: u32,
-    pub diffuse_texture: Texture,
-    pub normals_texture: Texture,
-    pub position_texture: Texture,
-    pub emissive_texture: Texture,
-    pub depth_stencil_texture: Texture,
+    pub diffuse_texture: Texture2D,
+    pub normals_texture: Texture2D,
+    pub position_texture: Texture2D,
+    pub emissive_texture: Texture2D,
+    pub depth_stencil_texture: Texture2D,
     pub quad_renderer_index: u16,
     pub debug_view: u16,
     pub wireframe: bool,
@@ -64,12 +64,12 @@ impl RenderingSystem {
         self.quad_renderer = quad_renderer_component;
     }
     // Bind a specific texture attachement to the frame buffer
-    fn bind_attachement(attachement: u32, texture: &Texture) {
+    fn bind_attachement(attachement: u32, texture: &Texture2D) {
         unsafe {
             // Default target, no multisamplind
             let target: u32 = gl::TEXTURE_2D;
-            gl::BindTexture(target, texture.id);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.id, 0);
+            gl::BindTexture(target, texture.internal_texture.id);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.internal_texture.id, 0);
         }
     }
     // Setup all the settings for opengl like culling and the clear color
@@ -86,27 +86,27 @@ impl RenderingSystem {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
-            self.diffuse_texture = Texture::new()
+            self.diffuse_texture = Texture2D::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the normals render texture
-            self.normals_texture = Texture::new()
+            self.normals_texture = Texture2D::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the position render texture
-            self.position_texture = Texture::new()
+            self.position_texture = Texture2D::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the emissive render texture
-            self.emissive_texture = Texture::new()
+            self.emissive_texture = Texture2D::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the depth-stencil render texture
-            self.depth_stencil_texture = Texture::new()
+            self.depth_stencil_texture = Texture2D::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
                 .generate_texture(Vec::new());
@@ -171,7 +171,7 @@ impl RenderingSystem {
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
 
         // Get the OpenGL texture id so we can bind it to the shader
-        let mut textures: Vec<&Texture> = Vec::new();
+        let mut textures: Vec<&Texture2D> = Vec::new();
 
         // Load the default ones
         for &id in material.texture_cache_ids.iter() {

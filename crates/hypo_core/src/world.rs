@@ -19,15 +19,15 @@ pub struct World {
     pub component_manager: ComponentManager,
     pub input_manager: InputManager,
     pub resource_manager: ResourceManager,
-    pub texture_cacher: CacheManager<Texture>,
-    // Shaders
+    // Rendering
+    pub texture_cacher: CacheManager<Texture2D>,
     pub shader_cacher: (CacheManager<SubShader>, CacheManager<Shader>),
+    pub debug: DebugRenderer,
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
 
     // Miscs
-    pub debug: DebugRenderer,
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
 }
@@ -48,10 +48,10 @@ impl World {
         window.set_cursor_pos(0.0, 0.0);
 
         // Load the default objects for the CacheManagers
-        let _white_texture = Texture::new()
+        let _white_texture = Texture2D::new()
             .load_texture("defaults\\textures\\white.png", &mut self.resource_manager, &mut self.texture_cacher)
             .unwrap();
-        let _black_texture = Texture::new()
+        let _black_texture = Texture2D::new()
             .load_texture("defaults\\textures\\black.png", &mut self.resource_manager, &mut self.texture_cacher)
             .unwrap();
         self.texture_cacher

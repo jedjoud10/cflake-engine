@@ -160,7 +160,7 @@ impl Shader {
     pub fn set_t2d(&self, name: &str, texture: &Texture2D, active_texture_id: u32) {
         unsafe {
             gl::ActiveTexture(active_texture_id);
-            gl::BindTexture(gl::TEXTURE_2D, texture.id);
+            gl::BindTexture(gl::TEXTURE_2D, texture.internal_texture.id);
             gl::Uniform1i(self.get_uniform_location(name), active_texture_id as i32 - 33984);
         }
     }

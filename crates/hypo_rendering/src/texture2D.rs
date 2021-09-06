@@ -118,3 +118,42 @@ impl Texture2D {
     }     
 }
 
+// Implement the wrapper stuff
+impl Texture2D {
+    // The internal format and data type of the soon to be generated texture
+    pub fn set_idf(mut self, internal_format: u32, format: u32, data_type: u32) -> Self {
+        let t = self.internal_texture.set_idf(internal_format, format, data_type);
+        self.internal_texture = t;
+        return self;
+    }
+    // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
+    pub fn set_mutable(mut self, mutable: bool) -> Self {
+        let t = self.internal_texture.set_mutable(mutable);
+        self.internal_texture = t;
+        return self;
+    }
+    // Set the generation of mipmaps
+    pub fn enable_mipmaps(mut self) -> Self {
+        let t = self.internal_texture.enable_mipmaps();
+        self.internal_texture = t;
+        return self;
+    }
+    // Set the mag and min filters
+    pub fn set_filter(mut self, filter: TextureFilter) -> Self {
+        let t = self.internal_texture.set_filter(filter);
+        self.internal_texture = t;
+        return self;
+    }
+    // Set the wrapping mode
+    pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
+        let t = self.internal_texture.set_wrapping_mode(wrapping_mode);
+        self.internal_texture = t;
+        return self;
+    }
+    // Generate an empty texture, could either be a mutable one or an immutable one
+    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
+        let t = self.internal_texture.generate_texture(bytes, TextureDimensionType::D_2D(self.width, self.height));
+        self.internal_texture = t;
+        return self;
+    }
+}
