@@ -33,7 +33,7 @@ void main() {
 	float light_val = max(dot(normal, normalize(directional_light_dir)), 0) * directional_light_strength;
 
 	// Used for ambient lighting
-	float ambient_lighting_strength = 0.2;
+	float ambient_lighting_strength = 0.4;
 	float light_val_inverted = max(-dot(normal, normalize(directional_light_dir)), 0);
 
 	vec3 sky_normal_lookup = reflect(-view_dir, normal);
