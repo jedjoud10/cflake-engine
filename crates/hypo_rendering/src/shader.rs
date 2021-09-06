@@ -99,7 +99,7 @@ impl Shader {
             unsafe {
                 gl::UseProgram(self.program);
             }
-        }
+        } 
     }
     // Link a specific subshader to this shader
     pub fn link_subshader(&mut self, subshader: &SubShader) {

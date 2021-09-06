@@ -16,6 +16,7 @@ pub struct RenderingSystem {
     pub position_texture: Texture2D,
     pub emissive_texture: Texture2D,
     pub depth_stencil_texture: Texture2D,
+    pub other: Texture2D,
     pub quad_renderer_index: u16,
     pub debug_view: u16,
     pub wireframe: bool,
@@ -110,6 +111,10 @@ impl RenderingSystem {
             self.depth_stencil_texture = Texture2D::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
+                .generate_texture(Vec::new());
+            self.other = Texture2D::new()
+                .set_dimensions(self.window.size.0, self.window.size.1)
+                .set_idf(gl::RGBA16F, gl::RGBA, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
@@ -331,8 +336,18 @@ impl System for RenderingSystem {
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
+
+        // Test the compute shader
+        let compute_shader = data.shader_cacher.1.get_object(&self.compute_shader_name).unwrap();
+        unsafe {
+            gl::BindImageTexture(0, self.other.internal_texture.id, 0, gl::FALSE, 0, gl::WRITE_ONLY, gl::RGBA16F);
+        }
+        compute_shader.use_shader();
+        //compute_shader.set_t2d("output_img", &self.other, gl::TEXTURE0);
+        compute_shader.run_compute((self.window.size.0 as u32, self.window.size.1 as u32, 1));
+        
         shader.use_shader();
-        shader.set_t2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
+        shader.set_t2d("diffuse_texture", &self.other, gl::TEXTURE0);
         shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
         shader.set_t2d("position_texture", &self.position_texture, gl::TEXTURE2);
         shader.set_t2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);
@@ -352,12 +367,7 @@ impl System for RenderingSystem {
             "default_sky_gradient",
             data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
             gl::TEXTURE4,
-        );
-
-        // Test the compute shader
-        let compute_shader = data.shader_cacher.1.get_object(&self.compute_shader_name).unwrap();
-        compute_shader.set_t2d("output_img", &self.diffuse_texture, gl::TEXTURE0);
-        compute_shader.run_compute((self.window.size.0 as u32, self.window.size.1 as u32, 1));
+        );        
 
         // Other params
         shader.set_vec3f32("view_pos", &camera_position);

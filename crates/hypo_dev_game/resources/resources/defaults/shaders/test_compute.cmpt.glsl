@@ -1,6 +1,6 @@
-#version 460
+#version 460 core
 layout(local_size_x = 1, local_size_y = 1) in;
-layout(rgba8, binding = 0) uniform image2D output_img;
+layout(rgba16f, binding = 0) uniform image2D output_img;
 
 void main() {
   // base pixel colour for image
