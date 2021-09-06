@@ -16,13 +16,11 @@ pub struct RenderingSystem {
     pub position_texture: Texture2D,
     pub emissive_texture: Texture2D,
     pub depth_stencil_texture: Texture2D,
-    pub other: Texture2D,
     pub quad_renderer_index: u16,
     pub debug_view: u16,
     pub wireframe: bool,
     pub window: Window,
     pub multisampling: Option<u8>,
-    compute_shader_name: String,
     wireframe_shader_name: String,
     quad_renderer: Renderer,
 }
@@ -36,19 +34,17 @@ impl RenderingSystem {
         // Loop over all the set uniforms
         for (name, data) in renderer.material.uniform_setter.uniforms.iter() {
             // Now it's the painful part
-            unsafe {
-                match data {
-                    hypo_rendering::ShaderArg::F32(v) => shader.set_f32(name, v),
-                    hypo_rendering::ShaderArg::I32(v) => shader.set_i32(name, v),
-                    hypo_rendering::ShaderArg::V2F32(v) => shader.set_vec2f32(name, v),
-                    hypo_rendering::ShaderArg::V3F32(v) => shader.set_vec3f32(name, v),
-                    hypo_rendering::ShaderArg::V4F32(v) => shader.set_vec4f32(name, v),
-                    hypo_rendering::ShaderArg::V2I32(v) => shader.set_vec2i32(name, v),
-                    hypo_rendering::ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
-                    hypo_rendering::ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
-                    hypo_rendering::ShaderArg::MAT44(v) => shader.set_mat44(name, v),
-                }
-            }
+            match data {
+                hypo_rendering::ShaderArg::F32(v) => shader.set_f32(name, v),
+                hypo_rendering::ShaderArg::I32(v) => shader.set_i32(name, v),
+                hypo_rendering::ShaderArg::V2F32(v) => shader.set_vec2f32(name, v),
+                hypo_rendering::ShaderArg::V3F32(v) => shader.set_vec3f32(name, v),
+                hypo_rendering::ShaderArg::V4F32(v) => shader.set_vec4f32(name, v),
+                hypo_rendering::ShaderArg::V2I32(v) => shader.set_vec2i32(name, v),
+                hypo_rendering::ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
+                hypo_rendering::ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
+                hypo_rendering::ShaderArg::MAT44(v) => shader.set_mat44(name, v),
+            }            
         }
     }
     // Create the quad that will render the render buffer
@@ -111,10 +107,6 @@ impl RenderingSystem {
             self.depth_stencil_texture = Texture2D::new()
                 .set_dimensions(self.window.size.0, self.window.size.1)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
-                .generate_texture(Vec::new());
-            self.other = Texture2D::new()
-                .set_dimensions(self.window.size.0, self.window.size.1)
-                .set_idf(gl::RGBA16F, gl::RGBA, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
@@ -280,8 +272,6 @@ impl System for RenderingSystem {
         )
         .1;
         self.wireframe_shader_name = wireframe_shader_name;
-
-        self.compute_shader_name = Shader::new(vec!["defaults\\shaders\\default_compute.cmpt.glsl"], &mut data.resource_manager, &mut data.shader_cacher).1;
     }
 
     // Called for each entity in the system
@@ -336,16 +326,9 @@ impl System for RenderingSystem {
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
-
-        // Test the compute shader
-        let compute_shader = data.shader_cacher.1.get_object(&self.compute_shader_name).unwrap();
-        compute_shader.set_i2d("output_img", &self.other, TextureShaderAccessType::ReadWrite);
-        compute_shader.use_shader();
-        //compute_shader.set_t2d("output_img", &self.other, gl::TEXTURE0);
-        compute_shader.run_compute((self.window.size.0 as u32, self.window.size.1 as u32, 1));
         
         shader.use_shader();
-        shader.set_t2d("diffuse_texture", &self.other, gl::TEXTURE0);
+        shader.set_t2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
         shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
         shader.set_t2d("position_texture", &self.position_texture, gl::TEXTURE2);
         shader.set_t2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);

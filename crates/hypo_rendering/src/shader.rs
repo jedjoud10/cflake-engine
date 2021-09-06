@@ -188,8 +188,9 @@ impl Shader {
                 TextureShaderAccessType::WriteOnly => new_access_type = gl::WRITE_ONLY,
                 TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
             };
+            let unit = self.get_uniform_location(name) as u32;
             gl::BindTexture(gl::TEXTURE_2D, texture.internal_texture.id);
-            gl::BindImageTexture(self.get_uniform_location(name) as u32, texture.internal_texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_texture.format);
+            gl::BindImageTexture(unit, texture.internal_texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_texture.internal_format);
         }
     }
     // Set a i32
