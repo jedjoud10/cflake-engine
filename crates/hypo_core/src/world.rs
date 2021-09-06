@@ -142,11 +142,6 @@ impl World {
                 "Time: '{}', Delta Time: '{}', FPS: '{}'",
                 self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps
             );
-            let mapped_entities = self.entity_manager.entities.iter().filter_map(|f| match f {
-                Some(entity) => Some(entity.name.as_str()),
-                None => None,
-            }).collect::<Vec<&str>>();
-            println!("Entities: {:?}", mapped_entities);
         }
         // Change the debug view
         if self.input_manager.map_pressed("change_debug_view") {
