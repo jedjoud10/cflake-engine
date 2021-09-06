@@ -1,3 +1,5 @@
+use crate::texture3D::Texture3D;
+
 use super::{Texture2D};
 use gl;
 use hypo_others::CacheManager;
@@ -161,6 +163,14 @@ impl Shader {
         unsafe {
             gl::ActiveTexture(active_texture_id);
             gl::BindTexture(gl::TEXTURE_2D, texture.internal_texture.id);
+            gl::Uniform1i(self.get_uniform_location(name), active_texture_id as i32 - 33984);
+        }
+    }
+    // Set a 3D texture
+    pub fn set_t3d(&self, name: &str, texture: &Texture3D, active_texture_id: u32) {
+        unsafe {
+            gl::ActiveTexture(active_texture_id);
+            gl::BindTexture(gl::TEXTURE_3D, texture.internal_texture.id);
             gl::Uniform1i(self.get_uniform_location(name), active_texture_id as i32 - 33984);
         }
     }
