@@ -2,7 +2,7 @@ use super::super::components;
 use gl;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
-use hypo_rendering::{Material, Model, Renderer, RendererFlags, Shader, Texture, Texture2D, Window};
+use hypo_rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture, Texture2D, Window};
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData};
 use std::ptr::null;
@@ -186,6 +186,12 @@ impl RenderingSystem {
 
         // Draw normally
         if renderer.gpu_data.initialized {
+            // Enable / Disable vertex culling
+            if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
+                unsafe { gl::Disable(gl::CULL_FACE); }
+            } else {
+                unsafe { gl::Enable(gl::CULL_FACE); }
+            }
             unsafe {
                 // Actually draw the array
                 gl::BindVertexArray(renderer.gpu_data.vertex_array_object);
