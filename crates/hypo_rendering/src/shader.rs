@@ -109,13 +109,16 @@ impl Shader {
         }
     }
     // Run the compute shader if this shader is a compute shader
-    pub fn run_compute(&mut self, num_groups: (u32, u32, u32)) {
+    pub fn run_compute(&self, num_groups: (u32, u32, u32)) {
         if let SubShaderType::Compute = self.linked_subshaders_programs[0].0 {
             self.use_shader();
             unsafe {
                 gl::DispatchCompute(num_groups.0, num_groups.1, num_groups.2);
                 gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
             }
+        } else {
+            // This shader isn't a compute shader!
+            panic!("This isn't a compute shader!");
         }
     }
 }

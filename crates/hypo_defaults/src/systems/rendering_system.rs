@@ -19,9 +19,10 @@ pub struct RenderingSystem {
     pub quad_renderer_index: u16,
     pub debug_view: u16,
     pub wireframe: bool,
-    pub wireframe_shader_name: String,
     pub window: Window,
     pub multisampling: Option<u8>,
+    compute_shader_name: String,
+    wireframe_shader_name: String,
     quad_renderer: Renderer,
 }
 
@@ -274,6 +275,8 @@ impl System for RenderingSystem {
         )
         .1;
         self.wireframe_shader_name = wireframe_shader_name;
+
+        self.compute_shader_name = Shader::new(vec!["defaults\\shaders\\test_compute.cmpt.glsl"], &mut data.resource_manager, &mut data.shader_cacher).1;
     }
 
     // Called for each entity in the system
@@ -350,6 +353,11 @@ impl System for RenderingSystem {
             data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
             gl::TEXTURE4,
         );
+
+        // Test the compute shader
+        let compute_shader = data.shader_cacher.1.get_object(&self.compute_shader_name).unwrap();
+        compute_shader.set_t2d("output_img", &self.diffuse_texture, gl::TEXTURE0);
+        compute_shader.run_compute((self.window.size.0 as u32, self.window.size.1 as u32, 1));
 
         // Other params
         shader.set_vec3f32("view_pos", &camera_position);

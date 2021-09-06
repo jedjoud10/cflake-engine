@@ -16,7 +16,7 @@ pub struct ChunkManager {
 }
 
 // How many chunks to generate per frame
-pub const CHUNK_GENERATIONS_PER_FRAME: usize = 4;
+pub const CHUNK_GENERATIONS_PER_FRAME: usize = 1;
 
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
