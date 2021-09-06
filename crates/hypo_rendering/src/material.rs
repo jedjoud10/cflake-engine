@@ -1,6 +1,13 @@
 use hypo_others::CacheManager;
 use hypo_resources::ResourceManager;
 use super::{Texture2D};
+use bitflags::bitflags;
+
+bitflags! {
+    pub struct MaterialFlags: u8 {
+        const DOUBLE_SIDED = 0b00000001;
+    }
+}
 
 // A material that can have multiple parameters and such
 pub struct Material {
@@ -8,6 +15,7 @@ pub struct Material {
     pub shader_name: String,    
     pub texture_cache_ids: Vec<u16>,
     pub uniform_setter: ShaderUniformSetter,
+    pub flags: MaterialFlags,
 }
 
 impl Default for Material {
@@ -15,7 +23,8 @@ impl Default for Material {
         let mut material: Self = Material { 
             shader_name: String::default(), 
             texture_cache_ids: Vec::new(), 
-            uniform_setter: ShaderUniformSetter::default()
+            uniform_setter: ShaderUniformSetter::default(),
+            flags: MaterialFlags::empty(),
         };
         // Set the default shader args
         let material = material.set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE));
@@ -74,6 +83,14 @@ impl Material {
     // Set the main shader
     pub fn set_shader(mut self, shader_name: &str) -> Self {
         self.shader_name = shader_name.to_string();
+        return self;
+    }
+    // Toggle the double sided flag for this material
+    pub fn set_double_sided(mut self, double_sided: bool) -> Self {
+        match double_sided {
+            true => self.flags.insert(MaterialFlags::DOUBLE_SIDED),
+            false => self.flags.remove(MaterialFlags::DOUBLE_SIDED),
+        }
         return self;
     }
 }

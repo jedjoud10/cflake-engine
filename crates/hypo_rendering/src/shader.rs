@@ -241,7 +241,7 @@ impl SubShader {
     }
     // Compile the current subshader's source code
     pub fn compile_subshader(&mut self) {
-        let mut shader_type: u32 = 0;
+        let shader_type: u32;
         match self.subshader_type {
             SubShaderType::Vertex => shader_type = gl::VERTEX_SHADER,
             SubShaderType::Fragment => shader_type = gl::FRAGMENT_SHADER,

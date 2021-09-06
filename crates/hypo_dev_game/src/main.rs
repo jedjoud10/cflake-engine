@@ -61,12 +61,8 @@ pub fn load_entities(world: &mut World) {
     let texture_ids = vec![
         Texture2D::new()
             .enable_mipmaps()
-            .load_texture("user\\textures\\sandstone_cracks_diff_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
-            .unwrap()
-            .1,
-            Texture2D::new()
-            .enable_mipmaps()
-            .load_texture("user\\textures\\sandstone_cracks_nor_gl_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
+            .set_filter(TextureFilter::Nearest)
+            .load_texture("user\\textures\\korotexture.png", &mut world.resource_manager, &mut world.texture_cacher)
             .unwrap()
             .1,
     ];
@@ -78,7 +74,7 @@ pub fn load_entities(world: &mut World) {
     entity.link_component::<Renderer>(
         &mut world.component_manager,
         Renderer::default()
-            .load_model("defaults\\models\\sphere.mdl3d", &mut world.resource_manager)
+            .load_model("user\\models\\bestgirl.mdl3d", &mut world.resource_manager)
             .set_material(material)
     )
     .unwrap();
