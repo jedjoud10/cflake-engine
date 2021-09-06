@@ -61,20 +61,24 @@ pub fn load_entities(world: &mut World) {
     let texture_ids = vec![
         Texture2D::new()
             .enable_mipmaps()
-            .set_filter(TextureFilter::Nearest)
-            .load_texture("user\\textures\\korotexture.png", &mut world.resource_manager, &mut world.texture_cacher)
+            .load_texture("user\\textures\\sandstone_cracks_diff_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
+            .unwrap()
+            .1,
+            Texture2D::new()
+            .enable_mipmaps()
+            .load_texture("user\\textures\\sandstone_cracks_nor_gl_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
             .unwrap()
             .1,
     ];
 
     // Create a sky material
-    let material = Material::default().load_textures(texture_ids, &mut world.texture_cacher).set_shader(&world.shader_cacher.1.id_get_default_object(0).unwrap().name).set_double_sided(true);
+    let material = Material::default().load_textures(texture_ids, &mut world.texture_cacher).set_shader(&world.shader_cacher.1.id_get_default_object(0).unwrap().name);
 
     // Link components
     entity.link_component::<Renderer>(
         &mut world.component_manager,
         Renderer::default()
-            .load_model("user\\models\\bestgirl.mdl3d", &mut world.resource_manager)
+            .load_model("defaults\\models\\sphere.mdl3d", &mut world.resource_manager)
             .set_material(material)
     )
     .unwrap();
