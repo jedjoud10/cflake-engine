@@ -2,7 +2,7 @@ use super::super::components;
 use gl;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
-use hypo_rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture, Texture2D, Window};
+use hypo_rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, TextureShaderAccessType, Texture2D, Window};
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData};
 use std::ptr::null;
@@ -281,7 +281,7 @@ impl System for RenderingSystem {
         .1;
         self.wireframe_shader_name = wireframe_shader_name;
 
-        self.compute_shader_name = Shader::new(vec!["defaults\\shaders\\test_compute.cmpt.glsl"], &mut data.resource_manager, &mut data.shader_cacher).1;
+        self.compute_shader_name = Shader::new(vec!["defaults\\shaders\\default_compute.cmpt.glsl"], &mut data.resource_manager, &mut data.shader_cacher).1;
     }
 
     // Called for each entity in the system
@@ -339,9 +339,7 @@ impl System for RenderingSystem {
 
         // Test the compute shader
         let compute_shader = data.shader_cacher.1.get_object(&self.compute_shader_name).unwrap();
-        unsafe {
-            gl::BindImageTexture(0, self.other.internal_texture.id, 0, gl::FALSE, 0, gl::WRITE_ONLY, gl::RGBA16F);
-        }
+        compute_shader.set_i2d("output_img", &self.other, TextureShaderAccessType::ReadWrite);
         compute_shader.use_shader();
         //compute_shader.set_t2d("output_img", &self.other, gl::TEXTURE0);
         compute_shader.run_compute((self.window.size.0 as u32, self.window.size.1 as u32, 1));

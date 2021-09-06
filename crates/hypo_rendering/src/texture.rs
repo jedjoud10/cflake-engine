@@ -36,6 +36,13 @@ pub enum TextureDimensionType {
     D_3D(u16, u16, u16)
 }
 
+// Access type when binding the texture
+pub enum TextureShaderAccessType {
+    ReadOnly,
+    WriteOnly,
+    ReadWrite,
+}
+
 // A texture, could be 2D or 3D
 #[derive(Debug)]
 pub struct Texture {

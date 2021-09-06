@@ -1,3 +1,4 @@
+use crate::TextureShaderAccessType;
 use crate::texture3D::Texture3D;
 
 use super::{Texture2D};
@@ -175,6 +176,20 @@ impl Shader {
             gl::ActiveTexture(active_texture_id);
             gl::BindTexture(gl::TEXTURE_3D, texture.internal_texture.id);
             gl::Uniform1i(self.get_uniform_location(name), active_texture_id as i32 - 33984);
+        }
+    }
+    // Set a 2D image
+    pub fn set_i2d(&self, name: &str, texture: &Texture2D, access_type: TextureShaderAccessType) {
+        unsafe {
+            // Converstion from wrapper to actual opengl values
+            let new_access_type: u32;
+            match access_type {
+                TextureShaderAccessType::ReadOnly => new_access_type = gl::READ_ONLY,
+                TextureShaderAccessType::WriteOnly => new_access_type = gl::WRITE_ONLY,
+                TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
+            };
+            gl::BindTexture(gl::TEXTURE_2D, texture.internal_texture.id);
+            gl::BindImageTexture(self.get_uniform_location(name) as u32, texture.internal_texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_texture.format);
         }
     }
     // Set a i32
