@@ -29,79 +29,128 @@ pub enum TextureWrapping {
     MirroredRepeat,
 }
 
-// A texture trait that will be implemented on the Texture2D and Texture3D structs
-pub trait Texture {
-    // Get the current internal format
-    fn get_internal_format_mut(&mut self) -> &mut u32;
-    // Get the current format
-    fn get_format_mut(&mut self) -> &mut u32;
-    // Get the current data type
-    fn get_data_type_mut(&mut self) -> &mut u32;
-    // Get the current texture flags
-    fn get_texture_flags_mut(&mut self) -> &mut TextureFlags;
-    // Get the current texture filter
-    fn get_texture_filter_mut(&mut self) -> &mut TextureFilter;
-    // Get the current texture wrap mode
-    fn get_texture_wrap_mode_mut(&mut self) -> &mut TextureWrapping;
-    // Get the texture dimension type, either 2D or 3D (OpenGl)
-    fn get_texture_dimension_type(&self) -> i32;
+// Texture dimension type
+#[derive(Debug)]
+pub enum TextureDimensionType {
+    D_2D(u16, u16),
+    D_3D(u16, u16, u16)
+}
+
+// A texture, could be 2D or 3D
+#[derive(Debug)]
+pub struct Texture {
+    pub id: u32,
+    pub name: String,
+    pub internal_format: u32,
+    pub format: u32,
+    pub data_type: u32,
+    pub flags: TextureFlags,
+    pub samples: u8,
+    pub filter: TextureFilter,
+    pub wrap_mode: TextureWrapping,
+}
+
+impl Default for Texture {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            name: String::new(),
+            internal_format: gl::RGBA,
+            format: gl::RGBA,
+            data_type: gl::UNSIGNED_BYTE,
+            flags: TextureFlags::MUTABLE,
+            samples: 0,
+            filter: TextureFilter::Linear,
+            wrap_mode: TextureWrapping::Repeat,
+        }
+    }
+}
+
+impl Texture {
     // The internal format and data type of the soon to be generated texture
-    fn set_idf(mut self, internal_format: u32, format: u32, data_type: u32) -> Self {
-        self.get_internal_format_mut() = internal_format;
-        self.get_format_mut() = format;
-        self.get_data_type_mut() = data_type;
+    pub fn set_idf(mut self, internal_format: u32, format: u32, data_type: u32) -> Self {
+        self.internal_format = internal_format;
+        self.format = format;
+        self.data_type = data_type;
         self
     }
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
-    fn set_mutable(mut self, mutable: bool) -> Self {
-        let result = self.get_texture_flags_mut();
+    pub fn set_mutable(mut self, mutable: bool) -> Self {
         match mutable {
-            true => result |= TextureFlags::MUTABLE,
-            false => result &= !TextureFlags::MUTABLE,
+            true => self.flags |= TextureFlags::MUTABLE,
+            false => self.flags &= !TextureFlags::MUTABLE,
         }
         self
     }
     // Set the generation of mipmaps
-    fn enable_mipmaps(mut self) -> Self {
-        self.get_texture_flags_mut() |= TextureFlags::MIPMAPS;
+    pub fn enable_mipmaps(mut self) -> Self {
+        self.flags |= TextureFlags::MIPMAPS;
         self
     }
     // Set the mag and min filters
-    fn set_filter(mut self, filter: TextureFilter) -> Self {
-        self.get_texture_filter_mut() = filter;
+    pub fn set_filter(mut self, filter: TextureFilter) -> Self {
+        self.filter = filter;
         self
     }
     // Set the wrapping mode
-    fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
-        self.get_texture_wrap_mode_mut() = wrapping_mode;
+    pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
+        self.wrap_mode = wrapping_mode;
         self
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
-    fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
+    pub fn generate_texture(mut self, bytes: Vec<u8>, dimension_type: TextureDimensionType) -> Self {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
         }
-        let tex_type = self.get_texture_dimension_type();
+
+        // Get the tex_type based on the TextureDimensionType
+        let tex_type= match dimension_type {
+            TextureDimensionType::D_2D(_, _) => gl::TEXTURE_2D,
+            TextureDimensionType::D_3D(_, _, _) => gl::TEXTURE_3D,
+        };
 
         if self.flags.contains(TextureFlags::MUTABLE) {
             // It's a normal mutable texture
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
                 gl::BindTexture(tex_type, self.id);
-                gl::TexImage2D(
-                    tex_type,
-                    0,
-                    self.internal_format as i32,
-                    self.width as i32,
-                    self.height as i32,
-                    0,
-                    self.format,
-                    self.data_type,
-                    pointer,
-                );
+
+                // Use TexImage3D if it's a 3D texture, otherwise use TexImage2D
+                match dimension_type {
+                    // This is a 2D texture
+                    TextureDimensionType::D_2D(width, height) => {
+                        gl::TexImage2D(
+                            tex_type,
+                            0,
+                            self.internal_format as i32,
+                            width as i32,
+                            height as i32,
+                            0,
+                            self.format,
+                            self.data_type,
+                            pointer,
+                        );
+                    },
+                    // This is a 3D texture
+                    TextureDimensionType::D_3D(width, height, depth) => {
+                        gl::TexImage3D(
+                            tex_type,
+                            0,
+                            self.internal_format as i32,
+                            width as i32,
+                            height as i32,
+                            depth as i32,
+                            0,
+                            self.format,
+                            self.data_type,
+                            pointer,
+                        );
+                    },
+                }
+
                 // Set the texture parameters for a normal texture
-                match self.texture_filter {
+                match self.filter {
                     TextureFilter::Linear => {
                         // 'Linear' filter
                         gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
@@ -121,7 +170,7 @@ pub trait Texture {
                 unsafe {
                     gl::GenerateMipmap(tex_type);
                     // Set the texture parameters for a mipmapped texture
-                    match self.texture_filter {
+                    match self.filter {
                         TextureFilter::Linear => {
                             // 'Linear' filter
                             gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
@@ -147,7 +196,7 @@ pub trait Texture {
 
         // Set the wrap mode for the texture (Mipmapped or not)
         let wrapping_mode: i32;
-        match self.texture_wrap_mode {
+        match self.wrap_mode {
             TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE as i32,
             TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER as i32,
             TextureWrapping::Repeat => wrapping_mode = gl::REPEAT as i32,
@@ -161,4 +210,3 @@ pub trait Texture {
         self
     }
 }
-

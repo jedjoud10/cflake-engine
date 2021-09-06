@@ -1,23 +1,16 @@
 use std::ptr::null;
 
-use super::{TextureWrapping, TextureFilter, TextureFlags, Texture};
+use super::{TextureWrapping, TextureFilter, TextureFlags, Texture, TextureDimensionType};
 use hypo_resources::{LoadableResource, Resource, ResourceManager};
 use hypo_others::CacheManager;
+use image::EncodableLayout;
 
 // A 2D texture
 #[derive(Debug)]
 pub struct Texture2D {
     pub width: u16,
-    pub height: u16,
-    pub id: u32,
-    pub name: String,
-    pub internal_format: u32,
-    pub format: u32,
-    pub data_type: u32,
-    pub flags: TextureFlags,
-    pub samples: u8,
-    pub texture_filter: TextureFilter,
-    pub texture_wrap_mode: TextureWrapping,
+    pub height: u16,    
+    pub internal_texture: Texture,    
 }
 
 impl Default for Texture2D {
@@ -45,9 +38,10 @@ impl LoadableResource for Texture2D {
                 // Set the proper dimensions and generate the texture from the resource's bytes
                 let mut texture = self.set_dimensions(width, height);
                 // Set the texture name since the texture has an empty name
-                texture.name = texture_name.clone();
-                let new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec());
-                new_texture
+                texture.internal_texture.name = texture_name.clone();
+                let new_texture = texture.internal_texture.generate_texture(rgba8_image.as_bytes().to_vec(), TextureDimensionType::D_2D(width, height));
+                texture.internal_texture = new_texture;
+                texture
             }
             _ => {
                 panic!("");
@@ -60,7 +54,7 @@ impl LoadableResource for Texture2D {
 impl Texture2D {
     // Cache the current texture and return it's reference
     pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture2D>) -> Option<(&'a Self, u16)> {
-        let texture_name = self.name.clone();
+        let texture_name = self.internal_texture.name.clone();
         let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
         return Some((texture_cacher.get_object(texture_name.as_str()).unwrap(), texture_id));
     }
@@ -94,15 +88,7 @@ impl Texture2D {
         Self {
             height: 1,
             width: 1,
-            id: 0,
-            name: String::new(),
-            internal_format: gl::RGBA,
-            format: gl::RGBA,
-            data_type: gl::UNSIGNED_BYTE,
-            flags: TextureFlags::MUTABLE,
-            samples: 0,
-            texture_filter: TextureFilter::Linear,
-            texture_wrap_mode: TextureWrapping::Repeat,
+            internal_texture: Texture::default(),            
         }
     }
     
@@ -116,16 +102,16 @@ impl Texture2D {
     pub fn update_size(&self, width: u16, height: u16) {
         // This is a normal texture getting resized
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, self.id);
+            gl::BindTexture(gl::TEXTURE_2D, self.internal_texture.id);
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
-                self.internal_format as i32,
+                self.internal_texture.internal_format as i32,
                 width as i32,
                 height as i32,
                 0,
-                self.format,
-                self.data_type,
+                self.internal_texture.format,
+                self.internal_texture.data_type,
                 null(),
             );
         }
