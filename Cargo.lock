@@ -362,6 +362,7 @@ dependencies = [
 name = "hypo_terrain"
 version = "0.1.0"
 dependencies = [
+ "gl",
  "hypo_defaults",
  "hypo_ecs",
  "hypo_input",

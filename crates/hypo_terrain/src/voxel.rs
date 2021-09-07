@@ -28,6 +28,11 @@ pub struct VoxelGenerator {
 }
 
 impl VoxelGenerator {
+    // Generate the voxel texture
+    pub fn create_voxel_texture(&mut self) {
+        // Create the voxel texture
+        self.voxel_texture = Texture3D::new().set_idf(gl::RGBA16F, gl::RGBA, gl::FLOAT).set_wrapping_mode(hypo_rendering::TextureWrapping::ClampToBorder);
+    }
     // Generate the voxels using a compute shader
     pub fn generate_voxels(&self, event_data: &SystemEventData, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Option<()> {
         // Get the compute shader
@@ -42,6 +47,7 @@ impl VoxelGenerator {
         // Read back the texture into the data buffer
         let pixels = self.voxel_texture.internal_texture.fill_array::<veclib::Vector3<f32>, f32>();
         
+        println!("{:?}", pixels);
 
         return None;
         return Some(());
