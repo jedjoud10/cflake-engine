@@ -69,14 +69,14 @@ impl Terrain {
                 },
             )
             .unwrap();
-        //let material = Material::default().load_textures(self.texture_ids.clone(), texture_cacher).set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.05)).set_uniform("normals_strength", ShaderArg::F32(1.0)).set_shader(self.shader_name.as_str()).set_uniform("depth_level", ShaderArg::F32(coords.depth as f32 / OCTREE_DEPTH as f32));
+        let material = Material::default().set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.05)).set_uniform("normals_strength", ShaderArg::F32(1.0)).set_shader(self.shader_name.as_str()).set_uniform("depth_level", ShaderArg::F32(coords.depth as f32 / OCTREE_DEPTH as f32));
         entity
             .link_component::<Renderer>(
                 component_manager,
                 Renderer::new()
                     .set_model(model)
                     .set_wireframe(true)
-                    //.set_material(material)
+                    .set_material(material)
             )
             .unwrap();
         // TODO: Fix this

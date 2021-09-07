@@ -32,7 +32,7 @@ impl RenderingSystem {
         // Use the shader first
         shader.use_shader();
         // Loop over all the set uniforms
-        for (name, data) in renderer.material.uniform_setter.uniforms.iter() {
+        for (name, data) in renderer.material.as_ref().unwrap().uniform_setter.uniforms.iter() {
             // Now it's the painful part
             match data {
                 hypo_rendering::ShaderArg::F32(v) => shader.set_f32(name, v),
@@ -152,10 +152,24 @@ impl RenderingSystem {
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
     ) {
+        // Default material just in case
+        let default_material = Material {
+            shader_name: data.shader_cacher.1.id_get_default_object(0).unwrap().name.clone(),
+            ..Material::default()
+        };
         // Get the material for this entity
-        let material = &renderer.material;
+        let material = match renderer.material.as_ref() {
+            Some(mat) => mat,
+            None => &default_material,
+        };
+        // Shader name
+        let shader_name = match material.shader_name.as_str() {
+            "" => default_material.shader_name.clone(),
+            a => a.to_string(),
+        };
+
         // Load the shader
-        let shader = data.shader_cacher.1.get_object(&material.shader_name).unwrap();
+        let shader = data.shader_cacher.1.get_object(&shader_name).unwrap();
         // Use the shader, and update any uniforms
         shader.use_shader();
         // Calculate the mvp matrix
@@ -171,10 +185,13 @@ impl RenderingSystem {
         // Get the OpenGL texture id so we can bind it to the shader
         let mut textures: Vec<&Texture2D> = Vec::new();
 
-        // Load the default ones
+        // Load the textures
         for &id in material.texture_cache_ids.iter() {
-            // If this is a negative number, it means we've gotta use the default texture
             textures.push(data.texture_cacher.id_get_object(id).unwrap());
+        }
+        // The rest of the textures are going to be the default ones
+        for i in material.texture_cache_ids.len()..2 {
+            textures.push(data.texture_cacher.id_get_default_object(0).unwrap());
         }
         shader.set_t2d("diffuse_tex", textures[0], gl::TEXTURE0);
         shader.set_t2d("normals_tex", textures[1], gl::TEXTURE1);
@@ -318,7 +335,7 @@ impl System for RenderingSystem {
         }
         // Draw the debug primitives
         data.debug.draw_debug(&vp_matrix, &data.shader_cacher.1);
-        let shader = data.shader_cacher.1.get_object(&self.quad_renderer.material.shader_name).unwrap();
+        let shader = data.shader_cacher.1.get_object(&self.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
         let camera_position = data
             .entity_manager
             .get_entity(&data.custom_data.main_camera_entity_id)

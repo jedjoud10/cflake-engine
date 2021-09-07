@@ -17,7 +17,7 @@ pub struct Renderer {
     pub gpu_data: ModelDataGPU,    
     pub model: Model,
     // This renderer can only have one material for now (TODO: Make a multi material system)
-    pub material: Material,
+    pub material: Option<Material>,
     // Flags
     pub flags: RendererFlags,
 }
@@ -28,7 +28,7 @@ impl Default for Renderer {
             render_state: EntityRenderState::Visible,
             gpu_data: ModelDataGPU::default(),
             model: Model::default(),
-            material: Material::default(),
+            material: None,
             flags: RendererFlags::DEFAULT,
         }
     }
@@ -70,7 +70,7 @@ impl Renderer {
     }
     // With a specific material
     pub fn set_material(mut self, material: Material) -> Self {
-        self.material = material;
+        self.material = Some(material);
         return self;
     }
 }

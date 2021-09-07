@@ -10,6 +10,7 @@ bitflags! {
 }
 
 // A material that can have multiple parameters and such
+#[derive(Debug)]
 pub struct Material {
     // Rendering stuff
     pub shader_name: String,    
@@ -96,7 +97,7 @@ impl Material {
 }
 
 // Used to manually set some uniforms for the shaders
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ShaderUniformSetter {
     // The arguments that are going to be written to
     pub uniforms: Vec<(String, ShaderArg)>,
@@ -110,6 +111,7 @@ impl ShaderUniformSetter {
 }
 
 // The type of shader argument
+#[derive(Debug)]
 pub enum ShaderArg {
     F32(f32),
     I32(i32),
