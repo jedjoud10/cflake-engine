@@ -222,8 +222,8 @@ impl Texture {
         }
         self
     }
-    // Get the image from this texture and fill an array with it
-    pub fn fill_array<V, U>(&self) -> Vec<V> where 
+    // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
+    pub fn fill_array_veclib<V, U>(&self) -> Vec<V> where 
         V: veclib::Vector<U> + Default + Clone,
         U: veclib::DefaultStates
     {
@@ -234,6 +234,36 @@ impl Texture {
         };
         // Create the vector
         let mut pixels: Vec<V> = vec![V::default(); length];
+        
+        // Actually read the pixels
+        unsafe {
+            match self.dimension_type {
+                TextureDimensionType::D_2D(_, _) => {
+                    // Bind the buffer before reading
+                    gl::BindTexture(gl::TEXTURE_2D,self.id);
+                    gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);      
+                }
+                TextureDimensionType::D_3D(_, _, _) => {
+                    // Bind the buffer before reading
+                    gl::BindTexture(gl::TEXTURE_3D,self.id);
+                    gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);      
+                }
+            }
+                  
+        }
+        return pixels;
+    }
+    // Get the image from this texture and fill an array of single elements with it
+    pub fn fill_array_elems<U>(&self) -> Vec<U> where 
+        U: Clone + Default
+    {
+        // Get the length of the vector
+        let length: usize = match self.dimension_type {
+            TextureDimensionType::D_2D(x, y) => (x*y) as usize,
+            TextureDimensionType::D_3D(x, y, z) => (x*y*z) as usize,
+        };
+        // Create the vector
+        let mut pixels: Vec<U> = vec![U::default(); length];
         
         // Actually read the pixels
         unsafe {

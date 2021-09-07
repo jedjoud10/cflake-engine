@@ -14,7 +14,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>, size: usize, skirts: bool) -> Model {
+pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, skirts: bool) -> Model {
     let mut model: Model = Model::default();
     let mut skirts_model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
@@ -265,7 +265,7 @@ pub fn solve_marching_squares(
     a: usize,
     b: usize,
     i: usize,
-    data: &Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>,
+    data: &Box<[Voxel]>,
     local_edges: &[(u32, u32, u32); 4],
     density_threshold: f32,
     shared_vertices: &mut Vec<SkirtVertex>,

@@ -66,7 +66,7 @@ impl ChunkManager {
         let generated_chunks = slice
         .into_iter()
         .map(|chunk_coords| {
-            let mut voxels: Box<[super::Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]> =
+            let mut voxels: Box<[super::Voxel]> =
             Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
             // Generate the data for this chunk
             let has_surface = voxel_generator.generate_voxels(data, chunk_coords.size, chunk_coords.position, &mut voxels);
@@ -75,7 +75,7 @@ impl ChunkManager {
                 Some(_) => {
                         // We have a surface, create the model
                         let coords = chunk_coords.clone();
-                        let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true);
+                        let model = mesher::generate_model(&voxels, chunk_coords.size as usize, false);
                         // Save the chunk's data, though don't save the mode
                         let chunk_data = ChunkData { coords: coords, voxels: voxels };
                         Some((chunk_data, model))

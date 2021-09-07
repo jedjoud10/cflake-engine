@@ -8,14 +8,14 @@ use super::CHUNK_SIZE;
 // Some chunk data
 pub struct ChunkData {
     pub coords: ChunkCoords,
-    pub voxels: Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>,
+    pub voxels: Box<[Voxel]>,
 }
 
 impl Default for ChunkData {
     fn default() -> Self {
         Self {
             coords: ChunkCoords::default(),
-            voxels: Box::new([Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]),
+            voxels: Box::new([Voxel::default()]),
         }
     }
 }
@@ -25,7 +25,7 @@ impl ChunkData {
     pub fn new(coords: ChunkCoords) -> Self {
         Self {
             coords,
-            voxels: Box::new([Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]),
+            voxels: Box::new([Voxel::default()]),
         }
     }
 }
