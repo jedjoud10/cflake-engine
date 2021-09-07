@@ -1,4 +1,4 @@
-use hypo_rendering::{Shader, Texture3D};
+use hypo_rendering::{Shader, Texture2D, Texture3D};
 use hypo_system_event_data::SystemEventData;
 
 use super::terrain::Terrain;
@@ -29,7 +29,7 @@ pub struct VoxelGenerator {
 
 impl VoxelGenerator {
     // Generate the voxel texture
-    pub fn create_voxel_texture(&mut self) {
+    pub fn setup_voxel_generator(&mut self, event_data: &mut SystemEventData) {
         // Create the voxel texture
         self.voxel_texture = Texture3D::new().set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16).set_idf(gl::R32F, gl::RED, gl::FLOAT).set_wrapping_mode(hypo_rendering::TextureWrapping::ClampToBorder).generate_texture(Vec::new());
     }
@@ -47,7 +47,6 @@ impl VoxelGenerator {
 
         // Run the compute shader
         compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
-
         // Read back the texture into the data buffer
         let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();        
     
