@@ -19,7 +19,7 @@ pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 1.1;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 8;
+pub const OCTREE_DEPTH: u8 = 1;
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -34,16 +34,14 @@ hypo_ecs::impl_component!(Chunk);
 #[derive(Default)]
 pub struct Terrain {
     pub system_data: SystemData,
-    // Terrain generation
-    pub voxel_generator: VoxelGenerator,
-
     // Chunk managing
     pub octree: math::octree::Octree,
     pub chunk_manager: ChunkManager,
-
+    // The voxel generator
+    pub voxel_generator: VoxelGenerator,
     // Preloaded resources for chunks
     pub shader_name: String,
-    pub texture_ids: Vec<u16>,
+    pub texture_ids: Vec<u16>,    
 }
 
 impl Terrain {
@@ -136,6 +134,9 @@ impl System for Terrain {
         self.octree.lod_factor = LOD_FACTOR;
         // Debug controls
         data.input_manager.bind_key(Keys::Y, "update_terrain", MapType::Button);
+
+        // Load the compute shader for the voxel generator
+        self.voxel_generator.compute_shader_name = Shader::new(vec!["users\\shaders\\voxel_generator.cmpt.glsl"], data.resource_manager, data.shader_cacher).1;
     }
 
     // Update the camera position inside the terrain generator
@@ -176,9 +177,10 @@ impl System for Terrain {
                 }
                 None => { /* Nothing happened */ }
             }
-        }
+        }        
+
         // Update the chunk manager
-        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator);
+        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data);
         for (coords, model) in added_chunks {
             // Add the entity
             let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, &coords, model);

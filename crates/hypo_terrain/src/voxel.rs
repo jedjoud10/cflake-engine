@@ -1,3 +1,6 @@
+use hypo_rendering::{Shader, Texture3D};
+use hypo_system_event_data::SystemEventData;
+
 use super::terrain::Terrain;
 use super::CHUNK_SIZE;
 
@@ -17,37 +20,29 @@ pub fn flatten(position: (usize, usize, usize)) -> usize {
 
 // Handles the generation of voxel data
 #[derive(Default)]
-pub struct VoxelGenerator {}
+pub struct VoxelGenerator {
+    // The compute shader's name used for voxel generation
+    pub compute_shader_name: String,
+    // The 3D texture used for voxel generation as well
+    pub voxel_texture: Texture3D,
+}
 
 impl VoxelGenerator {
-    // Generate the voxels
-    pub fn generate_voxels(&self, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Option<()> {
-        let mut i = 0;
-        let mut min: f32 = f32::MAX;
-        let mut max: f32 = f32::MIN;
-        for y in 0..CHUNK_SIZE {
-            for z in 0..CHUNK_SIZE {
-                for x in 0..CHUNK_SIZE {
-                    // Get the point in world coordinates
-                    let size = size as f32 / (CHUNK_SIZE as f32 - 2.0);
-                    let point: veclib::Vector3<f32> = veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32) * size + veclib::Vector3::<f32>::from(position);
-                    // Set the voxel data
-                    data[i] = self.get_voxel(point);
-                    // Keep track of the min max values
-                    min = min.min(data[i].density);
-                    max = max.max(data[i].density);
-                    i += 1;
-                }
-            }
-        }
-        // Check if this data has a surface
-        if min.signum() != max.signum() {
-            // We have a surface
-            return Some(());
-        } else {
-            // We do not have a surface
-            return None;
-        }
+    // Generate the voxels using a compute shader
+    pub fn generate_voxels(&self, event_data: &SystemEventData, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Option<()> {
+        // Get the compute shader
+        let compute = event_data.shader_cacher.1.get_object(self.compute_shader_name.as_str()).unwrap();
+        
+        // Set the compute shader variables and voxel texture
+        compute.set_i3d("voxel_image", &self.voxel_texture, hypo_rendering::TextureShaderAccessType::ReadWrite);
+
+        // Run the compute shader
+        compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
+
+        // Read back the texture into the data buffer
+        
+
+        return Some(());
     }
 }
 
@@ -55,31 +50,4 @@ impl VoxelGenerator {
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
     pub density: f32,
-    pub color: veclib::Vector3<f32>,
-}
-
-impl VoxelGenerator {
-    // Set the default values
-    pub fn set_values(&mut self, terrain: &Terrain) {}
-    // Get the voxel at a specific point
-    pub fn get_voxel(&self, point: veclib::Vector3<f32>) -> Voxel {
-        let mut voxel: Voxel = Voxel {
-            density: 0.0,
-            color: veclib::Vector3::ZERO,
-        };
-        // Code goes here
-        voxel.density = point.y - 40.0;
-        voxel.density += (point.x * 0.05).sin() * 10.0;
-        //voxel.density += (point.y * 0.05).sin() * 3.0;
-        voxel.density = (point.x * 0.02).sin() * 20.0 + (point.y * 0.02).sin() * 60.0 + (point.z * 0.04).sin() * 60.0 + point.y * 2.0;
-        //voxel.density = voxel.density.max(point.y - 40.0);
-        //voxel.density = (point.x - 5.0).min(point.y - 5.0).min(point.z - 5.0);
-        //voxel.density = (-point.z + 5.0).min(-point.x + 5.0);
-        //voxel.density = point.z + point.y + point.x - 10.0;
-        voxel.density -= 0.5;
-        //voxel.density = point.y - 5.5;
-        //voxel.density = point.y - 14.5 + (point.x * 0.123).sin() * 30.0;
-        // BIG NOTE: If the density value has no decimal, the skirts won't show up!
-        return voxel;
-    }
 }

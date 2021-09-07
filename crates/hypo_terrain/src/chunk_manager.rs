@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use hypo_rendering::Model;
+use hypo_rendering::{Model, Shader};
+use hypo_system_event_data::SystemEventData;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator, CHUNK_SIZE};
@@ -57,18 +58,18 @@ impl ChunkManager {
         self.entities_to_remove.push(id);
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         // Generate the data for some chunks, then create their model
         let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
         let slice = self.chunks_to_generate[0..(CHUNK_GENERATIONS_PER_FRAME.min(self.chunks_to_generate.len()))].to_vec();
         // The chunks that are removed
         let generated_chunks = slice
-        .into_par_iter()
+        .into_iter()
         .map(|chunk_coords| {
             let mut voxels: Box<[super::Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]> =
             Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
             // Generate the data for this chunk
-            let has_surface = voxel_generator.generate_voxels(chunk_coords.size, chunk_coords.position, &mut voxels);
+            let has_surface = voxel_generator.generate_voxels(data, chunk_coords.size, chunk_coords.position, &mut voxels);
             // If we don't have a surface, no need to create a model for this chunk
             match has_surface {
                 Some(_) => {
@@ -78,7 +79,7 @@ impl ChunkManager {
                         // Save the chunk's data, though don't save the mode
                         let chunk_data = ChunkData { coords: coords, voxels: voxels };
                         Some((chunk_data, model))
-                    }
+                }
                     None => {
                         /* We don't have a surface, no need to create the model */
                         None
