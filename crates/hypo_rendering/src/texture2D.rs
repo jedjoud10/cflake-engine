@@ -96,6 +96,7 @@ impl Texture2D {
     pub fn set_dimensions(mut self, width: u16, height: u16) -> Self {
         self.height = height;
         self.width = width;
+        self.internal_texture.dimension_type = TextureDimensionType::D_2D(width, height);
         self
     }
     // Update the size of the current texture

@@ -45,7 +45,7 @@ impl VoxelGenerator {
         compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
 
         // Read back the texture into the data buffer
-        let pixels = self.voxel_texture.internal_texture.fill_array::<veclib::Vector3<f32>, f32>();
+        let pixels = self.voxel_texture.internal_texture.fill_array::<veclib::Vector4<f32>, f32>();
         
         println!("{:?}", pixels);
 

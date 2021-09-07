@@ -37,6 +37,7 @@ impl Texture3D {
         self.height = height;
         self.width = width;
         self.depth = depth;
+        self.internal_texture.dimension_type = TextureDimensionType::D_3D(width, height, depth);
         self
     }
     // Update the size of the current texture

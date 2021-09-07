@@ -234,9 +234,22 @@ impl Texture {
         };
         // Create the vector
         let mut pixels: Vec<V> = vec![V::default(); length];
+        
         // Actually read the pixels
         unsafe {
-            gl::GetTexImage(self.id, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);            
+            match self.dimension_type {
+                TextureDimensionType::D_2D(_, _) => {
+                    // Bind the buffer before reading
+                    gl::BindTexture(gl::TEXTURE_2D,self.id);
+                    gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);      
+                }
+                TextureDimensionType::D_3D(_, _, _) => {
+                    // Bind the buffer before reading
+                    gl::BindTexture(gl::TEXTURE_3D,self.id);
+                    gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);      
+                }
+            }
+                  
         }
         return pixels;
     }
