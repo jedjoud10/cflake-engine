@@ -109,6 +109,7 @@ impl Shader {
             gl::AttachShader(self.program, subshader.program);
         }
     }
+    // TODO: Split this into it's own compute shader struct
     // Run the compute shader if this shader is a compute shader
     pub fn run_compute(&self, num_groups: (u32, u32, u32)) {
         if let SubShaderType::Compute = self.linked_subshaders_programs[0].0 {

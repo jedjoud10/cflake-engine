@@ -36,6 +36,10 @@ pub enum TextureDimensionType {
     D_3D(u16, u16, u16)
 }
 
+// Custom internal format
+// Custom data type
+// Custom format
+
 // Access type when binding the texture
 pub enum TextureShaderAccessType {
     ReadOnly,
@@ -215,5 +219,18 @@ impl Texture {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
         }
         self
+    }
+    // Get the image from this texture and fill an array with it
+    pub fn fill_array<V, U>(&self) -> Vec<V> where 
+        V: veclib::Vector<U>,
+        U: veclib::DefaultStates
+    {
+        // Create the vector
+        let mut pixels: Vec<V> = Vec::new();
+        // Actually read the pixels
+        unsafe {
+            gl::GetTexImage(self.id, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);            
+        }
+        return pixels;
     }
 }

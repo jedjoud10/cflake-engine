@@ -1,4 +1,4 @@
-use std::ptr::null;
+use std::{ffi::c_void, ptr::null};
 
 use super::{TextureWrapping, TextureFilter, TextureFlags, Texture, TextureDimensionType};
 use hypo_resources::{LoadableResource, Resource, ResourceManager};
@@ -155,5 +155,5 @@ impl Texture2D {
         let t = self.internal_texture.generate_texture(bytes, TextureDimensionType::D_2D(self.width, self.height));
         self.internal_texture = t;
         return self;
-    }
+    }        
 }
