@@ -31,7 +31,7 @@ impl VoxelGenerator {
     // Generate the voxel texture
     pub fn create_voxel_texture(&mut self) {
         // Create the voxel texture
-        self.voxel_texture = Texture3D::new().set_idf(gl::RGBA16F, gl::RGBA, gl::FLOAT).set_wrapping_mode(hypo_rendering::TextureWrapping::ClampToBorder);
+        self.voxel_texture = Texture3D::new().set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16).set_idf(gl::RGBA16F, gl::RGBA, gl::FLOAT).set_wrapping_mode(hypo_rendering::TextureWrapping::ClampToBorder).generate_texture(Vec::new());
     }
     // Generate the voxels using a compute shader
     pub fn generate_voxels(&self, event_data: &SystemEventData, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel; (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]>) -> Option<()> {

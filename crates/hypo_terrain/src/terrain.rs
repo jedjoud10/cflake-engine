@@ -137,6 +137,8 @@ impl System for Terrain {
 
         // Load the compute shader for the voxel generator
         self.voxel_generator.compute_shader_name = Shader::new(vec!["user\\shaders\\voxel_generator.cmpt.glsl"], data.resource_manager, data.shader_cacher).1;
+        // Generate the voxel texture
+        self.voxel_generator.create_voxel_texture();
     }
 
     // Update the camera position inside the terrain generator

@@ -59,6 +59,7 @@ pub struct Texture {
     pub samples: u8,
     pub filter: TextureFilter,
     pub wrap_mode: TextureWrapping,
+    pub dimension_type: TextureDimensionType,
 }
 
 impl Default for Texture {
@@ -72,6 +73,7 @@ impl Default for Texture {
             flags: TextureFlags::MUTABLE,
             samples: 0,
             filter: TextureFilter::Linear,
+            dimension_type: TextureDimensionType::D_2D(0, 0),
             wrap_mode: TextureWrapping::Repeat,
         }
     }
@@ -222,11 +224,16 @@ impl Texture {
     }
     // Get the image from this texture and fill an array with it
     pub fn fill_array<V, U>(&self) -> Vec<V> where 
-        V: veclib::Vector<U>,
+        V: veclib::Vector<U> + Default + Clone,
         U: veclib::DefaultStates
     {
+        // Get the length of the vector
+        let length: usize = match self.dimension_type {
+            TextureDimensionType::D_2D(x, y) => (x*y) as usize,
+            TextureDimensionType::D_3D(x, y, z) => (x*y*z) as usize,
+        };
         // Create the vector
-        let mut pixels: Vec<V> = Vec::new();
+        let mut pixels: Vec<V> = vec![V::default(); length];
         // Actually read the pixels
         unsafe {
             gl::GetTexImage(self.id, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);            
