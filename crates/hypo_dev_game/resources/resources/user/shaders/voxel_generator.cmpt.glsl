@@ -1,4 +1,6 @@
 #version 460 core
+// Load the density function file
+#include "density.func.glsl"
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(r32f, binding = 0) uniform image3D voxel_image;
 layout(location = 1 ) uniform vec3 node_pos;

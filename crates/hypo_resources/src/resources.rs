@@ -123,8 +123,8 @@ impl ResourceManager {
 // Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
 // Date: 2021-08-13. Basically rewrote the whole thing. It's good now
 impl ResourceManager {
-    // Loads a specific resource and caches it so we can use it next time
-    pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, hypo_errors::ResourceError> {
+    // Turn a local path into a literal, hashed path
+    pub fn local_to_global_path(local_path: &str) -> Result<(String, String, u64), hypo_errors::ResourceError> {
         println!("{}", local_path);
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
@@ -152,15 +152,20 @@ impl ResourceManager {
             local_path.hash(&mut hasher);
             hasher.finish()
         };
+        
+        // The global file path for the hashed packed resource
+        let file_path = format!("{}{}.pkg", packed_resources_path, hashed_name);
+        return Ok((file_path, extension, hashed_name));
+    }
+    // Loads a specific resource and caches it so we can use it next time
+    pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, hypo_errors::ResourceError> {       
+        let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path)?; 
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!
             let resource = self.cached_resources.get(&hashed_name).unwrap();
             return Ok(resource);
         }
-
-        // The global file path for the hashed packed resource
-        let file_path = format!("{}{}.pkg", packed_resources_path, hashed_name);
         let mut resource: Resource = Resource::None;
 
         // Since the resource was not in the cache, load it and then put it in the cache
@@ -195,6 +200,23 @@ impl ResourceManager {
     }
     // Unloads a resource to save on memory
     pub fn unload_resouce(&mut self) {}
+    // Load the literal lines from a packed resource, with a byte padding at the start (Useful for function shaders)
+    pub fn load_lines_packed_resource(&mut self, local_path: &str, byte_padding: u64) -> Result<String, hypo_errors::ResourceError> {
+        // Get the global hashed path file
+        let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path).unwrap();
+        // Open the file first
+        let packed_file = File::open(file_path)
+            .ok()
+            .ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
+        let mut reader = BufReader::new(packed_file);
+
+        // Offset the reader
+        reader.seek(SeekFrom::Start(byte_padding)).unwrap();        
+        let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
+        // Now combine all the lines into the text file
+        let text = lines.join("\n");
+        return Ok(text);
+    }
 }
 
 // A simple loaded resource

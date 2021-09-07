@@ -118,6 +118,7 @@ pub fn convert_shader(file: &File, extension: &str) -> Resource {
         "vrsh.glsl" => subshader_type = 0,
         "frsh.glsl" => subshader_type = 1,
         "cmpt.glsl" => subshader_type = 2,
+        "func.glsl" => subshader_type = 3,
         _ => { subshader_type = -1 }
     }
     // Check if the subshader is even valid in the first place
