@@ -79,18 +79,22 @@ impl Shader {
                     // Get the lines
                     let lines = shader_sources_to_evalute[0].clone();
                     // Recursively load the includes
-                    let local_included_lines = Self::load_includes(lines.clone(), resource_manager);
-                    included_lines.extend(local_included_lines.clone());
+                    let mut orignal_local_included_lines = Self::load_includes(lines.clone(), resource_manager);
+                    // Extend from the start of the vector
+                    let mut local_indluded_lines = orignal_local_included_lines.clone();
+                    local_indluded_lines.extend(included_lines);
+                    included_lines = local_indluded_lines.clone();
+
                     shader_sources_to_evalute.remove(0);
                     // Check if the added included lines aren't empty
-                    if !local_included_lines.is_empty() {
-                        shader_sources_to_evalute.push(local_included_lines);
+                    if !orignal_local_included_lines.is_empty() {
+                        shader_sources_to_evalute.push(orignal_local_included_lines);
                     }
                 }  
                 // Gotta filter out the include message
                 included_lines.retain(|x| !x.starts_with("#include"));
-
-                println!("Good shit: {}", included_lines.join("\n"));
+                // Set the shader source for this shader
+                subshader.source = included_lines.join("\n");
                 // Compile the subshader
                 subshader.compile_subshader();
 
