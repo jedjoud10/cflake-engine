@@ -164,6 +164,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, skirts: bool) -> Model
                             true,
                         );
                     }
+                    // TODO: Fix the bug where this crashes when the density value doesn't have a decimal 
                     // Skirts for the Y axis
                     if y == 0 {
                         solve_marching_squares(
