@@ -376,6 +376,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hypo_ui"
+version = "0.1.0"
+dependencies = [
+ "veclib",
+]
+
+[[package]]
 name = "hypothermia"
 version = "0.1.0"
 

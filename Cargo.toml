@@ -25,7 +25,8 @@ members = [
     "crates\\hypo_others",
     "crates\\hypo_resources",
     "crates\\hypo_resources_packer",
-    "crates\\hypo_terrain"
+    "crates\\hypo_terrain",
+    "crates\\hypo_ui"
 ]
 
 

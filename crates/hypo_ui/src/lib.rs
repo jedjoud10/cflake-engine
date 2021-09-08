@@ -1,7 +1,7 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+// Export
+mod root;
+mod elements;
+mod element;
+pub use root::Root;
+pub use element::Element;
+pub use elements::*;
