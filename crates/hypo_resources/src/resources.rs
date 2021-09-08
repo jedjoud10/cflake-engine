@@ -205,13 +205,14 @@ impl ResourceManager {
         // Get the global hashed path file
         let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path).unwrap();
         // Open the file first
+        println!("{} {}", local_path, file_path);
         let packed_file = File::open(file_path)
             .ok()
             .ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
         let mut reader = BufReader::new(packed_file);
 
         // Offset the reader
-        reader.seek(SeekFrom::Start(byte_padding)).unwrap();        
+        reader.seek(SeekFrom::Start(byte_padding)).unwrap();
         let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
         // Now combine all the lines into the text file
         let text = lines.join("\n");

@@ -387,7 +387,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
 
         // Now convert each resource in it's own way
         match file_extension.as_str() {
-            "vrsh.glsl" | "frsh.glsl" | "cmpt.glsl" => {
+            "vrsh.glsl" | "frsh.glsl" | "cmpt.glsl" | "func.glsl" => {
                 // This is a shader
                 resource = convert_shader(&file, file_extension.as_str());
             }

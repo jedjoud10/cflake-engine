@@ -40,7 +40,7 @@ impl Shader {
                 let local_path = line.split("#include").collect::<Vec<&str>>()[1].replace(r#"""#, "");
                 let local_path = local_path.trim_start();
                 // Load the function shader text
-                let text = resource_manager.load_lines_packed_resource(&local_path, 1).unwrap();
+                let text = resource_manager.load_lines_packed_resource(&local_path, 0).unwrap();
                 println!("Text {}", text);
                 let lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                 included_lines.extend(lines);
