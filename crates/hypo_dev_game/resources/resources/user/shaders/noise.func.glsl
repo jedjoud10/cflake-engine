@@ -1,1 +1,1 @@
-// Noise gains
+// Noise gain

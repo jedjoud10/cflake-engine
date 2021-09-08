@@ -205,7 +205,6 @@ impl ResourceManager {
         // Get the global hashed path file
         let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path).unwrap();
         // Open the file first
-        println!("{} {}", local_path, file_path);
         let packed_file = File::open(file_path)
             .ok()
             .ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;

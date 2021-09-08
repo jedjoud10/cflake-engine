@@ -40,10 +40,9 @@ impl Shader {
                 let local_path = line.split("#include").collect::<Vec<&str>>()[1].replace(r#"""#, "");
                 let local_path = local_path.trim_start();
                 // Load the function shader text
-                let text = resource_manager.load_lines_packed_resource(&local_path, 0).unwrap();
-                println!("Text {}", text);
-                let lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                included_lines.extend(lines);
+                let text = resource_manager.load_lines_packed_resource(&local_path, 1).unwrap();
+                let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+                included_lines.extend(new_lines);
             }
         }
         // Return the included lines and the original lines that are without the include statement
@@ -83,13 +82,15 @@ impl Shader {
                     let local_included_lines = Self::load_includes(lines.clone(), resource_manager);
                     included_lines.extend(local_included_lines.clone());
                     shader_sources_to_evalute.remove(0);
-                    //shader_sources_to_evalute.extend(vec![local_included_lines]);
+                    // Check if the added included lines aren't empty
+                    if !local_included_lines.is_empty() {
+                        shader_sources_to_evalute.push(local_included_lines);
+                    }
                 }  
                 // Gotta filter out the include message
                 included_lines.retain(|x| !x.starts_with("#include"));
 
-                println!("{}", included_lines.join("\n"))
-;
+                println!("Good shit: {}", included_lines.join("\n"));
                 // Compile the subshader
                 subshader.compile_subshader();
 
