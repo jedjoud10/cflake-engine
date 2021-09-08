@@ -41,6 +41,7 @@ impl Shader {
                 let local_path = local_path.trim_start();
                 // Load the function shader text
                 let text = resource_manager.load_lines_packed_resource(&local_path, 1).unwrap();
+                println!("Text {}", text);
                 let lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                 included_lines.extend(lines);
             }
@@ -72,7 +73,7 @@ impl Shader {
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
                 let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
                 // The list of the shaders that need to be evaluated
-                let mut shader_sources_to_evalute: Vec<Vec<String>> = vec![];
+                let mut shader_sources_to_evalute: Vec<Vec<String>> = vec![lines];
                 // The final included lines
                 let mut included_lines: Vec<String> = Vec::new();
                 while shader_sources_to_evalute.len() > 0 {
@@ -80,11 +81,15 @@ impl Shader {
                     let lines = shader_sources_to_evalute[0].clone();
                     // Recursively load the includes
                     let local_included_lines = Self::load_includes(lines.clone(), resource_manager);
-                    included_lines.extend(lines);
+                    included_lines.extend(local_included_lines.clone());
                     shader_sources_to_evalute.remove(0);
-                    shader_sources_to_evalute.extend(vec![local_included_lines]);
+                    //shader_sources_to_evalute.extend(vec![local_included_lines]);
                 }  
+                // Gotta filter out the include message
+                included_lines.retain(|x| !x.starts_with("#include"));
 
+                println!("{}", included_lines.join("\n"))
+;
                 // Compile the subshader
                 subshader.compile_subshader();
 
