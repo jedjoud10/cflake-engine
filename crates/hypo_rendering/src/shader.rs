@@ -33,7 +33,7 @@ impl Shader {
     // Creates a shader from multiple subshader files
     pub fn new<'a>(
         subshader_paths: Vec<&str>,
-        resource_cacher: &'a mut ResourceManager,
+        resource_manager: &'a mut ResourceManager,
         shader_cacher: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
     ) -> (&'a mut Self, String) {
         let mut shader = Self::default();
@@ -47,8 +47,26 @@ impl Shader {
                 shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             } else {
                 // It was not cached, so we need to cache it
-                let resource = resource_cacher.load_packed_resource(subshader_path).unwrap();
+                let resource = resource_manager.load_packed_resource(subshader_path).unwrap();
                 let mut subshader = SubShader::from_resource(resource).unwrap();
+
+                // Recursively load the shader includes
+                let lines = subshader.source.lines().collect::<Vec<&str>>();
+                // The list of included shaders' lines
+                let mut included_lines: Vec<&str> = Vec::new();
+                for line in lines {
+                    // Check if this is an include statement
+                    if line.starts_with("#include") {
+                        // Get the local path of the include file
+                        let mut local_path = line.split("#include").collect::<Vec<&str>>()[1].replace(r#"""#, "");
+                        let local_path = local_path.trim_start();
+                        println!("Local path: {:?}", local_path);
+                        // Load the function shader text
+                        let text = resource_manager.load_lines_packed_resource(&local_path, 1).unwrap();
+                        println!("{:?}", text);
+                    }
+                }
+
                 // Compile the subshader
                 subshader.compile_subshader();
 
