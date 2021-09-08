@@ -19,7 +19,7 @@ void main() {
 
     // Density calculations
     float density = pos.y - 10.1;
-    density += (1-cellular(pos * 0.002).x) * 300.0;
+    density += (snoise(pos * 0.002)) * 300.0;
 
     // Create the pixel value
     vec4 pixel = vec4(density, 0.0, 0.0, 0.0);    

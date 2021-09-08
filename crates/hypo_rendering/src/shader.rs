@@ -70,12 +70,12 @@ impl Shader {
 
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
-                let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
+                let mut lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
                 let mut version_directive: String = String::new();
                 // Save the version directive
-                for line in lines {
+                for (i, line) in lines.iter().enumerate() {
                     if line.starts_with("#version") {
-                        version_directive = line;
+                        version_directive = line.clone();
                         break;
                     }
                 }
@@ -98,12 +98,16 @@ impl Shader {
                     if !orignal_local_included_lines.is_empty() {
                         shader_sources_to_evalute.push(orignal_local_included_lines);
                     }
-                }  
-                // Gotta filter out the include message
-                included_lines.retain(|x| !x.starts_with("#include"));
+                }                  
                 // Set the shader source for this shader
-                let extend_shader_source = included_lines.join("\n");               
-                subshader.source = format!("{}\n{}", extend_shader_source, subshader.source);
+                let extend_shader_source = included_lines.join("\n");    
+                
+                // Remove the version directive from the original subshader source
+                let og_shader_source = subshader.source.split(&version_directive).nth(1).unwrap();
+                subshader.source = format!("{}\n{}\n{}", version_directive, extend_shader_source, og_shader_source);
+                // Gotta filter out the include messages
+                subshader.source = subshader.source.lines().filter(|x| !x.starts_with("#include")).collect::<Vec<&str>>().join("\n");                
+                //println!("{}", subshader.source);
                 // Compile the subshader
                 subshader.compile_subshader();
 
