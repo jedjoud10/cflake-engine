@@ -71,6 +71,14 @@ impl Shader {
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
                 let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
+                let mut version_directive: String = String::new();
+                // Save the version directive
+                for line in lines {
+                    if line.starts_with("#version") {
+                        version_directive = line;
+                        break;
+                    }
+                }
                 // The list of the shaders that need to be evaluated
                 let mut shader_sources_to_evalute: Vec<Vec<String>> = vec![lines];
                 // The final included lines
@@ -94,7 +102,8 @@ impl Shader {
                 // Gotta filter out the include message
                 included_lines.retain(|x| !x.starts_with("#include"));
                 // Set the shader source for this shader
-                subshader.source = included_lines.join("\n");
+                let extend_shader_source = included_lines.join("\n");               
+                subshader.source = format!("{}\n{}", extend_shader_source, subshader.source);
                 // Compile the subshader
                 subshader.compile_subshader();
 
