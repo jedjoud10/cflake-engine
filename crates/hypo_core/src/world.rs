@@ -135,7 +135,7 @@ impl World {
         }
         // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
         if self.input_manager.map_pressed("debug_info") {
-            println!("Component count: '{}'", self.component_manager.linked_components.len());
+            println!("Component count: '{}'", self.component_manager.smart_components_list.elements.len());
             println!("Entity count: '{}'", self.entity_manager.entities.len());
             println!("System count: '{}'", self.system_manager.systems.len());
             println!(

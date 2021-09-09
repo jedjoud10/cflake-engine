@@ -3,8 +3,16 @@ pub struct SmartList<T> {
     pub elements: Vec<Option<T>>
 }
 
+impl<T> Default for SmartList<T> {
+    fn default() -> Self {
+        Self {
+            elements: Vec::new(),
+        }
+    }
+}
+
 // All the smart list logic
-impl<T> SmartList<T> where T: Clone {
+impl<T> SmartList<T> {
     // Calculate the next valid ID from the actual elements
     pub fn get_next_valid_id(&self) -> u16 {
         // Calculate the next valid free ID
@@ -28,17 +36,20 @@ impl<T> SmartList<T> where T: Clone {
         // Update
         if id < self.elements.len() as u16 {
             // Turn the none into a valid element
-            self.elements[id as usize] = Some(element.clone());
+            self.elements[id as usize] = Some(element);
         } else {
             // Add this to the elements
-            self.elements.push(Some(element.clone()));
+            self.elements.push(Some(element));
         }
         id
     }
     // Remove an element from this SmartList
-    pub fn remove_element(&mut self, element_id: &u16) -> Option<Option<T>> {
+    pub fn remove_element(&mut self, element_id: &u16) -> Option<T> {
         // Remove the element
-        return Some(self.elements.remove(*element_id as usize));
+        let element = self.elements.remove(*element_id as usize);
+        // Insert a none element
+        self.elements.insert(*element_id as usize, None);
+        return element;
     }
     // Get a mutable reference to a stored element
     pub fn get_element_mut(&mut self, element_id: &u16) -> Option<&mut T> {
