@@ -75,11 +75,11 @@ impl ChunkManager {
                 Some(_) => {
                         // We have a surface, create the model
                         let coords = chunk_coords.clone();
-                        let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true);
+                        let model = mesher::generate_model(&voxels, chunk_coords.size as usize, false);
                         // Save the chunk's data, though don't save the mode
                         let chunk_data = ChunkData { coords: coords, voxels: voxels };
                         Some((chunk_data, model))
-                }
+                    }
                     None => {
                         /* We don't have a surface, no need to create the model */
                         None

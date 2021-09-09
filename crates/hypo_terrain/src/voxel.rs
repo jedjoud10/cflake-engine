@@ -50,10 +50,18 @@ impl VoxelGenerator {
         // Read back the texture into the data buffer
         let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();        
     
+        // Keep track of the min and max values
+        let mut min = f32::MAX;
+        let mut max = f32::MIN;
+
         // Turn the pixels into the data
         for (i, pixel) in pixels.iter().enumerate() {
-            data[i] = Voxel { density: *pixel };
+            let density = *pixel;
+            data[i] = Voxel { density: density };
+            min = min.min(density);
+            max = max.max(density);
         }
+        println!("{} {}", min, max);
         return Some(());
     }
 }
