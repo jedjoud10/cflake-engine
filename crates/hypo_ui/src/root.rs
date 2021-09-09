@@ -9,9 +9,7 @@ impl Root {
     // Get the next free spot
     // Add an element to the tree
     pub fn add_element(&mut self, element: Element) {
-        // Recursively add the children onto the tree
-        let children = element.children;
-        self.elements.push(element);
+        self.elements.push(Some(element));
     }
     // Remove an element from the three, and recursively remove it's children
     pub fn remove_element(&mut self, element: Element) {
@@ -22,7 +20,7 @@ impl Root {
         while elems_to_evaluate.len() > 0 {
             // We need to get the children of this element
             let elem = self.elements.get(elems_to_evaluate[0]).unwrap();
-            let children = elem.children.clone();
+            let children = elem.as_ref().unwrap().children.clone();
             elems_to_evaluate.extend(children);
             elems_to_evaluate.remove(0);
         }
