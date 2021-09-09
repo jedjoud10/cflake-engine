@@ -17,6 +17,7 @@ impl Element {
     // Create a new element
     pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>) {
         // Get the element id from the root node
-        let output: Self = Element { size: size.clone(), position: position.clone(), parent: 0, id: root, children: () }
+        let output: Self = Element { size: size.clone(), position: position.clone(), parent: 0, id: root.elements.len(), children: Vec::new() };
+        // Add the element
     }
 }

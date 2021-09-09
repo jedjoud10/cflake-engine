@@ -61,8 +61,12 @@ impl VoxelGenerator {
             min = min.min(density);
             max = max.max(density);
         }
-        println!("{} {}", min, max);
-        return Some(());
+        // Only generate the mesh if we have a surface
+        if min.signum() != max.signum() {
+            return Some(());
+        } else {
+            return None;
+        }
     }
 }
 
