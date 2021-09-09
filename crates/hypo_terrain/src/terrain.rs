@@ -13,7 +13,7 @@ use math::octree;
 use std::collections::HashMap;
 
 // The actual chunk size number that you change
-pub const MAIN_CHUNK_SIZE: usize = 32;
+pub const MAIN_CHUNK_SIZE: usize = 8;
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
