@@ -41,7 +41,7 @@ pub struct Terrain {
     pub voxel_generator: VoxelGenerator,
     // Preloaded resources for chunks
     pub shader_name: String,
-    pub texture_ids: Vec<u16>,    
+    pub texture_ids: Vec<u16>,
 }
 
 impl Terrain {
@@ -69,15 +69,13 @@ impl Terrain {
                 },
             )
             .unwrap();
-        let material = Material::default().set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.05)).set_uniform("normals_strength", ShaderArg::F32(1.0)).set_shader(self.shader_name.as_str()).set_uniform("depth_level", ShaderArg::F32(coords.depth as f32 / OCTREE_DEPTH as f32));
+        let material = Material::default()
+            .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.05))
+            .set_uniform("normals_strength", ShaderArg::F32(1.0))
+            .set_shader(self.shader_name.as_str())
+            .set_uniform("depth_level", ShaderArg::F32(coords.depth as f32 / OCTREE_DEPTH as f32));
         entity
-            .link_component::<Renderer>(
-                component_manager,
-                Renderer::new()
-                    .set_model(model)
-                    .set_wireframe(true)
-                    .set_material(material)
-            )
+            .link_component::<Renderer>(component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
             .unwrap();
         // TODO: Fix this
         entity
@@ -179,7 +177,7 @@ impl System for Terrain {
                 }
                 None => { /* Nothing happened */ }
             }
-        }        
+        }
 
         // Update the chunk manager
         let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data);

@@ -1,9 +1,9 @@
 // Export
-mod root;
-mod elements;
 mod element;
+mod elements;
 mod manager;
-pub use manager::UIManager;
-pub use root::Root;
+mod root;
 pub use element::Element;
 pub use elements::*;
+pub use manager::UIManager;
+pub use root::Root;

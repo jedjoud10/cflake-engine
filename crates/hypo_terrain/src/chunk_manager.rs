@@ -64,15 +64,14 @@ impl ChunkManager {
         let slice = self.chunks_to_generate[0..(CHUNK_GENERATIONS_PER_FRAME.min(self.chunks_to_generate.len()))].to_vec();
         // The chunks that are removed
         let generated_chunks = slice
-        .into_iter()
-        .map(|chunk_coords| {
-            let mut voxels: Box<[super::Voxel]> =
-            Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
-            // Generate the data for this chunk
-            let has_surface = voxel_generator.generate_voxels(data, chunk_coords.size, chunk_coords.position, &mut voxels);
-            // If we don't have a surface, no need to create a model for this chunk
-            match has_surface {
-                Some(_) => {
+            .into_iter()
+            .map(|chunk_coords| {
+                let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
+                // Generate the data for this chunk
+                let has_surface = voxel_generator.generate_voxels(data, chunk_coords.size, chunk_coords.position, &mut voxels);
+                // If we don't have a surface, no need to create a model for this chunk
+                match has_surface {
+                    Some(_) => {
                         // We have a surface, create the model
                         let coords = chunk_coords.clone();
                         let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true);

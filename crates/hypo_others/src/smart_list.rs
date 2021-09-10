@@ -1,14 +1,12 @@
 // The smart list system
 #[derive(Debug)]
 pub struct SmartList<T> {
-    pub elements: Vec<Option<T>>
+    pub elements: Vec<Option<T>>,
 }
 
 impl<T> Default for SmartList<T> {
     fn default() -> Self {
-        Self {
-            elements: Vec::new(),
-        }
+        Self { elements: Vec::new() }
     }
 }
 

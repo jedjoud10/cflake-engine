@@ -119,10 +119,12 @@ pub fn convert_shader(file: &File, extension: &str) -> Resource {
         "frsh.glsl" => subshader_type = 1,
         "cmpt.glsl" => subshader_type = 2,
         "func.glsl" => subshader_type = 3,
-        _ => { subshader_type = -1 }
+        _ => subshader_type = -1,
     }
     // Check if the subshader is even valid in the first place
-    if subshader_type == -1 { panic!("Invalid subshader type!") }
+    if subshader_type == -1 {
+        panic!("Invalid subshader type!")
+    }
     // Convert the shader
     let mut string_source: String = String::new();
     reader.read_to_string(&mut string_source).unwrap();

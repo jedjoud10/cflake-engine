@@ -1,12 +1,12 @@
-use crate::TextureShaderAccessType;
 use crate::texture3D::Texture3D;
+use crate::TextureShaderAccessType;
 
-use super::{Texture2D};
+use super::Texture2D;
+use core::num;
 use gl;
 use hypo_others::CacheManager;
 use hypo_resources::Resource;
 use hypo_resources::ResourceManager;
-use core::num;
 use std::{ffi::CString, ptr::null};
 
 // A shader that contains two sub shaders that are compiled independently
@@ -99,15 +99,15 @@ impl Shader {
                     if !orignal_local_included_lines.is_empty() {
                         shader_sources_to_evalute.push(orignal_local_included_lines);
                     }
-                }                  
+                }
                 // Set the shader source for this shader
-                let extend_shader_source = included_lines.join("\n");    
-                
+                let extend_shader_source = included_lines.join("\n");
+
                 // Remove the version directive from the original subshader source
                 let og_shader_source = subshader.source.split(&version_directive).nth(1).unwrap();
                 subshader.source = format!("{}\n{}\n{}", version_directive, extend_shader_source, og_shader_source);
                 // Gotta filter out the include messages
-                subshader.source = subshader.source.lines().filter(|x| !x.starts_with("#include")).collect::<Vec<&str>>().join("\n");                
+                subshader.source = subshader.source.lines().filter(|x| !x.starts_with("#include")).collect::<Vec<&str>>().join("\n");
                 //println!("{}", subshader.source);
                 // Compile the subshader
                 subshader.compile_subshader();
@@ -160,7 +160,7 @@ impl Shader {
             unsafe {
                 gl::UseProgram(self.program);
             }
-        } 
+        }
     }
     // Link a specific subshader to this shader
     pub fn link_subshader(&mut self, subshader: &SubShader) {
@@ -177,7 +177,7 @@ impl Shader {
             unsafe {
                 // Do some num_groups checks
                 let mut max: i32 = 0;
-                gl::GetIntegeri_v(gl::MAX_COMPUTE_WORK_GROUP_COUNT, 0, &mut max); 
+                gl::GetIntegeri_v(gl::MAX_COMPUTE_WORK_GROUP_COUNT, 0, &mut max);
                 if num_groups.0 * num_groups.1 * num_groups.2 > max as u32 {
                     // We have exceeded the max, this is not good
                     panic!("Num groups dispatched for compute shader are invalid!");
@@ -258,7 +258,15 @@ impl Shader {
             };
             let unit = self.get_uniform_location(name) as u32;
             gl::BindTexture(gl::TEXTURE_2D, texture.internal_texture.id);
-            gl::BindImageTexture(unit, texture.internal_texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_texture.internal_format);
+            gl::BindImageTexture(
+                unit,
+                texture.internal_texture.id,
+                0,
+                gl::FALSE,
+                0,
+                new_access_type,
+                texture.internal_texture.internal_format,
+            );
         }
     }
     // Set a 3D image
@@ -273,7 +281,15 @@ impl Shader {
             };
             let unit = self.get_uniform_location(name) as u32;
             gl::BindTexture(gl::TEXTURE_3D, texture.internal_texture.id);
-            gl::BindImageTexture(unit, texture.internal_texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_texture.internal_format);
+            gl::BindImageTexture(
+                unit,
+                texture.internal_texture.id,
+                0,
+                gl::FALSE,
+                0,
+                new_access_type,
+                texture.internal_texture.internal_format,
+            );
         }
     }
     // Set a i32

@@ -83,9 +83,11 @@ impl ResourceManager {
         let shader_type: u8 = reader.read_u8().ok()?;
         let shader_name = local_path;
         match shader_type {
-            0 | 1 | 2 => {},
-            _ => { panic!("Shader type not supported!") }
-        }        
+            0 | 1 | 2 => {}
+            _ => {
+                panic!("Shader type not supported!")
+            }
+        }
         // Read all the bytes until the end of the file, and then turn them into a utf8 string
         let mut bytes: Vec<u8> = Vec::new();
         reader.read_to_end(&mut bytes).unwrap();
@@ -152,14 +154,14 @@ impl ResourceManager {
             local_path.hash(&mut hasher);
             hasher.finish()
         };
-        
+
         // The global file path for the hashed packed resource
         let file_path = format!("{}{}.pkg", packed_resources_path, hashed_name);
         return Ok((file_path, extension, hashed_name));
     }
     // Loads a specific resource and caches it so we can use it next time
-    pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, hypo_errors::ResourceError> {       
-        let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path)?; 
+    pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, hypo_errors::ResourceError> {
+        let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path)?;
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!

@@ -2,7 +2,7 @@ use super::super::components;
 use gl;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
-use hypo_rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, TextureShaderAccessType, Texture2D, Window};
+use hypo_rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture2D, TextureShaderAccessType, Window};
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData};
 use std::ptr::null;
@@ -44,7 +44,7 @@ impl RenderingSystem {
                 hypo_rendering::ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
                 hypo_rendering::ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
                 hypo_rendering::ShaderArg::MAT44(v) => shader.set_mat44(name, v),
-            }            
+            }
         }
     }
     // Create the quad that will render the render buffer
@@ -52,11 +52,15 @@ impl RenderingSystem {
         let mut quad_renderer_component = Renderer::default();
         quad_renderer_component.model = Model::from_resource(data.resource_manager.load_packed_resource("defaults\\models\\screen_quad.mdl3d").unwrap()).unwrap();
         // Create the screen quad material
-        let material: Material = Material::default().set_shader(Shader::new(
-            vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen.frsh.glsl"],
-            &mut data.resource_manager,
-            &mut data.shader_cacher,
-        ).1.as_str());
+        let material: Material = Material::default().set_shader(
+            Shader::new(
+                vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen.frsh.glsl"],
+                &mut data.resource_manager,
+                &mut data.shader_cacher,
+            )
+            .1
+            .as_str(),
+        );
         let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
@@ -203,9 +207,13 @@ impl RenderingSystem {
         if renderer.gpu_data.initialized {
             // Enable / Disable vertex culling
             if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
-                unsafe { gl::Disable(gl::CULL_FACE); }
+                unsafe {
+                    gl::Disable(gl::CULL_FACE);
+                }
             } else {
-                unsafe { gl::Enable(gl::CULL_FACE); }
+                unsafe {
+                    gl::Enable(gl::CULL_FACE);
+                }
             }
             unsafe {
                 // Actually draw the array
@@ -343,7 +351,7 @@ impl System for RenderingSystem {
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
-        
+
         shader.use_shader();
         shader.set_t2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
         shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
@@ -365,7 +373,7 @@ impl System for RenderingSystem {
             "default_sky_gradient",
             data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
             gl::TEXTURE4,
-        );        
+        );
 
         // Other params
         shader.set_vec3f32("view_pos", &camera_position);

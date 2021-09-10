@@ -14,7 +14,7 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub render_state: EntityRenderState,
-    pub gpu_data: ModelDataGPU,    
+    pub gpu_data: ModelDataGPU,
     pub model: Model,
     // This renderer can only have one material for now (TODO: Make a multi material system)
     pub material: Option<Material>,
@@ -58,7 +58,7 @@ impl Renderer {
     pub fn set_model(mut self, model: Model) -> Self {
         self.model = model;
         return self;
-    }    
+    }
     // Enable / disable the wireframe rendering for this entity
     pub fn set_wireframe(mut self, enabled: bool) -> Self {
         if enabled {

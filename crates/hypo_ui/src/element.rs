@@ -5,10 +5,10 @@ use crate::Root;
 pub struct Element {
     pub size: veclib::Vector2<f32>,
     pub position: veclib::Vector2<f32>,
-    pub color: veclib::Vector3<f32>,   
+    pub color: veclib::Vector3<f32>,
     pub parent: usize,
     id: usize,
-    pub children: Vec<usize>, 
+    pub children: Vec<usize>,
     pub element_type: ElementType,
 }
 
@@ -27,13 +27,13 @@ pub enum ElementType {
     Panel(),
     Button(ButtonState),
     Text(String),
-    Image(String), 
+    Image(String),
 }
 
 impl Element {
     // Attach children to this element
     pub fn attach(root: &mut Root, id: usize, children: Vec<usize>) {
-        // Update the parent id of the children 
+        // Update the parent id of the children
         for child_element_id in children.iter() {
             // Get the child element and update it
             let child_element = root.smart_element_list.get_element_mut(&(*child_element_id as u16)).unwrap();
@@ -45,8 +45,16 @@ impl Element {
     // Create a new element
     pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, element_type: ElementType) -> usize {
         // Get the element id from the root node
-        let output: Self = Element { size: size.clone(), position: position.clone(), parent: 0, id: root.smart_element_list.get_next_valid_id() as usize + 1, children: Vec::new(), element_type: element_type, color: veclib::Vector3::ONE };
-        // Add the element        
+        let output: Self = Element {
+            size: size.clone(),
+            position: position.clone(),
+            parent: 0,
+            id: root.smart_element_list.get_next_valid_id() as usize + 1,
+            children: Vec::new(),
+            element_type: element_type,
+            color: veclib::Vector3::ONE,
+        };
+        // Add the element
         return root.add_element(output) as usize;
     }
 }

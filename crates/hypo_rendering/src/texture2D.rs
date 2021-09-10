@@ -1,16 +1,16 @@
 use std::{ffi::c_void, ptr::null};
 
-use super::{TextureWrapping, TextureFilter, TextureFlags, Texture, TextureDimensionType};
-use hypo_resources::{LoadableResource, Resource, ResourceManager};
+use super::{Texture, TextureDimensionType, TextureFilter, TextureFlags, TextureWrapping};
 use hypo_others::CacheManager;
+use hypo_resources::{LoadableResource, Resource, ResourceManager};
 use image::EncodableLayout;
 
 // A 2D texture
 #[derive(Debug)]
 pub struct Texture2D {
     pub width: u16,
-    pub height: u16,    
-    pub internal_texture: Texture,    
+    pub height: u16,
+    pub internal_texture: Texture,
 }
 
 impl Default for Texture2D {
@@ -39,7 +39,9 @@ impl LoadableResource for Texture2D {
                 let mut texture = self.set_dimensions(width, height);
                 // Set the texture name since the texture has an empty name
                 texture.internal_texture.name = texture_name.clone();
-                let new_texture = texture.internal_texture.generate_texture(rgba8_image.as_bytes().to_vec(), TextureDimensionType::D_2D(width, height));
+                let new_texture = texture
+                    .internal_texture
+                    .generate_texture(rgba8_image.as_bytes().to_vec(), TextureDimensionType::D_2D(width, height));
                 texture.internal_texture = new_texture;
                 texture
             }
@@ -88,10 +90,10 @@ impl Texture2D {
         Self {
             height: 1,
             width: 1,
-            internal_texture: Texture::default(),            
+            internal_texture: Texture::default(),
         }
     }
-    
+
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, width: u16, height: u16) -> Self {
         self.height = height;
@@ -116,7 +118,7 @@ impl Texture2D {
                 null(),
             );
         }
-    }     
+    }
 }
 
 // Implement the wrapper stuff
@@ -156,5 +158,5 @@ impl Texture2D {
         let t = self.internal_texture.generate_texture(bytes, TextureDimensionType::D_2D(self.width, self.height));
         self.internal_texture = t;
         return self;
-    }        
+    }
 }

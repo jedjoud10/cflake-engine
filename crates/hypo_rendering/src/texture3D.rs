@@ -1,17 +1,17 @@
 use std::ptr::null;
 
-use super::{TextureWrapping, TextureFilter, TextureFlags, Texture, TextureDimensionType};
-use hypo_resources::{LoadableResource, Resource, ResourceManager};
+use super::{Texture, TextureDimensionType, TextureFilter, TextureFlags, TextureWrapping};
 use hypo_others::CacheManager;
+use hypo_resources::{LoadableResource, Resource, ResourceManager};
 use image::EncodableLayout;
 
 // A 3D texture
 #[derive(Debug)]
 pub struct Texture3D {
     pub width: u16,
-    pub height: u16,    
+    pub height: u16,
     pub depth: u16,
-    pub internal_texture: Texture,    
+    pub internal_texture: Texture,
 }
 
 impl Default for Texture3D {
@@ -28,10 +28,10 @@ impl Texture3D {
             height: 1,
             width: 1,
             depth: 1,
-            internal_texture: Texture::default(),            
+            internal_texture: Texture::default(),
         }
     }
-    
+
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, width: u16, height: u16, depth: u16) -> Self {
         self.height = height;
@@ -58,7 +58,7 @@ impl Texture3D {
                 null(),
             );
         }
-    }     
+    }
 }
 
 // Implement the wrapper stuff
@@ -95,7 +95,9 @@ impl Texture3D {
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
-        let t = self.internal_texture.generate_texture(bytes, TextureDimensionType::D_3D(self.width, self.height, self.depth));
+        let t = self
+            .internal_texture
+            .generate_texture(bytes, TextureDimensionType::D_3D(self.width, self.height, self.depth));
         self.internal_texture = t;
         return self;
     }

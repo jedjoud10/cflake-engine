@@ -1,7 +1,7 @@
+use super::Texture2D;
+use bitflags::bitflags;
 use hypo_others::CacheManager;
 use hypo_resources::ResourceManager;
-use super::{Texture2D};
-use bitflags::bitflags;
 
 bitflags! {
     pub struct MaterialFlags: u8 {
@@ -13,7 +13,7 @@ bitflags! {
 #[derive(Debug)]
 pub struct Material {
     // Rendering stuff
-    pub shader_name: String,    
+    pub shader_name: String,
     pub texture_cache_ids: Vec<u16>,
     pub uniform_setter: ShaderUniformSetter,
     pub flags: MaterialFlags,
@@ -21,9 +21,9 @@ pub struct Material {
 
 impl Default for Material {
     fn default() -> Self {
-        let mut material: Self = Material { 
-            shader_name: String::default(), 
-            texture_cache_ids: Vec::new(), 
+        let mut material: Self = Material {
+            shader_name: String::default(),
+            texture_cache_ids: Vec::new(),
             uniform_setter: ShaderUniformSetter::default(),
             flags: MaterialFlags::empty(),
         };
@@ -35,9 +35,9 @@ impl Default for Material {
     }
 }
 
-impl Material {    
-     // Load textures from their texture struct
-     pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture2D>) -> Self {
+impl Material {
+    // Load textures from their texture struct
+    pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture2D>) -> Self {
         // Set the textures as the renderer's textures
         for (&texture_id) in texture_ids.iter() {
             // Since these are loadable textures, we already know they got cached beforehand

@@ -70,14 +70,18 @@ impl ComponentManager {
     pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
-        let linked_component = self.smart_components_list.get_element(global_id)
+        let linked_component = self
+            .smart_components_list
+            .get_element(global_id)
             .ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
         let component = Self::cast_component(linked_component)?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
     pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
-        let linked_component = self.smart_components_list.get_element_mut(global_id)
+        let linked_component = self
+            .smart_components_list
+            .get_element_mut(global_id)
             .ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
         let component = Self::cast_component_mut(linked_component)?;
         Ok(component)

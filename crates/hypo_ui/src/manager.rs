@@ -1,4 +1,4 @@
-use crate::{Root, element::ButtonState, element::ElementType};
+use crate::{element::ButtonState, element::ElementType, Root};
 
 // The UI manager
 #[derive(Default)]
@@ -13,8 +13,8 @@ impl UIManager {
         // Get the element
         let elem = self.root.smart_element_list.get_element(element_id).unwrap();
         let state = match elem.element_type {
-            ElementType::Button(ref state) => { state },
-            _ => { &ButtonState::Released }
+            ElementType::Button(ref state) => state,
+            _ => &ButtonState::Released,
         };
         return state;
     }
@@ -26,9 +26,8 @@ impl UIManager {
             ElementType::Text(ref mut last_text) => {
                 // Set the text
                 *last_text = text.to_string();
-            },
+            }
             _ => {}
         }
-    } 
-
+    }
 }

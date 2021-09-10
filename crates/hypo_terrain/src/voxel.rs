@@ -31,13 +31,17 @@ impl VoxelGenerator {
     // Generate the voxel texture
     pub fn setup_voxel_generator(&mut self, event_data: &mut SystemEventData) {
         // Create the voxel texture
-        self.voxel_texture = Texture3D::new().set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16).set_idf(gl::R32F, gl::RED, gl::FLOAT).set_wrapping_mode(hypo_rendering::TextureWrapping::ClampToBorder).generate_texture(Vec::new());
+        self.voxel_texture = Texture3D::new()
+            .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)
+            .set_idf(gl::R32F, gl::RED, gl::FLOAT)
+            .set_wrapping_mode(hypo_rendering::TextureWrapping::ClampToBorder)
+            .generate_texture(Vec::new());
     }
     // Generate the voxels using a compute shader
     pub fn generate_voxels(&self, event_data: &SystemEventData, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> Option<()> {
         // Get the compute shader
         let compute = event_data.shader_cacher.1.get_object(self.compute_shader_name.as_str()).unwrap();
-        
+
         // Set the compute shader variables and voxel texture
         compute.use_shader();
         compute.set_i3d("voxel_image", &self.voxel_texture, hypo_rendering::TextureShaderAccessType::ReadWrite);
@@ -48,8 +52,8 @@ impl VoxelGenerator {
         // Run the compute shader
         compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
         // Read back the texture into the data buffer
-        let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();        
-    
+        let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();
+
         // Keep track of the min and max values
         let mut min = f32::MAX;
         let mut max = f32::MIN;

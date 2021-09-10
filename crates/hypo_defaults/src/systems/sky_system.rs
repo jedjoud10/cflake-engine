@@ -48,17 +48,13 @@ impl System for SkySystem {
         model.flip_triangles();
 
         // Create a sky material
-        let material = Material::default().load_textures(vec![cached_texture_id], &mut data.texture_cacher).set_shader(sky_shader_name.as_str());
+        let material = Material::default()
+            .load_textures(vec![cached_texture_id], &mut data.texture_cacher)
+            .set_shader(sky_shader_name.as_str());
 
         // Link components
-        sky.link_component::<Renderer>(
-            data.component_manager,
-            Renderer::default()
-                .set_material(material)
-                .set_model(model)
-                .set_wireframe(false)
-        )
-        .unwrap();
+        sky.link_component::<Renderer>(data.component_manager, Renderer::default().set_material(material).set_model(model).set_wireframe(false))
+            .unwrap();
         sky.link_default_component::<components::AABB>(data.component_manager).unwrap();
 
         sky.link_component::<components::Transform>(
