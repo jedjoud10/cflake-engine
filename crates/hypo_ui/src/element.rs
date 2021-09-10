@@ -1,6 +1,7 @@
 use crate::Root;
 
 // A simple element, could be a button or a panel or anything, it just has some variables
+#[derive(Debug)]
 pub struct Element {
     pub size: veclib::Vector2<f32>,
     pub position: veclib::Vector2<f32>,
@@ -11,13 +12,21 @@ pub struct Element {
 
 impl Element {
     // Attach children to this element
-    pub fn attach(&mut self, children: Vec<Element>) {
-        self.children = children.iter().map(|x| x.id).collect();
+    pub fn attach(root: &mut Root, id: usize, children: Vec<usize>) {
+        // Update the parent id of the children 
+        for child_element_id in children.iter() {
+            // Get the child element and update it
+            let child_element = root.smart_element_list.get_element_mut(&(*child_element_id as u16)).unwrap();
+            child_element.parent = id;
+        }
+        let element = root.smart_element_list.get_element_mut(&(id as u16)).unwrap();
+        element.children.extend(children);
     }
     // Create a new element
-    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>) {
+    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>) -> usize {
         // Get the element id from the root node
-        let output: Self = Element { size: size.clone(), position: position.clone(), parent: 0, id: root.elements.len(), children: Vec::new() };
-        // Add the element
+        let output: Self = Element { size: size.clone(), position: position.clone(), parent: 0, id: root.smart_element_list.get_next_valid_id() as usize + 1, children: Vec::new() };
+        // Add the element        
+        return root.add_element(output) as usize;
     }
 }

@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
+hypo_others = { path = "../hypo_others" }

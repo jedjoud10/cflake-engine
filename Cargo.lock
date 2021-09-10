@@ -379,6 +379,7 @@ dependencies = [
 name = "hypo_ui"
 version = "0.1.0"
 dependencies = [
+ "hypo_others",
  "veclib",
 ]
 

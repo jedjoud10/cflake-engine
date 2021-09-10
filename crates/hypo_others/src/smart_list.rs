@@ -1,4 +1,5 @@
 // The smart list system
+#[derive(Debug)]
 pub struct SmartList<T> {
     pub elements: Vec<Option<T>>
 }
