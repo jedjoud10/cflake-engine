@@ -10,6 +10,7 @@ pub fn load_systems(world: &mut World) {
     let mut data: SystemEventData = SystemEventData {
         entity_manager: &mut world.entity_manager,
         component_manager: &mut world.component_manager,
+        ui_manager: &mut world.ui_manager,
         input_manager: &mut world.input_manager,
         shader_cacher: &mut world.shader_cacher,
         texture_cacher: &mut world.texture_cacher,

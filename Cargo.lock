@@ -347,6 +347,7 @@ dependencies = [
  "hypo_others",
  "hypo_rendering",
  "hypo_resources",
+ "hypo_ui",
 ]
 
 [[package]]

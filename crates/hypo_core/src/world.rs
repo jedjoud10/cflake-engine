@@ -101,6 +101,7 @@ impl World {
         let mut data: SystemEventData = SystemEventData {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
+            ui_manager: &mut self.ui_manager,
             input_manager: &mut self.input_manager,
             shader_cacher: &mut self.shader_cacher,
             texture_cacher: &mut self.texture_cacher,
