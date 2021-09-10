@@ -39,6 +39,11 @@ pub fn load_systems(world: &mut World) {
     let mut terrain_generator = Terrain::default();
     terrain_generator.setup_system(&mut data);
     world.system_manager.add_system(terrain_generator);
+
+    // Load the UI system
+    let mut ui_system = systems::UISystem::default();
+    ui_system.setup_system(&mut data);
+    world.system_manager.add_system(ui_system);
 }
 // Load the entities
 pub fn load_entities(world: &mut World) {

@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
+hypo_ui = { path = "../hypo_ui" }
 hypo_system_event_data = { path = "../hypo_system_event_data" }
 hypo_math = { path = "../hypo_math" }
 hypo_ecs = { path = "../hypo_ecs" }
