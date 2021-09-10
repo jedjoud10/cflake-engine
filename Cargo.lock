@@ -213,6 +213,7 @@ dependencies = [
  "hypo_resources",
  "hypo_system_event_data",
  "hypo_systems",
+ "hypo_ui",
 ]
 
 [[package]]

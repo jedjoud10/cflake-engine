@@ -5,9 +5,29 @@ use crate::Root;
 pub struct Element {
     pub size: veclib::Vector2<f32>,
     pub position: veclib::Vector2<f32>,
+    pub color: veclib::Vector3<f32>,   
     pub parent: usize,
     id: usize,
-    pub children: Vec<usize>,    
+    pub children: Vec<usize>, 
+    pub element_type: ElementType,
+}
+
+// The state of a button element
+#[derive(Debug)]
+pub enum ButtonState {
+    Pressed,
+    Released,
+    Held,
+}
+
+// The type of element
+#[derive(Debug)]
+pub enum ElementType {
+    Empty,
+    Panel(),
+    Button(ButtonState),
+    Text(String),
+    Image(String), 
 }
 
 impl Element {
@@ -23,9 +43,9 @@ impl Element {
         element.children.extend(children);
     }
     // Create a new element
-    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>) -> usize {
+    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, element_type: ElementType) -> usize {
         // Get the element id from the root node
-        let output: Self = Element { size: size.clone(), position: position.clone(), parent: 0, id: root.smart_element_list.get_next_valid_id() as usize + 1, children: Vec::new() };
+        let output: Self = Element { size: size.clone(), position: position.clone(), parent: 0, id: root.smart_element_list.get_next_valid_id() as usize + 1, children: Vec::new(), element_type: element_type, color: veclib::Vector3::ONE };
         // Add the element        
         return root.add_element(output) as usize;
     }

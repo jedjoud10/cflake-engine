@@ -13,6 +13,7 @@ hypo_input = { path = "../hypo_input" }
 hypo_systems = { path = "../hypo_systems" }
 hypo_others = { path = "../hypo_others" }
 hypo_ecs = { path = "../hypo_ecs" }
+hypo_ui = { path = "../hypo_ui" }
 hypo_errors = { path = "../hypo_errors" }
 hypo_rendering = { path = "../hypo_rendering" }
 hypo_resources = { path = "../hypo_resources" }

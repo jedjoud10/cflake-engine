@@ -2,6 +2,7 @@ use hypo_others::SmartList;
 use crate::Element;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
+#[derive(Default)]
 pub struct Root {
     pub smart_element_list: SmartList<Element>
 }

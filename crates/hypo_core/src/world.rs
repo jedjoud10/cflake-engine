@@ -11,6 +11,7 @@ use hypo_rendering::*;
 use hypo_resources::*;
 use hypo_system_event_data::*;
 use hypo_systems::*;
+use hypo_ui::UIManager;
 use std::collections::HashSet;
 //  The actual world
 #[derive(Default)]
@@ -19,6 +20,7 @@ pub struct World {
     pub component_manager: ComponentManager,
     pub input_manager: InputManager,
     pub resource_manager: ResourceManager,
+    pub ui_manager: UIManager,
     // Rendering
     pub texture_cacher: CacheManager<Texture2D>,
     pub shader_cacher: (CacheManager<SubShader>, CacheManager<Shader>),
