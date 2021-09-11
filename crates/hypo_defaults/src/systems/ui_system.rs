@@ -85,10 +85,6 @@ impl System for UISystem {
             self.vertex_array = vertex_array;
         }
         let root = &mut data.ui_manager.root;
-        // Setup some test elements
-        let element = Element::new(root, &veclib::Vector2::ZERO, &(veclib::Vector2::ONE * 0.2), &veclib::Vector3::X, ElementType::Panel());
-        let second_element = Element::new(root, &veclib::Vector2::ZERO, &(veclib::Vector2::ONE * 0.1), &veclib::Vector3::Y, ElementType::Panel());
-        Element::attach(root, element, vec![second_element]);
         // Load the UI shader
         let shader_name = Shader::new(vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_panel.frsh.glsl"], data.resource_manager, data.shader_cacher).1;
         self.ui_shader_name = shader_name;

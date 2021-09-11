@@ -383,6 +383,7 @@ name = "hypo_ui"
 version = "0.1.0"
 dependencies = [
  "hypo_others",
+ "hypo_resources",
  "veclib",
 ]
 

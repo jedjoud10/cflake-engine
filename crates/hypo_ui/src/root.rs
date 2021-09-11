@@ -28,4 +28,10 @@ impl Root {
             elems_to_evaluate.remove(0);
         }
     }
+    // Load a specific UI file from the resources 
+    pub fn load_root_file(local_path: &str) -> Root {
+        let mut output: Root = Root::default();
+        
+        return output;
+    }
 }
