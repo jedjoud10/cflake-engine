@@ -12,14 +12,16 @@
             "parent": 0,
             "position": { "x": -1, "y": -1 },
             "size": { "x": 1, "y": 1 },
-            "color": "#b7ff00"
+            "color": "#b7ff00",
+            "image": "defaults\\textures\\ui\\default.png"
         },
         {
             "id": 3,
             "parent": 2,
             "position": { "x": 0, "y": 0 },
             "size": { "x": 0.5, "y": 0.5 },
-            "color": "#a103fc"
+            "color": "#a103fc",
+            "button_type": "press"
         }
     ]
 }
