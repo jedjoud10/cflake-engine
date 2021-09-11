@@ -7,6 +7,7 @@ pub struct Element {
     pub position: veclib::Vector2<f32>,
     pub color: veclib::Vector3<f32>,
     pub parent: usize,
+    pub depth: i32,
     id: usize,
     pub children: Vec<usize>,
     pub element_type: ElementType,
@@ -38,21 +39,24 @@ impl Element {
             // Get the child element and update it
             let child_element = root.smart_element_list.get_element_mut(&(*child_element_id as u16)).unwrap();
             child_element.parent = id;
+            child_element.depth += 1;
+            root.max_depth = root.max_depth.max(child_element.depth);
         }
         let element = root.smart_element_list.get_element_mut(&(id as u16)).unwrap();
         element.children.extend(children);
     }
     // Create a new element
-    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, element_type: ElementType) -> usize {
+    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, color: &veclib::Vector3<f32>, element_type: ElementType) -> usize {
         // Get the element id from the root node
         let output: Self = Element {
             size: size.clone(),
             position: position.clone(),
             parent: 0,
             id: root.smart_element_list.get_next_valid_id() as usize + 1,
+            depth: 0,
             children: Vec::new(),
             element_type: element_type,
-            color: veclib::Vector3::ONE,
+            color: color.clone(),
         };
         // Add the element
         return root.add_element(output) as usize;

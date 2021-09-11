@@ -5,6 +5,7 @@ use hypo_others::SmartList;
 #[derive(Default)]
 pub struct Root {
     pub smart_element_list: SmartList<Element>,
+    pub max_depth: i32,
 }
 
 impl Root {

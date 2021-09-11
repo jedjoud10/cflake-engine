@@ -67,7 +67,6 @@ impl System for UISystem {
             let mut vertex_buffer: u32 = 0;
             // The uv buffer
             let mut uv_buffer: u32 = 0;
-
             gl::GenBuffers(1, &mut vertex_buffer as *mut u32);
             gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
             gl::BufferData(gl::ARRAY_BUFFER, (self.verts.len() * size_of::<f32>() * 2) as isize, self.verts.as_ptr() as *const c_void, gl::STATIC_DRAW);
@@ -83,11 +82,13 @@ impl System for UISystem {
             gl::EnableVertexAttribArray(1);
             gl::BindBuffer(gl::ARRAY_BUFFER, uv_buffer);
             gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 0, null());
-
             self.vertex_array = vertex_array;
         }
+        let root = &mut data.ui_manager.root;
         // Setup some test elements
-        let element = Element::new(&mut data.ui_manager.root, &veclib::Vector2::ZERO, &(veclib::Vector2::ONE * 0.2), ElementType::Panel());
+        let element = Element::new(root, &veclib::Vector2::ZERO, &(veclib::Vector2::ONE * 0.2), &veclib::Vector3::X, ElementType::Panel());
+        let second_element = Element::new(root, &veclib::Vector2::ZERO, &(veclib::Vector2::ONE * 0.1), &veclib::Vector3::Y, ElementType::Panel());
+        Element::attach(root, element, vec![second_element]);
         // Load the UI shader
         let shader_name = Shader::new(vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_panel.frsh.glsl"], data.resource_manager, data.shader_cacher).1;
         self.ui_shader_name = shader_name;
@@ -108,7 +109,8 @@ impl System for UISystem {
             .filter_map(|x| x.as_ref())
             .collect::<Vec<&hypo_ui::Element>>();
         let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();         
-        
+        let root = &data.ui_manager.root;
+
         // Draw every element
         for element in elements {
             shader.use_shader(); 
@@ -119,8 +121,11 @@ impl System for UISystem {
                 gl::Clear(gl::DEPTH_BUFFER_BIT);
                 gl::BindVertexArray(self.vertex_array);
                 // Update the shader uniforms
+                let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
+                shader.set_f32("depth", &depth);
                 shader.set_vec2f32("size", &element.size);
                 shader.set_vec2f32("position", &element.position);
+                shader.set_vec3f32("color", &element.color);
                 gl::DrawArrays(gl::TRIANGLES, 0, 6);            
             } 
         }
