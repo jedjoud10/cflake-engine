@@ -4,6 +4,8 @@ use hypo_others::Time;
 use hypo_system_event_data::*;
 use std::any::Any;
 
+use crate::SystemFiringType;
+
 use super::system_data::{SystemData, SystemState, SystemType};
 
 #[derive(Default)]
@@ -112,12 +114,12 @@ pub trait System {
     // When the system gets added the world
     fn system_added(&mut self, _data: &mut SystemEventData, _system_id: u8) {}
     // Add an entity to the current system
-    fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
-        {
-            let system_data = self.get_system_data_mut();
-            system_data.entities.push(entity.entity_id);
-        }
-        self.entity_added(entity, data);
+    fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {        
+        let system_data = self.get_system_data_mut();
+        system_data.entities.push(entity.entity_id);
+        if let SystemFiringType::OnlyEntities | SystemFiringType::All = system_data.firing_type {
+            self.entity_added(entity, data);
+        }        
     }
     // Remove an entity from the current system
     fn remove_entity(&mut self, entity_id: &u16, entity: &Entity, data: &mut SystemEventDataLite) {
@@ -125,16 +127,21 @@ pub trait System {
         // Search for the entity with the matching entity_id
         let system_entity_local_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == *entity_id).unwrap();
         system_data.entities.remove(system_entity_local_id);
-        self.entity_removed(entity, data);
+        if let SystemFiringType::OnlyEntities | SystemFiringType::All = system_data.firing_type {
+            self.entity_removed(entity, data);
+        }
     }
     // Stop the system permanently
     fn end_system(&mut self, data: &mut SystemEventDataLite) {
+        let firing_type = self.get_system_data().firing_type;
         let system_data_clone = self.get_system_data_mut();
         let entities_clone = system_data_clone.entities.clone();
         // Loop over all the entities and fire the entity removed event
         for entity_id in entities_clone.iter() {
             let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
-            self.entity_removed(entity_clone, data);
+            if let SystemFiringType::OnlyEntities | SystemFiringType::All = firing_type {
+                self.entity_removed(entity_clone, data);
+            }
             *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
         }
         // Reput the cloned entities
@@ -142,15 +149,18 @@ pub trait System {
     }
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {
-        // Pre fire event call
-        self.pre_fire(data);
+        let firing_type = self.get_system_data().firing_type;
+        if let SystemFiringType::OnlySystems | SystemFiringType::All = firing_type {        
+            // Pre fire event call
+            self.pre_fire(data);
+        }
         let system_data = self.get_system_data_mut();
         let entities = system_data.entities.clone();
         let c_bitfield = system_data.c_bitfield;
         let entity_manager_immutable = &*data.entity_manager;
-
-        // The filtered entities tuple that also contains the linked component data
-        let filtered_entity_ids = entities
+        if let SystemFiringType::OnlyEntities | SystemFiringType::All = firing_type  {
+                // The filtered entities tuple that also contains the linked component data
+            let filtered_entity_ids = entities
             .iter()
             .filter_map(|entity_id| {
                 let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
@@ -167,16 +177,18 @@ pub trait System {
                 }
             })
             .collect::<Vec<u16>>();
-        // Loop over all the entities and update their components
-        for entity_id in filtered_entity_ids {
-            let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
-            // Get the linked entity components from the current entity
-            let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
-            self.fire_entity(&linked_components, data);
+            // Loop over all the entities and update their components
+            for entity_id in filtered_entity_ids {
+                let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
+                // Get the linked entity components from the current entity
+                let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
+                self.fire_entity(&linked_components, data);
+            }
+        }        
+        if let SystemFiringType::OnlySystems | SystemFiringType::All = firing_type {
+            // Post fire event call
+            self.post_fire(data);
         }
-
-        // Post fire event call
-        self.post_fire(data);
     }
 
     // Getters for the system data

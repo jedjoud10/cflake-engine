@@ -7,6 +7,7 @@ pub struct SystemData {
     pub system_id: u8,
     pub state: SystemState,
     pub stype: SystemType,
+    pub firing_type: SystemFiringType,
     pub entities: Vec<u16>,
 }
 
@@ -35,6 +36,13 @@ impl Default for SystemState {
         Self::Enabled(0.0)
     }
 }
+// System firing type
+#[derive(Clone, Copy)]
+pub enum SystemFiringType {
+    All,
+    OnlySystems,
+    OnlyEntities,
+}
 
 // All of the systems that are implement by default
 #[derive(Clone, Copy)]
@@ -48,5 +56,10 @@ pub enum SystemType {
 impl Default for SystemType {
     fn default() -> Self {
         Self::Update
+    }
+}
+impl Default for SystemFiringType {
+    fn default() -> Self {
+        Self::All
     }
 }

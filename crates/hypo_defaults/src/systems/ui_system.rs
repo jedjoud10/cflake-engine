@@ -6,7 +6,7 @@ use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_input::*;
 use hypo_rendering::Shader;
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
-use hypo_systems::{System, SystemData};
+use hypo_systems::{System, SystemData, SystemFiringType};
 #[derive(Default)]
 pub struct UISystem {
     pub system_data: SystemData,
@@ -28,7 +28,10 @@ impl System for UISystem {
 
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
-        let system_data = self.get_system_data_mut();
+        {
+            let data = self.get_system_data_mut();
+            data.firing_type = SystemFiringType::OnlySystems;
+        }
         unsafe {
             self.panel_verts = vec![-1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 0.0, 1.0, 0.0];
             let mut vertex_array: u32 = 0;
@@ -49,7 +52,7 @@ impl System for UISystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {}
+    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) { println!("{}", _components.entity_id) }
 
     // Render all the elements onto the screen
     fn post_fire(&mut self, data: &mut SystemEventData) {
