@@ -18,9 +18,14 @@ pub struct ResourceManager {
 // A trait for structs that can be loaded from resources
 pub trait LoadableResource {
     // Turn a resource into the current struct
-    fn from_resource(self, resource: &Resource) -> Option<Self> where Self: Sized;
+    fn from_resource(self, resource: &Resource) -> Option<Self>
+    where
+        Self: Sized;
     // Load this resource directly from a path, this is implemented by default
-    fn from_path(self, local_path: &str, resource_manager: &mut ResourceManager) -> Option<Self> where Self: Sized {
+    fn from_path(self, local_path: &str, resource_manager: &mut ResourceManager) -> Option<Self>
+    where
+        Self: Sized,
+    {
         let resource = resource_manager.load_packed_resource(local_path).ok()?;
         return Self::from_resource(self, resource);
     }
@@ -131,8 +136,8 @@ impl ResourceManager {
         reader.read_to_string(&mut text).unwrap();
         // Get the elements' full string from the reader
         let lines: Vec<String> = text.lines().map(|x| x.to_string()).collect();
-        let mut current_element: LoadedUIElement = LoadedUIElement ::default();
-        let mut root: LoadedUIRoot = LoadedUIRoot { elements: Vec::new(), };
+        let mut current_element: LoadedUIElement = LoadedUIElement::default();
+        let mut root: LoadedUIRoot = LoadedUIRoot { elements: Vec::new() };
         let mut last_element_id: u32 = 1;
         for line in lines {
             // If the line is empty, skip
@@ -194,7 +199,7 @@ impl ResourceManager {
                     }
                     "ett" => {
                         // Element type text
-                        let text = &line[5..(line.len()-1)];
+                        let text = &line[5..(line.len() - 1)];
                         current_element.loaded_elem_type = LoadedUIElementType::Text(text.to_string());
                     }
                     "a" => {
@@ -202,12 +207,12 @@ impl ResourceManager {
                         root.elements.push(current_element.clone());
                         last_element_id += 1;
                     }
-                    
+
                     _ => {}
                 }
             }
         }
-        return Some(Resource::UIRoot(root, text))
+        return Some(Resource::UIRoot(root, text));
     }
 }
 
@@ -379,7 +384,7 @@ pub struct LoadedUIElement {
 // A loaded UI resource
 #[derive(Clone)]
 pub struct LoadedUIRoot {
-    pub elements: Vec<LoadedUIElement>
+    pub elements: Vec<LoadedUIElement>,
 }
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {}

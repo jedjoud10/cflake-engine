@@ -1,7 +1,15 @@
-use std::{collections::{hash_map::DefaultHasher, HashMap}, env, fs::{remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write}, process::Command, time::SystemTime};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    env,
+    fs::{remove_file, File, OpenOptions},
+    hash::{Hash, Hasher},
+    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
+    process::Command,
+    time::SystemTime,
+};
 
-use hypo_resources::*;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use hypo_resources::*;
 use image::GenericImageView;
 use walkdir::WalkDir;
 
@@ -336,9 +344,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
                 let mut text: String = String::new();
                 file.read_to_string(&mut text).unwrap();
                 // Just copy the text from the original file to the packed file
-                resource = Resource::UIRoot(LoadedUIRoot {
-                    elements: Vec::new(),
-                }, text);
+                resource = Resource::UIRoot(LoadedUIRoot { elements: Vec::new() }, text);
             }
             _ => {}
         }

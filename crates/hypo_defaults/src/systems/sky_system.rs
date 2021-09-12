@@ -34,11 +34,16 @@ impl System for SkySystem {
             vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\sky.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
+            None,
         )
         .1;
 
         // Load texture
-        let cached_texture_id = Texture2D::new().set_wrapping_mode(TextureWrapping::ClampToEdge).load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher).unwrap().1;
+        let cached_texture_id = Texture2D::new()
+            .set_wrapping_mode(TextureWrapping::ClampToEdge)
+            .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
+            .unwrap()
+            .1;
 
         // Load model
         let mut model = Model::new().from_path("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();

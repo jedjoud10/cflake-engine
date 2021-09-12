@@ -114,12 +114,12 @@ pub trait System {
     // When the system gets added the world
     fn system_added(&mut self, _data: &mut SystemEventData, _system_id: u8) {}
     // Add an entity to the current system
-    fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {        
+    fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
         let system_data = self.get_system_data_mut();
         system_data.entities.push(entity.entity_id);
         if let SystemFiringType::OnlyEntities | SystemFiringType::All = system_data.firing_type {
             self.entity_added(entity, data);
-        }        
+        }
     }
     // Remove an entity from the current system
     fn remove_entity(&mut self, entity_id: &u16, entity: &Entity, data: &mut SystemEventDataLite) {
@@ -150,7 +150,7 @@ pub trait System {
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut SystemEventData) {
         let firing_type = self.get_system_data().firing_type;
-        if let SystemFiringType::OnlySystems | SystemFiringType::All = firing_type {        
+        if let SystemFiringType::OnlySystems | SystemFiringType::All = firing_type {
             // Pre fire event call
             self.pre_fire(data);
         }
@@ -158,25 +158,25 @@ pub trait System {
         let entities = system_data.entities.clone();
         let c_bitfield = system_data.c_bitfield;
         let entity_manager_immutable = &*data.entity_manager;
-        if let SystemFiringType::OnlyEntities | SystemFiringType::All = firing_type  {
-                // The filtered entities tuple that also contains the linked component data
+        if let SystemFiringType::OnlyEntities | SystemFiringType::All = firing_type {
+            // The filtered entities tuple that also contains the linked component data
             let filtered_entity_ids = entities
-            .iter()
-            .filter_map(|entity_id| {
-                let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
-                // Get the linked components
-                let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
-                let valid_entity = self.filter_entity(entity_clone, &linked_components, &data);
-                // Check if it is a valid entity
-                if valid_entity {
-                    // This entity passed the filter
-                    Some(*entity_id)
-                } else {
-                    // This entity failed the filter
-                    None
-                }
-            })
-            .collect::<Vec<u16>>();
+                .iter()
+                .filter_map(|entity_id| {
+                    let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
+                    // Get the linked components
+                    let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
+                    let valid_entity = self.filter_entity(entity_clone, &linked_components, &data);
+                    // Check if it is a valid entity
+                    if valid_entity {
+                        // This entity passed the filter
+                        Some(*entity_id)
+                    } else {
+                        // This entity failed the filter
+                        None
+                    }
+                })
+                .collect::<Vec<u16>>();
             // Loop over all the entities and update their components
             for entity_id in filtered_entity_ids {
                 let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
@@ -184,7 +184,7 @@ pub trait System {
                 let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
                 self.fire_entity(&linked_components, data);
             }
-        }        
+        }
         if let SystemFiringType::OnlySystems | SystemFiringType::All = firing_type {
             // Post fire event call
             self.post_fire(data);

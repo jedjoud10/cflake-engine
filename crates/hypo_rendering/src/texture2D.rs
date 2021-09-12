@@ -45,7 +45,7 @@ impl LoadableResource for Texture2D {
                 texture.internal_texture = new_texture;
                 Some(texture)
             }
-            _ => { None }
+            _ => None,
         }
     }
 }

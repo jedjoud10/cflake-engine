@@ -109,6 +109,7 @@ impl System for Terrain {
             vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\triplanar.frsh.glsl"],
             data.resource_manager,
             data.shader_cacher,
+            None,
         )
         .1;
 
@@ -134,7 +135,13 @@ impl System for Terrain {
         data.input_manager.bind_key(Keys::Y, "update_terrain", MapType::Button);
 
         // Load the compute shader for the voxel generator
-        self.voxel_generator.compute_shader_name = Shader::new(vec!["user\\shaders\\voxel_generator.cmpt.glsl"], data.resource_manager, data.shader_cacher).1;
+        self.voxel_generator.compute_shader_name = Shader::new(
+            vec!["user\\shaders\\voxel_generator.cmpt.glsl"],
+            data.resource_manager,
+            data.shader_cacher,
+            Some(AdditionalShader::Compute(ComputeShader::default())),
+        )
+        .1;
         // Generate the voxel texture
         self.voxel_generator.setup_voxel_generator(data);
     }

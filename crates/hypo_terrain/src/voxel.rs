@@ -50,7 +50,11 @@ impl VoxelGenerator {
         compute.set_i32("node_size", &(size as i32));
 
         // Run the compute shader
-        compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
+        let compute_shader = match &compute.additional_shader {
+            hypo_rendering::AdditionalShader::Compute(c) => c,
+            _ => todo!(),
+        };
+        compute_shader.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
         // Read back the texture into the data buffer
         let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();
 

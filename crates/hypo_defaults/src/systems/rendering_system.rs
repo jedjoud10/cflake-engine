@@ -58,6 +58,7 @@ impl RenderingSystem {
                 vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen.frsh.glsl"],
                 &mut data.resource_manager,
                 &mut data.shader_cacher,
+                None,
             )
             .1
             .as_str(),
@@ -295,6 +296,7 @@ impl System for RenderingSystem {
             vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\wireframe.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
+            None,
         )
         .1;
         self.wireframe_shader_name = wireframe_shader_name;

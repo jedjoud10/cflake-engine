@@ -35,7 +35,7 @@ impl LoadableResource for Model {
     }
 }
 
-impl Model {    
+impl Model {
     // Create a new empty model
     pub fn new() -> Self {
         Self {
@@ -45,7 +45,7 @@ impl Model {
             uvs: Vec::new(),
             triangles: Vec::new(),
         }
-    } 
+    }
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
         for i in (0..self.triangles.len()).step_by(3) {

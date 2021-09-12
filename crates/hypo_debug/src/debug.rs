@@ -59,6 +59,7 @@ impl DebugRenderer {
             vec!["defaults\\shaders\\debug.vrsh.glsl", "defaults\\shaders\\debug.frsh.glsl"],
             resource_manager,
             shader_cacher,
+            None,
         )
         .1;
     }
