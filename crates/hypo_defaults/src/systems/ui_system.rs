@@ -7,7 +7,8 @@ use hypo_input::*;
 use hypo_rendering::Shader;
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData, SystemFiringType};
-use hypo_ui::{Element, ElementType};
+use hypo_ui::{Element, ElementType, Root};
+use hypo_resources::LoadableResource;
 #[derive(Default)]
 pub struct UISystem {
     pub system_data: SystemData,
@@ -84,7 +85,7 @@ impl System for UISystem {
             gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 0, null());
             self.vertex_array = vertex_array;
         }
-        let root = &mut data.ui_manager.root;
+        let root = Root::new().from_path("defaults\\ui\\default.ui", data.resource_manager);
         // Load the UI shader
         let shader_name = Shader::new(vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_panel.frsh.glsl"], data.resource_manager, data.shader_cacher).1;
         self.ui_shader_name = shader_name;
@@ -107,8 +108,7 @@ impl System for UISystem {
         let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();         
         let root = &data.ui_manager.root;
 
-        // Draw every element
-        /*
+        // Draw every element        
         for element in elements {
             shader.use_shader(); 
             unsafe {            
@@ -126,7 +126,7 @@ impl System for UISystem {
                 gl::DrawArrays(gl::TRIANGLES, 0, 6);            
             } 
         }
-        */
+        
     }
 
     // Turn this into "Any" so we can cast into child systems

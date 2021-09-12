@@ -129,6 +129,7 @@ impl ResourceManager {
         // Read to string
         let mut text: String = String::new();
         reader.read_to_string(&mut text);
+        println!("{}", text);
         // Get the elements' full string from the reader
         let lines: Vec<String> = text.lines().map(|x| x.to_string()).collect();
         let mut current_element: LoadedUIElement = LoadedUIElement ::default();
@@ -199,7 +200,6 @@ impl ResourceManager {
 impl ResourceManager {
     // Turn a local path into a literal, hashed path
     pub fn local_to_global_path(local_path: &str) -> Result<(String, String, u64), hypo_errors::ResourceError> {
-        println!("{}", local_path);
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
         let exe_path = exe_path.to_str().ok_or(hypo_errors::ResourceError::new_str("Exe path not valid!"))?;
@@ -339,7 +339,7 @@ pub struct LoadedSubShader {
 #[derive(Clone)]
 pub enum LoadedUIElementType {
     Panel(),
-    Button(i32),
+    Button(),
     Text(String),
     Image(String),
 }

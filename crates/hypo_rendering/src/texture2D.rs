@@ -76,7 +76,6 @@ impl Texture2D {
         } else {
             // If it not cached, then load the texture from that resource
             let mut texture = self.from_resource(resource).ok_or(hypo_errors::ResourceError::new_str("Could not load texture!"))?;
-            println!("{:?}", texture);
             let (texture, texture_id) = texture.cache_texture(texture_cacher).unwrap();
             Ok((texture, texture_id))
         }

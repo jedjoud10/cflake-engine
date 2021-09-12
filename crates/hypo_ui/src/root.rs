@@ -1,15 +1,47 @@
+use crate::ButtonState;
 use crate::Element;
+use crate::ElementType;
 use hypo_others::SmartList;
+use hypo_resources::LoadableResource;
+use hypo_resources::Resource;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Root {
     pub smart_element_list: SmartList<Element>,
     pub max_depth: i32,
 }
 
+// Loadable resource
+impl LoadableResource for Root {
+    // Turn the LoadedUIRoot into this Root struct
+    fn from_resource(self, resource: &hypo_resources::Resource) -> Option<Self> where Self: Sized {
+        match resource {
+            Resource::UIRoot(root, _) => {
+                let mut output_root: Root = Root::default();
+                for loaded_element in root.elements.iter() {
+                    let element_type = match &loaded_element.loaded_elem_type {
+                        hypo_resources::LoadedUIElementType::Panel() => ElementType::Panel(),
+                        hypo_resources::LoadedUIElementType::Button() => ElementType::Button(ButtonState::Released),
+                        hypo_resources::LoadedUIElementType::Text(t) => ElementType::Text(t.clone()),
+                        hypo_resources::LoadedUIElementType::Image(lp) => ElementType::Image(lp.clone()),
+                    };
+                    let element = Element::new(&mut output_root, &loaded_element.pos, &loaded_element.size, &loaded_element.color, element_type);
+                }
+                println!("{:?}", output_root);
+                panic!("");
+                Some(output_root)
+            }
+            _ => { /* We are doomed */ None }
+        }        
+    }
+}
+
 impl Root {
-    // Get the next free spot
+    // New
+    pub fn new() -> Self {
+        Self::default()
+    }
     // Add an element to the tree
     pub fn add_element(&mut self, element: Element) -> usize {
         return self.smart_element_list.add_element(element) as usize;

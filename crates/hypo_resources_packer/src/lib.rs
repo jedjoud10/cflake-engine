@@ -331,6 +331,15 @@ pub fn pack_resources(src_path: String) -> Option<()> {
                 // This is a texture
                 resource = convert_texture(&mut file, file_path);
             }
+            "ui" => {
+                // This is a UI file
+                let mut text: String = String::new();
+                file.read_to_string(&mut text).unwrap();
+                // Just copy the text from the original file to the packed file
+                resource = Resource::UIRoot(LoadedUIRoot {
+                    elements: Vec::new(),
+                }, text);
+            }
             _ => {}
         }
 
