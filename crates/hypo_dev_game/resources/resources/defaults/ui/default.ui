@@ -1,22 +1,25 @@
-1: 
+id 1 
 pid 0
 p 1.0 1.0
 s 1.0 1.0
 c 1.0 1.0 1.0
-tb t
-2: 
+etp
+
+id 2
 pid 1
 p 1.0 1.0
 s 1.0 1.0
 c 1.0 0.0 0.0
-tt "This is some text"
-3: 
+ett "This is some text"
+
+id 3
 pid 0
 p 0.0 0.0
 s 1.0 1.0
-tp
-4: 
+etp
+
+id 4
 pid 0
 p 0.0 0.0
 s 1.0 1.0
-ti "defaults\\textures\\sky_gradient.png"
+eti "defaults\\textures\\sky_gradient.png"

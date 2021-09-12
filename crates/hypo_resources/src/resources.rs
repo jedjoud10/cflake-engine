@@ -119,6 +119,70 @@ impl ResourceManager {
             local_path,
         ))
     }
+    // Load back the data from the reader and turn it into a LoadedUIRoot resource
+    pub fn load_ui(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
+        // Get the elements' full string from the reader
+        let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
+        let mut current_element: LoadedUIElement = LoadedUIElement ::default();
+        let mut root: LoadedUIRoot = LoadedUIRoot { elements: Vec::new(), };
+        for line in lines {
+            // Check if it is an empty line, because if it is, that means that there is going to be an element id the next line
+            if line == "" {
+                // Empty line, add the old current_element to the list
+                root.elements.push(current_element.clone());
+            } else {
+                // Fill the element's data
+                let first = line.split("").nth(0).unwrap();
+                match first.clone() {
+                    "id" => {
+                        // Set the ID of the element
+                        current_element.id = line.split(" ").nth(1).unwrap().to_string().parse::<u32>().unwrap();
+                    }
+                    "pid" => {
+                        // Set the PID of the element
+                        current_element.pid = line.split(" ").nth(1).unwrap().to_string().parse::<u32>().unwrap();
+                    }
+                    "p" => {
+                        // Set the position of the element
+                        let x = line.split(" ").nth(1).unwrap().to_string().parse::<f32>().unwrap();
+                        let y = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
+                        current_element.pos = veclib::Vector2::new(x, y);
+                    }
+                    "s" => {
+                        // Set the size of the element
+                        let x = line.split(" ").nth(1).unwrap().to_string().parse::<f32>().unwrap();
+                        let y = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
+                        current_element.size = veclib::Vector2::new(x, y);
+                    }
+                    "c" => {
+                        // Set the color of the element
+                        let r = line.split(" ").nth(1).unwrap().to_string().parse::<f32>().unwrap();
+                        let g = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
+                        let b = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
+                        current_element.color = veclib::Vector3::new(r, g, b);
+                    }
+                    // Element type matching
+                    "etp" => {
+                        // Element type panel
+                        current_element.loaded_elem_type = LoadedUIElementType::Panel();
+                    }
+                    "eti" => {
+                        // Element type image
+                        let image_local_path = line.split(" ").nth(1).unwrap().to_string();
+                        current_element.loaded_elem_type = LoadedUIElementType::Image(image_local_path);
+                    }
+                    "ett" => {
+                        // Element type text
+                        let text = line.split(" ").nth(1).unwrap().to_string();
+                        current_element.loaded_elem_type = LoadedUIElementType::Text(text);
+                    }
+                    
+                    _ => {}
+                }
+            }
+        }
+        return Some(Resource::UIRoot(root))
+    }
 }
 
 // Da code.
@@ -191,6 +255,10 @@ impl ResourceManager {
                 // This is a texture
                 resource = Self::load_texture(&mut reader, local_path.to_string()).unwrap();
             }
+            "ui" => {
+                // This is a UI root
+                resource = Self::load_ui(&mut reader, local_path.to_string()).unwrap();
+            }
             _ => {}
         }
 
@@ -228,6 +296,7 @@ pub enum Resource {
     Texture(LoadedTexture, String),
     Shader(LoadedSubShader, String),
     Sound(LoadedSoundEffect, String),
+    UIRoot(LoadedUIRoot),
 }
 
 // Default enum for ResourceType
@@ -257,6 +326,34 @@ pub struct LoadedTexture {
 pub struct LoadedSubShader {
     pub source: String,
     pub subshader_type: u8,
+}
+// A loaded UI element type
+#[derive(Clone)]
+pub enum LoadedUIElementType {
+    Panel(),
+    Button(i32),
+    Text(String),
+    Image(String),
+}
+impl Default for LoadedUIElementType {
+    fn default() -> Self {
+        Self::Panel()
+    }
+}
+// A loaded UI element
+#[derive(Clone, Default)]
+pub struct LoadedUIElement {
+    pub id: u32,
+    pub pid: u32,
+    pub pos: veclib::Vector2<f32>,
+    pub size: veclib::Vector2<f32>,
+    pub color: veclib::Vector3<f32>,
+    pub loaded_elem_type: LoadedUIElementType,
+}
+// A loaded UI resource
+#[derive(Clone)]
+pub struct LoadedUIRoot {
+    pub elements: Vec<LoadedUIElement>
 }
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {}
