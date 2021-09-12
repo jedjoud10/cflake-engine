@@ -141,7 +141,8 @@ impl ResourceManager {
                 root.elements.push(current_element.clone());
             } else {
                 // Fill the element's data
-                let first = line.split("").nth(0).unwrap();
+                let first = line.split(" ").nth(0).unwrap();
+                println!("{}", first);
                 match first.clone() {
                     "id" => {
                         // Set the ID of the element

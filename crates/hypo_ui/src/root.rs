@@ -19,6 +19,10 @@ impl LoadableResource for Root {
         match resource {
             Resource::UIRoot(root, _) => {
                 let mut output_root: Root = Root::default();
+                
+                // Root element
+                Element::new(&mut output_root, &veclib::Vector2::ZERO, &veclib::Vector2::ONE, &veclib::Vector3::ONE, ElementType::Panel());
+
                 for loaded_element in root.elements.iter() {
                     let element_type = match &loaded_element.loaded_elem_type {
                         hypo_resources::LoadedUIElementType::Panel() => ElementType::Panel(),

@@ -16,10 +16,12 @@ id 3
 pid 0
 p 0.0 0.0
 s 1.0 1.0
+c 0.0 1.0 0.0
 etp
 
 id 4
 pid 0
 p 0.0 0.0
 s 1.0 1.0
+c 0.0 1.0 1.0
 eti "defaults\\textures\\sky_gradient.png"
