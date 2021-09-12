@@ -1,23 +1,13 @@
 pid 0
-p 1.0 1.0
-s 1.0 1.0
+p 0.0 0.0
+s 0.4 0.4
 c 1.0 1.0 1.0 1.0
 etp
-
-pid 1
-p 1.0 1.0
-s 1.0 1.0
-c 1.0 0.0 0.0 1.0
-ett "This is some text"
+a
 
 pid 0
-p 0.0 0.0
-s 1.0 1.0
+p 0.5 0.5
+s 0.5 0.5
 c 0.0 1.0 0.0 1.0
 etp
-
-pid 0
-p 0.0 0.0
-s 1.0 1.0
-c 0.0 1.0 1.0 1.0
-eti "defaults\\textures\\sky_gradient.png"
+a

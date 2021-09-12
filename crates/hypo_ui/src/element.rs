@@ -58,7 +58,11 @@ impl Element {
             element_type: element_type,
             color: color.clone(),
         };
+        // Attach this element to the root element
+        let output_id = root.add_element(output) as usize;
+        if output_id != 0 { Element::attach(root, 0, vec![output_id]); }
+        
         // Add the element
-        return root.add_element(output) as usize;
+        return output_id;
     }
 }

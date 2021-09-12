@@ -7,8 +7,10 @@ uniform float depth;
 out vec2 uvs;
 
 void main() {
+	// Position is in the -1, 1 range
 	vec2 position = vertex_pos.xy;
-	position *= size;
+	position *= size/2.0;
+	// Position is in the 0, 1 range
 	position += position;
 	gl_Position = vec4(position, depth, 1);
 	uvs = vertex_uvs;

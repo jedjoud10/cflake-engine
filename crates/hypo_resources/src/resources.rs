@@ -135,12 +135,8 @@ impl ResourceManager {
         let mut root: LoadedUIRoot = LoadedUIRoot { elements: Vec::new(), };
         let mut last_element_id: u32 = 1;
         for line in lines {
-            // Check if it is an empty line, because if it is, that means that there is going to be an element id the next line
-            if line == "" {
-                // Empty line, add the old current_element to the list
-                root.elements.push(current_element.clone());
-                last_element_id += 1;
-            } else {
+            // If the line is empty, skip
+            if line != "" {
                 // Fill the element's data
                 let first = line.split(" ").nth(0).unwrap();
                 match first.clone() {
@@ -184,6 +180,11 @@ impl ResourceManager {
                         // Element type text
                         let text = &line[5..(line.len()-1)];
                         current_element.loaded_elem_type = LoadedUIElementType::Text(text.to_string());
+                    }
+                    "a" => {
+                        // Add the element to the list
+                        root.elements.push(current_element.clone());
+                        last_element_id += 1;
                     }
                     
                     _ => {}

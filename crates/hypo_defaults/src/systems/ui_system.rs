@@ -85,7 +85,8 @@ impl System for UISystem {
             gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 0, null());
             self.vertex_array = vertex_array;
         }
-        let root = Root::new().from_path("defaults\\ui\\default.ui", data.resource_manager);
+        let root = Root::new().from_path("defaults\\ui\\default.ui", data.resource_manager).unwrap();
+        data.ui_manager.root = root;
         // Load the UI shader
         let shader_name = Shader::new(vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_panel.frsh.glsl"], data.resource_manager, data.shader_cacher).1;
         self.ui_shader_name = shader_name;
@@ -108,14 +109,17 @@ impl System for UISystem {
         let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();         
         let root = &data.ui_manager.root;
 
-        // Draw every element        
+        // Draw every element, other than the root element  
+        unsafe { 
+            gl::Disable(gl::CULL_FACE);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            // Always remember to clear the depth buffer
+            gl::Clear(gl::DEPTH_BUFFER_BIT);
+        }     
         for element in elements {
+            if element.id == 0 { continue; }
             shader.use_shader(); 
-            unsafe {            
-                gl::Disable(gl::CULL_FACE);
-                gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-                // Always remember to clear the depth buffer
-                gl::Clear(gl::DEPTH_BUFFER_BIT);
+            unsafe {                 
                 gl::BindVertexArray(self.vertex_array);
                 // Update the shader uniforms
                 let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
