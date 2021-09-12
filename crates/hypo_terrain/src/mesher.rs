@@ -6,7 +6,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
-const AVERAGE_DENSITY_THRESHOLD: f32 = 2.0;
+const AVERAGE_DENSITY_THRESHOLD: f32 = 3.0;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -14,13 +14,13 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, skirts: bool) -> Model {
+pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> Model {
     let mut model: Model = Model::default();
     let mut skirts_model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
     // Calculate the density threshold for the skirts
-    let density_threshold = AVERAGE_DENSITY_THRESHOLD * (size as f32 / CHUNK_SIZE as f32);
+    let density_threshold = AVERAGE_DENSITY_THRESHOLD * (((size as f32)*3.0) / (CHUNK_SIZE-2) as f32);
     // Loop over every voxel
     for x in 0..CHUNK_SIZE - 2 {
         for y in 0..CHUNK_SIZE - 2 {
@@ -67,7 +67,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, skirts: bool) -> Model
                         let density1 = voxels[index1].density;
                         let density2 = voxels[index2].density;
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = inverse_lerp(density1, density2, 0.0);
+                        let value: f32 =  if interpolation { inverse_lerp(density1, density2, 0.0) } else { 0.5 };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
@@ -288,7 +288,7 @@ pub fn solve_marching_squares(
         let density = data[i + density_offset[j]].density;
         local_densities[j] = density;
         // Update the case index
-        case += ((density < 0.0) as u8) * 2_u8.pow(j as u32);
+        case += ((density <= 0.0) as u8) * 2_u8.pow(j as u32);
     }
     // Get the average density
     let average_density: f32 = local_densities.iter().sum::<f32>() / 4.0;
@@ -299,7 +299,7 @@ pub fn solve_marching_squares(
         return; /* Always skip if it's empty */
     }
     // Check if it's full and it's out of range of the threshold
-    if case == 15 && average_density < -density_threshold {
+    if case == 15 && (average_density < -density_threshold) {
         return;
     }
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);

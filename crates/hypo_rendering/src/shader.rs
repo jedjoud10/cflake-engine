@@ -123,6 +123,8 @@ impl Shader {
                 shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             }
         }
+        // Set the additional shader
+        shader.additional_shader = additional_shader.unwrap_or(AdditionalShader::None);
         // Finalize the shader and cache it
         shader.finalize_shader();
         let cached_shader_id = shader_cacher.1.cache_object(shader, &name);

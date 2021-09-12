@@ -7,5 +7,7 @@ float get_density(vec3 pos) {
     float density = pos.y - 10.1;
     float t = snoise(pos * 0.002) * 0.7;
     density += snoise(pos * 0.005 * vec3(1, 0.2, 1) + vec3(t, t, t)).x * 100.0;
-    return density * 0.5;
+    density = opSubtraction(sdSphere(pos, 100.0), density);
+    //density = pos.y - 10;
+    return density;
 }
