@@ -4,14 +4,17 @@ use hypo_others::get_default_window_size;
 #[derive(Clone)]
 pub struct Window {
     pub fullscreen: bool,
-    pub size: (u16, u16),
+    pub size: veclib::Vector2<u16>,
 }
 
 impl Default for Window {
     fn default() -> Self {
         Self {
             fullscreen: false,
-            size: get_default_window_size(),
+            size: {
+                let d = get_default_window_size();
+                veclib::Vector2::new(d.0, d.1)
+            },
         }
     }
 }

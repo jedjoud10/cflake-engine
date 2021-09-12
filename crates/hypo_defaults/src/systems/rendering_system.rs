@@ -79,7 +79,7 @@ impl RenderingSystem {
     fn setup_opengl(&mut self, data: &mut SystemEventData) {
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-            gl::Viewport(0, 0, self.window.size.0 as i32, self.window.size.1 as i32);
+            gl::Viewport(0, 0, self.window.size.x as i32, self.window.size.y as i32);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
             gl::CullFace(gl::BACK);
@@ -90,27 +90,27 @@ impl RenderingSystem {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
             self.diffuse_texture = Texture2D::new()
-                .set_dimensions(self.window.size.0, self.window.size.1)
+                .set_dimensions(self.window.size.x, self.window.size.y)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the normals render texture
             self.normals_texture = Texture2D::new()
-                .set_dimensions(self.window.size.0, self.window.size.1)
+                .set_dimensions(self.window.size.x, self.window.size.y)
                 .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the position render texture
             self.position_texture = Texture2D::new()
-                .set_dimensions(self.window.size.0, self.window.size.1)
+                .set_dimensions(self.window.size.x, self.window.size.y)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the emissive render texture
             self.emissive_texture = Texture2D::new()
-                .set_dimensions(self.window.size.0, self.window.size.1)
+                .set_dimensions(self.window.size.x, self.window.size.y)
                 .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the depth-stencil render texture
             self.depth_stencil_texture = Texture2D::new()
-                .set_dimensions(self.window.size.0, self.window.size.1)
+                .set_dimensions(self.window.size.x, self.window.size.y)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
@@ -358,7 +358,7 @@ impl System for RenderingSystem {
         shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
         shader.set_t2d("position_texture", &self.position_texture, gl::TEXTURE2);
         shader.set_t2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);
-        shader.set_vec2i32("resolution", &veclib::Vector2::new(self.window.size.0 as i32, self.window.size.1 as i32));
+        shader.set_vec2i32("resolution", &veclib::Vector2::new(self.window.size.x as i32, self.window.size.y as i32));
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         // Sky params
         shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));

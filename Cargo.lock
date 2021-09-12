@@ -214,6 +214,7 @@ dependencies = [
  "hypo_system_event_data",
  "hypo_systems",
  "hypo_ui",
+ "veclib",
 ]
 
 [[package]]
@@ -641,8 +642,8 @@ dependencies = [
 
 [[package]]
 name = "veclib"
-version = "0.1.1"
-source = "git+https://github.com/jedjoud10/veclib#c041dc46e5ae7fa545195e9d2d8783bafef7d143"
+version = "0.1.2"
+source = "git+https://github.com/jedjoud10/veclib#bf0ff416d8bb908bb04b77591a6845d72f7575cc"
 
 [[package]]
 name = "walkdir"

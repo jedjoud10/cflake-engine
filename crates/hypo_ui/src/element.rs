@@ -11,6 +11,14 @@ pub struct Element {
     pub depth: i32,
     pub children: Vec<usize>,
     pub element_type: ElementType,
+    pub coordinate_type: CoordinateType,
+}
+
+// Coordinate type
+#[derive(Debug)]
+pub enum CoordinateType {
+    Pixel,
+    Factor,
 }
 
 // The state of a button element
@@ -46,7 +54,7 @@ impl Element {
         element.children.extend(children);
     }
     // Create a new element
-    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, color: &veclib::Vector4<f32>, element_type: ElementType) -> usize {
+    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, color: &veclib::Vector4<f32>, element_type: ElementType, coordinate_type: CoordinateType) -> usize {
         // Get the element id from the root node
         let output: Self = Element {
             size: size.clone(),
@@ -57,6 +65,7 @@ impl Element {
             children: Vec::new(),
             element_type: element_type,
             color: color.clone(),
+            coordinate_type
         };
         // Attach this element to the root element
         let output_id = root.add_element(output) as usize;

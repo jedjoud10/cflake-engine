@@ -128,9 +128,22 @@ impl System for UISystem {
                 // Update the shader uniforms
                 let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
                 shader.set_f32("depth", &depth);
-                shader.set_vec2f32("size", &element.size);
-                shader.set_vec2f32("offset_position", &element.position);
+                shader.set_vec2i32("resolution", &(veclib::Vector2::<i32>::from(data.custom_data.window.size)));
+                match element.coordinate_type {
+                    hypo_ui::CoordinateType::Pixel => {
+                        // Pixel coordinate type
+                        shader.set_vec2i32("p_size", &(veclib::Vector2::<i32>::from(element.size)));
+                        shader.set_vec2i32("p_offset_position", &(veclib::Vector2::<i32>::from(element.position)));
+                    },
+                    hypo_ui::CoordinateType::Factor => {
+                        // Factor coordinate type
+                        shader.set_vec2f32("f_size", &element.size);
+                        shader.set_vec2f32("f_offset_position", &element.position);
+                    },
+                }               
+                // Set the color of the current element
                 shader.set_vec4f32("color", &element.color);
+                // Draw the element
                 gl::DrawArrays(gl::TRIANGLES, 0, 6);            
             } 
         }

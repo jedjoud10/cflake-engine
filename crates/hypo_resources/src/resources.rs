@@ -140,6 +140,22 @@ impl ResourceManager {
                 // Fill the element's data
                 let first = line.split(" ").nth(0).unwrap();
                 match first.clone() {
+                    "stt" => {
+                        // Get the settings for this specific element
+                        // Get the coordinate type
+                        let coordinate_type = line.split(" ").nth(1).unwrap();
+                        match coordinate_type {
+                            "pc" => {
+                                // Pixel coordinates
+                                current_element.coordinate_type = 0;
+                            }
+                            "fc" => {
+                                // Factor coordinates
+                                current_element.coordinate_type = 1;
+                            }
+                            _ => {}
+                        }
+                    }
                     "pid" => {
                         // Set the PID of the element
                         current_element.pid = line.split(" ").nth(1).unwrap().to_string().parse::<u32>().unwrap();
@@ -354,6 +370,7 @@ impl Default for LoadedUIElementType {
 pub struct LoadedUIElement {
     pub id: u32,
     pub pid: u32,
+    pub coordinate_type: u8,
     pub pos: veclib::Vector2<f32>,
     pub size: veclib::Vector2<f32>,
     pub color: veclib::Vector4<f32>,

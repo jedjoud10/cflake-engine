@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ButtonState;
+use crate::CoordinateType;
 use crate::Element;
 use crate::ElementType;
 use hypo_others::SmartList;
@@ -22,7 +23,7 @@ impl LoadableResource for Root {
             Resource::UIRoot(root, _) => {
                 let mut output_root: Root = Root::default();                
                 // Create the root element
-                Element::new(&mut output_root, &veclib::Vector2::ZERO, &veclib::Vector2::ONE, &veclib::Vector4::ZERO, ElementType::Empty);
+                Element::new(&mut output_root, &veclib::Vector2::ZERO, &veclib::Vector2::ONE, &veclib::Vector4::ZERO, ElementType::Empty, CoordinateType::Factor);
                 // The list of children-parent links
                 let mut parent_children: HashMap<usize, Vec<usize>> = HashMap::new();
                 for loaded_element in root.elements.iter() {
@@ -32,7 +33,11 @@ impl LoadableResource for Root {
                         hypo_resources::LoadedUIElementType::Text(t) => ElementType::Text(t.clone()),
                         hypo_resources::LoadedUIElementType::Image(lp) => ElementType::Image(lp.clone()),
                     };
-                    let element = Element::new(&mut output_root, &loaded_element.pos, &loaded_element.size, &loaded_element.color, element_type);
+                    let element = Element::new(&mut output_root, &loaded_element.pos, &loaded_element.size, &loaded_element.color, element_type, match loaded_element.coordinate_type {
+                        0 => { CoordinateType::Pixel }
+                        1 => { CoordinateType::Factor }
+                        _ => { CoordinateType::Pixel }
+                    });
                     // Attach this specific element to it's valid parent
                     if loaded_element.pid != 0 {
                         // Add this child into the children of the same parent
