@@ -128,19 +128,23 @@ impl System for UISystem {
                 // Update the shader uniforms
                 let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
                 shader.set_f32("depth", &depth);
-                shader.set_vec2i32("resolution", &(veclib::Vector2::<i32>::from(data.custom_data.window.size)));
+                let mut size: veclib::Vector2<f32> = veclib::Vector2::ZERO;
+                let mut position: veclib::Vector2<f32> = veclib::Vector2::ZERO;
+                let resolution =  veclib::Vector2::<f32>::from(data.custom_data.window.size.clone());
                 match element.coordinate_type {
                     hypo_ui::CoordinateType::Pixel => {
                         // Pixel coordinate type
-                        shader.set_vec2i32("p_size", &(veclib::Vector2::<i32>::from(element.size)));
-                        shader.set_vec2i32("p_offset_position", &(veclib::Vector2::<i32>::from(element.position)));
+                        size = element.size / resolution;
+                        position = element.position / resolution;
                     },
                     hypo_ui::CoordinateType::Factor => {
                         // Factor coordinate type
-                        shader.set_vec2f32("f_size", &element.size);
-                        shader.set_vec2f32("f_offset_position", &element.position);
+                        size = element.size;
+                        position = element.position;
                     },
-                }               
+                }   
+                shader.set_vec2f32("size", &size);
+                shader.set_vec2f32("offset_position", &position);            
                 // Set the color of the current element
                 shader.set_vec4f32("color", &element.color);
                 // Draw the element

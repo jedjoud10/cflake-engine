@@ -260,7 +260,7 @@ impl World {
 
             let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            render_system.window = self.custom_data.window.clone();
+            render_system.window.size = veclib::Vector2::new(size.0, size.1);
             render_system.diffuse_texture.update_size(size.0, size.1);
             render_system.depth_stencil_texture.update_size(size.0, size.1);
             render_system.normals_texture.update_size(size.0, size.1);
