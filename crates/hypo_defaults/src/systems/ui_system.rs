@@ -115,6 +115,10 @@ impl System for UISystem {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             // Always remember to clear the depth buffer
             gl::Clear(gl::DEPTH_BUFFER_BIT);
+
+            // Enable transparency only for the UI elements
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }     
         for element in elements {
             if element.id == 0 { continue; }
@@ -125,12 +129,15 @@ impl System for UISystem {
                 let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
                 shader.set_f32("depth", &depth);
                 shader.set_vec2f32("size", &element.size);
-                shader.set_vec2f32("position", &element.position);
+                shader.set_vec2f32("offset_position", &element.position);
                 shader.set_vec4f32("color", &element.color);
                 gl::DrawArrays(gl::TRIANGLES, 0, 6);            
             } 
         }
-        
+        // Disable transparency after drawing the ui elements
+        unsafe {
+            gl::Disable(gl::BLEND);
+        }
     }
 
     // Turn this into "Any" so we can cast into child systems

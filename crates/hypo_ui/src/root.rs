@@ -44,12 +44,6 @@ impl LoadableResource for Root {
                 for (parent, children) in parent_children {
                     Element::attach(&mut output_root, parent, children)
                 }
-                for elem in output_root.smart_element_list.elements.iter() {
-                    match elem {
-                        Some(x) => { println!("{:?}", x); }
-                        _ => {}
-                    }
-                }
                 Some(output_root)
             }
             _ => { /* We are doomed */ None }
