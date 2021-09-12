@@ -121,8 +121,11 @@ impl ResourceManager {
     }
     // Load back the data from the reader and turn it into a LoadedUIRoot resource
     pub fn load_ui(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
+        // Read to string
+        let mut text: String = String::new();
+        reader.read_to_string(&mut text);
         // Get the elements' full string from the reader
-        let lines: Vec<String> = reader.lines().map(|x| x.unwrap()).collect();
+        let lines: Vec<String> = text.lines().map(|x| x.to_string()).collect();
         let mut current_element: LoadedUIElement = LoadedUIElement ::default();
         let mut root: LoadedUIRoot = LoadedUIRoot { elements: Vec::new(), };
         for line in lines {
@@ -181,7 +184,7 @@ impl ResourceManager {
                 }
             }
         }
-        return Some(Resource::UIRoot(root))
+        return Some(Resource::UIRoot(root, text))
     }
 }
 
@@ -296,7 +299,7 @@ pub enum Resource {
     Texture(LoadedTexture, String),
     Shader(LoadedSubShader, String),
     Sound(LoadedSoundEffect, String),
-    UIRoot(LoadedUIRoot),
+    UIRoot(LoadedUIRoot, String),
 }
 
 // Default enum for ResourceType

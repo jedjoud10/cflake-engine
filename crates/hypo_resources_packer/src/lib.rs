@@ -1,66 +1,19 @@
-use std::{
-    collections::{hash_map::DefaultHasher, HashMap},
-    env,
-    fs::{remove_file, File, OpenOptions},
-    hash::{Hash, Hasher},
-    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom},
-    process::Command,
-    time::SystemTime,
-};
+use std::{collections::{hash_map::DefaultHasher, HashMap}, env, fs::{remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write}, process::Command, time::SystemTime};
 
+use hypo_resources::*;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use image::GenericImageView;
 use walkdir::WalkDir;
 
 // Time for the resource packer
-// A simple loaded resource
-pub enum Resource {
-    None,
-    Model(LoadedModel),
-    Texture(LoadedTexture, String),
-    Shader(LoadedSubShader, String),
-    Sound(LoadedSoundEffect, String),
-}
-
-// Default enum for ResourceType
-impl Default for Resource {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-// A loaded model resource
-#[derive(Debug)]
-pub struct LoadedModel {
-    pub vertices: Vec<(f32, f32, f32)>,
-    pub normals: Vec<(f32, f32, f32)>,
-    pub tangents: Vec<(f32, f32, f32, f32)>,
-    pub uvs: Vec<(f32, f32)>,
-    pub indices: Vec<u32>,
-}
-// A loaded texture resource
-pub struct LoadedTexture {
-    pub width: u16,
-    pub height: u16,
-    pub compressed_bytes: Vec<u8>,
-}
-// A loaded sub shader
-#[derive(Clone)]
-pub struct LoadedSubShader {
-    pub source: String,
-    pub subshader_type: u8,
-}
-// A sound effect that can be played at any time
-pub struct LoadedSoundEffect {}
-
 // Turn a mdl3d file into a LoadedModel resource
 pub fn convert_mdl3d(file: &File) -> Resource {
     // Create all the buffers
     let reader = BufReader::new(file);
-    let mut vertices: Vec<(f32, f32, f32)> = Vec::new();
-    let mut normals: Vec<(f32, f32, f32)> = Vec::new();
-    let mut tangents: Vec<(f32, f32, f32, f32)> = Vec::new();
-    let mut uvs: Vec<(f32, f32)> = Vec::new();
+    let mut vertices: Vec<veclib::Vector3<f32>> = Vec::new();
+    let mut normals: Vec<veclib::Vector3<f32>> = Vec::new();
+    let mut tangents: Vec<veclib::Vector4<f32>> = Vec::new();
+    let mut uvs: Vec<veclib::Vector2<f32>> = Vec::new();
     let mut triangles: Vec<u32> = Vec::new();
     // Go over each line and scan it
     for line in reader.lines() {
@@ -71,22 +24,22 @@ pub fn convert_mdl3d(file: &File) -> Resource {
             // Vertices
             "v" => {
                 let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                vertices.push((coords[0], coords[1], coords[2]));
+                vertices.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
             }
             // Normals
             "n" => {
                 let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                normals.push((coords[0], coords[1], coords[2]));
+                normals.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
             }
             // UVs
             "u" => {
                 let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                uvs.push((coords[0], coords[1]));
+                uvs.push(veclib::Vector2::new(coords[0], coords[1]));
             }
             // Tangents
             "t" => {
                 let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                tangents.push((coords[0], coords[1], coords[2], coords[3]));
+                tangents.push(veclib::Vector4::new(coords[0], coords[1], coords[2], coords[3]));
             }
             // Triangle indices
             "i" => {
@@ -193,42 +146,33 @@ pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {
     texture
 }
 // Pack a LoadedModel resource into a file
-pub fn pack_model(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
-    let model: LoadedModel;
-    match resource {
-        Resource::Model(__model) => {
-            model = __model;
-        }
-        _ => {
-            panic!("Resource was not a model!");
-        }
-    }
+pub fn pack_model(writer: &mut BufWriter<File>, model: LoadedModel) -> std::io::Result<()> {
     // Write to the strem
     writer.write_u32::<LittleEndian>(model.vertices.len() as u32)?;
     writer.write_u32::<LittleEndian>(model.indices.len() as u32)?;
     // Write the vertices
     for vertex in model.vertices {
-        writer.write_f32::<LittleEndian>(vertex.0)?;
-        writer.write_f32::<LittleEndian>(vertex.1)?;
-        writer.write_f32::<LittleEndian>(vertex.2)?;
+        writer.write_f32::<LittleEndian>(vertex.x)?;
+        writer.write_f32::<LittleEndian>(vertex.y)?;
+        writer.write_f32::<LittleEndian>(vertex.z)?;
     }
     // Write the normals
     for normal in model.normals {
-        writer.write_f32::<LittleEndian>(normal.0)?;
-        writer.write_f32::<LittleEndian>(normal.1)?;
-        writer.write_f32::<LittleEndian>(normal.2)?;
+        writer.write_f32::<LittleEndian>(normal.x)?;
+        writer.write_f32::<LittleEndian>(normal.y)?;
+        writer.write_f32::<LittleEndian>(normal.z)?;
     }
     // Write the tangents
     for tangent in model.tangents {
-        writer.write_f32::<LittleEndian>(tangent.0)?;
-        writer.write_f32::<LittleEndian>(tangent.1)?;
-        writer.write_f32::<LittleEndian>(tangent.2)?;
-        writer.write_f32::<LittleEndian>(tangent.3)?;
+        writer.write_f32::<LittleEndian>(tangent.x)?;
+        writer.write_f32::<LittleEndian>(tangent.y)?;
+        writer.write_f32::<LittleEndian>(tangent.z)?;
+        writer.write_f32::<LittleEndian>(tangent.w)?;
     }
     // Write the uvs
     for uv in model.uvs {
-        writer.write_f32::<LittleEndian>(uv.0)?;
-        writer.write_f32::<LittleEndian>(uv.1)?;
+        writer.write_f32::<LittleEndian>(uv.x)?;
+        writer.write_f32::<LittleEndian>(uv.y)?;
     }
     // Write the indices
     for index in model.indices {
@@ -238,17 +182,7 @@ pub fn pack_model(writer: &mut BufWriter<File>, resource: Resource) -> std::io::
     std::io::Result::Ok(())
 }
 // Pack a LoadedSubShader resource into a file
-pub fn pack_shader(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
-    let shader: LoadedSubShader;
-    match resource {
-        Resource::Shader(__shader, _) => {
-            shader = __shader;
-        }
-        _ => {
-            panic!("Resource was not a shader!");
-        }
-    }
-
+pub fn pack_shader(writer: &mut BufWriter<File>, shader: LoadedSubShader) -> std::io::Result<()> {
     // Turn the source string into bytes, and write them into the resource file
     let string_bytes = shader.source.into_bytes().to_vec();
     // Save the type of this subshader, can either be a Vertex or a Fragment subshader
@@ -264,17 +198,7 @@ pub fn pack_shader(writer: &mut BufWriter<File>, resource: Resource) -> std::io:
     std::io::Result::Ok(())
 }
 // Pack a LoadedTexture resource into a file
-pub fn pack_texture(writer: &mut BufWriter<File>, resource: Resource) -> std::io::Result<()> {
-    let texture: LoadedTexture;
-    match resource {
-        Resource::Texture(__texture, _) => {
-            texture = __texture;
-        }
-        _ => {
-            panic!("Resource was not a texture!");
-        }
-    }
-
+pub fn pack_texture(writer: &mut BufWriter<File>, texture: LoadedTexture) -> std::io::Result<()> {
     // Write the dimensions of the texture
     writer.write_u16::<LittleEndian>(texture.width)?;
     writer.write_u16::<LittleEndian>(texture.height)?;
@@ -283,6 +207,12 @@ pub fn pack_texture(writer: &mut BufWriter<File>, resource: Resource) -> std::io
     for byte in texture.compressed_bytes {
         writer.write_u8(byte)?;
     }
+    std::io::Result::Ok(())
+}
+// Pack a LoadedUIRoot resource into a file
+pub fn pack_ui_root(writer: &mut BufWriter<File>, text: String) -> std::io::Result<()> {
+    // Write the text that was read from the resource file, no actual packing
+    writer.write(text.as_bytes())?;
     std::io::Result::Ok(())
 }
 // Saves all the resources from the "resources" folder into the "packed-resources" folder
@@ -412,17 +342,21 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         let last_time_packed = packed_file_metadata.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
         let mut writer = BufWriter::new(packed_file);
         match resource {
-            Resource::Shader(_, _) => {
+            Resource::Shader(shader, _) => {
                 // This is a shader
-                pack_shader(&mut writer, resource).unwrap();
+                pack_shader(&mut writer, shader).unwrap();
             }
-            Resource::Model(_) => {
+            Resource::Model(model) => {
                 // This a 3D model
-                pack_model(&mut writer, resource).unwrap();
+                pack_model(&mut writer, model).unwrap();
             }
-            Resource::Texture(_, _) => {
+            Resource::Texture(texture, _) => {
                 // This a texture
-                pack_texture(&mut writer, resource).unwrap();
+                pack_texture(&mut writer, texture).unwrap();
+            }
+            Resource::UIRoot(_, text) => {
+                // This is a UI root
+                pack_ui_root(&mut writer, text).unwrap();
             }
             _ => {}
         }

@@ -333,7 +333,9 @@ name = "hypo_resources_packer"
 version = "0.1.0"
 dependencies = [
  "byteorder",
+ "hypo_resources",
  "image",
+ "veclib",
  "walkdir",
 ]
 
