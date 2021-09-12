@@ -38,9 +38,9 @@ impl VoxelGenerator {
             .generate_texture(Vec::new());
     }
     // Generate the voxels using a compute shader
-    pub fn generate_voxels(&self, event_data: &SystemEventData, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> Option<()> {
+    pub fn generate_voxels(&self, event_data: &mut SystemEventData, size: u64, position: veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> Option<()> {
         // Get the compute shader
-        let compute = event_data.shader_cacher.1.get_object(self.compute_shader_name.as_str()).unwrap();
+        let compute = event_data.shader_cacher.1.get_object_mut(self.compute_shader_name.as_str()).unwrap();
 
         // Set the compute shader variables and voxel texture
         compute.use_shader();
@@ -50,11 +50,12 @@ impl VoxelGenerator {
         compute.set_i32("node_size", &(size as i32));
 
         // Run the compute shader
-        let compute_shader = match &compute.additional_shader {
+        let compute_shader = match &mut compute.additional_shader {
             hypo_rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };
         compute_shader.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
+        compute_shader.get_compute_state();
         // Read back the texture into the data buffer
         let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();
 

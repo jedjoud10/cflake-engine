@@ -16,8 +16,8 @@ pub struct ChunkManager {
     pub entities_to_remove: Vec<u16>,
 }
 
-// How many chunks to generate per frame
-pub const CHUNK_GENERATIONS_PER_FRAME: usize = 4;
+// How many frames to wait before getting the data from the compute shader
+pub const FRAMES_COMPUTE_DELAY: u32 = 20;
 
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
@@ -58,17 +58,19 @@ impl ChunkManager {
         self.entities_to_remove.push(id);
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         // Generate the data for some chunks, then create their model
         let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
-        let slice = self.chunks_to_generate[0..(CHUNK_GENERATIONS_PER_FRAME.min(self.chunks_to_generate.len()))].to_vec();
-        // The chunks that are removed
-        let generated_chunks = slice
-            .into_iter()
-            .map(|chunk_coords| {
+        let coord = self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0);
+        let generated_chunk = match coord {
+            Some(_) => {
+                // Get the chunk coords 
+                let chunk_coords = coord.unwrap().clone();
                 let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
                 // Generate the data for this chunk
                 let has_surface = voxel_generator.generate_voxels(data, chunk_coords.size, chunk_coords.position, &mut voxels);
+                // Since we just generated the chunk we can remove it from the generated chunks
+                self.chunks_to_generate.remove(0);
                 // If we don't have a surface, no need to create a model for this chunk
                 match has_surface {
                     Some(_) => {
@@ -76,7 +78,7 @@ impl ChunkManager {
                         let coords = chunk_coords.clone();
                         let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
                         // Save the chunk's data, though don't save the mode
-                        let chunk_data = ChunkData { coords: coords, voxels: voxels };
+                        let chunk_data = ChunkData { coords: coords, voxels: voxels };                        
                         Some((chunk_data, model))
                     }
                     None => {
@@ -84,23 +86,21 @@ impl ChunkManager {
                         None
                     }
                 }
-            })
-            .collect::<Vec<Option<(ChunkData, Model)>>>();
-
-        // Update the actual chunks in the main thread
-        for opt in generated_chunks {
-            // Since we just generated the chunk we can remove it from the generated chunks
-            self.chunks_to_generate.remove(0);
-            match opt {
-                Some((data, model)) => {
-                    // This chunk has a surface and a model, so add it to the world as a new entity
-                    let coords = data.coords.clone();
-                    self.chunks.insert(coords.center.clone(), data);
-                    new_chunks.push((coords, model));
-                }
-                None => {}
             }
+            None => { /* No chunk to generate */ None }
+        };        
+
+        // Update the actual chunks in the main thread       
+        match generated_chunk {
+            Some((data, model)) => {
+                // This chunk has a surface and a model, so add it to the world as a new entity
+                let coords = data.coords.clone();
+                self.chunks.insert(coords.center.clone(), data);
+                new_chunks.push((coords, model));
+            }
+            None => {}
         }
+    
         // If the new chunks are 0, then we can delete all the old chunks
         let mut entities_to_remove: Vec<u16> = Vec::new();
         if self.chunks_to_generate.len() == 0 {
