@@ -128,8 +128,7 @@ impl ResourceManager {
     pub fn load_ui(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
         // Read to string
         let mut text: String = String::new();
-        reader.read_to_string(&mut text);
-        println!("{}", text);
+        reader.read_to_string(&mut text).unwrap();
         // Get the elements' full string from the reader
         let lines: Vec<String> = text.lines().map(|x| x.to_string()).collect();
         let mut current_element: LoadedUIElement = LoadedUIElement ::default();
@@ -142,7 +141,6 @@ impl ResourceManager {
             } else {
                 // Fill the element's data
                 let first = line.split(" ").nth(0).unwrap();
-                println!("{}", first);
                 match first.clone() {
                     "id" => {
                         // Set the ID of the element
@@ -168,8 +166,9 @@ impl ResourceManager {
                         // Set the color of the element
                         let r = line.split(" ").nth(1).unwrap().to_string().parse::<f32>().unwrap();
                         let g = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
-                        let b = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
-                        current_element.color = veclib::Vector3::new(r, g, b);
+                        let b = line.split(" ").nth(3).unwrap().to_string().parse::<f32>().unwrap();
+                        let a = line.split(" ").nth(4).unwrap().to_string().parse::<f32>().unwrap();
+                        current_element.color = veclib::Vector4::new(r, g, b, a);
                     }
                     // Element type matching
                     "etp" => {
@@ -183,8 +182,8 @@ impl ResourceManager {
                     }
                     "ett" => {
                         // Element type text
-                        let text = line.split(" ").nth(1).unwrap().to_string();
-                        current_element.loaded_elem_type = LoadedUIElementType::Text(text);
+                        let text = &line[5..(line.len()-1)];
+                        current_element.loaded_elem_type = LoadedUIElementType::Text(text.to_string());
                     }
                     
                     _ => {}
@@ -337,7 +336,7 @@ pub struct LoadedSubShader {
     pub subshader_type: u8,
 }
 // A loaded UI element type
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum LoadedUIElementType {
     Panel(),
     Button(),
@@ -350,13 +349,13 @@ impl Default for LoadedUIElementType {
     }
 }
 // A loaded UI element
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct LoadedUIElement {
     pub id: u32,
     pub pid: u32,
     pub pos: veclib::Vector2<f32>,
     pub size: veclib::Vector2<f32>,
-    pub color: veclib::Vector3<f32>,
+    pub color: veclib::Vector4<f32>,
     pub loaded_elem_type: LoadedUIElementType,
 }
 // A loaded UI resource

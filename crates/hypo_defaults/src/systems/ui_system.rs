@@ -122,7 +122,7 @@ impl System for UISystem {
                 shader.set_f32("depth", &depth);
                 shader.set_vec2f32("size", &element.size);
                 shader.set_vec2f32("position", &element.position);
-                shader.set_vec3f32("color", &element.color);
+                shader.set_vec4f32("color", &element.color);
                 gl::DrawArrays(gl::TRIANGLES, 0, 6);            
             } 
         }

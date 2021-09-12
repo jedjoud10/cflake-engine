@@ -3,11 +3,11 @@ use crate::Root;
 // A simple element, could be a button or a panel or anything, it just has some variables
 #[derive(Debug)]
 pub struct Element {
-    id: usize,
+    pub id: usize,
     pub parent: usize,
     pub position: veclib::Vector2<f32>,
     pub size: veclib::Vector2<f32>,
-    pub color: veclib::Vector3<f32>,
+    pub color: veclib::Vector4<f32>,
     pub depth: i32,
     pub children: Vec<usize>,
     pub element_type: ElementType,
@@ -46,13 +46,13 @@ impl Element {
         element.children.extend(children);
     }
     // Create a new element
-    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, color: &veclib::Vector3<f32>, element_type: ElementType) -> usize {
+    pub fn new(root: &mut Root, position: &veclib::Vector2<f32>, size: &veclib::Vector2<f32>, color: &veclib::Vector4<f32>, element_type: ElementType) -> usize {
         // Get the element id from the root node
         let output: Self = Element {
             size: size.clone(),
             position: position.clone(),
             parent: 0,
-            id: root.smart_element_list.get_next_valid_id() as usize + 1,
+            id: root.smart_element_list.get_next_valid_id() as usize,
             depth: 0,
             children: Vec::new(),
             element_type: element_type,

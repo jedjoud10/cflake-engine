@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ButtonState;
 use crate::Element;
 use crate::ElementType;
@@ -20,8 +22,11 @@ impl LoadableResource for Root {
             Resource::UIRoot(root, _) => {
                 let mut output_root: Root = Root::default();
                 
-                // Root element
-                Element::new(&mut output_root, &veclib::Vector2::ZERO, &veclib::Vector2::ONE, &veclib::Vector3::ONE, ElementType::Panel());
+                // Create the root element
+                Element::new(&mut output_root, &veclib::Vector2::ZERO, &veclib::Vector2::ONE, &veclib::Vector4::ZERO, ElementType::Empty);
+
+                // The list of children-parent links
+                let mut parent_children: HashMap<usize, Vec<usize>> = HashMap::new();
 
                 for loaded_element in root.elements.iter() {
                     let element_type = match &loaded_element.loaded_elem_type {
@@ -30,9 +35,29 @@ impl LoadableResource for Root {
                         hypo_resources::LoadedUIElementType::Text(t) => ElementType::Text(t.clone()),
                         hypo_resources::LoadedUIElementType::Image(lp) => ElementType::Image(lp.clone()),
                     };
+                    println!("{:?}", loaded_element);
                     let element = Element::new(&mut output_root, &loaded_element.pos, &loaded_element.size, &loaded_element.color, element_type);
+                    // Attach this specific element to it's valid parent
+                    if loaded_element.pid != 0 {
+                        // Add this child into the children of the same parent
+                        let old_children = parent_children.entry(loaded_element.pid as usize).or_insert(Vec::new());
+                        old_children.push(loaded_element.id as usize);
+                    }
                 }
-                println!("{:?}", output_root);
+                println!("{:?}", parent_children);
+                // Link all the children to the parents
+                for (parent, children) in parent_children {
+                    Element::attach(&mut output_root, parent, children)
+                }
+                let t=  output_root.smart_element_list.elements.iter().map(|x| x.as_ref().unwrap().parent).collect::<Vec<usize>>();
+                for i in output_root.smart_element_list.elements {
+                    match i {
+                        Some(x) => {
+                            println!("{:?}", x);
+                        }
+                        _ => {}
+                    }
+                }
                 panic!("");
                 Some(output_root)
             }
