@@ -18,7 +18,12 @@ pub struct ResourceManager {
 // A trait for structs that can be loaded from resources
 pub trait LoadableResource {
     // Turn a resource into the current struct
-    fn from_resource(self, resource: &Resource) -> Self;
+    fn from_resource(resource: &Resource) -> Option<Self> where Self: Sized;
+    // Load this resource directly from a path, this is implemented by default
+    fn from_path(local_path: &str, resource_manager: &mut ResourceManager) -> Option<Self> where Self: Sized {
+        let resource = resource_manager.load_packed_resource(local_path).ok()?;
+        return Self::from_resource(resource);
+    }
 }
 
 // Impl block for turning all the packed data back into resources

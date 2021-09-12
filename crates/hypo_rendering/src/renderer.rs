@@ -2,7 +2,7 @@ use super::{model::Model, model::ModelDataGPU, texture::Texture, Material, Shade
 use bitflags::bitflags;
 use hypo_ecs::{Component, ComponentID, ComponentInternal};
 use hypo_others::CacheManager;
-use hypo_resources::ResourceManager;
+use hypo_resources::{LoadableResource, ResourceManager};
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 bitflags! {

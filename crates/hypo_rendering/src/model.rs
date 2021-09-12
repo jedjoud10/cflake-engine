@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
+use hypo_resources::LoadableResource;
 use hypo_resources::Resource;
 use hypo_resources::ResourceManager;
 
@@ -14,9 +15,9 @@ pub struct Model {
     pub triangles: Vec<u32>,
 }
 
-impl Model {
+impl LoadableResource for Model {
     // Turns a loaded resource model into an actual model
-    pub fn from_resource(resource: &Resource) -> Option<Self> {
+    fn from_resource(resource: &Resource) -> Option<Self> {
         match resource {
             Resource::Model(model) => {
                 // Turn the loaded model into a normal model
@@ -32,11 +33,9 @@ impl Model {
             _ => None,
         }
     }
-    // Loads a model directly from a path
-    pub fn load_model(path: &str, resource_manager: &mut ResourceManager) -> Result<Self, hypo_errors::ResourceError> {
-        let resource = resource_manager.load_packed_resource(path)?;
-        return Ok(Self::from_resource(resource).unwrap());
-    }
+}
+
+impl Model {    
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
         for i in (0..self.triangles.len()).step_by(3) {

@@ -1,6 +1,7 @@
 use super::super::components;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
+use hypo_resources::LoadableResource;
 use hypo_system_event_data::SystemEventData;
 use hypo_systems::{System, SystemData};
 
@@ -37,14 +38,11 @@ impl System for SkySystem {
         .1;
 
         // Load texture
-        let cached_texture_id = Texture2D::new()
-            .set_wrapping_mode(TextureWrapping::ClampToEdge)
-            .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
-            .unwrap()
-            .1;
+        let cached_texture_id = Texture2D::from_path("defaults\\textures\\sky_gradient.png", data.resource_manager).unwrap()
+            .set_wrapping_mode(TextureWrapping::ClampToEdge).get_cached_id();
 
         // Load model
-        let mut model = Model::load_model("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
+        let mut model = Model::from_path("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
         model.flip_triangles();
 
         // Create a sky material

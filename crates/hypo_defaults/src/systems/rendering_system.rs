@@ -3,6 +3,7 @@ use gl;
 use hypo_ecs::{Entity, FilteredLinkedComponents};
 use hypo_math as math;
 use hypo_rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture2D, TextureShaderAccessType, Window};
+use hypo_resources::LoadableResource;
 use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
 use hypo_systems::{System, SystemData};
 use std::ptr::null;

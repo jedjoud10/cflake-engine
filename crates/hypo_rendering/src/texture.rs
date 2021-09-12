@@ -56,7 +56,7 @@ pub struct Texture {
     pub format: u32,
     pub data_type: u32,
     pub flags: TextureFlags,
-    pub samples: u8,
+    pub cached_texture_id: u16,
     pub filter: TextureFilter,
     pub wrap_mode: TextureWrapping,
     pub dimension_type: TextureDimensionType,
@@ -71,7 +71,7 @@ impl Default for Texture {
             format: gl::RGBA,
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::MUTABLE,
-            samples: 0,
+            cached_texture_id: 0,
             filter: TextureFilter::Linear,
             dimension_type: TextureDimensionType::D_2D(0, 0),
             wrap_mode: TextureWrapping::Repeat,
@@ -108,6 +108,11 @@ impl Texture {
     // Set the wrapping mode
     pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
         self.wrap_mode = wrapping_mode;
+        self
+    }
+    // Set the flags
+    pub fn set_flags(mut self, flags: TextureFlags) -> Self {
+        self.flags = flags;
         self
     }
     // Generate an empty texture, could either be a mutable one or an immutable one

@@ -21,8 +21,8 @@ impl Default for Texture2D {
 
 // Loadable resource
 impl LoadableResource for Texture2D {
-    // Load da texture resource
-    fn from_resource(self, resource: &Resource) -> Self {
+    // Load a texture 2D from a resource file
+    fn from_resource(resource: &Resource) -> Option<Self> {
         match resource {
             Resource::Texture(texture, texture_name) => {
                 let width = texture.width;
@@ -36,18 +36,16 @@ impl LoadableResource for Texture2D {
                 let rgba8_image = decoded.to_rgba8();
 
                 // Set the proper dimensions and generate the texture from the resource's bytes
-                let mut texture = self.set_dimensions(width, height);
+                let mut texture = Self::new().set_dimensions(width, height);
                 // Set the texture name since the texture has an empty name
                 texture.internal_texture.name = texture_name.clone();
                 let new_texture = texture
                     .internal_texture
                     .generate_texture(rgba8_image.as_bytes().to_vec(), TextureDimensionType::D_2D(width, height));
                 texture.internal_texture = new_texture;
-                texture
+                Some(texture)
             }
-            _ => {
-                panic!("");
-            }
+            _ => { None }
         }
     }
 }
@@ -55,10 +53,10 @@ impl LoadableResource for Texture2D {
 // Loading / caching stuff for Texture2D
 impl Texture2D {
     // Cache the current texture and return it's reference
-    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture2D>) -> Option<(&'a Self, u16)> {
+    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture2D>) -> Option<(&'a mut Self, u16)> {
         let texture_name = self.internal_texture.name.clone();
         let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
-        return Some((texture_cacher.get_object(texture_name.as_str()).unwrap(), texture_id));
+        return Some((texture_cacher.get_object_mut(texture_name.as_str()).unwrap(), texture_id));
     }
     // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
     pub fn load_texture<'a>(
@@ -77,8 +75,17 @@ impl Texture2D {
             Ok((texture, texture_id))
         } else {
             // If it not cached, then load the texture from that resource
-            let texture = self.from_resource(resource).cache_texture(texture_cacher).unwrap();
-            Ok(texture)
+            let (texture, texture_id) = Self::from_resource(resource).ok_or(hypo_errors::ResourceError::new_str("Could not load texture!"))?.cache_texture(texture_cacher).unwrap();
+            // Copy the texture settings from "self" to "texture"
+            texture.width = self.width;
+            texture.height = self.height;
+            texture.internal_texture.internal_format = self.internal_texture.internal_format;
+            texture.internal_texture.format = self.internal_texture.format;
+            texture.internal_texture.data_type = self.internal_texture.data_type;
+            texture.internal_texture.flags = self.internal_texture.flags;
+            texture.internal_texture.filter = self.internal_texture.filter;
+
+            Ok((texture, texture_id))
         }
     }
 }
@@ -152,6 +159,10 @@ impl Texture2D {
         let t = self.internal_texture.set_wrapping_mode(wrapping_mode);
         self.internal_texture = t;
         return self;
+    }
+    // Get the cached texture id
+    pub fn get_cached_id(self) -> u16 {
+        self.internal_texture.cached_texture_id
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {

@@ -16,3 +16,4 @@ hypo_systems = { path = "../hypo_systems" }
 hypo_rendering = { path = "../hypo_rendering" }
 hypo_input = { path = "../hypo_input" }
 hypo_others = { path = "../hypo_others" }
+hypo_resources = { path = "../hypo_resources" }
