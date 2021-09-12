@@ -1,25 +1,21 @@
-id 1 
 pid 0
 p 1.0 1.0
 s 1.0 1.0
 c 1.0 1.0 1.0 1.0
 etp
 
-id 2
 pid 1
 p 1.0 1.0
 s 1.0 1.0
 c 1.0 0.0 0.0 1.0
 ett "This is some text"
 
-id 3
 pid 0
 p 0.0 0.0
 s 1.0 1.0
 c 0.0 1.0 0.0 1.0
 etp
 
-id 4
 pid 0
 p 0.0 0.0
 s 1.0 1.0

@@ -133,22 +133,22 @@ impl ResourceManager {
         let lines: Vec<String> = text.lines().map(|x| x.to_string()).collect();
         let mut current_element: LoadedUIElement = LoadedUIElement ::default();
         let mut root: LoadedUIRoot = LoadedUIRoot { elements: Vec::new(), };
+        let mut last_element_id: u32 = 1;
         for line in lines {
             // Check if it is an empty line, because if it is, that means that there is going to be an element id the next line
             if line == "" {
                 // Empty line, add the old current_element to the list
                 root.elements.push(current_element.clone());
+                last_element_id += 1;
             } else {
                 // Fill the element's data
                 let first = line.split(" ").nth(0).unwrap();
                 match first.clone() {
-                    "id" => {
-                        // Set the ID of the element
-                        current_element.id = line.split(" ").nth(1).unwrap().to_string().parse::<u32>().unwrap();
-                    }
                     "pid" => {
                         // Set the PID of the element
                         current_element.pid = line.split(" ").nth(1).unwrap().to_string().parse::<u32>().unwrap();
+                        // And it's ID as well
+                        current_element.id = last_element_id;
                     }
                     "p" => {
                         // Set the position of the element
