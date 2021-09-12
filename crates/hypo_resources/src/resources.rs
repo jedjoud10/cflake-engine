@@ -140,7 +140,7 @@ impl ResourceManager {
                 // Fill the element's data
                 let first = line.split(" ").nth(0).unwrap();
                 match first.clone() {
-                    "stt" => {
+                    "st" => {
                         // Get the settings for this specific element
                         // Get the coordinate type
                         let coordinate_type = line.split(" ").nth(1).unwrap();
