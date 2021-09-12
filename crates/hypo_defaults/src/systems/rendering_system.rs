@@ -51,7 +51,7 @@ impl RenderingSystem {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut SystemEventData) {
         let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::from_resource(data.resource_manager.load_packed_resource("defaults\\models\\screen_quad.mdl3d").unwrap()).unwrap();
+        quad_renderer_component.model = Model::new().from_path("defaults\\models\\screen_quad.mdl3d", data.resource_manager).unwrap();
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
             Shader::new(

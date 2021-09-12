@@ -108,6 +108,7 @@ impl System for UISystem {
         let root = &data.ui_manager.root;
 
         // Draw every element
+        /*
         for element in elements {
             shader.use_shader(); 
             unsafe {            
@@ -125,6 +126,7 @@ impl System for UISystem {
                 gl::DrawArrays(gl::TRIANGLES, 0, 6);            
             } 
         }
+        */
     }
 
     // Turn this into "Any" so we can cast into child systems

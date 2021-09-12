@@ -17,7 +17,7 @@ pub struct Model {
 
 impl LoadableResource for Model {
     // Turns a loaded resource model into an actual model
-    fn from_resource(resource: &Resource) -> Option<Self> {
+    fn from_resource(self, resource: &Resource) -> Option<Self> {
         match resource {
             Resource::Model(model) => {
                 // Turn the loaded model into a normal model
@@ -36,6 +36,16 @@ impl LoadableResource for Model {
 }
 
 impl Model {    
+    // Create a new empty model
+    pub fn new() -> Self {
+        Self {
+            vertices: Vec::new(),
+            normals: Vec::new(),
+            tangents: Vec::new(),
+            uvs: Vec::new(),
+            triangles: Vec::new(),
+        }
+    } 
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
         for i in (0..self.triangles.len()).step_by(3) {

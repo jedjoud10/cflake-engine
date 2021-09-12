@@ -50,7 +50,7 @@ impl Renderer {
     // Load a model
     pub fn load_model(mut self, model_path: &str, resource_manager: &mut ResourceManager) -> Self {
         let resource = resource_manager.load_packed_resource(model_path).unwrap();
-        let model = Model::from_resource(resource).unwrap();
+        let model = Model::new().from_resource(resource).unwrap();
         self.model = model;
         return self;
     }

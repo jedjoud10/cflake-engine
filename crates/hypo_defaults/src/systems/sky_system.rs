@@ -38,11 +38,10 @@ impl System for SkySystem {
         .1;
 
         // Load texture
-        let cached_texture_id = Texture2D::from_path("defaults\\textures\\sky_gradient.png", data.resource_manager).unwrap()
-            .set_wrapping_mode(TextureWrapping::ClampToEdge).get_cached_id();
+        let cached_texture_id = Texture2D::new().set_wrapping_mode(TextureWrapping::ClampToEdge).load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher).unwrap().1;
 
         // Load model
-        let mut model = Model::from_path("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
+        let mut model = Model::new().from_path("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
         model.flip_triangles();
 
         // Create a sky material
