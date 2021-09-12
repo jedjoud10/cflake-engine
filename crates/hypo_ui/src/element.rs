@@ -3,12 +3,12 @@ use crate::Root;
 // A simple element, could be a button or a panel or anything, it just has some variables
 #[derive(Debug)]
 pub struct Element {
-    pub size: veclib::Vector2<f32>,
-    pub position: veclib::Vector2<f32>,
-    pub color: veclib::Vector3<f32>,
-    pub parent: usize,
-    pub depth: i32,
     id: usize,
+    pub parent: usize,
+    pub position: veclib::Vector2<f32>,
+    pub size: veclib::Vector2<f32>,
+    pub color: veclib::Vector3<f32>,
+    pub depth: i32,
     pub children: Vec<usize>,
     pub element_type: ElementType,
 }
