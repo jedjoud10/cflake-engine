@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use hypo_defaults::components;
 use hypo_rendering::{Model, Shader};
 use hypo_system_event_data::SystemEventData;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -21,7 +22,7 @@ pub struct ChunkManager {
 }
 
 // How many frames to wait before getting the data from the compute shader
-pub const FRAMES_COMPUTE_DELAY: u64 = 0;
+pub const FRAMES_COMPUTE_DELAY: u64 = 1;
 
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
@@ -61,8 +62,26 @@ impl ChunkManager {
         let id = self.entities.remove(&coords.center).unwrap();
         self.entities_to_remove.push(id);
     }
+    // The priority function
+    pub fn priority_function(a: &ChunkCoords, camera_forward_vector: &veclib::Vector3<f32>, camera_position: &veclib::Vector3<f32>) -> f32 {
+        let priority = camera_forward_vector.dot((*camera_position - veclib::Vector3::<f32>::from(a.center)).normalized());
+        priority
+    }
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+        // Sort the chunks to generate
+        let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+        let camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
+        let camera_forward_vector = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
+        if !self.voxels_generating {
+            // Sort the added nodes using a priority system
+            self.chunks_to_generate.sort_by(|a, b| { 
+                // Get the dot product
+                let ad = Self::priority_function(&a, &camera_forward_vector, &camera_position);
+                let bd = Self::priority_function(&b, &camera_forward_vector, &camera_position);
+                bd.partial_cmp(&ad).unwrap()
+            });
+        }
         // Generate the data for some chunks, then create their model
         let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
         let coord = self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0);

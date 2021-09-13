@@ -19,7 +19,7 @@ pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 0.5;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 10;
+pub const OCTREE_DEPTH: u8 = 8;
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -149,18 +149,20 @@ impl System for Terrain {
     // Update the camera position inside the terrain generator
     fn pre_fire(&mut self, data: &mut SystemEventData) {
         // Get the camera location
-        let camera_location = data
-            .entity_manager
-            .get_entity(&data.custom_data.main_camera_entity_id)
-            .unwrap()
+        let camera_entity = data
+        .entity_manager
+        .get_entity(&data.custom_data.main_camera_entity_id)
+        .unwrap();
+        let camera_location = camera_entity
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
+        let camera_forward_vector = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
 
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
-                Some((added, removed)) => {
+                Some((mut added, removed)) => {
                     // Turn all the newly added nodes into chunks and instantiate them into the world
                     for octree_node in added {
                         // Only add the octree nodes that have no children
