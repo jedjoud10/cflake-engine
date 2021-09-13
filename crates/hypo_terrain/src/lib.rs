@@ -5,6 +5,7 @@ pub mod mesher;
 mod tables;
 mod terrain;
 mod voxel;
+mod density;
 
 pub use chunk_data::*;
 pub use chunk_manager::*;

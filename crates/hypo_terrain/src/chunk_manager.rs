@@ -159,8 +159,7 @@ impl ChunkManager {
         let mut nodes_to_parents: Vec<veclib::Vector3<i64>> = Vec::new();
         for (octree_parent, count) in self.parent_children_generation_count.iter() {
             if *count == 8 {
-                nodes_to_parents.push(octree_parent.clone());
-                println!("{:?}", octree_parent);
+                //nodes_to_parents.push(octree_parent.clone());
             }
         }
         // Remove the nodes
