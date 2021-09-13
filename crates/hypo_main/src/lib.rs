@@ -35,7 +35,7 @@ pub fn start(load_systems_callback: fn(&mut World), load_entities_callback: fn(&
     window.set_scroll_polling(true);
     window.set_size_polling(true);
     window.make_current();
-    glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+    glfw.set_swap_interval(glfw::SwapInterval::None);
     if gl::Viewport::is_loaded() {
         unsafe {
             gl::Viewport(0, 0, 300, 300);

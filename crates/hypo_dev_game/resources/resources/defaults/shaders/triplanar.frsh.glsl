@@ -10,7 +10,7 @@ uniform vec3 view_pos;
 uniform float normals_strength;
 uniform float depth_level;
 in vec3 m_position;
-in vec3 m_normal;
+in flat vec3 m_normal;
 in vec4 m_tangent;
 in vec2 m_uv;
 in mat3 tbn;

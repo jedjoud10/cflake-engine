@@ -21,7 +21,7 @@ pub struct ChunkManager {
 }
 
 // How many frames to wait before getting the data from the compute shader
-pub const FRAMES_COMPUTE_DELAY: u64 = 3;
+pub const FRAMES_COMPUTE_DELAY: u64 = 0;
 
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
@@ -93,7 +93,7 @@ impl ChunkManager {
                                 Some((chunk_data, model))
                             }
                             None => {
-                                /* We don't have a surface, no need to create the model */
+                                // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
                                 None
                             }
                         }
