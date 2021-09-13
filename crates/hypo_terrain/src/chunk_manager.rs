@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use hypo_defaults::components;
 use hypo_rendering::{Model, Shader};
@@ -153,13 +153,13 @@ impl ChunkManager {
             }
             None => {}
         }
-        let mut entities_to_remove: Vec<u16> = Vec::new();
+        let mut entities_to_remove: HashSet<u16> = HashSet::new();
 
         // Detect when one of the parent children nodes reaches 8 child nodes generated, that means we can delete it early
         let mut nodes_to_parents: Vec<veclib::Vector3<i64>> = Vec::new();
         for (octree_parent, count) in self.parent_children_generation_count.iter() {
             if *count == 8 {
-                //nodes_to_parents.push(octree_parent.clone());
+                nodes_to_parents.push(octree_parent.clone());
             }
         }
         // Remove the nodes
@@ -168,7 +168,11 @@ impl ChunkManager {
             // Remove the chunks early
             let id = self.entities_to_remove.get(node);
             match id {
-                Some(id) => entities_to_remove.push(*id), 
+                Some(id) => { 
+                    entities_to_remove.insert(*id);
+                    // Remove it from the cache
+                    self.entities_to_remove.remove(node);
+                }, 
                 _ => {}
             };
         }
@@ -182,6 +186,6 @@ impl ChunkManager {
             self.parent_children_generation_count.clear();
         }
 
-        return (new_chunks, entities_to_remove);
+        return (new_chunks, entities_to_remove.iter().map(|x| *x).collect::<Vec<u16>>());
     }
 }
