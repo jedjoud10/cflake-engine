@@ -44,14 +44,15 @@ pub fn start(load_systems_callback: fn(&mut World), load_entities_callback: fn(&
     // Create the world
     let mut world: World = World::default();
     world.start_world(&mut window, load_systems_callback, load_entities_callback);
+    let mut last_time: f64 = 0.0;
 
     while !window.should_close() {
         // Update the delta_time
         let new_time = glfw.get_time();
-        world.time_manager.delta_time = new_time - world.time_manager.seconds_since_game_start;
-        world.time_manager.seconds_since_game_start = new_time;
+        let delta = new_time - last_time;
+        last_time = new_time;
         // Update the world
-        world.update_world(&mut window, &mut glfw);
+        world.update_world(&mut window, &mut glfw, delta);
 
         // Read the events at the start of the frame
         glfw.poll_events();

@@ -91,7 +91,7 @@ impl World {
     // 1. We update the entities of each UpdateSystem
     // 2. We tick the entities of each TickSystem (Only if the framecount is valid)
     // 3. We render the entities onto the screen using the RenderSystem
-    pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+    pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw, delta: f64) {
         // Check for input events
         self.input_manager.update();
         // Check for default input events
@@ -124,6 +124,11 @@ impl World {
 
         // Update entity manager
         self.update_entity_manager();
+
+        // Update the time
+        self.time_manager.delta_time = delta;
+        self.time_manager.seconds_since_game_start += delta;
+        self.time_manager.frame_count += 1;
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
@@ -141,8 +146,8 @@ impl World {
             println!("Entity count: '{}'", self.entity_manager.entities.len());
             println!("System count: '{}'", self.system_manager.systems.len());
             println!(
-                "Time: '{}', Delta Time: '{}', FPS: '{}'",
-                self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps
+                "Time: '{}', Delta Time: '{}', FPS: '{}', Frame Count: {}",
+                self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps, self.time_manager.frame_count
             );
         }
         // Change the debug view
