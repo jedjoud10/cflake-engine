@@ -220,6 +220,14 @@ impl ResourceManager {
 // Date: 2021-08-08. Warning: Do not touch this code. It will give you headaches. Trust me.
 // Date: 2021-08-13. Basically rewrote the whole thing. It's good now
 impl ResourceManager {
+    // Get the hashed name from the local path
+    fn calculate_hashed_name(local_path: &str) -> u64 {
+        {
+            let mut hasher = DefaultHasher::new();
+            local_path.hash(&mut hasher);
+            hasher.finish()
+        }
+    }
     // Turn a local path into a literal, hashed path
     pub fn local_to_global_path(local_path: &str) -> Result<(String, String, u64), hypo_errors::ResourceError> {
         // Get the global path of the packed-resources folder
@@ -243,11 +251,7 @@ impl ResourceManager {
         let extension: Vec<&str> = name_and_extension.split('.').collect();
         let extension = extension[1..].join(".");
         // Hash the local path and then use it to load the file
-        let hashed_name: u64 = {
-            let mut hasher = DefaultHasher::new();
-            local_path.hash(&mut hasher);
-            hasher.finish()
-        };
+        let hashed_name: u64 = Self::calculate_hashed_name(local_path);
 
         // The global file path for the hashed packed resource
         let file_path = format!("{}{}.pkg", packed_resources_path, hashed_name);
@@ -299,7 +303,12 @@ impl ResourceManager {
         Ok(resource)
     }
     // Unloads a resource to save on memory
-    pub fn unload_resouce(&mut self) {}
+    pub fn unload_resouce(&mut self, local_path: &str) {
+        // Get the hashed name
+        let hashed_name: u64 = Self::calculate_hashed_name(local_path);
+        // Unload the resource from cache
+        self.cached_resources.remove(&hashed_name);
+    }
     // Load the literal lines from a packed resource, with a byte padding at the start (Useful for function shaders)
     pub fn load_lines_packed_resource(&mut self, local_path: &str, byte_padding: u64) -> Result<String, hypo_errors::ResourceError> {
         // Get the global hashed path file
