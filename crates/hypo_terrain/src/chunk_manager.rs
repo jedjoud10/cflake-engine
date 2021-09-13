@@ -14,11 +14,13 @@ pub struct ChunkManager {
     // Just the chunk data
     pub chunks: HashMap<veclib::Vector3<i64>, ChunkData>,
     pub entities: HashMap<veclib::Vector3<i64>, u16>,
-    pub entities_to_remove: Vec<u16>,
+    pub entities_to_remove: HashMap<veclib::Vector3<i64>, u16>,
     // The last frame chunk voxels where generated
     pub last_frame_voxels_generated: u64,
     // Are we currently waiting for the voxels to finish generating?
     pub voxels_generating: bool,
+    // The parent nodes that got their children generated
+    pub parent_children_generation_count: HashMap<veclib::Vector3<i64>, u8>,
 }
 
 // How many frames to wait before getting the data from the compute shader
@@ -60,7 +62,7 @@ impl ChunkManager {
     pub fn remove_chunk_entity(&mut self, coords: &ChunkCoords) {
         // Check if we even have the chunk entity in the first place
         let id = self.entities.remove(&coords.center).unwrap();
-        self.entities_to_remove.push(id);
+        self.entities_to_remove.insert(coords.center, id);
     }
     // The priority function
     pub fn priority_function(a: &ChunkCoords, camera_forward_vector: &veclib::Vector3<f32>, camera_position: &veclib::Vector3<f32>) -> f32 {
@@ -101,6 +103,15 @@ impl ChunkManager {
                         let has_surface = voxel_generator.generate_voxels_end(data, &mut voxels);
                         // Since we just generated the chunk we can remove it from the generated chunks
                         self.chunks_to_generate.remove(0);
+
+                        // We generated this chunk, so we can add one to the the early-deletion parent node child counter
+                        if self.parent_children_generation_count.contains_key(&chunk_coords.parent_center) {
+                            let t = self.parent_children_generation_count.get_mut(&chunk_coords.parent_center).unwrap();
+                            *t += 1;
+                        } else {
+                            self.parent_children_generation_count.insert(chunk_coords.parent_center, 1);
+                        }
+
                         // If we don't have a surface, no need to create a model for this chunk
                         match has_surface {
                             Some(_) => {
@@ -127,9 +138,7 @@ impl ChunkManager {
                     voxel_generator.generate_voxels_start(data, &chunk_coords.size, &chunk_coords.position);           
                     // We aren't generating a mesh so return none
                     None         
-                }
-
-                
+                }                
             }
             None => { /* No chunk to generate */ None }
         };        
@@ -138,19 +147,40 @@ impl ChunkManager {
         match generated_chunk {
             Some((data, model)) => {
                 // This chunk has a surface and a model, so add it to the world as a new entity
-                let coords = data.coords.clone();
+                let coords = data.coords.clone();                
                 self.chunks.insert(coords.center.clone(), data);
                 new_chunks.push((coords, model));
             }
             None => {}
         }
+        let mut entities_to_remove: Vec<u16> = Vec::new();
+
+        // Detect when one of the parent children nodes reaches 8 child nodes generated, that means we can delete it early
+        let mut nodes_to_parents: Vec<veclib::Vector3<i64>> = Vec::new();
+        for (octree_parent, count) in self.parent_children_generation_count.iter() {
+            if *count == 8 {
+                nodes_to_parents.push(octree_parent.clone());
+                println!("{:?}", octree_parent);
+            }
+        }
+        // Remove the nodes
+        for node in nodes_to_parents.iter() {
+            self.parent_children_generation_count.remove(node);
+            // Remove the chunks early
+            let id = self.entities_to_remove.get(node);
+            match id {
+                Some(id) => entities_to_remove.push(*id), 
+                _ => {}
+            };
+        }
     
         // If the new chunks are 0, then we can delete all the old chunks
-        let mut entities_to_remove: Vec<u16> = Vec::new();
         if self.chunks_to_generate.len() == 0 {
-            entities_to_remove = self.entities_to_remove.clone();
+            let a = self.entities_to_remove.values().map(|x| *x).collect::<Vec<u16>>();
             // Clear the removed entities
+            entities_to_remove.extend(a);
             self.entities_to_remove.clear();
+            self.parent_children_generation_count.clear();
         }
 
         return (new_chunks, entities_to_remove);
