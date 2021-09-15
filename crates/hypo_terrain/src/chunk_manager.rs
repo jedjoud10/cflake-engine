@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
+use hypo_debug::DefaultDebugRendererType;
 use hypo_defaults::components;
+use hypo_ecs::{ComponentManager, Entity};
 use hypo_rendering::{Model, Shader};
 use hypo_system_event_data::SystemEventData;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -21,6 +23,8 @@ pub struct ChunkManager {
     pub voxels_generating: bool,
     // The parent nodes that got their children generated
     pub parent_children_generation_count: HashMap<veclib::Vector3<i64>, u8>,
+    // Camera location and forward vector
+    pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
 }
 
 // How many frames to wait before getting the data from the compute shader
@@ -69,20 +73,29 @@ impl ChunkManager {
         let priority = camera_forward_vector.dot((*camera_position - veclib::Vector3::<f32>::from(a.center)).normalized());
         priority
     }
+    // Update the location and forward vector of the camera entity
+    pub fn update_camera_view(&mut self, camera_entity: &Entity, component_manager: &ComponentManager) {
+        self.camera_location = camera_entity.get_component::<components::Transform>(component_manager).unwrap().position;
+        self.camera_forward_vector = camera_entity.get_component::<components::Transform>(component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
+    }
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         // Sort the chunks to generate
-        let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
-        let camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
-        let camera_forward_vector = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
         if !self.voxels_generating {
             // Sort the added nodes using a priority system
+            let camera_position = self.camera_location;
+            let camera_forward_vector = self.camera_forward_vector;
             self.chunks_to_generate.sort_by(|a, b| { 
                 // Get the dot product
                 let ad = Self::priority_function(&a, &camera_forward_vector, &camera_position);
                 let bd = Self::priority_function(&b, &camera_forward_vector, &camera_position);
                 bd.partial_cmp(&ad).unwrap()
             });
+        }
+        // Debug draw the chunks to generate
+        for chunk_to_generate in self.chunks_to_generate.iter() {
+            let t = DefaultDebugRendererType::CUBE(veclib::Vector3::from(chunk_to_generate.center), veclib::Vector3::new(chunk_to_generate.size as f32, chunk_to_generate.size as f32, chunk_to_generate.size as f32));
+            data.debug.debug_default(t, veclib::Vector3::ONE, false);
         }
         // Generate the data for some chunks, then create their model
         let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
@@ -153,30 +166,7 @@ impl ChunkManager {
             }
             None => {}
         }
-        let mut entities_to_remove: HashSet<u16> = HashSet::new();
-
-        // Detect when one of the parent children nodes reaches 8 child nodes generated, that means we can delete it early
-        let mut nodes_to_parents: Vec<veclib::Vector3<i64>> = Vec::new();
-        for (octree_parent, count) in self.parent_children_generation_count.iter() {
-            if *count == 8 {
-                nodes_to_parents.push(octree_parent.clone());
-            }
-        }
-        // Remove the nodes
-        for node in nodes_to_parents.iter() {
-            self.parent_children_generation_count.remove(node);
-            // Remove the chunks early
-            let id = self.entities_to_remove.get(node);
-            match id {
-                Some(id) => { 
-                    entities_to_remove.insert(*id);
-                    // Remove it from the cache
-                    self.entities_to_remove.remove(node);
-                }, 
-                _ => {}
-            };
-        }
-    
+        let mut entities_to_remove: HashSet<u16> = HashSet::new();    
         // If the new chunks are 0, then we can delete all the old chunks
         if self.chunks_to_generate.len() == 0 {
             let a = self.entities_to_remove.values().map(|x| *x).collect::<Vec<u16>>();

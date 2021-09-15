@@ -17,3 +17,4 @@ hypo_rendering = { path = "../hypo_rendering" }
 hypo_others = { path = "../hypo_others" }
 hypo_defaults = { path = "../hypo_defaults" }
 hypo_input = { path = "../hypo_input" }
+hypo_debug = { path = "../hypo_debug" }

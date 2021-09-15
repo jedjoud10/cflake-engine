@@ -186,6 +186,8 @@ impl System for Terrain {
                 }
                 None => { /* Nothing happened */ }
             }
+            let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+            self.chunk_manager.update_camera_view(&camera_entity, data.component_manager);
         }
 
         // Update the chunk manager
