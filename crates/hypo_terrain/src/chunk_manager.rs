@@ -179,8 +179,14 @@ impl ChunkManager {
                 }
                 parents_removed.insert(*parent_node);
                 // We can remove the parent
-                //let entity_id = self.entities_to_remove.get(parent_node).unwrap();
-                //entities_to_remove.insert(*entity_id);
+                let entity_id = self.entities_to_remove.get(parent_node);
+                match entity_id {
+                    Some(parent_id) => {
+                        //entities_to_remove.insert(*parent_id);
+                        //self.entities_to_remove.remove(parent_node);
+                    }
+                    None => { }
+                };
             }
         }    
         
@@ -189,13 +195,7 @@ impl ChunkManager {
             // Remove the specified parents from the list
             !parents_removed.contains(coord)
         });
-        /*
-        self.entities_to_remove.retain(|_, id| {
-            // Hopefully this works
-            !entities_to_remove.contains(id)
-        });
-        */
-
+        println!("{}", self.entities_to_remove.len());
         return (new_chunks, entities_to_remove.iter().map(|x| *x).collect::<Vec<u16>>());
     }
 }
