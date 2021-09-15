@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::ops::{BitAnd, BitOr};
 use std::time::Instant;
 
+// TODO: Rewrite this
 // The whole octree
 pub struct Octree {
     pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
@@ -44,6 +45,7 @@ impl Octree {
             postprocess: false,
             parent_center: veclib::Vector3::<i64>::ZERO,
             children_centers: [veclib::Vector3::<i64>::ZERO; 8],
+            child_leaf_count: 0,
             children: false,
         }
     }
@@ -106,7 +108,7 @@ impl Octree {
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth
-    pub fn generate_incremental_octree(&mut self, input: veclib::Vector3<f32>) -> Option<(Vec<OctreeNode>, Vec<OctreeNode>)> {
+    pub fn generate_incremental_octree(&mut self, input: veclib::Vector3<f32>) -> Option<(Vec<OctreeNode>, Vec<OctreeNode>, HashMap<veclib::Vector3::<i64>, OctreeNode>)> {
         // Clamp the input position
         let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
             input,
@@ -117,9 +119,10 @@ impl Octree {
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it
             let added_nodes = self.generate_base_octree();
+            let nodes = added_nodes.clone();
             let added_nodes: Vec<OctreeNode> = added_nodes.iter().map(|(center, node)| node.clone()).collect();
             self.generated_base_octree = true;
-            return Some((added_nodes, Vec::new()));
+            return Some((added_nodes, Vec::new(), nodes));
         }
         // If we don't have a targetted node try to create the base octree
         if self.targetted_node.is_none() {
@@ -235,9 +238,9 @@ impl Octree {
         }
 
         // Update
-        self.postprocess_nodes = postprocess_nodes;
+        self.postprocess_nodes = postprocess_nodes;   
         // Return
-        return Some((added_postprocess_nodes, removed_postprocess_nodes));
+        return Some((added_postprocess_nodes, removed_postprocess_nodes, self.postprocess_nodes.clone()));
     }
 }
 
@@ -247,6 +250,7 @@ pub struct OctreeNode {
     pub position: veclib::Vector3<i64>,
     pub half_extent: u64,
     pub depth: u8,
+    pub child_leaf_count: u8,
 
     // Used for the parent-children links
     // TODO: Change this to it uses IDs instead of coordinates
@@ -302,6 +306,7 @@ impl OctreeNode {
                         parent_center: self.get_center(),
                         postprocess: false,
                         children_centers: [veclib::Vector3::<i64>::ZERO; 8],
+                        child_leaf_count: 0,
                         children: false,
                     };
                     let center = child.get_center();

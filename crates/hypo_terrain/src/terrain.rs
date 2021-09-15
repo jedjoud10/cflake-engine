@@ -42,6 +42,7 @@ pub struct Terrain {
     // Preloaded resources for chunks
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
+    parent_child_count: HashMap<veclib::Vector3::<i64>, u8>,
 }
 
 impl Terrain {
@@ -162,7 +163,21 @@ impl System for Terrain {
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
-                Some((mut added, removed)) => {
+                Some((mut added, removed, total_nodes)) => {
+                    
+                    // Calculate the child leaf node count for each node in the post process tree
+                    let mut nodes_parents_children_leaf_count: HashMap<veclib::Vector3::<i64>, u8> = HashMap::new();
+                    for (node_coords, node) in total_nodes.iter() {
+                        let mut count: u8 = 0;
+                        for child_coord in node.children_centers.iter() {
+                            // Skip
+                            if *child_coord == veclib::Vector3::ZERO { continue; }
+                            let child_node = total_nodes.get(child_coord).unwrap();
+                            if !child_node.children { count += 1; }
+                        }
+                        nodes_parents_children_leaf_count.insert(*node_coords, count);
+                    }
+                    self.parent_child_count = nodes_parents_children_leaf_count;
                     // Turn all the newly added nodes into chunks and instantiate them into the world
                     for octree_node in added {
                         // Only add the octree nodes that have no children
@@ -191,7 +206,8 @@ impl System for Terrain {
         }
 
         // Update the chunk manager
-        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data);
+        //println!("{:?}", self.parent_child_count);        
+        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data, self.parent_child_count.clone());
         for (coords, model) in added_chunks {
             // Add the entity
             let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, &coords, model);
@@ -201,7 +217,7 @@ impl System for Terrain {
         for entity_id in removed_chunks {
             // Removal the entity from the world
             data.entity_manager.remove_entity_s(&entity_id).unwrap();
-        }
+        }        
     }
 
     // Called for each entity in the system
