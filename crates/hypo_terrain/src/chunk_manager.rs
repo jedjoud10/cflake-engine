@@ -14,7 +14,7 @@ use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator, CHUNK_SI
 pub struct ChunkManager {
     pub chunks_to_generate: Vec<ChunkCoords>,
     // Just the chunk data
-    pub chunks: HashMap<veclib::Vector3<i64>, ChunkData>,
+    pub chunks: HashSet<veclib::Vector3<i64>>,
     pub entities: HashMap<veclib::Vector3<i64>, u16>,
     pub entities_to_remove: HashMap<veclib::Vector3<i64>, u16>,
     // The last frame chunk voxels where generated
@@ -50,7 +50,7 @@ impl ChunkManager {
     }
     // Remove a chunk
     pub fn remove_chunk(&mut self, coords: &ChunkCoords) -> Option<()> {
-        if self.chunks.contains_key(&coords.center) {
+        if self.chunks.contains(&coords.center) {
             // Only remove the chunk if it exists in the first place
             self.chunks.remove(&coords.center);
             return Some(());
@@ -173,6 +173,7 @@ impl ChunkManager {
                             // Valid model
                             // TODO: Gotta make this not clone the values
                             new_chunks.push((coords.clone(), model.clone()));
+                            self.chunks.insert(coords.center);
                         }
                         None => { /* No need */ }
                     }
@@ -182,14 +183,17 @@ impl ChunkManager {
                 let entity_id = self.entities_to_remove.get(parent_node);
                 match entity_id {
                     Some(parent_id) => {
-                        //entities_to_remove.insert(*parent_id);
-                        //self.entities_to_remove.remove(parent_node);
+                        entities_to_remove.insert(*parent_id);
+                        self.entities_to_remove.remove(parent_node);
                     }
                     None => { }
                 };
             }
         }    
         
+        // Clear the list just in case
+        if self.chunks_to_generate.len() == 0 { self.entities_to_remove.clear(); }
+
         // Now refresh our list
         self.parent_children_added_entity_chunks.retain(|coord, _| {
             // Remove the specified parents from the list
