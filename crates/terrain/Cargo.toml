@@ -1,0 +1,20 @@
+[package]
+name = "terrain"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+veclib = { git = "https://github.com/jedjoud10/veclib" }
+rayon = "1.5.1"
+gl = "0.14.0"
+math = { path = "../math" }
+systems = { path = "../systems" }
+system_event_data = { path = "../system_event_data" }
+ecs = { path = "../ecs" }
+rendering = { path = "../rendering" }
+others = { path = "../others" }
+defaults = { path = "../defaults" }
+input = { path = "../input" }
+debug = { path = "../debug" }

@@ -1,0 +1,19 @@
+[package]
+name = "defaults"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gl = "0.14.0"
+veclib = { git = "https://github.com/jedjoud10/veclib" }
+ui = { path = "../ui" }
+system_event_data = { path = "../system_event_data" }
+math = { path = "../math" }
+ecs = { path = "../ecs" }
+systems = { path = "../systems" }
+rendering = { path = "../rendering" }
+input = { path = "../input" }
+others = { path = "../others" }
+resources = { path = "../resources" }

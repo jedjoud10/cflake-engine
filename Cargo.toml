@@ -10,23 +10,23 @@ build = "build.rs"
 [workspace]
 
 members = [
-    "crates\\hypo_dev_game",
-    "crates\\hypo_main",
-    "crates\\hypo_system_event_data",
-    "crates\\hypo_errors",
-    "crates\\hypo_debug",
-    "crates\\hypo_core",
-    "crates\\hypo_systems",
-    "crates\\hypo_ecs",
-    "crates\\hypo_math",
-    "crates\\hypo_rendering",
-    "crates\\hypo_input",
-    "crates\\hypo_defaults",
-    "crates\\hypo_others",
-    "crates\\hypo_resources",
-    "crates\\hypo_resources_packer",
-    "crates\\hypo_terrain",
-    "crates\\hypo_ui"
+    "crates\\dev_game",
+    "crates\\main",
+    "crates\\system_event_data",
+    "crates\\errors",
+    "crates\\debug",
+    "crates\\core",
+    "crates\\systems",
+    "crates\\ecs",
+    "crates\\math",
+    "crates\\rendering",
+    "crates\\input",
+    "crates\\defaults",
+    "crates\\others",
+    "crates\\resources",
+    "crates\\resources_packer",
+    "crates\\terrain",
+    "crates\\ui"
 ]
 
 

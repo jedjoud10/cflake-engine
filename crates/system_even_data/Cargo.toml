@@ -1,0 +1,16 @@
+[package]
+name = "system_event_data"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ui = { path = "../ui" }
+input = { path = "../input" }
+others = { path = "../others" }
+ecs = { path = "../ecs" }
+errors = { path = "../errors" }
+rendering = { path = "../rendering" }
+resources = { path = "../resources" }
+debug = { path = "../debug" }

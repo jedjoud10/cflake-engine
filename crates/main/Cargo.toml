@@ -1,0 +1,24 @@
+[package]
+name = "main"
+version = "0.1.0"
+edition = "2018"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+glfw = "0.41.0"
+gl = "0.14.0"
+veclib = { git = "https://github.com/jedjoud10/veclib" }
+system_event_data = { path = "../system_event_data" }
+systems = { path = "../systems"  }
+core = { path = "../core" }
+input = { path = "../input" }
+others = { path = "../others" }
+ecs = { path = "../ecs" }
+errors = { path = "../errors" }
+rendering = { path = "../rendering" }
+resources = { path = "../resources" }
+debug = { path = "../debug" }
+defaults = { path = "../defaults" }
+terrain = { path = "../terrain" }
