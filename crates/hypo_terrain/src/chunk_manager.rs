@@ -22,7 +22,8 @@ pub struct ChunkManager {
     // Are we currently waiting for the voxels to finish generating?
     pub voxels_generating: bool,
     // The chunks that we need to add to the world and their corresponding parent node
-    pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, Vec<Option<(ChunkCoords, Model)>>>,
+    pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, Vec<(ChunkCoords, Option<Model>)>>,
+    pub parent_child_count: HashMap<veclib::Vector3<i64>, u8>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
 }
@@ -80,6 +81,15 @@ impl ChunkManager {
     }
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_child_count: HashMap<veclib::Vector3<i64>, u8>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+        // Check if we are currently generating the chunks
+        self.parent_child_count = parent_child_count;
+        if self.chunks_to_generate.len() > 0 {
+            // We are generating
+        } else {
+            // We are idle
+        }
+        
+        
         // Sort the chunks to generate
         if !self.voxels_generating {
             // Sort the added nodes using a priority system
@@ -132,7 +142,7 @@ impl ChunkManager {
                                 let chunk_data = ChunkData { coords: coords, voxels: voxels };    
                                 
                                 self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).and_modify(|x| {
-                                    x.push(Some((chunk_coords.clone(), model.clone())));
+                                    x.push((chunk_coords.clone(), Some(model.clone())));
                                 });
                                 
                                 Some((chunk_data, model))
@@ -140,7 +150,7 @@ impl ChunkManager {
                             None => {
                                 // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
                                 self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).and_modify(|x| {
-                                    x.push(None);
+                                    x.push((chunk_coords.clone(), None));
                                 });
                                 None
                             }
@@ -165,12 +175,13 @@ impl ChunkManager {
         // Check all the parents and check if their chunk child reached their limit
         for (parent_node, children) in self.parent_children_added_entity_chunks.iter() {
             // Check if it is equal the limit
-            let limit = parent_child_count.get(parent_node).unwrap();
+            let limit = self.parent_child_count.get(parent_node).unwrap();
             if children.len() as u8 == *limit {
                 // We have the correct amount of children, we can swap the children with their parent
                 for child in children {
-                    match child {
-                        Some((coords, model)) => {
+                    match &child.1 {
+                        Some(model) => {
+                            let coords = &child.0;
                             // Valid model
                             // TODO: Gotta make this not clone the values
                             new_chunks.push((coords.clone(), model.clone()));
@@ -191,6 +202,10 @@ impl ChunkManager {
                 };
             } else {
                 //println!("{} {} {:?}", children.len(), limit, parent_node);
+                for child in children {
+                    let coords = &child.0;
+                    data.debug.debug_default(DefaultDebugRendererType::CUBE(coords.center.clone().into(), veclib::Vector3::ONE * coords.size as f32 * 0.8), veclib::Vector3::X, false);
+                }
             }
         }    
 
@@ -202,7 +217,7 @@ impl ChunkManager {
             self.entities_to_remove.clear();
         }
 
-        //println!("{}", self.parent_children_added_entity_chunks.len());
+        println!("{}", self.parent_children_added_entity_chunks.len());
         return (new_chunks, entities_to_remove.iter().map(|x| *x).collect::<Vec<u16>>());
     }
 }

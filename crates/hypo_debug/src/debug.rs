@@ -71,7 +71,7 @@ impl DebugRenderer {
         // Loop each one and construct lines out of them
         let mut lines: Vec<math::shapes::Line> = Vec::new();
         self.colors.clear();
-        for renderer in self.debug_primitives.iter() {
+        for renderer in self.debug_primitives.iter().chain(self.permanent_debug_primitives.iter()) {
             match renderer {
                 DebugRendererType::CUBE(corners, icolor) => {
                     // Turn the corners into lines
