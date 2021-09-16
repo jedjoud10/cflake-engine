@@ -164,19 +164,15 @@ impl System for Terrain {
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
-                Some((mut added, removed, test_nodes)) => {
-                    
+                Some((mut added, removed, added_nodes_hashmap)) => {                    
                     // Calculate the child leaf node count for each node in the post process tree
                     let mut nodes_parents_children_leaf_count: HashMap<veclib::Vector3::<i64>, u8> = HashMap::new();
-                    for (node_coords, node) in test_nodes.iter() {
-                        let mut count: u8 = 0;
+                    for (node_coords, node) in added_nodes_hashmap.iter() {
+                        // Make sure the key exists for our parent
                         nodes_parents_children_leaf_count.entry(node.parent_center).or_insert(0);
-                        // Discard nodes that have children
+                        // Discard child nodes that have children
                         if !node.children {
                             nodes_parents_children_leaf_count.entry(node.parent_center).and_modify(|x| *x += 1);
-                        }
-                        if count == 8 {
-                            data.debug.debug_default(DefaultDebugRendererType::CUBE(node_coords.clone().into(), veclib::Vector3::ONE * node.half_extent as f32 * 2.0), veclib::Vector3::ONE, true);
                         }
                     }
                     self.parent_child_count = nodes_parents_children_leaf_count;

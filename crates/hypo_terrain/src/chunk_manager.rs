@@ -214,10 +214,12 @@ impl ChunkManager {
         
         // Clear the list just in case
         if self.chunks_to_generate.len() == 0 { 
+            let a = self.entities_to_remove.values().map(|x| *x).collect::<Vec<u16>>();
+            entities_to_remove.extend(a);
             self.entities_to_remove.clear();
         }
 
-        println!("{}", self.parent_children_added_entity_chunks.len());
+        //println!("{}", self.parent_children_added_entity_chunks.len());
         return (new_chunks, entities_to_remove.iter().map(|x| *x).collect::<Vec<u16>>());
     }
 }

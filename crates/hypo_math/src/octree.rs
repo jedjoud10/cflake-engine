@@ -239,9 +239,9 @@ impl Octree {
 
         // Update
         self.postprocess_nodes = postprocess_nodes;   
-        let test = added_postprocess_nodes.iter().map(|x| (x.get_center(), x.clone())).collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
+        let added_nodes_hashmap = added_postprocess_nodes.iter().map(|x| (x.get_center(), x.clone())).collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
         // Return
-        return Some((added_postprocess_nodes, removed_postprocess_nodes, test.clone()));
+        return Some((added_postprocess_nodes, removed_postprocess_nodes, added_nodes_hashmap));
     }
 }
 
