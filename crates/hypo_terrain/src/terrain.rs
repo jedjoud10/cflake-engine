@@ -1,6 +1,7 @@
 use crate::{chunk_data::ChunkCoords, ChunkData, ChunkManager};
 
 use super::voxel::VoxelGenerator;
+use hypo_debug::DefaultDebugRendererType;
 use hypo_defaults::components;
 use hypo_ecs::*;
 use hypo_input::*;
@@ -174,6 +175,9 @@ impl System for Terrain {
                             if *child_coord == veclib::Vector3::ZERO { continue; }
                             let child_node = total_nodes.get(child_coord).unwrap();
                             if !child_node.children { count += 1; }
+                        }
+                        if count == 0 {
+                            data.debug.debug_default(DefaultDebugRendererType::CUBE(node_coords.clone().into(), veclib::Vector3::ONE * node.half_extent as f32), veclib::Vector3::ONE, true);
                         }
                         nodes_parents_children_leaf_count.insert(*node_coords, count);
                     }
