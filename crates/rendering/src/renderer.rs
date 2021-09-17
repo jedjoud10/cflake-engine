@@ -1,8 +1,8 @@
 use super::{model::Model, model::ModelDataGPU, texture::Texture, Material, ShaderArg, ShaderUniformSetter};
 use bitflags::bitflags;
-use hypo_ecs::{Component, ComponentID, ComponentInternal};
-use hypo_others::CacheManager;
-use hypo_resources::{LoadableResource, ResourceManager};
+use ecs::{Component, ComponentID, ComponentInternal};
+use others::CacheManager;
+use resources::{LoadableResource, ResourceManager};
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 bitflags! {
@@ -35,7 +35,7 @@ impl Default for Renderer {
 }
 
 // Main traits implemented
-hypo_ecs::impl_component!(Renderer);
+ecs::impl_component!(Renderer);
 
 // Everything related to the creation of a renderer
 impl Renderer {

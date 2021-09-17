@@ -1,8 +1,9 @@
 use std::{ffi::c_void, ptr::null};
 
 use super::{Texture, TextureDimensionType, TextureFilter, TextureFlags, TextureWrapping};
-use hypo_others::CacheManager;
-use hypo_resources::{LoadableResource, Resource, ResourceManager};
+use others::CacheManager;
+use resources::{LoadableResource, Resource, ResourceManager};
+use errors::ResourceError;
 use image::EncodableLayout;
 
 // A 2D texture
@@ -64,7 +65,7 @@ impl Texture2D {
         local_path: &str,
         resource_manager: &mut ResourceManager,
         texture_cacher: &'a mut CacheManager<Texture2D>,
-    ) -> Result<(&'a Self, u16), hypo_errors::ResourceError> {
+    ) -> Result<(&'a Self, u16), ResourceError> {
         // Load the resource
         let resource = resource_manager.load_packed_resource(local_path)?;
         // If the texture was already cached, just loaded from cache
@@ -75,7 +76,7 @@ impl Texture2D {
             Ok((texture, texture_id))
         } else {
             // If it not cached, then load the texture from that resource
-            let mut texture = self.from_resource(resource).ok_or(hypo_errors::ResourceError::new_str("Could not load texture!"))?;
+            let mut texture = self.from_resource(resource).ok_or(ResourceError::new_str("Could not load texture!"))?;
             let (texture, texture_id) = texture.cache_texture(texture_cacher).unwrap();
             Ok((texture, texture_id))
         }

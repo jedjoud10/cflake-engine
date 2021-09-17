@@ -4,9 +4,10 @@ use crate::ButtonState;
 use crate::CoordinateType;
 use crate::Element;
 use crate::ElementType;
-use hypo_others::SmartList;
-use hypo_resources::LoadableResource;
-use hypo_resources::Resource;
+use others::SmartList;
+use resources::LoadableResource;
+use resources::Resource;
+use resources::LoadedUIElementType;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
 #[derive(Default, Debug)]
@@ -18,7 +19,7 @@ pub struct Root {
 // Loadable resource
 impl LoadableResource for Root {
     // Turn the LoadedUIRoot into this Root struct
-    fn from_resource(self, resource: &hypo_resources::Resource) -> Option<Self>
+    fn from_resource(self, resource: &Resource) -> Option<Self>
     where
         Self: Sized,
     {
@@ -38,10 +39,10 @@ impl LoadableResource for Root {
                 let mut parent_children: HashMap<usize, Vec<usize>> = HashMap::new();
                 for loaded_element in root.elements.iter() {
                     let element_type = match &loaded_element.loaded_elem_type {
-                        hypo_resources::LoadedUIElementType::Panel() => ElementType::Panel(),
-                        hypo_resources::LoadedUIElementType::Button() => ElementType::Button(ButtonState::Released),
-                        hypo_resources::LoadedUIElementType::Text(t) => ElementType::Text(t.clone()),
-                        hypo_resources::LoadedUIElementType::Image(lp) => ElementType::Image(lp.clone()),
+                        LoadedUIElementType::Panel() => ElementType::Panel(),
+                        LoadedUIElementType::Button() => ElementType::Button(ButtonState::Released),
+                        LoadedUIElementType::Text(t) => ElementType::Text(t.clone()),
+                        LoadedUIElementType::Image(lp) => ElementType::Image(lp.clone()),
                     };
                     let element = Element::new(
                         &mut output_root,

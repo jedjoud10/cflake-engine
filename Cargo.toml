@@ -7,8 +7,8 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-[workspace]
 
+[workspace]
 members = [
     "crates\\dev_game",
     "crates\\main",

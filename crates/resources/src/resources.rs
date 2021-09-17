@@ -8,6 +8,7 @@ use std::{
     io::{BufRead, BufReader, Read, Seek, SeekFrom},
     str,
 };
+use errors::ResourceError;
 
 // A resource manager that will load structs from binary files
 #[derive(Default)]
@@ -229,10 +230,10 @@ impl ResourceManager {
         }
     }
     // Turn a local path into a literal, hashed path
-    pub fn local_to_global_path(local_path: &str) -> Result<(String, String, u64), hypo_errors::ResourceError> {
+    pub fn local_to_global_path(local_path: &str) -> Result<(String, String, u64), ResourceError> {
         // Get the global path of the packed-resources folder
         let exe_path = env::current_exe().unwrap();
-        let exe_path = exe_path.to_str().ok_or(hypo_errors::ResourceError::new_str("Exe path not valid!"))?;
+        let exe_path = exe_path.to_str().ok_or(ResourceError::new_str("Exe path not valid!"))?;
         let client_folder: Vec<&str> = exe_path.split('\\').collect();
         let client_folder = format!("{}\\", &client_folder[..(client_folder.len() - 1)].join("\\"));
         let packed_resources_path = format!("{}packed-resources\\", client_folder);
@@ -243,7 +244,7 @@ impl ResourceManager {
         let _name = name_and_extension
             .split('.')
             .next()
-            .ok_or(hypo_errors::ResourceError::new(format!(
+            .ok_or(ResourceError::new(format!(
                 "Name or extension are not valid for resource file '{}'",
                 local_path
             )))?
@@ -258,7 +259,7 @@ impl ResourceManager {
         return Ok((file_path, extension, hashed_name));
     }
     // Loads a specific resource and caches it so we can use it next time
-    pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, hypo_errors::ResourceError> {
+    pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, ResourceError> {
         let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path)?;
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
@@ -272,7 +273,7 @@ impl ResourceManager {
         // Open the file
         let packed_file = File::open(file_path)
             .ok()
-            .ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
+            .ok_or(ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
         let mut reader = BufReader::new(packed_file);
 
         // Update the resource type
@@ -310,13 +311,13 @@ impl ResourceManager {
         self.cached_resources.remove(&hashed_name);
     }
     // Load the literal lines from a packed resource, with a byte padding at the start (Useful for function shaders)
-    pub fn load_lines_packed_resource(&mut self, local_path: &str, byte_padding: u64) -> Result<String, hypo_errors::ResourceError> {
+    pub fn load_lines_packed_resource(&mut self, local_path: &str, byte_padding: u64) -> Result<String, ResourceError> {
         // Get the global hashed path file
         let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path).unwrap();
         // Open the file first
         let packed_file = File::open(file_path)
             .ok()
-            .ok_or(hypo_errors::ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
+            .ok_or(ResourceError::new(format!("Resource file '{}' could not be opened!", local_path)))?;
         let mut reader = BufReader::new(packed_file);
 
         // Offset the reader

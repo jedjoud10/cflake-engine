@@ -1,6 +1,6 @@
 use std::{ffi::CString, ptr::null};
 
-use hypo_resources::Resource;
+use resources::Resource;
 
 // Sub shader type
 #[derive(Debug, Copy, Clone)]

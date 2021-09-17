@@ -7,9 +7,9 @@ use crate::TextureShaderAccessType;
 use super::Texture2D;
 use core::num;
 use gl;
-use hypo_others::CacheManager;
-use hypo_resources::Resource;
-use hypo_resources::ResourceManager;
+use others::CacheManager;
+use resources::Resource;
+use resources::ResourceManager;
 use std::{ffi::CString, ptr::null};
 
 // A shader that contains two sub shaders that are compiled independently

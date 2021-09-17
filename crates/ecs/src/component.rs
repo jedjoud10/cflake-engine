@@ -1,6 +1,6 @@
 use super::entity::Entity;
-use hypo_errors::ECSError;
-use hypo_others::SmartList;
+use errors::ECSError;
+use others::SmartList;
 use std::{any::Any, collections::HashMap};
 
 // Struct used to get the component ID of specific components, entities, and systems

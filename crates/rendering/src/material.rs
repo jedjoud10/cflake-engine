@@ -1,7 +1,7 @@
 use super::Texture2D;
 use bitflags::bitflags;
-use hypo_others::CacheManager;
-use hypo_resources::ResourceManager;
+use others::CacheManager;
+use resources::ResourceManager;
 
 bitflags! {
     pub struct MaterialFlags: u8 {
@@ -66,7 +66,7 @@ impl Material {
         texture_paths: Vec<&str>,
         texture_cacher: &mut CacheManager<Texture2D>,
         resource_manager: &mut ResourceManager,
-    ) -> Result<Self, hypo_errors::ResourceError> {
+    ) -> Result<Self, errors::ResourceError> {
         // Load the textures
         for (_i, &texture_path) in texture_paths.iter().enumerate() {
             let _resource = resource_manager.load_packed_resource(texture_path)?;

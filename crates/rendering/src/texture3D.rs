@@ -1,8 +1,8 @@
 use std::ptr::null;
 
 use super::{Texture, TextureDimensionType, TextureFilter, TextureFlags, TextureWrapping};
-use hypo_others::CacheManager;
-use hypo_resources::{LoadableResource, Resource, ResourceManager};
+use others::CacheManager;
+use resources::{LoadableResource, Resource, ResourceManager};
 use image::EncodableLayout;
 
 // A 3D texture

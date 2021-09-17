@@ -66,6 +66,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
+name = "core"
+version = "0.1.0"
+dependencies = [
+ "debug",
+ "defaults",
+ "ecs",
+ "errors",
+ "gl",
+ "glfw",
+ "input",
+ "others",
+ "rendering",
+ "resources",
+ "system_event_data",
+ "systems",
+ "ui",
+ "veclib",
+]
+
+[[package]]
 name = "crc32fast"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -119,6 +139,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "debug"
+version = "0.1.0"
+dependencies = [
+ "gl",
+ "math",
+ "others",
+ "rendering",
+ "resources",
+ "veclib",
+]
+
+[[package]]
+name = "defaults"
+version = "0.1.0"
+dependencies = [
+ "ecs",
+ "gl",
+ "input",
+ "math",
+ "others",
+ "rendering",
+ "resources",
+ "system_event_data",
+ "systems",
+ "ui",
+ "veclib",
+]
+
+[[package]]
 name = "deflate"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -129,10 +178,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "dev_game"
+version = "0.1.0"
+dependencies = [
+ "main",
+ "resources_packer",
+]
+
+[[package]]
+name = "ecs"
+version = "0.1.0"
+dependencies = [
+ "errors",
+ "others",
+]
+
+[[package]]
 name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
+name = "errors"
+version = "0.1.0"
 
 [[package]]
 name = "gif"
@@ -198,201 +267,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hypo_core"
-version = "0.1.0"
-dependencies = [
- "gl",
- "glfw",
- "hypo_debug",
- "hypo_defaults",
- "hypo_ecs",
- "hypo_errors",
- "hypo_input",
- "hypo_others",
- "hypo_rendering",
- "hypo_resources",
- "hypo_system_event_data",
- "hypo_systems",
- "hypo_ui",
- "veclib",
-]
-
-[[package]]
-name = "hypo_debug"
-version = "0.1.0"
-dependencies = [
- "gl",
- "hypo_math",
- "hypo_others",
- "hypo_rendering",
- "hypo_resources",
- "veclib",
-]
-
-[[package]]
-name = "hypo_defaults"
-version = "0.1.0"
-dependencies = [
- "gl",
- "hypo_ecs",
- "hypo_input",
- "hypo_math",
- "hypo_others",
- "hypo_rendering",
- "hypo_resources",
- "hypo_system_event_data",
- "hypo_systems",
- "hypo_ui",
- "veclib",
-]
-
-[[package]]
-name = "hypo_dev_game"
-version = "0.1.0"
-dependencies = [
- "hypo_main",
- "hypo_resources_packer",
-]
-
-[[package]]
-name = "hypo_ecs"
-version = "0.1.0"
-dependencies = [
- "hypo_errors",
- "hypo_others",
-]
-
-[[package]]
-name = "hypo_errors"
-version = "0.1.0"
-
-[[package]]
-name = "hypo_input"
-version = "0.1.0"
-dependencies = [
- "glfw",
-]
-
-[[package]]
-name = "hypo_main"
-version = "0.1.0"
-dependencies = [
- "gl",
- "glfw",
- "hypo_core",
- "hypo_debug",
- "hypo_defaults",
- "hypo_ecs",
- "hypo_errors",
- "hypo_input",
- "hypo_others",
- "hypo_rendering",
- "hypo_resources",
- "hypo_system_event_data",
- "hypo_systems",
- "hypo_terrain",
- "veclib",
-]
-
-[[package]]
-name = "hypo_math"
-version = "0.1.0"
-dependencies = [
- "veclib",
-]
-
-[[package]]
-name = "hypo_others"
-version = "0.1.0"
-
-[[package]]
-name = "hypo_rendering"
-version = "0.1.0"
-dependencies = [
- "bitflags",
- "gl",
- "hypo_ecs",
- "hypo_errors",
- "hypo_others",
- "hypo_resources",
- "image",
- "veclib",
-]
-
-[[package]]
-name = "hypo_resources"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "hypo_errors",
- "image",
- "veclib",
- "walkdir",
-]
-
-[[package]]
-name = "hypo_resources_packer"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "hypo_resources",
- "image",
- "veclib",
- "walkdir",
-]
-
-[[package]]
-name = "hypo_system_event_data"
-version = "0.1.0"
-dependencies = [
- "hypo_debug",
- "hypo_ecs",
- "hypo_errors",
- "hypo_input",
- "hypo_others",
- "hypo_rendering",
- "hypo_resources",
- "hypo_ui",
-]
-
-[[package]]
-name = "hypo_systems"
-version = "0.1.0"
-dependencies = [
- "hypo_ecs",
- "hypo_errors",
- "hypo_others",
- "hypo_system_event_data",
-]
-
-[[package]]
-name = "hypo_terrain"
-version = "0.1.0"
-dependencies = [
- "gl",
- "hypo_debug",
- "hypo_defaults",
- "hypo_ecs",
- "hypo_input",
- "hypo_math",
- "hypo_others",
- "hypo_rendering",
- "hypo_system_event_data",
- "hypo_systems",
- "rayon",
- "veclib",
-]
-
-[[package]]
-name = "hypo_ui"
-version = "0.1.0"
-dependencies = [
- "hypo_others",
- "hypo_resources",
- "veclib",
-]
-
-[[package]]
 name = "hypothermia"
 version = "0.1.0"
 
@@ -413,6 +287,13 @@ dependencies = [
  "png",
  "scoped_threadpool",
  "tiff",
+]
+
+[[package]]
+name = "input"
+version = "0.1.0"
+dependencies = [
+ "glfw",
 ]
 
 [[package]]
@@ -452,12 +333,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "main"
+version = "0.1.0"
+dependencies = [
+ "core",
+ "debug",
+ "defaults",
+ "ecs",
+ "errors",
+ "gl",
+ "glfw",
+ "input",
+ "others",
+ "rendering",
+ "resources",
+ "system_event_data",
+ "systems",
+ "terrain",
+ "veclib",
+]
+
+[[package]]
 name = "malloc_buf"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "math"
+version = "0.1.0"
+dependencies = [
+ "veclib",
 ]
 
 [[package]]
@@ -549,6 +458,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "others"
+version = "0.1.0"
+
+[[package]]
 name = "png"
 version = "0.16.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -595,6 +508,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "rendering"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "ecs",
+ "errors",
+ "gl",
+ "image",
+ "others",
+ "resources",
+ "veclib",
+]
+
+[[package]]
+name = "resources"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "errors",
+ "image",
+ "veclib",
+ "walkdir",
+]
+
+[[package]]
+name = "resources_packer"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "image",
+ "resources",
+ "veclib",
+ "walkdir",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -631,6 +580,48 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
+name = "system_event_data"
+version = "0.1.0"
+dependencies = [
+ "debug",
+ "ecs",
+ "errors",
+ "input",
+ "others",
+ "rendering",
+ "resources",
+ "ui",
+]
+
+[[package]]
+name = "systems"
+version = "0.1.0"
+dependencies = [
+ "ecs",
+ "errors",
+ "others",
+ "system_event_data",
+]
+
+[[package]]
+name = "terrain"
+version = "0.1.0"
+dependencies = [
+ "debug",
+ "defaults",
+ "ecs",
+ "gl",
+ "input",
+ "math",
+ "others",
+ "rayon",
+ "rendering",
+ "system_event_data",
+ "systems",
+ "veclib",
+]
+
+[[package]]
 name = "tiff"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -639,6 +630,15 @@ dependencies = [
  "jpeg-decoder",
  "miniz_oxide 0.4.4",
  "weezl",
+]
+
+[[package]]
+name = "ui"
+version = "0.1.0"
+dependencies = [
+ "others",
+ "resources",
+ "veclib",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 use super::{Component, ComponentID, ComponentManager};
-use hypo_errors::ECSError;
+use errors::ECSError;
 use std::collections::{HashMap, HashSet};
 
 // An entity manager that handles entities

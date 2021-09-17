@@ -9,7 +9,7 @@ use std::{
 };
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use hypo_resources::*;
+use resources::*;
 use image::GenericImageView;
 use walkdir::WalkDir;
 
