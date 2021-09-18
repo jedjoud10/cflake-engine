@@ -24,13 +24,13 @@ pub struct ChunkManager {
     pub voxels_generating: bool,
     // The chunks that we need to add to the world and their corresponding parent node
     pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, HashMap<veclib::Vector3<i64>, (ChunkCoords, Option<Model>)>>,
-    pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
+    pub parent_children: HashMap<veclib::Vector3<i64>, Vec<veclib::Vector3<i64>>>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
 }
 
 // How many frames to wait before getting the data from the compute shader
-pub const FRAMES_COMPUTE_DELAY: u64 = 50;
+pub const FRAMES_COMPUTE_DELAY: u64 = 1;
 
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
@@ -80,15 +80,9 @@ impl ChunkManager {
         self.camera_location = camera_entity.get_component::<components::Transform>(component_manager).unwrap().position;
         self.camera_forward_vector = camera_entity.get_component::<components::Transform>(component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
     }
-    // Set the parent child count if possible
-    pub fn set_octree_data(&mut self, parent_child_count: HashMap<veclib::Vector3<i64>, u8>, nodes: HashMap<veclib::Vector3<i64>, OctreeNode>) {
-        if self.chunks_to_generate.len() == 0 {
-            // We are idle
-            self.nodes = nodes;
-        }
-    }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_children: HashMap<veclib::Vector3<i64>, Vec<veclib::Vector3<i64>>>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+        self.parent_children = parent_children;
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating
@@ -183,13 +177,9 @@ impl ChunkManager {
         // Check all the parents and check if their chunk child reached their limit
         for (parent_node, children) in self.parent_children_added_entity_chunks.iter() {
             // Check if it is equal the limit
-            let original_children = self.nodes.get(parent_node).unwrap().children_centers.clone().iter().filter_map(|&x| 
-                if x != veclib::Vector3::ZERO {
-                    Some(x)
-                } else { None }
-            ).collect::<Vec<veclib::Vector3<i64>>>();
-            let all = children.len() + 1 == original_children.len();
-            if original_children.iter().all(|x| children.contains_key(x)) {
+            let centers = self.parent_children.get(parent_node).unwrap();
+            if centers.iter().all(|x| children.contains_key(x)) {
+                if data.time_manager.frame_count % 50 != 0 { continue; }
                 // We have the correct amount of children, we can swap the children with their parent
                 for child in children {
                     match &child.1.1 {
