@@ -24,13 +24,13 @@ pub struct ChunkManager {
     pub voxels_generating: bool,
     // The chunks that we need to add to the world and their corresponding parent node
     pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, Vec<(ChunkCoords, Option<Model>)>>,
-    pub parent_child_count: HashMap<veclib::Vector3<i64>, u8>,
+    pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
 }
 
 // How many frames to wait before getting the data from the compute shader
-pub const FRAMES_COMPUTE_DELAY: u64 = 1;
+pub const FRAMES_COMPUTE_DELAY: u64 = 50;
 
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
@@ -80,10 +80,16 @@ impl ChunkManager {
         self.camera_location = camera_entity.get_component::<components::Transform>(component_manager).unwrap().position;
         self.camera_forward_vector = camera_entity.get_component::<components::Transform>(component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
     }
+    // Set the parent child count if possible
+    pub fn set_octree_data(&mut self, parent_child_count: HashMap<veclib::Vector3<i64>, u8>, nodes: HashMap<veclib::Vector3<i64>, OctreeNode>) {
+        if self.chunks_to_generate.len() == 0 {
+            // We are idle
+            self.nodes = nodes;
+        }
+    }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_child_count: HashMap<veclib::Vector3<i64>, u8>, nodes: HashMap<veclib::Vector3<i64>, OctreeNode>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         // Check if we are currently generating the chunks
-        self.parent_child_count = parent_child_count;
         if self.chunks_to_generate.len() > 0 {
             // We are generating
         } else {
@@ -176,8 +182,13 @@ impl ChunkManager {
         // Check all the parents and check if their chunk child reached their limit
         for (parent_node, children) in self.parent_children_added_entity_chunks.iter() {
             // Check if it is equal the limit
-            let limit = self.parent_child_count.get(parent_node).unwrap();
-            if children.len() as u8 == *limit {
+            let original_children = self.nodes.get(parent_node).unwrap().children_centers.clone().iter().filter_map(|&x| 
+                if x != veclib::Vector3::ZERO {
+                    Some(x)
+                } else { None }
+            ).collect::<Vec<veclib::Vector3<i64>>>();
+            let all = children.len() + 1 == original_children.len();
+            if all {
                 // We have the correct amount of children, we can swap the children with their parent
                 for child in children {
                     match &child.1 {
@@ -220,12 +231,12 @@ impl ChunkManager {
                     None => { }
                 };
             } else {
-                //println!("{} {} {:?}", children.len(), limit, parent_node);
+                print!("--{} {}--", children.len(), original_children.len());
                 for child in children {
                     let coords = &child.0;
                     data.debug.debug_default(DefaultDebugRendererType::CUBE(coords.center.clone().into(), veclib::Vector3::ONE * coords.size as f32 * 0.8), veclib::Vector3::X, false);
                 }
-            }
+            }        
         }    
 
         // Remove the parents that got their children added to the world

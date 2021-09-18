@@ -20,7 +20,7 @@ pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 0.5;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 8;
+pub const OCTREE_DEPTH: u8 = 5;
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -176,8 +176,7 @@ impl System for Terrain {
                             nodes_parents_children_leaf_count.entry(node.parent_center).and_modify(|x| *x += 1);
                         }
                     }
-                    self.parent_child_count = nodes_parents_children_leaf_count;
-                    self.nodes = total_nodes;
+                    self.chunk_manager.set_octree_data(nodes_parents_children_leaf_count, total_nodes);
                     // Turn all the newly added nodes into chunks and instantiate them into the world
                     for (_, octree_node) in added {
                         // Only add the octree nodes that have no children
@@ -207,7 +206,7 @@ impl System for Terrain {
 
         // Update the chunk manager
         //println!("{:?}", self.parent_child_count);        
-        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data, self.parent_child_count.clone(), self.nodes.clone());
+        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data);
         for (coords, model) in added_chunks {
             // Add the entity
             let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, &coords, model);
