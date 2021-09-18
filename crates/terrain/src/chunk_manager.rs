@@ -23,7 +23,7 @@ pub struct ChunkManager {
     // Are we currently waiting for the voxels to finish generating?
     pub voxels_generating: bool,
     // The chunks that we need to add to the world and their corresponding parent node
-    pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, Vec<(ChunkCoords, Option<Model>)>>,
+    pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, HashMap<veclib::Vector3<i64>, (ChunkCoords, Option<Model>)>>,
     pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
@@ -125,7 +125,7 @@ impl ChunkManager {
                 let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
 
                 // Make sure the key exists
-                self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).or_insert(Vec::new());
+                self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).or_insert(HashMap::new());
                 
                 // Decide between generating the chunk or start the generation of the voxel data
                 if self.voxels_generating {
@@ -140,7 +140,7 @@ impl ChunkManager {
                         self.chunks_to_generate.remove(0);                        
 
                         // If we don't have a surface, no need to create a model for this chunk
-                        match has_surface {
+                        let t = match has_surface {
                             Some(_) => {
                                 // We have a surface, create the model
                                 let coords = chunk_coords.clone();
@@ -149,7 +149,7 @@ impl ChunkManager {
                                 let chunk_data = ChunkData { coords: coords, voxels: voxels };    
                                 
                                 self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).and_modify(|x| {
-                                    x.push((chunk_coords.clone(), Some(model.clone())));
+                                    x.insert(chunk_coords.center, (chunk_coords.clone(), Some(model.clone())));
                                 });
                                 
                                 Some((chunk_data, model))
@@ -157,11 +157,12 @@ impl ChunkManager {
                             None => {
                                 // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
                                 self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).and_modify(|x| {
-                                    x.push((chunk_coords.clone(), None));
+                                    x.insert(chunk_coords.center, (chunk_coords.clone(), None));
                                 });
                                 None
                             }
-                        }                        
+                        };
+                        t                     
                     } else {
                         // Wait...
                         None
@@ -188,12 +189,12 @@ impl ChunkManager {
                 } else { None }
             ).collect::<Vec<veclib::Vector3<i64>>>();
             let all = children.len() + 1 == original_children.len();
-            if all {
+            if original_children.iter().all(|x| children.contains_key(x)) {
                 // We have the correct amount of children, we can swap the children with their parent
                 for child in children {
-                    match &child.1 {
+                    match &child.1.1 {
                         Some(model) => {
-                            let coords = &child.0;
+                            let (_, (coords, _)) = &child;
                             // Valid model
                             // Check if this node is below the max_depth, because if it is, we need to remove the nodes that are in it's area first
                             /*
@@ -231,9 +232,9 @@ impl ChunkManager {
                     None => { }
                 };
             } else {
-                print!("--{} {}--", children.len(), original_children.len());
+                //print!("--{} {}--", children.len(), original_children.len());
                 for child in children {
-                    let coords = &child.0;
+                    let (coords, _) = &child.1;
                     data.debug.debug_default(DefaultDebugRendererType::CUBE(coords.center.clone().into(), veclib::Vector3::ONE * coords.size as f32 * 0.8), veclib::Vector3::X, false);
                 }
             }        
