@@ -3,11 +3,12 @@ use std::collections::{HashMap, HashSet};
 use debug::DefaultDebugRendererType;
 use defaults::components;
 use ecs::{ComponentManager, Entity};
+use math::octree::OctreeNode;
 use rendering::{Model, Shader};
 use system_event_data::SystemEventData;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator, CHUNK_SIZE};
+use crate::{CHUNK_SIZE, ChunkData, Terrain, VoxelGenerator, chunk_data::ChunkCoords, mesher};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -80,7 +81,7 @@ impl ChunkManager {
         self.camera_forward_vector = camera_entity.get_component::<components::Transform>(component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_child_count: HashMap<veclib::Vector3<i64>, u8>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_child_count: HashMap<veclib::Vector3<i64>, u8>, nodes: HashMap<veclib::Vector3<i64>, OctreeNode>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         // Check if we are currently generating the chunks
         self.parent_child_count = parent_child_count;
         if self.chunks_to_generate.len() > 0 {
@@ -183,6 +184,24 @@ impl ChunkManager {
                         Some(model) => {
                             let coords = &child.0;
                             // Valid model
+                            // Check if this node is below the max_depth, because if it is, we need to remove the nodes that are in it's area first
+                            /*
+                            if coords.depth < crate::terrain::OCTREE_DEPTH {
+                                // This node has nodes that intersect it, probably
+                                // Check each node that this node might intersect with
+                                let aabb = math::bounds::AABB { min: coords.position.into(), max: veclib::Vector3::<f32>::from(coords.position) + coords.size as f32 };
+                                for node in nodes.iter() {
+                                    // Check intersection
+                                    if math::Intersection::point_aabb(&veclib::Vector3::<f32>::from(node.1.get_center()), &aabb) {
+                                        if self.entities_to_remove.contains_key(node.0) {
+                                            let entity_id = self.entities_to_remove.get(node.0).unwrap();
+                                            entities_to_remove.insert(*entity_id);
+                                            self.entities_to_remove.remove(node.0);
+                                        }
+                                    }
+                                }
+                            }
+                            */
                             // TODO: Gotta make this not clone the values
                             new_chunks.push((coords.clone(), model.clone()));
                             self.chunks.insert(coords.center);

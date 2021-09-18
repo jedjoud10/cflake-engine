@@ -5,7 +5,7 @@ use debug::DefaultDebugRendererType;
 use defaults::components;
 use ecs::*;
 use input::*;
-use math;
+use math::{self, octree::OctreeNode};
 use others::CacheManager;
 use rendering::*;
 use system_event_data::{SystemEventData, SystemEventDataLite};
@@ -44,6 +44,7 @@ pub struct Terrain {
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
     parent_child_count: HashMap<veclib::Vector3::<i64>, u8>,
+    nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
 }
 
 impl Terrain {
@@ -164,10 +165,10 @@ impl System for Terrain {
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
-                Some((mut added, removed, added_nodes_hashmap)) => {                    
+                Some((mut added, removed, total_nodes)) => {                    
                     // Calculate the child leaf node count for each node in the post process tree
                     let mut nodes_parents_children_leaf_count: HashMap<veclib::Vector3::<i64>, u8> = HashMap::new();
-                    for (node_coords, node) in added_nodes_hashmap.iter() {
+                    for (node_coords, node) in added.iter() {
                         // Make sure the key exists for our parent
                         nodes_parents_children_leaf_count.entry(node.parent_center).or_insert(0);
                         // Discard child nodes that have children
@@ -176,8 +177,9 @@ impl System for Terrain {
                         }
                     }
                     self.parent_child_count = nodes_parents_children_leaf_count;
+                    self.nodes = total_nodes;
                     // Turn all the newly added nodes into chunks and instantiate them into the world
-                    for octree_node in added {
+                    for (_, octree_node) in added {
                         // Only add the octree nodes that have no children
                         if !octree_node.children {
                             // Add the chunk in the chunk manager
@@ -185,7 +187,7 @@ impl System for Terrain {
                         }
                     }
                     // Delete all the removed octree nodes from the world
-                    for octree_node in removed {
+                    for (_, octree_node) in removed {
                         let chunk_coords = ChunkCoords::new(&octree_node);
                         // Remove the chunk from the chunk manager
                         match self.chunk_manager.remove_chunk(&chunk_coords) {
@@ -205,7 +207,7 @@ impl System for Terrain {
 
         // Update the chunk manager
         //println!("{:?}", self.parent_child_count);        
-        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data, self.parent_child_count.clone());
+        let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data, self.parent_child_count.clone(), self.nodes.clone());
         for (coords, model) in added_chunks {
             // Add the entity
             let entity = self.add_chunk_entity(&data.texture_cacher, &mut data.component_manager, &coords, model);
