@@ -1,8 +1,8 @@
 use super::super::components;
-use hypo_ecs::{Entity, FilteredLinkedComponents};
-use hypo_input::*;
-use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
-use hypo_systems::{System, SystemData};
+use ecs::{Entity, FilteredLinkedComponents};
+use input::*;
+use system_event_data::{SystemEventData, SystemEventDataLite};
+use systems::{System, SystemData};
 #[derive(Default)]
 pub struct CameraSystem {
     pub system_data: SystemData,

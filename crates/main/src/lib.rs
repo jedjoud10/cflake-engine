@@ -4,27 +4,27 @@ extern crate gl;
 extern crate glfw;
 
 // World
-pub use hypo_core::World;
+pub use core::World;
 
 // Export
 use glfw::Context;
-pub use hypo_debug;
-pub use hypo_defaults::components;
-pub use hypo_defaults::systems;
-pub use hypo_ecs::*;
-pub use hypo_errors::*;
-pub use hypo_input::*;
-pub use hypo_others::*;
-pub use hypo_rendering::*;
-pub use hypo_resources::*;
-pub use hypo_system_event_data::*;
-pub use hypo_systems::*;
-pub use hypo_terrain::*;
+pub use debug;
+pub use defaults::components;
+pub use defaults::systems;
+pub use ecs::*;
+pub use errors::*;
+pub use input::*;
+pub use others::*;
+pub use rendering::*;
+pub use resources::*;
+pub use system_event_data::*;
+pub use ::systems::*;
+pub use terrain::*;
 pub use veclib;
 
 pub fn start(load_systems_callback: fn(&mut World), load_entities_callback: fn(&mut World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-    let default_size = hypo_others::get_default_window_size();
+    let default_size = others::get_default_window_size();
     let (mut window, events) = glfw
         .create_window(default_size.0 as u32, default_size.1 as u32, "Hypothermia", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");

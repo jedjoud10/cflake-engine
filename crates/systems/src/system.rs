@@ -1,7 +1,7 @@
-use hypo_ecs::*;
-use hypo_errors::ECSError;
-use hypo_others::Time;
-use hypo_system_event_data::*;
+use ecs::*;
+use errors::ECSError;
+use others::Time;
+use system_event_data::*;
 use std::any::Any;
 
 use crate::SystemFiringType;

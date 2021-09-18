@@ -1,7 +1,7 @@
-use hypo_main::*;
+use main::*;
 fn main() {
     // Load up the engine
-    hypo_main::start(load_systems, load_entities);
+    main::start(load_systems, load_entities);
 }
 // Load the systems
 pub fn load_systems(world: &mut World) {

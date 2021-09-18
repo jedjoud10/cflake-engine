@@ -1,9 +1,9 @@
 use super::super::components;
-use hypo_ecs::{Entity, FilteredLinkedComponents};
-use hypo_rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
-use hypo_resources::LoadableResource;
-use hypo_system_event_data::SystemEventData;
-use hypo_systems::{System, SystemData};
+use ecs::{Entity, FilteredLinkedComponents};
+use rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
+use resources::LoadableResource;
+use system_event_data::SystemEventData;
+use systems::{System, SystemData};
 
 #[derive(Default)]
 pub struct SkySystem {

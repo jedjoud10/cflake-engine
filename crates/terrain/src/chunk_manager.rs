@@ -1,10 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
-use hypo_debug::DefaultDebugRendererType;
-use hypo_defaults::components;
-use hypo_ecs::{ComponentManager, Entity};
-use hypo_rendering::{Model, Shader};
-use hypo_system_event_data::SystemEventData;
+use debug::DefaultDebugRendererType;
+use defaults::components;
+use ecs::{ComponentManager, Entity};
+use rendering::{Model, Shader};
+use system_event_data::SystemEventData;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator, CHUNK_SIZE};

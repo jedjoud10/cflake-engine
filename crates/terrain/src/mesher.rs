@@ -1,7 +1,7 @@
 use super::tables::*;
 use super::Voxel;
 use super::CHUNK_SIZE;
-use hypo_rendering::Model;
+use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 

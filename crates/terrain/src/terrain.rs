@@ -1,15 +1,15 @@
 use crate::{chunk_data::ChunkCoords, ChunkData, ChunkManager};
 
 use super::voxel::VoxelGenerator;
-use hypo_debug::DefaultDebugRendererType;
-use hypo_defaults::components;
-use hypo_ecs::*;
-use hypo_input::*;
-use hypo_math as math;
-use hypo_others::CacheManager;
-use hypo_rendering::*;
-use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
-use hypo_systems::*;
+use debug::DefaultDebugRendererType;
+use defaults::components;
+use ecs::*;
+use input::*;
+use math;
+use others::CacheManager;
+use rendering::*;
+use system_event_data::{SystemEventData, SystemEventDataLite};
+use systems::*;
 use math::octree;
 use std::collections::HashMap;
 
@@ -29,7 +29,7 @@ pub struct Chunk {
 }
 
 // Main traits implemented
-hypo_ecs::impl_component!(Chunk);
+ecs::impl_component!(Chunk);
 
 // Hehe terrain generator momenta
 #[derive(Default)]

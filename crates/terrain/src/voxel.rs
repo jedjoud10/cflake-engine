@@ -1,5 +1,5 @@
-use hypo_rendering::{Shader, Texture2D, Texture3D};
-use hypo_system_event_data::SystemEventData;
+use rendering::{Shader, Texture2D, Texture3D};
+use system_event_data::SystemEventData;
 
 use super::terrain::Terrain;
 use super::CHUNK_SIZE;
@@ -34,7 +34,7 @@ impl VoxelGenerator {
         self.voxel_texture = Texture3D::new()
             .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)
             .set_idf(gl::R32F, gl::RED, gl::FLOAT)
-            .set_wrapping_mode(hypo_rendering::TextureWrapping::ClampToBorder)
+            .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new());
     }
     // Update the last frame variable and dispatch the compute shader
@@ -44,14 +44,14 @@ impl VoxelGenerator {
 
         // Set the compute shader variables and voxel texture
         compute.use_shader();
-        compute.set_i3d("voxel_image", &self.voxel_texture, hypo_rendering::TextureShaderAccessType::ReadWrite);
+        compute.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::ReadWrite);
         compute.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         compute.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
         compute.set_i32("node_size", &(*size as i32));
 
         // Run the compute shader
         let compute_shader = match &mut compute.additional_shader {
-            hypo_rendering::AdditionalShader::Compute(c) => c,
+            rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data imme
@@ -64,7 +64,7 @@ impl VoxelGenerator {
 
         // Run the compute shader
         let compute_shader = match &mut compute.additional_shader {
-            hypo_rendering::AdditionalShader::Compute(c) => c,
+            rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };
         // Read back the compute shader data

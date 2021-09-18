@@ -1,5 +1,5 @@
-use hypo_ecs::*;
-use hypo_errors::ECSError;
+use ecs::*;
+use errors::ECSError;
 // Some system data that is part of a system and wrapped around System trait getter functions
 #[derive(Default)]
 pub struct SystemData {

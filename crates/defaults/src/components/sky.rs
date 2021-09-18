@@ -1,4 +1,4 @@
-use hypo_ecs::*;
+use ecs::*;
 
 // A component that will be linked to the skysphere
 #[derive(Default)]
@@ -7,4 +7,4 @@ pub struct Sky {
 }
 
 // Main traits implemented
-hypo_ecs::impl_component!(Sky);
+ecs::impl_component!(Sky);

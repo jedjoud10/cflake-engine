@@ -1,5 +1,5 @@
-use hypo_ecs::*;
-use hypo_math as math;
+use ecs::*;
+use math;
 
 // An AABB components
 #[derive(Default)]
@@ -25,7 +25,7 @@ impl Default for AABBGenerationType {
 impl AABB {
     // Generate the AABB from a renderer entity
     pub fn from_components(entity: &Entity, component_manager: &ComponentManager) -> Self {
-        let model_ref = &entity.get_component::<hypo_rendering::Renderer>(component_manager).unwrap().model;
+        let model_ref = &entity.get_component::<rendering::Renderer>(component_manager).unwrap().model;
         let transform = entity.get_component::<super::Transform>(component_manager).unwrap();
         let mut aabb = math::bounds::AABB::from_model(model_ref.vertices.clone());
         aabb.transform(&transform.get_matrix());
@@ -34,4 +34,4 @@ impl AABB {
 }
 
 // Main traits implemented
-hypo_ecs::impl_component!(AABB);
+ecs::impl_component!(AABB);

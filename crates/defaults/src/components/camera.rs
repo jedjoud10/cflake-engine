@@ -1,6 +1,6 @@
-use hypo_ecs::*;
-use hypo_math as math;
-use hypo_rendering::Window;
+use ecs::*;
+use math;
+use rendering::Window;
 // A simple camera component
 pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,

@@ -1,5 +1,5 @@
 // Transforms components
-use hypo_ecs::{Component, ComponentID, ComponentInternal};
+use ecs::{Component, ComponentID, ComponentInternal};
 // The transform component
 pub struct Transform {
     pub position: veclib::Vector3<f32>,
@@ -55,4 +55,4 @@ impl Transform {
     }
 }
 
-hypo_ecs::impl_component!(Transform);
+ecs::impl_component!(Transform);

@@ -1,5 +1,5 @@
-use hypo_math::octree;
-use hypo_math::octree::OctreeNode;
+use math::octree;
+use math::octree::OctreeNode;
 
 use super::Voxel;
 use super::VoxelGenerator;

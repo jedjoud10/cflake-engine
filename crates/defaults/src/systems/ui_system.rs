@@ -2,13 +2,13 @@ use core::mem::size_of;
 use std::{ffi::c_void, ptr::null};
 
 use super::super::components;
-use hypo_ecs::{Entity, FilteredLinkedComponents};
-use hypo_input::*;
-use hypo_rendering::Shader;
-use hypo_resources::LoadableResource;
-use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
-use hypo_systems::{System, SystemData, SystemFiringType};
-use hypo_ui::{Element, ElementType, Root};
+use ecs::{Entity, FilteredLinkedComponents};
+use input::*;
+use rendering::Shader;
+use resources::LoadableResource;
+use system_event_data::{SystemEventData, SystemEventDataLite};
+use systems::{System, SystemData, SystemFiringType};
+use ui::{Element, ElementType, Root};
 #[derive(Default)]
 pub struct UISystem {
     pub system_data: SystemData,
@@ -121,7 +121,7 @@ impl System for UISystem {
             .elements
             .iter()
             .filter_map(|x| x.as_ref())
-            .collect::<Vec<&hypo_ui::Element>>();
+            .collect::<Vec<&ui::Element>>();
         let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
         let root = &data.ui_manager.root;
 
@@ -150,12 +150,12 @@ impl System for UISystem {
                 let mut position: veclib::Vector2<f32> = veclib::Vector2::ZERO;
                 let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size.clone());
                 match element.coordinate_type {
-                    hypo_ui::CoordinateType::Pixel => {
+                    ui::CoordinateType::Pixel => {
                         // Pixel coordinate type
                         size = element.size / resolution;
                         position = element.position / resolution;
                     }
-                    hypo_ui::CoordinateType::Factor => {
+                    ui::CoordinateType::Factor => {
                         // Factor coordinate type
                         size = element.size;
                         position = element.position;

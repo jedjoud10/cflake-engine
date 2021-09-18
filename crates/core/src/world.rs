@@ -1,17 +1,17 @@
 use gl;
 use glfw::{self, Context};
-use hypo_debug::*;
-use hypo_defaults::components;
-use hypo_defaults::systems;
-use hypo_ecs::*;
-use hypo_errors::*;
-use hypo_input::*;
-use hypo_others::*;
-use hypo_rendering::*;
-use hypo_resources::*;
-use hypo_system_event_data::*;
-use hypo_systems::*;
-use hypo_ui::UIManager;
+use debug::*;
+use defaults::components;
+use defaults::systems;
+use ecs::*;
+use errors::*;
+use input::*;
+use others::*;
+use rendering::*;
+use resources::*;
+use system_event_data::*;
+use ::systems::*;
+use ui::UIManager;
 use std::collections::HashSet;
 //  The actual world
 #[derive(Default)]
@@ -182,7 +182,7 @@ impl World {
             // Set the glfw window as a windowed window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                let default_window_size = hypo_others::get_default_window_size();
+                let default_window_size = others::get_default_window_size();
                 window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
                 unsafe {
                     // Update the OpenGL viewport

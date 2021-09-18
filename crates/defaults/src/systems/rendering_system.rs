@@ -1,11 +1,11 @@
 use super::super::components;
 use gl;
-use hypo_ecs::{Entity, FilteredLinkedComponents};
-use hypo_math as math;
-use hypo_rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture2D, TextureShaderAccessType, Window};
-use hypo_resources::LoadableResource;
-use hypo_system_event_data::{SystemEventData, SystemEventDataLite};
-use hypo_systems::{System, SystemData};
+use ecs::{Entity, FilteredLinkedComponents};
+use math;
+use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture2D, TextureShaderAccessType, Window, ShaderArg};
+use resources::LoadableResource;
+use system_event_data::{SystemEventData, SystemEventDataLite};
+use systems::{System, SystemData};
 use std::ptr::null;
 
 #[derive(Default)]
@@ -36,15 +36,15 @@ impl RenderingSystem {
         for (name, data) in renderer.material.as_ref().unwrap().uniform_setter.uniforms.iter() {
             // Now it's the painful part
             match data {
-                hypo_rendering::ShaderArg::F32(v) => shader.set_f32(name, v),
-                hypo_rendering::ShaderArg::I32(v) => shader.set_i32(name, v),
-                hypo_rendering::ShaderArg::V2F32(v) => shader.set_vec2f32(name, v),
-                hypo_rendering::ShaderArg::V3F32(v) => shader.set_vec3f32(name, v),
-                hypo_rendering::ShaderArg::V4F32(v) => shader.set_vec4f32(name, v),
-                hypo_rendering::ShaderArg::V2I32(v) => shader.set_vec2i32(name, v),
-                hypo_rendering::ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
-                hypo_rendering::ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
-                hypo_rendering::ShaderArg::MAT44(v) => shader.set_mat44(name, v),
+                ShaderArg::F32(v) => shader.set_f32(name, v),
+                ShaderArg::I32(v) => shader.set_i32(name, v),
+                ShaderArg::V2F32(v) => shader.set_vec2f32(name, v),
+                ShaderArg::V3F32(v) => shader.set_vec3f32(name, v),
+                ShaderArg::V4F32(v) => shader.set_vec4f32(name, v),
+                ShaderArg::V2I32(v) => shader.set_vec2i32(name, v),
+                ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
+                ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
+                ShaderArg::MAT44(v) => shader.set_mat44(name, v),
             }
         }
     }
@@ -288,7 +288,7 @@ impl System for RenderingSystem {
         self.create_screen_quad(data);
 
         // Then setup opengl and the render buffer
-        let _default_size = hypo_others::get_default_window_size();
+        let _default_size = others::get_default_window_size();
         self.setup_opengl(data);
 
         // Load the wireframe shader
