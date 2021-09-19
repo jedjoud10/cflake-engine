@@ -24,7 +24,7 @@ pub struct ChunkManager {
     pub voxels_generating: bool,
     // The chunks that we need to add to the world and their corresponding parent node
     pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, HashMap<veclib::Vector3<i64>, (ChunkCoords, Option<Model>)>>,
-    pub parent_children: HashMap<veclib::Vector3<i64>, Vec<veclib::Vector3<i64>>>,
+    pub parent_children: HashMap<veclib::Vector3<i64>, HashSet<veclib::Vector3<i64>>>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
 }
@@ -81,7 +81,7 @@ impl ChunkManager {
         self.camera_forward_vector = camera_entity.get_component::<components::Transform>(component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_children: HashMap<veclib::Vector3<i64>, Vec<veclib::Vector3<i64>>>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_children: HashMap<veclib::Vector3<i64>, HashSet<veclib::Vector3<i64>>>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         self.parent_children = parent_children;
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
@@ -175,10 +175,12 @@ impl ChunkManager {
         let mut entities_to_remove: HashSet<u16> = HashSet::new();  
         let mut valid_parents: HashSet<veclib::Vector3<i64>> = HashSet::new();
         // Check all the parents and check if their chunk child reached their limit
+
         for (parent_node, children) in self.parent_children_added_entity_chunks.iter() {
             // Check if it is equal the limit
-            let centers = self.parent_children.get(parent_node).unwrap();
-            if centers.iter().all(|x| children.contains_key(x)) {
+            let centers = self.parent_children.get(parent_node).unwrap().clone();
+            let keys = children.keys().map(|x| x.clone()).collect::<HashSet<veclib::Vector3<i64>>>();
+            if centers == keys {
                 // We have the correct amount of children, we can swap the children with their parent
                 for child in children {
                     match &child.1.1 {
@@ -231,15 +233,16 @@ impl ChunkManager {
 
         // Remove the parents that got their children added to the world
         self.parent_children_added_entity_chunks.retain(|x, _| !valid_parents.contains(x));
-        
+        println!("{}", self.parent_children_added_entity_chunks.len());
         // Clear the list just in case
-        if self.chunks_to_generate.len() == 0 { 
+        if self.chunks_to_generate.len() == 0 && self.parent_children_added_entity_chunks.len() == 0 { 
             let a = self.entities_to_remove.values().map(|x| *x).collect::<Vec<u16>>();
             entities_to_remove.extend(a);
             self.entities_to_remove.clear();
         }
 
         //println!("{}", self.parent_children_added_entity_chunks.len());
-        return (new_chunks, entities_to_remove.iter().map(|x| *x).collect::<Vec<u16>>());
+        let output = (new_chunks, entities_to_remove.iter().map(|x| *x).collect::<Vec<u16>>());
+        return output;
     }
 }

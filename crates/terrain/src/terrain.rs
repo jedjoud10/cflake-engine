@@ -11,7 +11,7 @@ use rendering::*;
 use system_event_data::{SystemEventData, SystemEventDataLite};
 use systems::*;
 use math::octree;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 // The actual chunk size number that you change
 pub const MAIN_CHUNK_SIZE: usize = 32;
@@ -44,7 +44,7 @@ pub struct Terrain {
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
     parent_child_count: HashMap<veclib::Vector3::<i64>, u8>,
-    parent_children: HashMap<veclib::Vector3<i64>, Vec<veclib::Vector3<i64>>>,
+    parent_children: HashMap<veclib::Vector3<i64>, HashSet<veclib::Vector3<i64>>>,
 }
 
 impl Terrain {
@@ -167,13 +167,13 @@ impl System for Terrain {
             match self.octree.generate_incremental_octree(camera_location) {
                 Some((added, removed, total_nodes)) => {                    
                     // Calculate the child leaf node count for each node in the post process tree
-                    let mut parents_children: HashMap<veclib::Vector3::<i64>, Vec<veclib::Vector3<i64>>> = HashMap::new();
+                    let mut parents_children: HashMap<veclib::Vector3::<i64>, HashSet<veclib::Vector3<i64>>> = HashMap::new();
                     for (node_coords, node) in added.iter() {
                         // Make sure the key exists for our parent
-                        parents_children.entry(node.parent_center).or_insert(Vec::new());
+                        parents_children.entry(node.parent_center).or_insert(HashSet::new());
                         // Discard child nodes that have children
                         if !node.children {
-                            parents_children.entry(node.parent_center).and_modify(|x| x.push(node_coords.clone()));
+                            parents_children.entry(node.parent_center).and_modify(|x| { x.insert(node_coords.clone()); });
                         }
                     }
                     self.parent_children = parents_children;
