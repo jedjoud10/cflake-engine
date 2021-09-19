@@ -179,7 +179,6 @@ impl ChunkManager {
             // Check if it is equal the limit
             let centers = self.parent_children.get(parent_node).unwrap();
             if centers.iter().all(|x| children.contains_key(x)) {
-                if data.time_manager.frame_count % 50 != 0 { continue; }
                 // We have the correct amount of children, we can swap the children with their parent
                 for child in children {
                     match &child.1.1 {
