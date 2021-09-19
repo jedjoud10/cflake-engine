@@ -79,7 +79,7 @@ pub fn load_entities(world: &mut World) {
 
     // Create a sky material
     let material = Material::default()
-        .load_textures(texture_ids, &mut world.texture_cacher)
+        .load_textures(&texture_ids, &mut world.texture_cacher)
         .set_shader(&world.shader_cacher.1.id_get_default_object(0).unwrap().name);
 
     // Link components

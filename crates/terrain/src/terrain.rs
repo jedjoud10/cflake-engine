@@ -20,7 +20,9 @@ pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
 pub const LOD_FACTOR: f32 = 0.5;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 5;
+pub const OCTREE_DEPTH: u8 = 8;
+// The size of the terrain in meters
+pub const TERRAIN_SIZE: u32 = (MAIN_CHUNK_SIZE as u32 / 2) * 2_u32.pow(OCTREE_DEPTH as u32);
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -71,10 +73,10 @@ impl Terrain {
             )
             .unwrap();
         let material = Material::default()
-            .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.05))
+            .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.2))
             .set_uniform("normals_strength", ShaderArg::F32(1.0))
             .set_shader(self.shader_name.as_str())
-            .set_uniform("depth_level", ShaderArg::F32(coords.depth as f32 / OCTREE_DEPTH as f32));
+            .load_textures(&self.texture_ids, texture_cacher);
         entity
             .link_component::<Renderer>(component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
             .unwrap();
@@ -158,8 +160,6 @@ impl System for Terrain {
             .get_component::<components::Transform>(data.component_manager)
             .unwrap()
             .position;
-        let camera_forward_vector = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
-
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
@@ -173,7 +173,6 @@ impl System for Terrain {
                         }
                     }
                     // Delete all the removed octree nodes from the world
-                    println!("{}", removed.len());
                     for (_, octree_node) in removed {
                         let chunk_coords = ChunkCoords::new(&octree_node);
                         // Remove the chunk from the chunk manager

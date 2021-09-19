@@ -51,7 +51,7 @@ impl System for SkySystem {
 
         // Create a sky material
         let material = Material::default()
-            .load_textures(vec![cached_texture_id], &mut data.texture_cacher)
+            .load_textures(&vec![cached_texture_id], &mut data.texture_cacher)
             .set_shader(sky_shader_name.as_str());
 
         // Link components

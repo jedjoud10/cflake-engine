@@ -5,7 +5,7 @@ layout(location = 2) in vec4 model_tangent;
 layout(location = 3) in vec2 model_uv;
 uniform mat4 mvp_matrix;
 uniform mat4 model_matrix;
-out flat vec3 m_normal;
+out vec3 m_normal;
 out vec4 m_tangents;
 out vec2 m_uv;
 out vec3 m_position;

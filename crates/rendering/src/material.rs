@@ -37,7 +37,7 @@ impl Default for Material {
 
 impl Material {
     // Load textures from their texture struct
-    pub fn load_textures(mut self, texture_ids: Vec<u16>, texture_cacher: &CacheManager<Texture2D>) -> Self {
+    pub fn load_textures(mut self, texture_ids: &Vec<u16>, texture_cacher: &CacheManager<Texture2D>) -> Self {
         // Set the textures as the renderer's textures
         for (&texture_id) in texture_ids.iter() {
             // Since these are loadable textures, we already know they got cached beforehand

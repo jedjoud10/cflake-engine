@@ -105,7 +105,6 @@ impl Octree {
         let postprocess_nodes = self.calculate_postprocess_nodes(&veclib::Vector3::ONE, &nodes);
         self.postprocess_nodes = postprocess_nodes.clone();
         nodes.extend(postprocess_nodes);
-        println!("Generated the base octree");
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth

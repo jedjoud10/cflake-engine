@@ -8,17 +8,21 @@ uniform sampler2D normals_tex;
 uniform vec2 uv_scale;
 uniform vec3 view_pos;
 uniform float normals_strength;
-uniform float depth_level;
 in vec3 m_position;
-in flat vec3 m_normal;
+in vec3 m_normal;
 in vec4 m_tangent;
 in vec2 m_uv;
 in mat3 tbn;
+vec3 get_blend(vec3 normal) {
+	const float offset = -0.3;
+	normal = abs(normal);
+	vec3 weights = (max(normal + offset, 0));
+	weights /= weights.x + weights.y + weights.z;
+	return weights;
+}
 void main() {
 	vec3 world_normal = normalize(m_normal);
-	const float sharpening = 1.0;
-	vec3 blending = pow(abs(world_normal), vec3(sharpening, sharpening, sharpening));
-	blending = normalize(blending);
+	vec3 blending = get_blend(world_normal);
 
 	// Sample the diffuse texture three times to make the triplanar texture
 	vec3 diffusex = texture(diffuse_tex, m_position.zy * uv_scale).xyz * blending.x;
@@ -34,9 +38,8 @@ void main() {
 	normaly = vec3(vec2(normaly.x, -normaly.y) * normals_strength + world_normal.xz, world_normal.y) * blending.y;
 	normalz = vec3(vec2(normalz.x, -normalz.y) * normals_strength + world_normal.xy, world_normal.z) * blending.z;
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
-
-	frag_diffuse = vec3(depth_level, depth_level, depth_level);
-	frag_normal = m_normal;
+	frag_diffuse = diffuse_final;
+	frag_normal = normal_final;
 	frag_pos = m_position;
 	frag_emissive = vec3(0, 0, 0);
 }
