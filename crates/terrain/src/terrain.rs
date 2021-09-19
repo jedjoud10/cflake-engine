@@ -73,8 +73,8 @@ impl Terrain {
             )
             .unwrap();
         let material = Material::default()
-            .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.2))
-            .set_uniform("normals_strength", ShaderArg::F32(1.0))
+            .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.02))
+            .set_uniform("normals_strength", ShaderArg::F32(2.0))
             .set_shader(self.shader_name.as_str())
             .load_textures(&self.texture_ids, texture_cacher);
         entity
