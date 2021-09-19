@@ -22,9 +22,6 @@ pub struct ChunkManager {
     pub last_frame_voxels_generated: u64,
     // Are we currently waiting for the voxels to finish generating?
     pub voxels_generating: bool,
-    // The chunks that we need to add to the world and their corresponding parent node
-    pub parent_children_added_entity_chunks: HashMap<veclib::Vector3<i64>, HashMap<veclib::Vector3<i64>, (ChunkCoords, Option<Model>)>>,
-    pub parent_children: HashMap<veclib::Vector3<i64>, HashSet<veclib::Vector3<i64>>>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
 }
@@ -81,8 +78,7 @@ impl ChunkManager {
         self.camera_forward_vector = camera_entity.get_component::<components::Transform>(component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData, parent_children: HashMap<veclib::Vector3<i64>, HashSet<veclib::Vector3<i64>>>) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
-        self.parent_children = parent_children;
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating
@@ -118,9 +114,6 @@ impl ChunkManager {
                 let chunk_coords = chunk_coords.clone();
                 let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
 
-                // Make sure the key exists
-                self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).or_insert(HashMap::new());
-                
                 // Decide between generating the chunk or start the generation of the voxel data
                 if self.voxels_generating {
                     // The voxels are generating, so wait until we reached a satisfactory frame count
@@ -140,19 +133,11 @@ impl ChunkManager {
                                 let coords = chunk_coords.clone();
                                 let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
                                 // Save the chunk's data, though don't save the mode
-                                let chunk_data = ChunkData { coords: coords, voxels: voxels };    
-                                
-                                self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).and_modify(|x| {
-                                    x.insert(chunk_coords.center, (chunk_coords.clone(), Some(model.clone())));
-                                });
-                                
+                                let chunk_data = ChunkData { coords: coords, voxels: voxels };                                    
                                 Some((chunk_data, model))
                             }
                             None => {
                                 // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
-                                self.parent_children_added_entity_chunks.entry(chunk_coords.parent_center).and_modify(|x| {
-                                    x.insert(chunk_coords.center, (chunk_coords.clone(), None));
-                                });
                                 None
                             }
                         };
@@ -172,77 +157,22 @@ impl ChunkManager {
             }
             None => { /* No chunk to generate */ None }
         };       
-        let mut entities_to_remove: HashSet<u16> = HashSet::new();  
-        let mut valid_parents: HashSet<veclib::Vector3<i64>> = HashSet::new();
-        // Check all the parents and check if their chunk child reached their limit
-
-        for (parent_node, children) in self.parent_children_added_entity_chunks.iter() {
-            // Check if it is equal the limit
-            let centers = self.parent_children.get(parent_node).unwrap().clone();
-            let keys = children.keys().map(|x| x.clone()).collect::<HashSet<veclib::Vector3<i64>>>();
-            if centers == keys {
-                // We have the correct amount of children, we can swap the children with their parent
-                for child in children {
-                    match &child.1.1 {
-                        Some(model) => {
-                            let (_, (coords, _)) = &child;
-                            // Valid model
-                            // Check if this node is below the max_depth, because if it is, we need to remove the nodes that are in it's area first
-                            /*
-                            if coords.depth < crate::terrain::OCTREE_DEPTH {
-                                // This node has nodes that intersect it, probably
-                                // Check each node that this node might intersect with
-                                let aabb = math::bounds::AABB { min: coords.position.into(), max: veclib::Vector3::<f32>::from(coords.position) + coords.size as f32 };
-                                for node in nodes.iter() {
-                                    // Check intersection
-                                    if math::Intersection::point_aabb(&veclib::Vector3::<f32>::from(node.1.get_center()), &aabb) {
-                                        if self.entities_to_remove.contains_key(node.0) {
-                                            let entity_id = self.entities_to_remove.get(node.0).unwrap();
-                                            entities_to_remove.insert(*entity_id);
-                                            self.entities_to_remove.remove(node.0);
-                                        }
-                                    }
-                                }
-                            }
-                            */
-                            // TODO: Gotta make this not clone the values
-                            new_chunks.push((coords.clone(), model.clone()));
-                            self.chunks.insert(coords.center);
-                        }
-                        None => { /* No need */ }
-                    }
-                }
-                // Check if we should remove this parent node
-                valid_parents.insert(*parent_node);
-                let entity_id = self.entities_to_remove.get(parent_node);
-                match entity_id {
-                    Some(parent_id) => {
-                        entities_to_remove.insert(*parent_id);
-                        self.entities_to_remove.remove(parent_node);
-                    }
-                    None => { }
-                };
-            } else {
-                //print!("--{} {}--", children.len(), original_children.len());
-                for child in children {
-                    let (coords, _) = &child.1;
-                    data.debug.debug_default(DefaultDebugRendererType::CUBE(coords.center.clone().into(), veclib::Vector3::ONE * coords.size as f32 * 0.8), veclib::Vector3::X, false);
-                }
-            }        
-        }    
-
-        // Remove the parents that got their children added to the world
-        self.parent_children_added_entity_chunks.retain(|x, _| !valid_parents.contains(x));
-        println!("{}", self.parent_children_added_entity_chunks.len());
-        // Clear the list just in case
-        if self.chunks_to_generate.len() == 0 && self.parent_children_added_entity_chunks.len() == 0 { 
-            let a = self.entities_to_remove.values().map(|x| *x).collect::<Vec<u16>>();
-            entities_to_remove.extend(a);
-            self.entities_to_remove.clear();
+        let mut entities_to_remove: Vec<u16> = Vec::new();  
+        
+        // The system was flawed...
+        match generated_chunk {
+            Some((chunk_data, model)) => {
+                self.chunks.insert(chunk_data.coords.center.clone());
+                new_chunks.push((chunk_data.coords, model.clone()));
+            },
+            None => { /* No model */ },
         }
-
-        //println!("{}", self.parent_children_added_entity_chunks.len());
-        let output = (new_chunks, entities_to_remove.iter().map(|x| *x).collect::<Vec<u16>>());
+        // Remove the entities after all the new ones got generated
+        if self.chunks_to_generate.len() == 0 {
+            entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();    
+            self.entities_to_remove.clear();        
+        }
+        let output = (new_chunks, entities_to_remove);
         return output;
     }
 }
