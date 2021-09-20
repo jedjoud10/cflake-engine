@@ -26,7 +26,8 @@ members = [
     "crates\\resources",
     "crates\\resources_packer",
     "crates\\terrain",
-    "crates\\ui"
+    "crates\\ui",
+    "crates\\io"
 ]
 
 

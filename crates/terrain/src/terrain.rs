@@ -1,4 +1,4 @@
-use crate::{chunk_data::ChunkCoords, ChunkData, ChunkManager};
+use crate::{BoundChecker, ChunkData, ChunkManager, chunk_data::ChunkCoords};
 
 use super::voxel::VoxelGenerator;
 use debug::DefaultDebugRendererType;
@@ -163,7 +163,9 @@ impl System for Terrain {
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
-                Some((added, removed, total_nodes)) => { 
+                Some((mut added, removed, total_nodes)) => { 
+                    // Filter first
+                    added.retain(|_, node| BoundChecker::bound_check(&node));
                     // Turn all the newly added nodes into chunks and instantiate them into the world
                     for (_, octree_node) in added {
                         // Only add the octree nodes that have no children
