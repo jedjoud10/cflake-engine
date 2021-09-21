@@ -7,7 +7,6 @@ use crate::ElementType;
 use others::SmartList;
 use resources::LoadableResource;
 use resources::Resource;
-use resources::LoadedUIElementType;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
 #[derive(Default, Debug)]
@@ -16,66 +15,6 @@ pub struct Root {
     pub max_depth: i32,
 }
 
-// Loadable resource
-impl LoadableResource for Root {
-    // Turn the LoadedUIRoot into this Root struct
-    fn from_resource(self, resource: &Resource) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        match resource {
-            Resource::UIRoot(root, _) => {
-                let mut output_root: Root = Root::default();
-                // Create the root element
-                Element::new(
-                    &mut output_root,
-                    &veclib::Vector2::ZERO,
-                    &veclib::Vector2::ONE,
-                    &veclib::Vector4::ZERO,
-                    ElementType::Empty,
-                    CoordinateType::Factor,
-                );
-                // The list of children-parent links
-                let mut parent_children: HashMap<usize, Vec<usize>> = HashMap::new();
-                for loaded_element in root.elements.iter() {
-                    let element_type = match &loaded_element.loaded_elem_type {
-                        LoadedUIElementType::Panel() => ElementType::Panel(),
-                        LoadedUIElementType::Button() => ElementType::Button(ButtonState::Released),
-                        LoadedUIElementType::Text(t) => ElementType::Text(t.clone()),
-                        LoadedUIElementType::Image(lp) => ElementType::Image(lp.clone()),
-                    };
-                    let element = Element::new(
-                        &mut output_root,
-                        &loaded_element.pos,
-                        &loaded_element.size,
-                        &loaded_element.color,
-                        element_type,
-                        match loaded_element.coordinate_type {
-                            0 => CoordinateType::Pixel,
-                            1 => CoordinateType::Factor,
-                            _ => CoordinateType::Pixel,
-                        },
-                    );
-                    // Attach this specific element to it's valid parent
-                    if loaded_element.pid != 0 {
-                        // Add this child into the children of the same parent
-                        let old_children = parent_children.entry(loaded_element.pid as usize).or_insert(Vec::new());
-                        old_children.push(loaded_element.id as usize);
-                    }
-                }
-                // Link all the children to the parents
-                for (parent, children) in parent_children {
-                    Element::attach(&mut output_root, parent, children)
-                }
-                Some(output_root)
-            }
-            _ => {
-                /* We are doomed */
-                None
-            }
-        }
-    }
-}
 
 impl Root {
     // New
@@ -83,8 +22,16 @@ impl Root {
         Self::default()
     }
     // Add an element to the tree
-    pub fn add_element(&mut self, element: Element) -> usize {
-        return self.smart_element_list.add_element(element) as usize;
+    pub fn add_element(&mut self, mut element: Element) -> usize {
+        // Get the ID of the element
+        let element_id = self.smart_element_list.get_next_valid_id() as usize;
+        element.id = element_id;
+        element.depth += 1;
+        // Add the element
+        let element_id = self.smart_element_list.add_element(element) as usize;
+        // Attach this element to the root element 
+        Element::attach(self, 0, vec![element_id]);
+        return element_id;
     }
     // Remove an element from the three, and recursively remove it's children
     pub fn remove_element(&mut self, element: Element) {
@@ -100,10 +47,29 @@ impl Root {
             elems_to_evaluate.remove(0);
         }
     }
-    // Load a specific UI file from the resources
-    pub fn load_root_file(local_path: &str) -> Root {
-        let mut output: Root = Root::default();
 
-        return output;
+    // ---- Actual root UI stuff ---- \\
+
+    // Get the state of a specific button element
+    pub fn get_button_state(&self, element_id: &u16) -> &ButtonState {
+        // Get the element
+        let elem = self.smart_element_list.get_element(element_id).unwrap();
+        let state = match elem.element_type {
+            ElementType::Button(ref state) => state,
+            _ => &ButtonState::Released,
+        };
+        return state;
+    }
+    // Set the text of a text element
+    pub fn set_text_state(&mut self, element_id: &u16, text: &str) {
+        // Get the element mutably
+        let elem = self.smart_element_list.get_element_mut(element_id).unwrap();
+        match elem.element_type {
+            ElementType::Text(ref mut last_text) => {
+                // Set the text
+                *last_text = text.to_string();
+            }
+            _ => {}
+        }
     }
 }

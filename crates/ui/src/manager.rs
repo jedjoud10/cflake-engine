@@ -1,33 +1,45 @@
+use std::ops::{Index, IndexMut};
+
 use crate::{element::ButtonState, element::ElementType, Root};
 
-// The UI manager
+// The UI manager, it can contain multiple UI roots, and switch between them
 #[derive(Default)]
 pub struct UIManager {
-    pub root: Root,
+    pub roots: Vec<Root>,
 }
 
 // Actually UI functions
-impl UIManager {
-    // Get the state of a specific button element
-    pub fn get_button_state(&self, element_id: &u16) -> &ButtonState {
-        // Get the element
-        let elem = self.root.smart_element_list.get_element(element_id).unwrap();
-        let state = match elem.element_type {
-            ElementType::Button(ref state) => state,
-            _ => &ButtonState::Released,
-        };
-        return state;
+impl UIManager {    
+    // Get the default root
+    pub fn get_default_root(&mut self) -> &Root {
+        self.roots.get_mut(0).unwrap()
     }
-    // Set the text of a text element
-    pub fn set_text_state(&mut self, element_id: &u16, text: &str) {
-        // Get the element mutably
-        let elem = self.root.smart_element_list.get_element_mut(element_id).unwrap();
-        match elem.element_type {
-            ElementType::Text(ref mut last_text) => {
-                // Set the text
-                *last_text = text.to_string();
-            }
-            _ => {}
+    pub fn get_default_root_mut(&mut self) -> &mut Root {
+        self.roots.get_mut(0).unwrap()
+    }
+    // Set the default UI root that will be drawn on the screen by default
+    pub fn set_default_root(&mut self, root: Root) {
+        if self.roots.len() == 0 {
+            // If this root does not exist, add it
+            self.roots.push(root);
+        } else {
+            // If it does exist, just update it
+            self.roots[0] = root;
         }
+    }
+}
+
+// Borrow indexer
+impl Index<usize> for UIManager {
+    type Output = Root;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.roots.get(index).unwrap()
+    }
+}
+// Borrow mut indexer 
+impl IndexMut<usize> for UIManager {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.roots.get_mut(index).unwrap()
     }
 }

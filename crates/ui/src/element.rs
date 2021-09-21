@@ -3,15 +3,41 @@ use crate::Root;
 // A simple element, could be a button or a panel or anything, it just has some variables
 #[derive(Debug)]
 pub struct Element {
+    // The ID of this element in the root node
     pub id: usize,
+    // Our parent node's ID
     pub parent: usize,
+    // Our position relative to our coordinate system
     pub position: veclib::Vector2<f32>,
+    // Our size relative to our coordinate system
     pub size: veclib::Vector2<f32>,
+    // Our color in RGBA form
     pub color: veclib::Vector4<f32>,
+    // The depth of this node, further depth nodes get rendered front to back
     pub depth: i32,
     pub children: Vec<usize>,
     pub element_type: ElementType,
+    // Coordinate system type
     pub coordinate_type: CoordinateType,
+}
+
+impl Default for Element {
+    fn default() -> Self {
+        Self { 
+            // Parent stuff
+            id: 0,
+            parent: 0,
+            // Data
+            position: veclib::Vector2::ZERO,
+            size: veclib::Vector2::ONE,
+            color: veclib::Vector4::ONE,
+            coordinate_type: CoordinateType::Factor,
+            element_type: ElementType::Empty,
+            // Internal data
+            depth: 0,
+            children: Vec::new(),
+        }
+    }
 }
 
 // Coordinate type
@@ -52,35 +78,5 @@ impl Element {
         }
         let element = root.smart_element_list.get_element_mut(&(id as u16)).unwrap();
         element.children.extend(children);
-    }
-    // Create a new element
-    pub fn new(
-        root: &mut Root,
-        position: &veclib::Vector2<f32>,
-        size: &veclib::Vector2<f32>,
-        color: &veclib::Vector4<f32>,
-        element_type: ElementType,
-        coordinate_type: CoordinateType,
-    ) -> usize {
-        // Get the element id from the root node
-        let output: Self = Element {
-            size: size.clone(),
-            position: position.clone(),
-            parent: 0,
-            id: root.smart_element_list.get_next_valid_id() as usize,
-            depth: 0,
-            children: Vec::new(),
-            element_type: element_type,
-            color: color.clone(),
-            coordinate_type,
-        };
-        // Attach this element to the root element
-        let output_id = root.add_element(output) as usize;
-        if output_id != 0 {
-            Element::attach(root, 0, vec![output_id]);
-        }
-
-        // Add the element
-        return output_id;
     }
 }

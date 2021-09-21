@@ -129,92 +129,7 @@ impl ResourceManager {
             },
             local_path,
         ))
-    }
-    // Load back the data from the reader and turn it into a LoadedUIRoot resource
-    pub fn load_ui(reader: &mut BufReader<File>, local_path: String) -> Option<Resource> {
-        // Read to string
-        let mut text: String = String::new();
-        reader.read_to_string(&mut text).unwrap();
-        // Get the elements' full string from the reader
-        let lines: Vec<String> = text.lines().map(|x| x.to_string()).collect();
-        let mut current_element: LoadedUIElement = LoadedUIElement::default();
-        let mut root: LoadedUIRoot = LoadedUIRoot { elements: Vec::new() };
-        let mut last_element_id: u32 = 1;
-        for line in lines {
-            // If the line is empty, skip
-            if line != "" {
-                // Fill the element's data
-                let first = line.split(" ").nth(0).unwrap();
-                match first.clone() {
-                    "st" => {
-                        // Get the settings for this specific element
-                        // Get the coordinate type
-                        let coordinate_type = line.split(" ").nth(1).unwrap();
-                        match coordinate_type {
-                            "pc" => {
-                                // Pixel coordinates
-                                current_element.coordinate_type = 0;
-                            }
-                            "fc" => {
-                                // Factor coordinates
-                                current_element.coordinate_type = 1;
-                            }
-                            _ => {}
-                        }
-                    }
-                    "pid" => {
-                        // Set the PID of the element
-                        current_element.pid = line.split(" ").nth(1).unwrap().to_string().parse::<u32>().unwrap();
-                        // And it's ID as well
-                        current_element.id = last_element_id;
-                    }
-                    "p" => {
-                        // Set the position of the element
-                        let x = line.split(" ").nth(1).unwrap().to_string().parse::<f32>().unwrap();
-                        let y = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
-                        current_element.pos = veclib::Vector2::new(x, y);
-                    }
-                    "s" => {
-                        // Set the size of the element
-                        let x = line.split(" ").nth(1).unwrap().to_string().parse::<f32>().unwrap();
-                        let y = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
-                        current_element.size = veclib::Vector2::new(x, y);
-                    }
-                    "c" => {
-                        // Set the color of the element
-                        let r = line.split(" ").nth(1).unwrap().to_string().parse::<f32>().unwrap();
-                        let g = line.split(" ").nth(2).unwrap().to_string().parse::<f32>().unwrap();
-                        let b = line.split(" ").nth(3).unwrap().to_string().parse::<f32>().unwrap();
-                        let a = line.split(" ").nth(4).unwrap().to_string().parse::<f32>().unwrap();
-                        current_element.color = veclib::Vector4::new(r, g, b, a);
-                    }
-                    // Element type matching
-                    "etp" => {
-                        // Element type panel
-                        current_element.loaded_elem_type = LoadedUIElementType::Panel();
-                    }
-                    "eti" => {
-                        // Element type image
-                        let image_local_path = line.split(" ").nth(1).unwrap().to_string();
-                        current_element.loaded_elem_type = LoadedUIElementType::Image(image_local_path);
-                    }
-                    "ett" => {
-                        // Element type text
-                        let text = &line[5..(line.len() - 1)];
-                        current_element.loaded_elem_type = LoadedUIElementType::Text(text.to_string());
-                    }
-                    "a" => {
-                        // Add the element to the list
-                        root.elements.push(current_element.clone());
-                        last_element_id += 1;
-                    }
-
-                    _ => {}
-                }
-            }
-        }
-        return Some(Resource::UIRoot(root, text));
-    }
+    }    
 }
 
 // Da code.
@@ -290,10 +205,6 @@ impl ResourceManager {
                 // This is a texture
                 resource = Self::load_texture(&mut reader, local_path.to_string()).unwrap();
             }
-            "ui" => {
-                // This is a UI root
-                resource = Self::load_ui(&mut reader, local_path.to_string()).unwrap();
-            }
             _ => {}
         }
 
@@ -336,7 +247,6 @@ pub enum Resource {
     Texture(LoadedTexture, String),
     Shader(LoadedSubShader, String),
     Sound(LoadedSoundEffect, String),
-    UIRoot(LoadedUIRoot, String),
 }
 
 // Default enum for ResourceType
@@ -366,35 +276,6 @@ pub struct LoadedTexture {
 pub struct LoadedSubShader {
     pub source: String,
     pub subshader_type: u8,
-}
-// A loaded UI element type
-#[derive(Clone, Debug)]
-pub enum LoadedUIElementType {
-    Panel(),
-    Button(),
-    Text(String),
-    Image(String),
-}
-impl Default for LoadedUIElementType {
-    fn default() -> Self {
-        Self::Panel()
-    }
-}
-// A loaded UI element
-#[derive(Clone, Default, Debug)]
-pub struct LoadedUIElement {
-    pub id: u32,
-    pub pid: u32,
-    pub coordinate_type: u8,
-    pub pos: veclib::Vector2<f32>,
-    pub size: veclib::Vector2<f32>,
-    pub color: veclib::Vector4<f32>,
-    pub loaded_elem_type: LoadedUIElementType,
-}
-// A loaded UI resource
-#[derive(Clone)]
-pub struct LoadedUIRoot {
-    pub elements: Vec<LoadedUIElement>,
 }
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {}

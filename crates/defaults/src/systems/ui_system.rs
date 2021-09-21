@@ -93,8 +93,19 @@ impl System for UISystem {
             gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 0, null());
             self.vertex_array = vertex_array;
         }
-        let root = Root::new().from_path("defaults\\ui\\default.ui", data.resource_manager).unwrap();
-        data.ui_manager.root = root;
+        // Create the default UI, just a blank screen
+        let mut root = Root::new();
+        let root_elem = Element::default();
+        // Add the element to the root node
+        root.add_element(root_elem);
+        let elem0 = Element {            
+            color: veclib::Vector4::ONE * 0.2,
+            element_type: ElementType::Panel(),
+            ..Default::default()
+        };
+        root.add_element(elem0);
+        // Set this as the default root
+        data.ui_manager.set_default_root(root);
         // Load the UI shader
         let shader_name = Shader::new(
             vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_panel.frsh.glsl"],
@@ -114,16 +125,14 @@ impl System for UISystem {
     // Render all the elements onto the screen
     fn post_fire(&mut self, data: &mut SystemEventData) {
         // Draw each element, from back to front
-        let elements = data
-            .ui_manager
-            .root
+        let root = &data.ui_manager.get_default_root();
+        let elements = root
             .smart_element_list
             .elements
             .iter()
             .filter_map(|x| x.as_ref())
             .collect::<Vec<&ui::Element>>();
         let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
-        let root = &data.ui_manager.root;
 
         // Draw every element, other than the root element
         unsafe {
@@ -137,9 +146,14 @@ impl System for UISystem {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
         for element in elements {
-            if element.id == 0 {
+            let bad_element_type = match element.element_type {
+                ElementType::Empty => true,
+                _ => false
+            };
+            if element.id == 0 || bad_element_type  {
                 continue;
             }
+            println!("{:?}", element);
             shader.use_shader();
             unsafe {
                 gl::BindVertexArray(self.vertex_array);
