@@ -1,6 +1,6 @@
 use std::{fs::{File, OpenOptions}, io::{BufReader, BufWriter, Seek}};
 
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
+use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
 
 // An enum value that can will be used when loading / saving structs 
 pub enum LoadValue {
@@ -72,6 +72,28 @@ impl SaverLoader {
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());
         let values = struct_to_save.save_to_file();
         // Actually save the file
-
+        for value in values.iter() {
+            match value {
+                LoadValue::None => todo!(),
+                LoadValue::BOOL(b) => {
+                    // Write the type of value
+                    writer.write_i8(0).unwrap();
+                    // Write the value
+                    writer.write_i8(if *b { 1 } else { 0 }).unwrap();
+                },
+                LoadValue::F32(f) => {
+                    // Write the type of value
+                    writer.write_i8(1).unwrap();
+                    // Write the value
+                    writer.write_f32::<LittleEndian>(*f).unwrap();
+                },
+                LoadValue::I32(f) => {
+                    // Write the type of value
+                    writer.write_i8(2).unwrap();
+                    // Write the value
+                    writer.write_i32::<LittleEndian>(*f).unwrap();
+                },
+            }
+        }
     }
 }
