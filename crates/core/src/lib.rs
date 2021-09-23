@@ -1,5 +1,5 @@
 // Export
 mod world;
 pub use world::*;
-mod config_file;
-pub use config_file::*;
+mod game_file;
+pub use game_file::*;
