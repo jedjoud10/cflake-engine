@@ -22,7 +22,8 @@ pub use ::systems::*;
 pub use terrain::*;
 pub use veclib;
 
-pub fn start(load_systems_callback: fn(&mut World), load_entities_callback: fn(&mut World)) {
+// Load up the OpenGL window and such
+pub fn start(author_name: &str, app_name: &str, load_systems_callback: fn(&mut World), load_entities_callback: fn(&mut World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let default_size = others::get_default_window_size();
     let (mut window, events) = glfw
@@ -42,7 +43,7 @@ pub fn start(load_systems_callback: fn(&mut World), load_entities_callback: fn(&
         }
     }
     // Create the world
-    let mut world: World = World::default();
+    let mut world: World = World::new(author_name, app_name);
     world.start_world(&mut window, load_systems_callback, load_entities_callback);
     let mut last_time: f64 = 0.0;
 

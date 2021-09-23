@@ -6,6 +6,7 @@ use defaults::systems;
 use ecs::*;
 use errors::*;
 use input::*;
+use io::SaverLoader;
 use others::*;
 use rendering::*;
 use resources::*;
@@ -14,7 +15,6 @@ use ::systems::*;
 use ui::UIManager;
 use std::collections::HashSet;
 //  The actual world
-#[derive(Default)]
 pub struct World {
     // Managers
     pub component_manager: ComponentManager,
@@ -32,9 +32,30 @@ pub struct World {
     // Miscs
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
+    pub saver_loader: SaverLoader,
 }
 
 impl World {
+    // Get a new copy of a brand new world
+    pub fn new(author_name: &str, app_name: &str) -> World {
+        Self {
+            component_manager: ComponentManager::default(),
+            input_manager: InputManager::default(),
+            resource_manager: ResourceManager::default(),
+            ui_manager: UIManager::default(),
+
+            texture_cacher: CacheManager::default(),
+            shader_cacher: (CacheManager::default(), CacheManager::default()),
+            debug: DebugRenderer::default(),
+
+            entity_manager: EntityManager::default(),
+            system_manager: SystemManager::default(),
+
+            custom_data: CustomWorldData::default(),
+            time_manager: Time::default(),
+            saver_loader: SaverLoader::new(author_name, app_name),
+        }
+    }
     // Load everything that needs to be loaded by default
     fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load all the default things
@@ -83,6 +104,9 @@ impl World {
         self.entity_manager.remove_entity_s(&entity_id);
         */
         load_systems_callback(self);
+        // Load the config file for this world
+        let config_file_values = 
+
         // Update entity manager
         self.update_entity_manager();
         load_entities_callback(self);

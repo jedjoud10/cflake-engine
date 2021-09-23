@@ -1,6 +1,7 @@
-use std::{fs::{File, OpenOptions}, io::{BufReader, BufWriter, Seek}};
+use std::{fs::{File, OpenOptions}, io::{BufReader, BufWriter, Seek}, path::PathBuf};
 
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
+use platform_dirs::AppDirs;
 
 // An enum value that can will be used when loading / saving structs 
 pub enum LoadValue {
@@ -20,14 +21,23 @@ pub trait Loadable {
 pub struct SaverLoader {
     // The path where all the local data will be stored into
     // %appdata%\\{game_name}\\data\\
-    pub local_path: String,
+    pub local_path: PathBuf,
 }
 
 impl SaverLoader {
+    // Get a new copy of the saver loader
+    pub fn new(author_name: &str, app_name: &str) -> Self {
+        let old_path = format!("{}\\{}\\", author_name, app_name);
+        let path = AppDirs::new(Some(&old_path), false).unwrap();
+        println!("{:?}", path.config_dir);
+        SaverLoader { 
+            local_path: path.config_dir
+        }
+    }
     // Load a struct from a file
     pub fn load<T: Loadable>(&self, file_path: &str) -> T {
         // Load the file
-        let global_path = format!("{}\\{}", self.local_path, file_path);
+        let global_path = self.local_path.join(file_path);
         let mut reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
         let cap = reader.buffer();
         let mut values: Vec<LoadValue> = Vec::new();
@@ -68,7 +78,7 @@ impl SaverLoader {
     // Save a struct to a file
     pub fn save<T: Loadable>(&self, file_path: &str, struct_to_save: T) {
         // Save the file
-        let global_path = format!("{}\\{}", self.local_path, file_path);
+        let global_path = self.local_path.join(file_path);
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());
         let values = struct_to_save.save_to_file();
         // Actually save the file

@@ -8,7 +8,7 @@ use rendering::Shader;
 use resources::LoadableResource;
 use system_event_data::{SystemEventData, SystemEventDataLite};
 use systems::{System, SystemData, SystemFiringType};
-use ui::{Element, ElementType, Root};
+use ui::{CoordinateType, Element, ElementType, Root};
 #[derive(Default)]
 pub struct UISystem {
     pub system_data: SystemData,
@@ -97,13 +97,7 @@ impl System for UISystem {
         let mut root = Root::new();
         let root_elem = Element::default();
         // Add the element to the root node
-        root.add_element(root_elem);
-        let elem0 = Element {            
-            color: veclib::Vector4::ONE * 0.2,
-            element_type: ElementType::Panel(),
-            ..Default::default()
-        };
-        root.add_element(elem0);
+        root.add_element(root_elem);        
         // Set this as the default root
         data.ui_manager.set_default_root(root);
         // Load the UI shader
@@ -153,7 +147,6 @@ impl System for UISystem {
             if element.id == 0 || bad_element_type  {
                 continue;
             }
-            println!("{:?}", element);
             shader.use_shader();
             unsafe {
                 gl::BindVertexArray(self.vertex_array);
@@ -171,7 +164,7 @@ impl System for UISystem {
                     }
                     ui::CoordinateType::Factor => {
                         // Factor coordinate type
-                        size = element.size;
+                        size = element.size * 2.0;
                         position = element.position;
                     }
                 }

@@ -20,3 +20,4 @@ rendering = { path = "../rendering" }
 resources = { path = "../resources" }
 debug = { path = "../debug" }
 defaults = { path = "../defaults" }
+io = { path = "../io" }

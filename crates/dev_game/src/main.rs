@@ -1,7 +1,7 @@
 use main::*;
 fn main() {
     // Load up the engine
-    main::start(load_systems, load_entities);
+    main::start("DevJed", "Hypothermia", load_systems, load_entities);
 }
 // Load the systems
 pub fn load_systems(world: &mut World) {
