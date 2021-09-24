@@ -107,7 +107,7 @@ impl World {
         */
         load_systems_callback(self);
         // Load the config file for this world
-        self.saver_loader.create_default("config\\game_config.che", GameConfig::default());
+        self.saver_loader.create_default("config\\game_config.che", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
 
         // Enable disable vsync
@@ -118,6 +118,9 @@ impl World {
             // Disable VSync
             glfw.set_swap_interval(glfw::SwapInterval::None);
         }
+
+        // Set the window mode
+        self.set_fullscreen(config_file_values.fullscreen, glfw, window);
 
         // Update entity manager
         self.update_entity_manager();
@@ -201,9 +204,9 @@ impl World {
         // Update the FPS
         self.time_manager.fps = 1.0 / self.time_manager.delta_time;
     }
-    // Toggle fullscreen
-    pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-        self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
+    // Set the fullscreen status
+    pub fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+        self.custom_data.window.fullscreen = fullscreen;
         if self.custom_data.window.fullscreen {
             // Set the glfw window as a fullscreen window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
@@ -226,6 +229,11 @@ impl World {
                 }
             });
         }
+    }
+    // Toggle fullscreen
+    pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+        self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
+        self.set_fullscreen(self.custom_data.window.fullscreen, glfw, window);
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {

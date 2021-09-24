@@ -6,7 +6,7 @@ use crate::{LoadedValue, ValueGetter};
 
 // A trait that will be implemented on structs that can be turned into .hsf files
 pub trait LoadableData {
-    fn load_from_file(vg: &ValueGetter) -> Self;
+    fn load_from_file(vg: &mut ValueGetter) -> Self;
     fn save_to_file(&self) -> Vec<LoadedValue>;
 }
 
@@ -19,7 +19,7 @@ pub struct SaverLoader {
 
 impl SaverLoader {
     // Make sure a default copy of the data exists
-    pub fn create_default<T: LoadableData>(&self, file_path: &str, default_data: T) {
+    pub fn create_default<T: LoadableData>(&self, file_path: &str, default_data: &T) {
         // If default_create is true, we should create the file if it does not exist yet
         let global_path = self.local_path.join(file_path);
         if !global_path.exists() {
@@ -78,14 +78,20 @@ impl SaverLoader {
             values.push(value_to_add);            
         }
         // Create the value getter
-        let value_getter: ValueGetter = ValueGetter {
+        let mut value_getter: ValueGetter = ValueGetter {
             values: values,
+            current_cursor_index: 0,
+            valid: true,
         };
-        let v = T::load_from_file(&value_getter);
+        let v = T::load_from_file(&mut value_getter);
+        // Save the file again if it had missing parameters
+        if !value_getter.valid {
+            self.save(file_path, &v);
+        }
         return v;
     }
     // Save a struct to a file
-    pub fn save<T: LoadableData>(&self, file_path: &str, struct_to_save: T) {
+    pub fn save<T: LoadableData>(&self, file_path: &str, struct_to_save: &T) {
         // Save the file
         let global_path = self.local_path.join(file_path);
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());
