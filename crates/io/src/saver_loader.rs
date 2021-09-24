@@ -28,9 +28,16 @@ impl SaverLoader {
         }
     }
     // Load a struct from a file
-    pub fn load<T: LoadableData>(&self, file_path: &str) -> T {
+    pub fn load<T: LoadableData>(&self, file_path: &str, default_create: bool) -> T {
         // Load the file
         let global_path = self.local_path.join(file_path);
+        println!("{:?}", global_path);
+        // If default_create is true, we should create the file if it does not exist yet
+        if !global_path.exists() && default_create {
+            let dir_path = global_path.parent().unwrap();
+            std::fs::create_dir_all(dir_path).unwrap();
+            File::create(global_path.clone()).unwrap();
+        }
         let mut reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
         let cap = reader.buffer();
         let mut values: Vec<LoadedValue> = Vec::new();

@@ -14,6 +14,8 @@ use system_event_data::*;
 use ::systems::*;
 use ui::UIManager;
 use std::collections::HashSet;
+
+use crate::GameConfig;
 //  The actual world
 pub struct World {
     // Managers
@@ -92,7 +94,7 @@ impl World {
         self.shader_cacher.1.generate_defaults(vec![default_shader_name.as_str()]);
     }
     // When the world started initializing
-    pub fn start_world(&mut self, window: &mut glfw::Window, load_systems_callback: fn(&mut Self), load_entities_callback: fn(&mut Self)) {
+    pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, load_systems_callback: fn(&mut Self), load_entities_callback: fn(&mut Self)) {
         // Load the default stuff
         self.load_defaults(window);
         /*
@@ -105,7 +107,16 @@ impl World {
         */
         load_systems_callback(self);
         // Load the config file for this world
-        let config_file_values = 
+        let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
+
+        // Enable disable vsync
+        if config_file_values.vsync {
+            // Enable VSync
+            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+        } else {
+            // Disable VSync
+            glfw.set_swap_interval(glfw::SwapInterval::None);
+        }
 
         // Update entity manager
         self.update_entity_manager();

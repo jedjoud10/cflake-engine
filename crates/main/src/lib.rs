@@ -35,8 +35,7 @@ pub fn start(author_name: &str, app_name: &str, load_systems_callback: fn(&mut W
     window.set_cursor_pos_polling(true);
     window.set_scroll_polling(true);
     window.set_size_polling(true);
-    window.make_current();
-    glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+    window.make_current();    
     if gl::Viewport::is_loaded() {
         unsafe {
             gl::Viewport(0, 0, 300, 300);
@@ -44,7 +43,7 @@ pub fn start(author_name: &str, app_name: &str, load_systems_callback: fn(&mut W
     }
     // Create the world
     let mut world: World = World::new(author_name, app_name);
-    world.start_world(&mut window, load_systems_callback, load_entities_callback);
+    world.start_world(&mut glfw, &mut window, load_systems_callback, load_entities_callback);
     let mut last_time: f64 = 0.0;
 
     while !window.should_close() {
