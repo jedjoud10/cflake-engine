@@ -5,6 +5,13 @@ pub struct GameConfig {
     pub vsync: bool,
 }
 
+// Default
+impl Default for GameConfig {
+    fn default() -> Self {
+        Self { vsync: true }
+    }
+}
+
 // Make the config file loadable
 impl LoadableData for GameConfig {
     // Load the config struct from the config file

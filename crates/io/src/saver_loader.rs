@@ -18,6 +18,17 @@ pub struct SaverLoader {
 }
 
 impl SaverLoader {
+    // Make sure a default copy of the data exists
+    pub fn create_default<T: LoadableData>(&self, file_path: &str, default_data: T) {
+        // If default_create is true, we should create the file if it does not exist yet
+        let global_path = self.local_path.join(file_path);
+        if !global_path.exists() {
+            let dir_path = global_path.parent().unwrap();
+            std::fs::create_dir_all(dir_path).unwrap();
+            File::create(global_path.clone()).unwrap();
+            self.save(file_path, default_data);
+        }
+    }
     // Get a new copy of the saver loader
     pub fn new(author_name: &str, app_name: &str) -> Self {
         let old_path = format!("{}\\{}\\", author_name, app_name);
@@ -28,16 +39,10 @@ impl SaverLoader {
         }
     }
     // Load a struct from a file
-    pub fn load<T: LoadableData>(&self, file_path: &str, default_create: bool) -> T {
+    pub fn load<T: LoadableData>(&self, file_path: &str) -> T {
         // Load the file
         let global_path = self.local_path.join(file_path);
-        println!("{:?}", global_path);
-        // If default_create is true, we should create the file if it does not exist yet
-        if !global_path.exists() && default_create {
-            let dir_path = global_path.parent().unwrap();
-            std::fs::create_dir_all(dir_path).unwrap();
-            File::create(global_path.clone()).unwrap();
-        }
+        println!("{:?}", global_path);        
         let mut reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
         let cap = reader.buffer();
         let mut values: Vec<LoadedValue> = Vec::new();
@@ -91,9 +96,9 @@ impl SaverLoader {
                 LoadedValue::None => todo!(),
                 LoadedValue::BOOL(b) => {
                     // Write the type of value
-                    writer.write_i8(0).unwrap();
+                    writer.write_u8(0).unwrap();
                     // Write the value
-                    writer.write_i8(if *b { 1 } else { 0 }).unwrap();
+                    writer.write_u8(if *b { 255 } else { 0 }).unwrap();
                 },
                 LoadedValue::F32(f) => {
                     // Write the type of value

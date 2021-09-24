@@ -107,6 +107,7 @@ impl World {
         */
         load_systems_callback(self);
         // Load the config file for this world
+        self.saver_loader.create_default("config\\game_config.che", GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
 
         // Enable disable vsync
