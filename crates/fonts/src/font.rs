@@ -17,6 +17,6 @@ impl Font {
     }
     // Load a texture into this font
     pub fn load_texture(&mut self, texture_atlas_id: u16) {
-        self.texture_atlas_id = texture_atlas_id;
+        self.texture_atlas_id = texture_atlas_id
     }
 }

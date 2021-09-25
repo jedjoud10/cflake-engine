@@ -9,12 +9,8 @@ pub struct FontPacker {
 
 // Creates a packed SDF font file that can be loaded later
 impl FontPacker {
-    // Getting the SDF image and the layout file
-    pub fn get_font_characters(texture_atlas_file: &str, config_path: &str) ->  {
-        // Load the texture atlas file
-        let image = image::open(texture_atlas_file).unwrap();
-        println!("{:?}", image.dimensions());
-       
-        // Read the config file
+    // Generate the custom font resource file by taking in the font texture atlas and the config file
+    pub fn generate_font(&self, texture_atlas_path: &str, config_file_path: &str) {
+        
     }
 }

@@ -247,6 +247,7 @@ pub enum Resource {
     Texture(LoadedTexture, String),
     Shader(LoadedSubShader, String),
     Sound(LoadedSoundEffect, String),
+    Font(LoadedFont, String),
 }
 
 // Default enum for ResourceType
@@ -280,15 +281,15 @@ pub struct LoadedSubShader {
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {}
 
-// A loaded font config, just contains the padding for each character and such
-pub struct LoadedFontConfig {
-    pub id: u32,
+// A loaded char font, just contains the padding for each character and such
+pub struct LoadedChar {
+    pub id: u8,
     pub min: veclib::Vector2<f32>,
     pub max: veclib::Vector2<f32>,
 }
 
 // A loaded font
 pub struct LoadedFont {
-    pub texture: LoadedTexture,
-    pub font_config: Vec<LoadedFontConfig>,
+    pub texture_pixels: Vec<f32>,
+    pub font_chars: Vec<LoadedChar>,
 }
