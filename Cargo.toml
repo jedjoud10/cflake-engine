@@ -28,7 +28,7 @@ members = [
     "crates\\terrain",
     "crates\\ui",
     "crates\\io",
-    "crates\\fontgen"
+    "crates\\fonts"
 ]
 
 

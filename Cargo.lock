@@ -226,8 +226,11 @@ name = "errors"
 version = "0.1.0"
 
 [[package]]
-name = "fontgen"
+name = "fonts"
 version = "0.1.0"
+dependencies = [
+ "veclib",
+]
 
 [[package]]
 name = "getrandom"
