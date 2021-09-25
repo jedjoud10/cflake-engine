@@ -279,3 +279,16 @@ pub struct LoadedSubShader {
 }
 // A sound effect that can be played at any time
 pub struct LoadedSoundEffect {}
+
+// A loaded font config, just contains the padding for each character and such
+pub struct LoadedFontConfig {
+    pub id: u32,
+    pub min: veclib::Vector2<f32>,
+    pub max: veclib::Vector2<f32>,
+}
+
+// A loaded font
+pub struct LoadedFont {
+    pub texture: LoadedTexture,
+    pub font_config: Vec<LoadedFontConfig>,
+}

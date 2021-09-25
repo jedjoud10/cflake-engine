@@ -13,6 +13,9 @@ use systems::*;
 use math::octree;
 use std::collections::{HashMap, HashSet};
 
+// TODO:
+// Gotta make this way, way faster
+
 // The actual chunk size number that you change
 pub const MAIN_CHUNK_SIZE: usize = 32;
 // How many voxels in one axis in each chunk?

@@ -226,9 +226,17 @@ name = "errors"
 version = "0.1.0"
 
 [[package]]
+name = "font_packer"
+version = "0.1.0"
+dependencies = [
+ "image",
+]
+
+[[package]]
 name = "fonts"
 version = "0.1.0"
 dependencies = [
+ "rendering",
  "veclib",
 ]
 

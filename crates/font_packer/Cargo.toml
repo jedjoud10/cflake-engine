@@ -1,10 +1,9 @@
 [package]
-name = "fonts"
+name = "font_packer"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-veclib = { git = "https://github.com/jedjoud10/veclib" }
-rendering = { path = "../rendering" }
+image = "0.23.14"
