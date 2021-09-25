@@ -1,5 +1,5 @@
 [package]
-name = "font_packer"
+name = "font_generator"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 image = "0.23.14"
+byteorder = "1.4.3"

@@ -29,7 +29,7 @@ members = [
     "crates\\ui",
     "crates\\io",
     "crates\\fonts",
-    "crates\\font_packer"
+    "crates\\font_generator"
 ]
 
 

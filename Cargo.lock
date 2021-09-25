@@ -226,9 +226,10 @@ name = "errors"
 version = "0.1.0"
 
 [[package]]
-name = "font_packer"
+name = "font_generator"
 version = "0.1.0"
 dependencies = [
+ "byteorder",
  "image",
 ]
 
