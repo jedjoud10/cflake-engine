@@ -232,6 +232,7 @@ dependencies = [
  "byteorder",
  "fonts",
  "image",
+ "veclib",
 ]
 
 [[package]]

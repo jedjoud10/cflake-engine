@@ -9,3 +9,4 @@ edition = "2021"
 image = "0.23.14"
 byteorder = "1.4.3"
 fonts = { path = "../fonts" }
+veclib = { git = "https://github.com/jedjoud10/veclib" }

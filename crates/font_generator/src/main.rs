@@ -14,10 +14,10 @@ fn main() {
     // Get the config file path
     let index = args.iter().position(|x| *x == "-c".to_string()).unwrap()+1;
     let config_file_path = args[index].clone();
-    let config_file = OpenOptions::new().read(true).open(config_file_path).unwrap();
+    let config_file = OpenOptions::new().read(true).open(config_file_path.clone()).unwrap();
     let reader = BufReader::new(config_file);
     // Get the output file path
-    let index = args.iter().position(|x| *x == "-c".to_string()).unwrap()+1;
+    let index = args.iter().position(|x| *x == "-o".to_string()).unwrap()+1;
     let output_file_path = args[index].clone();    
     println!("Texture atlas file: {}", texture_atlas_path);
     println!("Config file: {}", config_file_path);
@@ -45,7 +45,7 @@ fn main() {
     let lines = reader.lines().map(|x| x.unwrap()).collect::<Vec<String>>();
     for line in lines {
         // Get the ASCII character ID
-        let split_line = line.split(" ").collect::<Vec<&str>>();
+        let split_line = line.split(" ").filter(|x| !x.is_empty()).collect::<Vec<&str>>();
         // Check if this a char line
         if split_line[0] == "char" {
             // Get the ID
@@ -57,8 +57,9 @@ fn main() {
             let height = split_line[5].split("height=").nth(1).unwrap().parse::<u32>().unwrap();
 
             // Create the min and max from the x,y and width,height
-            let min: veclib::Vector2<f32> = min
-            println!("{} {}")
+            let min = veclib::Vector2::<u32>::new(x, y);
+            let max = veclib::Vector2::<u32>::new(x + width, y + height);
+            println!("{:?} {:?}", min, max);
         }
     }
 }
