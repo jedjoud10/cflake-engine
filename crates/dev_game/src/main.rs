@@ -98,5 +98,11 @@ pub fn load_entities(world: &mut World) {
     world.entity_manager.add_entity_s(entity);
 
     // Load test font
-    let font = world.resource_manager.load_packed_resource("defaults\\fonts\\default_font.font");
+    let font = world.resource_manager.load_packed_resource("defaults\\fonts\\default_font.font").unwrap();
+    match font {
+        Resource::Font(f) => {
+            // Epic
+        },
+        _ => {}
+    }
 }

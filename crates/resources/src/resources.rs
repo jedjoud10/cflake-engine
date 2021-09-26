@@ -135,8 +135,6 @@ impl ResourceManager {
     }  
     // Load back a font
     pub fn load_font(reader: &mut BufReader<File>) -> Option<Resource> {    
-        let len = reader.buffer().len();    
-        println!("{}", len);
         // Read the custom font
         let mut output_font = LoadedFont {
             dimensions: veclib::Vector2::ZERO,
