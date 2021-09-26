@@ -10,6 +10,9 @@ use std::{
 };
 use errors::ResourceError;
 
+// Should we logs resource events?
+pub const DEBUG_LOGS: bool = true;
+
 // A resource manager that will load structs from binary files
 #[derive(Default)]
 pub struct ResourceManager {
@@ -129,7 +132,43 @@ impl ResourceManager {
             },
             local_path,
         ))
-    }    
+    }  
+    // Load back a font
+    pub fn load_font(reader: &mut BufReader<File>) -> Option<Resource> {    
+        let len = reader.buffer().len();    
+        println!("{}", len);
+        // Read the custom font
+        let mut output_font = LoadedFont {
+            dimensions: veclib::Vector2::ZERO,
+            texture_pixels: Vec::new(),
+            chars: Vec::new(),
+        };
+
+        // Get the width and height of the bitmap
+        let width = reader.read_u32::<LittleEndian>().unwrap();
+        let height = reader.read_u32::<LittleEndian>().unwrap();
+
+        // Read the pixels, one by one
+        for i in 0..(width * height) {
+            let pixel = reader.read_u8().unwrap();
+            output_font.texture_pixels.push(pixel);
+        } 
+
+        // Get the number of ASCII characters we have
+        let font_char_num = reader.read_u8().unwrap();
+
+        // Read the chars
+        for i in 0..font_char_num {
+            // Get the data back
+            let loaded_char = LoadedChar {
+                id: reader.read_u8().unwrap(),
+                min: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
+                max: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
+            };
+            output_font.chars.push(loaded_char);
+        }
+        Some(Resource::Font(output_font))
+    }  
 }
 
 // Da code.
@@ -175,11 +214,13 @@ impl ResourceManager {
     }
     // Loads a specific resource and caches it so we can use it next time
     pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, ResourceError> {
+        if DEBUG_LOGS { println!("Loading resource: '{}'...", local_path); }
         let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path)?;
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!
             let resource = self.cached_resources.get(&hashed_name).unwrap();
+            if DEBUG_LOGS { println!("Loaded resource: '{}' from cache succsessfully!", local_path); }
             return Ok(resource);
         }
         let mut resource: Resource = Resource::None;
@@ -205,13 +246,17 @@ impl ResourceManager {
                 // This is a texture
                 resource = Self::load_texture(&mut reader, local_path.to_string()).unwrap();
             }
+            "font" => {
+                // This is a font
+                resource = Self::load_font(&mut reader).unwrap();
+            }
             _ => {}
         }
 
         // Insert the resource in the cache
         self.cached_resources.insert(hashed_name, resource);
         let resource = self.cached_resources.get(&hashed_name).unwrap();
-
+        if DEBUG_LOGS { println!("Loaded resource: '{}' succsessfully!", local_path); }
         Ok(resource)
     }
     // Unloads a resource to save on memory
@@ -249,6 +294,8 @@ pub enum Resource {
     Shader(LoadedSubShader, String),
     Sound(LoadedSoundEffect),
     Font(LoadedFont),
+    // Only used if we are not actually doing packing, just passing the bytes from the normal resource to the packed one
+    Bytes(Vec<u8>),
 }
 
 // Default enum for ResourceType
@@ -291,6 +338,7 @@ pub struct LoadedChar {
 
 // A loaded font
 pub struct LoadedFont {
+    pub dimensions: veclib::Vector2<u32>,
     pub texture_pixels: Vec<u8>,
     pub chars: Vec<LoadedChar>,
 }

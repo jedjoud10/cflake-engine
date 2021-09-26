@@ -10,7 +10,7 @@ use std::{
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use resources::*;
-use image::GenericImageView;
+use image::{EncodableLayout, GenericImageView};
 use walkdir::WalkDir;
 
 // Time for the resource packer
@@ -153,42 +153,6 @@ pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {
     );
     texture
 }
-// Turn a cfont file into a LoadedFont resource
-pub fn convert_font(file: &mut File, full_path: &str) -> Resource {
-    // String holding the extension of the file
-    let mut reader = BufReader::new(file);
-    
-    // Read the custom font
-    let mut output_font = LoadedFont {
-        texture_pixels: Vec::new(),
-        chars: Vec::new(),
-    };
-
-    // Get the width and height of the bitmap
-    let width = reader.read_u32::<LittleEndian>().unwrap();
-    let height = reader.read_u32::<LittleEndian>().unwrap();
-
-    // Read the pixels, one by one
-    for i in 0..(width * height) {
-        let pixel = reader.read_u8().unwrap();
-        output_font.texture_pixels.push(pixel);
-    } 
-
-    // Get the number of ASCII characters we have
-    let font_char_num = reader.read_u8().unwrap();
-
-    // Read the chars
-    for i in 0..font_char_num {
-        // Get the data back
-        let loaded_char = LoadedChar {
-            id: reader.read_u8().unwrap(),
-            min: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
-            max: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
-        };
-        output_font.chars.push(loaded_char);
-    }
-    Resource::Font(output_font)
-}
 
 // Pack a LoadedModel resource into a file
 pub fn pack_model(writer: &mut BufWriter<File>, model: LoadedModel) -> std::io::Result<()> {
@@ -253,42 +217,6 @@ pub fn pack_texture(writer: &mut BufWriter<File>, texture: LoadedTexture) -> std
         writer.write_u8(byte)?;
     }
     std::io::Result::Ok(())
-}
-// Pack a LoadedFont resource into a file 
-pub fn pack_font(writer: &mut BufWriter<File>, font: LoadedFont) -> std::io::Result<()> {
-    // Bit 0: Width of Bitmap Texture Atlas
-    // Bit 1: Height of Bitmap Texture Atlas
-    // Bit 2, (x*y): Texture bits (f32)
-    // Bit (x*y)+1: How many ASCII characters do we have
-
-    // Local bit 0: ASCII ID
-    // Local byte 1: Min.X (f32)
-    // Local byte 2: Min.Y (f32)
-    // Local byte 3: Max.X (f32)
-    // Local byte 4: Max.Y (f32)
-
-    // Write the bitmap
-    let pixels = font.texture_pixels;
-    // Write the dimensions of the bitmap (Yes, we are storing this as a bitmap and not a PNG file)
-    writer.write_u32::<LittleEndian>(pixels.len() as u32)?;
-    writer.write_u32::<LittleEndian>(pixels.len() as u32)?;    
-    // Write the actual pixels now
-    for pixel in pixels {
-        writer.write_u8(pixel)?;
-    }
-    // Write the length of the characters
-    writer.write_u8(font.chars.len() as u8)?;
-    // Write the config file
-    for font_char in font.chars {
-        // Write the char ASCII character ID and min-max
-        writer.write_u8(font_char.id)?;
-        // Write the min and max
-        writer.write_u32::<LittleEndian>(font_char.min.x)?;
-        writer.write_u32::<LittleEndian>(font_char.min.y)?;
-        writer.write_u32::<LittleEndian>(font_char.max.x)?;
-        writer.write_u32::<LittleEndian>(font_char.max.y)?;
-    }
-    Ok(())
 }
 // Saves all the resources from the "resources" folder into the "packed-resources" folder
 pub fn pack_resources(src_path: String) -> Option<()> {
@@ -407,8 +335,13 @@ pub fn pack_resources(src_path: String) -> Option<()> {
                 resource = convert_texture(&mut file, file_path);
             }
             "font" => {
-                // This is a custom font
-                resource = convert_font(&mut file, file_path);
+                // This is a custom font, just pass the bytes since we don't do special stuff here
+                // Reader
+                let mut reader = BufReader::new(file);
+                let mut bytes = Vec::<u8>::new();
+                reader.read_to_end(&mut bytes).unwrap();
+                println!("{}", bytes.len());
+                resource = Resource::Bytes(bytes);
             }
             _ => {}
         }
@@ -432,6 +365,10 @@ pub fn pack_resources(src_path: String) -> Option<()> {
             Resource::Texture(texture, _) => {
                 // This a texture
                 pack_texture(&mut writer, texture).unwrap();
+            }
+            Resource::Bytes(b) => {
+                // Pass on the bytes
+                writer.write_all(b.as_bytes()).unwrap();
             }
             _ => {}
         }
