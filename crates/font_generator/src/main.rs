@@ -1,4 +1,4 @@
-use std::{env, fs::OpenOptions, io::{BufRead, BufReader, BufWriter}};
+use std::{env, fs::{File, OpenOptions}, io::{BufRead, BufReader, BufWriter}, path::Path};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use fonts::FontChar;
@@ -28,7 +28,7 @@ fn main() {
     let dimension = texture.dimensions();
     
     // Get the writer
-    let output_file = OpenOptions::new().write(true).open(output_file_path).unwrap();
+    let output_file = OpenOptions::new().create(true).truncate(true).write(true).open(output_file_path).unwrap();
     let mut output_file_writer = BufWriter::new(output_file);
 
     // Write the width and height
@@ -59,7 +59,21 @@ fn main() {
             // Create the min and max from the x,y and width,height
             let min = veclib::Vector2::<u32>::new(x, y);
             let max = veclib::Vector2::<u32>::new(x + width, y + height);
-            println!("{:?} {:?}", min, max);
+            println!("{} {:?} {:?}", id, min, max);
         }
+    }
+
+    // Write the number of characters
+    output_file_writer.write_u8(font_chars.len() as u8).unwrap();
+
+    // Write the character configs
+    for font_char in font_chars.iter() {
+        // Write the ID first
+        output_file_writer.write_u8(font_char.id).unwrap();
+        // Then you can write the min-max values
+        output_file_writer.write_u32::<LittleEndian>(font_char.min.x).unwrap();
+        output_file_writer.write_u32::<LittleEndian>(font_char.min.y).unwrap();
+        output_file_writer.write_u32::<LittleEndian>(font_char.max.x).unwrap();
+        output_file_writer.write_u32::<LittleEndian>(font_char.max.y).unwrap();
     }
 }
