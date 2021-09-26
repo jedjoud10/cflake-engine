@@ -155,15 +155,13 @@ pub fn convert_texture(file: &mut File, full_path: &str) -> Resource {
 }
 // Turn a cfont file into a LoadedFont resource
 pub fn convert_font(file: &mut File, full_path: &str) -> Resource {
-    // The font resource
-    let mut font: Resource = Resource::None;
     // String holding the extension of the file
     let mut reader = BufReader::new(file);
     
     // Read the custom font
     let mut output_font = LoadedFont {
         texture_pixels: Vec::new(),
-        font_chars: Vec::new(),
+        chars: Vec::new(),
     };
 
     // Get the width and height of the bitmap
@@ -187,11 +185,9 @@ pub fn convert_font(file: &mut File, full_path: &str) -> Resource {
             min: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
             max: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
         };
-        output_font.font_chars.push(loaded_char);
+        output_font.chars.push(loaded_char);
     }
-
-    font = Resource::Font(output_font, String::new());
-    font
+    Resource::Font(output_font)
 }
 
 // Pack a LoadedModel resource into a file
@@ -281,9 +277,9 @@ pub fn pack_font(writer: &mut BufWriter<File>, font: LoadedFont) -> std::io::Res
         writer.write_u8(pixel)?;
     }
     // Write the length of the characters
-    writer.write_u8(font.font_chars.len() as u8)?;
+    writer.write_u8(font.chars.len() as u8)?;
     // Write the config file
-    for font_char in font.font_chars {
+    for font_char in font.chars {
         // Write the char ASCII character ID and min-max
         writer.write_u8(font_char.id)?;
         // Write the min and max
@@ -410,7 +406,7 @@ pub fn pack_resources(src_path: String) -> Option<()> {
                 // This is a texture
                 resource = convert_texture(&mut file, file_path);
             }
-            "cfnt" => {
+            "font" => {
                 // This is a custom font
                 resource = convert_font(&mut file, file_path);
             }

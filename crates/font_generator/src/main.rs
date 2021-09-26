@@ -60,6 +60,13 @@ fn main() {
             let min = veclib::Vector2::<u32>::new(x, y);
             let max = veclib::Vector2::<u32>::new(x + width, y + height);
             println!("{} {:?} {:?}", id, min, max);
+            let font_char = FontChar {
+                id,
+                min,
+                max,
+            };
+            // Yes
+            font_chars.push(font_char);
         }
     }
 

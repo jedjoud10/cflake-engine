@@ -241,13 +241,14 @@ impl ResourceManager {
 }
 
 // A simple loaded resource
+// TODO: Handle the caching internally so we can get rid of the Texture and Shader cachers
 pub enum Resource {
     None,
     Model(LoadedModel),
     Texture(LoadedTexture, String),
     Shader(LoadedSubShader, String),
-    Sound(LoadedSoundEffect, String),
-    Font(LoadedFont, String),
+    Sound(LoadedSoundEffect),
+    Font(LoadedFont),
 }
 
 // Default enum for ResourceType
@@ -291,5 +292,5 @@ pub struct LoadedChar {
 // A loaded font
 pub struct LoadedFont {
     pub texture_pixels: Vec<u8>,
-    pub font_chars: Vec<LoadedChar>,
+    pub chars: Vec<LoadedChar>,
 }

@@ -1,8 +1,10 @@
+use resources::{LoadableResource, Resource};
+
 use crate::FontChar;
 
 // A simple font containing the characters
 pub struct Font {
-    pub texture_atlas_id: u16,
+    pub texture_pixels: Vec<u8>,
     pub chars: Vec<FontChar>
 }
 
@@ -14,8 +16,24 @@ impl Font {
         let char = self.chars.get((ascii_code - ASCII_FIRST_CHAR_OFFSET) as usize).unwrap();
         return char;
     }
-    // Load a texture into this font
-    pub fn load_texture(&mut self, texture_atlas_id: u16) {
-        self.texture_atlas_id = texture_atlas_id
+}
+
+// The font is loadable
+impl LoadableResource for Font {
+    fn from_resource(self, resource: &resources::Resource) -> Option<Self>
+    where
+        Self: Sized {
+        match resource {
+            Resource::Font(font) => {
+                // Load the chars
+                let chars = font.chars.iter().map(|x| FontChar { id: x.id, min: x.min, max: x.max }).collect::<Vec<FontChar>>();
+                let output = Self {
+                    texture_pixels: font.texture_pixels.clone(),
+                    chars: chars,
+                };
+                return Some(output);
+            }
+            _ => None,
+        }
     }
 }
