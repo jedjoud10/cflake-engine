@@ -1,4 +1,3 @@
-use rendering::Texture;
 use crate::FontChar;
 
 // A simple font containing the characters

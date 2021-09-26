@@ -172,7 +172,8 @@ pub fn convert_font(file: &mut File, full_path: &str) -> Resource {
 
     // Read the pixels, one by one
     for i in 0..(width * height) {
-        let pixel = reader.read_f32::<LittleEndian>().unwrap();
+        let pixel = reader.read_u8().unwrap();
+        output_font.texture_pixels.push(pixel);
     } 
 
     // Get the number of ASCII characters we have
@@ -183,8 +184,8 @@ pub fn convert_font(file: &mut File, full_path: &str) -> Resource {
         // Get the data back
         let loaded_char = LoadedChar {
             id: reader.read_u8().unwrap(),
-            min: veclib::Vector2::new(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()),
-            max: veclib::Vector2::new(reader.read_f32::<LittleEndian>().unwrap(), reader.read_f32::<LittleEndian>().unwrap()),
+            min: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
+            max: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
         };
         output_font.font_chars.push(loaded_char);
     }
@@ -277,7 +278,7 @@ pub fn pack_font(writer: &mut BufWriter<File>, font: LoadedFont) -> std::io::Res
     writer.write_u32::<LittleEndian>(pixels.len() as u32)?;    
     // Write the actual pixels now
     for pixel in pixels {
-        writer.write_f32::<LittleEndian>(pixel)?;
+        writer.write_u8(pixel)?;
     }
     // Write the length of the characters
     writer.write_u8(font.font_chars.len() as u8)?;
@@ -286,10 +287,10 @@ pub fn pack_font(writer: &mut BufWriter<File>, font: LoadedFont) -> std::io::Res
         // Write the char ASCII character ID and min-max
         writer.write_u8(font_char.id)?;
         // Write the min and max
-        writer.write_f32::<LittleEndian>(font_char.min.x)?;
-        writer.write_f32::<LittleEndian>(font_char.min.y)?;
-        writer.write_f32::<LittleEndian>(font_char.max.x)?;
-        writer.write_f32::<LittleEndian>(font_char.max.y)?;
+        writer.write_u32::<LittleEndian>(font_char.min.x)?;
+        writer.write_u32::<LittleEndian>(font_char.min.y)?;
+        writer.write_u32::<LittleEndian>(font_char.max.x)?;
+        writer.write_u32::<LittleEndian>(font_char.max.y)?;
     }
     Ok(())
 }

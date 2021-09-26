@@ -284,12 +284,12 @@ pub struct LoadedSoundEffect {}
 // A loaded char font, just contains the padding for each character and such
 pub struct LoadedChar {
     pub id: u8,
-    pub min: veclib::Vector2<f32>,
-    pub max: veclib::Vector2<f32>,
+    pub min: veclib::Vector2<u32>,
+    pub max: veclib::Vector2<u32>,
 }
 
 // A loaded font
 pub struct LoadedFont {
-    pub texture_pixels: Vec<f32>,
+    pub texture_pixels: Vec<u8>,
     pub font_chars: Vec<LoadedChar>,
 }

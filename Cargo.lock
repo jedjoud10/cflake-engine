@@ -230,6 +230,7 @@ name = "font_generator"
 version = "0.1.0"
 dependencies = [
  "byteorder",
+ "fonts",
  "image",
 ]
 
@@ -237,7 +238,6 @@ dependencies = [
 name = "fonts"
 version = "0.1.0"
 dependencies = [
- "rendering",
  "veclib",
 ]
 

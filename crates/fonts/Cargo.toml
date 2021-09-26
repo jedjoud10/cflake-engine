@@ -7,4 +7,3 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-rendering = { path = "../rendering" }
