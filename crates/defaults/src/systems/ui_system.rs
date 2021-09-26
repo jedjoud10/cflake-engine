@@ -18,6 +18,40 @@ pub struct UISystem {
     pub vertex_array: u32,
 }
 
+// Draw functions 
+impl UISystem {
+    // Draw a simple panel to the screen
+    fn draw_panel(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>) {
+        unsafe {
+            gl::BindVertexArray(self.vertex_array);
+                // Update the shader uniforms
+                let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
+                shader.set_f32("depth", &depth);
+                let mut size: veclib::Vector2<f32> = veclib::Vector2::ZERO;
+                let mut position: veclib::Vector2<f32> = veclib::Vector2::ZERO;
+                let resolution = veclib::Vector2::<f32>::from(resolution);
+                match element.coordinate_type {
+                    ui::CoordinateType::Pixel => {
+                        // Pixel coordinate type
+                        size = element.size / resolution;
+                        position = element.position / resolution;
+                    }
+                    ui::CoordinateType::Factor => {
+                        // Factor coordinate type
+                        size = element.size * 2.0;
+                        position = element.position;
+                    }
+                }
+                shader.set_vec2f32("size", &size);
+                shader.set_vec2f32("offset_position", &position);
+                // Set the color of the current element
+                shader.set_vec4f32("color", &element.color);
+                // Draw the element
+                gl::DrawArrays(gl::TRIANGLES, 0, 6);
+        }
+    }
+}
+
 // The UI system which is going to render the elements and handle UI input for the elements
 impl System for UISystem {
     // Wrappers around system data
@@ -149,31 +183,17 @@ impl System for UISystem {
             }
             shader.use_shader();
             unsafe {
-                gl::BindVertexArray(self.vertex_array);
-                // Update the shader uniforms
-                let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
-                shader.set_f32("depth", &depth);
-                let mut size: veclib::Vector2<f32> = veclib::Vector2::ZERO;
-                let mut position: veclib::Vector2<f32> = veclib::Vector2::ZERO;
-                let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size.clone());
-                match element.coordinate_type {
-                    ui::CoordinateType::Pixel => {
-                        // Pixel coordinate type
-                        size = element.size / resolution;
-                        position = element.position / resolution;
-                    }
-                    ui::CoordinateType::Factor => {
-                        // Factor coordinate type
-                        size = element.size * 2.0;
-                        position = element.position;
+                // Every type that isn't the text type
+                match &element.element_type {
+                    ElementType::Text(text_content) => {
+                        // Draw the text
+                    },
+                    _ => { 
+                        // Draw the panel
+                        self.draw_panel(&element, &root, &shader, data.custom_data.window.size);
                     }
                 }
-                shader.set_vec2f32("size", &size);
-                shader.set_vec2f32("offset_position", &position);
-                // Set the color of the current element
-                shader.set_vec4f32("color", &element.color);
-                // Draw the element
-                gl::DrawArrays(gl::TRIANGLES, 0, 6);
+                
             }
         }
         // Disable transparency after drawing the ui elements
