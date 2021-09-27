@@ -50,6 +50,10 @@ impl UISystem {
                 gl::DrawArrays(gl::TRIANGLES, 0, 6);
         }
     }
+    // Draw the text by drawing multiple elements
+    fn draw_text(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>) {
+        
+    }
 }
 
 // The UI system which is going to render the elements and handle UI input for the elements
