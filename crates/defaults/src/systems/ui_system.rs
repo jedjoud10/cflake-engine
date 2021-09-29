@@ -51,8 +51,12 @@ impl UISystem {
         }
     }
     // Draw the text by drawing multiple elements
-    fn draw_text(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>) {
-        
+    fn draw_text(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>, text_content: &String) {
+        // Draw each character in the string as a separate element
+        let chars = text_content.split("").collect::<Vec<&str>>();
+        for char in chars {
+
+        }
     }
 }
 
@@ -136,6 +140,12 @@ impl System for UISystem {
         let root_elem = Element::default();
         // Add the element to the root node
         root.add_element(root_elem);        
+        // ----Add the elements here----
+
+        // Create a text element
+        let text_element = Element::new().set_coordinate_system(CoordinateType::Pixel).set_position(veclib::Vector2::ZERO).set_size(veclib::Vector2::ONE * 500.0).set_text("Tomatoes");
+        root.add_element(text_element);
+
         // Set this as the default root
         data.ui_manager.set_default_root(root);
         // Load the UI shader
@@ -186,18 +196,16 @@ impl System for UISystem {
                 continue;
             }
             shader.use_shader();
-            unsafe {
-                // Every type that isn't the text type
-                match &element.element_type {
-                    ElementType::Text(text_content) => {
-                        // Draw the text
-                    },
-                    _ => { 
-                        // Draw the panel
-                        self.draw_panel(&element, &root, &shader, data.custom_data.window.size);
-                    }
+            // Every type that isn't the text type
+            match &element.element_type {
+                ElementType::Text(text_content) => {
+                    // Draw the text
+                    self.draw_text(&element, &root, &shader, data.custom_data.window.size, text_content);
+                },
+                _ => { 
+                    // Draw the panel
+                    self.draw_panel(&element, &root, &shader, data.custom_data.window.size);
                 }
-                
             }
         }
         // Disable transparency after drawing the ui elements

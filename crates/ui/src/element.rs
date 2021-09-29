@@ -40,6 +40,33 @@ impl Default for Element {
     }
 }
 
+// Code for generation of the elements
+impl Element {
+    // Create a new element with default parameters
+    pub fn new() -> Self { return Self::default(); }
+    // Set the coordinate system for this element
+    pub fn set_coordinate_system(mut self, coordinate_type: CoordinateType) -> Self { 
+        self.coordinate_type = coordinate_type;
+        return self;
+    }
+    // Set the position of the element
+    pub fn set_position(mut self, position: veclib::Vector2<f32>) -> Self {
+        self.position = position;
+        return self;
+    }
+    // Set the size of the element
+    pub fn set_size(mut self, size: veclib::Vector2<f32>) -> Self {
+        self.size = size;
+        return self;
+    }
+    // Set the text of the element
+    pub fn set_text(mut self, text: &str) -> Self {
+        // Set the type of element
+        self.element_type = ElementType::Text(text.to_string());
+        return self;
+    }
+}
+
 // Coordinate type
 #[derive(Debug)]
 pub enum CoordinateType {
