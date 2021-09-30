@@ -4,11 +4,11 @@ use debug::DefaultDebugRendererType;
 use defaults::components;
 use ecs::{ComponentManager, Entity};
 use math::octree::OctreeNode;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rendering::{Model, Shader};
 use system_event_data::SystemEventData;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{CHUNK_SIZE, ChunkData, Terrain, VoxelGenerator, chunk_data::ChunkCoords, mesher};
+use crate::{chunk_data::ChunkCoords, mesher, ChunkData, Terrain, VoxelGenerator, CHUNK_SIZE};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -23,7 +23,8 @@ pub struct ChunkManager {
     // Are we currently waiting for the voxels to finish generating?
     pub voxels_generating: bool,
     // Camera location and forward vector
-    pub camera_location: veclib::Vector3<f32>, pub camera_forward_vector: veclib::Vector3<f32>
+    pub camera_location: veclib::Vector3<f32>,
+    pub camera_forward_vector: veclib::Vector3<f32>,
 }
 
 // How many frames to wait before getting the data from the compute shader
@@ -75,7 +76,11 @@ impl ChunkManager {
     // Update the location and forward vector of the camera entity
     pub fn update_camera_view(&mut self, camera_entity: &Entity, component_manager: &ComponentManager) {
         self.camera_location = camera_entity.get_component::<components::Transform>(component_manager).unwrap().position;
-        self.camera_forward_vector = camera_entity.get_component::<components::Transform>(component_manager).unwrap().rotation.mul_point(veclib::Vector3::Z);
+        self.camera_forward_vector = camera_entity
+            .get_component::<components::Transform>(component_manager)
+            .unwrap()
+            .rotation
+            .mul_point(veclib::Vector3::Z);
     }
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
@@ -85,14 +90,13 @@ impl ChunkManager {
         } else {
             // We are idle
         }
-        
-        
+
         // Sort the chunks to generate
         if !self.voxels_generating {
             // Sort the added nodes using a priority system
             let camera_position = self.camera_location;
             let camera_forward_vector = self.camera_forward_vector;
-            self.chunks_to_generate.sort_by(|a, b| { 
+            self.chunks_to_generate.sort_by(|a, b| {
                 // Get the dot product
                 let ad = Self::priority_function(&a, &camera_forward_vector, &camera_position);
                 let bd = Self::priority_function(&b, &camera_forward_vector, &camera_position);
@@ -101,7 +105,10 @@ impl ChunkManager {
         }
         // Debug draw the chunks to generate
         for chunk_to_generate in self.chunks_to_generate.iter() {
-            let t = DefaultDebugRendererType::CUBE(veclib::Vector3::from(chunk_to_generate.center), veclib::Vector3::new(chunk_to_generate.size as f32, chunk_to_generate.size as f32, chunk_to_generate.size as f32));
+            let t = DefaultDebugRendererType::CUBE(
+                veclib::Vector3::from(chunk_to_generate.center),
+                veclib::Vector3::new(chunk_to_generate.size as f32, chunk_to_generate.size as f32, chunk_to_generate.size as f32),
+            );
             //data.debug.debug_default(t, veclib::Vector3::ONE, false);
         }
         // Generate the data for some chunks, then create their model
@@ -110,7 +117,7 @@ impl ChunkManager {
 
         let generated_chunk = match coord {
             Some(chunk_coords) => {
-                // Get the chunk coords 
+                // Get the chunk coords
                 let chunk_coords = chunk_coords.clone();
                 let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
 
@@ -124,7 +131,7 @@ impl ChunkManager {
                         // Generate the data for this chunk
                         let has_surface = voxel_generator.generate_voxels_end(data, &mut voxels);
                         // Since we just generated the chunk we can remove it from the generated chunks
-                        self.chunks_to_generate.remove(0);                        
+                        self.chunks_to_generate.remove(0);
 
                         // If we don't have a surface, no need to create a model for this chunk
                         let t = match has_surface {
@@ -133,7 +140,7 @@ impl ChunkManager {
                                 let coords = chunk_coords.clone();
                                 let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
                                 // Save the chunk's data, though don't save the mode
-                                let chunk_data = ChunkData { coords: coords, voxels: voxels };                                    
+                                let chunk_data = ChunkData { coords: coords, voxels: voxels };
                                 Some((chunk_data, model))
                             }
                             None => {
@@ -141,7 +148,7 @@ impl ChunkManager {
                                 None
                             }
                         };
-                        t                     
+                        t
                     } else {
                         // Wait...
                         None
@@ -150,27 +157,30 @@ impl ChunkManager {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;
                     self.last_frame_voxels_generated = data.time_manager.frame_count;
-                    voxel_generator.generate_voxels_start(data, &chunk_coords.size, &chunk_coords.position);           
+                    voxel_generator.generate_voxels_start(data, &chunk_coords.size, &chunk_coords.position);
                     // We aren't generating a mesh so return none
-                    None         
-                }                
+                    None
+                }
             }
-            None => { /* No chunk to generate */ None }
-        };       
-        let mut entities_to_remove: Vec<u16> = Vec::new();  
-        
+            None => {
+                /* No chunk to generate */
+                None
+            }
+        };
+        let mut entities_to_remove: Vec<u16> = Vec::new();
+
         // The system was flawed...
         match generated_chunk {
             Some((chunk_data, model)) => {
                 self.chunks.insert(chunk_data.coords.center.clone());
                 new_chunks.push((chunk_data.coords, model.clone()));
-            },
-            None => { /* No model */ },
+            }
+            None => { /* No model */ }
         }
         // Remove the entities after all the new ones got generated
         if self.chunks_to_generate.len() == 0 {
-            entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();    
-            self.entities_to_remove.clear();        
+            entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();
+            self.entities_to_remove.clear();
         }
         let output = (new_chunks, entities_to_remove);
         return output;

@@ -9,8 +9,8 @@ use std::{
 };
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use resources::*;
 use image::{EncodableLayout, GenericImageView};
+use resources::*;
 use walkdir::WalkDir;
 
 // Time for the resource packer

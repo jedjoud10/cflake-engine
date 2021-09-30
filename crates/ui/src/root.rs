@@ -15,7 +15,6 @@ pub struct Root {
     pub max_depth: i32,
 }
 
-
 impl Root {
     // New
     pub fn new() -> Self {
@@ -29,7 +28,7 @@ impl Root {
         element.depth += 1;
         // Add the element
         let element_id = self.smart_element_list.add_element(element) as usize;
-        // Attach this element to the root element 
+        // Attach this element to the root element
         Element::attach(self, 0, vec![element_id]);
         return element_id;
     }

@@ -34,7 +34,7 @@ impl ChunkData {
 #[derive(Default, Clone, Debug)]
 pub struct ChunkCoords {
     pub position: veclib::Vector3<i64>,
-    pub parent_center: veclib::Vector3<i64>, 
+    pub parent_center: veclib::Vector3<i64>,
     pub center: veclib::Vector3<i64>,
     pub size: u64,
     pub depth: u8,

@@ -1,8 +1,11 @@
-use std::{fs::{File, OpenOptions}, io::{BufReader, BufWriter, Seek}, path::PathBuf};
+use crate::{LoadedValue, ValueGetter};
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
 use platform_dirs::AppDirs;
-use crate::{LoadedValue, ValueGetter};
-
+use std::{
+    fs::{File, OpenOptions},
+    io::{BufReader, BufWriter, Seek},
+    path::PathBuf,
+};
 
 // A trait that will be implemented on structs that can be turned into .hsf files
 pub trait LoadableData {
@@ -34,27 +37,25 @@ impl SaverLoader {
         let old_path = format!("{}\\{}\\", author_name, app_name);
         let path = AppDirs::new(Some(&old_path), false).unwrap();
         println!("{:?}", path.config_dir);
-        SaverLoader { 
-            local_path: path.config_dir
-        }
+        SaverLoader { local_path: path.config_dir }
     }
     // Load a struct from a file
     pub fn load<T: LoadableData>(&self, file_path: &str) -> T {
         // Load the file
         let global_path = self.local_path.join(file_path);
-        println!("{:?}", global_path);        
+        println!("{:?}", global_path);
         let mut reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
         let cap = reader.buffer();
         let mut values: Vec<LoadedValue> = Vec::new();
         // Get the values from this reader
         loop {
-            // Get the value type 
+            // Get the value type
             let _type = match reader.read_u8() {
                 Ok(x) => x as i32,
                 Err(_) => {
                     // Quit from the loop
                     break;
-                },
+                }
             };
             let value_to_add = match _type {
                 0 => {
@@ -62,7 +63,7 @@ impl SaverLoader {
                     LoadedValue::BOOL(match reader.read_u8().unwrap() {
                         0 => false,
                         255 => true,
-                        _ => panic!()
+                        _ => panic!(),
                     })
                 }
                 1 => {
@@ -73,9 +74,9 @@ impl SaverLoader {
                     // i32
                     LoadedValue::I32(reader.read_i32::<LittleEndian>().unwrap())
                 }
-                _ => panic!()
+                _ => panic!(),
             };
-            values.push(value_to_add);            
+            values.push(value_to_add);
         }
         // Create the value getter
         let mut value_getter: ValueGetter = ValueGetter {
@@ -105,19 +106,19 @@ impl SaverLoader {
                     writer.write_u8(0).unwrap();
                     // Write the value
                     writer.write_u8(if *b { 255 } else { 0 }).unwrap();
-                },
+                }
                 LoadedValue::F32(f) => {
                     // Write the type of value
                     writer.write_i8(1).unwrap();
                     // Write the value
                     writer.write_f32::<LittleEndian>(*f).unwrap();
-                },
+                }
                 LoadedValue::I32(f) => {
                     // Write the type of value
                     writer.write_i8(2).unwrap();
                     // Write the value
                     writer.write_i32::<LittleEndian>(*f).unwrap();
-                },
+                }
             }
         }
     }

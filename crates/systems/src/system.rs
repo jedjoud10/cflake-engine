@@ -1,8 +1,8 @@
 use ecs::*;
 use errors::ECSError;
 use others::Time;
-use system_event_data::*;
 use std::any::Any;
+use system_event_data::*;
 
 use crate::SystemFiringType;
 

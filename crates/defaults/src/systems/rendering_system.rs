@@ -1,12 +1,12 @@
 use super::super::components;
-use gl;
 use ecs::{Entity, FilteredLinkedComponents};
+use gl;
 use math;
-use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture2D, TextureShaderAccessType, Window, ShaderArg};
+use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, TextureShaderAccessType, Window};
 use resources::LoadableResource;
+use std::ptr::null;
 use system_event_data::{SystemEventData, SystemEventDataLite};
 use systems::{System, SystemData};
-use std::ptr::null;
 
 #[derive(Default)]
 pub struct RenderingSystem {

@@ -7,18 +7,18 @@ extern crate glfw;
 pub use core::World;
 
 // Export
-use glfw::Context;
+pub use ::systems::*;
 pub use debug;
 pub use defaults::components;
 pub use defaults::systems;
 pub use ecs::*;
 pub use errors::*;
+use glfw::Context;
 pub use input::*;
 pub use others::*;
 pub use rendering::*;
 pub use resources::*;
 pub use system_event_data::*;
-pub use ::systems::*;
 pub use terrain::*;
 pub use veclib;
 
@@ -35,7 +35,7 @@ pub fn start(author_name: &str, app_name: &str, load_systems_callback: fn(&mut W
     window.set_cursor_pos_polling(true);
     window.set_scroll_polling(true);
     window.set_size_polling(true);
-    window.make_current();    
+    window.make_current();
     if gl::Viewport::is_loaded() {
         unsafe {
             gl::Viewport(0, 0, 300, 300);

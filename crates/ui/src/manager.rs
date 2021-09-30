@@ -12,7 +12,7 @@ pub struct UIManager {
 }
 
 // Actually UI functions
-impl UIManager {    
+impl UIManager {
     // Get the default root
     pub fn get_default_root(&mut self) -> &Root {
         self.roots.get_mut(0).unwrap()
@@ -40,7 +40,7 @@ impl Index<usize> for UIManager {
         self.roots.get(index).unwrap()
     }
 }
-// Borrow mut indexer 
+// Borrow mut indexer
 impl IndexMut<usize> for UIManager {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.roots.get_mut(index).unwrap()

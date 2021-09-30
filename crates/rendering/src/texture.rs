@@ -1,8 +1,8 @@
 use bitflags::bitflags;
 use gl;
+use image::EncodableLayout;
 use others::CacheManager;
 use resources::{LoadableResource, Resource, ResourceManager};
-use image::EncodableLayout;
 
 use std::{ffi::c_void, ptr::null};
 

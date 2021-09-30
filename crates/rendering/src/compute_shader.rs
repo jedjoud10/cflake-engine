@@ -8,7 +8,9 @@ pub struct ComputeShader {
 impl ComputeShader {
     // Run the compute shader if this shader is a compute shader
     pub fn run_compute(&mut self, num_groups: (u32, u32, u32)) {
-        if self.running { return; }
+        if self.running {
+            return;
+        }
         unsafe {
             // Do some num_groups checks
             let mut max: i32 = 0;

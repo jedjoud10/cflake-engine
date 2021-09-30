@@ -1,5 +1,6 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 
+use errors::ResourceError;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     env,
@@ -8,7 +9,6 @@ use std::{
     io::{BufRead, BufReader, Read, Seek, SeekFrom},
     str,
 };
-use errors::ResourceError;
 
 // Should we logs resource events?
 pub const DEBUG_LOGS: bool = true;
@@ -132,9 +132,9 @@ impl ResourceManager {
             },
             local_path,
         ))
-    }  
+    }
     // Load back a font
-    pub fn load_font(reader: &mut BufReader<File>, name: String) -> Option<Resource> {    
+    pub fn load_font(reader: &mut BufReader<File>, name: String) -> Option<Resource> {
         // Read the custom font
         let mut output_font = LoadedFont {
             dimensions: veclib::Vector2::ZERO,
@@ -150,7 +150,7 @@ impl ResourceManager {
         for i in 0..(width * height) {
             let pixel = reader.read_u8().unwrap();
             output_font.texture_pixels.push(pixel);
-        } 
+        }
 
         // Get the number of ASCII characters we have
         let font_char_num = reader.read_u8().unwrap();
@@ -166,7 +166,7 @@ impl ResourceManager {
             output_font.chars.push(loaded_char);
         }
         Some(Resource::Font(output_font, name))
-    }  
+    }
 }
 
 // Da code.
@@ -196,10 +196,7 @@ impl ResourceManager {
         let _name = name_and_extension
             .split('.')
             .next()
-            .ok_or(ResourceError::new(format!(
-                "Name or extension are not valid for resource file '{}'",
-                local_path
-            )))?
+            .ok_or(ResourceError::new(format!("Name or extension are not valid for resource file '{}'", local_path)))?
             .to_string();
         let extension: Vec<&str> = name_and_extension.split('.').collect();
         let extension = extension[1..].join(".");
@@ -212,13 +209,17 @@ impl ResourceManager {
     }
     // Loads a specific resource and caches it so we can use it next time
     pub fn load_packed_resource(&mut self, local_path: &str) -> Result<&Resource, ResourceError> {
-        if DEBUG_LOGS { println!("Loading resource: '{}'...", local_path); }
+        if DEBUG_LOGS {
+            println!("Loading resource: '{}'...", local_path);
+        }
         let (file_path, extension, hashed_name) = Self::local_to_global_path(local_path)?;
         // Check if we have the file cached, if we do, then just take the resource from the cache
         if self.cached_resources.contains_key(&hashed_name) {
             // We have the needed resource in the resource cache!
             let resource = self.cached_resources.get(&hashed_name).unwrap();
-            if DEBUG_LOGS { println!("Loaded resource: '{}' from cache succsessfully!", local_path); }
+            if DEBUG_LOGS {
+                println!("Loaded resource: '{}' from cache succsessfully!", local_path);
+            }
             return Ok(resource);
         }
         let mut resource: Resource = Resource::None;
@@ -254,7 +255,9 @@ impl ResourceManager {
         // Insert the resource in the cache
         self.cached_resources.insert(hashed_name, resource);
         let resource = self.cached_resources.get(&hashed_name).unwrap();
-        if DEBUG_LOGS { println!("Loaded resource: '{}' succsessfully!", local_path); }
+        if DEBUG_LOGS {
+            println!("Loaded resource: '{}' succsessfully!", local_path);
+        }
         Ok(resource)
     }
     // Unloads a resource to save on memory

@@ -23,7 +23,7 @@ pub struct Element {
 
 impl Default for Element {
     fn default() -> Self {
-        Self { 
+        Self {
             // Parent stuff
             id: 0,
             parent: 0,
@@ -43,9 +43,11 @@ impl Default for Element {
 // Code for generation of the elements
 impl Element {
     // Create a new element with default parameters
-    pub fn new() -> Self { return Self::default(); }
+    pub fn new() -> Self {
+        return Self::default();
+    }
     // Set the coordinate system for this element
-    pub fn set_coordinate_system(mut self, coordinate_type: CoordinateType) -> Self { 
+    pub fn set_coordinate_system(mut self, coordinate_type: CoordinateType) -> Self {
         self.coordinate_type = coordinate_type;
         return self;
     }

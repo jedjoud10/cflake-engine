@@ -47,7 +47,7 @@ impl Octree {
             children_centers: [veclib::Vector3::<i64>::ZERO; 8],
             child_leaf_count: 0,
             children: false,
-            path: Vec::new()
+            path: Vec::new(),
         }
     }
     // Get the subdivided nodes that have passed through the post process check
@@ -108,7 +108,14 @@ impl Octree {
         return nodes;
     }
     // Generate the octree at a specific position with a specific depth
-    pub fn generate_incremental_octree(&mut self, input: veclib::Vector3<f32>) -> Option<(HashMap<veclib::Vector3::<i64>, OctreeNode>, HashMap<veclib::Vector3::<i64>, OctreeNode>, HashMap<veclib::Vector3::<i64>, OctreeNode>)> {
+    pub fn generate_incremental_octree(
+        &mut self,
+        input: veclib::Vector3<f32>,
+    ) -> Option<(
+        HashMap<veclib::Vector3<i64>, OctreeNode>,
+        HashMap<veclib::Vector3<i64>, OctreeNode>,
+        HashMap<veclib::Vector3<i64>, OctreeNode>,
+    )> {
         // Clamp the input position
         let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
             input,
@@ -237,8 +244,11 @@ impl Octree {
         }
 
         // Update
-        self.postprocess_nodes = postprocess_nodes;   
-        let added_nodes_hashmap = added_postprocess_nodes.iter().map(|x| (x.get_center(), x.clone())).collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
+        self.postprocess_nodes = postprocess_nodes;
+        let added_nodes_hashmap = added_postprocess_nodes
+            .iter()
+            .map(|x| (x.get_center(), x.clone()))
+            .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
         let removed_nodes_hashmap: HashMap<veclib::Vector3<i64>, OctreeNode> = removed_postprocess_nodes.iter().map(|x| (x.get_center(), x.clone())).collect();
         // Return
         return Some((added_nodes_hashmap, removed_nodes_hashmap, self.postprocess_nodes.clone()));
@@ -262,7 +272,7 @@ pub struct OctreeNode {
     // Check if we had children
     pub children: bool,
     // The path we took
-    pub path: Vec<u8>
+    pub path: Vec<u8>,
 }
 
 impl OctreeNode {
@@ -313,7 +323,7 @@ impl OctreeNode {
                         children_centers: [veclib::Vector3::<i64>::ZERO; 8],
                         child_leaf_count: 0,
                         children: false,
-                        path: new_path
+                        path: new_path,
                     };
                     let center = child.get_center();
                     self.children_centers[i as usize] = center;

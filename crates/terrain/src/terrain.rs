@@ -1,17 +1,17 @@
-use crate::{BoundChecker, ChunkData, ChunkManager, chunk_data::ChunkCoords};
+use crate::{chunk_data::ChunkCoords, BoundChecker, ChunkData, ChunkManager};
 
 use super::voxel::VoxelGenerator;
 use debug::DefaultDebugRendererType;
 use defaults::components;
 use ecs::*;
 use input::*;
+use math::octree;
 use math::{self, octree::OctreeNode};
 use others::CacheManager;
 use rendering::*;
+use std::collections::{HashMap, HashSet};
 use system_event_data::{SystemEventData, SystemEventDataLite};
 use systems::*;
-use math::octree;
-use std::collections::{HashMap, HashSet};
 
 // TODO:
 // Gotta make this way, way faster
@@ -155,18 +155,12 @@ impl System for Terrain {
     // Update the camera position inside the terrain generator
     fn pre_fire(&mut self, data: &mut SystemEventData) {
         // Get the camera location
-        let camera_entity = data
-        .entity_manager
-        .get_entity(&data.custom_data.main_camera_entity_id)
-        .unwrap();
-        let camera_location = camera_entity
-            .get_component::<components::Transform>(data.component_manager)
-            .unwrap()
-            .position;
+        let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+        let camera_location = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
         // Generate the octree each frame and generate / delete the chunks
         if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
-                Some((mut added, removed, total_nodes)) => { 
+                Some((mut added, removed, total_nodes)) => {
                     // Filter first
                     added.retain(|_, node| BoundChecker::bound_check(&node));
                     // Turn all the newly added nodes into chunks and instantiate them into the world
@@ -197,7 +191,7 @@ impl System for Terrain {
         }
 
         // Update the chunk manager
-        //println!("{:?}", self.parent_child_count);        
+        //println!("{:?}", self.parent_child_count);
         let (added_chunks, removed_chunks) = self.chunk_manager.update(&self.voxel_generator, data);
         for (coords, model) in added_chunks {
             // Add the entity
@@ -208,7 +202,7 @@ impl System for Terrain {
         for entity_id in removed_chunks {
             // Removal the entity from the world
             data.entity_manager.remove_entity_s(&entity_id).unwrap();
-        }        
+        }
     }
 
     // Called for each entity in the system

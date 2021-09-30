@@ -13,7 +13,7 @@ pub struct Font {
 impl Font {
     // Get a specific character from this font using it's ASCII code
     pub fn get_char(&self, ascii_code: u8) -> &FontChar {
-        // The offset of the first ASCII character in the font 
+        // The offset of the first ASCII character in the font
         const ASCII_FIRST_CHAR_OFFSET: u8 = 33;
         let char = self.chars.get((ascii_code - ASCII_FIRST_CHAR_OFFSET) as usize).unwrap();
         return char;
@@ -28,16 +28,15 @@ impl Font {
         }
     }
     // Set the font parameters for this text
-    pub fn set_font_parameter(&self) {
-
-    }
+    pub fn set_font_parameter(&self) {}
 }
 
 // The font is loadable
 impl LoadableResource for Font {
     fn from_resource(self, resource: &resources::Resource) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         match resource {
             Resource::Font(font, name) => {
                 // Load the chars

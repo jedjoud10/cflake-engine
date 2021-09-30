@@ -1,9 +1,9 @@
 use std::ptr::null;
 
 use super::{Texture, TextureDimensionType, TextureFilter, TextureFlags, TextureWrapping};
+use image::EncodableLayout;
 use others::CacheManager;
 use resources::{LoadableResource, Resource, ResourceManager};
-use image::EncodableLayout;
 
 // A 3D texture
 #[derive(Debug)]

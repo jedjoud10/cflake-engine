@@ -1,4 +1,4 @@
-// An enum value that can will be used when loading / saving structs 
+// An enum value that can will be used when loading / saving structs
 pub enum LoadedValue {
     None,
     BOOL(bool),

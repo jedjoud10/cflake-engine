@@ -19,6 +19,8 @@ impl FontManager {
         let font_name = font.name.clone();
         // Check if we already don't have a font with the same name
         self.fonts.entry(font_name.clone()).or_insert(font);
-        if self.fonts.len() == 1 { println!("Add font: '{}' as default font", font_name); };
+        if self.fonts.len() == 1 {
+            println!("Add font: '{}' as default font", font_name);
+        };
     }
 }

@@ -1,10 +1,10 @@
 use std::{ffi::c_void, ptr::null};
 
 use super::{Texture, TextureDimensionType, TextureFilter, TextureFlags, TextureWrapping};
-use others::CacheManager;
-use resources::{LoadableResource, Resource, ResourceManager};
 use errors::ResourceError;
 use image::EncodableLayout;
+use others::CacheManager;
+use resources::{LoadableResource, Resource, ResourceManager};
 
 // A 2D texture
 #[derive(Debug)]

@@ -20,7 +20,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
     // Calculate the density threshold for the skirts
-    let density_threshold = AVERAGE_DENSITY_THRESHOLD * (((size as f32)*3.0) / (CHUNK_SIZE-2) as f32);
+    let density_threshold = AVERAGE_DENSITY_THRESHOLD * (((size as f32) * 3.0) / (CHUNK_SIZE - 2) as f32);
     // Loop over every voxel
     for x in 0..CHUNK_SIZE - 2 {
         for y in 0..CHUNK_SIZE - 2 {
@@ -67,7 +67,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         let density1 = voxels[index1].density;
                         let density2 = voxels[index2].density;
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 =  if interpolation { inverse_lerp(density1, density2, 0.0) } else { 0.5 };
+                        let value: f32 = if interpolation { inverse_lerp(density1, density2, 0.0) } else { 0.5 };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex

@@ -1,20 +1,20 @@
-use fonts::FontManager;
-use gl;
-use glfw::{self, Context};
+use ::systems::*;
 use debug::*;
 use defaults::components;
 use defaults::systems;
 use ecs::*;
 use errors::*;
+use fonts::FontManager;
+use gl;
+use glfw::{self, Context};
 use input::*;
 use io::SaverLoader;
 use others::*;
 use rendering::*;
 use resources::*;
-use system_event_data::*;
-use ::systems::*;
-use ui::UIManager;
 use std::collections::HashSet;
+use system_event_data::*;
+use ui::UIManager;
 
 use crate::GameConfig;
 //  The actual world
@@ -31,7 +31,7 @@ pub struct World {
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
-    
+
     // Miscs
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
@@ -53,7 +53,7 @@ impl World {
 
             entity_manager: EntityManager::default(),
             system_manager: SystemManager::default(),
-            
+
             custom_data: CustomWorldData::default(),
             time_manager: Time::default(),
             saver_loader: SaverLoader::new(author_name, app_name),

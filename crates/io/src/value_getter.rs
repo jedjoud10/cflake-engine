@@ -1,4 +1,4 @@
-use crate::{LoadedValue};
+use crate::LoadedValue;
 
 // A struct containing all the loaded values, and a simple function to get them back
 pub struct ValueGetter {
@@ -17,16 +17,19 @@ impl ValueGetter {
             Some(x) => {
                 match x {
                     LoadedValue::BOOL(b) => *b,
-                    _ => { /* Nothing */ panic!("Value loaded at index {} is not a bool!", self.current_cursor_index) }
+                    _ => {
+                        /* Nothing */
+                        panic!("Value loaded at index {} is not a bool!", self.current_cursor_index)
+                    }
                 }
-            },
-            None => { 
+            }
+            None => {
                 // No value loaded, return the original
-                self.valid = false;            
-                return default_value;            
-            },
+                self.valid = false;
+                return default_value;
+            }
         };
-        self.current_cursor_index+= 1;
+        self.current_cursor_index += 1;
         return output;
     }
 }

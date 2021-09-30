@@ -9,10 +9,7 @@ pub struct GameConfig {
 // Default
 impl Default for GameConfig {
     fn default() -> Self {
-        Self { 
-            vsync: true,
-            fullscreen: true,
-        }
+        Self { vsync: true, fullscreen: true }
     }
 }
 
@@ -22,15 +19,12 @@ impl LoadableData for GameConfig {
     fn load_from_file(vg: &mut ValueGetter) -> Self {
         let default_self = Self::default();
         Self {
-            vsync: vg.get_bool( default_self.vsync),
+            vsync: vg.get_bool(default_self.vsync),
             fullscreen: vg.get_bool(default_self.fullscreen),
         }
     }
     // Save to file
     fn save_to_file(&self) -> Vec<io::LoadedValue> {
-        return vec![
-            LoadedValue::BOOL(self.vsync),
-            LoadedValue::BOOL(self.fullscreen)
-        ];
+        return vec![LoadedValue::BOOL(self.vsync), LoadedValue::BOOL(self.fullscreen)];
     }
 }
