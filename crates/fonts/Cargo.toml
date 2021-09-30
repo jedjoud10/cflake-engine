@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 resources = { path = "../resources" }
+rendering = { path = "../rendering" }
+gl = "0.14.0"

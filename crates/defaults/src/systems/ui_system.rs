@@ -22,9 +22,9 @@ pub struct UISystem {
 
 // Draw functions
 impl UISystem {
-    // Draw a simple panel to the screen
-    fn draw_panel(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>) {
-        unsafe {
+    // Set the default shader arguments to draw a normal panel
+    fn set_default_draw_arguments(&self, element: &Element, root: &Root, resolution: veclib::Vector2<u16>, shader: &Shader) {
+        unsafe { 
             gl::BindVertexArray(self.vertex_array);
             // Update the shader uniforms
             let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
@@ -48,15 +48,34 @@ impl UISystem {
             shader.set_vec2f32("offset_position", &position);
             // Set the color of the current element
             shader.set_vec4f32("color", &element.color);
+        }
+    }
+    // Draw the panel vertices
+    fn draw_panel_vertices(&self) {
+        unsafe {
             // Draw the element
             gl::DrawArrays(gl::TRIANGLES, 0, 6);
         }
     }
+    // Draw a simple panel to the screen
+    fn draw_panel(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>) {
+        self.set_default_draw_arguments(element, root, resolution, shader);
+        self.draw_panel_vertices();
+    }
     // Draw the text by drawing multiple elements
-    fn draw_text(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>, text_content: &String) {
+    fn draw_text(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>, text_content: &String, font: &Font) {
         // Draw each character in the string as a separate element
         let chars = text_content.split("").collect::<Vec<&str>>();
         for char in chars {}
+
+        // Set the default panel arguments
+        self.set_default_draw_arguments(element, root, resolution, shader);
+        unsafe {
+            // Set the atlas texture and the character padding
+            shader.set_t2d("atlas_texture", &font.texture.unwrap(), gl::TEXTURE0);
+        }
+        // Draw each character as panel
+        self.draw_panel_vertices();
     }
 }
 
@@ -186,6 +205,10 @@ impl System for UISystem {
         let root = &data.ui_manager.get_default_root();
         let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
         let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
+        // Get the font shader
+        let font_shader = data.shader_cacher.1.get_object(&self.font_ui_shader_name).unwrap();
+        // Default font
+        let default_font = data.ui_manager.font_manager.get_font("defaults\\fonts\\default_font.font");
 
         // Draw every element, other than the root element
         unsafe {
@@ -206,14 +229,18 @@ impl System for UISystem {
             if element.id == 0 || bad_element_type {
                 continue;
             }
-            shader.use_shader();
+            
             // Every type that isn't the text type
             match &element.element_type {
                 ElementType::Text(text_content) => {
+                    // Use the font shader
+                    font_shader.use_shader();
                     // Draw the text
-                    self.draw_text(&element, &root, &shader, data.custom_data.window.size, text_content);
+                    self.draw_text(&element, &root, &shader, data.custom_data.window.size, text_content, default_font);
                 }
                 _ => {
+                    // Use the normal panel shader
+                    shader.use_shader();
                     // Draw the panel
                     self.draw_panel(&element, &root, &shader, data.custom_data.window.size);
                 }
