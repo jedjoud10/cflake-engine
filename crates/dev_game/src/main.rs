@@ -96,13 +96,4 @@ pub fn load_entities(world: &mut World) {
         .link_component::<components::Transform>(&mut world.component_manager, components::Transform::default().with_scale(veclib::Vector3::ONE * 10.0))
         .unwrap();
     world.entity_manager.add_entity_s(entity);
-
-    // Load test font
-    let font = world.resource_manager.load_packed_resource("defaults\\fonts\\default_font.font").unwrap();
-    match font {
-        Resource::Font(f) => {
-            // Epic
-        },
-        _ => {}
-    }
 }

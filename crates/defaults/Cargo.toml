@@ -11,6 +11,7 @@ veclib = { git = "https://github.com/jedjoud10/veclib" }
 ui = { path = "../ui" }
 system_event_data = { path = "../system_event_data" }
 math = { path = "../math" }
+fonts = { path = "../fonts"  }
 ecs = { path = "../ecs" }
 systems = { path = "../systems" }
 rendering = { path = "../rendering" }

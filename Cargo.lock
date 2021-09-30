@@ -73,6 +73,7 @@ dependencies = [
  "defaults",
  "ecs",
  "errors",
+ "fonts",
  "gl",
  "glfw",
  "input",
@@ -156,6 +157,7 @@ name = "defaults"
 version = "0.1.0"
 dependencies = [
  "ecs",
+ "fonts",
  "gl",
  "input",
  "math",
@@ -723,6 +725,7 @@ dependencies = [
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "fonts",
  "others",
  "resources",
  "veclib",

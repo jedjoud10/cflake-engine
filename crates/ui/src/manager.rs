@@ -1,11 +1,14 @@
 use std::ops::{Index, IndexMut};
 
+use fonts::FontManager;
+
 use crate::{element::ButtonState, element::ElementType, Root};
 
 // The UI manager, it can contain multiple UI roots, and switch between them
 #[derive(Default)]
 pub struct UIManager {
     pub roots: Vec<Root>,
+    pub font_manager: FontManager,
 }
 
 // Actually UI functions

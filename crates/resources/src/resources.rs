@@ -134,7 +134,7 @@ impl ResourceManager {
         ))
     }  
     // Load back a font
-    pub fn load_font(reader: &mut BufReader<File>) -> Option<Resource> {    
+    pub fn load_font(reader: &mut BufReader<File>, name: String) -> Option<Resource> {    
         // Read the custom font
         let mut output_font = LoadedFont {
             dimensions: veclib::Vector2::ZERO,
@@ -165,7 +165,7 @@ impl ResourceManager {
             };
             output_font.chars.push(loaded_char);
         }
-        Some(Resource::Font(output_font))
+        Some(Resource::Font(output_font, name))
     }  
 }
 
@@ -246,7 +246,7 @@ impl ResourceManager {
             }
             "font" => {
                 // This is a font
-                resource = Self::load_font(&mut reader).unwrap();
+                resource = Self::load_font(&mut reader, local_path.to_string()).unwrap();
             }
             _ => {}
         }
@@ -291,7 +291,7 @@ pub enum Resource {
     Texture(LoadedTexture, String),
     Shader(LoadedSubShader, String),
     Sound(LoadedSoundEffect),
-    Font(LoadedFont),
+    Font(LoadedFont, String),
     // Only used if we are not actually doing packing, just passing the bytes from the normal resource to the packed one
     Bytes(Vec<u8>),
 }

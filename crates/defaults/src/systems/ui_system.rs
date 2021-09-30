@@ -3,6 +3,7 @@ use std::{ffi::c_void, ptr::null};
 
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
+use fonts::Font;
 use input::*;
 use rendering::Shader;
 use resources::LoadableResource;
@@ -135,6 +136,11 @@ impl System for UISystem {
             gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 0, null());
             self.vertex_array = vertex_array;
         }
+        // Load a default font that we can use for testing
+        let default_font = Font::new().from_path("defaults\\fonts\\default_font.font", data.resource_manager).unwrap();
+        // Set the default font
+        data.ui_manager.font_manager.add_font(default_font);
+        
         // Create the default UI, just a blank screen
         let mut root = Root::new();
         let root_elem = Element::default();

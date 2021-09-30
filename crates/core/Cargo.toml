@@ -19,5 +19,6 @@ errors = { path = "../errors" }
 rendering = { path = "../rendering" }
 resources = { path = "../resources" }
 debug = { path = "../debug" }
+fonts = { path = "../fonts" }
 defaults = { path = "../defaults" }
 io = { path = "../io" }
