@@ -40,9 +40,39 @@ fn main() {
     output_file_writer.write_u16::<LittleEndian>(dimension.0).unwrap();
     output_file_writer.write_u16::<LittleEndian>(dimension.1).unwrap();
 
-    // Write each pixel
-    for pixel in texture.pixels() {
-        output_file_writer.write_u8(pixel.2[0]).unwrap();
+    // The threshold to detect lit pixels
+    const THRESHOLD: u8 = 128;
+    // Turn each pixel into a single bit first of all
+    let bit_pixels: Vec<(u32, u32, bool)> = texture.pixels().map(|x| (x.0, x.1, x.2[0] > THRESHOLD)).collect();
+
+    // Get the signed SDF for each pixel
+    let mut pixels_to_write: Vec<u8> = Vec::new();
+    let mut i: u32 = 0;
+    for pixel in bit_pixels.iter() {
+        i += 1;
+        let pixel_coords = veclib::Vector2::<f32>::new(pixel.0 as f32, pixel.1 as f32);
+        let pixel_color = if !pixel.2 {
+            // Keep track of the best distance
+            let mut best_distance: f32 = f32::MAX;
+            // This is an unlit pixel, get it's distance to lit pixels
+            for sdf_pixel in bit_pixels.iter() {
+                let sdf_pixel_coords = veclib::Vector2::<f32>::new(sdf_pixel.0 as f32, sdf_pixel.1 as f32);
+                if sdf_pixel.2 {
+                    // Get the distance to the closest pixel
+                    best_distance = best_distance.min(sdf_pixel_coords.distance(pixel_coords));
+                }
+            }
+            best_distance
+        } else {
+            0.0
+        };
+        let byte = ((pixel_color / 10.0).clamp(0.0, 1.0) * 255.0) as u8;
+        pixels_to_write.push(byte);
+    }
+
+    // Write each new pixel
+    for pixel in pixels_to_write {
+        output_file_writer.write_u8(pixel).unwrap();
     }
 
     // Read the config file data

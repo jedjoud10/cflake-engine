@@ -53,8 +53,17 @@ impl UISystem {
         self.set_default_draw_arguments(element_data, shader);
         // Set the atlas texture and the character padding
         shader.set_t2d("atlas_texture", font.texture.as_ref().unwrap(), gl::TEXTURE0);
-        shader.set_vec2f32("min_padding", &veclib::Vector2::<f32>::ZERO);
-        shader.set_vec2f32("max_padding", &veclib::Vector2::<f32>::ONE);
+        const width: f32 = 32.0;
+        const height: f32 = 64.0;
+        const posx: f32 = 136.0;
+        const posy: f32 = 130.0;
+        let min_padding: veclib::Vector2<f32> = veclib::Vector2::new(posx, posy);
+        let max_padding: veclib::Vector2<f32> = veclib::Vector2::new(posx+width, posy+height);
+        println!("{:?} {:?}", min_padding, max_padding);
+        shader.set_vec2f32("min_padding", &(min_padding / 512.0));
+        shader.set_vec2f32("max_padding", &(max_padding / 512.0));
+        //shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
+        //shader.set_vec2f32("max_padding", &veclib::Vector2::ONE);
         // Draw each character as panel
         self.draw_panel_vertices();
     }
@@ -151,7 +160,7 @@ impl System for UISystem {
         let text_element = Element::new()
             .set_coordinate_system(CoordinateType::Pixel)
             .set_position(veclib::Vector2::ZERO)
-            .set_size(veclib::Vector2::ONE * 600.0)
+            .set_size(veclib::Vector2::ONE * 1000.0)
             .set_text("Tomato");
         root.add_element(text_element);
 
@@ -167,7 +176,7 @@ impl System for UISystem {
         .1;
         // Load the UI font shader
         self.font_ui_shader_name = Shader::new(
-            vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_font.frsh.glsl"],
+            vec!["defaults\\shaders\\ui_font.vrsh.glsl", "defaults\\shaders\\ui_font.frsh.glsl"],
             data.resource_manager,
             data.shader_cacher,
             None,
