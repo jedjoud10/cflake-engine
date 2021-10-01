@@ -23,31 +23,14 @@ pub struct UISystem {
 // Draw functions
 impl UISystem {
     // Set the default shader arguments to draw a normal panel
-    fn set_default_draw_arguments(&self, element: &Element, root: &Root, resolution: veclib::Vector2<u16>, shader: &Shader) {
+    fn set_default_draw_arguments(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader) {
         unsafe { 
             gl::BindVertexArray(self.vertex_array);
-            // Update the shader uniforms
-            let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
-            shader.set_f32("depth", &depth);
-            let mut size: veclib::Vector2<f32> = veclib::Vector2::ZERO;
-            let mut position: veclib::Vector2<f32> = veclib::Vector2::ZERO;
-            let resolution = veclib::Vector2::<f32>::from(resolution);
-            match element.coordinate_type {
-                ui::CoordinateType::Pixel => {
-                    // Pixel coordinate type
-                    size = element.size / resolution;
-                    position = element.position / resolution;
-                }
-                ui::CoordinateType::Factor => {
-                    // Factor coordinate type
-                    size = element.size * 2.0;
-                    position = element.position;
-                }
-            }
-            shader.set_vec2f32("size", &size);
-            shader.set_vec2f32("offset_position", &position);
-            // Set the color of the current element
-            shader.set_vec4f32("color", &element.color);
+            // Update the shader uniforms            
+            shader.set_f32("depth", &element_data.3);
+            shader.set_vec2f32("size", &element_data.0);
+            shader.set_vec2f32("offset_position", &element_data.1);
+            shader.set_vec4f32("color", &element_data.2);
         }
     }
     // Draw the panel vertices
@@ -58,21 +41,21 @@ impl UISystem {
         }
     }
     // Draw a simple panel to the screen
-    fn draw_panel(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>) {
-        self.set_default_draw_arguments(element, root, resolution, shader);
+    fn draw_panel(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader) {
+        self.set_default_draw_arguments(element_data, shader);
         self.draw_panel_vertices();
     }
     // Draw the text by drawing multiple elements
-    fn draw_text(&self, element: &Element, root: &Root, shader: &Shader, resolution: veclib::Vector2<u16>, text_content: &String, font: &Font) {
+    fn draw_text(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader, text_content: &String, font: &Font) {
         // Draw each character in the string as a separate element
         let chars = text_content.split("").collect::<Vec<&str>>();
         for char in chars {}
 
         // Set the default panel arguments
-        self.set_default_draw_arguments(element, root, resolution, shader);
+        self.set_default_draw_arguments(element_data, shader);
         unsafe {
             // Set the atlas texture and the character padding
-            shader.set_t2d("atlas_texture", &font.texture.unwrap(), gl::TEXTURE0);
+            shader.set_t2d("atlas_texture", font.texture.as_ref().unwrap(), gl::TEXTURE0);
         }
         // Draw each character as panel
         self.draw_panel_vertices();
@@ -202,7 +185,7 @@ impl System for UISystem {
     // Render all the elements onto the screen
     fn post_fire(&mut self, data: &mut SystemEventData) {
         // Draw each element, from back to front
-        let root = &data.ui_manager.get_default_root();
+        let root = data.ui_manager.get_default_root();
         let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
         let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
         // Get the font shader
@@ -229,20 +212,39 @@ impl System for UISystem {
             if element.id == 0 || bad_element_type {
                 continue;
             }
-            
+            // Get the data that will be passed to the shader
+            let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;            
+            let mut size: veclib::Vector2<f32> = veclib::Vector2::ZERO;
+            let mut position: veclib::Vector2<f32> = veclib::Vector2::ZERO;
+            let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size);
+            match element.coordinate_type {
+                ui::CoordinateType::Pixel => {
+                    // Pixel coordinate type
+                    size = element.size / resolution;
+                    position = element.position / resolution;
+                }
+                ui::CoordinateType::Factor => {
+                    // Factor coordinate type
+                    size = element.size * 2.0;
+                    position = element.position;
+                }
+            }
+            // Create da tuple
+            let tuple = (position, size, element.color, depth);
+
             // Every type that isn't the text type
             match &element.element_type {
                 ElementType::Text(text_content) => {
                     // Use the font shader
                     font_shader.use_shader();
                     // Draw the text
-                    self.draw_text(&element, &root, &shader, data.custom_data.window.size, text_content, default_font);
+                    self.draw_text(tuple, &shader, text_content, default_font);
                 }
                 _ => {
                     // Use the normal panel shader
                     shader.use_shader();
                     // Draw the panel
-                    self.draw_panel(&element, &root, &shader, data.custom_data.window.size);
+                    self.draw_panel(tuple, &shader);
                 }
             }
         }

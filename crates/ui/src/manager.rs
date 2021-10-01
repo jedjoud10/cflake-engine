@@ -14,8 +14,8 @@ pub struct UIManager {
 // Actually UI functions
 impl UIManager {
     // Get the default root
-    pub fn get_default_root(&mut self) -> &Root {
-        self.roots.get_mut(0).unwrap()
+    pub fn get_default_root(&self) -> &Root {
+        self.roots.get(0).unwrap()
     }
     pub fn get_default_root_mut(&mut self) -> &mut Root {
         self.roots.get_mut(0).unwrap()
