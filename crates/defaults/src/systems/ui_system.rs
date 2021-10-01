@@ -151,7 +151,8 @@ impl System for UISystem {
         let text_element = Element::new()
             .set_coordinate_system(CoordinateType::Pixel)
             .set_position(veclib::Vector2::ZERO)
-            .set_size(veclib::Vector2::ONE * 500.0);
+            .set_size(veclib::Vector2::ONE * 600.0)
+            .set_text("Tomato");
         root.add_element(text_element);
 
         // Set this as the default root
