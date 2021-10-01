@@ -20,20 +20,21 @@ impl Font {
         let char = self.chars.get((ascii_code - ASCII_FIRST_CHAR_OFFSET) as usize).unwrap();
         return char;
     }
-    // Create the actual texture from the raw pixel bitmap data we have 
+    // Create the actual texture from the raw pixel bitmap data we have
     pub fn create_texture(&mut self) {
         match self.texture {
-            None => { 
+            None => {
                 // Create the texture and set it's parameters
-                let texture = Texture2D::new().set_dimensions(self.atlas_dimensions.x, self.atlas_dimensions.y)
+                let texture = Texture2D::new()
+                    .set_dimensions(self.atlas_dimensions.x, self.atlas_dimensions.y)
                     .set_filter(rendering::TextureFilter::Linear)
-                    .set_idf(gl::RED, gl::R16, gl::UNSIGNED_BYTE);
+                    .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE);
                 // Create the texture data from the bitmap pixels
                 let texture = texture.generate_texture(self.texture_pixels.clone());
                 self.texture = Some(texture);
-            },
+            }
             _ => { /* The texture already exists */ }
-        }        
+        }
     }
     // Create a font with empty paramaters and without any texture or chars
     pub fn new() -> Self {

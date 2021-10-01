@@ -42,7 +42,7 @@ impl LoadableResource for Texture2D {
                 texture.internal_texture.name = texture_name.clone();
                 let new_texture = texture
                     .internal_texture
-                    .generate_texture(rgba8_image.as_bytes().to_vec(), TextureDimensionType::D_2D(width, height));
+                    .generate_texture(rgba8_image.as_bytes().to_vec(), TextureDimensionType::D2D(width, height));
                 texture.internal_texture = new_texture;
                 Some(texture)
             }
@@ -98,7 +98,7 @@ impl Texture2D {
     pub fn set_dimensions(mut self, width: u16, height: u16) -> Self {
         self.height = height;
         self.width = width;
-        self.internal_texture.dimension_type = TextureDimensionType::D_2D(width, height);
+        self.internal_texture.dimension_type = TextureDimensionType::D2D(width, height);
         self
     }
     // Update the size of the current texture
@@ -155,7 +155,8 @@ impl Texture2D {
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
-        let t = self.internal_texture.generate_texture(bytes, TextureDimensionType::D_2D(self.width, self.height));
+        let dimension_type = self.internal_texture.dimension_type.clone();
+        let t = self.internal_texture.generate_texture(bytes, dimension_type);
         self.internal_texture = t;
         return self;
     }

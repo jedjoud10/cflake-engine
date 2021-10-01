@@ -30,10 +30,10 @@ pub enum TextureWrapping {
 }
 
 // Texture dimension type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TextureDimensionType {
-    D_2D(u16, u16),
-    D_3D(u16, u16, u16),
+    D2D(u16, u16),
+    D3D(u16, u16, u16),
 }
 
 // Custom internal format
@@ -71,7 +71,7 @@ impl Default for Texture {
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::MUTABLE,
             filter: TextureFilter::Linear,
-            dimension_type: TextureDimensionType::D_2D(0, 0),
+            dimension_type: TextureDimensionType::D2D(0, 0),
             wrap_mode: TextureWrapping::Repeat,
         }
     }
@@ -122,8 +122,8 @@ impl Texture {
 
         // Get the tex_type based on the TextureDimensionType
         let tex_type = match dimension_type {
-            TextureDimensionType::D_2D(_, _) => gl::TEXTURE_2D,
-            TextureDimensionType::D_3D(_, _, _) => gl::TEXTURE_3D,
+            TextureDimensionType::D2D(_, _) => gl::TEXTURE_2D,
+            TextureDimensionType::D3D(_, _, _) => gl::TEXTURE_3D,
         };
 
         if self.flags.contains(TextureFlags::MUTABLE) {
@@ -135,7 +135,7 @@ impl Texture {
                 // Use TexImage3D if it's a 3D texture, otherwise use TexImage2D
                 match dimension_type {
                     // This is a 2D texture
-                    TextureDimensionType::D_2D(width, height) => {
+                    TextureDimensionType::D2D(width, height) => {
                         gl::TexImage2D(
                             tex_type,
                             0,
@@ -149,7 +149,7 @@ impl Texture {
                         );
                     }
                     // This is a 3D texture
-                    TextureDimensionType::D_3D(width, height, depth) => {
+                    TextureDimensionType::D3D(width, height, depth) => {
                         gl::TexImage3D(
                             tex_type,
                             0,
@@ -233,8 +233,8 @@ impl Texture {
     {
         // Get the length of the vector
         let length: usize = match self.dimension_type {
-            TextureDimensionType::D_2D(x, y) => (x * y) as usize,
-            TextureDimensionType::D_3D(x, y, z) => (x * y * z) as usize,
+            TextureDimensionType::D2D(x, y) => (x * y) as usize,
+            TextureDimensionType::D3D(x, y, z) => (x * y * z) as usize,
         };
         // Create the vector
         let mut pixels: Vec<V> = vec![V::default(); length];
@@ -242,12 +242,12 @@ impl Texture {
         // Actually read the pixels
         unsafe {
             match self.dimension_type {
-                TextureDimensionType::D_2D(_, _) => {
+                TextureDimensionType::D2D(_, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
                 }
-                TextureDimensionType::D_3D(_, _, _) => {
+                TextureDimensionType::D3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
@@ -263,8 +263,8 @@ impl Texture {
     {
         // Get the length of the vector
         let length: usize = match self.dimension_type {
-            TextureDimensionType::D_2D(x, y) => (x * y) as usize,
-            TextureDimensionType::D_3D(x, y, z) => (x * y * z) as usize,
+            TextureDimensionType::D2D(x, y) => (x * y) as usize,
+            TextureDimensionType::D3D(x, y, z) => (x * y * z) as usize,
         };
         // Create the vector
         let mut pixels: Vec<U> = vec![U::default(); length];
@@ -272,12 +272,12 @@ impl Texture {
         // Actually read the pixels
         unsafe {
             match self.dimension_type {
-                TextureDimensionType::D_2D(_, _) => {
+                TextureDimensionType::D2D(_, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
                 }
-                TextureDimensionType::D_3D(_, _, _) => {
+                TextureDimensionType::D3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);

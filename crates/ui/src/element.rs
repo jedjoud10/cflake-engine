@@ -32,7 +32,7 @@ impl Default for Element {
             size: veclib::Vector2::ONE,
             color: veclib::Vector4::ONE,
             coordinate_type: CoordinateType::Factor,
-            element_type: ElementType::Empty,
+            element_type: ElementType::Panel(),
             // Internal data
             depth: 0,
             children: Vec::new(),
@@ -65,6 +65,11 @@ impl Element {
     pub fn set_text(mut self, text: &str) -> Self {
         // Set the type of element
         self.element_type = ElementType::Text(text.to_string());
+        return self;
+    }
+    // Set the color of the element
+    pub fn set_color(mut self, color: veclib::Vector4<f32>) -> Self {
+        self.color = color;
         return self;
     }
 }

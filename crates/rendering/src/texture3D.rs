@@ -37,7 +37,7 @@ impl Texture3D {
         self.height = height;
         self.width = width;
         self.depth = depth;
-        self.internal_texture.dimension_type = TextureDimensionType::D_3D(width, height, depth);
+        self.internal_texture.dimension_type = TextureDimensionType::D3D(width, height, depth);
         self
     }
     // Update the size of the current texture
@@ -97,7 +97,7 @@ impl Texture3D {
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
         let t = self
             .internal_texture
-            .generate_texture(bytes, TextureDimensionType::D_3D(self.width, self.height, self.depth));
+            .generate_texture(bytes, TextureDimensionType::D3D(self.width, self.height, self.depth));
         self.internal_texture = t;
         return self;
     }
