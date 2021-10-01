@@ -59,11 +59,10 @@ impl UISystem {
         const posy: f32 = 130.0;
         let min_padding: veclib::Vector2<f32> = veclib::Vector2::new(posx, posy);
         let max_padding: veclib::Vector2<f32> = veclib::Vector2::new(posx+width, posy+height);
-        println!("{:?} {:?}", min_padding, max_padding);
-        shader.set_vec2f32("min_padding", &(min_padding / 512.0));
-        shader.set_vec2f32("max_padding", &(max_padding / 512.0));
-        //shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
-        //shader.set_vec2f32("max_padding", &veclib::Vector2::ONE);
+        //shader.set_vec2f32("min_padding", &(min_padding / 512.0));
+        //shader.set_vec2f32("max_padding", &(max_padding / 512.0));
+        shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
+        shader.set_vec2f32("max_padding", &veclib::Vector2::ONE);
         // Draw each character as panel
         self.draw_panel_vertices();
     }

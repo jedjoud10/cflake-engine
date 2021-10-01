@@ -40,41 +40,6 @@ fn main() {
     output_file_writer.write_u16::<LittleEndian>(dimension.0).unwrap();
     output_file_writer.write_u16::<LittleEndian>(dimension.1).unwrap();
 
-    // The threshold to detect lit pixels
-    const THRESHOLD: u8 = 128;
-    // Turn each pixel into a single bit first of all
-    let bit_pixels: Vec<(u32, u32, bool)> = texture.pixels().map(|x| (x.0, x.1, x.2[0] > THRESHOLD)).collect();
-
-    // Get the signed SDF for each pixel
-    let mut pixels_to_write: Vec<u8> = Vec::new();
-    let mut i: u32 = 0;
-    for pixel in bit_pixels.iter() {
-        i += 1;
-        let pixel_coords = veclib::Vector2::<f32>::new(pixel.0 as f32, pixel.1 as f32);
-        let pixel_color = if !pixel.2 {
-            // Keep track of the best distance
-            let mut best_distance: f32 = f32::MAX;
-            // This is an unlit pixel, get it's distance to lit pixels
-            for sdf_pixel in bit_pixels.iter() {
-                let sdf_pixel_coords = veclib::Vector2::<f32>::new(sdf_pixel.0 as f32, sdf_pixel.1 as f32);
-                if sdf_pixel.2 {
-                    // Get the distance to the closest pixel
-                    best_distance = best_distance.min(sdf_pixel_coords.distance(pixel_coords));
-                }
-            }
-            best_distance
-        } else {
-            0.0
-        };
-        let byte = ((pixel_color / 10.0).clamp(0.0, 1.0) * 255.0) as u8;
-        pixels_to_write.push(byte);
-    }
-
-    // Write each new pixel
-    for pixel in pixels_to_write {
-        output_file_writer.write_u8(pixel).unwrap();
-    }
-
     // Read the config file data
     let mut font_chars: Vec<FontChar> = Vec::new();
     let lines = reader.lines().map(|x| x.unwrap()).collect::<Vec<String>>();
@@ -99,6 +64,60 @@ fn main() {
             // Yes
             font_chars.push(font_char);
         }
+    }
+
+    // The threshold to detect lit pixels
+    const THRESHOLD: u8 = 128;
+    // Turn each pixel into a single bit first of all
+    let bit_pixels: Vec<(u32, u32, bool)> = texture.pixels().map(|x| (x.0, x.1, x.2[0] > THRESHOLD)).collect();
+    // Get the signed SDF for each pixel
+    let mut pixels_to_write: Vec<u8> = Vec::new();
+    // Create multiple vectors for each character, that way we don't have to find the sdf of the whole texture, but only of each "sub-texture" for each character
+    let mut sub_textures: Vec<Vec<(u32, u32, bool)>> = Vec::new();
+
+    for font_char in font_chars.iter() {
+        // Get the sub-texture
+        let sub_texture = bit_pixels.iter().filter_map(|x| {
+                let valid = (x.0 as u16) > font_char.min.x && (x.1 as u16) > font_char.min.y && (x.0 as u16) < font_char.max.x && (x.1 as u16) < font_char.max.y;
+                if valid {
+                    Some((x.0.clone(), x.1.clone(), x.2.clone()))
+                } else {
+                    None
+                }
+            }
+        ).collect::<Vec<(u32, u32, bool)>>();
+        
+        // Get the SDF now
+        for pixel in sub_texture.iter() {
+            let coords = veclib::Vector2::<f32>::new(pixel.0 as f32, pixel.1 as f32);
+            let pixel_color = if !pixel.2 {
+                // Keep the best distance
+                let mut best_distance: f32 = f32::MAX;
+                // Get the distance to lit pixels
+                for sdf_pixel in sub_texture.iter() {
+                    if sdf_pixel.2 {
+                        let sdf_coords = veclib::Vector2::<f32>::new(pixel.0 as f32, pixel.1 as f32);
+                        best_distance = best_distance.min(coords.distance(sdf_coords));
+                    }
+                }
+                ((best_distance / 20.0).clamp(0.0, 20.0) * 12.75) as u8
+            } else {
+                // This pixel is already lit
+                0
+            };
+            // Just in case
+            let max = dimension.0 as u32 * dimension.1 as u32;
+            if (pixels_to_write.len() as u32) < max {
+                pixels_to_write.push(pixel_color);
+            }
+        }        
+        println!("Finished creating the SDF for the character {}", font_char.id);
+    }
+    println!("Final pixels to write length {}", pixels_to_write.len())
+;
+    // Write each new pixel
+    for pixel in pixels_to_write {
+        output_file_writer.write_u8(pixel).unwrap();
     }
 
     // Write the number of characters

@@ -323,10 +323,18 @@ impl System for RenderingSystem {
     }
 
     // Called before each fire_entity event is fired
-    fn pre_fire(&mut self, _data: &mut SystemEventData) {
+    fn pre_fire(&mut self, data: &mut SystemEventData) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        }
+
+        // Update the default values for each shader that exists in the shader cacher
+        for shader in data.shader_cacher.1.objects.iter() {
+            // Set the shader arguments
+            shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
+            shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+            shader.set_vec2i32("resolution", &(data.custom_data.window.size.into()));
         }
     }
 
