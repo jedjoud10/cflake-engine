@@ -143,11 +143,12 @@ impl ResourceManager {
         };
 
         // Get the width and height of the bitmap
-        let width = reader.read_u32::<LittleEndian>().unwrap();
-        let height = reader.read_u32::<LittleEndian>().unwrap();
-
+        let width = reader.read_u16::<LittleEndian>().unwrap();
+        let height = reader.read_u16::<LittleEndian>().unwrap();
+        output_font.dimensions = veclib::Vector2::new(width, height);
+        let pixel_num: u32 = width as u32 * height as u32; 
         // Read the pixels, one by one
-        for i in 0..(width * height) {
+        for i in 0..pixel_num {
             let pixel = reader.read_u8().unwrap();
             output_font.texture_pixels.push(pixel);
         }
@@ -160,8 +161,8 @@ impl ResourceManager {
             // Get the data back
             let loaded_char = LoadedChar {
                 id: reader.read_u8().unwrap(),
-                min: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
-                max: veclib::Vector2::new(reader.read_u32::<LittleEndian>().unwrap(), reader.read_u32::<LittleEndian>().unwrap()),
+                min: veclib::Vector2::new(reader.read_u16::<LittleEndian>().unwrap(), reader.read_u16::<LittleEndian>().unwrap()),
+                max: veclib::Vector2::new(reader.read_u16::<LittleEndian>().unwrap(), reader.read_u16::<LittleEndian>().unwrap()),
             };
             output_font.chars.push(loaded_char);
         }
@@ -333,13 +334,13 @@ pub struct LoadedSoundEffect {}
 // A loaded char font, just contains the padding for each character and such
 pub struct LoadedChar {
     pub id: u8,
-    pub min: veclib::Vector2<u32>,
-    pub max: veclib::Vector2<u32>,
+    pub min: veclib::Vector2<u16>,
+    pub max: veclib::Vector2<u16>,
 }
 
 // A loaded font
 pub struct LoadedFont {
-    pub dimensions: veclib::Vector2<u32>,
+    pub dimensions: veclib::Vector2<u16>,
     pub texture_pixels: Vec<u8>,
     pub chars: Vec<LoadedChar>,
 }

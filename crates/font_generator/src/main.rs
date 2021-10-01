@@ -31,14 +31,14 @@ fn main() {
     // Get the font texture atlas image
     let texture = image::open(texture_atlas_path).unwrap();
     let dimension = texture.dimensions();
-
+    let dimension = (dimension.0 as u16, dimension.1 as u16);
     // Get the writer
     let output_file = OpenOptions::new().create(true).truncate(true).write(true).open(output_file_path).unwrap();
     let mut output_file_writer = BufWriter::new(output_file);
 
     // Write the width and height
-    output_file_writer.write_u32::<LittleEndian>(dimension.0).unwrap();
-    output_file_writer.write_u32::<LittleEndian>(dimension.1).unwrap();
+    output_file_writer.write_u16::<LittleEndian>(dimension.0).unwrap();
+    output_file_writer.write_u16::<LittleEndian>(dimension.1).unwrap();
 
     // Write each pixel
     for pixel in texture.pixels() {
@@ -56,14 +56,14 @@ fn main() {
             // Get the ID
             let id = split_line[1].split("id=").nth(1).unwrap().parse::<u8>().unwrap();
             // Get the min and max
-            let x = split_line[2].split("x=").nth(1).unwrap().parse::<u32>().unwrap();
-            let y = split_line[3].split("y=").nth(1).unwrap().parse::<u32>().unwrap();
-            let width = split_line[4].split("width=").nth(1).unwrap().parse::<u32>().unwrap();
-            let height = split_line[5].split("height=").nth(1).unwrap().parse::<u32>().unwrap();
+            let x = split_line[2].split("x=").nth(1).unwrap().parse::<u16>().unwrap();
+            let y = split_line[3].split("y=").nth(1).unwrap().parse::<u16>().unwrap();
+            let width = split_line[4].split("width=").nth(1).unwrap().parse::<u16>().unwrap();
+            let height = split_line[5].split("height=").nth(1).unwrap().parse::<u16>().unwrap();
 
             // Create the min and max from the x,y and width,height
-            let min = veclib::Vector2::<u32>::new(x, y);
-            let max = veclib::Vector2::<u32>::new(x + width, y + height);
+            let min = veclib::Vector2::<u16>::new(x, y);
+            let max = veclib::Vector2::<u16>::new(x + width, y + height);
             println!("{} {:?} {:?}", id, min, max);
             let font_char = FontChar { id, min, max };
             // Yes
@@ -79,9 +79,9 @@ fn main() {
         // Write the ID first
         output_file_writer.write_u8(font_char.id).unwrap();
         // Then you can write the min-max values
-        output_file_writer.write_u32::<LittleEndian>(font_char.min.x).unwrap();
-        output_file_writer.write_u32::<LittleEndian>(font_char.min.y).unwrap();
-        output_file_writer.write_u32::<LittleEndian>(font_char.max.x).unwrap();
-        output_file_writer.write_u32::<LittleEndian>(font_char.max.y).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.min.x).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.min.y).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.max.x).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.max.y).unwrap();
     }
 }

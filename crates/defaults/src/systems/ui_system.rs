@@ -24,9 +24,6 @@ pub struct UISystem {
 impl UISystem {
     // Set the default shader arguments to draw a normal panel
     fn set_default_draw_arguments(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader) {
-        unsafe {
-            gl::BindVertexArray(self.vertex_array);
-        }
         // Update the shader arguments
         shader.set_f32("depth", &element_data.3);
         shader.set_vec2f32("size", &element_data.1);
@@ -37,6 +34,7 @@ impl UISystem {
     fn draw_panel_vertices(&self) {
         unsafe {
             // Draw the element
+            gl::BindVertexArray(self.vertex_array);
             gl::DrawArrays(gl::TRIANGLES, 0, 6);
         }
     }
@@ -153,8 +151,7 @@ impl System for UISystem {
         let text_element = Element::new()
             .set_coordinate_system(CoordinateType::Pixel)
             .set_position(veclib::Vector2::ZERO)
-            .set_size(veclib::Vector2::ONE * 500.0)
-            .set_text("Tomato");
+            .set_size(veclib::Vector2::ONE * 500.0);
         root.add_element(text_element);
 
         // Set this as the default root
@@ -224,7 +221,7 @@ impl System for UISystem {
                 }
                 ui::CoordinateType::Factor => {
                     // Factor coordinate type
-                    size = element.size * 2.0;
+                    size = element.size;
                     position = element.position;
                 }
             }
