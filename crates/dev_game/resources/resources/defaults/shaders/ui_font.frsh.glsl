@@ -8,14 +8,15 @@ void main() {
     // Get the color of this specific pixel in the font atlas
     float signed_distance = texture(atlas_texture, uvs).x;    
     // Detect alpha clipping
-    float alpha = signed_distance < 0.1 ? 0 : 1;
+    float alpha = signed_distance > 0.2 ? 1 : 0;
 
     // Outline
-    if (signed_distance > 0.3) {
-        signed_distance = 0;
+    vec3 fcolor = vec3(signed_distance, signed_distance, signed_distance);    
+    if (signed_distance > 0.4) {
+        fcolor = vec3(0, 0, 0);
     } else {
-        signed_distance = 1;
-    }    
+        fcolor = vec3(1, 1, 1);
+    }        
     
-	out_color = vec4(signed_distance, signed_distance, signed_distance, alpha);
+	out_color = vec4(fcolor, alpha);
 }

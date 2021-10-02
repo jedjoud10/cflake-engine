@@ -21,9 +21,9 @@ pub const MAIN_CHUNK_SIZE: usize = 32;
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
-pub const LOD_FACTOR: f32 = 0.5;
+pub const LOD_FACTOR: f32 = 0.8;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 8;
+pub const OCTREE_DEPTH: u8 = 12;
 // The size of the terrain in meters
 pub const TERRAIN_SIZE: u32 = (MAIN_CHUNK_SIZE as u32 / 2) * 2_u32.pow(OCTREE_DEPTH as u32);
 
@@ -48,6 +48,8 @@ pub struct Terrain {
     // Preloaded resources for chunks
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
+    // Debug elements ID
+    element_id: u16
 }
 
 impl Terrain {
@@ -150,6 +152,20 @@ impl System for Terrain {
         .1;
         // Generate the voxel texture
         self.voxel_generator.setup_voxel_generator(data);
+
+        // Create a debug UI for this terrain
+        let mut root = ui::Root::new();
+        let root_elem = ui::Element::default();
+        // Add the element to the root node
+        root.add_element(root_elem);
+
+        // Text for chunk debug data
+        let elem = ui::Element::new()
+            .set_coordinate_system(ui::CoordinateType::Pixel)
+            .set_position(veclib::Vector2::Y * 60.0 * 3.0)
+            .set_text("chunk_data_here", 60.0);
+        self.element_id = root.add_element(elem);
+        data.ui_manager.add_root("terrain_debug", root);
     }
 
     // Update the camera position inside the terrain generator
@@ -203,6 +219,11 @@ impl System for Terrain {
             // Removal the entity from the world
             data.entity_manager.remove_entity_s(&entity_id).unwrap();
         }
+
+        // Update the UI debug chunk data
+        let root = data.ui_manager.get_root_mut("terrain_debug");
+        let text = &format!("Chunks to generate: {}", self.chunk_manager.chunks_to_generate.len());
+        root.get_element_mut(self.element_id).update_text(text, 60.0)
     }
 
     // Called for each entity in the system

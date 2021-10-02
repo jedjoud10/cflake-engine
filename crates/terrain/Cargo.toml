@@ -11,6 +11,7 @@ rayon = "1.5.1"
 gl = "0.14.0"
 math = { path = "../math" }
 systems = { path = "../systems" }
+ui = { path = "../ui" }
 system_event_data = { path = "../system_event_data" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }

@@ -716,6 +716,7 @@ dependencies = [
  "rendering",
  "system_event_data",
  "systems",
+ "ui",
  "veclib",
 ]
 

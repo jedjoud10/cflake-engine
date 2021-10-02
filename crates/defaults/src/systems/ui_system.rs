@@ -179,18 +179,7 @@ impl System for UISystem {
 
     // Render all the elements onto the screen
     fn post_fire(&mut self, data: &mut SystemEventData) {
-        // Check if we even have a default root to begin with
-        if !data.ui_manager.default_root_valid() { return; }
-        // Draw each element, from back to front
-        let root = data.ui_manager.get_default_root();
-        let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
-        let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
-        // Get the font shader
-        let font_shader = data.shader_cacher.1.get_object(&self.font_ui_shader_name).unwrap();
-        // Default font
-        let default_font = data.ui_manager.font_manager.get_font("defaults\\fonts\\default_font.font");
-
-        // Draw every element, other than the root element
+        // Set the right OpenGL settings
         unsafe {
             gl::Disable(gl::CULL_FACE);
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -201,47 +190,59 @@ impl System for UISystem {
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
-        for element in elements {
-            let bad_element_type = match element.element_type {
-                ElementType::Empty => true,
-                _ => false,
-            };
-            if element.id == 0 || bad_element_type {
-                continue;
-            }
-            // Get the data that will be passed to the shader
-            let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
-            let size: veclib::Vector2<f32>;
-            let position: veclib::Vector2<f32>;
-            let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size);
-            match element.coordinate_type {
-                ui::CoordinateType::Pixel => {
-                    // Pixel coordinate type
-                    size = element.size / resolution;
-                    position = element.position / resolution;
-                }
-                ui::CoordinateType::Factor => {
-                    // Factor coordinate type
-                    size = element.size;
-                    position = element.position;
-                }
-            }
-            // Create da tuple
-            let tuple = (position, size, element.color, depth);
 
-            // Every type that isn't the text type
-            match &element.element_type {
-                ElementType::Text(text_content, font_size) => {
-                    // Use the font shader
-                    font_shader.use_shader();
-                    // Draw the text
-                    self.draw_text(tuple, &font_shader, text_content, *font_size, default_font);
+        // Loop over every root node
+        for (root_name, root) in data.ui_manager.roots.iter() {  
+            let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
+            let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
+            // Get the font shader
+            let font_shader = data.shader_cacher.1.get_object(&self.font_ui_shader_name).unwrap();
+            // Default font
+            let default_font = data.ui_manager.font_manager.get_font("defaults\\fonts\\default_font.font");
+
+            // Draw every element, other than the root element
+            for element in elements {
+                let bad_element_type = match element.element_type {
+                    ElementType::Empty => true,
+                    _ => false,
+                };
+                if element.id == 0 || bad_element_type {
+                    continue;
                 }
-                _ => {
-                    // Use the normal panel shader
-                    shader.use_shader();
-                    // Draw the panel
-                    self.draw_panel(tuple, &shader);
+                // Get the data that will be passed to the shader
+                let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
+                let size: veclib::Vector2<f32>;
+                let position: veclib::Vector2<f32>;
+                let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size);
+                match element.coordinate_type {
+                    ui::CoordinateType::Pixel => {
+                        // Pixel coordinate type
+                        size = element.size / resolution;
+                        position = element.position / resolution;
+                    }
+                    ui::CoordinateType::Factor => {
+                        // Factor coordinate type
+                        size = element.size;
+                        position = element.position;
+                    }
+                }
+                // Create da tuple
+                let tuple = (position, size, element.color, depth);
+
+                // Every type that isn't the text type
+                match &element.element_type {
+                    ElementType::Text(text_content, font_size) => {
+                        // Use the font shader
+                        font_shader.use_shader();
+                        // Draw the text
+                        self.draw_text(tuple, &font_shader, text_content, *font_size, default_font);
+                    }
+                    _ => {
+                        // Use the normal panel shader
+                        shader.use_shader();
+                        // Draw the panel
+                        self.draw_panel(tuple, &shader);
+                    }
                 }
             }
         }

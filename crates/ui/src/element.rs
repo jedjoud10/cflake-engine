@@ -4,9 +4,9 @@ use crate::Root;
 #[derive(Debug)]
 pub struct Element {
     // The ID of this element in the root node
-    pub id: usize,
+    pub id: u16,
     // Our parent node's ID
-    pub parent: usize,
+    pub parent: u16,
     // Our position relative to our coordinate system
     pub position: veclib::Vector2<f32>,
     // Our size relative to our coordinate system
@@ -15,7 +15,7 @@ pub struct Element {
     pub color: veclib::Vector4<f32>,
     // The depth of this node, further depth nodes get rendered front to back
     pub depth: i32,
-    pub children: Vec<usize>,
+    pub children: Vec<u16>,
     pub element_type: ElementType,
     // Coordinate system type
     pub coordinate_type: CoordinateType,
@@ -106,16 +106,16 @@ pub enum ElementType {
 
 impl Element {
     // Attach children to this element
-    pub fn attach(root: &mut Root, id: usize, children: Vec<usize>) {
+    pub fn attach(root: &mut Root, id: u16, children: Vec<u16>) {
         // Update the parent id of the children
         for &child_element_id in children.iter() {
             // Get the child element and update it
-            let child_element = root.smart_element_list.get_element_mut(child_element_id as u16).unwrap();
+            let child_element = root.smart_element_list.get_element_mut(child_element_id).unwrap();
             child_element.parent = id;
             child_element.depth += 1;
             root.max_depth = root.max_depth.max(child_element.depth);
         }
-        let element = root.smart_element_list.get_element_mut(id as u16).unwrap();
+        let element = root.smart_element_list.get_element_mut(id).unwrap();
         element.children.extend(children);
     }
 }

@@ -27,9 +27,6 @@ pub struct ChunkManager {
     pub camera_forward_vector: veclib::Vector3<f32>,
 }
 
-// How many frames to wait before getting the data from the compute shader
-pub const FRAMES_COMPUTE_DELAY: u64 = 1;
-
 // Chunk manager. This is how each chunk entity is created
 // 1. Add the ChunkCoords to the chunk_to_generate list
 // TODO: 1.5: Check if the chunk could exist in the first place (d = y - 5.0, and funny shit)
@@ -123,36 +120,31 @@ impl ChunkManager {
 
                 // Decide between generating the chunk or start the generation of the voxel data
                 if self.voxels_generating {
-                    // The voxels are generating, so wait until we reached a satisfactory frame count
-                    if data.time_manager.frame_count > self.last_frame_voxels_generated + FRAMES_COMPUTE_DELAY {
-                        // We reached the limit, read the compute buffer
-                        self.voxels_generating = false;
-                        self.last_frame_voxels_generated = 0;
-                        // Generate the data for this chunk
-                        let has_surface = voxel_generator.generate_voxels_end(data, &mut voxels);
-                        // Since we just generated the chunk we can remove it from the generated chunks
-                        self.chunks_to_generate.remove(0);
+                    // The voxels are generating, so wait until we reached a satisfactory frame count                    
+                    // We reached the limit, read the compute buffer
+                    self.voxels_generating = false;
+                    self.last_frame_voxels_generated = 0;
+                    // Generate the data for this chunk
+                    let has_surface = voxel_generator.generate_voxels_end(data, &mut voxels);
+                    // Since we just generated the chunk we can remove it from the generated chunks
+                    self.chunks_to_generate.remove(0);
 
-                        // If we don't have a surface, no need to create a model for this chunk
-                        let t = match has_surface {
-                            Some(_) => {
-                                // We have a surface, create the model
-                                let coords = chunk_coords.clone();
-                                let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
-                                // Save the chunk's data, though don't save the mode
-                                let chunk_data = ChunkData { coords: coords, voxels: voxels };
-                                Some((chunk_data, model))
-                            }
-                            None => {
-                                // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
-                                None
-                            }
-                        };
-                        t
-                    } else {
-                        // Wait...
-                        None
-                    }
+                    // If we don't have a surface, no need to create a model for this chunk
+                    let t = match has_surface {
+                        Some(_) => {
+                            // We have a surface, create the model
+                            let coords = chunk_coords.clone();
+                            let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
+                            // Save the chunk's data, though don't save the mode
+                            let chunk_data = ChunkData { coords: coords, voxels: voxels };
+                            Some((chunk_data, model))
+                        }
+                        None => {
+                            // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
+                            None
+                        }
+                    };
+                    t                    
                 } else {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;

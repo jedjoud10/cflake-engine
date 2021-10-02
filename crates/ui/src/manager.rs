@@ -1,4 +1,4 @@
-use std::ops::{Index, IndexMut};
+use std::{collections::HashMap, ops::{Index, IndexMut}};
 
 use fonts::FontManager;
 
@@ -7,7 +7,7 @@ use crate::{element::ButtonState, element::ElementType, Root};
 // The UI manager, it can contain multiple UI roots, and switch between them
 #[derive(Default)]
 pub struct UIManager {
-    pub roots: Vec<Root>,
+    pub roots: HashMap<String, Root>,
     pub font_manager: FontManager,
 }
 
@@ -15,38 +15,25 @@ pub struct UIManager {
 impl UIManager {
     // Check if we have a default root set
     pub fn default_root_valid(&self) -> bool {
-        self.roots.len() > 0
+        self.roots.contains_key("default")
     }
     // Get the default root
     pub fn get_default_root(&self) -> &Root {
-        self.roots.get(0).unwrap()
+        self.roots.get("default").unwrap()
     }
     pub fn get_default_root_mut(&mut self) -> &mut Root {
-        self.roots.get_mut(0).unwrap()
+        self.roots.get_mut("default").unwrap()
     }
     // Set the default UI root that will be drawn on the screen by default
     pub fn set_default_root(&mut self, root: Root) {
-        if self.roots.len() == 0 {
-            // If this root does not exist, add it
-            self.roots.push(root);
-        } else {
-            // If it does exist, just update it
-            self.roots[0] = root;
-        }
+        self.roots.entry("default".to_string()).or_insert(root);
     }
-}
-
-// Borrow indexer
-impl Index<usize> for UIManager {
-    type Output = Root;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        self.roots.get(index).unwrap()
+    // Get the root with the corresponding name
+    pub fn get_root_mut(&mut self, name: &str) -> &mut Root {
+        self.roots.get_mut(name).unwrap()
     }
-}
-// Borrow mut indexer
-impl IndexMut<usize> for UIManager {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.roots.get_mut(index).unwrap()
+    // Add a root to the manager
+    pub fn add_root(&mut self, root_name: &str, root: Root) {
+        self.roots.insert(root_name.to_string(), root);
     }
 }

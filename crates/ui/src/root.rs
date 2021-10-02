@@ -21,13 +21,13 @@ impl Root {
         Self::default()
     }
     // Add an element to the tree
-    pub fn add_element(&mut self, mut element: Element) -> usize {
+    pub fn add_element(&mut self, mut element: Element) -> u16 {
         // Get the ID of the element
-        let element_id = self.smart_element_list.get_next_valid_id() as usize;
+        let element_id = self.smart_element_list.get_next_valid_id();
         element.id = element_id;
         element.depth += 1;
         // Add the element
-        let element_id = self.smart_element_list.add_element(element) as usize;
+        let element_id = self.smart_element_list.add_element(element);
         // Attach this element to the root element
         Element::attach(self, 0, vec![element_id]);
         return element_id;
@@ -35,8 +35,8 @@ impl Root {
     // Remove an element from the three, and recursively remove it's children
     pub fn remove_element(&mut self, element: Element) {
         // Get all the children from this element, recursively
-        let mut output_elem_indices: Vec<usize> = Vec::new();
-        let mut elems_to_evaluate: Vec<usize> = Vec::new();
+        let mut output_elem_indices: Vec<u16> = Vec::new();
+        let mut elems_to_evaluate: Vec<u16> = Vec::new();
         elems_to_evaluate.extend(element.children);
         while elems_to_evaluate.len() > 0 {
             // We need to get the children of this element
