@@ -7,7 +7,7 @@ use std::{
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use fonts::FontChar;
-use image::GenericImageView;
+use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
 
 // Pack the font
 fn main() {
@@ -31,14 +31,17 @@ fn main() {
     // Get the font texture atlas image
     let texture = image::open(texture_atlas_path).unwrap();
     let dimension = texture.dimensions();
-    let dimension = (dimension.0 as u16, dimension.1 as u16);
+    let original_dimension = (dimension.0 as u16, dimension.1 as u16);
     // Get the writer
     let output_file = OpenOptions::new().create(true).truncate(true).write(true).open(output_file_path).unwrap();
     let mut output_file_writer = BufWriter::new(output_file);
 
+    // Constants
+    const DOWNSAMPLE_FACTOR: u16 = 2;
+
     // Write the width and height
-    output_file_writer.write_u16::<LittleEndian>(dimension.0).unwrap();
-    output_file_writer.write_u16::<LittleEndian>(dimension.1).unwrap();
+    output_file_writer.write_u16::<LittleEndian>(original_dimension.0/DOWNSAMPLE_FACTOR).unwrap();
+    output_file_writer.write_u16::<LittleEndian>(original_dimension.1/DOWNSAMPLE_FACTOR).unwrap();
 
     // Read the config file data
     let mut font_chars: Vec<FontChar> = Vec::new();
@@ -57,8 +60,8 @@ fn main() {
             let height = split_line[5].split("height=").nth(1).unwrap().parse::<u16>().unwrap();
 
             // Create the min and max from the x,y and width,height
-            let min = veclib::Vector2::<u16>::new(x, y);
-            let max = veclib::Vector2::<u16>::new(x + width, y + height);
+            let min = veclib::Vector2::<u16>::new(x, y) / DOWNSAMPLE_FACTOR;
+            let max = veclib::Vector2::<u16>::new(x + width, y + height) / DOWNSAMPLE_FACTOR;
             println!("{} {:?} {:?}", id, min, max);
             let font_char = FontChar { id, min, max };
             // Yes
@@ -74,7 +77,7 @@ fn main() {
     let mut sub_textures: Vec<Vec<(u32, u32, bool)>> = Vec::new();
 
     // The edited pixels, you could say
-    let mut edited_pixels: Vec<Vec<u8>> = vec![vec![0; dimension.1 as usize]; dimension.0 as usize];
+    let mut edited_pixels: Vec<Vec<(u32, u32, u8)>> = vec![vec![(0, 0, 0); original_dimension.1 as usize]; original_dimension.0 as usize];
     for font_char in font_chars.iter() {
         // Get the sub-texture
         let sub_texture = bit_pixels.iter().filter_map(|x| {
@@ -133,15 +136,33 @@ fn main() {
                 }                
             };
             let mut_y = edited_pixels.get_mut(pixel.1 as usize).unwrap();
-            mut_y[pixel.0 as usize] = pixel_color;
+            mut_y[pixel.0 as usize] = (0, 0, 0);
         }        
         println!("Finished creating the SDF for the character {}", font_char.id);
     }
-    // Write each new pixel
+    // The texture that will be downscaled
+    let mut new_texture = DynamicImage::new_rgba8(original_dimension.0 as u32, original_dimension.1 as u32);
+    
+    // Write each new pixel to the texture
     for x_row in edited_pixels {
         for pixel in x_row {
-            output_file_writer.write_u8(pixel).unwrap();
+            let pixel_color = image::Rgba([255, 255, 255, 255]);
+            new_texture.put_pixel(pixel.0, pixel.1, pixel_color);
         }
+    }
+
+    // Downscale
+    let new_texture = new_texture.resize((original_dimension.0/DOWNSAMPLE_FACTOR) as u32, (original_dimension.1/DOWNSAMPLE_FACTOR) as u32, image::imageops::FilterType::Gaussian);
+    let bytes = new_texture.pixels().map(|x| {
+        x.2[0]
+    }).collect::<Vec<u8>>();
+
+    // Debug
+    println!("Length: {}, dimensions: {:?}, char count: {}", bytes.len(), new_texture.dimensions(), font_chars.len());
+
+    // Actually writing the bytes to the file
+    for &byte in bytes.iter() {
+        output_file_writer.write_u8(byte).unwrap();
     }
 
     // Write the number of characters
