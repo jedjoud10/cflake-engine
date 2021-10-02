@@ -57,8 +57,8 @@ impl UISystem {
         let fchar = font.get_char(65);
         let min_padding: veclib::Vector2<f32> = fchar.min.into();
         let max_padding: veclib::Vector2<f32> = fchar.max.into();
-        //shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
-        //shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
+        shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
+        shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
         shader.set_vec2f32("min_padding", &(min_padding / 512.0));
         shader.set_vec2f32("max_padding", &(max_padding / 512.0));
         // Draw each character as panel

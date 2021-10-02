@@ -25,7 +25,6 @@ impl Font {
         match self.texture {
             None => {
                 // Create the texture and set it's parameters
-                println!("{:?}", self.atlas_dimensions);
                 let texture = Texture2D::new()
                     .set_dimensions(self.atlas_dimensions.x, self.atlas_dimensions.y)
                     .set_filter(rendering::TextureFilter::Linear)

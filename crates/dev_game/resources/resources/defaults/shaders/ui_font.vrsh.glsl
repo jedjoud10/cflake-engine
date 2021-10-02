@@ -19,9 +19,6 @@ void main() {
 	position += offset_position;
 	// Turn the 0, 1 back to the -1, 1 range
 	position = position * 2 - 1; 
-
-    // Remap the UV to the padding of the character
-
     // Map the uvs to the min_padding and the max_padding
     vec2 new_uvs = vec2(map(vertex_uvs.x, 0, 1, min_padding.x, max_padding.x), map(1-vertex_uvs.y, 0, 1, min_padding.y, max_padding.y));
     new_uvs = vec2(new_uvs.x, new_uvs.y);
