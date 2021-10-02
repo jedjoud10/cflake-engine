@@ -46,23 +46,22 @@ impl UISystem {
     // Draw the text by drawing multiple elements
     fn draw_text(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader, text_content: &String, font: &Font) {
         // Draw each character in the string as a separate element
-        let chars = text_content.split("").collect::<Vec<&str>>();
-        for char in chars {}
-
-        // Set the default panel arguments
-        self.set_default_draw_arguments(element_data, shader);
-        // Set the atlas texture and the character padding
-        shader.set_t2d("atlas_texture", font.texture.as_ref().unwrap(), gl::TEXTURE0);
-        // Get the character padding for a specific letter
-        let fchar = font.get_char(65);
-        let min_padding: veclib::Vector2<f32> = fchar.min.into();
-        let max_padding: veclib::Vector2<f32> = fchar.max.into();
-        shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
-        shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
-        shader.set_vec2f32("min_padding", &(min_padding / 512.0));
-        shader.set_vec2f32("max_padding", &(max_padding / 512.0));
-        // Draw each character as panel
-        self.draw_panel_vertices();
+        let chars = font.convert_text_to_font_chars(text_content);        
+        for char in chars {
+            // Set the default panel arguments
+            self.set_default_draw_arguments(element_data, shader);
+            // Set the atlas texture and the character padding
+            shader.set_t2d("atlas_texture", font.texture.as_ref().unwrap(), gl::TEXTURE0);
+            // Set the font char padding in the shader
+            let min_padding: veclib::Vector2<f32> = char.min.into();
+            let max_padding: veclib::Vector2<f32> = char.max.into();
+            shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
+            shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
+            shader.set_vec2f32("min_padding", &(min_padding / 512.0));
+            shader.set_vec2f32("max_padding", &(max_padding / 512.0));
+            // Draw each character as panel
+            self.draw_panel_vertices();
+        }                
     }
 }
 

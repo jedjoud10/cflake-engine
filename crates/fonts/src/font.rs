@@ -1,3 +1,4 @@
+use ascii::AsciiStr;
 use rendering::{Texture2D, TextureDimensionType};
 use resources::{LoadableResource, Resource};
 
@@ -45,6 +46,13 @@ impl Font {
             texture: None,
             chars: Vec::new(),
         }
+    }
+    // Turn some text into an array of font chars
+    pub fn convert_text_to_font_chars(&self, text: &str) -> Vec<&FontChar> {
+        let ascii_str = AsciiStr::from_ascii(text).unwrap();
+        let chars = ascii_str.as_bytes();
+        let font_chars = chars.iter().map(|&x| self.get_char(x)).collect::<Vec<&FontChar>>();
+        return font_chars;
     }
     // Set the font parameters for this text
     pub fn set_font_parameter(&self) {}

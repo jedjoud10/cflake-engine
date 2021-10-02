@@ -82,7 +82,7 @@ fn main() {
     for font_char in font_chars.iter() {
         // Get the sub-texture
         let sub_texture = bit_pixels.iter().filter_map(|x| {
-                let valid = (x.0 as u16) >= font_char.min.x && (x.1 as u16) >= font_char.min.y && (x.0 as u16) <= font_char.max.x && (x.1 as u16) <= font_char.max.y;
+                let valid = (x.0 as u16) > font_char.min.x && (x.1 as u16) > font_char.min.y && (x.0 as u16) < font_char.max.x && (x.1 as u16) < font_char.max.y;
                 if valid {
                     Some((x.0.clone(), x.1.clone(), x.2.clone()))
                 } else {
@@ -90,13 +90,6 @@ fn main() {
                 }
             }
         ).collect::<Vec<(u32, u32, bool)>>();
-        
-        // Get the SDF now
-        // Map some value from a specific range to another range
-        fn map(x: f32, ra: f32, rb: f32, r2a: f32, r2b: f32) -> f32 {
-            // https://stackoverflow.com/questions/3451553/value-remapping
-            return r2a + (x - ra) * (r2b - r2a) / (rb - ra);
-        }
         for pixel in sub_texture.iter() {
             let coords = veclib::Vector2::<f32>::new(pixel.0 as f32, pixel.1 as f32);
             let pixel_color = if !pixel.2 {
