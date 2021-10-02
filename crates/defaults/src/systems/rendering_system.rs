@@ -334,7 +334,7 @@ impl System for RenderingSystem {
             // Set the shader arguments
             shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
             shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
-            shader.set_vec2i32("resolution", &(data.custom_data.window.size.into()));
+            shader.set_vec2f32("resolution", &(data.custom_data.window.size.into()));
         }
     }
 

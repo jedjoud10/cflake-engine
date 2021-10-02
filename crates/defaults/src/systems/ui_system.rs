@@ -47,6 +47,7 @@ impl UISystem {
     fn draw_text(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader, text_content: &String, font: &Font) {
         // Draw each character in the string as a separate element
         let chars = font.convert_text_to_font_chars(text_content);        
+        let mut i: f32 = 0.0;
         for char in chars {
             // Set the default panel arguments
             self.set_default_draw_arguments(element_data, shader);
@@ -55,12 +56,18 @@ impl UISystem {
             // Set the font char padding in the shader
             let min_padding: veclib::Vector2<f32> = char.min.into();
             let max_padding: veclib::Vector2<f32> = char.max.into();
+            // Get the dimensions of the font char
+            let width = char.get_width() as f32;
+            let height = char.get_height() as f32;
+            shader.set_vec2f32("character_offset", &(veclib::Vector2::X * (width*i*1.5)));
+            shader.set_f32("font_ratio", &((width as f32) / (height as f32)));
             shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
             shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
             shader.set_vec2f32("min_padding", &(min_padding / 512.0));
             shader.set_vec2f32("max_padding", &(max_padding / 512.0));
             // Draw each character as panel
             self.draw_panel_vertices();
+            i += 1.0;
         }                
     }
 }
@@ -156,8 +163,8 @@ impl System for UISystem {
         let text_element = Element::new()
             .set_coordinate_system(CoordinateType::Pixel)
             .set_position(veclib::Vector2::ZERO)
-            .set_size(veclib::Vector2::ONE * 1000.0)
-            .set_text("Tomato");
+            .set_size(veclib::Vector2::ONE * 100.0)
+            .set_text("I love anime girls. This text works!");
         root.add_element(text_element);
 
         // Set this as the default root

@@ -5,6 +5,9 @@ uniform vec2 size;
 uniform vec2 offset_position;
 uniform vec2 min_padding;
 uniform vec2 max_padding;
+uniform float font_ratio;
+uniform vec2 character_offset;
+uniform vec2 resolution;
 uniform float depth;
 out vec2 uvs;
 // Map some value from a specific range to another range
@@ -15,8 +18,11 @@ float map(float x, float ra, float rb, float r2a, float r2b) {
 void main() {
 	// Turn the -1, 1 range to 0, 1 range
 	vec2 position = ((vertex_pos.xy) + 1) / 2;
-	position *= size;
-	position += offset_position;
+	position *= size * vec2(font_ratio, 1);
+	position += offset_position;	
+	// Remap the character offset
+	vec2 new_char_offset = vec2(map(character_offset.x, 0, resolution.x, 0, 1), map(character_offset.y, 0, resolution.y, 0, 1));
+	position += new_char_offset;
 	// Turn the 0, 1 back to the -1, 1 range
 	position = position * 2 - 1; 
     // Map the uvs to the min_padding and the max_padding
