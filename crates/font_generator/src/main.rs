@@ -60,8 +60,8 @@ fn main() {
             let height = split_line[5].split("height=").nth(1).unwrap().parse::<u16>().unwrap();
 
             // Create the min and max from the x,y and width,height
-            let min = veclib::Vector2::<u16>::new(x, y) / DOWNSAMPLE_FACTOR;
-            let max = veclib::Vector2::<u16>::new(x + width, y + height) / DOWNSAMPLE_FACTOR;
+            let min = veclib::Vector2::<u16>::new(x, y);
+            let max = veclib::Vector2::<u16>::new(x + width, y + height);
             println!("{} {:?} {:?}", id, min, max);
             let font_char = FontChar { id, min, max };
             // Yes
@@ -73,8 +73,6 @@ fn main() {
     const THRESHOLD: u8 = 128;
     // Turn each pixel into a single bit first of all
     let bit_pixels: Vec<(u32, u32, bool)> = texture.pixels().map(|x| (x.0, x.1, x.2[0] > THRESHOLD)).collect();
-    // Create multiple vectors for each character, that way we don't have to find the sdf of the whole texture, but only of each "sub-texture" for each character
-    let mut sub_textures: Vec<Vec<(u32, u32, bool)>> = Vec::new();
 
     // The edited pixels, you could say
     let mut edited_pixels: Vec<Vec<(u32, u32, u8)>> = vec![vec![(0, 0, 0); original_dimension.1 as usize]; original_dimension.0 as usize];
@@ -142,23 +140,22 @@ fn main() {
     }
     // The texture that will be downscaled
     let mut new_texture = DynamicImage::new_rgba8(original_dimension.0 as u32, original_dimension.1 as u32);
-    
     // Write each new pixel to the texture
     for x_row in edited_pixels {
         for pixel in x_row {
             let pixel_color = image::Rgba([pixel.2, 0, 0, 0]);
             new_texture.put_pixel(pixel.0, pixel.1, pixel_color);
         }
-    }
+    }    
 
     // Downscale
-    let new_texture = new_texture.resize((original_dimension.0/DOWNSAMPLE_FACTOR) as u32, (original_dimension.1/DOWNSAMPLE_FACTOR) as u32, image::imageops::FilterType::Nearest);
+    let new_texture = new_texture.resize_exact((original_dimension.0/DOWNSAMPLE_FACTOR) as u32, (original_dimension.1/DOWNSAMPLE_FACTOR) as u32, image::imageops::FilterType::Nearest);
     let bytes = new_texture.pixels().map(|x| {
         x.2[0]
     }).collect::<Vec<u8>>();
 
     // Debug
-    println!("Length: {}, dimensions: {:?}, char count: {}", bytes.len(), new_texture.dimensions(), font_chars.len());
+    println!("Length: {}, original dimensions: {:?}, new dimensions: {:?}, char count: {}", bytes.len(), &dimension, new_texture.dimensions(), font_chars.len());
 
     // Actually writing the bytes to the file
     for &byte in bytes.iter() {
@@ -173,9 +170,9 @@ fn main() {
         // Write the ID first
         output_file_writer.write_u8(font_char.id).unwrap();
         // Then you can write the min-max values
-        output_file_writer.write_u16::<LittleEndian>(font_char.min.x).unwrap();
-        output_file_writer.write_u16::<LittleEndian>(font_char.min.y).unwrap();
-        output_file_writer.write_u16::<LittleEndian>(font_char.max.x).unwrap();
-        output_file_writer.write_u16::<LittleEndian>(font_char.max.y).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.min.x / DOWNSAMPLE_FACTOR).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.min.y / DOWNSAMPLE_FACTOR).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.max.x / DOWNSAMPLE_FACTOR).unwrap();
+        output_file_writer.write_u16::<LittleEndian>(font_char.max.y / DOWNSAMPLE_FACTOR).unwrap();
     }
 }
