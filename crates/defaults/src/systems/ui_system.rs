@@ -53,16 +53,16 @@ impl UISystem {
         self.set_default_draw_arguments(element_data, shader);
         // Set the atlas texture and the character padding
         shader.set_t2d("atlas_texture", font.texture.as_ref().unwrap(), gl::TEXTURE0);
-        const width: f32 = 32.0;
-        const height: f32 = 64.0;
-        const posx: f32 = 136.0;
-        const posy: f32 = 130.0;
+        const width: f32 = 139.0;
+        const height: f32 = 256.0;
+        const posx: f32 = 840.0;
+        const posy: f32 = 514.0;
         let min_padding: veclib::Vector2<f32> = veclib::Vector2::new(posx, posy);
         let max_padding: veclib::Vector2<f32> = veclib::Vector2::new(posx+width, posy+height);
-        //shader.set_vec2f32("min_padding", &(min_padding / 512.0));
-        //shader.set_vec2f32("max_padding", &(max_padding / 512.0));
-        shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
-        shader.set_vec2f32("max_padding", &veclib::Vector2::ONE);
+        shader.set_vec2f32("min_padding", &(min_padding / 2048.0));
+        shader.set_vec2f32("max_padding", &(max_padding / 2048.0));
+        //shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
+        //shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE/9.0));
         // Draw each character as panel
         self.draw_panel_vertices();
     }
