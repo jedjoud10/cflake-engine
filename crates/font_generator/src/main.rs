@@ -36,8 +36,12 @@ fn main() {
     let output_file = OpenOptions::new().create(true).truncate(true).write(true).open(output_file_path).unwrap();
     let mut output_file_writer = BufWriter::new(output_file);
 
-    // Constants
+    // How many times to we downsample the texture?
     const DOWNSAMPLE_FACTOR: u16 = 2;
+    // The threshold to detect lit pixels
+    const THRESHOLD: u8 = 128;
+    // The SDF max width
+    const MAX_SDF_WIDTH: f32 = 10.0;
 
     // Write the width and height
     output_file_writer.write_u16::<LittleEndian>(original_dimension.0/DOWNSAMPLE_FACTOR).unwrap();
@@ -69,8 +73,7 @@ fn main() {
         }
     }
 
-    // The threshold to detect lit pixels
-    const THRESHOLD: u8 = 128;
+    
     // Turn each pixel into a single bit first of all
     let bit_pixels: Vec<(u32, u32, bool)> = texture.pixels().map(|x| (x.0, x.1, x.2[0] > THRESHOLD)).collect();
 
@@ -108,7 +111,7 @@ fn main() {
                 }
                 if best_distance != f32::MAX {
                     // Turn the distance into a number with a range of 0, 1
-                    let factor = 1.0-(best_distance / 5.0).clamp(0.0, 1.0);
+                    let factor = 1.0-(best_distance / MAX_SDF_WIDTH).clamp(0.0, 1.0);
                     (factor * 128.0) as u8
                 } else {
                     0
@@ -127,7 +130,7 @@ fn main() {
                 if best_distance != f32::MAX {
                     best_distance = best_distance.max(1.41421) - 1.41421;
                     // Turn the distance into a number with a range of 0, 1
-                    let factor = (best_distance / 5.0).clamp(0.0, 1.0) + 0.5;
+                    let factor = (best_distance / MAX_SDF_WIDTH).clamp(0.0, 1.0) + 0.5;
                     (factor * 255.0) as u8
                 } else {
                     0
@@ -149,7 +152,7 @@ fn main() {
     }    
 
     // Downscale
-    let new_texture = new_texture.resize_exact((original_dimension.0/DOWNSAMPLE_FACTOR) as u32, (original_dimension.1/DOWNSAMPLE_FACTOR) as u32, image::imageops::FilterType::Nearest);
+    let new_texture = new_texture.resize_exact((original_dimension.0/DOWNSAMPLE_FACTOR) as u32, (original_dimension.1/DOWNSAMPLE_FACTOR) as u32, image::imageops::FilterType::Triangle);
     let bytes = new_texture.pixels().map(|x| {
         x.2[0]
     }).collect::<Vec<u8>>();
