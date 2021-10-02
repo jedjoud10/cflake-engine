@@ -102,11 +102,21 @@ impl World {
         // ----Add the elements here----
 
         // Create a text element
-        let text_element = ui::Element::new()
+        let text_element_1 = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Pixel)
             .set_position(veclib::Vector2::ZERO)
-            .set_text("FPS: ", 30.0);
-        root.add_element(text_element);
+            .set_text("fps_text_here", 60.0);
+        root.add_element(text_element_1);
+        let text_element_2 = ui::Element::new()
+            .set_coordinate_system(ui::CoordinateType::Pixel)
+            .set_position(veclib::Vector2::Y * 60.0)
+            .set_text("entity_text_here", 60.0);
+        root.add_element(text_element_2);
+        let text_element_3 = ui::Element::new()
+            .set_coordinate_system(ui::CoordinateType::Pixel)
+            .set_position(veclib::Vector2::Y * 60.0 * 2.0)
+            .set_text("component_text_here", 60.0);
+        root.add_element(text_element_3);
 
         // Set this as the default root
         self.ui_manager.set_default_root(root);
@@ -184,15 +194,21 @@ impl World {
 
         // Update the default UI
         let root = self.ui_manager.get_default_root_mut();
-        let element = root.get_element_mut(1);
-        let fps = (1.0/self.time_manager.delta_time).round();
-        let text = &format!("FPS: {}", fps);
-        element.update_text(text, (self.time_manager.seconds_since_game_start.sin() as f32) * 128.0 + 96.0);
+        let fps_text = &format!("FPS: {}", self.time_manager.average_fps.round());
+        root.get_element_mut(1).update_text(fps_text, 60.0);
+        let entity_text = &format!("#Entities: {}", self.entity_manager.entities.len());
+        root.get_element_mut(2).update_text(entity_text, 60.0);
+        let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.elements.len());
+        root.get_element_mut(3).update_text(component_text, 60.0);
+        
 
         // Update the time
         self.time_manager.delta_time = delta;
         self.time_manager.seconds_since_game_start += delta;
         self.time_manager.frame_count += 1;
+        // Update the FPS
+        self.time_manager.fps = 1.0 / self.time_manager.delta_time;
+        self.time_manager.update_average_fps();
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
@@ -224,10 +240,7 @@ impl World {
         if self.input_manager.map_pressed("toggle_wireframe") {
             let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.wireframe = !render_system.wireframe;
-        }
-
-        // Update the FPS
-        self.time_manager.fps = 1.0 / self.time_manager.delta_time;
+        }        
     }
     // Set the fullscreen status
     pub fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
