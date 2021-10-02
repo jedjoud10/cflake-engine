@@ -21,9 +21,9 @@ pub const MAIN_CHUNK_SIZE: usize = 32;
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // An LOD bias used to change how how high detail chunks spawn
-pub const LOD_FACTOR: f32 = 0.8;
+pub const LOD_FACTOR: f32 = 0.3;
 // The octree depth
-pub const OCTREE_DEPTH: u8 = 12;
+pub const OCTREE_DEPTH: u8 = 8;
 // The size of the terrain in meters
 pub const TERRAIN_SIZE: u32 = (MAIN_CHUNK_SIZE as u32 / 2) * 2_u32.pow(OCTREE_DEPTH as u32);
 
@@ -79,7 +79,8 @@ impl Terrain {
             .unwrap();
         let material = Material::default()
             .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.02))
-            .set_uniform("normals_strength", ShaderArg::F32(2.0))
+            .set_uniform("normals_strength", ShaderArg::F32(4.0))
+            .set_uniform("depth", ShaderArg::F32(coords.depth as f32 / (OCTREE_DEPTH as f32)))
             .set_shader(self.shader_name.as_str())
             .load_textures(&self.texture_ids, texture_cacher);
         entity
@@ -125,12 +126,12 @@ impl System for Terrain {
         self.texture_ids = vec![
             Texture2D::new()
                 .enable_mipmaps()
-                .load_texture("user\\textures\\sandstone_cracks_diff_4k.png", data.resource_manager, data.texture_cacher)
+                .load_texture("user\\textures\\forrest_ground_01_diff_1k.png", data.resource_manager, data.texture_cacher)
                 .unwrap()
                 .1,
             Texture2D::new()
                 .enable_mipmaps()
-                .load_texture("user\\textures\\sandstone_cracks_nor_gl_4k.png", data.resource_manager, data.texture_cacher)
+                .load_texture("user\\textures\\forrest_ground_01_nor_gl_1k.png", data.resource_manager, data.texture_cacher)
                 .unwrap()
                 .1,
         ];

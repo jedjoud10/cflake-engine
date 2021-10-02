@@ -106,16 +106,17 @@ impl ChunkManager {
                 veclib::Vector3::from(chunk_to_generate.center),
                 veclib::Vector3::new(chunk_to_generate.size as f32, chunk_to_generate.size as f32, chunk_to_generate.size as f32),
             );
-            //data.debug.debug_default(t, veclib::Vector3::ONE, false);
+            data.debug.debug_default(t, veclib::Vector3::ONE, false);
         }
         // Generate the data for some chunks, then create their model
-        let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
-        let coord = self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0);
+        let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();       
 
-        let generated_chunk = match coord {
-            Some(chunk_coords) => {
+        // This chunk will always have a valid model and chunk data
+        let mut final_chunk: Option<(ChunkData, Model)> = None;  
+        match self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0) {
+            Some(coord) => {
                 // Get the chunk coords
-                let chunk_coords = chunk_coords.clone();
+                let chunk_coords = coord.clone();
                 let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
 
                 // Decide between generating the chunk or start the generation of the voxel data
@@ -128,47 +129,43 @@ impl ChunkManager {
                     let has_surface = voxel_generator.generate_voxels_end(data, &mut voxels);
                     // Since we just generated the chunk we can remove it from the generated chunks
                     self.chunks_to_generate.remove(0);
-
+                
                     // If we don't have a surface, no need to create a model for this chunk
-                    let t = match has_surface {
+                    match has_surface {
                         Some(_) => {
                             // We have a surface, create the model
                             let coords = chunk_coords.clone();
                             let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
                             // Save the chunk's data, though don't save the mode
                             let chunk_data = ChunkData { coords: coords, voxels: voxels };
-                            Some((chunk_data, model))
+                            final_chunk = Some((chunk_data, model));
                         }
                         None => {
                             // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
-                            None
                         }
-                    };
-                    t                    
+                    }            
                 } else {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;
                     self.last_frame_voxels_generated = data.time_manager.frame_count;
                     voxel_generator.generate_voxels_start(data, &chunk_coords.size, &chunk_coords.position);
                     // We aren't generating a mesh so return none
-                    None
                 }
-            }
-            None => {
-                /* No chunk to generate */
-                None
-            }
-        };
+            },
+            None => {},
+        }                   
+        
         let mut entities_to_remove: Vec<u16> = Vec::new();
 
         // The system was flawed...
-        match generated_chunk {
-            Some((chunk_data, model)) => {
-                self.chunks.insert(chunk_data.coords.center.clone());
-                new_chunks.push((chunk_data.coords, model.clone()));
-            }
-            None => { /* No model */ }
+        match final_chunk {
+            Some((data, model)) => {
+                self.chunks.insert(data.coords.center.clone());
+                new_chunks.push((data.coords, model.clone()));
+            },
+            None => {},
         }
+        
         // Remove the entities after all the new ones got generated
         if self.chunks_to_generate.len() == 0 {
             entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();
