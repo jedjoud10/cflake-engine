@@ -136,7 +136,7 @@ fn main() {
                 }                
             };
             let mut_y = edited_pixels.get_mut(pixel.1 as usize).unwrap();
-            mut_y[pixel.0 as usize] = (0, 0, 0);
+            mut_y[pixel.0 as usize] = (pixel.0, pixel.1, pixel_color);
         }        
         println!("Finished creating the SDF for the character {}", font_char.id);
     }
@@ -146,13 +146,13 @@ fn main() {
     // Write each new pixel to the texture
     for x_row in edited_pixels {
         for pixel in x_row {
-            let pixel_color = image::Rgba([255, 255, 255, 255]);
+            let pixel_color = image::Rgba([pixel.2, 0, 0, 0]);
             new_texture.put_pixel(pixel.0, pixel.1, pixel_color);
         }
     }
 
     // Downscale
-    let new_texture = new_texture.resize((original_dimension.0/DOWNSAMPLE_FACTOR) as u32, (original_dimension.1/DOWNSAMPLE_FACTOR) as u32, image::imageops::FilterType::Gaussian);
+    let new_texture = new_texture.resize((original_dimension.0/DOWNSAMPLE_FACTOR) as u32, (original_dimension.1/DOWNSAMPLE_FACTOR) as u32, image::imageops::FilterType::Nearest);
     let bytes = new_texture.pixels().map(|x| {
         x.2[0]
     }).collect::<Vec<u8>>();
