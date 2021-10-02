@@ -5,4 +5,5 @@ pub struct Time {
     pub delta_time: f64,
     pub frame_count: u64,
     pub fps: f64,
+    pub average_fps: f64,
 }

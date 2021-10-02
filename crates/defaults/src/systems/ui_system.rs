@@ -59,13 +59,16 @@ impl UISystem {
             // Get the dimensions of the font char
             let width = char.get_width() as f32;
             let height = char.get_height() as f32;
+            let ratio =  (width as f32) / (height as f32); 
+            // 
+            let character_offset = veclib::Vector2::X*(width*i)*ratio*element_data.1.x*(font_size / height)*2.0;
             shader.set_f32("font_size", &font_size);
-            shader.set_vec2f32("character_offset", &(veclib::Vector2::X * (width*i)));
-            shader.set_f32("font_ratio", &((width as f32) / (height as f32)));
+            shader.set_vec2f32("character_offset", &character_offset);
+            shader.set_f32("font_ratio", &ratio);
             shader.set_vec2f32("min_padding", &veclib::Vector2::ZERO);
             shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
-            shader.set_vec2f32("min_padding", &(min_padding / 512.0));
-            shader.set_vec2f32("max_padding", &(max_padding / 512.0));
+            shader.set_vec2f32("min_padding", &(min_padding / (font.atlas_dimensions.x as f32)));
+            shader.set_vec2f32("max_padding", &(max_padding / (font.atlas_dimensions.y as f32)));
             // Draw each character as panel
             self.draw_panel_vertices();
             i += 1.0;
@@ -232,7 +235,7 @@ impl System for UISystem {
                     // Use the font shader
                     font_shader.use_shader();
                     // Draw the text
-                    self.draw_text(tuple, &font_shader, text_content, *font_size / resolution.y, default_font);
+                    self.draw_text(tuple, &font_shader, text_content, *font_size, default_font);
                 }
                 _ => {
                     // Use the normal panel shader

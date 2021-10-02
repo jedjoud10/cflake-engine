@@ -187,7 +187,7 @@ impl World {
         let element = root.get_element_mut(1);
         let fps = (1.0/self.time_manager.delta_time).round();
         let text = &format!("FPS: {}", fps);
-        element.update_text(text, 20.0);
+        element.update_text(text, (self.time_manager.seconds_since_game_start.sin() as f32) * 128.0 + 96.0);
 
         // Update the time
         self.time_manager.delta_time = delta;
