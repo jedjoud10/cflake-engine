@@ -88,6 +88,11 @@ fn main() {
         ).collect::<Vec<(u32, u32, bool)>>();
         
         // Get the SDF now
+        // Map some value from a specific range to another range
+        fn map(x: f32, ra: f32, rb: f32, r2a: f32, r2b: f32) -> f32 {
+            // https://stackoverflow.com/questions/3451553/value-remapping
+            return r2a + (x - ra) * (r2b - r2a) / (rb - ra);
+        }
         for pixel in sub_texture.iter() {
             let coords = veclib::Vector2::<f32>::new(pixel.0 as f32, pixel.1 as f32);
             let pixel_color = if !pixel.2 {
@@ -102,13 +107,30 @@ fn main() {
                 }
                 if best_distance != f32::MAX {
                     // Turn the distance into a number with a range of 0, 1
-                    let factor = 1.0-(best_distance / 30.0).clamp(0.0, 1.0);
-                    (factor * 255.0) as u8
+                    let factor = 1.0-(best_distance / 5.0).clamp(0.0, 1.0);
+                    (factor * 128.0) as u8
                 } else {
                     0
                 }
             } else {
-                255
+                // This pixel is already lit
+                // Keep the best distance
+                let mut best_distance: f32 = f32::MAX;
+                // Get the distance to unlit pixels
+                for sdf_pixel in sub_texture.iter() {
+                    if !sdf_pixel.2 {
+                        let sdf_coords = veclib::Vector2::<f32>::new(sdf_pixel.0 as f32, sdf_pixel.1 as f32);
+                        best_distance = best_distance.min(coords.distance(sdf_coords));
+                    }
+                }                
+                if best_distance != f32::MAX {
+                    best_distance = best_distance.max(1.41421) - 1.41421;
+                    // Turn the distance into a number with a range of 0, 1
+                    let factor = (best_distance / 5.0).clamp(0.0, 1.0) + 0.5;
+                    (factor * 255.0) as u8
+                } else {
+                    0
+                }                
             };
             let mut_y = edited_pixels.get_mut(pixel.1 as usize).unwrap();
             mut_y[pixel.0 as usize] = pixel_color;
