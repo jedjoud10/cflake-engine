@@ -13,6 +13,10 @@ pub struct UIManager {
 
 // Actually UI functions
 impl UIManager {
+    // Check if we have a default root set
+    pub fn default_root_valid(&self) -> bool {
+        self.roots.len() > 0
+    }
     // Get the default root
     pub fn get_default_root(&self) -> &Root {
         self.roots.get(0).unwrap()

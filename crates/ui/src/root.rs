@@ -40,7 +40,7 @@ impl Root {
         elems_to_evaluate.extend(element.children);
         while elems_to_evaluate.len() > 0 {
             // We need to get the children of this element
-            let elem = self.smart_element_list.get_element(&(elems_to_evaluate[0] as u16)).unwrap();
+            let elem = self.smart_element_list.get_element(elems_to_evaluate[0] as u16).unwrap();
             let children = elem.children.clone();
             elems_to_evaluate.extend(children);
             elems_to_evaluate.remove(0);
@@ -48,9 +48,16 @@ impl Root {
     }
 
     // ---- Actual root UI stuff ---- \\
-
+    // Get an element from the root using it's id
+    pub fn get_element(&self, id: u16) -> &Element { 
+        self.smart_element_list.get_element(id).unwrap()
+    }
+    // Get an element from the root using it's id
+    pub fn get_element_mut(&mut self, id: u16) -> &mut Element { 
+        self.smart_element_list.get_element_mut(id).unwrap()
+    }
     // Get the state of a specific button element
-    pub fn get_button_state(&self, element_id: &u16) -> &ButtonState {
+    pub fn get_button_state(&self, element_id: u16) -> &ButtonState {
         // Get the element
         let elem = self.smart_element_list.get_element(element_id).unwrap();
         let state = match elem.element_type {
@@ -60,11 +67,11 @@ impl Root {
         return state;
     }
     // Set the text of a text element
-    pub fn set_text_state(&mut self, element_id: &u16, text: &str) {
+    pub fn set_text_state(&mut self, element_id: u16, text: &str) {
         // Get the element mutably
         let elem = self.smart_element_list.get_element_mut(element_id).unwrap();
         match elem.element_type {
-            ElementType::Text(ref mut last_text) => {
+            ElementType::Text(ref mut last_text, font_size) => {
                 // Set the text
                 *last_text = text.to_string();
             }

@@ -67,7 +67,7 @@ impl ComponentManager {
         Ok(final_component)
     }
     // Get a reference to a specific linked component
-    pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: &u16) -> Result<&T, ECSError> {
+    pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: u16) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self
@@ -78,7 +78,7 @@ impl ComponentManager {
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: &u16) -> Result<&mut T, ECSError> {
+    pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: u16) -> Result<&mut T, ECSError> {
         let linked_component = self
             .smart_components_list
             .get_element_mut(global_id)
@@ -138,7 +138,7 @@ impl FilteredLinkedComponents {
         if self.components.contains_key(&id) {
             // We are allowed to get this component
             let global_id = self.components.get(&id).unwrap();
-            let component = component_manager.id_get_linked_component(global_id)?;
+            let component = component_manager.id_get_linked_component(*global_id)?;
             Ok(component)
         } else {
             // We are not allowed to get this component
@@ -155,7 +155,7 @@ impl FilteredLinkedComponents {
         if self.components.contains_key(&id) {
             // We are allowed to get this component
             let global_id = self.components.get(&id).unwrap();
-            let component = component_manager.id_get_linked_component_mut(global_id)?;
+            let component = component_manager.id_get_linked_component_mut(*global_id)?;
             Ok(component)
         } else {
             // We are not allowed to get this component

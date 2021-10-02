@@ -93,6 +93,23 @@ impl World {
             default_shader_name = default_shader.1;
         }
         self.shader_cacher.1.generate_defaults(vec![default_shader_name.as_str()]);
+        
+        // Create some default UI that prints some default info to the screen
+        let mut root = ui::Root::new();
+        let root_elem = ui::Element::default();
+        // Add the element to the root node
+        root.add_element(root_elem);
+        // ----Add the elements here----
+
+        // Create a text element
+        let text_element = ui::Element::new()
+            .set_coordinate_system(ui::CoordinateType::Pixel)
+            .set_position(veclib::Vector2::ZERO)
+            .set_text("FPS: ", 30.0);
+        root.add_element(text_element);
+
+        // Set this as the default root
+        self.ui_manager.set_default_root(root);
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, load_systems_callback: fn(&mut Self), load_entities_callback: fn(&mut Self)) {
@@ -164,6 +181,13 @@ impl World {
 
         // Update entity manager
         self.update_entity_manager();
+
+        // Update the default UI
+        let root = self.ui_manager.get_default_root_mut();
+        let element = root.get_element_mut(1);
+        let fps = (1.0/self.time_manager.delta_time).round();
+        let text = &format!("FPS: {}", fps);
+        element.update_text(text, 20.0);
 
         // Update the time
         self.time_manager.delta_time = delta;

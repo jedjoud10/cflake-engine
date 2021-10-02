@@ -1,7 +1,7 @@
 #version 460 core
 layout(location = 0) in vec2 vertex_pos;
 layout(location = 1) in vec2 vertex_uvs;
-uniform vec2 size;
+uniform float font_size;
 uniform vec2 offset_position;
 uniform vec2 min_padding;
 uniform vec2 max_padding;
@@ -18,7 +18,7 @@ float map(float x, float ra, float rb, float r2a, float r2b) {
 void main() {
 	// Turn the -1, 1 range to 0, 1 range
 	vec2 position = ((vertex_pos.xy) + 1) / 2;
-	position *= size * vec2(font_ratio, 1);
+	position *= font_size * vec2(font_ratio, 1);
 	position += offset_position;	
 	// Remap the character offset
 	vec2 new_char_offset = vec2(map(character_offset.x, 0, resolution.x, 0, 1), map(character_offset.y, 0, resolution.y, 0, 1));

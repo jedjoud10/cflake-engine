@@ -17,5 +17,5 @@ void main() {
         signed_distance = 1;
     }    
     
-	out_color = vec4(signed_distance, signed_distance, signed_distance, alpha);
+	out_color = vec4(signed_distance, signed_distance, signed_distance, 1);
 }

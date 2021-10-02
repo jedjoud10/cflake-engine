@@ -62,15 +62,20 @@ impl Element {
         return self;
     }
     // Set the text of the element
-    pub fn set_text(mut self, text: &str) -> Self {
+    pub fn set_text(mut self, text: &str, font_size: f32) -> Self {
         // Set the type of element
-        self.element_type = ElementType::Text(text.to_string());
+        self.element_type = ElementType::Text(text.to_string(), font_size);
         return self;
     }
     // Set the color of the element
     pub fn set_color(mut self, color: veclib::Vector4<f32>) -> Self {
         self.color = color;
         return self;
+    }
+
+    // ----Update functions----
+    pub fn update_text(&mut self, text: &str, font_size: f32) {
+        self.element_type = ElementType::Text(text.to_string(), font_size);
     }
 }
 
@@ -95,7 +100,7 @@ pub enum ElementType {
     Empty,
     Panel(),
     Button(ButtonState),
-    Text(String),
+    Text(String, f32),
     Image(String),
 }
 
@@ -103,14 +108,14 @@ impl Element {
     // Attach children to this element
     pub fn attach(root: &mut Root, id: usize, children: Vec<usize>) {
         // Update the parent id of the children
-        for child_element_id in children.iter() {
+        for &child_element_id in children.iter() {
             // Get the child element and update it
-            let child_element = root.smart_element_list.get_element_mut(&(*child_element_id as u16)).unwrap();
+            let child_element = root.smart_element_list.get_element_mut(child_element_id as u16).unwrap();
             child_element.parent = id;
             child_element.depth += 1;
             root.max_depth = root.max_depth.max(child_element.depth);
         }
-        let element = root.smart_element_list.get_element_mut(&(id as u16)).unwrap();
+        let element = root.smart_element_list.get_element_mut(id as u16).unwrap();
         element.children.extend(children);
     }
 }

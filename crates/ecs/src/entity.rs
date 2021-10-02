@@ -163,7 +163,7 @@ impl Entity {
         // Check if we even have the component
         if self.is_component_linked(&component_id) {
             let global_id = self.linked_components.get(&component_id).unwrap();
-            let final_component = component_manager.id_get_linked_component::<T>(global_id)?;
+            let final_component = component_manager.id_get_linked_component::<T>(*global_id)?;
             Ok(final_component)
         } else {
             return Err(ECSError::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name)));
@@ -175,7 +175,7 @@ impl Entity {
         // Check if we even have the component
         if self.is_component_linked(&component_id) {
             let global_id = self.linked_components.get(&component_id).unwrap();
-            let final_component = component_manager.id_get_linked_component_mut::<T>(global_id)?;
+            let final_component = component_manager.id_get_linked_component_mut::<T>(*global_id)?;
             Ok(final_component)
         } else {
             return Err(ECSError::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name)));
