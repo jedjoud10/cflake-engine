@@ -40,21 +40,6 @@ impl Camera {
     }
 }
 
-impl ComponentInternal for Camera {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-
-impl ComponentID for Camera {
-    fn get_component_name() -> String {
-        String::from("Camera Component")
-    }
-}
-
 impl Default for Camera {
     fn default() -> Self {
         Self {
@@ -68,4 +53,4 @@ impl Default for Camera {
     }
 }
 
-impl Component for Camera {}
+ecs::impl_component!(Camera);

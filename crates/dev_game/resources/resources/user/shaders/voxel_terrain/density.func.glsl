@@ -1,6 +1,6 @@
-#include "user\shaders\noise.func.glsl"
-#include "user\shaders\sdf.func.glsl"
-#include "user\shaders\erosion.func.glsl"
+#include "defaults\shaders\voxel_terrain\noise.func.glsl"
+#include "defaults\shaders\voxel_terrain\sdf.func.glsl"
+#include "defaults\shaders\voxel_terrain\erosion.func.glsl"
 // Generate the density here
 float get_density(vec3 pos) {
     // Do some position flipping
