@@ -4,10 +4,10 @@ use gl;
 use math;
 use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, TextureShaderAccessType, Window};
 use resources::LoadableResource;
-use ui::Root;
 use std::ptr::null;
 use system_event_data::{SystemEventData, SystemEventDataLite};
 use systems::{System, SystemData};
+use ui::Root;
 
 #[derive(Default)]
 pub struct RenderingSystem {

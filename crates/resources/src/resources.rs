@@ -146,7 +146,7 @@ impl ResourceManager {
         let width = reader.read_u16::<LittleEndian>().unwrap();
         let height = reader.read_u16::<LittleEndian>().unwrap();
         output_font.dimensions = veclib::Vector2::new(width, height);
-        let pixel_num: u32 = width as u32 * height as u32; 
+        let pixel_num: u32 = width as u32 * height as u32;
         // Read the pixels, one by one
         for i in 0..pixel_num {
             let pixel = reader.read_u8().unwrap();

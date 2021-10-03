@@ -93,7 +93,7 @@ impl World {
             default_shader_name = default_shader.1;
         }
         self.shader_cacher.1.generate_defaults(vec![default_shader_name.as_str()]);
-        
+
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new();
         let root_elem = ui::Element::default();
@@ -200,7 +200,6 @@ impl World {
         root.get_element_mut(2).update_text(entity_text, 60.0);
         let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.elements.len());
         root.get_element_mut(3).update_text(component_text, 60.0);
-        
 
         // Update the time
         self.time_manager.delta_time = delta;
@@ -240,7 +239,7 @@ impl World {
         if self.input_manager.map_pressed("toggle_wireframe") {
             let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.wireframe = !render_system.wireframe;
-        }        
+        }
     }
     // Set the fullscreen status
     pub fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {

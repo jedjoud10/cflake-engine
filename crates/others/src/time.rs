@@ -7,7 +7,7 @@ pub struct Time {
     pub fps: f64,
     pub average_fps: f64,
     // Used for the one second tick
-    last_tick_time: f64
+    last_tick_time: f64,
 }
 
 impl Time {

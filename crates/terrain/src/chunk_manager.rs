@@ -109,10 +109,10 @@ impl ChunkManager {
             data.debug.debug_default(t, veclib::Vector3::ONE, false);
         }
         // Generate the data for some chunks, then create their model
-        let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();       
+        let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
 
         // This chunk will always have a valid model and chunk data
-        let mut final_chunk: Option<(ChunkData, Model)> = None;  
+        let mut final_chunk: Option<(ChunkData, Model)> = None;
         match self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0) {
             Some(coord) => {
                 // Get the chunk coords
@@ -121,7 +121,7 @@ impl ChunkManager {
 
                 // Decide between generating the chunk or start the generation of the voxel data
                 if self.voxels_generating {
-                    // The voxels are generating, so wait until we reached a satisfactory frame count                    
+                    // The voxels are generating, so wait until we reached a satisfactory frame count
                     // We reached the limit, read the compute buffer
                     self.voxels_generating = false;
                     self.last_frame_voxels_generated = 0;
@@ -129,7 +129,7 @@ impl ChunkManager {
                     let has_surface = voxel_generator.generate_voxels_end(data, &mut voxels);
                     // Since we just generated the chunk we can remove it from the generated chunks
                     self.chunks_to_generate.remove(0);
-                
+
                     // If we don't have a surface, no need to create a model for this chunk
                     match has_surface {
                         Some(_) => {
@@ -143,7 +143,7 @@ impl ChunkManager {
                         None => {
                             // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
                         }
-                    }            
+                    }
                 } else {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;
@@ -151,10 +151,10 @@ impl ChunkManager {
                     voxel_generator.generate_voxels_start(data, &chunk_coords.size, &chunk_coords.position);
                     // We aren't generating a mesh so return none
                 }
-            },
-            None => {},
-        }                   
-        
+            }
+            None => {}
+        }
+
         let mut entities_to_remove: Vec<u16> = Vec::new();
 
         // The system was flawed...
@@ -162,10 +162,10 @@ impl ChunkManager {
             Some((data, model)) => {
                 self.chunks.insert(data.coords.center.clone());
                 new_chunks.push((data.coords, model.clone()));
-            },
-            None => {},
+            }
+            None => {}
         }
-        
+
         // Remove the entities after all the new ones got generated
         if self.chunks_to_generate.len() == 0 {
             entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();

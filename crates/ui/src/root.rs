@@ -49,11 +49,11 @@ impl Root {
 
     // ---- Actual root UI stuff ---- \\
     // Get an element from the root using it's id
-    pub fn get_element(&self, id: u16) -> &Element { 
+    pub fn get_element(&self, id: u16) -> &Element {
         self.smart_element_list.get_element(id).unwrap()
     }
     // Get an element from the root using it's id
-    pub fn get_element_mut(&mut self, id: u16) -> &mut Element { 
+    pub fn get_element_mut(&mut self, id: u16) -> &mut Element {
         self.smart_element_list.get_element_mut(id).unwrap()
     }
     // Get the state of a specific button element

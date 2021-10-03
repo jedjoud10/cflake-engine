@@ -44,9 +44,16 @@ impl UISystem {
         self.draw_panel_vertices();
     }
     // Draw the text by drawing multiple elements
-    fn draw_text(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader, text_content: &String, font_size: f32, font: &Font) {
+    fn draw_text(
+        &self,
+        element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32),
+        shader: &Shader,
+        text_content: &String,
+        font_size: f32,
+        font: &Font,
+    ) {
         // Draw each character in the string as a separate element
-        let chars = font.convert_text_to_font_chars(text_content);        
+        let chars = font.convert_text_to_font_chars(text_content);
         let mut i: f32 = 0.0;
         for char in chars {
             // Set the default panel arguments
@@ -59,9 +66,9 @@ impl UISystem {
             // Get the dimensions of the font char
             let width = char.get_width() as f32;
             let height = char.get_height() as f32;
-            let ratio =  (width as f32) / (height as f32); 
-            // 
-            let character_offset = veclib::Vector2::X*(width*i)*ratio*element_data.1.x*(font_size / height)*2.0;
+            let ratio = (width as f32) / (height as f32);
+            //
+            let character_offset = veclib::Vector2::X * (width * i) * ratio * element_data.1.x * (font_size / height) * 2.0;
             shader.set_f32("font_size", &font_size);
             shader.set_vec2f32("character_offset", &character_offset);
             shader.set_f32("font_ratio", &ratio);
@@ -72,7 +79,7 @@ impl UISystem {
             // Draw each character as panel
             self.draw_panel_vertices();
             i += 1.0;
-        }                
+        }
     }
 }
 
@@ -154,7 +161,7 @@ impl System for UISystem {
         // Load a default font that we can use for testing
         let default_font = Font::new().from_path("defaults\\fonts\\default_font.font", data.resource_manager).unwrap();
         // Set the default font
-        data.ui_manager.font_manager.add_font(default_font);        
+        data.ui_manager.font_manager.add_font(default_font);
         // Load the UI shader
         self.ui_shader_name = Shader::new(
             vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_panel.frsh.glsl"],
@@ -174,8 +181,7 @@ impl System for UISystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {
-    }
+    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {}
 
     // Render all the elements onto the screen
     fn post_fire(&mut self, data: &mut SystemEventData) {
@@ -192,7 +198,7 @@ impl System for UISystem {
         }
 
         // Loop over every root node
-        for (root_name, root) in data.ui_manager.roots.iter() {  
+        for (root_name, root) in data.ui_manager.roots.iter() {
             let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
             let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
             // Get the font shader

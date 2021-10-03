@@ -49,7 +49,7 @@ pub struct Terrain {
     pub shader_name: String,
     pub texture_ids: Vec<u16>,
     // Debug elements ID
-    element_id: u16
+    element_id: u16,
 }
 
 impl Terrain {

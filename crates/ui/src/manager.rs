@@ -1,4 +1,7 @@
-use std::{collections::HashMap, ops::{Index, IndexMut}};
+use std::{
+    collections::HashMap,
+    ops::{Index, IndexMut},
+};
 
 use fonts::FontManager;
 
