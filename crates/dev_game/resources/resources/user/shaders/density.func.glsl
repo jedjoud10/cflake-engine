@@ -7,7 +7,7 @@ float get_density(vec3 pos) {
     float density = pos.y;
     float c = (1-cellular(pos * vec3(1, 0.1, 1) * 0.001).x) * 6.0;
     float p = snoise(pos * vec3(1, 1, 1) * 0.002) * 10.0;
-    density += snoise(pos * vec3(1, 1, 1) * 0.002) * 50;
+    density += (snoise(pos * vec3(1, 0.2, 1) * 0.001).x) * 200;
     //density = pos.y - 10;
     return density;
 }

@@ -6,7 +6,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
-const AVERAGE_DENSITY_THRESHOLD: f32 = 3.0;
+const AVERAGE_DENSITY_THRESHOLD: f32 = 1.0;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -77,12 +77,12 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             let mut normal2 = veclib::Vector3::<f32>::ZERO;
 
                             // Create the normal
-                            normal1.x = (voxels[index1 + DATA_OFFSET_TABLE[3]].density - density1);
-                            normal1.y = (voxels[index1 + DATA_OFFSET_TABLE[4]].density - density1);
-                            normal1.z = (voxels[index1 + DATA_OFFSET_TABLE[1]].density - density1);
-                            normal2.x = (voxels[index2 + DATA_OFFSET_TABLE[3]].density - density2);
-                            normal2.y = (voxels[index2 + DATA_OFFSET_TABLE[4]].density - density2);
-                            normal2.z = (voxels[index2 + DATA_OFFSET_TABLE[1]].density - density2);
+                            normal1.x = voxels[index1 + DATA_OFFSET_TABLE[3]].density - density1;
+                            normal1.y = voxels[index1 + DATA_OFFSET_TABLE[4]].density - density1;
+                            normal1.z = voxels[index1 + DATA_OFFSET_TABLE[1]].density - density1;
+                            normal2.x = voxels[index2 + DATA_OFFSET_TABLE[3]].density - density2;
+                            normal2.y = voxels[index2 + DATA_OFFSET_TABLE[4]].density - density2;
+                            normal2.z = voxels[index2 + DATA_OFFSET_TABLE[1]].density - density2;
                             veclib::Vector3::<f32>::lerp(normal1, normal2, value)
                         };
 

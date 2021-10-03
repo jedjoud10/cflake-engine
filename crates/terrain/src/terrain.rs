@@ -140,8 +140,6 @@ impl System for Terrain {
         self.octree.size = CHUNK_SIZE as u64 - 2;
         self.octree.depth = OCTREE_DEPTH;
         self.octree.lod_factor = LOD_FACTOR;
-        // Debug controls
-        data.input_manager.bind_key(Keys::Y, "update_terrain", MapType::Button);
 
         // Load the compute shader for the voxel generator
         self.voxel_generator.compute_shader_name = Shader::new(
@@ -175,7 +173,7 @@ impl System for Terrain {
         let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
         let camera_location = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
         // Generate the octree each frame and generate / delete the chunks
-        if data.input_manager.map_toggled("update_terrain") && self.chunk_manager.octree_update_valid() {
+        if self.chunk_manager.octree_update_valid() {
             match self.octree.generate_incremental_octree(camera_location) {
                 Some((mut added, removed, total_nodes)) => {
                     // Filter first
