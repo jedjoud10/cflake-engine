@@ -89,7 +89,7 @@ impl System for TerrainSystem {
         // Get the terrain data
         let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();    
         let octree_size = td.octree.size;    
-        let clone_material 
+        let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
         if td.chunk_manager.octree_update_valid() {
@@ -152,7 +152,7 @@ impl System for TerrainSystem {
                 )
                 .unwrap();
                 // TODO: Make a custom material instance system
-                let material = td.material.clone()
+                let material = clone_material.clone()
                     .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.02))
                     .set_uniform("normals_strength", ShaderArg::F32(4.0));
                 entity
