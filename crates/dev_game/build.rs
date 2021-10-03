@@ -1,5 +1,6 @@
 use std::env;
 
+// Pack the resources
 fn main() {
     let target_dir = env::var("OUT_DIR").unwrap();
     let target_dir = target_dir.split("build\\dev_game").collect::<Vec<&str>>()[0];
