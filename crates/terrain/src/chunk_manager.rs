@@ -126,19 +126,17 @@ impl ChunkManager {
                     self.chunks_to_generate.remove(0);
 
                     // If we don't have a surface, no need to create a model for this chunk
-                    match has_surface {
-                        Some(_) => {
-                            // We have a surface, create the model
-                            let coords = chunk_coords.clone();
-                            let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
+                    if has_surface {
+                        // We have a surface, create the model
+                        let coords = chunk_coords.clone();
+                        let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, false);
+                        // TODO: Why the fuck is this happening bro
+                        if model.triangles.len() > model.vertices.len() {
                             // Save the chunk's data, though don't save the mode
                             let chunk_data = ChunkData { coords: coords, voxels: voxels };
                             final_chunk = Some((chunk_data, model));
                         }
-                        None => {
-                            // We don't have a surface, no need to create the model, but rerun the update loop to find a model that doe have a surface
-                        }
-                    }
+                    }                
                 } else {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;
@@ -149,7 +147,6 @@ impl ChunkManager {
             }
             None => {}
         }
-
         let mut entities_to_remove: Vec<u16> = Vec::new();
 
         // The system was flawed...

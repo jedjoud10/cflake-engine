@@ -64,7 +64,7 @@ pub fn world_initialized(world: &mut World) {
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
     const OCTREE_DEPTH: u8 = 8;
-    const LOD_FACTOR: f32 = 0.5;
+    const LOD_FACTOR: f32 = 0.2;
     
     // Load the material and compute shader name
     let compute_shader_name = Shader::new(
@@ -73,7 +73,13 @@ pub fn world_initialized(world: &mut World) {
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
     ).1;
-    terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(Material::default(), compute_shader_name, OCTREE_DEPTH, LOD_FACTOR)).unwrap();
+
+    // The terrain shader
+    let terrain_shader = Shader::new(vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl"], data.resource_manager, data.shader_cacher, None).1;
+    // Material
+    let material = Material::default().set_shader(&terrain_shader).resource_load_textures(vec!["defaults\\textures\\white.png", "defaults\\textures\\rock_normal.png"], data.texture_cacher, data.resource_manager).unwrap().load_default_textures(data.texture_cacher);
+    println!("{:?}", material);
+    terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(material, compute_shader_name, OCTREE_DEPTH, LOD_FACTOR)).unwrap();
 
     data.entity_manager.add_entity_s(terrain_entity);
 }

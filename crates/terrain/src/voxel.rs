@@ -52,7 +52,7 @@ impl VoxelGenerator {
         compute_shader.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&self, compute_shader: &mut Shader, data: &mut Box<[Voxel]>) -> Option<()> {
+    pub fn generate_voxels_end(&self, compute_shader: &mut Shader, data: &mut Box<[Voxel]>) -> bool {
         // Run the compute shader
         let compute_shader = match &mut compute_shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
@@ -77,11 +77,7 @@ impl VoxelGenerator {
             max = max.max(density);
         }
         // Only generate the mesh if we have a surface
-        if min.signum() != max.signum() {
-            return Some(());
-        } else {
-            return None;
-        }
+        min.signum() != max.signum()
     }
 }
 

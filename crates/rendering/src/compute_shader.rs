@@ -12,7 +12,6 @@ impl ComputeShader {
             return;
         }
         unsafe {
-            println!("1");
             // Do some num_groups checks
             let mut max: i32 = 0;
             gl::GetIntegeri_v(gl::MAX_COMPUTE_WORK_GROUP_COUNT, 0, &mut max);
@@ -22,7 +21,6 @@ impl ComputeShader {
             }
             gl::DispatchCompute(num_groups.0, num_groups.1, num_groups.2);
             self.running = true;
-            println!("2");
         }
         errors::ErrorCatcher::catch_opengl_errors();
     }
@@ -31,9 +29,7 @@ impl ComputeShader {
         unsafe {
             if self.running {
                 // Force the compute shader to complete
-                println!("3");
                 gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
-                println!("4");
                 self.running = false;
             } else {
             }
