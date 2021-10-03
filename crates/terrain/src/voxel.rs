@@ -1,7 +1,5 @@
 use rendering::{Shader, Texture2D, Texture3D};
 use system_event_data::SystemEventData;
-
-use super::terrain::Terrain;
 use super::CHUNK_SIZE;
 
 // Casually stole my old code lol
@@ -38,19 +36,16 @@ impl VoxelGenerator {
             .generate_texture(Vec::new());
     }
     // Update the last frame variable and dispatch the compute shader
-    pub fn generate_voxels_start(&self, event_data: &mut SystemEventData, size: &u64, position: &veclib::Vector3<i64>) {
-        // Get the compute shader
-        let compute = event_data.shader_cacher.1.get_object_mut(self.compute_shader_name.as_str()).unwrap();
-
+    pub fn generate_voxels_start(&self, compute_shader: &mut Shader, size: &u64, position: &veclib::Vector3<i64>) {
         // Set the compute shader variables and voxel texture
-        compute.use_shader();
-        compute.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::ReadWrite);
-        compute.set_i32("chunk_size", &(CHUNK_SIZE as i32));
-        compute.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
-        compute.set_i32("node_size", &(*size as i32));
+        compute_shader.use_shader();
+        compute_shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::ReadWrite);
+        compute_shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
+        compute_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
+        compute_shader.set_i32("node_size", &(*size as i32));
 
         // Run the compute shader
-        let compute_shader = match &mut compute.additional_shader {
+        let compute_shader = match &mut compute_shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };
@@ -58,12 +53,9 @@ impl VoxelGenerator {
         compute_shader.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&self, event_data: &mut SystemEventData, data: &mut Box<[Voxel]>) -> Option<()> {
-        // Get the compute shader
-        let compute = event_data.shader_cacher.1.get_object_mut(self.compute_shader_name.as_str()).unwrap();
-
+    pub fn generate_voxels_end(&self, compute_shader: &mut Shader, data: &mut Box<[Voxel]>) -> Option<()> {
         // Run the compute shader
-        let compute_shader = match &mut compute.additional_shader {
+        let compute_shader = match &mut compute_shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };

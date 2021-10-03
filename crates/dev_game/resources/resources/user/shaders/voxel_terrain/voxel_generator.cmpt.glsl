@@ -1,5 +1,5 @@
 #version 460 core
-#include "user\shaders\density.func.glsl"
+#include "user\shaders\voxel_terrain\density.func.glsl"
 // Load the density function file
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(r32f, binding = 0) uniform image3D voxel_image;

@@ -1,11 +1,10 @@
 use main::*;
 fn main() {
     // Load up the engine
-    main::start("DevJed", "Hypothermia", load_systems, load_entities);
+    main::start("DevJed", "DevGame", world_initialized);
 }
-// Load the systems
-pub fn load_systems(world: &mut World) {
-    // Load the default systems
+pub fn world_initialized(world: &mut World) {
+    // ----Load the default systems----
     // Create the custom data
     let mut data: SystemEventData = SystemEventData {
         entity_manager: &mut world.entity_manager,
@@ -36,7 +35,7 @@ pub fn load_systems(world: &mut World) {
     world.system_manager.add_system(sky_system);
 
     // Load the terrain generator system
-    let mut terrain_generator = Terrain::default();
+    let mut terrain_generator = systems::TerrainSystem::default();
     terrain_generator.setup_system(&mut data);
     world.system_manager.add_system(terrain_generator);
 
@@ -44,9 +43,8 @@ pub fn load_systems(world: &mut World) {
     let mut ui_system = systems::UISystem::default();
     ui_system.setup_system(&mut data);
     world.system_manager.add_system(ui_system);
-}
-// Load the entities
-pub fn load_entities(world: &mut World) {
+
+    // ----Load the entities----
     // Create a camera entity
     let mut camera = Entity::new("Default Camera");
     camera
@@ -59,41 +57,7 @@ pub fn load_entities(world: &mut World) {
         )
         .unwrap();
     camera.link_default_component::<components::Camera>(&mut world.component_manager).unwrap();
+
     // Make it the default camera
     world.custom_data.main_camera_entity_id = world.entity_manager.add_entity_s(camera);
-
-    let mut entity = Entity::new("Sphere");
-
-    let texture_ids = vec![
-        Texture2D::new()
-            .enable_mipmaps()
-            .load_texture("user\\textures\\sandstone_cracks_diff_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
-            .unwrap()
-            .1,
-        Texture2D::new()
-            .enable_mipmaps()
-            .load_texture("user\\textures\\sandstone_cracks_nor_gl_4k.png", &mut world.resource_manager, &mut world.texture_cacher)
-            .unwrap()
-            .1,
-    ];
-
-    // Create a sky material
-    let material = Material::default()
-        .load_textures(&texture_ids, &mut world.texture_cacher)
-        .set_shader(&world.shader_cacher.1.id_get_default_object(0).unwrap().name);
-
-    // Link components
-    entity
-        .link_component::<Renderer>(
-            &mut world.component_manager,
-            Renderer::default()
-                .load_model("defaults\\models\\sphere.mdl3d", &mut world.resource_manager)
-                .set_material(material),
-        )
-        .unwrap();
-    entity.link_default_component::<components::AABB>(&mut world.component_manager).unwrap();
-    entity
-        .link_component::<components::Transform>(&mut world.component_manager, components::Transform::default().with_scale(veclib::Vector3::ONE * 10.0))
-        .unwrap();
-    world.entity_manager.add_entity_s(entity);
 }

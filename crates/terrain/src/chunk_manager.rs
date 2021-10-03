@@ -1,14 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
 use debug::DefaultDebugRendererType;
-use defaults::components;
 use ecs::{ComponentManager, Entity};
 use math::octree::OctreeNode;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rendering::{Model, Shader};
 use system_event_data::SystemEventData;
 
-use crate::{chunk_data::ChunkCoords, mesher, ChunkData, Terrain, VoxelGenerator, CHUNK_SIZE};
+use crate::CHUNK_SIZE;
+use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -71,16 +71,12 @@ impl ChunkManager {
         priority
     }
     // Update the location and forward vector of the camera entity
-    pub fn update_camera_view(&mut self, camera_entity: &Entity, component_manager: &ComponentManager) {
-        self.camera_location = camera_entity.get_component::<components::Transform>(component_manager).unwrap().position;
-        self.camera_forward_vector = camera_entity
-            .get_component::<components::Transform>(component_manager)
-            .unwrap()
-            .rotation
-            .mul_point(veclib::Vector3::Z);
+    pub fn update_camera_view(&mut self, position: veclib::Vector3<f32>, forward_vector: veclib::Vector3<f32>) {
+        self.camera_location = position;
+        self.camera_forward_vector = forward_vector;
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, data: &mut SystemEventData) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, compute_shader: &mut Shader, frame_count: u64) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating
@@ -106,7 +102,6 @@ impl ChunkManager {
                 veclib::Vector3::from(chunk_to_generate.center),
                 veclib::Vector3::new(chunk_to_generate.size as f32, chunk_to_generate.size as f32, chunk_to_generate.size as f32),
             );
-            data.debug.debug_default(t, veclib::Vector3::ONE, false);
         }
         // Generate the data for some chunks, then create their model
         let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
@@ -126,7 +121,7 @@ impl ChunkManager {
                     self.voxels_generating = false;
                     self.last_frame_voxels_generated = 0;
                     // Generate the data for this chunk
-                    let has_surface = voxel_generator.generate_voxels_end(data, &mut voxels);
+                    let has_surface = voxel_generator.generate_voxels_end(compute_shader, &mut voxels);
                     // Since we just generated the chunk we can remove it from the generated chunks
                     self.chunks_to_generate.remove(0);
 
@@ -147,8 +142,8 @@ impl ChunkManager {
                 } else {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;
-                    self.last_frame_voxels_generated = data.time_manager.frame_count;
-                    voxel_generator.generate_voxels_start(data, &chunk_coords.size, &chunk_coords.position);
+                    self.last_frame_voxels_generated = frame_count;
+                    voxel_generator.generate_voxels_start(compute_shader, &chunk_coords.size, &chunk_coords.position);
                     // We aren't generating a mesh so return none
                 }
             }

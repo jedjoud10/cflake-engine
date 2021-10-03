@@ -122,7 +122,7 @@ impl World {
         self.ui_manager.set_default_root(root);
     }
     // When the world started initializing
-    pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, load_systems_callback: fn(&mut Self), load_entities_callback: fn(&mut Self)) {
+    pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
         // Load the default stuff
         self.load_defaults(window);
         /*
@@ -132,8 +132,7 @@ impl World {
         test_entity.link_default_component::<components::Transform>(&mut self.component_manager).unwrap();
         let entity_id = self.add_entity(test_entity);
         self.entity_manager.remove_entity_s(&entity_id);
-        */
-        load_systems_callback(self);
+        */        
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.che", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
@@ -152,7 +151,9 @@ impl World {
 
         // Update entity manager
         self.update_entity_manager();
-        load_entities_callback(self);
+
+        // Callback
+        callback(self);
     }
     // We do the following in this function
     // 1. We update the entities of each UpdateSystem

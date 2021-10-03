@@ -1,5 +1,4 @@
-use super::terrain::CHUNK_SIZE;
-
+use crate::CHUNK_SIZE;
 // Triangulation table
 pub const TRI_TABLE: [[i8; 16]; 256] = [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],

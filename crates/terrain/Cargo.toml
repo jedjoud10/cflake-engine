@@ -16,6 +16,5 @@ system_event_data = { path = "../system_event_data" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
 others = { path = "../others" }
-defaults = { path = "../defaults" }
 input = { path = "../input" }
 debug = { path = "../debug" }

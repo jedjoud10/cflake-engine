@@ -15,6 +15,7 @@ fonts = { path = "../fonts"  }
 ecs = { path = "../ecs" }
 systems = { path = "../systems" }
 rendering = { path = "../rendering" }
+terrain = { path = "../terrain" }
 input = { path = "../input" }
 others = { path = "../others" }
 resources = { path = "../resources" }
