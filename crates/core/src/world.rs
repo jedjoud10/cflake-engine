@@ -36,6 +36,7 @@ pub struct World {
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
     pub saver_loader: SaverLoader,
+    pub config_file: GameConfig,
 }
 
 impl World {
@@ -57,6 +58,7 @@ impl World {
             custom_data: CustomWorldData::default(),
             time_manager: Time::default(),
             saver_loader: SaverLoader::new(author_name, app_name),
+            config_file: GameConfig::default()
         }
     }
     // Load everything that needs to be loaded by default
@@ -105,17 +107,17 @@ impl World {
         let text_element_1 = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Pixel)
             .set_position(veclib::Vector2::ZERO)
-            .set_text("fps_text_here", 60.0);
+            .set_text("fps_text_here", 40.0);
         root.add_element(text_element_1);
         let text_element_2 = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Pixel)
-            .set_position(veclib::Vector2::Y * 60.0)
-            .set_text("entity_text_here", 60.0);
+            .set_position(veclib::Vector2::Y * 40.0)
+            .set_text("entity_text_here", 40.0);
         root.add_element(text_element_2);
         let text_element_3 = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Pixel)
-            .set_position(veclib::Vector2::Y * 60.0 * 2.0)
-            .set_text("component_text_here", 60.0);
+            .set_position(veclib::Vector2::Y * 40.0 * 2.0)
+            .set_text("component_text_here", 40.0);
         root.add_element(text_element_3);
 
         // Set this as the default root
@@ -136,9 +138,10 @@ impl World {
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.che", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
+        self.config_file = config_file_values;
 
         // Enable disable vsync
-        if config_file_values.vsync {
+        if self.config_file.vsync {
             // Enable VSync
             glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
         } else {
@@ -147,7 +150,7 @@ impl World {
         }
 
         // Set the window mode
-        self.set_fullscreen(config_file_values.fullscreen, glfw, window);
+        self.set_fullscreen(self.config_file.fullscreen, glfw, window);
 
         // Update entity manager
         self.update_entity_manager();
@@ -196,11 +199,11 @@ impl World {
         // Update the default UI
         let root = self.ui_manager.get_default_root_mut();
         let fps_text = &format!("FPS: {}", self.time_manager.average_fps.round());
-        root.get_element_mut(1).update_text(fps_text, 60.0);
+        root.get_element_mut(1).update_text(fps_text, 40.0);
         let entity_text = &format!("#Entities: {}", self.entity_manager.entities.len());
-        root.get_element_mut(2).update_text(entity_text, 60.0);
+        root.get_element_mut(2).update_text(entity_text, 40.0);
         let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.elements.len());
-        root.get_element_mut(3).update_text(component_text, 60.0);        
+        root.get_element_mut(3).update_text(component_text, 40.0);        
 
         // Just in case
         errors::ErrorCatcher::catch_opengl_errors();
@@ -275,6 +278,16 @@ impl World {
     pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
         self.set_fullscreen(self.custom_data.window.fullscreen, glfw, window);
+
+        // Enable disable vsync
+        if self.config_file.vsync {
+            // Enable VSync
+            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+        } else {
+            // Disable VSync
+            glfw.set_swap_interval(glfw::SwapInterval::None);
+        }
+        println!("{}", self.config_file.vsync);
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {

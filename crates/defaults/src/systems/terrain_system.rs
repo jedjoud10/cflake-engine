@@ -54,6 +54,8 @@ impl System for TerrainSystem {
             .set_text("chunk_data_here", 60.0);
         self.element_id = root.add_element(elem);
         data.ui_manager.add_root("terrain_debug", root);
+
+        data.input_manager.bind_key(input::Keys::Y, "terrain_testing", input::MapType::Toggle);
     }
 
     // Called for each entity in the system
@@ -71,7 +73,7 @@ impl System for TerrainSystem {
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
-        if td.chunk_manager.octree_update_valid() {
+        if td.chunk_manager.octree_update_valid() && data.input_manager.map_toggled("terrain_testing") {
             match td.octree.generate_incremental_octree(camera_location) {
                 Some((mut added, removed, total_nodes)) => {
                     // Filter first
@@ -108,6 +110,7 @@ impl System for TerrainSystem {
         let compute_shader = data.shader_cacher.1.get_object_mut(&td.voxel_generator.compute_shader_name).unwrap();
         let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, compute_shader, data.time_manager.frame_count);
         let mut added_chunk_entities_ids: Vec<(u16, ChunkCoords)> = Vec::new();
+        let depth = td.octree.depth as f32;
         for (coords, model) in added_chunks {
             // Add the entity
             let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
@@ -132,7 +135,7 @@ impl System for TerrainSystem {
             )
             .unwrap();
             // TODO: Make a custom material instance system
-            let material = clone_material.clone();
+            let material = clone_material.clone().set_uniform("depth", ShaderArg::F32(coords.depth as f32 / depth));
             entity
                 .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
                 .unwrap();            
@@ -158,8 +161,8 @@ impl System for TerrainSystem {
 
         // Update the UI debug chunk data        
         let root = data.ui_manager.get_root_mut("terrain_debug");
-        let text = &format!("Chunks to generate: {}", td.chunk_manager.chunks_to_generate.len());
-        root.get_element_mut(self.element_id).update_text(text, 60.0);        
+        let text = &format!("Chunks to generate: {}, Entities to remove: {}", td.chunk_manager.chunks_to_generate.len(), td.chunk_manager.entities_to_remove.len());
+        root.get_element_mut(self.element_id).update_text(text, 40.0);        
     }
 
     // When a terrain generator gets added to the world
