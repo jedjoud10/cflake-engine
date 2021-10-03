@@ -39,18 +39,7 @@ impl System for TerrainSystem {
         // Link the components
         let system_data = self.get_system_data_mut();
         data.component_manager.register_component::<Chunk>();
-        system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();
-
-        // Load the compute shader for the voxel generator
-        self.voxel_generator.compute_shader_name = Shader::new(
-            vec!["user\\shaders\\voxel_terrain\\voxel_generator.cmpt.glsl"],
-            data.resource_manager,
-            data.shader_cacher,
-            Some(AdditionalShader::Compute(ComputeShader::default())),
-        )
-        .1;
-        // Generate the voxel texture
-        self.voxel_generator.setup_voxel_generator(data);
+        system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();        
 
         // Create a debug UI for this terrain
         let mut root = ui::Root::new();
@@ -116,8 +105,8 @@ impl System for TerrainSystem {
         // Update the chunk manager
         //println!("{:?}", self.parent_child_count);
         // Get the compute shader and frame count
-        let compute_shader = data.shader_cacher.1.get_object_mut(&self.voxel_generator.compute_shader_name).unwrap();
-        let (added_chunks, removed_chunks) = td.chunk_manager.update(&self.voxel_generator, compute_shader, data.time_manager.frame_count);
+        let compute_shader = data.shader_cacher.1.get_object_mut(&td.voxel_generator.compute_shader_name).unwrap();
+        let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, compute_shader, data.time_manager.frame_count);
         let mut added_chunk_entities_ids: Vec<(u16, ChunkCoords)> = Vec::new();
         for (coords, model) in added_chunks {
             // Add the entity
@@ -174,8 +163,13 @@ impl System for TerrainSystem {
         root.get_element_mut(self.element_id).update_text(text, 60.0);        
     }
 
-    // When a chunk gets added to the world
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {}
+    // When a terrain generator gets added to the world
+    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+        // Setup the voxel generator for this generator
+        let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
+        // Generate the voxel texture
+        td.voxel_generator.setup_voxel_generator();
+    }
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {

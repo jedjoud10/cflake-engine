@@ -1,5 +1,5 @@
 use rendering::{Shader, Texture2D, Texture3D};
-use system_event_data::SystemEventData;
+use system_event_data::{SystemEventData, SystemEventDataLite};
 use super::CHUNK_SIZE;
 
 // Casually stole my old code lol
@@ -27,7 +27,7 @@ pub struct VoxelGenerator {
 
 impl VoxelGenerator {
     // Generate the voxel texture
-    pub fn setup_voxel_generator(&mut self, event_data: &mut SystemEventData) {
+    pub fn setup_voxel_generator(&mut self) {
         // Create the voxel texture
         self.voxel_texture = Texture3D::new()
             .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)

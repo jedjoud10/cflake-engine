@@ -73,7 +73,7 @@ pub fn world_initialized(world: &mut World) {
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
     ).1;
-    terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(Material::default(), &compute_shader_name, OCTREE_DEPTH, LOD_FACTOR)).unwrap();
+    terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(Material::default(), compute_shader_name, OCTREE_DEPTH, LOD_FACTOR)).unwrap();
 
     data.entity_manager.add_entity_s(terrain_entity);
 }
