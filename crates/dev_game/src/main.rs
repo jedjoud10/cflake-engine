@@ -63,8 +63,8 @@ pub fn world_initialized(world: &mut World) {
 
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
-    const OCTREE_DEPTH: u8 = 8;
-    const LOD_FACTOR: f32 = 0.2;
+    const OCTREE_DEPTH: u8 = 6;
+    const LOD_FACTOR: f32 = 1.5;
     
     // Load the material and compute shader name
     let compute_shader_name = Shader::new(
@@ -77,9 +77,32 @@ pub fn world_initialized(world: &mut World) {
     // The terrain shader
     let terrain_shader = Shader::new(vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl"], data.resource_manager, data.shader_cacher, None).1;
     // Material
-    let material = Material::default().set_shader(&terrain_shader).resource_load_textures(vec!["defaults\\textures\\white.png", "defaults\\textures\\rock_normal.png"], data.texture_cacher, data.resource_manager).unwrap().load_default_textures(data.texture_cacher);
+    let material = Material::default().set_shader(&terrain_shader).resource_load_textures(vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\rock_normal.png"], data.texture_cacher, data.resource_manager).unwrap().load_default_textures(data.texture_cacher);
+    //let material = material.set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.05));
+    
     println!("{:?}", material);
     terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(material, compute_shader_name, OCTREE_DEPTH, LOD_FACTOR)).unwrap();
 
     data.entity_manager.add_entity_s(terrain_entity);
+
+    let mut entity = Entity::new("Sphere");
+    // Create a sky material
+    let material = Material::default()
+        .load_default_textures(data.texture_cacher)
+        .set_shader(&data.shader_cacher.1.id_get_default_object(0).unwrap().name);
+
+    // Link components
+    entity
+        .link_component::<Renderer>(
+            data.component_manager,
+            Renderer::default()
+                .load_model("defaults\\models\\sphere.mdl3d", data.resource_manager)
+                .set_material(material),
+        )
+        .unwrap();
+    entity.link_default_component::<components::AABB>(data.component_manager).unwrap();
+    entity
+        .link_component::<components::Transform>(data.component_manager, components::Transform::default().with_scale(veclib::Vector3::ONE * 1.0))
+        .unwrap();
+    world.entity_manager.add_entity_s(entity);
 }

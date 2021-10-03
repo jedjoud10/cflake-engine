@@ -132,9 +132,7 @@ impl System for TerrainSystem {
             )
             .unwrap();
             // TODO: Make a custom material instance system
-            let material = clone_material.clone()
-                .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.02))
-                .set_uniform("normals_strength", ShaderArg::F32(1.0));
+            let material = clone_material.clone();
             entity
                 .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
                 .unwrap();            

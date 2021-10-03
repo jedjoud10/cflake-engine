@@ -14,6 +14,7 @@ uniform int debug_view;
 uniform ivec2 resolution;
 uniform float time;
 in vec2 uv_coordinates;
+//TODO: Pass the roughness and metallic values to this shader
 
 void main() {	
 	// Sample the textures
@@ -25,7 +26,7 @@ void main() {
 	// Calculate specular
 	vec3 view_dir = normalize(view_pos - position);
 	vec3 reflect_dir = reflect(-directional_light_dir, normal);
-	const float specular_strength = 0.1;
+	const float specular_strength = 0.0;
 	float specular = pow(max(dot(view_dir, reflect_dir), 0), 32);
 	
 	// Calculate the diffuse lighting
