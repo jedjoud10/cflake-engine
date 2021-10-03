@@ -200,7 +200,10 @@ impl World {
         let entity_text = &format!("#Entities: {}", self.entity_manager.entities.len());
         root.get_element_mut(2).update_text(entity_text, 60.0);
         let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.elements.len());
-        root.get_element_mut(3).update_text(component_text, 60.0);
+        root.get_element_mut(3).update_text(component_text, 60.0);        
+
+        // Just in case
+        errors::ErrorCatcher::catch_opengl_errors();
 
         // Update the time
         self.time_manager.delta_time = delta;

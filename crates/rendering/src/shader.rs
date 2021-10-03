@@ -77,10 +77,10 @@ impl Shader {
 
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
-                let mut lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
+                let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
                 let mut version_directive: String = String::new();
                 // Save the version directive
-                for (i, line) in lines.iter().enumerate() {
+                for (_, line) in lines.iter().enumerate() {
                     if line.starts_with("#version") {
                         version_directive = line.clone();
                         break;
@@ -94,7 +94,7 @@ impl Shader {
                     // Get the lines
                     let lines = shader_sources_to_evalute[0].clone();
                     // Recursively load the includes
-                    let mut orignal_local_included_lines = Self::load_includes(lines.clone(), resource_manager);
+                    let orignal_local_included_lines = Self::load_includes(lines.clone(), resource_manager);
                     // Extend from the start of the vector
                     let mut local_indluded_lines = orignal_local_included_lines.clone();
                     local_indluded_lines.extend(included_lines);
@@ -168,6 +168,7 @@ impl Shader {
             unsafe {
                 gl::UseProgram(self.program);
             }
+            errors::ErrorCatcher::catch_opengl_errors();
         }
     }
     // Link a specific subshader to this shader
