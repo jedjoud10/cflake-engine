@@ -49,15 +49,31 @@ pub fn world_initialized(world: &mut World) {
     let mut camera = Entity::new("Default Camera");
     camera
         .link_component::<components::Transform>(
-            &mut world.component_manager,
+            data.component_manager,
             components::Transform {
                 position: veclib::Vector3::<f32>::new(5.0, 5.0, 5.0),
                 ..components::Transform::default()
             },
         )
         .unwrap();
-    camera.link_default_component::<components::Camera>(&mut world.component_manager).unwrap();
+    camera.link_default_component::<components::Camera>(data.component_manager).unwrap();
 
     // Make it the default camera
-    world.custom_data.main_camera_entity_id = world.entity_manager.add_entity_s(camera);
+    data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
+
+    // Create the terrain entity
+    let mut terrain_entity = Entity::new("Default Terrain");
+    const OCTREE_DEPTH: u8 = 8;
+    const LOD_FACTOR: f32 = 0.5;
+    
+    // Load the material and compute shader name
+    let compute_shader_name = Shader::new(
+        vec!["user\\shaders\\voxel_terrain\\voxel_generator.cmpt.glsl"],
+        data.resource_manager,
+        data.shader_cacher,
+        Some(AdditionalShader::Compute(ComputeShader::default())),
+    ).1;
+    terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(Material::default(), compute_shader_name, OCTREE_DEPTH, LOD_FACTOR)).unwrap();
+
+    data.entity_manager.add_entity_s(terrain_entity);
 }

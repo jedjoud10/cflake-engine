@@ -1,0 +1,11 @@
+use terrain::ChunkCoords;
+use ecs::{ Component, ComponentInternal, ComponentID };
+
+// A component that will be added to well... chunks
+#[derive(Default)]
+pub struct Chunk {
+    pub coords: ChunkCoords,
+}
+
+// Main traits implemented
+ecs::impl_component!(Chunk);

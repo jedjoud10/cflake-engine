@@ -10,27 +10,16 @@ use rendering::*;
 use std::collections::{HashMap, HashSet};
 use system_event_data::{SystemEventData, SystemEventDataLite};
 use systems::*;
+use components::Chunk;
 
 use crate::components;
 
 // TODO:
 // Gotta make this way, way faster
-
-// A component that will be added to well... chunks
-#[derive(Default)]
-pub struct Chunk {
-    pub coords: ChunkCoords,
-}
-
-// Main traits implemented
-ecs::impl_component!(Chunk);
-
 // Hehe terrain generator momenta
 #[derive(Default)]
 pub struct TerrainSystem {
     pub system_data: SystemData,
-    // The voxel generator
-    pub voxel_generator: VoxelGenerator,
     // Debug elements ID
     element_id: u16,
 }
@@ -48,18 +37,9 @@ impl System for TerrainSystem {
     // Setup the system
     fn setup_system(&mut self, data: &mut SystemEventData) {
         // Link the components
-        self.system_data.link_component::<components::TerrainData>(data.component_manager);
-
-        // Load the compute shader for the voxel generator
-        self.voxel_generator.compute_shader_name = Shader::new(
-            vec!["user\\shaders\\voxel_terrain\\voxel_generator.cmpt.glsl"],
-            data.resource_manager,
-            data.shader_cacher,
-            Some(AdditionalShader::Compute(ComputeShader::default())),
-        )
-        .1;
-        // Generate the voxel texture
-        self.voxel_generator.setup_voxel_generator(data);
+        let system_data = self.get_system_data_mut();
+        data.component_manager.register_component::<Chunk>();
+        system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();        
 
         // Create a debug UI for this terrain
         let mut root = ui::Root::new();
@@ -75,7 +55,6 @@ impl System for TerrainSystem {
         self.element_id = root.add_element(elem);
         data.ui_manager.add_root("terrain_debug", root);
     }
-
 
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
@@ -126,8 +105,9 @@ impl System for TerrainSystem {
         // Update the chunk manager
         //println!("{:?}", self.parent_child_count);
         // Get the compute shader and frame count
-        let compute_shader = data.shader_cacher.1.get_object_mut(&self.voxel_generator.compute_shader_name).unwrap();
-        let (added_chunks, removed_chunks) = td.chunk_manager.update(&self.voxel_generator, compute_shader, data.time_manager.frame_count);
+        let compute_shader = data.shader_cacher.1.get_object_mut(&td.voxel_generator.compute_shader_name).unwrap();
+        let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, compute_shader, data.time_manager.frame_count);
+        let mut added_chunk_entities_ids: Vec<(u16, ChunkCoords)> = Vec::new();
         for (coords, model) in added_chunks {
             // Add the entity
             let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
@@ -138,47 +118,58 @@ impl System for TerrainSystem {
             // Link the components
             entity.link_component::<Chunk>(data.component_manager, chunk).unwrap();
             entity
-                .link_component::<components::Transform>(
-                    data.component_manager,
-                    components::Transform {
-                        position: veclib::Vector3::<f32>::from(coords.position),
-                        scale: veclib::Vector3::new(
-                            (coords.size / octree_size) as f32,
-                            (coords.size / octree_size) as f32,
-                            (coords.size / octree_size) as f32,
-                        ),
-                        ..components::Transform::default()
-                    },
-                )
+            .link_component::<components::Transform>(
+                data.component_manager,
+                components::Transform {
+                    position: veclib::Vector3::<f32>::from(coords.position),
+                    scale: veclib::Vector3::new(
+                        (coords.size / octree_size) as f32,
+                        (coords.size / octree_size) as f32,
+                        (coords.size / octree_size) as f32,
+                    ),
+                    ..components::Transform::default()
+                },
+            )
+            .unwrap();
+            // TODO: Make a custom material instance system
+            let material = clone_material.clone()
+                .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.02))
+                .set_uniform("normals_strength", ShaderArg::F32(4.0));
+            entity
+                .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
                 .unwrap();
-                // TODO: Make a custom material instance system
-                let material = clone_material.clone()
-                    .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::<f32>::ONE * 0.02))
-                    .set_uniform("normals_strength", ShaderArg::F32(4.0));
-                entity
-                    .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
-                    .unwrap();
-                // TODO: Fix this
-                entity
-                    .link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&entity, data.component_manager))
-                    .unwrap();
-                let entity_id = data.entity_manager.add_entity_s(entity);
-            }
+            // TODO: Fix this
+            entity
+                .link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&entity, data.component_manager))
+                .unwrap();
+            let entity_id = data.entity_manager.add_entity_s(entity);
+            added_chunk_entities_ids.push((entity_id, coords.clone()));            
+        }
+
+        // Reassign
+        let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
+        for (entity_id, coords) in added_chunk_entities_ids {
+            td.chunk_manager.add_chunk_entity(&coords, entity_id);
+        }
+
         for entity_id in removed_chunks {
             // Removal the entity from the world
             data.entity_manager.remove_entity_s(&entity_id).unwrap();
         }
 
-        // Update the UI debug chunk data
-        /*
+        // Update the UI debug chunk data        
         let root = data.ui_manager.get_root_mut("terrain_debug");
         let text = &format!("Chunks to generate: {}", td.chunk_manager.chunks_to_generate.len());
-        root.get_element_mut(self.element_id).update_text(text, 60.0);
-        */
+        root.get_element_mut(self.element_id).update_text(text, 60.0);        
     }
 
-    // When a chunk gets added to the world
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {}
+    // When a terrain generator gets added to the world
+    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+        // Setup the voxel generator for this generator
+        let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
+        // Generate the voxel texture
+        td.voxel_generator.setup_voxel_generator();
+    }
 
     // Turn this into "Any" so we can cast into child systems
     fn as_any(&self) -> &dyn std::any::Any {
