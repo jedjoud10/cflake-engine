@@ -10,7 +10,7 @@ uniform vec3 view_pos;
 uniform float depth;
 uniform float normals_strength;
 in vec3 m_position;
-in vec3 m_normal;
+in flat vec3 m_normal;
 in vec4 m_tangent;
 in vec2 m_uv;
 in mat3 tbn;
@@ -40,7 +40,7 @@ void main() {
 	normalz = vec3(vec2(normalz.x, -normalz.y) * normals_strength + world_normal.xy, world_normal.z) * blending.z;
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
 	frag_diffuse = diffuse_final;
-	frag_normal = normal_final;
+	frag_normal = m_normal;
 	frag_pos = m_position;
 	frag_emissive = vec3(0, 0, 0);
 }

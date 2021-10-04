@@ -49,6 +49,10 @@ pub struct InputManager {
     last_mouse_pos: (i32, i32),
     last_mouse_scroll: f32,
     glfw_get_scancode: fn(key: Keys) -> i32,
+
+    // Key sentence registering
+    last_key: String,
+    full_sentence: Option<String>,
 }
 
 impl Default for InputManager {
@@ -60,6 +64,8 @@ impl Default for InputManager {
             last_mouse_pos: Default::default(),
             last_mouse_scroll: Default::default(),
             glfw_get_scancode: |x| -1,
+            last_key: String::new(),
+            full_sentence: None,
         }
     }
 }
@@ -75,6 +81,7 @@ impl InputManager {
             Keys::RightShift => glfw::Key::get_scancode(&glfw::Key::RightShift),
             Keys::RightControl => glfw::Key::get_scancode(&glfw::Key::RightControl),
             Keys::Space => glfw::Key::get_scancode(&glfw::Key::Space),
+            Keys::Minus => glfw::Key::get_scancode(&glfw::Key::Minus),
             Keys::A => glfw::Key::get_scancode(&glfw::Key::A),
             Keys::B => glfw::Key::get_scancode(&glfw::Key::B),
             Keys::C => glfw::Key::get_scancode(&glfw::Key::C),
@@ -114,6 +121,41 @@ impl InputManager {
             Keys::F11 => glfw::Key::get_scancode(&glfw::Key::F11),
             Keys::F12 => glfw::Key::get_scancode(&glfw::Key::F12),
         }
+    }
+    // Convert a key to it's string literal
+    pub fn convert_key_to_string(&self, key: Keys) -> String {
+        match key {
+            Keys::Enter => "\n",
+            Keys::Space => " ",
+            Keys::Minus => "-",
+            Keys::A => "a",
+            Keys::B => "b",
+            Keys::C => "c",
+            Keys::D => "d",
+            Keys::E => "e",
+            Keys::F => "f",
+            Keys::G => "g",
+            Keys::H => "h",
+            Keys::I => "i",
+            Keys::J => "j",
+            Keys::K => "k",
+            Keys::L => "l",
+            Keys::M => "m",
+            Keys::N => "n",
+            Keys::O => "o",
+            Keys::P => "p",
+            Keys::Q => "q",
+            Keys::R => "r",
+            Keys::S => "s",
+            Keys::T => "t",
+            Keys::U => "u",
+            Keys::V => "v",
+            Keys::W => "w",
+            Keys::X => "x",
+            Keys::Y => "y",
+            Keys::Z => "z",
+            _ => ""
+        }.to_string()
     }
     // Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
     pub fn update(&mut self) {
@@ -182,8 +224,24 @@ impl InputManager {
         }
         */
     }
+    // Start registering the keys as a sentence
+    pub fn start_keys_reg(&mut self) {
+        self.full_sentence = Some(String::new());
+    }
+    // Stop registering the keys as a sentence and return it
+    pub fn stop_keys_reg(&mut self) -> String {
+        let output = self.full_sentence.as_ref().unwrap().clone();
+        self.full_sentence = None;
+        return output;
+    }
     // When we receive a key event from glfw (Always at the start of the frame)
     pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
+        // If we are in sentence registering mode, don't do anything else
+        if self.full_sentence.is_some() {
+            let key = *self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode).unwrap().0;
+            let new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
+            self.full_sentence = Some(new_string);
+        }
         // If this key does not exist in the dictionary yet, add it
         let mut key_data = self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));
         match action_type {

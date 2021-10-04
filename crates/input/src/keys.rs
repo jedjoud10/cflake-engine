@@ -1,5 +1,5 @@
 // Keys enums
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 #[allow(dead_code)]
 pub enum Keys {
     Escape,
@@ -9,6 +9,7 @@ pub enum Keys {
     RightShift,
     RightControl,
     Space,
+    Minus,
     A,
     B,
     C,
@@ -47,4 +48,5 @@ pub enum Keys {
     F10,
     F11,
     F12,
+    
 }
