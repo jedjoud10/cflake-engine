@@ -11,6 +11,7 @@ uniform vec2 character_offset;
 uniform vec2 resolution;
 uniform float depth;
 out vec2 uvs;
+out vec2 global_position;
 // Map some value from a specific range to another range
 float map(float x, float ra, float rb, float r2a, float r2b) {
     // https://stackoverflow.com/questions/3451553/value-remapping
@@ -31,5 +32,6 @@ void main() {
     vec2 new_uvs = vec2(map(vertex_uvs.x, 0, 1, min_padding.x, max_padding.x), map(1-vertex_uvs.y, 0, 1, min_padding.y, max_padding.y));
     new_uvs = vec2(new_uvs.x, new_uvs.y);
 	gl_Position = vec4(position, depth, 1);
+	global_position = position;
 	uvs = new_uvs;
 }

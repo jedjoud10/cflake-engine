@@ -170,47 +170,46 @@ impl Octree {
             marked_node = Some(current_node);
         }
         // Check if we even changed parents
-        if marked_node.is_none() || node_to_remove.is_none() {
-            return None;
-        }
-        // Then we generate a local octree, using that marked node as the root
-        let local_octree_data = self.generate_octree(&input, marked_node.clone().unwrap());
-        self.targetted_node = local_octree_data.1;
-        // Get the nodes that we've added
-        let added_nodes = local_octree_data.0;
-        // Update the actual nodes before we calculate the postprocessed nodes
-        self.nodes.extend(added_nodes.clone());
-
-        // Get the nodes that we've deleted
-        let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
-        {
-            let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-            pending_nodes.push(node_to_remove.clone().unwrap());
-            // Recursively delete the nodes
-            while pending_nodes.len() > 0 {
-                let current_node = pending_nodes[0].clone();
-                // Recursively remove the nodes
-                if current_node.children {
-                    // Get the children
-                    for child_center in current_node.children_centers {
-                        // Just in case
-                        if child_center != veclib::Vector3::<i64>::ZERO {
-                            let child_node = self.nodes.get(&child_center).unwrap().clone();
-                            pending_nodes.push(child_node);
+        if !marked_node.is_none() && !node_to_remove.is_none() {
+            // Then we generate a local octree, using that marked node as the root
+            let local_octree_data = self.generate_octree(&input, marked_node.clone().unwrap());
+            self.targetted_node = local_octree_data.1;
+            // Get the nodes that we've added
+            let added_nodes = local_octree_data.0;
+            // Update the actual nodes before we calculate the postprocessed nodes
+            self.nodes.extend(added_nodes.clone());
+            
+            // Get the nodes that we've deleted
+            let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
+            {
+                let mut pending_nodes: Vec<OctreeNode> = Vec::new();
+                pending_nodes.push(node_to_remove.clone().unwrap());
+                // Recursively delete the nodes
+                while pending_nodes.len() > 0 {
+                    let current_node = pending_nodes[0].clone();
+                    // Recursively remove the nodes
+                    if current_node.children {
+                        // Get the children
+                        for child_center in current_node.children_centers {
+                            // Just in case
+                            if child_center != veclib::Vector3::<i64>::ZERO {
+                                let child_node = self.nodes.get(&child_center).unwrap().clone();
+                                pending_nodes.push(child_node);
+                            }
                         }
                     }
+                    deleted_centers.insert(current_node.get_center());
+                    pending_nodes.remove(0);
                 }
-                deleted_centers.insert(current_node.get_center());
-                pending_nodes.remove(0);
             }
-        }
-
-        // Update the removed node
-        let mut node_to_remove = node_to_remove.unwrap();
-        node_to_remove.children = false;
-        node_to_remove.children_centers = [veclib::Vector3::<i64>::ZERO; 8];
-        self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
-        self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());
+        
+            // Update the removed node
+            let mut node_to_remove = node_to_remove.unwrap();
+            node_to_remove.children = false;
+            node_to_remove.children_centers = [veclib::Vector3::<i64>::ZERO; 8];
+            self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
+            self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());   
+        }       
 
         // Subdivide each added node at least once
         let postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = self.calculate_postprocess_nodes(&input, &self.nodes);
