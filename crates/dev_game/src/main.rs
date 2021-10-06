@@ -64,9 +64,9 @@ pub fn world_initialized(world: &mut World) {
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
     const OCTREE_DEPTH: u8 = 7;
-    const LOD_FACTOR: f32 = 1.5;
+    const LOD_FACTOR: f32 = 0.7;
     
-    // Load the material and compute shader name
+    // Load the material and compute shader na
     let compute_shader_name = Shader::new(
         vec!["user\\shaders\\voxel_terrain\\voxel_generator.cmpt.glsl"],
         data.resource_manager,

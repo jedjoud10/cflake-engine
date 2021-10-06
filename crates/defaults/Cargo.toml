@@ -16,6 +16,7 @@ ecs = { path = "../ecs" }
 systems = { path = "../systems" }
 rendering = { path = "../rendering" }
 terrain = { path = "../terrain" }
+debug = { path = "../debug" }
 input = { path = "../input" }
 others = { path = "../others" }
 resources = { path = "../resources" }

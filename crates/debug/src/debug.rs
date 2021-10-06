@@ -6,7 +6,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // Constants
 pub const MAX_LINE_COUNT: i32 = 8192;
-pub const DRAW_DEBUG: bool = false;
+pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {

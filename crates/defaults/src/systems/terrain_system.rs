@@ -1,3 +1,4 @@
+use debug::DefaultDebugRendererType;
 use terrain::{ChunkCoords, BoundChecker, ChunkData, ChunkManager};
 
 use terrain::VoxelGenerator;
@@ -151,7 +152,13 @@ impl System for TerrainSystem {
         // Reassign
         let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
         for (entity_id, coords) in added_chunk_entities_ids {
-            td.chunk_manager.add_chunk_entity(&coords, entity_id);
+            td.chunk_manager.add_chunk_entity(&coords, entity_id);            
+        }
+
+        for coords in td.chunk_manager.chunks_to_generate.iter() {
+            let size = veclib::Vector3::<f32>::from(veclib::Vector3::ONE * coords.size);
+            let debug = DefaultDebugRendererType::CUBE(coords.center.into(), size);
+            data.debug.debug_default(debug, veclib::Vector3::ONE, false);
         }
 
         for entity_id in removed_chunks {
