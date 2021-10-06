@@ -56,7 +56,7 @@ impl RenderingSystem {
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
             Shader::new(
-                vec!["defaults\\shaders\\passthrough.vrsh.glsl", "defaults\\shaders\\screen.frsh.glsl"],
+                vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
                 &mut data.resource_manager,
                 &mut data.shader_cacher,
                 None,
@@ -292,9 +292,9 @@ impl System for RenderingSystem {
         let _default_size = others::get_default_window_size();
         self.setup_opengl(data);
 
-        // Load the wireframe shader
+        // Load the wireframe shad
         let wireframe_shader_name = Shader::new(
-            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\wireframe.frsh.glsl"],
+            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
             None,

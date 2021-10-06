@@ -164,7 +164,7 @@ impl System for UISystem {
         data.ui_manager.font_manager.add_font(default_font);
         // Load the UI shader
         self.ui_shader_name = Shader::new(
-            vec!["defaults\\shaders\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui_panel.frsh.glsl"],
+            vec!["defaults\\shaders\\ui\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui\\ui_panel.frsh.glsl"],
             data.resource_manager,
             data.shader_cacher,
             None,
@@ -172,7 +172,7 @@ impl System for UISystem {
         .1;
         // Load the UI font shader
         self.font_ui_shader_name = Shader::new(
-            vec!["defaults\\shaders\\ui_font.vrsh.glsl", "defaults\\shaders\\ui_font.frsh.glsl"],
+            vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
             data.resource_manager,
             data.shader_cacher,
             None,

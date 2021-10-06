@@ -3,16 +3,20 @@
 #include "defaults\shaders\voxel_terrain\erosion.func.glsl"
 // Generate the density here
 float get_density(vec3 pos) {
-    // Do some position flipping
-    float density = pos.y;
-    float c = (1-cellular(pos * vec3(1, 0.1, 1) * 0.001).x) * 6.0;
-    float p = snoise(pos * vec3(1, 1, 1) * 0.002) * 10.0;
+    // Actual function for voxels
+    // FBM Cellular noise with 11 octaves
     float fd = 0;
     for(int i = 0; i < 11; i++) {
         fd -= (1-abs(snoise(pos * vec3(1, 0.2, 1) * 0.001 * pow(2, i)))) * 100 * pow(0.43, i);
     }
-    density += fd;
-    density = max(-sdBox(pos, vec3(50, 30, 50)), density);
-    //density = pos.y - 10;
+
+    // Add the FBM cellular noise
+    float density = pos.y + fd;
+
+    // Make the terrain flatter
+    density = min(density + 80, pos.y - 16.0);
+
+    // Subtract a box from the terrain
+    density = max(-sdSphere(pos, 100.0), density);
     return density;
 }

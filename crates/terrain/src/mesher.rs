@@ -6,7 +6,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
-const AVERAGE_DENSITY_THRESHOLD: f32 = 1.0;
+const AVERAGE_DENSITY_THRESHOLD: f32 = 0.2;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -14,11 +14,12 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> Model {
+pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> (Model, u32) {
     let mut model: Model = Model::default();
     let mut skirts_model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
+    let mut max_index: u32 = 0;
     // Calculate the density threshold for the skirts
     let density_threshold = AVERAGE_DENSITY_THRESHOLD * (((size as f32) * 3.0) / (CHUNK_SIZE - 2) as f32);
     // Loop over every voxel
@@ -28,14 +29,14 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density > 0.0) as u8) * 1;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density > 0.0) as u8) * 2;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density > 0.0) as u8) * 4;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[3]].density > 0.0) as u8) * 8;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[4]].density > 0.0) as u8) * 16;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[5]].density > 0.0) as u8) * 32;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[6]].density > 0.0) as u8) * 64;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[7]].density > 0.0) as u8) * 128;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= 0.0) as u8) * 1;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= 0.0) as u8) * 2;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= 0.0) as u8) * 4;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[3]].density >= 0.0) as u8) * 8;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[4]].density >= 0.0) as u8) * 16;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[5]].density >= 0.0) as u8) * 32;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[6]].density >= 0.0) as u8) * 64;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[7]].density >= 0.0) as u8) * 128;
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -105,6 +106,9 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
                         }
+
+                        // Get the max index
+                        max_index = max_index.max(*model.triangles.last().unwrap());
 
                         // For the X axis
                         if skirts {
@@ -251,7 +255,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     }
     model = model.combine_smart(&skirts_model);
     // Return the model
-    model
+    return (model, max_index);
 }
 
 // The type of skirt vertex, normal or shared
@@ -288,7 +292,7 @@ pub fn solve_marching_squares(
         let density = data[i + density_offset[j]].density;
         local_densities[j] = density;
         // Update the case index
-        case += ((density <= 0.0) as u8) * 2_u8.pow(j as u32);
+        case += ((density < 0.0) as u8) * 2_u8.pow(j as u32);
     }
     // Get the average density
     let average_density: f32 = local_densities.iter().sum::<f32>() / 4.0;

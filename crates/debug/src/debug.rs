@@ -56,7 +56,7 @@ impl DebugRenderer {
         }
         // Set the shader name
         self.shader_name = Shader::new(
-            vec!["defaults\\shaders\\debug.vrsh.glsl", "defaults\\shaders\\debug.frsh.glsl"],
+            vec!["defaults\\shaders\\others\\debug.vrsh.glsl", "defaults\\shaders\\others\\debug.frsh.glsl"],
             resource_manager,
             shader_cacher,
             None,

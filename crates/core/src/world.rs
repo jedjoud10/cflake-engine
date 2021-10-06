@@ -87,7 +87,7 @@ impl World {
         let default_shader_name: String;
         {
             let default_shader = Shader::new(
-                vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\default.frsh.glsl"],
+                vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
                 &mut self.resource_manager,
                 &mut self.shader_cacher,
                 None,

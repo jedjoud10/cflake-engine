@@ -31,7 +31,7 @@ impl System for SkySystem {
 
         // Get shader name
         let sky_shader_name = Shader::new(
-            vec!["defaults\\shaders\\default.vrsh.glsl", "defaults\\shaders\\sky.frsh.glsl"],
+            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\sky.frsh.glsl"],
             &mut data.resource_manager,
             &mut data.shader_cacher,
             None,
