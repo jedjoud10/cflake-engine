@@ -1,5 +1,6 @@
 use super::{Component, ComponentID, ComponentManager};
 use errors::ECSError;
+use others::Instance;
 use std::collections::{HashMap, HashSet};
 
 // An entity manager that handles entities
@@ -180,5 +181,16 @@ impl Entity {
         } else {
             return Err(ECSError::new(format!("Component '{}' does not exist on Entity '{}'!", T::get_component_name(), self.name)));
         }
+    }
+}
+
+// Each entity is instantiable
+impl Instance for Entity {
+    fn set_name(&mut self, string: String) {
+        self.name = string;
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
     }
 }
