@@ -426,6 +426,7 @@ dependencies = [
  "system_event_data",
  "systems",
  "terrain",
+ "ui",
  "veclib",
 ]
 

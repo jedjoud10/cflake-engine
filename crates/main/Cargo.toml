@@ -21,5 +21,6 @@ rendering = { path = "../rendering" }
 resources = { path = "../resources" }
 debug = { path = "../debug" }
 math = { path = "../math" }
+ui = { path = "../ui" }
 defaults = { path = "../defaults" }
 terrain = { path = "../terrain" }

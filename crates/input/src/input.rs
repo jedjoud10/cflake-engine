@@ -234,6 +234,21 @@ impl InputManager {
         self.full_sentence = None;
         return output;
     }
+    // Toggle the registering of the keys as a literal string
+    pub fn toggle_keys_reg(&mut self) -> Option<String> {
+        match self.full_sentence.clone() {
+            Some(string) => {
+                // Stop registering
+                self.stop_keys_reg();                
+                return Some(string);
+            },
+            None => {
+                // Start registering
+                self.start_keys_reg();
+                return None;
+            },
+        }
+    }
     // When we receive a key event from glfw (Always at the start of the frame)
     pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
         // If we are in sentence registering mode, don't do anything else
@@ -241,6 +256,7 @@ impl InputManager {
             let key = *self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode).unwrap().0;
             let new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
             self.full_sentence = Some(new_string);
+            println!("sentence: {}", self.full_sentence.as_ref().clone().unwrap());
         }
         // If this key does not exist in the dictionary yet, add it
         let mut key_data = self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));

@@ -10,6 +10,7 @@ pub use core::World;
 pub use systems;
 pub use debug;
 pub use defaults;
+pub use ui;
 pub use ecs;
 pub use errors;
 use glfw::Context;

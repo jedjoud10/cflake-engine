@@ -1,4 +1,5 @@
 // A single value spring, that tries to reach a target with a certain dampening value
+#[derive(Default)]
 pub struct Spring {
     pub target: f32,
     pub current: f32,

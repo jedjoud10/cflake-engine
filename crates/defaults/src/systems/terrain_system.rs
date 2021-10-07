@@ -43,10 +43,7 @@ impl System for TerrainSystem {
         system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();        
 
         // Create a debug UI for this terrain
-        let mut root = ui::Root::new();
-        let root_elem = ui::Element::default();
-        // Add the element to the root node
-        root.add_element(root_elem);
+        let mut root = ui::Root::new(); 
 
         // Text for chunk debug data
         let elem = ui::Element::new()
@@ -55,8 +52,6 @@ impl System for TerrainSystem {
             .set_text("chunk_data_here", 60.0);
         self.element_id = root.add_element(elem);
         data.ui_manager.add_root("terrain_debug", root);
-
-        data.input_manager.bind_key(input::Keys::Y, "terrain_testing", input::MapType::Toggle);
     }
 
     // Called for each entity in the system
@@ -74,7 +69,7 @@ impl System for TerrainSystem {
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
-        if td.chunk_manager.octree_update_valid() && data.input_manager.map_toggled("terrain_testing") {
+        if td.chunk_manager.octree_update_valid() {
             match td.octree.generate_incremental_octree(camera_location) {
                 Some((mut added, removed, total_nodes)) => {
                     // Filter first

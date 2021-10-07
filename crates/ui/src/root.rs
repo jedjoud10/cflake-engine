@@ -18,7 +18,12 @@ pub struct Root {
 impl Root {
     // New
     pub fn new() -> Self {
-        Self::default()
+        let mut root = Self::default();
+        // Add the root element to this
+        let root_elem = Element::default();
+        // Add the element to the root node
+        root.add_element(root_elem);
+        return root;
     }
     // Add an element to the tree
     pub fn add_element(&mut self, mut element: Element) -> u16 {

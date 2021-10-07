@@ -71,6 +71,7 @@ impl World {
         self.input_manager.bind_key(Keys::F1, "fullscreen", MapType::Button);
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
         self.input_manager.bind_key(Keys::F3, "change_debug_view", MapType::Button);
+        self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
         self.input_manager.bind_key(Keys::F, "toggle_wireframe", MapType::Button);
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
@@ -100,9 +101,6 @@ impl World {
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new();
-        let root_elem = ui::Element::default();
-        // Add the element to the root node
-        root.add_element(root_elem);
         // ----Add the elements here----
 
         // Create a text element
@@ -250,6 +248,10 @@ impl World {
             let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.wireframe = !render_system.wireframe;
         }
+        // Check if we should start key registering if the console is active
+        if self.input_manager.map_pressed("toggle_console") {
+            self.input_manager.toggle_keys_reg();
+        } 
     }
     // Set the fullscreen status
     pub fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
