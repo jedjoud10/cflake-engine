@@ -42,7 +42,7 @@ pub trait Instance {
     // Get the current name for this object
     fn get_name(&self) -> String; 
     // Create an instance of the current object and store it in it's cache manager
-    fn insantiate_cm<'a>(&self, cache_manager: &'a mut cacher::CacheManager<Self>, instance_manager: &mut InstanceManager) -> &'a Self where Self: Sized + Clone {
+    fn instantiate_cm<'a>(&self, cache_manager: &'a mut cacher::CacheManager<Self>, instance_manager: &mut InstanceManager) -> &'a Self where Self: Sized + Clone {
         let mut instance = self.clone();
         // Get the instance name
         let name = instance_manager.add_instance(&self.get_name());
@@ -52,7 +52,7 @@ pub trait Instance {
         return cache_manager.id_get_object(cached_object).unwrap();
     }
     // Create an instance of the current object without storing in the cache manager
-    fn insantiate(&self, instance_manager: &mut InstanceManager) -> Self where Self: Sized + Clone {
+    fn instantiate(&self, instance_manager: &mut InstanceManager) -> Self where Self: Sized + Clone {
         let mut instance = self.clone();
         // Get the instance name
         let name = instance_manager.add_instance(&self.get_name());

@@ -14,6 +14,7 @@ bitflags! {
 pub struct Material {
     // Rendering stuff
     pub shader_name: String,
+    pub material_name: String,
     pub texture_cache_ids: Vec<u16>,
     pub uniform_setter: ShaderUniformSetter,
     pub flags: MaterialFlags,
@@ -22,7 +23,8 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         let mut material: Self = Material {
-            shader_name: String::default(),
+            shader_name: String::new(),
+            material_name: String::new(),
             texture_cache_ids: Vec::new(),
             uniform_setter: ShaderUniformSetter::default(),
             flags: MaterialFlags::empty(),
@@ -36,6 +38,13 @@ impl Default for Material {
 }
 
 impl Material {
+    // Create a new material with a name
+    pub fn new(material_name: &str) -> Self {
+        Self {
+            material_name: material_name.to_string(),
+            ..Self::default()
+        }
+    }
     // Load textures from their texture struct
     pub fn load_textures(mut self, texture_ids: &Vec<u16>, texture_cacher: &CacheManager<Texture2D>) -> Self {
         // Set the textures as the renderer's textures
@@ -99,10 +108,10 @@ impl Material {
 // Each material can be instanced
 impl others::Instance for Material {
     fn set_name(&mut self, string: String) {
-        self.shader_name = string
+        self.material_name = string
     }
     fn get_name(&self) -> String {
-        self.shader_name.clone()
+        self.material_name.clone()
     }
 }
 
