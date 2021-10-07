@@ -1,12 +1,4 @@
-use std::{
-    collections::{hash_map::DefaultHasher, HashMap},
-    env,
-    fs::{remove_file, File, OpenOptions},
-    hash::{Hash, Hasher},
-    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
-    process::Command,
-    time::SystemTime,
-};
+use std::{collections::{hash_map::DefaultHasher, HashMap}, env, fs::{remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write}, path::Path, process::Command, time::SystemTime};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use image::{EncodableLayout, GenericImageView};
@@ -383,8 +375,12 @@ pub fn pack_resources(src_path: String) -> Option<()> {
         let keep = hashed_names.contains(hashed);
         if !keep {
             let packed_file_path = format!("{}{}.pkg", packed_resources_path, hashed);
+            let packed_file_path_path = Path::new(&packed_file_path);
             println!("{}", packed_file_path);
-            remove_file(packed_file_path).unwrap();
+            // Check if the file even exists first
+            if packed_file_path_path.exists() {
+                remove_file(packed_file_path).unwrap();
+            }
         }
         keep
     });
