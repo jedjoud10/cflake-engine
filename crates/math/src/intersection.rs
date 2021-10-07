@@ -33,4 +33,8 @@ impl Intersection {
         let max = (point).elem_gt(&-veclib::Vector2::ONE).all();
         min && max
     }
+    // Check if a segment intersects an aabb
+    pub fn edge_aabb(segment: &shapes::Line, aabb: &bounds::AABB) -> bool {
+        todo!();
+    }
 }

@@ -6,21 +6,21 @@ extern crate glfw;
 // World
 pub use core::World;
 
-// Export
-pub use ::systems::*;
+// Re-Export
+pub use systems;
 pub use debug;
-pub use defaults::components;
-pub use defaults::systems;
-pub use ecs::*;
-pub use errors::*;
+pub use defaults;
+pub use ecs;
+pub use errors;
 use glfw::Context;
-pub use input::*;
-pub use others::*;
-pub use rendering::*;
-pub use resources::*;
-pub use system_event_data::*;
-pub use terrain::*;
+pub use input;
+pub use others;
+pub use rendering;
+pub use resources;
+pub use system_event_data;
+pub use terrain;
 pub use veclib;
+pub use math;
 
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {

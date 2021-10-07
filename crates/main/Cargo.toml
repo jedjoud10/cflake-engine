@@ -20,5 +20,6 @@ errors = { path = "../errors" }
 rendering = { path = "../rendering" }
 resources = { path = "../resources" }
 debug = { path = "../debug" }
+math = { path = "../math" }
 defaults = { path = "../defaults" }
 terrain = { path = "../terrain" }

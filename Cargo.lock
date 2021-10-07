@@ -419,6 +419,7 @@ dependencies = [
  "gl",
  "glfw",
  "input",
+ "math",
  "others",
  "rendering",
  "resources",
