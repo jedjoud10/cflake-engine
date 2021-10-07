@@ -357,6 +357,17 @@ impl Shader {
         }
     }
 }
+
+// Each shader can be instanced
+impl others::Instance for Shader {
+    fn set_name(&mut self, string: String) {
+        self.name = string
+    }
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+}
+
 // Additional shaders
 pub enum AdditionalShader {
     None,

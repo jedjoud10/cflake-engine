@@ -8,4 +8,5 @@ pub use default::get_default_window_size;
 pub use smart_list::SmartList;
 pub use time::Time;
 pub use instances::Instance;
+pub use instances::InstanceManager;
 mod default;

@@ -96,6 +96,16 @@ impl Material {
     }
 }
 
+// Each material can be instanced
+impl others::Instance for Material {
+    fn set_name(&mut self, string: String) {
+        self.shader_name = string
+    }
+    fn get_name(&self) -> String {
+        self.shader_name.clone()
+    }
+}
+
 // Used to manually set some uniforms for the shaders
 #[derive(Default, Debug, Clone)]
 pub struct ShaderUniformSetter {

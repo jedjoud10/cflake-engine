@@ -10,6 +10,7 @@ pub struct SystemEventData<'a> {
     pub time_manager: &'a mut others::Time,
     pub debug: &'a mut debug::DebugRenderer,
     pub custom_data: &'a mut CustomWorldData,
+    pub instance_manager: &'a mut others::InstanceManager
 }
 // Data that will be passed some events in the systems that don't need all the world data
 pub struct SystemEventDataLite<'a> {

@@ -161,3 +161,13 @@ impl Texture2D {
         return self;
     }
 }
+
+// The texture 2D can be instanced
+impl others::Instance for Texture2D {
+    fn set_name(&mut self, string: String) {
+        self.internal_texture.name = string
+    }
+    fn get_name(&self) -> String {
+        self.internal_texture.name.clone()
+    }
+}

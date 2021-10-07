@@ -34,6 +34,7 @@ pub struct World {
 
     // Miscs
     pub custom_data: CustomWorldData,
+    pub instance_manager: others::InstanceManager,
     pub time_manager: Time,
     pub saver_loader: SaverLoader,
     pub config_file: GameConfig,
@@ -55,6 +56,7 @@ impl World {
             entity_manager: EntityManager::default(),
             system_manager: SystemManager::default(),
 
+            instance_manager: InstanceManager::default(),
             custom_data: CustomWorldData::default(),
             time_manager: Time::default(),
             saver_loader: SaverLoader::new(author_name, app_name),
@@ -179,6 +181,7 @@ impl World {
             time_manager: &mut self.time_manager,
             debug: &mut self.debug,
             custom_data: &mut self.custom_data,
+            instance_manager: &mut self.instance_manager
         };
 
         // Update the entities
