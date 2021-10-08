@@ -128,8 +128,8 @@ impl InputManager {
         self.scancode_cache = cache;
     }    
     // Get the key scancode using the cache that we have
-    pub fn get_key_scancode(&self, key: Keys) -> i32 {
-        return self.scancode_cache.get(&key).unwrap().clone();
+    pub fn get_key_scancode(&self, key: Keys) -> Option<&i32> {
+        return self.scancode_cache.get(&key);
     }
     // Convert a key to it's string literal
     pub fn convert_key_to_string(&self, key: Keys) -> String {
@@ -240,11 +240,16 @@ impl InputManager {
     // When we receive a key event from glfw (Always at the start of the frame)
     pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
         // If we are in sentence registering mode, don't do anything else
-        if self.full_sentence.is_some() {
-            let key = *self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode).unwrap().0;
-            let new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
-            self.full_sentence = Some(new_string);
-            println!("sentence: {}", self.full_sentence.as_ref().clone().unwrap());
+        if self.full_sentence.is_some() && action_type == 0 {
+            match self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode) {
+                Some(x) => {
+                    let key = x.0.clone();
+                    let new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
+                    self.full_sentence = Some(new_string);
+                    println!("sentence: {}", self.full_sentence.as_ref().clone().unwrap());
+                },
+                None => { /* We simply don't have they key in the cache */ },
+            };            
         }
         // If this key does not exist in the dictionary yet, add it
         let mut key_data = self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));
@@ -268,7 +273,7 @@ impl InputManager {
     // Binds a key to a specific mapping
     pub fn bind_key(&mut self, key: Keys, map_name: &str, map_type: MapType) {
         // Check if the binding exists
-        let key_scancode = self.get_key_scancode(key);
+        let key_scancode = self.get_key_scancode(key).unwrap().clone();
         if !self.bindings.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
             self.bindings.insert(map_name.to_string(), key_scancode);

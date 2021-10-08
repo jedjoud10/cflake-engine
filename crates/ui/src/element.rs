@@ -1,7 +1,7 @@
 use crate::Root;
 
 // A simple element, could be a button or a panel or anything, it just has some variables
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Element {
     // The ID of this element in the root node
     pub id: u16,
@@ -13,6 +13,8 @@ pub struct Element {
     pub size: veclib::Vector2<f32>,
     // Our color in RGBA form
     pub color: veclib::Vector4<f32>,
+    // If the element is even visible, this propagates down to it's children
+    pub visible: bool,
     // The depth of this node, further depth nodes get rendered front to back
     pub depth: i32,
     pub children: Vec<u16>,
@@ -31,6 +33,7 @@ impl Default for Element {
             position: veclib::Vector2::ZERO,
             size: veclib::Vector2::ONE,
             color: veclib::Vector4::ONE,
+            visible: true,
             coordinate_type: CoordinateType::Factor,
             element_type: ElementType::Panel(),
             // Internal data
@@ -72,6 +75,24 @@ impl Element {
         self.color = color;
         return self;
     }
+    // Recursively get the children of this element
+    pub fn get_children_recursive(&self, root: &Root) -> Vec<u16> {
+        let mut elements: Vec<&Element> = Vec::new();
+        let mut final_elements_ids: Vec<u16> = Vec::new();
+        // Borrow the elements recursively 
+        while elements.len() > 0 {
+            // Get the elements from this and add them   
+            let current_element = elements.get(0).unwrap(); 
+            let mut children: Vec<&Element> = Vec::new();
+            for children_id in current_element.children.iter() {
+                children.push(root.get_element(*children_id));
+                final_elements_ids.push(*children_id);
+            }        
+            // Don't add empty vectors
+            if !children.is_empty() { elements.extend(children); }
+        } 
+        return final_elements_ids;        
+    }
 
     // ----Update functions----
     pub fn update_text(&mut self, text: &str, font_size: f32) {
@@ -80,14 +101,14 @@ impl Element {
 }
 
 // Coordinate type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CoordinateType {
     Pixel,
     Factor,
 }
 
 // The state of a button element
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ButtonState {
     Pressed,
     Released,
@@ -95,7 +116,7 @@ pub enum ButtonState {
 }
 
 // The type of element
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ElementType {
     Empty,
     Panel(),

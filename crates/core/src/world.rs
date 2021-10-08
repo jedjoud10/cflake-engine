@@ -67,6 +67,7 @@ impl World {
     fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load all the default things
         // Load default bindings
+        self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::Escape, "quit", MapType::Button);
         self.input_manager.bind_key(Keys::F1, "fullscreen", MapType::Button);
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
@@ -122,6 +123,22 @@ impl World {
 
         // Set this as the default root
         self.ui_manager.set_default_root(root);
+
+        // Create the default root for the console
+        let mut console_root = ui::Root::new();
+        let console_panel = ui::Element::new()
+            .set_coordinate_system(ui::CoordinateType::Factor)
+            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.5));
+        let console_panel_id = console_root.add_element(console_panel);
+        let console_text = ui::Element::new()
+            .set_coordinate_system(ui::CoordinateType::Factor)
+            .set_position(veclib::Vector2::ZERO)
+            .set_text("", 30.0)
+            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.0));
+        let console_text_id = console_root.add_element(console_text);
+        ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
+
+        self.ui_manager.add_root("console", console_root);
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
@@ -163,8 +180,6 @@ impl World {
     // 2. We tick the entities of each TickSystem (Only if the framecount is valid)
     // 3. We render the entities onto the screen using the RenderSystem
     pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw, delta: f64) {
-        // Check for input events
-        self.input_manager.update();
         // Check for default input events
         self.check_default_input_events(window, glfw);
         // Create the data for the systems
@@ -250,7 +265,24 @@ impl World {
         }
         // Check if we should start key registering if the console is active
         if self.input_manager.map_pressed("toggle_console") {
-            self.input_manager.toggle_keys_reg();
+            match self.input_manager.toggle_keys_reg() {
+                Some(x) => {
+                    // Enable the console and update the text 
+                    let console_root = self.ui_manager.get_root_mut("console");
+                    let children = console_root.get_element(1).get_children_recursive(&console_root);
+                    for child_id in children {
+                        console_root.get_element_mut(child_id).visible = true;
+                    }
+                }
+                None => { 
+                    // Hide the console
+                    let console_root = self.ui_manager.get_root_mut("console");
+                    let children = console_root.get_element(1).get_children_recursive(&console_root);
+                    for child_id in children {
+                        console_root.get_element_mut(child_id).visible = false;
+                    }
+                }
+            }
         } 
     }
     // Set the fullscreen status

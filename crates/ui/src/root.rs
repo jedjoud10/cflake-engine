@@ -9,7 +9,7 @@ use resources::LoadableResource;
 use resources::Resource;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Root {
     pub smart_element_list: SmartList<Element>,
     pub max_depth: i32,
