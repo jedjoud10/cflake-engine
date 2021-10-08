@@ -2,6 +2,8 @@ use super::Keys;
 use std::{
     collections::HashMap,
     fmt::{self},
+    iter::FromIterator,
+    array::IntoIter
 };
 
 // Status of a key
@@ -71,56 +73,63 @@ impl Default for InputManager {
 }
 
 impl InputManager {
-    // Get the key scancode for a specific key
-    pub fn get_key_scancode(&self, key: Keys) -> Option<i32> {
-        match key {
-            Keys::Escape => glfw::Key::get_scancode(&glfw::Key::Escape),
-            Keys::Enter => glfw::Key::get_scancode(&glfw::Key::Enter),
-            Keys::LeftShift => glfw::Key::get_scancode(&glfw::Key::LeftShift),
-            Keys::LeftControl => glfw::Key::get_scancode(&glfw::Key::LeftControl),
-            Keys::RightShift => glfw::Key::get_scancode(&glfw::Key::RightShift),
-            Keys::RightControl => glfw::Key::get_scancode(&glfw::Key::RightControl),
-            Keys::Space => glfw::Key::get_scancode(&glfw::Key::Space),
-            Keys::Minus => glfw::Key::get_scancode(&glfw::Key::Minus),
-            Keys::A => glfw::Key::get_scancode(&glfw::Key::A),
-            Keys::B => glfw::Key::get_scancode(&glfw::Key::B),
-            Keys::C => glfw::Key::get_scancode(&glfw::Key::C),
-            Keys::D => glfw::Key::get_scancode(&glfw::Key::D),
-            Keys::E => glfw::Key::get_scancode(&glfw::Key::E),
-            Keys::F => glfw::Key::get_scancode(&glfw::Key::F),
-            Keys::G => glfw::Key::get_scancode(&glfw::Key::G),
-            Keys::H => glfw::Key::get_scancode(&glfw::Key::H),
-            Keys::I => glfw::Key::get_scancode(&glfw::Key::I),
-            Keys::J => glfw::Key::get_scancode(&glfw::Key::J),
-            Keys::K => glfw::Key::get_scancode(&glfw::Key::K),
-            Keys::L => glfw::Key::get_scancode(&glfw::Key::L),
-            Keys::M => glfw::Key::get_scancode(&glfw::Key::M),
-            Keys::N => glfw::Key::get_scancode(&glfw::Key::N),
-            Keys::O => glfw::Key::get_scancode(&glfw::Key::O),
-            Keys::P => glfw::Key::get_scancode(&glfw::Key::P),
-            Keys::Q => glfw::Key::get_scancode(&glfw::Key::Q),
-            Keys::R => glfw::Key::get_scancode(&glfw::Key::R),
-            Keys::S => glfw::Key::get_scancode(&glfw::Key::S),
-            Keys::T => glfw::Key::get_scancode(&glfw::Key::T),
-            Keys::U => glfw::Key::get_scancode(&glfw::Key::U),
-            Keys::V => glfw::Key::get_scancode(&glfw::Key::V),
-            Keys::W => glfw::Key::get_scancode(&glfw::Key::W),
-            Keys::X => glfw::Key::get_scancode(&glfw::Key::X),
-            Keys::Y => glfw::Key::get_scancode(&glfw::Key::Y),
-            Keys::Z => glfw::Key::get_scancode(&glfw::Key::Z),
-            Keys::F1 => glfw::Key::get_scancode(&glfw::Key::F1),
-            Keys::F2 => glfw::Key::get_scancode(&glfw::Key::F2),
-            Keys::F3 => glfw::Key::get_scancode(&glfw::Key::F3),
-            Keys::F4 => glfw::Key::get_scancode(&glfw::Key::F4),
-            Keys::F5 => glfw::Key::get_scancode(&glfw::Key::F5),
-            Keys::F6 => glfw::Key::get_scancode(&glfw::Key::F6),
-            Keys::F7 => glfw::Key::get_scancode(&glfw::Key::F7),
-            Keys::F8 => glfw::Key::get_scancode(&glfw::Key::F8),
-            Keys::F9 => glfw::Key::get_scancode(&glfw::Key::F9),
-            Keys::F10 => glfw::Key::get_scancode(&glfw::Key::F10),
-            Keys::F11 => glfw::Key::get_scancode(&glfw::Key::F11),
-            Keys::F12 => glfw::Key::get_scancode(&glfw::Key::F12),
-        }
+    // Create the key scancode cache 
+    pub fn create_key_cache(&mut self) {
+        let cache: HashMap<Keys, Option<i32>> = HashMap::<Keys, Option<i32>>::from_iter(IntoIter::new([
+            (Keys::Escape, glfw::Key::get_scancode(&glfw::Key::Escape)),
+            (Keys::Enter, glfw::Key::get_scancode(&glfw::Key::Enter)),
+            (Keys::LeftShift, glfw::Key::get_scancode(&glfw::Key::LeftShift)),
+            (Keys::LeftControl, glfw::Key::get_scancode(&glfw::Key::LeftControl)),
+            (Keys::RightShift, glfw::Key::get_scancode(&glfw::Key::RightShift)),
+            (Keys::RightControl, glfw::Key::get_scancode(&glfw::Key::RightControl)),
+            (Keys::Space, glfw::Key::get_scancode(&glfw::Key::Space)),
+            (Keys::Minus, glfw::Key::get_scancode(&glfw::Key::Minus)),
+            (Keys::A, glfw::Key::get_scancode(&glfw::Key::A)),
+            (Keys::B, glfw::Key::get_scancode(&glfw::Key::B)),
+            (Keys::C, glfw::Key::get_scancode(&glfw::Key::C)),
+            (Keys::D, glfw::Key::get_scancode(&glfw::Key::D)),
+            (Keys::E, glfw::Key::get_scancode(&glfw::Key::E)),
+            (Keys::F, glfw::Key::get_scancode(&glfw::Key::F)),
+            (Keys::G, glfw::Key::get_scancode(&glfw::Key::G)),
+            (Keys::H, glfw::Key::get_scancode(&glfw::Key::H)),
+            (Keys::I, glfw::Key::get_scancode(&glfw::Key::I)),
+            (Keys::J, glfw::Key::get_scancode(&glfw::Key::J)),
+            (Keys::K, glfw::Key::get_scancode(&glfw::Key::K)),
+            (Keys::L, glfw::Key::get_scancode(&glfw::Key::L)),
+            (Keys::M, glfw::Key::get_scancode(&glfw::Key::M)),
+            (Keys::N, glfw::Key::get_scancode(&glfw::Key::N)),
+            (Keys::O, glfw::Key::get_scancode(&glfw::Key::O)),
+            (Keys::P, glfw::Key::get_scancode(&glfw::Key::P)),
+            (Keys::Q, glfw::Key::get_scancode(&glfw::Key::Q)),
+            (Keys::R, glfw::Key::get_scancode(&glfw::Key::R)),
+            (Keys::S, glfw::Key::get_scancode(&glfw::Key::S)),
+            (Keys::T, glfw::Key::get_scancode(&glfw::Key::T)),
+            (Keys::U, glfw::Key::get_scancode(&glfw::Key::U)),
+            (Keys::V, glfw::Key::get_scancode(&glfw::Key::V)),
+            (Keys::W, glfw::Key::get_scancode(&glfw::Key::W)),
+            (Keys::X, glfw::Key::get_scancode(&glfw::Key::X)),
+            (Keys::Y, glfw::Key::get_scancode(&glfw::Key::Y)),
+            (Keys::Z, glfw::Key::get_scancode(&glfw::Key::Z)),
+            (Keys::F1, glfw::Key::get_scancode(&glfw::Key::F1)),
+            (Keys::F2, glfw::Key::get_scancode(&glfw::Key::F2)),
+            (Keys::F3, glfw::Key::get_scancode(&glfw::Key::F3)),
+            (Keys::F4, glfw::Key::get_scancode(&glfw::Key::F4)),
+            (Keys::F5, glfw::Key::get_scancode(&glfw::Key::F5)),
+            (Keys::F6, glfw::Key::get_scancode(&glfw::Key::F6)),
+            (Keys::F7, glfw::Key::get_scancode(&glfw::Key::F7)),
+            (Keys::F8, glfw::Key::get_scancode(&glfw::Key::F8)),
+            (Keys::F9, glfw::Key::get_scancode(&glfw::Key::F9)),
+            (Keys::F10, glfw::Key::get_scancode(&glfw::Key::F10)),
+            (Keys::F11, glfw::Key::get_scancode(&glfw::Key::F11)),
+            (Keys::F12, glfw::Key::get_scancode(&glfw::Key::F12))])
+        );
+        // Unwrap each value
+        let cache = cache.iter().map(|(key, val)| (key.clone(), val.unwrap())).collect::<HashMap<Keys, i32>>();
+        self.scancode_cache = cache;
+    }    
+    // Get the key scancode using the cache that we have
+    pub fn get_key_scancode(&self, key: Keys) -> i32 {
+        return self.scancode_cache.get(&key).unwrap().clone();
     }
     // Convert a key to it's string literal
     pub fn convert_key_to_string(&self, key: Keys) -> String {
@@ -156,12 +165,6 @@ impl InputManager {
             Keys::Z => "z",
             _ => ""
         }.to_string()
-    }
-    // Called at the start of every frame to handle default-like events, like quitting by pressing Escape or fullscreening by pressing F1
-    pub fn update(&mut self) {
-        // Update mappings first
-        self.update_mappings();
-        // Calculate the mouse delta
     }
     // Called when we recieve a new mouse event from the window (Could either be a mouse position one or a scroll one)
     pub fn recieve_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
@@ -208,22 +211,7 @@ impl InputManager {
     // Get the accumulated mouse scroll
     pub fn get_accumulated_mouse_scroll(&self) -> f32 {
         self.last_mouse_scroll
-    }
-    // Update the maps using the keys
-    fn update_mappings(&mut self) {
-        /*
-        // Update the mappings
-        for binding in self.bindings.iter() {
-            // Make sure the keys already in the dictionary
-            if self.keys.contains_key(binding.0) {
-                // First of all, get the map status from they keys, since it talks directly to GLFW
-                let new_mapstatus = self.keys[binding.0];
-                // Then, update the internal mappings so it uses this new map-status
-                *self.mappings.get_mut(binding.1).unwrap() = new_mapstatus;
-            }
-        }
-        */
-    }
+    }    
     // Start registering the keys as a sentence
     pub fn start_keys_reg(&mut self) {
         self.full_sentence = Some(String::new());
@@ -280,7 +268,7 @@ impl InputManager {
     // Binds a key to a specific mapping
     pub fn bind_key(&mut self, key: Keys, map_name: &str, map_type: MapType) {
         // Check if the binding exists
-        let key_scancode = self.get_key_scancode(key).unwrap();
+        let key_scancode = self.get_key_scancode(key);
         if !self.bindings.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
             self.bindings.insert(map_name.to_string(), key_scancode);
