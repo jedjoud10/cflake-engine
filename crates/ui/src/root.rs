@@ -9,10 +9,21 @@ use resources::LoadableResource;
 use resources::Resource;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Root {
     pub smart_element_list: SmartList<Element>,
+    pub visible: bool,
     pub max_depth: i32,
+}
+
+impl Default for Root {
+    fn default() -> Self {
+        Self { 
+            smart_element_list: SmartList::<Element>::default(), 
+            visible: true,
+            max_depth: 0
+    }
+    }
 }
 
 impl Root {

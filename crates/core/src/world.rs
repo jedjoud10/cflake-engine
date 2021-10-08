@@ -133,7 +133,7 @@ impl World {
         let console_text = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Factor)
             .set_position(veclib::Vector2::ZERO)
-            .set_text("", 30.0)
+            .set_text("text", 30.0)
             .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.0));
         let console_text_id = console_root.add_element(console_text);
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
@@ -267,20 +267,14 @@ impl World {
         if self.input_manager.map_pressed("toggle_console") {
             match self.input_manager.toggle_keys_reg() {
                 Some(x) => {
-                    // Enable the console and update the text 
-                    let console_root = self.ui_manager.get_root_mut("console");
-                    let children = console_root.get_element(1).get_children_recursive(&console_root);
-                    for child_id in children {
-                        console_root.get_element_mut(child_id).visible = true;
-                    }
-                }
-                None => { 
                     // Hide the console
                     let console_root = self.ui_manager.get_root_mut("console");
-                    let children = console_root.get_element(1).get_children_recursive(&console_root);
-                    for child_id in children {
-                        console_root.get_element_mut(child_id).visible = false;
-                    }
+                    console_root.visible = false;                    
+                }
+                None => { 
+                    // Enable the console
+                    let console_root = self.ui_manager.get_root_mut("console");
+                    console_root.visible = true;
                 }
             }
         } 

@@ -205,7 +205,7 @@ impl System for UISystem {
             let font_shader = data.shader_cacher.1.get_object(&self.font_ui_shader_name).unwrap();
             // Default font
             let default_font = data.ui_manager.font_manager.get_font("defaults\\fonts\\default_font.font");
-
+            if !root.visible { continue; }
             // Draw every element, other than the root element
             for element in elements {
                 let bad_element_type = match element.element_type {
