@@ -137,7 +137,7 @@ impl World {
             .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.0));
         let console_text_id = console_root.add_element(console_text);
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
-
+        console_root.visible = false;
         self.ui_manager.add_root("console", console_root);
     }
     // When the world started initializing
@@ -269,12 +269,14 @@ impl World {
                 Some(x) => {
                     // Hide the console
                     let console_root = self.ui_manager.get_root_mut("console");
-                    console_root.visible = false;                    
+                    console_root.visible = false;         
+                    println!("Hide console");           
                 }
                 None => { 
                     // Enable the console
                     let console_root = self.ui_manager.get_root_mut("console");
                     console_root.visible = true;
+                    println!("Show console");
                 }
             }
         } 

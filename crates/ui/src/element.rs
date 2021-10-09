@@ -75,6 +75,11 @@ impl Element {
         self.color = color;
         return self;
     }
+    // Set the visibility of the element
+    pub fn set_visible(mut self, visible: bool) -> Self {
+        self.visible = visible;
+        return self;
+    }
     // Recursively get the children of this element
     pub fn get_children_recursive(&self, root: &Root) -> Vec<u16> {
         let mut elements: Vec<&Element> = Vec::new();
@@ -128,12 +133,15 @@ pub enum ElementType {
 impl Element {
     // Attach children to this element
     pub fn attach(root: &mut Root, id: u16, children: Vec<u16>) {
+        // Get the parent's visibility
+        let parent_visible = root.get_element(id).visible.clone();
         // Update the parent id of the children
         for &child_element_id in children.iter() {
             // Get the child element and update it
             let child_element = root.smart_element_list.get_element_mut(child_element_id).unwrap();
             child_element.parent = id;
             child_element.depth += 1;
+            child_element.visible = parent_visible;
             root.max_depth = root.max_depth.max(child_element.depth);
         }
         let element = root.smart_element_list.get_element_mut(id).unwrap();
