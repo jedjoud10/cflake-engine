@@ -175,7 +175,7 @@ impl World {
         // Create a default command
         let command: debug::Command = debug::Command {
             name: "test".to_string(),
-            inputs: Vec::new(),
+            inputs: vec![debug::CommandInput::new::<bool>("-s")],
         };
         self.debug.console.register_template_command(command);
 
@@ -241,7 +241,11 @@ impl World {
         // Detect test command 
         match self.debug.console.listen_command("test") {
             Some(x) => {
-                println!("TEST WORKS");
+                let t = x.get_input("-s");
+                match t.as_ref() {
+                    Some(x) => println!("T: {:?}", x),
+                    None => todo!(),
+                }
             },
             None => { /* */ },
         }        

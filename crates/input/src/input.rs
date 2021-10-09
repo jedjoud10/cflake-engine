@@ -86,6 +86,9 @@ impl InputManager {
             (Keys::RightControl, glfw::Key::get_scancode(&glfw::Key::RightControl)),
             (Keys::Space, glfw::Key::get_scancode(&glfw::Key::Space)),
             (Keys::Minus, glfw::Key::get_scancode(&glfw::Key::Minus)),
+            (Keys::Period, glfw::Key::get_scancode(&glfw::Key::Period)),
+            (Keys::Comma, glfw::Key::get_scancode(&glfw::Key::Comma)),
+            (Keys::Backspace, glfw::Key::get_scancode(&glfw::Key::Backspace)),
             (Keys::A, glfw::Key::get_scancode(&glfw::Key::A)),
             (Keys::B, glfw::Key::get_scancode(&glfw::Key::B)),
             (Keys::C, glfw::Key::get_scancode(&glfw::Key::C)),
@@ -133,9 +136,7 @@ impl InputManager {
             (Keys::NUM7, glfw::Key::get_scancode(&glfw::Key::Num7)),
             (Keys::NUM8, glfw::Key::get_scancode(&glfw::Key::Num8)),
             (Keys::NUM9, glfw::Key::get_scancode(&glfw::Key::Num9)),
-            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0)),
-            (Keys::Period, glfw::Key::get_scancode(&glfw::Key::Period)),
-            (Keys::Comma, glfw::Key::get_scancode(&glfw::Key::Comma))])
+            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0))])
         );
         // Unwrap each value
         let cache = cache.iter().map(|(key, val)| (key.clone(), val.unwrap())).collect::<HashMap<Keys, i32>>();
@@ -276,8 +277,13 @@ impl InputManager {
             match self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode) {
                 Some(x) => {
                     let key = x.0.clone();
-                    let new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
-                    println!("{:?}", new_string);
+                    let mut new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
+                    if let Keys::Backspace = key {
+                        if new_string.len() > 0 {
+                            new_string.remove(new_string.len()-1);
+                        }
+                    }
+                    // Remove the last character of the string if the scan code was the back key
                     self.full_sentence = Some(new_string);
                 },
                 None => { /* We simply don't have they key in the cache */ },

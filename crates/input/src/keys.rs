@@ -12,6 +12,7 @@ pub enum Keys {
     Minus,
     Period,
     Comma,
+    Backspace,
     A,
     B,
     C,

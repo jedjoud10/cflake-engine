@@ -12,11 +12,11 @@ pub struct Console {
 // Listen to commands and send a message if we received one
 impl Console {
     // Detect the currently written command and send the event to all command listeneners
-    pub fn detect_command(&mut self, text: String) {
+    pub fn detect_command(&mut self, text: String) -> Option<()> {
         // Clear the sent command
         self.sent_command = None;
         // Get the current command's name
-        let name = text.split(" ").nth(0).unwrap();
+        let name = text.split(" ").nth(0)?;
         // Get the inputs
         let inputs = text.split(" ").collect::<Vec<&str>>()[1..].to_vec();
 
@@ -28,26 +28,26 @@ impl Console {
                 let mut final_assossiated_inputs: Vec<CommandInput> = Vec::new();
                 for associated_input in command.inputs.iter() {
                     // Get the name and the actual value
-                    let index = inputs.iter().position(|x| x.to_string() == associated_input.short_name).unwrap();
+                    let index = inputs.iter().position(|x| x.to_string() == associated_input.short_name)?;
                     
                     // Get the value
                     let value: CommandInputEnum = {
-                        let value_string = inputs[index + 1];
+                        let value_string = inputs.get(index + 1)?;
                         // Parse the string
                         match associated_input.input {
                             CommandInputEnum::F32(_) => {
                                 // Parse to f32
-                                let output = value_string.parse::<f32>().unwrap();
+                                let output = value_string.parse::<f32>().ok()?;
                                 CommandInputEnum::F32(output)                                
                             },
                             CommandInputEnum::I32(_) => {
                                 // Parse to i32
-                                let output = value_string.parse::<i32>().unwrap();
+                                let output = value_string.parse::<i32>().ok()?;
                                 CommandInputEnum::I32(output)
                             },
                             CommandInputEnum::BOOL(_) => {
                                 // Parse to bool
-                                let output = value_string.parse::<bool>().unwrap();
+                                let output = value_string.parse::<bool>().ok()?;
                                 CommandInputEnum::BOOL(output)
                             },
                         }
@@ -62,8 +62,9 @@ impl Console {
         // If the final command is not none then send the message
         match final_command {
             Some(x) => { self.send_command(x); }
-            _ => {}
+            _ => { }
         }
+        Some(())
     }
     // Send a message to all the console command receivers
     pub fn send_command(&mut self, command: Command) {
@@ -124,7 +125,7 @@ impl CommandInput {
 }
 
 // A command input enum
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum CommandInputEnum {
     F32(f32),
     I32(i32),
