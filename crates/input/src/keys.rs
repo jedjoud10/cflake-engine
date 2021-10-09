@@ -10,6 +10,8 @@ pub enum Keys {
     RightControl,
     Space,
     Minus,
+    Period,
+    Comma,
     A,
     B,
     C,

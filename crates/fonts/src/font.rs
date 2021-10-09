@@ -18,7 +18,7 @@ impl Font {
     pub fn get_char(&self, ascii_code: u8) -> &FontChar {
         // The offset of the first ASCII character in the font
         const ASCII_FIRST_CHAR_OFFSET: u8 = 32;
-        let char = self.chars.get((ascii_code - ASCII_FIRST_CHAR_OFFSET) as usize).unwrap();
+        let char = self.chars.get((ascii_code - ASCII_FIRST_CHAR_OFFSET) as usize).expect(format!("Couldn't get character {}", &ascii_code).as_str());
         return char;
     }
     // Create the actual texture from the raw pixel bitmap data we have

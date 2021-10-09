@@ -153,7 +153,7 @@ impl System for TerrainSystem {
         for coords in td.chunk_manager.chunks_to_generate.iter() {
             let size = veclib::Vector3::<f32>::from(veclib::Vector3::ONE * coords.size);
             let debug = DefaultDebugRendererType::CUBE(coords.center.into(), size);
-            data.debug.debug_default(debug, veclib::Vector3::ONE, false);
+            data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
         }
 
         for entity_id in removed_chunks {

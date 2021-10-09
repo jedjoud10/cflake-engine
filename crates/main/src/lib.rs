@@ -84,8 +84,8 @@ fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glf
             // Size
             world.resize_window_event((x as u16, y as u16));
         }
-        glfw::WindowEvent::Scroll(_scroll, scroll2) => world.input_manager.recieve_mouse_event(None, Some(scroll2)),
-        glfw::WindowEvent::CursorPos(x, y) => world.input_manager.recieve_mouse_event(Some((x, y)), None),
+        glfw::WindowEvent::Scroll(_scroll, scroll2) => world.input_manager.receive_mouse_event(None, Some(scroll2)),
+        glfw::WindowEvent::CursorPos(x, y) => world.input_manager.receive_mouse_event(Some((x, y)), None),
         _ => {}
     }
 }

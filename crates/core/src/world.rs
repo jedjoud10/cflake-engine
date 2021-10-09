@@ -1,7 +1,6 @@
 use ::systems::*;
 use debug::*;
-use defaults::components;
-use defaults::systems;
+use defaults::{components, systems};
 use ecs::*;
 use errors::*;
 use fonts::FontManager;
@@ -27,12 +26,12 @@ pub struct World {
     // Rendering
     pub texture_cacher: CacheManager<Texture2D>,
     pub shader_cacher: (CacheManager<SubShader>, CacheManager<Shader>),
-    pub debug: DebugRenderer,
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
-
+    
     // Miscs
+    pub debug: MainDebug,
     pub custom_data: CustomWorldData,
     pub instance_manager: others::InstanceManager,
     pub time_manager: Time,
@@ -51,7 +50,7 @@ impl World {
 
             texture_cacher: CacheManager::default(),
             shader_cacher: (CacheManager::default(), CacheManager::default()),
-            debug: DebugRenderer::default(),
+            debug: MainDebug::default(),
 
             entity_manager: EntityManager::default(),
             system_manager: SystemManager::default(),
@@ -74,6 +73,7 @@ impl World {
         self.input_manager.bind_key(Keys::F3, "change_debug_view", MapType::Button);
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
         self.input_manager.bind_key(Keys::F, "toggle_wireframe", MapType::Button);
+        self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
 
@@ -172,16 +172,22 @@ impl World {
         // Update entity manager
         self.update_entity_manager();
 
+        // Create a default command
+        let command: debug::Command = debug::Command {
+            name: "test".to_string(),
+            inputs: Vec::new(),
+        };
+        self.debug.console.register_template_command(command);
+
         // Callback
         callback(self);
     }
     // We do the following in this function
-    // 1. We update the entities of each UpdateSystem
-    // 2. We tick the entities of each TickSystem (Only if the framecount is valid)
-    // 3. We render the entities onto the screen using the RenderSystem
     pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw, delta: f64) {
         // Check for default input events
         self.check_default_input_events(window, glfw);
+        // Upate the console
+        self.update_console();
         // Create the data for the systems
         let mut data: SystemEventData = SystemEventData {
             entity_manager: &mut self.entity_manager,
@@ -231,6 +237,14 @@ impl World {
         // Update the FPS
         self.time_manager.fps = 1.0 / self.time_manager.delta_time;
         self.time_manager.update_average_fps();
+
+        // Detect test command 
+        match self.debug.console.listen_command("test") {
+            Some(x) => {
+                println!("TEST WORKS");
+            },
+            None => { /* */ },
+        }        
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
@@ -262,14 +276,18 @@ impl World {
         if self.input_manager.map_pressed("toggle_wireframe") {
             let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.wireframe = !render_system.wireframe;
-        }
+        }        
+    }
+    // Update the console
+    fn update_console(&mut self) {
         // Check if we should start key registering if the console is active
-        if self.input_manager.map_pressed_uncheck("toggle_console") {
+        if self.input_manager.map_pressed_uncheck("toggle_console") || (self.input_manager.map_pressed_uncheck("enter") && self.input_manager.keys_reg_active()) {
             match self.input_manager.toggle_keys_reg() {
                 Some(x) => {
                     // Hide the console
                     let console_root = self.ui_manager.get_root_mut("console");
-                    console_root.visible = false;          
+                    console_root.visible = false;     
+                    self.debug.console.detect_command(x);
                 }
                 None => { 
                     // Enable the console
@@ -292,7 +310,7 @@ impl World {
         }
     }
     // Set the fullscreen status
-    pub fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         self.custom_data.window.fullscreen = fullscreen;
         if self.custom_data.window.fullscreen {
             // Set the glfw window as a fullscreen window
@@ -318,7 +336,7 @@ impl World {
         }
     }
     // Toggle fullscreen
-    pub fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
         self.set_fullscreen(self.custom_data.window.fullscreen, glfw, window);
 

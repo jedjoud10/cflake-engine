@@ -8,7 +8,7 @@ pub struct SystemEventData<'a> {
     pub texture_cacher: &'a mut others::CacheManager<rendering::Texture2D>,
     pub resource_manager: &'a mut resources::ResourceManager,
     pub time_manager: &'a mut others::Time,
-    pub debug: &'a mut debug::DebugRenderer,
+    pub debug: &'a mut debug::MainDebug,
     pub custom_data: &'a mut CustomWorldData,
     pub instance_manager: &'a mut others::InstanceManager
 }

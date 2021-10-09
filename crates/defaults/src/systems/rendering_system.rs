@@ -147,7 +147,7 @@ impl RenderingSystem {
         }
 
         // Setup the debug renderer
-        data.debug.setup_debug_renderer(data.resource_manager, data.shader_cacher);
+        data.debug.renderer.setup_debug_renderer(data.resource_manager, data.shader_cacher);
     }
     // Draw an entity normally
     fn draw_normal(
@@ -354,7 +354,7 @@ impl System for RenderingSystem {
             vp_matrix = projection_matrix * view_matrix;
         }
         // Draw the debug primitives
-        data.debug.draw_debug(&vp_matrix, &data.shader_cacher.1);
+        data.debug.renderer.draw_debug(&vp_matrix, &data.shader_cacher.1);
         let shader = data.shader_cacher.1.get_object(&self.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
         let camera_position = data
             .entity_manager

@@ -133,7 +133,9 @@ impl InputManager {
             (Keys::NUM7, glfw::Key::get_scancode(&glfw::Key::Num7)),
             (Keys::NUM8, glfw::Key::get_scancode(&glfw::Key::Num8)),
             (Keys::NUM9, glfw::Key::get_scancode(&glfw::Key::Num9)),
-            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0))])
+            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0)),
+            (Keys::Period, glfw::Key::get_scancode(&glfw::Key::Period)),
+            (Keys::Comma, glfw::Key::get_scancode(&glfw::Key::Comma))])
         );
         // Unwrap each value
         let cache = cache.iter().map(|(key, val)| (key.clone(), val.unwrap())).collect::<HashMap<Keys, i32>>();
@@ -146,9 +148,10 @@ impl InputManager {
     // Convert a key to it's string literal
     pub fn convert_key_to_string(&self, key: Keys) -> String {
         match key {
-            Keys::Enter => "\n",
             Keys::Space => " ",
             Keys::Minus => "-",
+            Keys::Period => ".",
+            Keys::Comma => ",",
             Keys::A => "a",
             Keys::B => "b",
             Keys::C => "c",
@@ -189,7 +192,7 @@ impl InputManager {
         }.to_string()
     }
     // Called when we recieve a new mouse event from the window (Could either be a mouse position one or a scroll one)
-    pub fn recieve_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
+    pub fn receive_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
         if !self.update { return; /* Update only when we can */ }
         match position {
             Some(position) => {
@@ -240,6 +243,10 @@ impl InputManager {
         self.full_sentence = Some(String::new());
         self.update = false;
     }
+    // Check if the key registering is active
+    pub fn keys_reg_active(&self) -> bool {
+        self.full_sentence.is_some()
+    }
     // Stop registering the keys as a sentence and return it
     pub fn stop_keys_reg(&mut self) -> String {
         let output = self.full_sentence.as_ref().unwrap().clone();
@@ -270,6 +277,7 @@ impl InputManager {
                 Some(x) => {
                     let key = x.0.clone();
                     let new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
+                    println!("{:?}", new_string);
                     self.full_sentence = Some(new_string);
                 },
                 None => { /* We simply don't have they key in the cache */ },
