@@ -199,7 +199,6 @@ impl System for UISystem {
 
         // Calculate the max root depth
         let max_root_depth = data.ui_manager.roots.iter().map(|x| x.1.root_depth ).sum::<i32>();
-        println!("{}", max_root_depth);
         // Loop over every root node
         for (root_name, root) in data.ui_manager.roots.iter() {
             let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();

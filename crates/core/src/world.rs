@@ -128,13 +128,13 @@ impl World {
         let mut console_root = ui::Root::new(64);
         let console_panel = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Factor)
-            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.5));
+            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 1.0));
         let console_panel_id = console_root.add_element(console_panel);
         let console_text = ui::Element::new()
-            .set_coordinate_system(ui::CoordinateType::Factor)
+            .set_coordinate_system(ui::CoordinateType::Pixel)
             .set_position(veclib::Vector2::ZERO)
-            .set_text("text", 30.0)
-            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.0));
+            .set_size(veclib::Vector2::ONE)
+            .set_text("text", 30.0);
         let console_text_id = console_root.add_element(console_text);
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
         console_root.visible = false;
@@ -280,6 +280,17 @@ impl World {
                 }
             }
         } 
+
+        // Update the console everytime
+        match self.input_manager.full_sentence.as_ref() {
+            Some(x) => {
+                let console_text = self.ui_manager.get_root_mut("console").get_element_mut(2);
+                console_text.update_text(x.clone().as_str(), 20.0);
+            },
+            None => {
+                // We don't have to update anything
+            },
+        }
     }
     // Set the fullscreen status
     pub fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {

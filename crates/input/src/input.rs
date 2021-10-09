@@ -54,7 +54,7 @@ pub struct InputManager {
 
     // Key sentence registering
     last_key: String,
-    full_sentence: Option<String>,
+    pub full_sentence: Option<String>,
 }
 
 impl Default for InputManager {
