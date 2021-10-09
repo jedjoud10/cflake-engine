@@ -264,7 +264,7 @@ impl World {
             render_system.wireframe = !render_system.wireframe;
         }
         // Check if we should start key registering if the console is active
-        if self.input_manager.map_pressed("toggle_console") {
+        if self.input_manager.map_pressed_uncheck("toggle_console") {
             match self.input_manager.toggle_keys_reg() {
                 Some(x) => {
                     // Hide the console

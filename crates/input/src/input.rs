@@ -51,6 +51,7 @@ pub struct InputManager {
     last_mouse_pos: (i32, i32),
     last_mouse_scroll: f32,
     glfw_get_scancode: fn(key: Keys) -> i32,
+    update: bool,
 
     // Key sentence registering
     last_key: String,
@@ -66,6 +67,7 @@ impl Default for InputManager {
             last_mouse_pos: Default::default(),
             last_mouse_scroll: Default::default(),
             glfw_get_scancode: |x| -1,
+            update: true,
             last_key: String::new(),
             full_sentence: None,
         }
@@ -168,6 +170,7 @@ impl InputManager {
     }
     // Called when we recieve a new mouse event from the window (Could either be a mouse position one or a scroll one)
     pub fn recieve_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
+        if !self.update { return; /* Update only when we can */ }
         match position {
             Some(position) => {
                 // This is a mouse position event
@@ -215,11 +218,13 @@ impl InputManager {
     // Start registering the keys as a sentence
     pub fn start_keys_reg(&mut self) {
         self.full_sentence = Some(String::new());
+        self.update = false;
     }
     // Stop registering the keys as a sentence and return it
     pub fn stop_keys_reg(&mut self) -> String {
         let output = self.full_sentence.as_ref().unwrap().clone();
         self.full_sentence = None;
+        self.update = true;
         return output;
     }
     // Toggle the registering of the keys as a literal string
@@ -285,6 +290,24 @@ impl InputManager {
 impl InputManager {
     // Returns true when the map is pressed
     pub fn map_pressed(&self, name: &str) -> bool {
+        if !self.update { return false; /* We are not allowed to update so return the default value */ }
+        // Make sure that mapping actually exists
+        if self.bindings.contains_key(&name.to_string()) {
+            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
+            if self.keys.contains_key(key_scancode) {
+                match self.keys.get(key_scancode).unwrap().0 {
+                    KeyStatus::Pressed => true,
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+    // Returns true when the map is pressed, ignores the update check
+    pub fn map_pressed_uncheck(&self, name: &str) -> bool {
         // Make sure that mapping actually exists
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
@@ -302,6 +325,7 @@ impl InputManager {
     }
     // Returns true when the map is being held
     pub fn map_held(&self, name: &str) -> (bool, f32) {
+        if !self.update { return (false, 0.0); /* We are not allowed to update so return the default value */ }
         // Make sure that mapping actually exists
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
@@ -319,6 +343,7 @@ impl InputManager {
     }
     // Returns true when the map has been released
     pub fn map_released(&self, name: &str) -> bool {
+        if !self.update { return false; /* We are not allowed to update so return the default value */ }
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
             if self.keys.contains_key(key_scancode) {
@@ -335,6 +360,7 @@ impl InputManager {
     }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {
+        if !self.update { return false; /* We are not allowed to update so return the default value */ }
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
             if self.keys.contains_key(key_scancode) {
