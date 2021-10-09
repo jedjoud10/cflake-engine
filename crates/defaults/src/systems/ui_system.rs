@@ -197,10 +197,14 @@ impl System for UISystem {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
 
+        // Calculate the max root depth
+        let max_root_depth = data.ui_manager.roots.iter().map(|x| x.1.root_depth ).sum::<i32>();
+        println!("{}", max_root_depth);
         // Loop over every root node
         for (root_name, root) in data.ui_manager.roots.iter() {
             let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
             let shader = data.shader_cacher.1.get_object(&self.ui_shader_name).unwrap();
+            let root_depth = root.root_depth;
             // Get the font shader
             let font_shader = data.shader_cacher.1.get_object(&self.font_ui_shader_name).unwrap();
             // Default font
@@ -216,7 +220,8 @@ impl System for UISystem {
                     continue;
                 }
                 // Get the data that will be passed to the shader
-                let depth = (1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99;
+                let root_depth_factor = root_depth as f32 / max_root_depth as f32;
+                let depth = ((1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99) * root_depth_factor;
                 let size: veclib::Vector2<f32>;
                 let position: veclib::Vector2<f32>;
                 let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size);

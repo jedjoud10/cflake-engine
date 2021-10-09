@@ -101,7 +101,7 @@ impl World {
         self.shader_cacher.1.generate_defaults(vec![default_shader_name.as_str()]);
 
         // Create some default UI that prints some default info to the screen
-        let mut root = ui::Root::new();
+        let mut root = ui::Root::new(1);
         // ----Add the elements here----
 
         // Create a text element
@@ -125,7 +125,7 @@ impl World {
         self.ui_manager.set_default_root(root);
 
         // Create the default root for the console
-        let mut console_root = ui::Root::new();
+        let mut console_root = ui::Root::new(64);
         let console_panel = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Factor)
             .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.5));

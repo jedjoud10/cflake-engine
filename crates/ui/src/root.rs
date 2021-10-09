@@ -14,6 +14,7 @@ pub struct Root {
     pub smart_element_list: SmartList<Element>,
     pub visible: bool,
     pub max_depth: i32,
+    pub root_depth: i32,
 }
 
 impl Default for Root {
@@ -21,19 +22,21 @@ impl Default for Root {
         Self { 
             smart_element_list: SmartList::<Element>::default(), 
             visible: true,
-            max_depth: 0
-    }
+            max_depth: 0,
+            root_depth: 1,
+        }
     }
 }
 
 impl Root {
     // New
-    pub fn new() -> Self {
+    pub fn new(root_depth: i32) -> Self {
         let mut root = Self::default();
         // Add the root element to this
         let root_elem = Element::default();
         // Add the element to the root node
         root.add_element(root_elem);
+        root.root_depth = root_depth;
         return root;
     }
     // Add an element to the tree

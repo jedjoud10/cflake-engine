@@ -43,7 +43,7 @@ impl System for TerrainSystem {
         system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();        
 
         // Create a debug UI for this terrain
-        let mut root = ui::Root::new(); 
+        let mut root = ui::Root::new(2); 
 
         // Text for chunk debug data
         let elem = ui::Element::new()
