@@ -269,14 +269,12 @@ impl World {
                 Some(x) => {
                     // Hide the console
                     let console_root = self.ui_manager.get_root_mut("console");
-                    console_root.visible = false;         
-                    println!("Hide console");           
+                    console_root.visible = false;          
                 }
                 None => { 
                     // Enable the console
                     let console_root = self.ui_manager.get_root_mut("console");
                     console_root.visible = true;
-                    println!("Show console");
                 }
             }
         } 
@@ -285,7 +283,8 @@ impl World {
         match self.input_manager.full_sentence.as_ref() {
             Some(x) => {
                 let console_text = self.ui_manager.get_root_mut("console").get_element_mut(2);
-                console_text.update_text(x.clone().as_str(), 20.0);
+                let console_string = format!("Com: '{}'", x.clone().as_str());
+                console_text.update_text(console_string.as_str(), 20.0);
             },
             None => {
                 // We don't have to update anything

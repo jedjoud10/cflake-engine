@@ -198,7 +198,7 @@ impl System for UISystem {
         }
 
         // Calculate the max root depth
-        let max_root_depth = data.ui_manager.roots.iter().map(|x| x.1.root_depth ).sum::<i32>();
+        let max_root_depth = data.ui_manager.roots.iter().map(|x| x.1.root_depth ).max().unwrap_or(1);
         // Loop over every root node
         for (root_name, root) in data.ui_manager.roots.iter() {
             let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
@@ -220,7 +220,7 @@ impl System for UISystem {
                 }
                 // Get the data that will be passed to the shader
                 let root_depth_factor = root_depth as f32 / max_root_depth as f32;
-                let depth = ((1.0 - (element.depth as f32 / root.max_depth as f32)) * 0.99) * root_depth_factor;
+                let depth = (1.0-((element.depth as f32 / root.max_depth as f32) * root_depth_factor)) * 0.99;
                 let size: veclib::Vector2<f32>;
                 let position: veclib::Vector2<f32>;
                 let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size);

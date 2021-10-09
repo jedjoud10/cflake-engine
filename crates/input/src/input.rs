@@ -123,7 +123,17 @@ impl InputManager {
             (Keys::F9, glfw::Key::get_scancode(&glfw::Key::F9)),
             (Keys::F10, glfw::Key::get_scancode(&glfw::Key::F10)),
             (Keys::F11, glfw::Key::get_scancode(&glfw::Key::F11)),
-            (Keys::F12, glfw::Key::get_scancode(&glfw::Key::F12))])
+            (Keys::F12, glfw::Key::get_scancode(&glfw::Key::F12)),
+            (Keys::NUM1, glfw::Key::get_scancode(&glfw::Key::Num1)),
+            (Keys::NUM2, glfw::Key::get_scancode(&glfw::Key::Num2)),
+            (Keys::NUM3, glfw::Key::get_scancode(&glfw::Key::Num3)),
+            (Keys::NUM4, glfw::Key::get_scancode(&glfw::Key::Num4)),
+            (Keys::NUM5, glfw::Key::get_scancode(&glfw::Key::Num5)),
+            (Keys::NUM6, glfw::Key::get_scancode(&glfw::Key::Num6)),
+            (Keys::NUM7, glfw::Key::get_scancode(&glfw::Key::Num7)),
+            (Keys::NUM8, glfw::Key::get_scancode(&glfw::Key::Num8)),
+            (Keys::NUM9, glfw::Key::get_scancode(&glfw::Key::Num9)),
+            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0))])
         );
         // Unwrap each value
         let cache = cache.iter().map(|(key, val)| (key.clone(), val.unwrap())).collect::<HashMap<Keys, i32>>();
@@ -165,6 +175,16 @@ impl InputManager {
             Keys::X => "x",
             Keys::Y => "y",
             Keys::Z => "z",
+            Keys::NUM0 => "0",
+            Keys::NUM1 => "1",
+            Keys::NUM2 => "2",
+            Keys::NUM3 => "3",
+            Keys::NUM4 => "4",
+            Keys::NUM5 => "5",
+            Keys::NUM6 => "6",
+            Keys::NUM7 => "7",
+            Keys::NUM8 => "8",
+            Keys::NUM9 => "9",
             _ => ""
         }.to_string()
     }
@@ -251,7 +271,6 @@ impl InputManager {
                     let key = x.0.clone();
                     let new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
                     self.full_sentence = Some(new_string);
-                    println!("sentence: {}", self.full_sentence.as_ref().clone().unwrap());
                 },
                 None => { /* We simply don't have they key in the cache */ },
             };            

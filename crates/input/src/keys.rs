@@ -48,5 +48,14 @@ pub enum Keys {
     F10,
     F11,
     F12,
-    
+    NUM0, 
+    NUM1,
+    NUM2,
+    NUM3,
+    NUM4,
+    NUM5,
+    NUM6,
+    NUM7,
+    NUM8,
+    NUM9
 }
