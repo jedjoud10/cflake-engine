@@ -128,7 +128,7 @@ impl World {
         let mut console_root = ui::Root::new(64);
         let console_panel = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Factor)
-            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 1.0));
+            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.7));
         let console_panel_id = console_root.add_element(console_panel);
         let console_text = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Pixel)
@@ -171,13 +171,6 @@ impl World {
 
         // Update entity manager
         self.update_entity_manager();
-
-        // Create a default command
-        let command: debug::Command = debug::Command {
-            name: "test".to_string(),
-            inputs: vec![debug::CommandInput::new::<bool>("-s")],
-        };
-        self.debug.console.register_template_command(command);
 
         // Callback
         callback(self);
@@ -236,19 +229,7 @@ impl World {
         self.time_manager.frame_count += 1;
         // Update the FPS
         self.time_manager.fps = 1.0 / self.time_manager.delta_time;
-        self.time_manager.update_average_fps();
-
-        // Detect test command 
-        match self.debug.console.listen_command("test") {
-            Some(x) => {
-                let t = x.get_input("-s");
-                match t.as_ref() {
-                    Some(x) => println!("T: {:?}", x),
-                    None => todo!(),
-                }
-            },
-            None => { /* */ },
-        }        
+        self.time_manager.update_average_fps();        
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
@@ -306,7 +287,7 @@ impl World {
             Some(x) => {
                 let console_text = self.ui_manager.get_root_mut("console").get_element_mut(2);
                 let console_string = format!("Com: '{}'", x.clone().as_str());
-                console_text.update_text(console_string.as_str(), 20.0);
+                console_text.update_text(console_string.as_str(), 40.0);
             },
             None => {
                 // We don't have to update anything

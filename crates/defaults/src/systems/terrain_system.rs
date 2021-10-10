@@ -21,8 +21,7 @@ use crate::components;
 #[derive(Default)]
 pub struct TerrainSystem {
     pub system_data: SystemData,
-    // Debug elements ID
-    element_id: u16,
+    pub lod_factor: f32,
 }
 
 impl System for TerrainSystem {
@@ -45,13 +44,15 @@ impl System for TerrainSystem {
         // Create a debug UI for this terrain
         let mut root = ui::Root::new(2); 
 
-        // Text for chunk debug data
-        let elem = ui::Element::new()
-            .set_coordinate_system(ui::CoordinateType::Pixel)
-            .set_position(veclib::Vector2::Y * 60.0 * 3.0)
-            .set_text("chunk_data_here", 60.0);
-        self.element_id = root.add_element(elem);
-        data.ui_manager.add_root("terrain_debug", root);
+        // Create debug commands
+        let command = debug::Command {
+            name: "terrain-set-lod-factor".to_string(),
+            inputs: vec![debug::CommandInput::new::<f32>("-v")],
+        };
+        data.debug.console.register_template_command(command);
+
+        // Default LOD factor
+        self.lod_factor = terrain::DEFAULT_LOD_FACTOR;
     }
 
     // Called for each entity in the system
@@ -70,7 +71,7 @@ impl System for TerrainSystem {
 
         // Generate the octree each frame and generate / delete the chunks
         if td.chunk_manager.octree_update_valid() {
-            match td.octree.generate_incremental_octree(camera_location) {
+            match td.octree.generate_incremental_octree(camera_location, self.lod_factor) {
                 Some((mut added, removed, total_nodes)) => {
                     // Filter first
                     added.retain(|_, node| BoundChecker::bound_check(&node));
@@ -159,12 +160,21 @@ impl System for TerrainSystem {
         for entity_id in removed_chunks {
             // Removal the entity from the world
             data.entity_manager.remove_entity_s(&entity_id).unwrap();
-        }
+        } 
 
-        // Update the UI debug chunk data        
-        let root = data.ui_manager.get_root_mut("terrain_debug");
-        let text = &format!("Chunks to generate: {}, Entities to remove: {}", td.chunk_manager.chunks_to_generate.len(), td.chunk_manager.entities_to_remove.len());
-        root.get_element_mut(self.element_id).update_text(text, 40.0);        
+        // Update the LOD factor using the commands
+        match data.debug.console.listen_command("terrain-set-lod-factor") {
+            Some(x) => {
+                match x.get_input("-v") {
+                    Some(x) => match x {
+                        debug::CommandInputEnum::F32(x) => self.lod_factor = *x,
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            },
+            None => {},
+        }
     }
 
     // When a terrain generator gets added to the world
@@ -172,7 +182,7 @@ impl System for TerrainSystem {
         // Setup the voxel generator for this generator
         let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
         // Generate the voxel texture
-        td.voxel_generator.setup_voxel_generator();
+        td.voxel_generator.setup_voxel_generator();        
     }
 
     // Turn this into "Any" so we can cast into child systems

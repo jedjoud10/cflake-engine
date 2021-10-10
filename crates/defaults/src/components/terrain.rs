@@ -14,10 +14,9 @@ pub struct TerrainData {
 // Create a new terrain data
 impl TerrainData {
     // New terrain data with specific parameters
-    pub fn new(material: rendering::Material, compute_shader_name: String, octree_depth: u8, lod_factor: f32) -> Self {
+    pub fn new(material: rendering::Material, compute_shader_name: String, octree_depth: u8) -> Self {
         // Create a new octree
         let octree = Octree {
-            lod_factor,
             size: (CHUNK_SIZE - 2) as u64,
             depth: octree_depth,
             ..Octree::default()

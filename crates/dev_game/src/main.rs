@@ -72,7 +72,6 @@ pub fn world_initialized(world: &mut World) {
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
     const OCTREE_DEPTH: u8 = 7;
-    const LOD_FACTOR: f32 = 0.7;
     
     // Load the material and compute shader na
     let compute_shader_name = Shader::new(
@@ -87,6 +86,6 @@ pub fn world_initialized(world: &mut World) {
     // Material
     let material = Material::new("Terrain material").set_shader(&terrain_shader).resource_load_textures(vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\rock_normal.png"], data.texture_cacher, data.resource_manager).unwrap().load_default_textures(data.texture_cacher);
     let material_inst = material.instantiate(data.instance_manager).set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE * 0.2));
-    terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(material_inst, compute_shader_name, OCTREE_DEPTH, LOD_FACTOR)).unwrap();
+    terrain_entity.link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(material_inst, compute_shader_name, OCTREE_DEPTH)).unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
 }

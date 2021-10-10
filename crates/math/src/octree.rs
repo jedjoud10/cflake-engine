@@ -12,7 +12,6 @@ pub struct Octree {
     pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     pub targetted_node: Option<OctreeNode>,
     pub postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
-    pub lod_factor: f32,
     pub size: u64,
     pub depth: u8,
     pub generated_base_octree: bool,
@@ -26,7 +25,6 @@ impl Default for Octree {
             targetted_node: None,
             size: 1,
             depth: 1,
-            lod_factor: 1.0,
             generated_base_octree: false,
         }
     }
@@ -51,14 +49,14 @@ impl Octree {
         }
     }
     // Get the subdivided nodes that have passed through the post process check
-    pub fn calculate_postprocess_nodes(&self, target: &veclib::Vector3<f32>, nodes: &HashMap<veclib::Vector3<i64>, OctreeNode>) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
+    pub fn calculate_postprocess_nodes(&self, target: &veclib::Vector3<f32>, nodes: &HashMap<veclib::Vector3<i64>, OctreeNode>, lod_factor: f32) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         let mut output: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         pending_nodes.extend(nodes.iter().map(|x| x.1.clone()));
         while pending_nodes.len() > 0 {
             let mut octree_node = pending_nodes[0].clone();
             // If the node passes the postprocess check, subdivide it, though only if it has no children
-            if octree_node.can_subdivide_postprocess(target, self.lod_factor, self.depth) && !octree_node.children {
+            if octree_node.can_subdivide_postprocess(target, lod_factor, self.depth) && !octree_node.children {
                 let t = octree_node.subdivide();
                 pending_nodes.extend(t);
             }
@@ -95,14 +93,14 @@ impl Octree {
         return (nodes, targetted_node);
     }
     // Generate the base octree with a target point at 0, 0, 0
-    pub fn generate_base_octree(&mut self) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
+    fn generate_base_octree(&mut self, lod_factor: f32) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         // Create the root node
         let root_node = self.get_root_node();
         let octree_data = self.generate_octree(&veclib::Vector3::ONE, root_node.clone());
         self.nodes = octree_data.0.clone();
         self.targetted_node = octree_data.1;
         let mut nodes = octree_data.0;
-        let postprocess_nodes = self.calculate_postprocess_nodes(&veclib::Vector3::ONE, &nodes);
+        let postprocess_nodes = self.calculate_postprocess_nodes(&veclib::Vector3::ONE, &nodes, lod_factor);
         self.postprocess_nodes = postprocess_nodes.clone();
         nodes.extend(postprocess_nodes);
         return nodes;
@@ -111,6 +109,7 @@ impl Octree {
     pub fn generate_incremental_octree(
         &mut self,
         input: veclib::Vector3<f32>,
+        lod_factor: f32,
     ) -> Option<(
         HashMap<veclib::Vector3<i64>, OctreeNode>,
         HashMap<veclib::Vector3<i64>, OctreeNode>,
@@ -125,7 +124,7 @@ impl Octree {
         // Check if we even have the base octree generated
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it
-            let added_nodes = self.generate_base_octree();
+            let added_nodes = self.generate_base_octree(lod_factor);
             let nodes = added_nodes.clone();
             self.generated_base_octree = true;
             return Some((added_nodes, HashMap::new(), nodes));
@@ -212,7 +211,7 @@ impl Octree {
         }       
 
         // Subdivide each added node at least once
-        let postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = self.calculate_postprocess_nodes(&input, &self.nodes);
+        let postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = self.calculate_postprocess_nodes(&input, &self.nodes, lod_factor);
         let mut removed_postprocess_nodes: Vec<OctreeNode> = Vec::new();
         // Detect the newly made postprocess-nodes
         let mut added_postprocess_nodes: Vec<OctreeNode> = Vec::new();
