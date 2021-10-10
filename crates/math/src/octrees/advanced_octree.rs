@@ -1,26 +1,18 @@
-use super::intersection::Intersection;
-use super::shapes;
-use super::shapes::Sphere;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::ops::{BitAnd, BitOr};
-use std::time::Instant;
 
-// TODO: Rewrite this
 // The whole octree
-pub struct Octree {
-    pub nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
-    pub targetted_node: Option<OctreeNode>,
+pub struct AdvancedOctree {
+    
     pub postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
     pub size: u64,
-    pub depth: u8,
     pub generated_base_octree: bool,
 }
 
-impl Default for Octree {
+impl Default for AdvancedOctree {
     fn default() -> Self {
         Self {
-            nodes: HashMap::new(),
+            nodes: Vec::new(),
             postprocess_nodes: HashMap::new(),
             targetted_node: None,
             size: 1,
@@ -65,33 +57,7 @@ impl Octree {
             output.insert(octree_node.get_center(), octree_node);
         }
         return output;
-    }
-    // Generate an octree from a root and a target point
-    pub fn generate_octree(&self, target: &veclib::Vector3<f32>, root_node: OctreeNode) -> (HashMap<veclib::Vector3<i64>, OctreeNode>, Option<OctreeNode>) {
-        let mut nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
-        let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-        pending_nodes.push(root_node.clone());
-        nodes.insert(root_node.get_center(), root_node);
-        let mut targetted_node: Option<OctreeNode> = None;
-        let mut closest_dist: f32 = f32::MAX;
-        while pending_nodes.len() > 0 {
-            let mut octree_node = pending_nodes[0].clone();
-            // Check if this octree node is the targeted node
-            let dist = veclib::Vector3::<f32>::from(octree_node.get_center()).distance(*target);
-            if octree_node.depth == self.depth - 1 && dist < closest_dist {
-                targetted_node = Some(octree_node.clone());
-                closest_dist = dist;
-            }
-            // If the node contains the position, subdivide it
-            if octree_node.can_subdivide(&target, self.depth) {
-                pending_nodes.extend(octree_node.subdivide());
-            }
-            // Bruh
-            pending_nodes.remove(0);
-            nodes.insert(octree_node.get_center(), octree_node);
-        }
-        return (nodes, targetted_node);
-    }
+    }    
     // Generate the base octree with a target point at 0, 0, 0
     fn generate_base_octree(&mut self, lod_factor: f32) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
         // Create the root node
@@ -250,88 +216,5 @@ impl Octree {
         let removed_nodes_hashmap: HashMap<veclib::Vector3<i64>, OctreeNode> = removed_postprocess_nodes.iter().map(|x| (x.get_center(), x.clone())).collect();
         // Return
         return Some((added_nodes_hashmap, removed_nodes_hashmap, self.postprocess_nodes.clone()));
-    }
-}
-
-// Simple node in the octree
-#[derive(Clone, Debug)]
-pub struct OctreeNode {
-    pub position: veclib::Vector3<i64>,
-    pub half_extent: u64,
-    pub depth: u8,
-    pub child_leaf_count: u8,
-
-    // Used for the parent-children links
-    // TODO: Change this to it uses IDs instead of coordinates
-    pub parent_center: veclib::Vector3<i64>,
-    pub children_centers: [veclib::Vector3<i64>; 8],
-    // Check if we passed the postprocess test
-    pub postprocess: bool,
-    // Check if we had children
-    pub children: bool,
-    // The path we took
-    pub path: Vec<u8>,
-}
-
-impl OctreeNode {
-    // Get the AABB from this octee node
-    pub fn get_aabb(&self) -> super::bounds::AABB {
-        super::bounds::AABB {
-            min: veclib::Vector3::<f32>::from(self.position),
-            max: veclib::Vector3::<f32>::from(self.position) + veclib::Vector3::<f32>::new(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
-        }
-    }
-    // Get the center of this octree node
-    pub fn get_center(&self) -> veclib::Vector3<i64> {
-        return self.position + self.half_extent as i64;
-    }
-    // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
-        // AABB intersection, return true if point in on the min edge though
-        let aabb = self.get_aabb().min.elem_lte(target) & self.get_aabb().max.elem_gt(target);
-        let aabb = (aabb | veclib::Vector3::<bool>::new(false, false, false)).all();
-        return aabb && self.depth < (max_depth - 1);
-    }
-    // Check if we can subdivide this node during the postprocessing loop
-    pub fn can_subdivide_postprocess(&self, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
-        let mut aabb = self.get_aabb();
-        aabb.expand(lod_factor * self.half_extent as f32);
-        let aabb = aabb.min.elem_lte(target) & aabb.max.elem_gt(target);
-        let aabb = (aabb | veclib::Vector3::<bool>::new(false, false, false)).all();
-        return aabb && self.depth < (max_depth - 1);
-    }
-    // Subdivide this node into 8 smaller nodes
-    pub fn subdivide(&mut self) -> Vec<OctreeNode> {
-        let extent_i64 = self.half_extent as i64;
-        let mut output: Vec<OctreeNode> = Vec::new();
-        let mut i: u8 = 0;
-        for y in 0..2 {
-            for z in 0..2 {
-                for x in 0..2 {
-                    // The position offset for the new octree node
-                    let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * extent_i64, y * extent_i64, z * extent_i64);
-                    let mut new_path = self.path.clone();
-                    new_path.push(i);
-                    let child = OctreeNode {
-                        position: self.position + offset,
-                        half_extent: self.half_extent / 2,
-                        depth: self.depth + 1,
-                        parent_center: self.get_center(),
-                        postprocess: false,
-                        children_centers: [veclib::Vector3::<i64>::ZERO; 8],
-                        child_leaf_count: 0,
-                        children: false,
-                        path: new_path,
-                    };
-                    let center = child.get_center();
-                    self.children_centers[i as usize] = center;
-                    output.push(child);
-                    i += 1;
-                }
-            }
-        }
-        // Update the octree node
-        self.children = true;
-        return output;
     }
 }

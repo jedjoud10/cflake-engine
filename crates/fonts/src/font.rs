@@ -10,7 +10,27 @@ pub struct Font {
     pub atlas_dimensions: veclib::Vector2<u16>,
     pub texture_pixels: Vec<u8>,
     pub texture: Option<Texture2D>,
-    pub chars: Vec<FontChar>,
+    pub chars: Vec<FontChar>
+}
+
+// Font options
+pub struct FontOptions {
+    pub thickness: f32,
+    pub outline_thickness: f32,
+    pub color: veclib::Vector4<f32>,
+    pub outline_color: veclib::Vector4<f32>,
+}
+
+// Default font options
+impl Default for FontOptions {
+    fn default() -> Self {
+        Self { 
+            thickness: 20.0,
+            outline_thickness: 0.0,
+            color: veclib::Vector4::new(0.0, 0.0, 0.0, 1.0),
+            outline_color: veclib::Vector4::ONE
+        }
+    }
 }
 
 impl Font {
