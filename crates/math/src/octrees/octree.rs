@@ -1,3 +1,5 @@
+use others::SmartList;
+
 use super::node::OctreeNode;
 
 // A simple octree, no incremental generation what so ever
@@ -5,7 +7,7 @@ pub struct Octree {
     // The target node
     pub target_node: Option<OctreeNode>,
     // The total nodes in the octree
-    pub nodes: Vec<OctreeNode>,
+    pub nodes: SmartList<OctreeNode>,
     // The depth of the tree
     pub depth: u8,
     // The size factor for each node, should be a power of two
@@ -17,7 +19,7 @@ impl Octree {
     pub fn create_octree(depth: u8, size: u64) -> Self {
         Self {
             target_node: None,
-            nodes: Vec::new(),
+            nodes: SmartList::default(),
             size,
             depth,
         }
@@ -38,14 +40,14 @@ impl Octree {
         }
     }
     // Generate an octree from a root and a target point
-    pub fn generate_octree(&self, target: &veclib::Vector3<f32>, root_node: OctreeNode) -> (Vec<OctreeNode>, Option<OctreeNode>) {
+    pub fn generate_octree(&mut self, target: &veclib::Vector3<f32>, root_node: OctreeNode) {
         // The final nodes
         let mut nodes: Vec<OctreeNode> = Vec::new();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         // The default root node
         pending_nodes.push(root_node.clone());
-        nodes.push(root_node.clone());
+        self.nodes.add_element(root_node);
 
         // The targetted node that is specified using the target position
         let mut targetted_node: Option<OctreeNode> = None;
@@ -66,21 +68,18 @@ impl Octree {
             
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth) {
-                // Update the node
-                pending_nodes.extend(octree_node.subdivide());
-            }
-            
-            // Remove the node so we don't cause an infinite loop
-            pending_nodes.remove(0);
-            // Update the node if it was the root node
-            if nodes.len() == 1 {
-                // This is the root node, update it
-                nodes[0] = octree_node;
-            } else {
-                // This is not the root node
-                nodes.push(octree_node);
+                // Update the nodes
+                let nodes_to_push = octree_node.subdivide();
+                nodes[octree_node.index as usize] = octree_node;
+                // Add each child node, but also update the parent's child link id
+
+                nodes.extend(nodes_to_push.clone());
+                pending_nodes.extend(nodes_to_push.clone());
             }
         }
-        return (nodes, targetted_node);
+
+        // Update self
+        self.nodes.add_element(element) = nodes;
+        self.target_node = targetted_node;
     }
 }

@@ -5,9 +5,9 @@ pub struct OctreeNode {
     pub half_extent: u64,
     pub depth: u8,
     // Indexing stuff
-    pub parent_index: u32,
-    pub index: u32,
-    pub children_indices: Option<[u32; 8]>,
+    pub parent_index: usize,
+    pub index: usize,
+    pub children_indices: Option<[usize; 8]>,
 }
 
 impl OctreeNode {
@@ -35,7 +35,7 @@ impl OctreeNode {
         let mut output: Vec<OctreeNode> = Vec::new();
 
         // Temporary array that we fill with out children's indices
-        let mut children_indices: [u32; 8];
+        let mut children_indices: [usize; 8];
 
         // Children counter
         let mut i: usize = 0;
@@ -46,7 +46,7 @@ impl OctreeNode {
                     let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * half_extent, y * half_extent, z * half_extent);
 
                     // Calculate the child's index
-                    let child_index = self.index * 8 + (i as u32);
+                    let child_index = self.index * 8 + (i as usize);
 
                     let child = OctreeNode {
                         position: self.position + offset,

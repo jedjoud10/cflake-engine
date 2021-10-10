@@ -14,16 +14,17 @@ impl AdvancedOctree {
         node.children_indices.is_none();
         false
     }
-    // Calculate the twin nodes
+    // Calculate the nodes that are the twin nodes *and* normal nodes
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
-    fn get_twin_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &Vec<OctreeNode>, lod_factor: f32) -> Vec<OctreeNode> {
-        // The output twin nodes
-        let mut twin_nodes: Vec<Option<OctreeNode>> = Vec::new();
+    fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &Vec<OctreeNode>, lod_factor: f32) -> Vec<OctreeNode> {
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         
+        // Output nodes
+        let mut output_nodes: Vec<OctreeNode> = Vec::new();
+        
         // Add all the normal nodes
-        let other_iter = nodes.iter().filter_map(|x| x.as_ref().cloned());
+        let other_iter = nodes.iter().map(|x| x.clone());
         pending_nodes.extend(other_iter);
 
         // Evaluate each node
@@ -34,23 +35,24 @@ impl AdvancedOctree {
             // If the node passes the collision check, subdivide it
             if self.can_node_subdivide_twin(&octree_node, target) {
                 let t = octree_node.subdivide();
-                pending_nodes.extend(t);
+                nodes[octree_node.index] = octree_node;
+                pending_nodes.extend(t.clone());
+                nodes.extend(t);
             }
 
             // Remove the node so we don't cause an infinite loop
             pending_nodes.remove(0);
-            twin_nodes.push(Some(octree_node));
+            output_nodes.push(octree_node);
         }
-        return twin_nodes;
+
+        return output_nodes;
     }    
     // Generate the base octree with a target point at 0, 0, 0
-    fn generate_base_octree(&mut self, lod_factor: f32) {
+    fn generate_base_octree(&mut self, lod_factor: f32) -> Vec<OctreeNode> {
         // Create the root node
         let root_node = self.octree.get_root_node();
-        let (normal_nodes, targetted_node) = self.octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
-        let mut nodes = normal_nodes.0;
-        let twin_nodes = self.get_twin_nodes(&veclib::Vector3::ONE, &nodes, lod_factor);
-        self.twin_nodes = twin_nodes.clone();
+        self.octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
+        self.calculate_combined_nodes(&veclib::Vector3::ONE, &self.octree.nodes, lod_factor)
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(
@@ -72,15 +74,18 @@ impl AdvancedOctree {
         // Check if we even have the base octree generated
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it
-            self.generate_base_octree(lod_factor);
-            // Combine the normal nodes and the twin nodes together
-            let combined_nodes = 
-            return Some((self., Vec::new(), nodes));
+            let added_nodes = self.generate_base_octree(lod_factor);
+            return Some((added_nodes, Vec::new(), added_nodes));
         }
-        // If we don't have a targetted node try to create the base octree
-        if self.targetted_node.is_none() {
+        // If we don't have a target node don't do anything
+        if self.octree.target_node.is_none() {
             return None;
         }
+
+        // What we do for incremental generation
+        // We go up the tree from the target node, then we check the highest depth node that still has a collision with the target point
+        // From there, we go down the tree and generate a sub-octree, then we just append it to our normal octree
+
         let marked_node: Option<OctreeNode>;
 
         // We'll have only one main octree node that we will remove, and we will recursively remove it's children as well

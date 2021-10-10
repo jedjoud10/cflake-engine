@@ -443,6 +443,7 @@ dependencies = [
 name = "math"
 version = "0.0.1"
 dependencies = [
+ "others",
  "veclib",
 ]
 
