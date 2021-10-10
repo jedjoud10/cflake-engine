@@ -1,75 +1,57 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
+use super::{node::OctreeNode, octree::Octree};
 
-// The whole octree
-pub struct AdvancedOctree {
-    
-    pub postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode>,
-    pub size: u64,
+// An advanced octree with incremental generation and twin nodes
+pub struct AdvancedOctree {    
+    // The original octree
+    pub octree: Octree,
+    pub twin_nodes: Vec<Option<OctreeNode>>,
     pub generated_base_octree: bool,
 }
 
-impl Default for AdvancedOctree {
-    fn default() -> Self {
-        Self {
-            nodes: Vec::new(),
-            postprocess_nodes: HashMap::new(),
-            targetted_node: None,
-            size: 1,
-            depth: 1,
-            generated_base_octree: false,
-        }
+impl AdvancedOctree {   
+    // Check if a node can be subdivided
+    fn can_node_subdivide_twin(&self, node: &OctreeNode, target: &veclib::Vector3<f32>) -> bool {
+        // Only subdivide if we don't have any children
+        node.children_indices.is_none();
+        false
     }
-}
-
-// TODO: Rewrite this
-impl Octree {
-    // Get the root node of this octree
-    pub fn get_root_node(&self) -> OctreeNode {
-        let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
-        let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
-        OctreeNode {
-            position: root_position,
-            half_extent: (root_size / 2) as u64,
-            depth: 0,
-            postprocess: false,
-            parent_center: veclib::Vector3::<i64>::ZERO,
-            children_centers: [veclib::Vector3::<i64>::ZERO; 8],
-            child_leaf_count: 0,
-            children: false,
-            path: Vec::new(),
-        }
-    }
-    // Get the subdivided nodes that have passed through the post process check
-    pub fn calculate_postprocess_nodes(&self, target: &veclib::Vector3<f32>, nodes: &HashMap<veclib::Vector3<i64>, OctreeNode>, lod_factor: f32) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
-        let mut output: HashMap<veclib::Vector3<i64>, OctreeNode> = HashMap::new();
+    // Calculate the twin nodes
+    // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
+    fn get_twin_nodes(&self, target: &veclib::Vector3<f32>, nodes: &Vec<Option<OctreeNode>>, lod_factor: f32) -> Vec<Option<OctreeNode>> {
+        // The output twin nodes
+        let mut twin_nodes: Vec<Option<OctreeNode>> = Vec::new();
+        // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-        pending_nodes.extend(nodes.iter().map(|x| x.1.clone()));
+        
+        // Add all the normal nodes
+        let other_iter = nodes.iter().filter_map(|x| x.as_ref().cloned());
+        pending_nodes.extend(other_iter);
+
+        // Evaluate each node
         while pending_nodes.len() > 0 {
+            // Get the current pending node
             let mut octree_node = pending_nodes[0].clone();
-            // If the node passes the postprocess check, subdivide it, though only if it has no children
-            if octree_node.can_subdivide_postprocess(target, lod_factor, self.depth) && !octree_node.children {
+
+            // If the node passes the collision check, subdivide it
+            if self.can_node_subdivide_twin(&octree_node, target) {
                 let t = octree_node.subdivide();
                 pending_nodes.extend(t);
             }
-            // Bruh
+
+            // Remove the node so we don't cause an infinite loop
             pending_nodes.remove(0);
-            output.insert(octree_node.get_center(), octree_node);
+            twin_nodes.push(Some(octree_node));
         }
-        return output;
+        return twin_nodes;
     }    
     // Generate the base octree with a target point at 0, 0, 0
-    fn generate_base_octree(&mut self, lod_factor: f32) -> HashMap<veclib::Vector3<i64>, OctreeNode> {
+    fn generate_base_octree(&mut self, lod_factor: f32) {
         // Create the root node
-        let root_node = self.get_root_node();
-        let octree_data = self.generate_octree(&veclib::Vector3::ONE, root_node.clone());
-        self.nodes = octree_data.0.clone();
-        self.targetted_node = octree_data.1;
-        let mut nodes = octree_data.0;
-        let postprocess_nodes = self.calculate_postprocess_nodes(&veclib::Vector3::ONE, &nodes, lod_factor);
-        self.postprocess_nodes = postprocess_nodes.clone();
-        nodes.extend(postprocess_nodes);
-        return nodes;
+        let root_node = self.octree.get_root_node();
+        let (normal_nodes, targetted_node) = self.octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
+        let mut nodes = normal_nodes.0;
+        let twin_nodes = self.get_twin_nodes(&veclib::Vector3::ONE, &nodes, lod_factor);
+        self.twin_nodes = twin_nodes.clone();
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(

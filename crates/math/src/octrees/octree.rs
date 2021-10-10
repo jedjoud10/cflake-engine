@@ -3,15 +3,40 @@ use super::node::OctreeNode;
 // A simple octree, no incremental generation what so ever
 pub struct Octree {
     // The target node
-    pub target_node: Option<OctreeNode>
+    pub target_node: Option<OctreeNode>,
     // The total nodes in the octree
     pub nodes: Vec<Option<OctreeNode>>,
     // The depth of the tree
     pub depth: u8,
+    // The size factor for each node, should be a power of two
+    pub size: u64,
 }
 
-
 impl Octree {
+    // Create a new octree with a specific depth
+    pub fn create_octree(depth: u8, size: u64) -> Self {
+        Self {
+            target_node: None,
+            nodes: Vec::new(),
+            size,
+            depth,
+        }
+    }
+    // Get the root node of this octree
+    pub fn get_root_node(&self) -> OctreeNode {
+        // Get the maximum size of the root node
+        let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
+        let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
+        // Output the root node
+        OctreeNode {
+            position: root_position,
+            half_extent: (root_size / 2) as u64,
+            depth: 0,
+            parent_index: 0,
+            index: 0,
+            children_indices: None,            
+        }
+    }
     // Generate an octree from a root and a target point
     pub fn generate_octree(&self, target: &veclib::Vector3<f32>, root_node: OctreeNode) -> (Vec<OctreeNode>, Option<OctreeNode>) {
         // The final nodes
