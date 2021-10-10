@@ -4,7 +4,6 @@ use super::{node::OctreeNode, octree::Octree};
 pub struct AdvancedOctree {    
     // The original octree
     pub octree: Octree,
-    pub twin_nodes: Vec<Option<OctreeNode>>,
     pub generated_base_octree: bool,
 }
 
@@ -17,7 +16,7 @@ impl AdvancedOctree {
     }
     // Calculate the twin nodes
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
-    fn get_twin_nodes(&self, target: &veclib::Vector3<f32>, nodes: &Vec<Option<OctreeNode>>, lod_factor: f32) -> Vec<Option<OctreeNode>> {
+    fn get_twin_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &Vec<OctreeNode>, lod_factor: f32) -> Vec<OctreeNode> {
         // The output twin nodes
         let mut twin_nodes: Vec<Option<OctreeNode>> = Vec::new();
         // The nodes that must be evaluated
@@ -59,23 +58,24 @@ impl AdvancedOctree {
         input: veclib::Vector3<f32>,
         lod_factor: f32,
     ) -> Option<(
-        HashMap<veclib::Vector3<i64>, OctreeNode>,
-        HashMap<veclib::Vector3<i64>, OctreeNode>,
-        HashMap<veclib::Vector3<i64>, OctreeNode>,
+        Vec<OctreeNode>, // Added nodes
+        Vec<OctreeNode>, // Removed nodes
+        Vec<OctreeNode>, // Total nodes
     )> {
         // Clamp the input position
+        let root_node = self.octree.get_root_node();
         let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
             input,
-            veclib::Vector3::<f32>::from(self.get_root_node().position) + 32.0,
-            veclib::Vector3::<f32>::from(self.get_root_node().position + (self.get_root_node().half_extent * 2) as i64) - 32.0,
+            veclib::Vector3::<f32>::from(root_node.position) + 32.0,
+            veclib::Vector3::<f32>::from(root_node.position + (root_node.half_extent * 2) as i64) - 32.0,
         );
         // Check if we even have the base octree generated
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it
-            let added_nodes = self.generate_base_octree(lod_factor);
-            let nodes = added_nodes.clone();
-            self.generated_base_octree = true;
-            return Some((added_nodes, HashMap::new(), nodes));
+            self.generate_base_octree(lod_factor);
+            // Combine the normal nodes and the twin nodes together
+            let combined_nodes = 
+            return Some((self., Vec::new(), nodes));
         }
         // If we don't have a targetted node try to create the base octree
         if self.targetted_node.is_none() {

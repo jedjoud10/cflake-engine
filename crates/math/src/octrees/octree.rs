@@ -5,7 +5,7 @@ pub struct Octree {
     // The target node
     pub target_node: Option<OctreeNode>,
     // The total nodes in the octree
-    pub nodes: Vec<Option<OctreeNode>>,
+    pub nodes: Vec<OctreeNode>,
     // The depth of the tree
     pub depth: u8,
     // The size factor for each node, should be a power of two
@@ -66,6 +66,7 @@ impl Octree {
             
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth) {
+                // Update the node
                 pending_nodes.extend(octree_node.subdivide());
             }
             
