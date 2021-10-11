@@ -7,7 +7,7 @@ use fonts::Font;
 use input::*;
 use rendering::Shader;
 use resources::LoadableResource;
-use system_event_data::{SystemEventData, SystemEventDataLite};
+use system_event_data::{SystemEventData};
 use systems::{System, SystemData, SystemFiringType};
 use ui::{CoordinateType, Element, ElementType, Root};
 #[derive(Default)]

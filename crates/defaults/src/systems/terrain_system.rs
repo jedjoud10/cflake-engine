@@ -8,7 +8,7 @@ use math::octrees::*;
 use others::CacheManager;
 use rendering::*;
 use std::collections::{HashMap, HashSet};
-use system_event_data::{SystemEventData, SystemEventDataLite};
+use system_event_data::{SystemEventData};
 use systems::*;
 use terrain::VoxelGenerator;
 
@@ -177,11 +177,17 @@ impl System for TerrainSystem {
     }
 
     // When a terrain generator gets added to the world
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventData) {
         // Setup the voxel generator for this generator
         let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
         // Generate the voxel texture
         td.voxel_generator.setup_voxel_generator();
+        // Generate the base octreee
+        let nodes = td.octree.generate_base_octree(self.lod_factor);
+        for node in nodes.iter() {
+            let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.position, node);
+            data.debug.renderer.debug_default(default_debug_renderer_type, color, permanent)
+        }
     }
 
     // Turn this into "Any" so we can cast into child systems

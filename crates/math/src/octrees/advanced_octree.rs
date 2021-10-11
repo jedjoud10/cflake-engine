@@ -12,7 +12,6 @@ use super::{
 pub struct AdvancedOctree {
     // The original octree
     pub internal_octree: Octree,
-    pub generated_base_octree: bool,
 }
 
 impl AdvancedOctree {
@@ -39,11 +38,7 @@ impl AdvancedOctree {
             // If the node passes the collision check, subdivide it
             if self.can_node_subdivide_twin(&octree_node, target) {
                 // Add the children nodes
-                let child_nodes = octree_node.subdivide();
-                pending_nodes.extend(child_nodes.clone());
-                for child in child_nodes {
-                    nodes.add_element(child);
-                }
+                let child_nodes = octree_node.subdivide(nodes);
             }
 
             // Remove the node so we don't cause an infinite loop
@@ -51,7 +46,7 @@ impl AdvancedOctree {
         }
     }
     // Generate the base octree with a target point at 0, 0, 0
-    fn generate_base_octree(&mut self, lod_factor: f32) -> Vec<OctreeNode> {
+    pub fn generate_base_octree(&mut self, lod_factor: f32) -> Vec<OctreeNode> {
         // Create the root node
         let root_node = self.internal_octree.get_root_node();
         self.internal_octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
@@ -74,12 +69,6 @@ impl AdvancedOctree {
             veclib::Vector3::<f32>::from(root_node.position) + 32.0,
             veclib::Vector3::<f32>::from(root_node.position + (root_node.half_extent * 2) as i64) - 32.0,
         );
-        // Check if we even have the base octree generated
-        if !self.generated_base_octree {
-            // The base octree is not generated, so generate it
-            let added_nodes: Vec<veclib::Vector3<i64>> = self.generate_base_octree(lod_factor).iter().map(|x| x.get_center()).collect();
-            return Some((added_nodes.clone(), Vec::new()));
-        }
         // If we don't have a target node don't do anything
         if self.internal_octree.target_node.is_none() {
             return None;
@@ -113,10 +102,16 @@ impl AdvancedOctree {
         if new_parents {
             // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
             // Keep track of the starting hashset
-            let original_hashset = self.internal_octree.nodes.elements.iter().filter_map(|x| match x {
-                Some(x) => Some(x.get_center()),
-                None => None,
-            }).collect::<HashSet<veclib::Vector3<i64>>>();
+            let original_hashset = self
+                .internal_octree
+                .nodes
+                .elements
+                .iter()
+                .filter_map(|x| match x {
+                    Some(x) => Some(x.get_center()),
+                    None => None,
+                })
+                .collect::<HashSet<veclib::Vector3<i64>>>();
             // Final nodes
             let mut nodes: SmartList<OctreeNode> = self.internal_octree.nodes.clone();
             // The nodes that must be evaluated
@@ -144,18 +139,19 @@ impl AdvancedOctree {
                     elm.children_indices = octree_node.children_indices;
 
                     // Add each child node, but also update the parent's child link id
-                    let child_nodes = octree_node.subdivide();
+                    let child_nodes = octree_node.subdivide(&mut nodes);
                     pending_nodes.extend(child_nodes.clone());
-                    for child in child_nodes {
-                        nodes.add_element(child);
-                    }
                 }
             }
             // Internally update the octree
-            let new_hashset = nodes.elements.iter().filter_map(|x| match x {
-                Some(x) => Some(x.get_center()),
-                None => None,
-            }).collect::<HashSet<veclib::Vector3<i64>>>();
+            let new_hashset = nodes
+                .elements
+                .iter()
+                .filter_map(|x| match x {
+                    Some(x) => Some(x.get_center()),
+                    None => None,
+                })
+                .collect::<HashSet<veclib::Vector3<i64>>>();
             self.internal_octree.extern_update(target_node, nodes);
 
             // Get the nodes that where removed / added

@@ -63,17 +63,13 @@ impl Octree {
 
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth) {
-                // Update the nodes
-                let nodes_to_push = octree_node.subdivide();
-                let elm = self.nodes.get_element_mut(octree_node.index).unwrap();
-                elm.children_indices = octree_node.children_indices;
-
                 // Add each child node, but also update the parent's child link id
-                pending_nodes.extend(nodes_to_push.clone());
-                for child in nodes_to_push {
-                    self.nodes.add_element(child);
-                }
+                let nodes_to_push = octree_node.subdivide(&mut self.nodes);    
+                pending_nodes.extend(nodes_to_push.clone());                
             }
+
+            // Don't cause an infinite loop
+            pending_nodes.remove(0);
         }
 
         self.target_node = targetted_node;

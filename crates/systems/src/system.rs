@@ -23,7 +23,7 @@ impl SystemManager {
         bitfield == 0
     }
     // Remove an entity from it's corresponding systems, this is done before actually removing the entity to allow the systems to dispose of it's data
-    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: usize, data: &mut SystemEventDataLite) {
+    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: usize, data: &mut SystemEventData) {
         // Remove the entity from all the systems it was in
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
@@ -35,7 +35,7 @@ impl SystemManager {
         }
     }
     // Add an entity to it's corresponding systems
-    pub fn add_entity_to_systems(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+    pub fn add_entity_to_systems(&mut self, entity: &Entity, data: &mut SystemEventData) {
         // Check if there are systems that need this entity
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
@@ -54,7 +54,7 @@ impl SystemManager {
         id
     }
     // Kill all the systems
-    pub fn kill_systems(&mut self, data: &mut SystemEventDataLite) {
+    pub fn kill_systems(&mut self, data: &mut SystemEventData) {
         for system in self.systems.iter_mut() {
             system.end_system(data);
         }
@@ -114,7 +114,7 @@ pub trait System {
     // When the system gets added the world
     fn system_added(&mut self, _data: &mut SystemEventData, _system_id: u8) {}
     // Add an entity to the current system
-    fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+    fn add_entity(&mut self, entity: &Entity, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
         system_data.entities.push(entity.entity_id);
         if let SystemFiringType::OnlyEntities | SystemFiringType::All = system_data.firing_type {
@@ -122,7 +122,7 @@ pub trait System {
         }
     }
     // Remove an entity from the current system
-    fn remove_entity(&mut self, entity_id: usize, entity: &Entity, data: &mut SystemEventDataLite) {
+    fn remove_entity(&mut self, entity_id: usize, entity: &Entity, data: &mut SystemEventData) {
         let system_data = self.get_system_data_mut();
         // Search for the entity with the matching entity_id
         let system_entity_local_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
@@ -132,7 +132,7 @@ pub trait System {
         }
     }
     // Stop the system permanently
-    fn end_system(&mut self, data: &mut SystemEventDataLite) {
+    fn end_system(&mut self, data: &mut SystemEventData) {
         let firing_type = self.get_system_data().firing_type;
         let system_data_clone = self.get_system_data_mut();
         let entities_clone = system_data_clone.entities.clone();
@@ -196,8 +196,8 @@ pub trait System {
     fn get_system_data_mut(&mut self) -> &mut SystemData;
 
     // System Events
-    fn entity_added(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
-    fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventDataLite) {}
+    fn entity_added(&mut self, _entity: &Entity, _data: &mut SystemEventData) {}
+    fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventData) {}
 
     // System control functions
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData);

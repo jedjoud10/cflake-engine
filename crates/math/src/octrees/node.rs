@@ -1,3 +1,5 @@
+use others::SmartList;
+
 // Simple node in the octree
 #[derive(Clone, Debug)]
 pub struct OctreeNode {
@@ -29,7 +31,7 @@ impl OctreeNode {
         return aabb && self.depth < (max_depth - 1);
     }
     // Subdivide this node into 8 smaller nodes
-    pub fn subdivide(&mut self) -> Vec<OctreeNode> {
+    pub fn subdivide(&mut self, nodes: &mut SmartList<OctreeNode>) -> Vec<OctreeNode> {
         let half_extent = self.half_extent as i64;
         // The outputted nodes
         let mut output: Vec<OctreeNode> = Vec::new();
@@ -46,7 +48,7 @@ impl OctreeNode {
                     let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * half_extent, y * half_extent, z * half_extent);
 
                     // Calculate the child's index
-                    let child_index = self.index * 8 + (i as usize);
+                    let child_index = nodes.get_next_valid_id();
 
                     let child = OctreeNode {
                         position: self.position + offset,
@@ -61,14 +63,20 @@ impl OctreeNode {
                     };
                     // Update the indices
                     children_indices[i] = child_index;
-                    output.push(child);
+                    output.push(child.clone());
+                    nodes.add_element(child);
                     i += 1;
                 }
             }
         }
 
-        // Turn our children indices to an empty 8 element array
+        // Update the children indices
         self.children_indices = Some(children_indices);
+
+        // Update the parent node
+        let elm = nodes.get_element_mut(self.index).unwrap();
+        elm.children_indices = Some(children_indices);
+
         return output;
     }
 }

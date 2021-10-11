@@ -5,7 +5,7 @@ use math;
 use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, TextureShaderAccessType, Window};
 use resources::LoadableResource;
 use std::ptr::null;
-use system_event_data::{SystemEventData, SystemEventDataLite};
+use system_event_data::{SystemEventData};
 use systems::{System, SystemData};
 use ui::Root;
 
@@ -397,7 +397,7 @@ impl System for RenderingSystem {
     }
 
     // When an entity gets added to this system
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventData) {
         let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
         // Make sure we create the OpenGL data for this entity's model
         rc.refresh_model();
@@ -406,7 +406,7 @@ impl System for RenderingSystem {
     }
 
     // When an entity gets removed from this system
-    fn entity_removed(&mut self, entity: &Entity, data: &mut SystemEventDataLite) {
+    fn entity_removed(&mut self, entity: &Entity, data: &mut SystemEventData) {
         let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
         // Dispose the model when the entity gets destroyed
         rc.dispose_model();

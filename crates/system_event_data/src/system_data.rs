@@ -12,12 +12,6 @@ pub struct SystemEventData<'a> {
     pub custom_data: &'a mut CustomWorldData,
     pub instance_manager: &'a mut others::InstanceManager,
 }
-// Data that will be passed some events in the systems that don't need all the world data
-pub struct SystemEventDataLite<'a> {
-    pub entity_manager: &'a mut ecs::EntityManager,
-    pub component_manager: &'a mut ecs::ComponentManager,
-    pub custom_data: &'a mut CustomWorldData,
-}
 // Some custom data that will be passed to systems
 #[derive(Default)]
 pub struct CustomWorldData {
