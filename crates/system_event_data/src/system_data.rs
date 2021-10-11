@@ -21,8 +21,8 @@ pub struct SystemEventDataLite<'a> {
 // Some custom data that will be passed to systems
 #[derive(Default)]
 pub struct CustomWorldData {
-    pub main_camera_entity_id: u16,
-    pub sky_entity_id: u16,
+    pub main_camera_entity_id: usize,
+    pub sky_entity_id: usize,
     pub render_system_id: u8,
     pub window: rendering::Window,
 }

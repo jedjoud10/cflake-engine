@@ -349,7 +349,7 @@ impl World {
 // Impl block for the entity stuff
 impl World {
     // Add the specified entity ID to the systems that it needs
-    pub fn add_entity_to_systems(&mut self, entity_id: &u16) {
+    pub fn add_entity_to_systems(&mut self, entity_id: usize) {
         let entity = self.entity_manager.get_entity(entity_id).unwrap().clone();
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         self.system_manager.add_entity_to_systems(
@@ -368,13 +368,13 @@ impl World {
         if self.entity_manager.entities_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {
             // Add the entities to the systems
             for entity in self.entity_manager.entities_to_add.clone() {
-                self.add_entity_to_systems(&entity.entity_id);
+                self.add_entity_to_systems(entity.entity_id);
             }
             self.entity_manager.entities_to_add.clear();
 
             // Remove the entities from the systems
             for entity_id in self.entity_manager.entities_to_remove.clone() {
-                self.remove_entity_from_systems(&entity_id).unwrap();
+                self.remove_entity_from_systems(entity_id).unwrap();
                 // After removing it from the systems, we can actually remove the entity
                 self.entity_manager.entities[entity_id as usize] = None;
             }
@@ -382,7 +382,7 @@ impl World {
         }
     }
     // Remove the specified entity ID from the systems it was in
-    pub fn remove_entity_from_systems(&mut self, entity_id: &u16) -> Result<Entity, ECSError> {
+    pub fn remove_entity_from_systems(&mut self, entity_id: usize) -> Result<Entity, ECSError> {
         // Remove this entity from the systems it was in first
         let entity = self.entity_manager.get_entity(entity_id)?.clone();
         let mut data = SystemEventDataLite {
@@ -394,7 +394,7 @@ impl World {
         // Then remove the actual entity last, so it allows for systems to run their entity_removed event
         // Remove all the components then entity had
         for global_component_id in entity.linked_components.values() {
-            self.component_manager.id_remove_linked_component(global_component_id).unwrap();
+            self.component_manager.id_remove_linked_component(*global_component_id).unwrap();
         }
         Ok(entity)
     }
@@ -417,13 +417,13 @@ impl World {
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);
         }
-        let camera_entity_clone = self.entity_manager.get_entity(&self.custom_data.main_camera_entity_id).unwrap().clone();
+        let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(&mut self.component_manager).unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.update_projection_matrix(&self.custom_data.window);
         camera_component.update_frustum_culling_matrix();
         // Update the original entity
-        *self.entity_manager.get_entity_mut(&entity_clone_id).unwrap() = camera_entity_clone;
+        *self.entity_manager.get_entity_mut(entity_clone_id).unwrap() = camera_entity_clone;
     }
 }

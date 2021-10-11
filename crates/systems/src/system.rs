@@ -23,7 +23,7 @@ impl SystemManager {
         bitfield == 0
     }
     // Remove an entity from it's corresponding systems, this is done before actually removing the entity to allow the systems to dispose of it's data
-    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: &usize, data: &mut SystemEventDataLite) {
+    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: usize, data: &mut SystemEventDataLite) {
         // Remove the entity from all the systems it was in
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
@@ -122,10 +122,10 @@ pub trait System {
         }
     }
     // Remove an entity from the current system
-    fn remove_entity(&mut self, entity_id: &usize, entity: &Entity, data: &mut SystemEventDataLite) {
+    fn remove_entity(&mut self, entity_id: usize, entity: &Entity, data: &mut SystemEventDataLite) {
         let system_data = self.get_system_data_mut();
         // Search for the entity with the matching entity_id
-        let system_entity_local_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == *entity_id).unwrap();
+        let system_entity_local_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
         system_data.entities.remove(system_entity_local_id);
         if let SystemFiringType::OnlyEntities | SystemFiringType::All = system_data.firing_type {
             self.entity_removed(entity, data);

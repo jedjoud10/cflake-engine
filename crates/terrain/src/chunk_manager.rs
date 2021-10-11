@@ -16,8 +16,8 @@ pub struct ChunkManager {
     pub chunks_to_generate: Vec<ChunkCoords>,
     // Just the chunk data
     pub chunks: HashSet<veclib::Vector3<i64>>,
-    pub entities: HashMap<veclib::Vector3<i64>, u16>,
-    pub entities_to_remove: HashMap<veclib::Vector3<i64>, u16>,
+    pub entities: HashMap<veclib::Vector3<i64>, usize>,
+    pub entities_to_remove: HashMap<veclib::Vector3<i64>, usize>,
     // The last frame chunk voxels where generated
     pub last_frame_voxels_generated: u64,
     // Are we currently waiting for the voxels to finish generating?
@@ -56,7 +56,7 @@ impl ChunkManager {
         }
     }
     // Add a chunk entity
-    pub fn add_chunk_entity(&mut self, coords: &ChunkCoords, entity_id: u16) {
+    pub fn add_chunk_entity(&mut self, coords: &ChunkCoords, entity_id: usize) {
         self.entities.insert(coords.center, entity_id);
     }
     // Remove a chunk entity
@@ -76,7 +76,7 @@ impl ChunkManager {
         self.camera_forward_vector = forward_vector;
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, compute_shader: &mut Shader, frame_count: u64) -> (Vec<(ChunkCoords, Model)>, Vec<u16>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, compute_shader: &mut Shader, frame_count: u64) -> (Vec<(ChunkCoords, Model)>, Vec<usize>) {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating
@@ -147,7 +147,7 @@ impl ChunkManager {
             }
             None => {}
         }
-        let mut entities_to_remove: Vec<u16> = Vec::new();
+        let mut entities_to_remove: Vec<usize> = Vec::new();
 
         // The system was flawed...
         match final_chunk {
@@ -163,7 +163,6 @@ impl ChunkManager {
             entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();
             self.entities_to_remove.clear();
         }
-        let output = (new_chunks, entities_to_remove);
-        return output;
+        return (new_chunks, entities_to_remove);
     }
 }

@@ -3,6 +3,7 @@ use others::SmartList;
 use super::node::{self, OctreeNode};
 
 // A simple octree, no incremental generation what so ever
+#[derive(Default)]
 pub struct Octree {
     // The target node
     pub target_node: Option<OctreeNode>,

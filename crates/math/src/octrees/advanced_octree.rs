@@ -3,9 +3,10 @@ use others::SmartList;
 use super::{node::OctreeNode, octree::{self, Octree}};
 
 // An advanced octree with incremental generation and twin nodes
+#[derive(Default)]
 pub struct AdvancedOctree {    
     // The original octree
-    pub octree: Octree,
+    pub internal_octree: Octree,
     pub generated_base_octree: bool,
 }
 
@@ -45,10 +46,10 @@ impl AdvancedOctree {
     // Generate the base octree with a target point at 0, 0, 0
     fn generate_base_octree(&mut self, lod_factor: f32) -> Vec<OctreeNode> {
         // Create the root node
-        let root_node = self.octree.get_root_node();
-        self.octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
+        let root_node = self.internal_octree.get_root_node();
+        self.internal_octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
         //self.calculate_combined_nodes(&veclib::Vector3::ONE, &self.octree.nodes, lod_factor)
-        return self.octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
+        return self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
     }
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(
@@ -61,7 +62,7 @@ impl AdvancedOctree {
         Vec<OctreeNode>, // Total nodes
     )> {
         // Clamp the input position
-        let root_node = self.octree.get_root_node();
+        let root_node = self.internal_octree.get_root_node();
         let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
             *target,
             veclib::Vector3::<f32>::from(root_node.position) + 32.0,
@@ -74,7 +75,7 @@ impl AdvancedOctree {
             return Some((added_nodes.clone(), Vec::new(), added_nodes));
         }
         // If we don't have a target node don't do anything
-        if self.octree.target_node.is_none() {
+        if self.internal_octree.target_node.is_none() {
             return None;
         }
 
@@ -84,14 +85,14 @@ impl AdvancedOctree {
         // The highest depth node with that contains the target point
         
         // Loop through the tree recursively
-        let mut current_node = self.octree.target_node.as_ref().cloned().unwrap();
+        let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
-        let mut common_target_node: OctreeNode = self.octree.target_node.as_ref().cloned().unwrap(); 
-        while current_node.depth != self.octree.depth {
+        let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap(); 
+        while current_node.depth != self.internal_octree.depth {
             // Go up the tree
-            let parent = self.octree.nodes.get_element(current_node.parent_index).unwrap();
+            let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap();
             // Check for collisions
-            if parent.can_subdivide(target, self.octree.depth) {
+            if parent.can_subdivide(target, self.internal_octree.depth) {
                 // This node the common target node
                 common_target_node = parent.clone();
                 break;
@@ -101,18 +102,18 @@ impl AdvancedOctree {
         }
         
         // Check if we even changed parents
-        let target_node_index = self.octree.target_node.as_ref().cloned().unwrap().parent_index;
+        let target_node_index = self.internal_octree.target_node.as_ref().cloned().unwrap().parent_index;
         let new_parents = target_node_index != common_target_node.index;
         if new_parents {
             // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
             // Final nodes
-            let mut nodes: SmartList<OctreeNode> = self.octree.nodes.clone();
+            let mut nodes: SmartList<OctreeNode> = self.internal_octree.nodes.clone();
             // The nodes that must be evaluated
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             // The starting node
             pending_nodes.push(common_target_node);
             // The depth of the octree
-            let depth = self.octree.depth;
+            let depth = self.internal_octree.depth;
 
             // The targetted node that is specified using the target position
             let mut targetted_node: Option<OctreeNode> = None;

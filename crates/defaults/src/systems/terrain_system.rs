@@ -4,8 +4,7 @@ use terrain::{ChunkCoords, BoundChecker, ChunkData, ChunkManager};
 use terrain::VoxelGenerator;
 use ecs::*;
 use input::*;
-use math::octree::{self, Octree};
-use math::{self, octree::OctreeNode};
+use math::octrees::*;
 use others::CacheManager;
 use rendering::*;
 use std::collections::{HashMap, HashSet};
@@ -58,7 +57,7 @@ impl System for TerrainSystem {
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
         // Get the camera location
-        let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+        let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
         let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap();
         // Get the camera transform values
         let camera_location = camera_transform.position;
@@ -66,25 +65,25 @@ impl System for TerrainSystem {
         
         // Get the terrain data
         let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();    
-        let octree_size = td.octree.size;    
+        let octree_size = td.octree.internal_octree.size;    
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
         if td.chunk_manager.octree_update_valid() {
-            match td.octree.generate_incremental_octree(camera_location, self.lod_factor) {
+            match td.octree.generate_incremental_octree(&camera_location, self.lod_factor) {
                 Some((mut added, removed, total_nodes)) => {
                     // Filter first
-                    added.retain(|_, node| BoundChecker::bound_check(&node));
+                    added.retain(|node| BoundChecker::bound_check(&node));
                     // Turn all the newly added nodes into chunks and instantiate them into the world
-                    for (_, octree_node) in added {
+                    for octree_node in added {
                         // Only add the octree nodes that have no children
-                        if !octree_node.children {
+                        if octree_node.children_indices.is_none() {
                             // Add the chunk in the chunk manager
                             td.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));
                         }
                     }
                     // Delete all the removed octree nodes from the world
-                    for (_, octree_node) in removed {
+                    for octree_node in removed {
                         let chunk_coords = ChunkCoords::new(&octree_node);
                         // Remove the chunk from the chunk manager
                         match td.chunk_manager.remove_chunk(&chunk_coords) {
@@ -106,8 +105,10 @@ impl System for TerrainSystem {
         // Get the compute shader and frame count
         let compute_shader = data.shader_cacher.1.get_object_mut(&td.voxel_generator.compute_shader_name).unwrap();
         let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, compute_shader, data.time_manager.frame_count);
-        let mut added_chunk_entities_ids: Vec<(u16, ChunkCoords)> = Vec::new();
-        let depth = td.octree.depth as f32;
+        let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
+        let depth = td.octree.internal_octree.depth as f32;
+
+        // Add the entities to the entity manager
         for (coords, model) in added_chunks {
             // Add the entity
             let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
@@ -159,7 +160,7 @@ impl System for TerrainSystem {
 
         for entity_id in removed_chunks {
             // Removal the entity from the world
-            data.entity_manager.remove_entity_s(&entity_id).unwrap();
+            data.entity_manager.remove_entity_s(entity_id).unwrap();
         } 
 
         // Update the LOD factor using the commands

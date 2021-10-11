@@ -306,7 +306,7 @@ impl System for RenderingSystem {
     // Called for each entity in the system
     fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
         // Get the camera stuff
-        let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+        let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
         let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
         let view_matrix: veclib::Matrix4x4<f32> = camera_data.view_matrix;
         let projection_matrix: veclib::Matrix4x4<f32> = camera_data.projection_matrix;
@@ -344,26 +344,22 @@ impl System for RenderingSystem {
         // At the end of each frame, disable the depth test and render the debug objects
         let vp_matrix: veclib::Matrix4x4<f32>;
         let frustum: &math::Frustum;
+        let camera_position: veclib::Vector3<f32>;
         // Get the (projection * view) matrix
         {
-            let camera_entity = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
+            let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
             let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
             let projection_matrix = camera_data.projection_matrix;
             let view_matrix = camera_data.view_matrix;
             frustum = &camera_data.frustum;
             vp_matrix = projection_matrix * view_matrix;
+            camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
         }
         // Draw the debug primitives
         data.debug.renderer.draw_debug(&vp_matrix, &data.shader_cacher.1);
-        let shader = data.shader_cacher.1.get_object(&self.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
-        let camera_position = data
-            .entity_manager
-            .get_entity(&data.custom_data.main_camera_entity_id)
-            .unwrap()
-            .get_component::<components::Transform>(data.component_manager)
-            .unwrap()
-            .position;
 
+        // Draw the normal primitives
+        let shader = data.shader_cacher.1.get_object(&self.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
         shader.use_shader();
         shader.set_t2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
         shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
@@ -375,7 +371,7 @@ impl System for RenderingSystem {
         shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
         let sky_component = data
             .entity_manager
-            .get_entity(&data.custom_data.sky_entity_id)
+            .get_entity(data.custom_data.sky_entity_id)
             .unwrap()
             .get_component::<components::Sky>(data.component_manager)
             .unwrap();
