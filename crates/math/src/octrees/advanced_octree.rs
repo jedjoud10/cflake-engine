@@ -57,7 +57,7 @@ impl AdvancedOctree {
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(
         &mut self,
-        input: veclib::Vector3<f32>,
+        target: &veclib::Vector3<f32>,
         lod_factor: f32,
     ) -> Option<(
         Vec<OctreeNode>, // Added nodes
@@ -67,7 +67,7 @@ impl AdvancedOctree {
         // Clamp the input position
         let root_node = self.octree.get_root_node();
         let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
-            input,
+            *target,
             veclib::Vector3::<f32>::from(root_node.position) + 32.0,
             veclib::Vector3::<f32>::from(root_node.position + (root_node.half_extent * 2) as i64) - 32.0,
         );
@@ -85,123 +85,29 @@ impl AdvancedOctree {
         // What we do for incremental generation
         // We go up the tree from the target node, then we check the highest depth node that still has a collision with the target point
         // From there, we go down the tree and generate a sub-octree, then we just append it to our normal octree
-
-        let marked_node: Option<OctreeNode>;
-
-        // We'll have only one main octree node that we will remove, and we will recursively remove it's children as well
-        let mut node_to_remove: Option<OctreeNode> = None;
-        // Go up the tree, marking the nodes that have been removed along the way
-        {
-            let mut current_node: OctreeNode = self.targetted_node.clone().unwrap();
-            let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-            let targetted_node = self.targetted_node.clone().unwrap();
-            let mut intersection: bool = false;
-            pending_nodes.push(targetted_node);
-            // Loop until you can subdivide
-            while !intersection {
-                // Set the current node as the current's node parent
-                current_node = self.nodes.get(&current_node.parent_center).unwrap().clone();
-                // Test for intersection
-                intersection = current_node.can_subdivide(&input, self.depth);
-                // If it doesn't hit, then that node must be removed
-                if !intersection {
-                    // Since we are moving up the tree, we will get rid of this node and all of it's children
-                    if current_node.children {
-                        node_to_remove = Some(current_node.clone());
-                    }
-                } else {
-                    // It hit
-                    break;
-                }
-                // If we are the root node, exit since we are sure that there must be an intersection (If the target is inside the octree that is)
-                if current_node.depth == 0 {
-                    break;
-                }
-            }
-            // We did find an intersection
-            marked_node = Some(current_node);
-        }
-        // Check if we even changed parents
-        if !marked_node.is_none() && !node_to_remove.is_none() {
-            // Then we generate a local octree, using that marked node as the root
-            let local_octree_data = self.generate_octree(&input, marked_node.clone().unwrap());
-            self.targetted_node = local_octree_data.1;
-            // Get the nodes that we've added
-            let added_nodes = local_octree_data.0;
-            // Update the actual nodes before we calculate the postprocessed nodes
-            self.nodes.extend(added_nodes.clone());
-            
-            // Get the nodes that we've deleted
-            let mut deleted_centers: HashSet<veclib::Vector3<i64>> = HashSet::new();
-            {
-                let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-                pending_nodes.push(node_to_remove.clone().unwrap());
-                // Recursively delete the nodes
-                while pending_nodes.len() > 0 {
-                    let current_node = pending_nodes[0].clone();
-                    // Recursively remove the nodes
-                    if current_node.children {
-                        // Get the children
-                        for child_center in current_node.children_centers {
-                            // Just in case
-                            if child_center != veclib::Vector3::<i64>::ZERO {
-                                let child_node = self.nodes.get(&child_center).unwrap().clone();
-                                pending_nodes.push(child_node);
-                            }
-                        }
-                    }
-                    deleted_centers.insert(current_node.get_center());
-                    pending_nodes.remove(0);
-                }
-            }
+        // The highest depth node with that contains the target point
         
-            // Update the removed node
-            let mut node_to_remove = node_to_remove.unwrap();
-            node_to_remove.children = false;
-            node_to_remove.children_centers = [veclib::Vector3::<i64>::ZERO; 8];
-            self.nodes.insert(node_to_remove.get_center(), node_to_remove.clone());
-            self.nodes.retain(|k, _| !deleted_centers.contains(k) || *k == node_to_remove.get_center());   
-        }       
-
-        // Subdivide each added node at least once
-        let postprocess_nodes: HashMap<veclib::Vector3<i64>, OctreeNode> = self.calculate_postprocess_nodes(&input, &self.nodes, lod_factor);
-        let mut removed_postprocess_nodes: Vec<OctreeNode> = Vec::new();
-        // Detect the newly made postprocess-nodes
-        let mut added_postprocess_nodes: Vec<OctreeNode> = Vec::new();
-        for (k, node) in postprocess_nodes.iter() {
-            if !self.postprocess_nodes.contains_key(k) {
-                // We added the node
-                added_postprocess_nodes.push(node.clone());
-            } else {
-                // We didn't change the node / it changed it's children status
-                if !node.children && self.postprocess_nodes[k].children {
-                    // We don't have children anymore, so this node counts as a new node
-                    added_postprocess_nodes.push(node.clone());
-                }
+        // Loop through the tree recursively
+        let mut current_node = self.octree.target_node.unwrap();
+        let common_target_node: OctreeNode; 
+        while current_node.depth != self.octree.depth {
+            // Go up the tree
+            let parent = self.octree.nodes.get_element(current_node.parent_index).unwrap();
+            // Check for collisions
+            if parent.can_subdivide(target, self.octree.depth) {
+                // This node the common target node
+                common_target_node = parent.clone();
+                break;
             }
         }
-        // Detect the removed nodes
-        for (k, node) in self.postprocess_nodes.iter() {
-            if !postprocess_nodes.contains_key(k) {
-                // We removed the node
-                removed_postprocess_nodes.push(node.clone());
-            } else {
-                // We didn't change the node / it changed it's children status
-                if !node.children && postprocess_nodes[k].children {
-                    // We have children now, so this counts as a removed node
-                    removed_postprocess_nodes.push(node.clone());
-                }
-            }
-        }
+        
+        // Check if we even changed parents
+        let new_parents = self.octree.target_node.unwrap().parent_index != common_target_node.index;
+        if new_parents {
+            // Just gotta do this I guess
 
-        // Update
-        self.postprocess_nodes = postprocess_nodes;
-        let added_nodes_hashmap = added_postprocess_nodes
-            .iter()
-            .map(|x| (x.get_center(), x.clone()))
-            .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
-        let removed_nodes_hashmap: HashMap<veclib::Vector3<i64>, OctreeNode> = removed_postprocess_nodes.iter().map(|x| (x.get_center(), x.clone())).collect();
-        // Return
-        return Some((added_nodes_hashmap, removed_nodes_hashmap, self.postprocess_nodes.clone()));
+            
+        }  
+        return None;
     }
 }
