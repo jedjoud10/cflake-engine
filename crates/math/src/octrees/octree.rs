@@ -37,7 +37,7 @@ impl Octree {
             depth: 0,
             parent_index: 0,
             index: 0,
-            children_indices: None,            
+            children_indices: None,
         }
     }
     // Generate an octree from a root and a target point
@@ -60,7 +60,7 @@ impl Octree {
             if octree_node.depth == self.depth - 1 && octree_node.can_subdivide(target, self.depth + 1) {
                 targetted_node = Some(octree_node.clone());
             }
-            
+
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth) {
                 // Update the nodes
@@ -77,7 +77,7 @@ impl Octree {
         }
 
         self.target_node = targetted_node;
-    }    
+    }
     // Externally update the octree with nodes and a target node
     pub fn extern_update(&mut self, target_node: Option<OctreeNode>, nodes: SmartList<OctreeNode>) {
         self.target_node = target_node;

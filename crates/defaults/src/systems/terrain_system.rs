@@ -1,7 +1,7 @@
 use debug::DefaultDebugRendererType;
-use terrain::{ChunkCoords, BoundChecker, ChunkData, ChunkManager};
+use terrain::{BoundChecker, ChunkCoords, ChunkData, ChunkManager};
 
-use terrain::VoxelGenerator;
+use components::Chunk;
 use ecs::*;
 use input::*;
 use math::octrees::*;
@@ -10,7 +10,7 @@ use rendering::*;
 use std::collections::{HashMap, HashSet};
 use system_event_data::{SystemEventData, SystemEventDataLite};
 use systems::*;
-use components::Chunk;
+use terrain::VoxelGenerator;
 
 use crate::components;
 
@@ -38,10 +38,10 @@ impl System for TerrainSystem {
         // Link the components
         let system_data = self.get_system_data_mut();
         data.component_manager.register_component::<Chunk>();
-        system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();        
+        system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();
 
         // Create a debug UI for this terrain
-        let mut root = ui::Root::new(2); 
+        let mut root = ui::Root::new(2);
 
         // Create debug commands
         let command = debug::Command {
@@ -62,10 +62,10 @@ impl System for TerrainSystem {
         // Get the camera transform values
         let camera_location = camera_transform.position;
         let camera_forward_vector = camera_transform.get_forward_vector();
-        
+
         // Get the terrain data
-        let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();    
-        let octree_size = td.octree.internal_octree.size;    
+        let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
+        let octree_size = td.octree.internal_octree.size;
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
@@ -96,7 +96,7 @@ impl System for TerrainSystem {
                     }
                 }
                 None => { /* Nothing happened */ }
-            }            
+            }
             td.chunk_manager.update_camera_view(camera_location, camera_forward_vector);
         }
 
@@ -113,43 +113,39 @@ impl System for TerrainSystem {
             // Add the entity
             let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
             let mut entity = Entity::new(name.as_str());
-            
+
             // Create the chunk component
             let chunk = Chunk { coords: coords.clone() };
             // Link the components
             entity.link_component::<Chunk>(data.component_manager, chunk).unwrap();
             entity
-            .link_component::<components::Transform>(
-                data.component_manager,
-                components::Transform {
-                    position: veclib::Vector3::<f32>::from(coords.position),
-                    scale: veclib::Vector3::new(
-                        (coords.size / octree_size) as f32,
-                        (coords.size / octree_size) as f32,
-                        (coords.size / octree_size) as f32,
-                    ),
-                    ..components::Transform::default()
-                },
-            )
-            .unwrap();
+                .link_component::<components::Transform>(
+                    data.component_manager,
+                    components::Transform {
+                        position: veclib::Vector3::<f32>::from(coords.position),
+                        scale: veclib::Vector3::new((coords.size / octree_size) as f32, (coords.size / octree_size) as f32, (coords.size / octree_size) as f32),
+                        ..components::Transform::default()
+                    },
+                )
+                .unwrap();
             // TODO: Make a custom material instance system
             let material = clone_material.clone().set_uniform("depth", ShaderArg::F32(coords.depth as f32 / depth));
             entity
                 .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
-                .unwrap();            
-            // TODO: Fix this            
+                .unwrap();
+            // TODO: Fix this
             entity
                 .link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&entity, data.component_manager))
                 .unwrap();
-            
+
             let entity_id = data.entity_manager.add_entity_s(entity);
-            added_chunk_entities_ids.push((entity_id, coords.clone()));            
+            added_chunk_entities_ids.push((entity_id, coords.clone()));
         }
 
         // Reassign
         let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
         for (entity_id, coords) in added_chunk_entities_ids {
-            td.chunk_manager.add_chunk_entity(&coords, entity_id);            
+            td.chunk_manager.add_chunk_entity(&coords, entity_id);
         }
 
         for coords in td.chunk_manager.chunks_to_generate.iter() {
@@ -161,20 +157,18 @@ impl System for TerrainSystem {
         for entity_id in removed_chunks {
             // Removal the entity from the world
             data.entity_manager.remove_entity_s(entity_id).unwrap();
-        } 
+        }
 
         // Update the LOD factor using the commands
         match data.debug.console.listen_command("terrain-set-lod-factor") {
-            Some(x) => {
-                match x.get_input("-v") {
-                    Some(x) => match x {
-                        debug::CommandInputEnum::F32(x) => self.lod_factor = *x,
-                        _ => {}
-                    },
+            Some(x) => match x.get_input("-v") {
+                Some(x) => match x {
+                    debug::CommandInputEnum::F32(x) => self.lod_factor = *x,
                     _ => {}
-                }
+                },
+                _ => {}
             },
-            None => {},
+            None => {}
         }
     }
 
@@ -183,7 +177,7 @@ impl System for TerrainSystem {
         // Setup the voxel generator for this generator
         let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
         // Generate the voxel texture
-        td.voxel_generator.setup_voxel_generator();        
+        td.voxel_generator.setup_voxel_generator();
     }
 
     // Turn this into "Any" so we can cast into child systems

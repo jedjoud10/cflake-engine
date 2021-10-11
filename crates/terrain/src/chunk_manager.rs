@@ -136,7 +136,7 @@ impl ChunkManager {
                             let chunk_data = ChunkData { coords: coords, voxels: voxels };
                             final_chunk = Some((chunk_data, model));
                         }
-                    }                
+                    }
                 } else {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;

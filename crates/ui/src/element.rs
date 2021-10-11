@@ -84,19 +84,21 @@ impl Element {
     pub fn get_children_recursive(&self, root: &Root) -> Vec<usize> {
         let mut elements: Vec<&Element> = Vec::new();
         let mut final_elements_ids: Vec<usize> = Vec::new();
-        // Borrow the elements recursively 
+        // Borrow the elements recursively
         while elements.len() > 0 {
-            // Get the elements from this and add them   
-            let current_element = elements.get(0).unwrap(); 
+            // Get the elements from this and add them
+            let current_element = elements.get(0).unwrap();
             let mut children: Vec<&Element> = Vec::new();
             for children_id in current_element.children.iter() {
                 children.push(root.get_element(*children_id));
                 final_elements_ids.push(*children_id);
-            }        
+            }
             // Don't add empty vectors
-            if !children.is_empty() { elements.extend(children); }
-        } 
-        return final_elements_ids;        
+            if !children.is_empty() {
+                elements.extend(children);
+            }
+        }
+        return final_elements_ids;
     }
 
     // ----Update functions----

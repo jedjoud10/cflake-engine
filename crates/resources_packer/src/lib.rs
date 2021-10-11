@@ -1,4 +1,13 @@
-use std::{collections::{hash_map::DefaultHasher, HashMap}, env, fs::{remove_file, File, OpenOptions}, hash::{Hash, Hasher}, io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write}, path::Path, process::Command, time::SystemTime};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    env,
+    fs::{remove_file, File, OpenOptions},
+    hash::{Hash, Hasher},
+    io::{BufRead, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
+    path::Path,
+    process::Command,
+    time::SystemTime,
+};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use image::{EncodableLayout, GenericImageView};

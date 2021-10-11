@@ -1,6 +1,5 @@
 // Used to catch errors from OpenGL and other unsafe sources
-pub struct ErrorCatcher {
-}
+pub struct ErrorCatcher {}
 
 impl ErrorCatcher {
     // Catch opengl error

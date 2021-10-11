@@ -19,8 +19,8 @@ pub struct Root {
 
 impl Default for Root {
     fn default() -> Self {
-        Self { 
-            smart_element_list: SmartList::<Element>::default(), 
+        Self {
+            smart_element_list: SmartList::<Element>::default(),
             visible: true,
             max_depth: 0,
             root_depth: 1,

@@ -6,7 +6,7 @@ use crate::cacher;
 #[derive(Default)]
 pub struct InstanceManager {
     // The original name of the cached object and it's instance count
-    pub instance_count: HashMap<String, u16>, 
+    pub instance_count: HashMap<String, u16>,
 }
 
 impl InstanceManager {
@@ -14,9 +14,9 @@ impl InstanceManager {
     pub fn add_instance(&mut self, object_name: &str) -> String {
         // Check if the value exists already, and increment it by one
         let x: &mut u16 = self.instance_count.entry(object_name.to_string()).or_insert(1);
-        *x += 1;    
+        *x += 1;
         let new_name = format!("{}_instance_#{}", object_name, &x);
-        return new_name
+        return new_name;
     }
     // Remove an instance from the world
     pub fn remove_instance(&mut self, object_name: &str) {
@@ -40,9 +40,12 @@ pub trait Instance {
     // Set the current name for this object
     fn set_name(&mut self, string: String);
     // Get the current name for this object
-    fn get_name(&self) -> String; 
+    fn get_name(&self) -> String;
     // Create an instance of the current object and store it in it's cache manager
-    fn instantiate_cm<'a>(&self, cache_manager: &'a mut cacher::CacheManager<Self>, instance_manager: &mut InstanceManager) -> &'a Self where Self: Sized + Clone {
+    fn instantiate_cm<'a>(&self, cache_manager: &'a mut cacher::CacheManager<Self>, instance_manager: &mut InstanceManager) -> &'a Self
+    where
+        Self: Sized + Clone,
+    {
         let mut instance = self.clone();
         // Get the instance name
         let name = instance_manager.add_instance(&self.get_name());
@@ -52,7 +55,10 @@ pub trait Instance {
         return cache_manager.id_get_object(cached_object).unwrap();
     }
     // Create an instance of the current object without storing in the cache manager
-    fn instantiate(&self, instance_manager: &mut InstanceManager) -> Self where Self: Sized + Clone {
+    fn instantiate(&self, instance_manager: &mut InstanceManager) -> Self
+    where
+        Self: Sized + Clone,
+    {
         let mut instance = self.clone();
         // Get the instance name
         let name = instance_manager.add_instance(&self.get_name());

@@ -1,9 +1,9 @@
 use super::Keys;
 use std::{
+    array::IntoIter,
     collections::HashMap,
     fmt::{self},
     iter::FromIterator,
-    array::IntoIter
 };
 
 // Status of a key
@@ -75,7 +75,7 @@ impl Default for InputManager {
 }
 
 impl InputManager {
-    // Create the key scancode cache 
+    // Create the key scancode cache
     pub fn create_key_cache(&mut self) {
         let cache: HashMap<Keys, Option<i32>> = HashMap::<Keys, Option<i32>>::from_iter(IntoIter::new([
             (Keys::Escape, glfw::Key::get_scancode(&glfw::Key::Escape)),
@@ -136,12 +136,12 @@ impl InputManager {
             (Keys::NUM7, glfw::Key::get_scancode(&glfw::Key::Num7)),
             (Keys::NUM8, glfw::Key::get_scancode(&glfw::Key::Num8)),
             (Keys::NUM9, glfw::Key::get_scancode(&glfw::Key::Num9)),
-            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0))])
-        );
+            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0)),
+        ]));
         // Unwrap each value
         let cache = cache.iter().map(|(key, val)| (key.clone(), val.unwrap())).collect::<HashMap<Keys, i32>>();
         self.scancode_cache = cache;
-    }    
+    }
     // Get the key scancode using the cache that we have
     pub fn get_key_scancode(&self, key: Keys) -> Option<&i32> {
         return self.scancode_cache.get(&key);
@@ -189,12 +189,15 @@ impl InputManager {
             Keys::NUM7 => "7",
             Keys::NUM8 => "8",
             Keys::NUM9 => "9",
-            _ => ""
-        }.to_string()
+            _ => "",
+        }
+        .to_string()
     }
     // Called when we recieve a new mouse event from the window (Could either be a mouse position one or a scroll one)
     pub fn receive_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
-        if !self.update { return; /* Update only when we can */ }
+        if !self.update {
+            return; /* Update only when we can */
+        }
         match position {
             Some(position) => {
                 // This is a mouse position event
@@ -238,7 +241,7 @@ impl InputManager {
     // Get the accumulated mouse scroll
     pub fn get_accumulated_mouse_scroll(&self) -> f32 {
         self.last_mouse_scroll
-    }    
+    }
     // Start registering the keys as a sentence
     pub fn start_keys_reg(&mut self) {
         self.full_sentence = Some(String::new());
@@ -260,14 +263,14 @@ impl InputManager {
         match self.full_sentence.clone() {
             Some(string) => {
                 // Stop registering
-                self.stop_keys_reg();                
+                self.stop_keys_reg();
                 return Some(string);
-            },
+            }
             None => {
                 // Start registering
                 self.start_keys_reg();
                 return None;
-            },
+            }
         }
     }
     // When we receive a key event from glfw (Always at the start of the frame)
@@ -280,14 +283,14 @@ impl InputManager {
                     let mut new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
                     if let Keys::Backspace = key {
                         if new_string.len() > 0 {
-                            new_string.remove(new_string.len()-1);
+                            new_string.remove(new_string.len() - 1);
                         }
                     }
                     // Remove the last character of the string if the scan code was the back key
                     self.full_sentence = Some(new_string);
-                },
-                None => { /* We simply don't have they key in the cache */ },
-            };            
+                }
+                None => { /* We simply don't have they key in the cache */ }
+            };
         }
         // If this key does not exist in the dictionary yet, add it
         let mut key_data = self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));
@@ -323,7 +326,9 @@ impl InputManager {
 impl InputManager {
     // Returns true when the map is pressed
     pub fn map_pressed(&self, name: &str) -> bool {
-        if !self.update { return false; /* We are not allowed to update so return the default value */ }
+        if !self.update {
+            return false; /* We are not allowed to update so return the default value */
+        }
         // Make sure that mapping actually exists
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
@@ -358,7 +363,9 @@ impl InputManager {
     }
     // Returns true when the map is being held
     pub fn map_held(&self, name: &str) -> (bool, f32) {
-        if !self.update { return (false, 0.0); /* We are not allowed to update so return the default value */ }
+        if !self.update {
+            return (false, 0.0); /* We are not allowed to update so return the default value */
+        }
         // Make sure that mapping actually exists
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
@@ -376,7 +383,9 @@ impl InputManager {
     }
     // Returns true when the map has been released
     pub fn map_released(&self, name: &str) -> bool {
-        if !self.update { return false; /* We are not allowed to update so return the default value */ }
+        if !self.update {
+            return false; /* We are not allowed to update so return the default value */
+        }
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
             if self.keys.contains_key(key_scancode) {
@@ -393,7 +402,9 @@ impl InputManager {
     }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {
-        if !self.update { return false; /* We are not allowed to update so return the default value */ }
+        if !self.update {
+            return false; /* We are not allowed to update so return the default value */
+        }
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
             if self.keys.contains_key(key_scancode) {

@@ -29,7 +29,7 @@ impl Console {
                 for associated_input in command.inputs.iter() {
                     // Get the name and the actual value
                     let index = inputs.iter().position(|x| x.to_string() == associated_input.short_name)?;
-                    
+
                     // Get the value
                     let value: CommandInputEnum = {
                         let value_string = inputs.get(index + 1)?;
@@ -38,31 +38,39 @@ impl Console {
                             CommandInputEnum::F32(_) => {
                                 // Parse to f32
                                 let output = value_string.parse::<f32>().ok()?;
-                                CommandInputEnum::F32(output)                                
-                            },
+                                CommandInputEnum::F32(output)
+                            }
                             CommandInputEnum::I32(_) => {
                                 // Parse to i32
                                 let output = value_string.parse::<i32>().ok()?;
                                 CommandInputEnum::I32(output)
-                            },
+                            }
                             CommandInputEnum::BOOL(_) => {
                                 // Parse to bool
                                 let output = value_string.parse::<bool>().ok()?;
                                 CommandInputEnum::BOOL(output)
-                            },
+                            }
                         }
                     };
                     // Finally push
-                    final_assossiated_inputs.push(CommandInput { short_name: associated_input.short_name.clone(), input: value });
+                    final_assossiated_inputs.push(CommandInput {
+                        short_name: associated_input.short_name.clone(),
+                        input: value,
+                    });
                 }
-                final_command = Some(Command { name: command.name.clone(), inputs: final_assossiated_inputs });
-                break;                
+                final_command = Some(Command {
+                    name: command.name.clone(),
+                    inputs: final_assossiated_inputs,
+                });
+                break;
             }
         }
         // If the final command is not none then send the message
         match final_command {
-            Some(x) => { self.send_command(x); }
-            _ => { }
+            Some(x) => {
+                self.send_command(x);
+            }
+            _ => {}
         }
         Some(())
     }
@@ -83,8 +91,10 @@ impl Console {
                     let output = Some(a);
                     self.sent_command = None;
                     output
-                } else { None }
-            },
+                } else {
+                    None
+                }
+            }
             None => None,
         }
     }
@@ -120,7 +130,10 @@ pub struct CommandInput {
 impl CommandInput {
     // Create a new command input
     pub fn new<T: CommandInputTrait>(name: &str) -> Self {
-        return CommandInput { short_name: name.to_string(), input: T::get_default_input() }
+        return CommandInput {
+            short_name: name.to_string(),
+            input: T::get_default_input(),
+        };
     }
 }
 
@@ -131,7 +144,6 @@ pub enum CommandInputEnum {
     I32(i32),
     BOOL(bool),
 }
-
 
 // A command input trait
 pub trait CommandInputTrait {

@@ -5,10 +5,10 @@ pub struct Spring {
     pub current: f32,
     pub velocity: f32,
     pub dampen: f32,
-    pub force: f32
+    pub force: f32,
 }
 
-// Actual sring code 
+// Actual sring code
 impl Spring {
     // Update the spring and return the current spring value
     pub fn update_get(&mut self) -> f32 {

@@ -29,7 +29,7 @@ pub struct World {
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
-    
+
     // Miscs
     pub debug: MainDebug,
     pub custom_data: CustomWorldData,
@@ -59,7 +59,7 @@ impl World {
             custom_data: CustomWorldData::default(),
             time_manager: Time::default(),
             saver_loader: SaverLoader::new(author_name, app_name),
-            config_file: GameConfig::default()
+            config_file: GameConfig::default(),
         }
     }
     // Load everything that needs to be loaded by default
@@ -151,7 +151,7 @@ impl World {
         test_entity.link_default_component::<components::Transform>(&mut self.component_manager).unwrap();
         let entity_id = self.add_entity(test_entity);
         self.entity_manager.remove_entity_s(&entity_id);
-        */        
+        */
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.che", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
@@ -193,7 +193,7 @@ impl World {
             time_manager: &mut self.time_manager,
             debug: &mut self.debug,
             custom_data: &mut self.custom_data,
-            instance_manager: &mut self.instance_manager
+            instance_manager: &mut self.instance_manager,
         };
 
         // Update the entities
@@ -218,7 +218,7 @@ impl World {
         let entity_text = &format!("#Entities: {}", self.entity_manager.entities.len());
         root.get_element_mut(2).update_text(entity_text, 40.0);
         let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.elements.len());
-        root.get_element_mut(3).update_text(component_text, 40.0);        
+        root.get_element_mut(3).update_text(component_text, 40.0);
 
         // Just in case
         errors::ErrorCatcher::catch_opengl_errors();
@@ -229,7 +229,7 @@ impl World {
         self.time_manager.frame_count += 1;
         // Update the FPS
         self.time_manager.fps = 1.0 / self.time_manager.delta_time;
-        self.time_manager.update_average_fps();        
+        self.time_manager.update_average_fps();
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
@@ -261,7 +261,7 @@ impl World {
         if self.input_manager.map_pressed("toggle_wireframe") {
             let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             render_system.wireframe = !render_system.wireframe;
-        }        
+        }
     }
     // Update the console
     fn update_console(&mut self) {
@@ -271,16 +271,16 @@ impl World {
                 Some(x) => {
                     // Hide the console
                     let console_root = self.ui_manager.get_root_mut("console");
-                    console_root.visible = false;     
+                    console_root.visible = false;
                     self.debug.console.detect_command(x);
                 }
-                None => { 
+                None => {
                     // Enable the console
                     let console_root = self.ui_manager.get_root_mut("console");
                     console_root.visible = true;
                 }
             }
-        } 
+        }
 
         // Update the console everytime
         match self.input_manager.full_sentence.as_ref() {
@@ -288,10 +288,10 @@ impl World {
                 let console_text = self.ui_manager.get_root_mut("console").get_element_mut(2);
                 let console_string = format!("Com: '{}'", x.clone().as_str());
                 console_text.update_text(console_string.as_str(), 40.0);
-            },
+            }
             None => {
                 // We don't have to update anything
-            },
+            }
         }
     }
     // Set the fullscreen status

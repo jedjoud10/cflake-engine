@@ -1,6 +1,6 @@
-use ecs::{ Component, ComponentInternal, ComponentID };
+use ecs::{Component, ComponentID, ComponentInternal};
 use math::octrees::*;
-use terrain::{CHUNK_SIZE, ChunkManager, Voxel, VoxelGenerator};
+use terrain::{ChunkManager, Voxel, VoxelGenerator, CHUNK_SIZE};
 
 // Terrain data that will be on the terrain entity
 #[derive(Default)]
@@ -8,7 +8,7 @@ pub struct TerrainData {
     pub material: rendering::Material,
     pub octree: AdvancedOctree,
     pub voxel_generator: VoxelGenerator,
-    pub chunk_manager: ChunkManager,    
+    pub chunk_manager: ChunkManager,
 }
 
 // Create a new terrain data
@@ -17,7 +17,11 @@ impl TerrainData {
     pub fn new(material: rendering::Material, compute_shader_name: String, octree_depth: u8) -> Self {
         // Create a new octree
         let octree = AdvancedOctree {
-            internal_octree: Octree { depth: octree_depth, size: (CHUNK_SIZE - 2) as u64, ..Octree::default() },
+            internal_octree: Octree {
+                depth: octree_depth,
+                size: (CHUNK_SIZE - 2) as u64,
+                ..Octree::default()
+            },
             ..AdvancedOctree::default()
         };
         Self {
@@ -28,9 +32,8 @@ impl TerrainData {
                 ..VoxelGenerator::default()
             },
             chunk_manager: ChunkManager::default(),
-        }        
+        }
     }
 }
 
 ecs::impl_component!(TerrainData);
-

@@ -53,7 +53,7 @@ impl OctreeNode {
                         // The children node is two times smaller in each axis
                         half_extent: self.half_extent / 2,
                         depth: self.depth + 1,
-                        
+
                         // Index stuff
                         parent_index: self.index,
                         index: child_index,

@@ -1,5 +1,5 @@
+use ecs::{Component, ComponentID, ComponentInternal};
 use terrain::ChunkCoords;
-use ecs::{ Component, ComponentInternal, ComponentID };
 
 // A component that will be added to well... chunks
 #[derive(Default)]

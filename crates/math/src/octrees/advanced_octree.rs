@@ -1,16 +1,19 @@
 use others::SmartList;
 
-use super::{node::OctreeNode, octree::{self, Octree}};
+use super::{
+    node::OctreeNode,
+    octree::{self, Octree},
+};
 
 // An advanced octree with incremental generation and twin nodes
 #[derive(Default)]
-pub struct AdvancedOctree {    
+pub struct AdvancedOctree {
     // The original octree
     pub internal_octree: Octree,
     pub generated_base_octree: bool,
 }
 
-impl AdvancedOctree {   
+impl AdvancedOctree {
     // Check if a node can be subdivided
     fn can_node_subdivide_twin(&self, node: &OctreeNode, target: &veclib::Vector3<f32>) -> bool {
         // Only subdivide if we don't have any children
@@ -22,7 +25,7 @@ impl AdvancedOctree {
     fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &mut SmartList<OctreeNode>, lod_factor: f32) {
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-        
+
         // Start at the root of the tree
         pending_nodes.push(nodes.get_element(0).cloned().unwrap());
 
@@ -36,13 +39,15 @@ impl AdvancedOctree {
                 // Add the children nodes
                 let child_nodes = octree_node.subdivide();
                 pending_nodes.extend(child_nodes.clone());
-                for child in child_nodes { nodes.add_element(child); }
+                for child in child_nodes {
+                    nodes.add_element(child);
+                }
             }
 
             // Remove the node so we don't cause an infinite loop
             pending_nodes.remove(0);
         }
-    }    
+    }
     // Generate the base octree with a target point at 0, 0, 0
     fn generate_base_octree(&mut self, lod_factor: f32) -> Vec<OctreeNode> {
         // Create the root node
@@ -83,11 +88,11 @@ impl AdvancedOctree {
         // We go up the tree from the target node, then we check the highest depth node that still has a collision with the target point
         // From there, we go down the tree and generate a sub-octree, then we just append it to our normal octree
         // The highest depth node with that contains the target point
-        
+
         // Loop through the tree recursively
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
-        let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap(); 
+        let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
         while current_node.depth != self.internal_octree.depth {
             // Go up the tree
             let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap();
@@ -100,7 +105,7 @@ impl AdvancedOctree {
             // Update the current node
             current_node = parent.clone();
         }
-        
+
         // Check if we even changed parents
         let target_node_index = self.internal_octree.target_node.as_ref().cloned().unwrap().parent_index;
         let new_parents = target_node_index != common_target_node.index;
@@ -122,7 +127,7 @@ impl AdvancedOctree {
             while pending_nodes.len() > 0 {
                 // Get the current pending node
                 let mut octree_node = pending_nodes[0].clone();
-            
+
                 // Update target node
                 if octree_node.depth == depth - 1 && octree_node.can_subdivide(target, depth + 1) {
                     targetted_node = Some(octree_node.clone());
@@ -138,13 +143,13 @@ impl AdvancedOctree {
                     // Add each child node, but also update the parent's child link id
                     let child_nodes = octree_node.subdivide();
                     pending_nodes.extend(child_nodes.clone());
-                    for child in child_nodes { nodes.add_element(child); }
+                    for child in child_nodes {
+                        nodes.add_element(child);
+                    }
                 }
             }
-
-            
-        }  
+        }
         // Output
-        return None;      
+        return None;
     }
 }

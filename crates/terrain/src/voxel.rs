@@ -1,6 +1,6 @@
+use super::CHUNK_SIZE;
 use rendering::{Shader, Texture2D, Texture3D};
 use system_event_data::{SystemEventData, SystemEventDataLite};
-use super::CHUNK_SIZE;
 
 // Casually stole my old code lol
 // Get the position from an index
@@ -37,7 +37,7 @@ impl VoxelGenerator {
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&self, compute_shader: &mut Shader, size: &u64, position: &veclib::Vector3<i64>) {
-        // Set the compute shader variables and voxel texture        
+        // Set the compute shader variables and voxel texture
         compute_shader.use_shader();
         compute_shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::ReadWrite);
         compute_shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
@@ -45,7 +45,7 @@ impl VoxelGenerator {
         compute_shader.set_i32("node_size", &(*size as i32));
         // Run the compute shader
         let compute_shader = match &mut compute_shader.additional_shader {
-            rendering::AdditionalShader::Compute(c) => c,            
+            rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data imme
@@ -58,12 +58,12 @@ impl VoxelGenerator {
             rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };
-        
+
         // Read back the compute shader data
         compute_shader.get_compute_state();
         // Read back the texture into the data buffer
         let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();
-        
+
         //let pixels = vec![-10.0; data.len()];
         // Keep track of the min and max values
         let mut min = f32::MAX;
