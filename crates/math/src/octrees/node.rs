@@ -35,7 +35,7 @@ impl OctreeNode {
         let mut output: Vec<OctreeNode> = Vec::new();
 
         // Temporary array that we fill with out children's indices
-        let mut children_indices: [usize; 8];
+        let mut children_indices: [usize; 8] = [0; 8];
 
         // Children counter
         let mut i: usize = 0;
@@ -59,7 +59,6 @@ impl OctreeNode {
                         index: child_index,
                         children_indices: None,
                     };
-                    let center = child.get_center();
                     // Update the indices
                     children_indices[i] = child_index;
                     output.push(child);

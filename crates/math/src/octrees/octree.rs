@@ -1,6 +1,6 @@
 use others::SmartList;
 
-use super::node::OctreeNode;
+use super::node::{self, OctreeNode};
 
 // A simple octree, no incremental generation what so ever
 pub struct Octree {
@@ -41,8 +41,6 @@ impl Octree {
     }
     // Generate an octree from a root and a target point
     pub fn generate_octree(&mut self, target: &veclib::Vector3<f32>, root_node: OctreeNode) {
-        // The final nodes
-        let mut nodes: Vec<OctreeNode> = Vec::new();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         // The default root node
@@ -51,35 +49,37 @@ impl Octree {
 
         // The targetted node that is specified using the target position
         let mut targetted_node: Option<OctreeNode> = None;
-        let mut closest_dist: f32 = f32::MAX;
 
         // Evaluate each node
         while pending_nodes.len() > 0 {
             // Get the current pending node
             let mut octree_node = pending_nodes[0].clone();
 
-            // Check if this octree node is the targeted node
-            let dist = veclib::Vector3::<f32>::from(octree_node.get_center()).distance(*target);
-            // Check distances and depth values
-            if octree_node.depth == self.depth - 1 && dist < closest_dist {
+            // Update target node
+            if octree_node.depth == self.depth - 1 && octree_node.can_subdivide(target, self.depth + 1) {
                 targetted_node = Some(octree_node.clone());
-                closest_dist = dist;
             }
             
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth) {
                 // Update the nodes
                 let nodes_to_push = octree_node.subdivide();
-                nodes[octree_node.index as usize] = octree_node;
-                // Add each child node, but also update the parent's child link id
+                let elm = self.nodes.get_element_mut(octree_node.index).unwrap();
+                elm.children_indices = octree_node.children_indices;
 
-                nodes.extend(nodes_to_push.clone());
+                // Add each child node, but also update the parent's child link id
                 pending_nodes.extend(nodes_to_push.clone());
+                for child in nodes_to_push {
+                    self.nodes.add_element(child);
+                }
             }
         }
 
-        // Update self
-        self.nodes.add_element(element) = nodes;
         self.target_node = targetted_node;
+    }    
+    // Externally update the octree with nodes and a target node
+    pub fn extern_update(&mut self, target_node: Option<OctreeNode>, nodes: SmartList<OctreeNode>) {
+        self.target_node = target_node;
+        self.nodes = nodes;
     }
 }

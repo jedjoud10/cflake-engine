@@ -3,12 +3,12 @@ use errors::ECSError;
 // Some system data that is part of a system and wrapped around System trait getter functions
 #[derive(Default)]
 pub struct SystemData {
-    pub c_bitfield: u16,
+    pub c_bitfield: usize,
     pub system_id: u8,
     pub state: SystemState,
     pub stype: SystemType,
     pub firing_type: SystemFiringType,
-    pub entities: Vec<u16>,
+    pub entities: Vec<usize>,
 }
 
 impl SystemData {

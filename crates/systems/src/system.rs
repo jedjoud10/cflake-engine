@@ -18,12 +18,12 @@ impl SystemManager {
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid_for_system(entity: &Entity, system_data: &SystemData) -> bool {
         // Check if the system matches the component ID of the entity
-        let bitfield: u16 = system_data.c_bitfield & !entity.c_bitfield;
+        let bitfield: usize = system_data.c_bitfield & !entity.c_bitfield;
         // If the entity is valid, all the bits would be 0
         bitfield == 0
     }
     // Remove an entity from it's corresponding systems, this is done before actually removing the entity to allow the systems to dispose of it's data
-    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: &u16, data: &mut SystemEventDataLite) {
+    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: &usize, data: &mut SystemEventDataLite) {
         // Remove the entity from all the systems it was in
         for system in self.systems.iter_mut() {
             let system_data = system.get_system_data_mut();
@@ -122,7 +122,7 @@ pub trait System {
         }
     }
     // Remove an entity from the current system
-    fn remove_entity(&mut self, entity_id: &u16, entity: &Entity, data: &mut SystemEventDataLite) {
+    fn remove_entity(&mut self, entity_id: &usize, entity: &Entity, data: &mut SystemEventDataLite) {
         let system_data = self.get_system_data_mut();
         // Search for the entity with the matching entity_id
         let system_entity_local_id = system_data.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == *entity_id).unwrap();
@@ -138,11 +138,11 @@ pub trait System {
         let entities_clone = system_data_clone.entities.clone();
         // Loop over all the entities and fire the entity removed event
         for entity_id in entities_clone.iter() {
-            let entity_clone = &mut data.entity_manager.get_entity(entity_id).unwrap().clone();
+            let entity_clone = &mut data.entity_manager.get_entity(*entity_id).unwrap().clone();
             if let SystemFiringType::OnlyEntities | SystemFiringType::All = firing_type {
                 self.entity_removed(entity_clone, data);
             }
-            *data.entity_manager.get_entity_mut(entity_id).unwrap() = entity_clone.clone();
+            *data.entity_manager.get_entity_mut(*entity_id).unwrap() = entity_clone.clone();
         }
         // Reput the cloned entities
         self.get_system_data_mut().entities = entities_clone;
@@ -163,7 +163,7 @@ pub trait System {
             let filtered_entity_ids = entities
                 .iter()
                 .filter_map(|entity_id| {
-                    let entity_clone = &entity_manager_immutable.get_entity(entity_id).unwrap();
+                    let entity_clone = &entity_manager_immutable.get_entity(*entity_id).unwrap();
                     // Get the linked components
                     let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
                     let valid_entity = self.filter_entity(entity_clone, &linked_components, &data);
@@ -176,10 +176,10 @@ pub trait System {
                         None
                     }
                 })
-                .collect::<Vec<u16>>();
+                .collect::<Vec<usize>>();
             // Loop over all the entities and update their components
             for entity_id in filtered_entity_ids {
-                let entity_clone = data.entity_manager.get_entity_mut(&entity_id).unwrap();
+                let entity_clone = data.entity_manager.get_entity_mut(entity_id).unwrap();
                 // Get the linked entity components from the current entity
                 let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, c_bitfield);
                 self.fire_entity(&linked_components, data);

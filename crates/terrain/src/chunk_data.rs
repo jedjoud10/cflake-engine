@@ -1,5 +1,4 @@
-use math::octree;
-use math::octree::OctreeNode;
+use math::octrees::OctreeNode;
 
 use super::Voxel;
 use super::VoxelGenerator;
@@ -34,7 +33,6 @@ impl ChunkData {
 #[derive(Default, Clone, Debug)]
 pub struct ChunkCoords {
     pub position: veclib::Vector3<i64>,
-    pub parent_center: veclib::Vector3<i64>,
     pub center: veclib::Vector3<i64>,
     pub size: u64,
     pub depth: u8,
@@ -46,7 +44,6 @@ impl ChunkCoords {
     pub fn new(octree_node: &OctreeNode) -> Self {
         Self {
             position: octree_node.position,
-            parent_center: octree_node.parent_center,
             center: octree_node.get_center(),
             size: octree_node.half_extent * 2,
             depth: octree_node.depth,

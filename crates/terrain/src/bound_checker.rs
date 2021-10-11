@@ -1,4 +1,4 @@
-use math::{bounds::AABB, octree::OctreeNode};
+use math::{bounds::AABB, octrees::*};
 
 // The bound checker
 pub struct BoundChecker {}

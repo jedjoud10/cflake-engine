@@ -4,9 +4,9 @@ use crate::Root;
 #[derive(Debug, Clone)]
 pub struct Element {
     // The ID of this element in the root node
-    pub id: u16,
+    pub id: usize,
     // Our parent node's ID
-    pub parent: u16,
+    pub parent: usize,
     // Our position relative to our coordinate system
     pub position: veclib::Vector2<f32>,
     // Our size relative to our coordinate system
@@ -17,7 +17,7 @@ pub struct Element {
     pub visible: bool,
     // The depth of this node, further depth nodes get rendered front to back
     pub depth: i32,
-    pub children: Vec<u16>,
+    pub children: Vec<usize>,
     pub element_type: ElementType,
     // Coordinate system type
     pub coordinate_type: CoordinateType,
@@ -81,9 +81,9 @@ impl Element {
         return self;
     }
     // Recursively get the children of this element
-    pub fn get_children_recursive(&self, root: &Root) -> Vec<u16> {
+    pub fn get_children_recursive(&self, root: &Root) -> Vec<usize> {
         let mut elements: Vec<&Element> = Vec::new();
-        let mut final_elements_ids: Vec<u16> = Vec::new();
+        let mut final_elements_ids: Vec<usize> = Vec::new();
         // Borrow the elements recursively 
         while elements.len() > 0 {
             // Get the elements from this and add them   
@@ -132,7 +132,7 @@ pub enum ElementType {
 
 impl Element {
     // Attach children to this element
-    pub fn attach(root: &mut Root, id: u16, children: Vec<u16>) {
+    pub fn attach(root: &mut Root, id: usize, children: Vec<usize>) {
         // Get the parent's visibility
         let parent_visible = root.get_element(id).visible.clone();
         // Update the parent id of the children

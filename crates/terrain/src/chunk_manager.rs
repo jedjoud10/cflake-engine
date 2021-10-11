@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use debug::DefaultDebugRendererType;
 use ecs::{ComponentManager, Entity};
-use math::octree::OctreeNode;
+use math::octrees::OctreeNode;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rendering::{Model, Shader};
 use system_event_data::SystemEventData;

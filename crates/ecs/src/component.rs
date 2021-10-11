@@ -5,9 +5,9 @@ use std::{any::Any, collections::HashMap};
 
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
-    component_ids: HashMap<String, u16>,
+    component_ids: HashMap<String, usize>,
     pub smart_components_list: SmartList<Box<dyn ComponentInternal + Send + Sync>>,
-    pub current_component_id: u16,
+    pub current_component_id: usize,
 }
 
 impl Default for ComponentManager {
@@ -23,7 +23,7 @@ impl Default for ComponentManager {
 // Implement all the functions
 impl ComponentManager {
     // Registers a specific component
-    pub fn register_component<T: ComponentID>(&mut self) -> u16 {
+    pub fn register_component<T: ComponentID>(&mut self) -> usize {
         let name: String = T::get_component_name();
         // Register the component
         self.component_ids.insert(name, self.current_component_id);
@@ -35,7 +35,7 @@ impl ComponentManager {
         component_id
     }
     // Get the component id for a specific entity
-    pub fn get_component_id<T: ComponentID>(&self) -> Result<u16, ECSError> {
+    pub fn get_component_id<T: ComponentID>(&self) -> Result<usize, ECSError> {
         let name: String = T::get_component_name();
         // It found the component, so just return it's id
         if self.component_ids.contains_key(&name) {
@@ -50,7 +50,7 @@ impl ComponentManager {
         self.component_ids.contains_key(&T::get_component_name())
     }
     // Add a specific linked componment to the component manager, returns the global IDs of the components
-    pub fn add_linked_component<T: Component + ComponentID + Send + Sync + 'static>(&mut self, component: T) -> Result<u16, ECSError> {
+    pub fn add_linked_component<T: Component + ComponentID + Send + Sync + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
         let global_id = self.smart_components_list.add_element(Box::new(component));
         Ok(global_id)
     }
@@ -67,7 +67,7 @@ impl ComponentManager {
         Ok(final_component)
     }
     // Get a reference to a specific linked component
-    pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: u16) -> Result<&T, ECSError> {
+    pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: usize) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self
@@ -78,7 +78,7 @@ impl ComponentManager {
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: u16) -> Result<&mut T, ECSError> {
+    pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: usize) -> Result<&mut T, ECSError> {
         let linked_component = self
             .smart_components_list
             .get_element_mut(global_id)
@@ -87,7 +87,7 @@ impl ComponentManager {
         Ok(component)
     }
     // Remove a specified component from the list
-    pub fn id_remove_linked_component(&mut self, global_id: &u16) -> Result<(), ECSError> {
+    pub fn id_remove_linked_component(&mut self, global_id: usize) -> Result<(), ECSError> {
         // To remove a specific component just set it's component slot to None
         self.smart_components_list.remove_element(global_id);
         return Ok(());
@@ -108,16 +108,16 @@ pub trait ComponentID {
 // The filtered components that are linked to a specific entity, and that also match a specific c_bitfield
 #[derive(Default)]
 pub struct FilteredLinkedComponents {
-    pub entity_id: u16,
-    pub components: HashMap<u16, u16>,
+    pub entity_id: usize,
+    pub components: HashMap<usize, usize>,
 }
 
 // Get the components
 impl FilteredLinkedComponents {
     // Get the matching filtered components from a specific entity
-    pub fn get_filtered_linked_components(entity: &Entity, system_c_bitfield: u16) -> Self {
+    pub fn get_filtered_linked_components(entity: &Entity, system_c_bitfield: usize) -> Self {
         let mut filtered_linked_components: Self = Self::default();
-        let global_ids: HashMap<u16, u16> = entity
+        let global_ids: HashMap<usize, usize> = entity
             .linked_components
             .iter()
             .filter(|(&component_id, _)| {
