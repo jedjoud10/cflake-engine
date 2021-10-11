@@ -337,10 +337,18 @@ impl World {
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {
-        let mut data: SystemEventDataLite = SystemEventDataLite {
+        let mut data: SystemEventData = SystemEventData {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
+            ui_manager: &mut self.ui_manager,
+            input_manager: &mut self.input_manager,
+            shader_cacher: &mut self.shader_cacher,
+            texture_cacher: &mut self.texture_cacher,
+            resource_manager: &mut self.resource_manager,
+            time_manager: &mut self.time_manager,
+            debug: &mut self.debug,
             custom_data: &mut self.custom_data,
+            instance_manager: &mut self.instance_manager,
         };
         self.system_manager.kill_systems(&mut data);
     }
@@ -354,10 +362,18 @@ impl World {
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         self.system_manager.add_entity_to_systems(
             &entity,
-            &mut SystemEventDataLite {
+            &mut SystemEventData {
                 entity_manager: &mut self.entity_manager,
                 component_manager: &mut self.component_manager,
+                ui_manager: &mut self.ui_manager,
+                input_manager: &mut self.input_manager,
+                shader_cacher: &mut self.shader_cacher,
+                texture_cacher: &mut self.texture_cacher,
+                resource_manager: &mut self.resource_manager,
+                time_manager: &mut self.time_manager,
+                debug: &mut self.debug,
                 custom_data: &mut self.custom_data,
+                instance_manager: &mut self.instance_manager,
             },
         );
         *self.entity_manager.get_entity_mut(entity_id).unwrap() = entity;
@@ -385,10 +401,18 @@ impl World {
     pub fn remove_entity_from_systems(&mut self, entity_id: usize) -> Result<Entity, ECSError> {
         // Remove this entity from the systems it was in first
         let entity = self.entity_manager.get_entity(entity_id)?.clone();
-        let mut data = SystemEventDataLite {
+        let mut data = SystemEventData {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
+            ui_manager: &mut self.ui_manager,
+            input_manager: &mut self.input_manager,
+            shader_cacher: &mut self.shader_cacher,
+            texture_cacher: &mut self.texture_cacher,
+            resource_manager: &mut self.resource_manager,
+            time_manager: &mut self.time_manager,
+            debug: &mut self.debug,
             custom_data: &mut self.custom_data,
+            instance_manager: &mut self.instance_manager,
         };
         self.system_manager.remove_entity_from_systems(&entity, entity_id, &mut data);
         // Then remove the actual entity last, so it allows for systems to run their entity_removed event

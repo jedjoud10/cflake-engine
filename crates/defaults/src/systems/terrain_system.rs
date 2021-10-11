@@ -185,8 +185,8 @@ impl System for TerrainSystem {
         // Generate the base octreee
         let nodes = td.octree.generate_base_octree(self.lod_factor);
         for node in nodes.iter() {
-            let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.position, node);
-            data.debug.renderer.debug_default(default_debug_renderer_type, color, permanent)
+            let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.position.into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32*2.0));
+            data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, true);
         }
     }
 
