@@ -71,7 +71,10 @@ impl System for TerrainSystem {
         // Generate the octree each frame and generate / delete the chunks
         if td.chunk_manager.octree_update_valid() {
             match td.octree.generate_incremental_octree(&camera_location, self.lod_factor) {
-                Some((mut added, removed, total_nodes)) => {
+                Some((mut added, removed)) => {
+                    println!("Added nodes: '{}'", added.len());
+                    println!("Removed nodes: '{}'", removed.len());
+                    /*
                     // Filter first
                     added.retain(|node| BoundChecker::bound_check(&node));
                     // Turn all the newly added nodes into chunks and instantiate them into the world
@@ -94,6 +97,7 @@ impl System for TerrainSystem {
                             None => {}
                         }
                     }
+                    */
                 }
                 None => { /* Nothing happened */ }
             }

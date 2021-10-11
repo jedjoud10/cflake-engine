@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use others::SmartList;
 
 use super::{
@@ -62,9 +64,8 @@ impl AdvancedOctree {
         target: &veclib::Vector3<f32>,
         lod_factor: f32,
     ) -> Option<(
-        Vec<OctreeNode>, // Added nodes
-        Vec<OctreeNode>, // Removed nodes
-        Vec<OctreeNode>, // Total nodes
+        Vec<veclib::Vector3<i64>>, // Added nodes
+        Vec<veclib::Vector3<i64>>, // Removed nodes
     )> {
         // Clamp the input position
         let root_node = self.internal_octree.get_root_node();
@@ -76,8 +77,8 @@ impl AdvancedOctree {
         // Check if we even have the base octree generated
         if !self.generated_base_octree {
             // The base octree is not generated, so generate it
-            let added_nodes = self.generate_base_octree(lod_factor);
-            return Some((added_nodes.clone(), Vec::new(), added_nodes));
+            let added_nodes: Vec<veclib::Vector3<i64>> = self.generate_base_octree(lod_factor).iter().map(|x| x.get_center()).collect();
+            return Some((added_nodes.clone(), Vec::new()));
         }
         // If we don't have a target node don't do anything
         if self.internal_octree.target_node.is_none() {
@@ -111,17 +112,19 @@ impl AdvancedOctree {
         let new_parents = target_node_index != common_target_node.index;
         if new_parents {
             // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
+            // Keep track of the starting hashset
+            let original_hashset = self.internal_octree.nodes.elements.iter().filter_map(|x| match x {
+                Some(x) => Some(x.get_center()),
+                None => None,
+            }).collect::<HashSet<veclib::Vector3<i64>>>();
             // Final nodes
             let mut nodes: SmartList<OctreeNode> = self.internal_octree.nodes.clone();
             // The nodes that must be evaluated
             let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             // The starting node
             pending_nodes.push(common_target_node);
-            // The depth of the octree
-            let depth = self.internal_octree.depth;
-
             // The targetted node that is specified using the target position
-            let mut targetted_node: Option<OctreeNode> = None;
+            let mut target_node: Option<OctreeNode> = None;
 
             // Evaluate each node
             while pending_nodes.len() > 0 {
@@ -129,12 +132,12 @@ impl AdvancedOctree {
                 let mut octree_node = pending_nodes[0].clone();
 
                 // Update target node
-                if octree_node.depth == depth - 1 && octree_node.can_subdivide(target, depth + 1) {
-                    targetted_node = Some(octree_node.clone());
+                if octree_node.depth == self.internal_octree.depth - 1 && octree_node.can_subdivide(target, self.internal_octree.depth + 1) {
+                    target_node = Some(octree_node.clone());
                 }
 
                 // If the node contains the position, subdivide it
-                if octree_node.can_subdivide(&target, depth) {
+                if octree_node.can_subdivide(&target, self.internal_octree.depth) {
                     // Update the parent node
                     let elm = nodes.get_element_mut(octree_node.index).unwrap();
                     // Update the values
@@ -148,6 +151,17 @@ impl AdvancedOctree {
                     }
                 }
             }
+            // Internally update the octree
+            let new_hashset = nodes.elements.iter().filter_map(|x| match x {
+                Some(x) => Some(x.get_center()),
+                None => None,
+            }).collect::<HashSet<veclib::Vector3<i64>>>();
+            self.internal_octree.extern_update(target_node, nodes);
+
+            // Get the nodes that where removed / added
+            let removed_nodes = original_hashset.difference(&new_hashset).cloned().collect::<Vec<veclib::Vector3<i64>>>();
+            let added_nodes = new_hashset.difference(&original_hashset).cloned().collect::<Vec<veclib::Vector3<i64>>>();
+            return Some((added_nodes, removed_nodes));
         }
         // Output
         return None;
