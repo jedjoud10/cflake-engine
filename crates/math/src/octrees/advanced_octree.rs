@@ -83,6 +83,7 @@ impl AdvancedOctree {
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
         let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
+        let mut removed_nodes: Vec<veclib::Vector3<i64>> = Vec::new();
         while current_node.depth != self.internal_octree.depth {
             // Go up the tree
             let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap();
@@ -90,25 +91,19 @@ impl AdvancedOctree {
             if parent.can_subdivide(&target, self.internal_octree.depth) || parent.depth == 0 {
                 // This node the common target node
                 common_target_node = parent.clone();
-                
-                
                 break;
             }            
+            // Keep track of the removed nodes
+            match parent.children_indices {
+                Some(children_indices) => {
+                    let children = children_indices.map(|x| self.internal_octree.nodes.get_element(x).unwrap().get_center()).to_vec();
+                    removed_nodes.extend(children);
+                },
+                None => panic!(),
+            }
             // Update the current node
             current_node = parent.clone();
         }
-        // Remove all the nodes that are children nodes of the common target node
-        let removed_nodes = self.internal_octree.nodes.elements.iter().filter_map(|x| match x {
-            Some(x) => {
-                // Check if this node passed by the common target node
-                if x.path.pass_check(&common_target_node) {
-                    Some(x.get_center())
-                } else {
-                    None
-                }
-            },
-            None => { None },
-        }).collect::<Vec<veclib::Vector3<i64>>>();
 
         // Check if we even changed parents
         let target_node_index = self.internal_octree.target_node.as_ref().cloned().unwrap().parent_index;
@@ -161,11 +156,6 @@ impl AdvancedOctree {
                 pending_nodes.remove(0);
             }
 
-            // Oh no
-            if target_node.is_none() {
-                panic!();
-            }
-
             // New dictionary to keep track of the deleted / added nodes
             let new_dictionary = nodes
                 .elements
@@ -175,6 +165,7 @@ impl AdvancedOctree {
                     None => None,
                 })
                 .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
+                
             //self.internal_octree.extern_update(target_node, nodes);
 
             // Get the nodes that where removed / added

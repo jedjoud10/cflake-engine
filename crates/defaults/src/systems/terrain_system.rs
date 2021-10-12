@@ -41,7 +41,7 @@ impl System for TerrainSystem {
         let system_data = self.get_system_data_mut();
         data.component_manager.register_component::<Chunk>();
         system_data.link_component::<components::TerrainData>(data.component_manager).unwrap();
-        
+
         // Create debug commands
         let command = debug::Command {
             name: "terrain-set-lod-factor".to_string(),
@@ -113,12 +113,12 @@ impl System for TerrainSystem {
 
         for node in self.added.iter() {
             let debug: debug::DefaultDebugRendererType =
-                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
+                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
             data.debug.renderer.debug_default(debug, veclib::Vector3::Y, false);
         }
         for node in self.removed.iter() {
             let debug: debug::DefaultDebugRendererType =
-                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
+                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
             data.debug.renderer.debug_default(debug, veclib::Vector3::X, false);
         }
 
