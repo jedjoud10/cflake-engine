@@ -62,6 +62,7 @@ impl AdvancedOctree {
         Vec<veclib::Vector3<i64>>, // Added nodes
         Vec<veclib::Vector3<i64>>, // Removed nodes
     )> {
+        return None;
         // Clamp the input position
         let root_node = self.internal_octree.get_root_node();
         let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
