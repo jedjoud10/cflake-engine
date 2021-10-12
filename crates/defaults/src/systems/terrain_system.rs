@@ -8,7 +8,7 @@ use math::octrees::*;
 use others::CacheManager;
 use rendering::*;
 use std::collections::{HashMap, HashSet};
-use system_event_data::{SystemEventData};
+use system_event_data::SystemEventData;
 use systems::*;
 use terrain::VoxelGenerator;
 
@@ -21,6 +21,8 @@ use crate::components;
 pub struct TerrainSystem {
     pub system_data: SystemData,
     pub lod_factor: f32,
+    pub added: Vec<OctreeNode>,
+    pub removed: Vec<OctreeNode>,
 }
 
 impl System for TerrainSystem {
@@ -69,11 +71,19 @@ impl System for TerrainSystem {
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
+        let location = veclib::Vector3::new(data.time_manager.seconds_since_game_start.sin() as f32, 0.01, data.time_manager.seconds_since_game_start.cos() as f32) * 2000.0;
+        let debug: debug::DefaultDebugRendererType =
+                debug::DefaultDebugRendererType::CUBE(location, veclib::Vector3::<f32>::ONE * 4.0);
+            data.debug.renderer.debug_default(debug, veclib::Vector3::Z, false);
         if td.chunk_manager.octree_update_valid() {
-            match td.octree.generate_incremental_octree(&camera_location, self.lod_factor) {
-                Some((mut added, removed)) => {
+            match td.octree.generate_incremental_octree(&location, self.lod_factor) {
+                Some((added, removed)) => {
+                    /*
                     println!("Added nodes: '{}'", added.len());
                     println!("Removed nodes: '{}'", removed.len());
+                    */
+                    self.added = added;
+                    self.removed = removed;                    
                     /*
                     // Filter first
                     added.retain(|node| BoundChecker::bound_check(&node));
@@ -99,9 +109,20 @@ impl System for TerrainSystem {
                     }
                     */
                 }
-                None => { /* Nothing happened */ }
+                None => { /* Nothing happened */  /* self.added = Vec::new(); self.removed = Vec::new(); */ }
             }
             td.chunk_manager.update_camera_view(camera_location, camera_forward_vector);
+        }
+
+        for node in self.added.iter() {
+            let debug: debug::DefaultDebugRendererType =
+                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
+            //data.debug.renderer.debug_default(debug, veclib::Vector3::Y, false);
+        }
+        for node in self.removed.iter() {
+            let debug: debug::DefaultDebugRendererType =
+                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
+            data.debug.renderer.debug_default(debug, veclib::Vector3::X, false);
         }
 
         // Update the chunk manager
@@ -184,10 +205,13 @@ impl System for TerrainSystem {
         td.voxel_generator.setup_voxel_generator();
         // Generate the base octreee
         let nodes = td.octree.generate_base_octree(self.lod_factor);
+        
         for node in nodes.iter() {
-            let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
+            let debug: debug::DefaultDebugRendererType =
+                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
             //data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, true);
         }
+        
     }
 
     // Turn this into "Any" so we can cast into child systems

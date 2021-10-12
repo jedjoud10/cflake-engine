@@ -64,8 +64,8 @@ impl Octree {
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth) {
                 // Add each child node, but also update the parent's child link id
-                let nodes_to_push = octree_node.subdivide(&mut self.nodes);    
-                pending_nodes.extend(nodes_to_push.clone());                
+                let nodes_to_push = octree_node.subdivide(&mut self.nodes);
+                pending_nodes.extend(nodes_to_push.clone());
             }
 
             // Don't cause an infinite loop

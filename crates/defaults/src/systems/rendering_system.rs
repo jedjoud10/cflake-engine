@@ -5,7 +5,7 @@ use math;
 use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, TextureShaderAccessType, Window};
 use resources::LoadableResource;
 use std::ptr::null;
-use system_event_data::{SystemEventData};
+use system_event_data::SystemEventData;
 use systems::{System, SystemData};
 use ui::Root;
 

@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use input::*;
-use system_event_data::{SystemEventData};
+use system_event_data::SystemEventData;
 use systems::{System, SystemData};
 #[derive(Default)]
 pub struct CameraSystem {

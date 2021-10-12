@@ -1,6 +1,6 @@
 use super::CHUNK_SIZE;
 use rendering::{Shader, Texture2D, Texture3D};
-use system_event_data::{SystemEventData};
+use system_event_data::SystemEventData;
 
 // Casually stole my old code lol
 // Get the position from an index
