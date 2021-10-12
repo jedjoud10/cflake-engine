@@ -64,7 +64,7 @@ impl AdvancedOctree {
     )> {
         // Clamp the input position
         let root_node = self.internal_octree.get_root_node();
-        let input: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
+        let target: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
             *target,
             veclib::Vector3::<f32>::from(root_node.position) + 32.0,
             veclib::Vector3::<f32>::from(root_node.position + (root_node.half_extent * 2) as i64) - 32.0,
@@ -83,18 +83,33 @@ impl AdvancedOctree {
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
         let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
+        let mut deleted_nodes: Vec<OctreeNode> = Vec::new();
         while current_node.depth != self.internal_octree.depth {
             // Go up the tree
             let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap();
             // Check for collisions
-            if parent.can_subdivide(target, self.internal_octree.depth) || parent.depth == 0 {
+            if parent.can_subdivide(&target, self.internal_octree.depth) || parent.depth == 0 {
                 // This node the common target node
                 common_target_node = parent.clone();
+                
+                
                 break;
-            }
+            }            
             // Update the current node
             current_node = parent.clone();
         }
+        // Remove all the nodes that are children nodes of the common target node
+        let removed_nodes = self.internal_octree.nodes.elements.iter().filter_map(|x| match x {
+            Some(x) => {
+                // Check if this node passed by the common target node
+                if x.path.pass_check(&common_target_node) {
+                    Some(x.get_center())
+                } else {
+                    None
+                }
+            },
+            None => { None },
+        }).collect::<Vec<veclib::Vector3<i64>>>();
 
         // Check if we even changed parents
         let target_node_index = self.internal_octree.target_node.as_ref().cloned().unwrap().parent_index;
@@ -127,7 +142,7 @@ impl AdvancedOctree {
                 let mut octree_node = pending_nodes[0].clone();
 
                 // Update target node
-                if octree_node.depth == self.internal_octree.depth - 1 && octree_node.can_subdivide(target, self.internal_octree.depth + 1) {
+                if octree_node.depth == self.internal_octree.depth - 1 && octree_node.can_subdivide(&target, self.internal_octree.depth + 1) {
                     target_node = Some(octree_node.clone());
                 }
 
@@ -146,7 +161,19 @@ impl AdvancedOctree {
                 // So we don't cause an infinite loop
                 pending_nodes.remove(0);
             }
-            // Internally update the octree
+
+            // Compensate for the removed nodes
+            nodes.elements.retain(|x| match x {
+                Some(x) => deleted_nodes.contains(x),
+                None => true,
+            });
+
+            // Oh no
+            if target_node.is_none() {
+                panic!();
+            }
+
+            // New dictionary to keep track of the deleted / added nodes
             let new_dictionary = nodes
                 .elements
                 .iter()
@@ -158,10 +185,9 @@ impl AdvancedOctree {
             //self.internal_octree.extern_update(target_node, nodes);
 
             // Get the nodes that where removed / added
-            let removed_nodes = original_dictionary
+            let removed_nodes = removed_nodes
                 .iter()
-                .filter(|x| !new_dictionary.contains_key(x.0))
-                .map(|x| x.1.clone())
+                .map(|x| original_dictionary.get(x).unwrap().clone())
                 .collect::<Vec<OctreeNode>>();
             let added_nodes = new_dictionary
                 .iter()
