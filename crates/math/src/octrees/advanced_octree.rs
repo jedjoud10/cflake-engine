@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
-
+use std::time::Instant;
 use others::SmartList;
-
 use super::{
     node::OctreeNode,
     octree::{self, Octree},
@@ -47,10 +46,12 @@ impl AdvancedOctree {
     }
     // Generate the base octree with a target point at 0, 0, 0
     pub fn generate_base_octree(&mut self, lod_factor: f32) -> Vec<OctreeNode> {
+        let t = std::time::Instant::now();
         // Create the root node
         let root_node = self.internal_octree.get_root_node();
         self.internal_octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
         //self.calculate_combined_nodes(&veclib::Vector3::ONE, &self.octree.nodes, lod_factor)
+        println!("Took '{}' micros to generate base octree", t.elapsed().as_micros());
         return self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
     }
     // Generate the octree at a specific position with a specific depth
@@ -62,6 +63,7 @@ impl AdvancedOctree {
         Vec<OctreeNode>, // Added nodes
         Vec<OctreeNode>, // Removed nodes
     )> {
+        let t = std::time::Instant::now();
         // Clamp the input position
         let root_node = self.internal_octree.get_root_node();
         let target: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
@@ -165,7 +167,7 @@ impl AdvancedOctree {
                     None => None,
                 })
                 .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
-                
+
             //self.internal_octree.extern_update(target_node, nodes);
 
             // Get the nodes that where removed / added
@@ -184,6 +186,7 @@ impl AdvancedOctree {
                 .iter()
                 .map(|x| original_dictionary.get(x).unwrap().clone())
                 .collect::<Vec<OctreeNode>>();
+            println!("Took '{}' micros to generate incremental octree", t.elapsed().as_micros());
             return Some((added_nodes, removed_nodes));
         }
         // Output

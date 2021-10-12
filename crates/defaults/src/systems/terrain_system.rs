@@ -73,7 +73,7 @@ impl System for TerrainSystem {
                 debug::DefaultDebugRendererType::CUBE(location, veclib::Vector3::<f32>::ONE * 4.0);
             data.debug.renderer.debug_default(debug, veclib::Vector3::Z, false);
         if td.chunk_manager.octree_update_valid() {
-            match td.octree.generate_incremental_octree(&location, self.lod_factor) {
+            match td.octree.generate_incremental_octree(&camera_location, self.lod_factor) {
                 Some((added, removed)) => {
                     /*
                     println!("Added nodes: '{}'", added.len());
