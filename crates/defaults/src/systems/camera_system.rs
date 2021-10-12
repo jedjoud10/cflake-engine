@@ -77,8 +77,9 @@ impl System for CameraSystem {
                 }
 
                 // Update the variables
-                components.get_component_mut::<components::Transform>(data.component_manager).unwrap().position = changed_position;
-                components.get_component_mut::<components::Transform>(data.component_manager).unwrap().rotation = changed_rotation;
+                let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
+                transform.position = changed_position;
+                transform.rotation = changed_rotation;
                 position = changed_position;
                 rotation = changed_rotation;
             }

@@ -83,7 +83,6 @@ impl AdvancedOctree {
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
         let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
-        let mut deleted_nodes: Vec<OctreeNode> = Vec::new();
         while current_node.depth != self.internal_octree.depth {
             // Go up the tree
             let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap();
@@ -162,12 +161,6 @@ impl AdvancedOctree {
                 pending_nodes.remove(0);
             }
 
-            // Compensate for the removed nodes
-            nodes.elements.retain(|x| match x {
-                Some(x) => deleted_nodes.contains(x),
-                None => true,
-            });
-
             // Oh no
             if target_node.is_none() {
                 panic!();
@@ -185,14 +178,20 @@ impl AdvancedOctree {
             //self.internal_octree.extern_update(target_node, nodes);
 
             // Get the nodes that where removed / added
-            let removed_nodes = removed_nodes
-                .iter()
-                .map(|x| original_dictionary.get(x).unwrap().clone())
-                .collect::<Vec<OctreeNode>>();
             let added_nodes = new_dictionary
                 .iter()
                 .filter(|x| !original_dictionary.contains_key(x.0))
                 .map(|x| x.1.clone())
+                .collect::<Vec<OctreeNode>>();
+
+            // Compensate for the removed nodes            
+            nodes.elements.retain(|x| match x {
+                Some(x) => !removed_nodes.contains(&x.get_center()),
+                None => true,
+            });
+            let removed_nodes = removed_nodes
+                .iter()
+                .map(|x| original_dictionary.get(x).unwrap().clone())
                 .collect::<Vec<OctreeNode>>();
             return Some((added_nodes, removed_nodes));
         }
