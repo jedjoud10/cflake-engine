@@ -11,6 +11,9 @@ use super::{
 pub struct AdvancedOctree {
     // The original octree
     pub internal_octree: Octree,
+    // The last and new positions that are scaled using the octree's node size
+    pub last_pos: veclib::Vector3<i64>,
+    pub new_pos: veclib::Vector3<i64>,
 }
 
 impl AdvancedOctree {
@@ -71,6 +74,8 @@ impl AdvancedOctree {
             veclib::Vector3::<f32>::from(root_node.position) + 32.0,
             veclib::Vector3::<f32>::from(root_node.position + (root_node.half_extent * 2) as i64) - 32.0,
         );
+        let a = (target / self.internal_octree.size as f32);
+        self.new_pos = veclib::Vector3::new(a.x.round() as i64, a.y.round() as i64, a.z.round() as i64);
         // If we don't have a target node don't do anything
         if self.internal_octree.target_node.is_none() {
             return None;
@@ -108,9 +113,7 @@ impl AdvancedOctree {
         }
 
         // Check if we even changed parents
-        let target_node_index = self.internal_octree.target_node.as_ref().cloned().unwrap().parent_index;
-        let new_parents = target_node_index != common_target_node.index;
-        if new_parents {
+        if self.new_pos != self.last_pos {
             // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
             // Keep track of the starting hashset
             let original_dictionary = self
@@ -168,8 +171,7 @@ impl AdvancedOctree {
                 })
                 .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
 
-            //self.internal_octree.extern_update(target_node, nodes);
-
+            //self.internal_octree.extern_update(target_node, nodes);            
             // Get the nodes that where removed / added
             let added_nodes = new_dictionary
                 .iter()
@@ -187,6 +189,7 @@ impl AdvancedOctree {
                 .map(|x| original_dictionary.get(x).unwrap().clone())
                 .collect::<Vec<OctreeNode>>();
             println!("Took '{}' micros to generate incremental octree", t.elapsed().as_micros());
+            self.last_pos = self.new_pos;
             return Some((added_nodes, removed_nodes));
         }
         // Output
