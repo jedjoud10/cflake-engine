@@ -1,6 +1,6 @@
 use others::SmartList;
 
-use super::{OctreeNodePath, node::{self, OctreeNode}};
+use super::{node::{self, OctreeNode}};
 
 // A simple octree, no incremental generation what so ever
 #[derive(Default)]
@@ -38,7 +38,6 @@ impl Octree {
             parent_index: 0,
             index: 0,
             children_indices: None,
-            path: OctreeNodePath::default(),
         }
     }
     // Generate an octree from a root and a target point

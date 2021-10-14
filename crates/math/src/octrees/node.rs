@@ -1,24 +1,5 @@
 use std::collections::HashSet;
-
 use others::SmartList;
-
-// An octree path that tells us the specific nodes that the current node took
-#[derive(Clone, Debug, Default)]
-pub struct OctreeNodePath {
-    pub path: HashSet<usize>,
-}
-
-impl OctreeNodePath {
-    // We just subdivied a node, so we need to incremenet the path
-    pub fn subidive(&mut self, parent_index: usize) {
-        self.path.insert(parent_index);
-    }
-    // Check whether we passed by a specific node
-    pub fn pass_check(&self, other_node: &OctreeNode) -> bool {
-        return self.path.contains(&other_node.index);
-    }
-}
-
 
 // Simple node in the octree
 #[derive(Clone, Debug)]
@@ -30,8 +11,6 @@ pub struct OctreeNode {
     pub parent_index: usize,
     pub index: usize,
     pub children_indices: Option<[usize; 8]>,
-    // The path the octree node took1
-    pub path: OctreeNodePath,
 }
 
 impl PartialEq for OctreeNode {
@@ -67,10 +46,7 @@ impl OctreeNode {
 
         // Temporary array that we fill with out children's indices
         let mut children_indices: [usize; 8] = [0; 8];
-
-        // Increment the path
-        let mut path = self.path.clone();
-        path.subidive(self.index);
+        
         // Children counter
         let mut i: usize = 0;
         for y in 0..2 {
@@ -92,7 +68,6 @@ impl OctreeNode {
                         parent_index: self.index,
                         index: child_index,
                         children_indices: None,
-                        path: path.clone(),
                     };
                     // Update the indices
                     children_indices[i] = child_index;

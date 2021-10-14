@@ -80,7 +80,7 @@ impl System for TerrainSystem {
                     println!("Removed nodes: '{}'", removed.len());
                     */
                     self.added = added;
-                    self.removed = removed;                    
+                    //self.removed = removed;                    
                     /*
                     // Filter first
                     added.retain(|node| BoundChecker::bound_check(&node));

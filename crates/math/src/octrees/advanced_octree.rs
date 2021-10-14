@@ -90,7 +90,7 @@ impl AdvancedOctree {
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
         let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
-        let mut removed_nodes: Vec<veclib::Vector3<i64>> = Vec::new();
+        let mut removed_nodes: HashMap<veclib::Vector3<i64>, usize> = HashMap::new();
         while current_node.depth != self.internal_octree.depth {
             // Go up the tree
             let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap();
@@ -103,7 +103,11 @@ impl AdvancedOctree {
             // Keep track of the removed nodes
             match parent.children_indices {
                 Some(children_indices) => {
-                    let children = children_indices.map(|x| self.internal_octree.nodes.get_element(x).unwrap().get_center()).to_vec();
+                    let children = children_indices.map(|x| {
+                            let key = self.internal_octree.nodes.get_element(x).unwrap().get_center();
+                            let value = x;
+                            (key, value)
+                        }).to_vec();
                     removed_nodes.extend(children);
                 },
                 None => panic!(),
@@ -147,11 +151,6 @@ impl AdvancedOctree {
 
                 // If the node contains the position, subdivide it
                 if octree_node.can_subdivide(&target, self.internal_octree.depth) {
-                    // Update the parent node
-                    let elm = nodes.get_element_mut(octree_node.index).unwrap();
-                    // Update the values
-                    elm.children_indices = octree_node.children_indices;
-
                     // Add each child node, but also update the parent's child link id
                     let child_nodes = octree_node.subdivide(&mut nodes);
                     pending_nodes.extend(child_nodes.clone());
@@ -169,9 +168,7 @@ impl AdvancedOctree {
                     Some(x) => Some((x.get_center(), x.clone())),
                     None => None,
                 })
-                .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
-
-            //self.internal_octree.extern_update(target_node, nodes);            
+                .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();                  
             // Get the nodes that where removed / added
             let added_nodes = new_dictionary
                 .iter()
@@ -180,15 +177,16 @@ impl AdvancedOctree {
                 .collect::<Vec<OctreeNode>>();
 
             // Compensate for the removed nodes            
-            nodes.elements.retain(|x| match x {
-                Some(x) => !removed_nodes.contains(&x.get_center()),
-                None => true,
-            });
+            for (_, index) in removed_nodes.iter() {
+                nodes.remove_element(*index).unwrap();
+            }
             let removed_nodes = removed_nodes
                 .iter()
-                .map(|x| original_dictionary.get(x).unwrap().clone())
+                .map(|(center, _)| original_dictionary.get(center).unwrap().clone())
                 .collect::<Vec<OctreeNode>>();
-            println!("Took '{}' micros to generate incremental octree", t.elapsed().as_micros());
+            self.internal_octree.extern_update(target_node, nodes);     
+            let node_count = self.internal_octree.nodes.elements.iter().filter(|x| x.is_some()).count();
+            println!("Took '{}' micros to generate incremental octree, total node count: {}", t.elapsed().as_micros(), node_count);
             self.last_pos = self.new_pos;
             return Some((added_nodes, removed_nodes));
         }
