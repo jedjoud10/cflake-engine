@@ -69,7 +69,7 @@ impl System for TerrainSystem {
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
-        const speed: f64 = 0.03;
+        const speed: f64 = 1.0;
         let location = veclib::Vector3::new((data.time_manager.seconds_since_game_start * speed).sin() as f32, 0.01, (data.time_manager.seconds_since_game_start * speed).cos() as f32) * 2000.0;
         let debug: debug::DefaultDebugRendererType =
                 debug::DefaultDebugRendererType::CUBE(location, veclib::Vector3::<f32>::ONE * 4.0);
@@ -113,7 +113,11 @@ impl System for TerrainSystem {
             }
             td.chunk_manager.update_camera_view(camera_location, camera_forward_vector);
         }
-
+        for node in self.total_nodes.iter() {
+            let debug: debug::DefaultDebugRendererType =
+                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
+            data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
+        }
         for node in self.added.iter() {
             let debug: debug::DefaultDebugRendererType =
                 debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
@@ -123,12 +127,7 @@ impl System for TerrainSystem {
             let debug: debug::DefaultDebugRendererType =
                 debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
             data.debug.renderer.debug_default(debug, veclib::Vector3::X, false);
-        }
-        for node in self.total_nodes.iter() {
-            let debug: debug::DefaultDebugRendererType =
-                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
-            data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
-        }
+        }        
 
         // Update the chunk manager
         //println!("{:?}", self.parent_child_count);

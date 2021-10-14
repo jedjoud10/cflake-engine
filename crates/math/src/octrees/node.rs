@@ -42,6 +42,7 @@ impl OctreeNode {
     pub fn find_children_recursive(&self, nodes: &SmartList<OctreeNode>) -> Vec<OctreeNode> {
         let mut list: Vec<OctreeNode> = Vec::new();
         let mut pending: Vec<OctreeNode> = vec![self.clone()];
+
         while pending.len() > 0 {
             // Get the current node to evaluate
             let current = pending.get(0).unwrap().clone();
@@ -56,9 +57,8 @@ impl OctreeNode {
 
             // A
             pending.remove(0);
-            list.push(current.clone());
+            if current.index != self.index { list.push(current.clone()); }
         }
-        println!("T: {}", list.len());
         return list;
 
     }
