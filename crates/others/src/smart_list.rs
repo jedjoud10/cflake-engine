@@ -49,18 +49,18 @@ impl<T> SmartList<T> {
         return element;
     }
     // Get a mutable reference to a stored element
-    pub fn get_element_mut(&mut self, element_id: usize) -> Option<&mut T> {
+    pub fn get_element_mut(&mut self, element_id: usize) -> Option<Option<&mut T>> {
         if element_id < self.elements.len() {
-            let element = self.elements.get_mut(element_id).unwrap().as_mut().unwrap();
+            let element = self.elements.get_mut(element_id).unwrap().as_mut();
             return Some(element);
         } else {
             return None;
         }
     }
     // Get an entity using it's entity id
-    pub fn get_element(&self, element_id: usize) -> Option<&T> {
+    pub fn get_element(&self, element_id: usize) -> Option<Option<&T>> {
         if element_id < self.elements.len() {
-            let element = self.elements.get(element_id as usize).unwrap().as_ref().unwrap();
+            let element = self.elements.get(element_id).unwrap().as_ref();
             return Some(element);
         } else {
             return None;

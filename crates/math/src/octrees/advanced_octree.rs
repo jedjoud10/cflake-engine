@@ -30,7 +30,7 @@ impl AdvancedOctree {
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
 
         // Start at the root of the tree
-        pending_nodes.push(nodes.get_element(0).cloned().unwrap());
+        pending_nodes.push(nodes.get_element(0).unwrap().cloned().unwrap());
 
         // Evaluate each node
         while pending_nodes.len() > 0 {
@@ -90,35 +90,25 @@ impl AdvancedOctree {
         // Loop through the tree recursively
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
-        let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
-        let mut removed_nodes: HashMap<veclib::Vector3<i64>, usize> = HashMap::new();
-        while current_node.depth != self.internal_octree.depth {
+        let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();  
+        while current_node.depth != 0 {
             // Go up the tree
-            let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap();
+            println!("{:?}", current_node);
+            let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap().unwrap();
             // Check for collisions
             if parent.can_subdivide(&target, self.internal_octree.depth) || parent.depth == 0 {
                 // This node the common target node
                 common_target_node = parent.clone();
                 break;
-            }            
-            // Keep track of the removed nodes
-            match parent.children_indices {
-                Some(children_indices) => {
-                    let children = children_indices.map(|x| {
-                            let key = self.internal_octree.nodes.get_element(x).unwrap().get_center();
-                            let value = x;
-                            (key, value)
-                        }).to_vec();
-                    removed_nodes.extend(children);
-                },
-                None => panic!(),
-            }
+            }      
             // Update the current node
             current_node = parent.clone();
         }
 
+        // Recursively get the removed nodes from the common target's node first valid child
+        let removed_nodes: HashMap<veclib::Vector3<i64>, usize> = common_target_node.find_children_recursive(&self.internal_octree.nodes).iter().map(|x| (x.get_center(), x.index)).collect();
+
         // Early quit tests
-        let new_pos = self.new_pos != self.last_pos;
         let new_parent = self.internal_octree.target_node.as_ref().unwrap().parent_index == common_target_node.index;
         // It is currently 10:41 on a wednesday night. I want to die
         if new_parent {
@@ -189,7 +179,7 @@ impl AdvancedOctree {
         // Just some basic remapping of the values
         let removed_nodes = removed_nodes
             .iter()
-            .map(|(_, index)| nodes.get_element(*index).unwrap().clone())
+            .map(|(_, index)| nodes.get_element(*index).unwrap().unwrap().clone())
             .collect::<Vec<OctreeNode>>();
         // Compensate for the removed nodes     
         for node in removed_nodes.iter() {

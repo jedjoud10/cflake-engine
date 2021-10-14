@@ -38,6 +38,30 @@ impl OctreeNode {
         let aabb = (self.get_aabb().min.elem_lte(target) & self.get_aabb().max.elem_gt(target)).all();
         return aabb && self.depth < (max_depth - 1);
     }
+    // Recursively find the children for this node
+    pub fn find_children_recursive(&self, nodes: &SmartList<OctreeNode>) -> Vec<OctreeNode> {
+        let mut list: Vec<OctreeNode> = Vec::new();
+        let mut pending: Vec<OctreeNode> = vec![self.clone()];
+        while pending.len() > 0 {
+            // Get the current node to evaluate
+            let current = pending.get(0).unwrap().clone();
+            // Add children
+            match current.children_indices {
+                Some(x) => {
+                    // Add them
+                    pending.extend(x.iter().map(|index| nodes.get_element(*index).unwrap().unwrap().clone()));
+                },
+                None => {},
+            }
+
+            // A
+            pending.remove(0);
+            list.push(current.clone());
+        }
+        println!("T: {}", list.len());
+        return list;
+
+    }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide(&mut self, nodes: &mut SmartList<OctreeNode>) -> Vec<OctreeNode> {
         let half_extent = self.half_extent as i64;
@@ -46,7 +70,7 @@ impl OctreeNode {
 
         // Temporary array that we fill with out children's indices
         let mut children_indices: [usize; 8] = [0; 8];
-        
+
         // Children counter
         let mut i: usize = 0;
         for y in 0..2 {
@@ -82,7 +106,7 @@ impl OctreeNode {
         self.children_indices = Some(children_indices);
 
         // Update the parent node
-        let elm = nodes.get_element_mut(self.index).unwrap();
+        let elm = nodes.get_element_mut(self.index).unwrap().unwrap();
         elm.children_indices = Some(children_indices);
 
         return output;

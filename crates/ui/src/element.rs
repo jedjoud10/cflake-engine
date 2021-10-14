@@ -140,13 +140,13 @@ impl Element {
         // Update the parent id of the children
         for &child_element_id in children.iter() {
             // Get the child element and update it
-            let child_element = root.smart_element_list.get_element_mut(child_element_id).unwrap();
+            let child_element = root.smart_element_list.get_element_mut(child_element_id).unwrap().unwrap();
             child_element.parent = id;
             child_element.depth += 1;
             child_element.visible = parent_visible;
             root.max_depth = root.max_depth.max(child_element.depth);
         }
-        let element = root.smart_element_list.get_element_mut(id).unwrap();
+        let element = root.smart_element_list.get_element_mut(id).unwrap().unwrap();
         element.children.extend(children);
     }
 }

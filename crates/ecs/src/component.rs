@@ -73,6 +73,7 @@ impl ComponentManager {
         let linked_component = self
             .smart_components_list
             .get_element(global_id)
+            .unwrap()
             .ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
         let component = Self::cast_component(linked_component)?;
         Ok(component)
@@ -82,6 +83,7 @@ impl ComponentManager {
         let linked_component = self
             .smart_components_list
             .get_element_mut(global_id)
+            .unwrap()
             .ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
         let component = Self::cast_component_mut(linked_component)?;
         Ok(component)
