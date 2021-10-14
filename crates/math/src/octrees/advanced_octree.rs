@@ -76,7 +76,7 @@ impl AdvancedOctree {
             veclib::Vector3::<f32>::from(root_node.position + (root_node.half_extent * 2) as i64) - 32.0,
         );
         let a = (target / self.internal_octree.size as f32);
-        self.new_pos = veclib::Vector3::new(a.x.round() as i64, a.y.round() as i64, a.z.round() as i64);
+        self.new_pos = veclib::Vector3::new(a.x.floor() as i64, a.y.floor() as i64, a.z.floor() as i64);
         // If we don't have a target node don't do anything
         if self.internal_octree.target_node.is_none() {
             return None;
@@ -117,85 +117,92 @@ impl AdvancedOctree {
             current_node = parent.clone();
         }
 
-        // Check if we even changed parents
-        if self.new_pos != self.last_pos {
-            // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
-            // Keep track of the starting hashset
-            let original_dictionary = self
-                .internal_octree
-                .nodes
-                .elements
-                .iter()
-                .filter_map(|x| match x {
-                    Some(x) => Some((x.get_center(), x.clone())),
-                    None => None,
-                })
-                .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
-            // Final nodes
-            let mut nodes: SmartList<OctreeNode> = self.internal_octree.nodes.clone();
-            // The nodes that must be evaluated
-            let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-            // The starting node
-            pending_nodes.push(common_target_node);
-            // The targetted node that is specified using the target position
-            let mut target_node: Option<OctreeNode> = None;
-
-            // Evaluate each node
-            while pending_nodes.len() > 0 {
-                // Get the current pending node
-                let mut octree_node = pending_nodes[0].clone();
-
-                // Update target node
-                if octree_node.depth == self.internal_octree.depth - 1 && octree_node.can_subdivide(&target, self.internal_octree.depth + 1) {
-                    target_node = Some(octree_node.clone());
-                }
-
-                // If the node contains the position, subdivide it
-                if octree_node.can_subdivide(&target, self.internal_octree.depth) {
-                    // Add each child node, but also update the parent's child link id
-                    let child_nodes = octree_node.subdivide(&mut nodes);
-                    pending_nodes.extend(child_nodes.clone());
-                }
-
-                // So we don't cause an infinite loop
-                pending_nodes.remove(0);
-            }
-
-            // New dictionary to keep track of the deleted / added nodes
-            let new_dictionary = nodes
-                .elements
-                .iter()
-                .filter_map(|x| match x {
-                    Some(x) => Some((x.get_center(), x.clone())),
-                    None => None,
-                })
-                .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();                  
-            // Get the nodes that where removed / added
-            let added_nodes = new_dictionary
-                .iter()
-                .filter(|x| !original_dictionary.contains_key(x.0))
-                .map(|x| x.1.clone())
-                .collect::<Vec<OctreeNode>>();
-            // Just some basic remapping of the values
-            let removed_nodes = removed_nodes
-                .iter()
-                .map(|(_, index)| nodes.get_element(*index).unwrap().clone())
-                .collect::<Vec<OctreeNode>>();
-            // Compensate for the removed nodes     
-            for node in removed_nodes.iter() {
-                nodes.remove_element(node.index).unwrap();
-            }
-            self.internal_octree.extern_update(target_node, nodes.clone());     
-            let node_count = self.internal_octree.nodes.elements.iter().filter(|x| x.is_some()).count();
-            println!("Took '{}' micros to generate incremental octree, total node count: {}", t.elapsed().as_micros(), node_count);
-            self.last_pos = self.new_pos;
-            let nodes = nodes.elements.iter().filter_map(|x| match x.as_ref() {
-                Some(x) => Some(x.clone()),
-                None => None,
-            }).collect::<Vec<OctreeNode>>();
-            return Some((added_nodes, removed_nodes, nodes));
+        // Early quit tests
+        let new_pos = self.new_pos != self.last_pos;
+        let new_parent = self.internal_octree.target_node.as_ref().unwrap().parent_index == common_target_node.index;
+        // It is currently 10:41 on a wednesday night. I want to die
+        if new_parent {
+            return None;
         }
-        // Output
-        return None;
+
+        // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
+        // Keep track of the starting hashset
+        let original_dictionary = self
+            .internal_octree
+            .nodes
+            .elements
+            .iter()
+            .filter_map(|x| match x {
+                Some(x) => Some((x.get_center(), x.clone())),
+                None => None,
+            })
+            .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
+            
+        // Final nodes
+        let mut nodes: SmartList<OctreeNode> = self.internal_octree.nodes.clone();
+        // The nodes that must be evaluated
+        let mut pending_nodes: Vec<OctreeNode> = Vec::new();
+        // The starting node
+        println!("A: {}", nodes.count_valid());
+        
+        // The targetted node that is specified using the target position
+        let mut target_node: Option<OctreeNode> = None;
+        pending_nodes.push(common_target_node);
+        // Evaluate each node
+        while pending_nodes.len() > 0 {
+            // Get the current pending node
+            let mut octree_node = pending_nodes[0].clone();
+
+            // Update target node
+            if octree_node.depth == self.internal_octree.depth - 1 && octree_node.can_subdivide(&target, self.internal_octree.depth + 1) {
+                target_node = Some(octree_node.clone());
+            }
+
+            // If the node contains the position, subdivide it
+            if octree_node.can_subdivide(&target, self.internal_octree.depth) {
+                // Add each child node, but also update the parent's child link id
+                let child_nodes = octree_node.subdivide(&mut nodes);
+                pending_nodes.extend(child_nodes.clone());
+            }
+
+            // So we don't cause an infinite loop
+            pending_nodes.remove(0);
+        }
+
+        println!("B: {}", nodes.count_valid());
+        
+        // New dictionary to keep track of the deleted / added nodes
+        let new_dictionary = nodes
+            .elements
+            .iter()
+            .filter_map(|x| match x {
+                Some(x) => Some((x.get_center(), x.clone())),
+                None => None,
+            })
+            .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();                  
+        // Get the nodes that where removed / added
+        let added_nodes = new_dictionary
+            .iter()
+            .filter(|x| !original_dictionary.contains_key(x.0))
+            .map(|x| x.1.clone())
+            .collect::<Vec<OctreeNode>>();
+        // Just some basic remapping of the values
+        let removed_nodes = removed_nodes
+            .iter()
+            .map(|(_, index)| nodes.get_element(*index).unwrap().clone())
+            .collect::<Vec<OctreeNode>>();
+        // Compensate for the removed nodes     
+        for node in removed_nodes.iter() {
+            nodes.remove_element(node.index).unwrap();
+        }
+        
+        println!("Added: {}, Removed {}", added_nodes.len(), removed_nodes.len());
+        self.internal_octree.extern_update(target_node, nodes.clone());     
+        self.last_pos = self.new_pos;
+        let nodes = nodes.elements.iter().filter_map(|x| match x.as_ref() {
+            Some(x) => Some(x.clone()),
+            None => None,
+        }).collect::<Vec<OctreeNode>>();
+        return Some((added_nodes, removed_nodes, nodes));        
     }
 }

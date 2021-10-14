@@ -66,4 +66,14 @@ impl<T> SmartList<T> {
             return None;
         }
     }
+    // Count how many valid elements we have inside the smart list
+    pub fn count_valid(&self) -> usize {
+        let c = self.elements.iter().filter(|x| x.is_some()).count();
+        return c;
+    }
+    // Count how many invalid elements we have inside the smart list
+    pub fn count_invalid(&self) -> usize {
+        let c = self.elements.iter().filter(|x| x.is_none()).count();
+        return c;
+    }
 }
