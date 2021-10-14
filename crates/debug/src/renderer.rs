@@ -6,6 +6,8 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // Constants
 pub const MAX_LINE_COUNT: i32 = 8192;
+pub const MAX_DEBUG_PRIMITIVES: usize = 512;
+pub const MAX_PERMAMENT_DEBUG_PRIMITIVES: usize = 512;
 pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality
 #[derive(Default)]
@@ -158,8 +160,16 @@ impl DebugRenderer {
         }
         if permanent {
             self.permanent_debug_primitives.push(debug_renderer_type);
+            // Remove old permanent debug primitives if we reached the maximum
+            if self.permanent_debug_primitives.len() > MAX_PERMAMENT_DEBUG_PRIMITIVES {
+                self.permanent_debug_primitives.remove(0);
+            }
         } else {
             self.debug_primitives.push(debug_renderer_type);
+            // Remove old debug primitives if we reached the maximum
+            if self.debug_primitives.len() > MAX_DEBUG_PRIMITIVES {
+                self.debug_primitives.remove(0);
+            }
         }
     }
     // Add a default debug primitive to the queue

@@ -65,6 +65,7 @@ impl AdvancedOctree {
     ) -> Option<(
         Vec<OctreeNode>, // Added nodes
         Vec<OctreeNode>, // Removed nodes
+        Vec<OctreeNode>, // Total nodes
     )> {
         let t = std::time::Instant::now();
         // Clamp the input position
@@ -175,20 +176,24 @@ impl AdvancedOctree {
                 .filter(|x| !original_dictionary.contains_key(x.0))
                 .map(|x| x.1.clone())
                 .collect::<Vec<OctreeNode>>();
-
-            // Compensate for the removed nodes            
-            for (_, index) in removed_nodes.iter() {
-                nodes.remove_element(*index).unwrap();
-            }
+            // Just some basic remapping of the values
             let removed_nodes = removed_nodes
                 .iter()
-                .map(|(center, _)| original_dictionary.get(center).unwrap().clone())
+                .map(|(_, index)| nodes.get_element(*index).unwrap().clone())
                 .collect::<Vec<OctreeNode>>();
-            self.internal_octree.extern_update(target_node, nodes);     
+            // Compensate for the removed nodes     
+            for node in removed_nodes.iter() {
+                nodes.remove_element(node.index).unwrap();
+            }
+            self.internal_octree.extern_update(target_node, nodes.clone());     
             let node_count = self.internal_octree.nodes.elements.iter().filter(|x| x.is_some()).count();
             println!("Took '{}' micros to generate incremental octree, total node count: {}", t.elapsed().as_micros(), node_count);
             self.last_pos = self.new_pos;
-            return Some((added_nodes, removed_nodes));
+            let nodes = nodes.elements.iter().filter_map(|x| match x.as_ref() {
+                Some(x) => Some(x.clone()),
+                None => None,
+            }).collect::<Vec<OctreeNode>>();
+            return Some((added_nodes, removed_nodes, nodes));
         }
         // Output
         return None;

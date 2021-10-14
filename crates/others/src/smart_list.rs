@@ -45,9 +45,7 @@ impl<T> SmartList<T> {
     // Remove an element from this SmartList
     pub fn remove_element(&mut self, element_id: usize) -> Option<T> {
         // Remove the element
-        let element = self.elements.remove(element_id);
-        // Insert a none element
-        self.elements.insert(element_id, None);
+        let element = std::mem::replace(&mut self.elements[element_id], None);
         return element;
     }
     // Get a mutable reference to a stored element
