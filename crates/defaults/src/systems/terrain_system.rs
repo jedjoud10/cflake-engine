@@ -66,7 +66,7 @@ impl System for TerrainSystem {
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
-        const speed: f64 = 0.0001;
+        const speed: f64 = 0.01;
         let location = veclib::Vector3::new((data.time_manager.seconds_since_game_start * speed).sin() as f32, 0.01, (data.time_manager.seconds_since_game_start * speed).cos() as f32) * 2000.0;
         let debug: debug::DefaultDebugRendererType =
                 debug::DefaultDebugRendererType::CUBE(location, veclib::Vector3::<f32>::ONE * 4.0);
