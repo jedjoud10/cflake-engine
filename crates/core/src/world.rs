@@ -139,6 +139,10 @@ impl World {
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
         console_root.visible = false;
         self.ui_manager.add_root("console", console_root);
+
+        // Create the default commands
+        let template_command = debug::Command::new("set-vsync", vec![debug::CommandInput::new::<bool>("-v")]);
+        self.debug.console.register_template_command(template_command);
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
@@ -201,10 +205,10 @@ impl World {
         // And render them
         self.system_manager.run_system_type(SystemType::Render, &mut data);
         window.swap_buffers();
-
+        
         // Update the timings of every system
         self.system_manager.update_systems(&self.time_manager);
-
+        
         // Update the inputs
         self.input_manager.late_update(self.time_manager.delta_time as f32);
 

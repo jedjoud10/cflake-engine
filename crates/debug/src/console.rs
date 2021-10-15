@@ -111,6 +111,10 @@ pub struct Command {
 }
 
 impl Command {
+    // Create a new template command with a name and associated inputs
+    pub fn new(name: &str, inputs: Vec<CommandInput>) -> Self {
+        return Self { name: name.to_string(), inputs  };
+    }
     // Get a specific input from the command
     pub fn get_input(&self, input_short_name: &str) -> Option<&CommandInputEnum> {
         match self.inputs.iter().find(|x| x.short_name == input_short_name) {
