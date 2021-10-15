@@ -4,7 +4,7 @@ use others::Time;
 use std::any::Any;
 use system_event_data::*;
 
-use crate::SystemFiringType;
+use crate::{SystemFiringType, system_data::SystemData};
 
 use super::system_data::{SystemData, SystemState, SystemType};
 
@@ -46,7 +46,7 @@ impl SystemManager {
         }
     }
     // Add a system to the world, and returns it's system ID
-    pub fn add_system<T: 'static + System>(&mut self, mut system: T) -> u8 {
+    pub fn add_system<T: 'static + System + SystemDataGetter>(&mut self, mut system: T) -> u8 {
         let id = self.systems.len() as u8;
         let system_data = system.get_system_data_mut();
         system_data.system_id = id;
@@ -106,6 +106,20 @@ impl SystemManager {
             .ok_or::<ECSError>(ECSError::new(format!("Could not cast system to type: '{}'!", std::any::type_name::<T>())))?;
         Ok(cast_system)
     }
+}
+
+// Gets the system data, 
+pub trait SystemDataGetter: Sized {
+    // Turn this into "Any" so we can cast into child systems
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
+    // Get system
 }
 
 pub trait System {
@@ -191,10 +205,6 @@ pub trait System {
         }
     }
 
-    // Getters for the system data
-    fn get_system_data(&self) -> &SystemData;
-    fn get_system_data_mut(&mut self) -> &mut SystemData;
-
     // System Events
     fn entity_added(&mut self, _entity: &Entity, _data: &mut SystemEventData) {}
     fn entity_removed(&mut self, _entity: &Entity, _data: &mut SystemEventData) {}
@@ -208,8 +218,4 @@ pub trait System {
     fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &SystemEventData) -> bool {
         true
     }
-
-    // As any
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
