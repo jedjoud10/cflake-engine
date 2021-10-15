@@ -21,9 +21,6 @@ use crate::components;
 pub struct TerrainSystem {
     pub system_data: SystemData,
     pub lod_factor: f32,
-    pub added: Vec<OctreeNode>,
-    pub removed: Vec<OctreeNode>,
-    pub total_nodes: Vec<OctreeNode>,
 }
 
 impl System for TerrainSystem {
@@ -69,22 +66,14 @@ impl System for TerrainSystem {
         let clone_material = td.material.clone();
 
         // Generate the octree each frame and generate / delete the chunks
-        const speed: f64 = 1.0;
+        const speed: f64 = 0.0001;
         let location = veclib::Vector3::new((data.time_manager.seconds_since_game_start * speed).sin() as f32, 0.01, (data.time_manager.seconds_since_game_start * speed).cos() as f32) * 2000.0;
         let debug: debug::DefaultDebugRendererType =
                 debug::DefaultDebugRendererType::CUBE(location, veclib::Vector3::<f32>::ONE * 4.0);
             data.debug.renderer.debug_default(debug, veclib::Vector3::Z, false);
         if td.chunk_manager.octree_update_valid() {
             match td.octree.generate_incremental_octree(&location, self.lod_factor) {
-                Some((added, removed, total_nodes)) => {
-                    /*
-                    println!("Added nodes: '{}'", added.len());
-                    println!("Removed nodes: '{}'", removed.len());
-                    */
-                    self.added = added;
-                    self.removed = removed;      
-                    self.total_nodes = total_nodes;              
-                    /*
+                Some((mut added, removed, total_nodes)) => {    
                     // Filter first
                     added.retain(|node| BoundChecker::bound_check(&node));
                     // Turn all the newly added nodes into chunks and instantiate them into the world
@@ -107,27 +96,11 @@ impl System for TerrainSystem {
                             None => {}
                         }
                     }
-                    */
                 }
                 None => { /* Nothing happened */  /*self.added.clear(); self.removed.clear();*/ }
             }
             td.chunk_manager.update_camera_view(camera_location, camera_forward_vector);
-        }
-        for node in self.total_nodes.iter() {
-            let debug: debug::DefaultDebugRendererType =
-                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
-            data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
-        }
-        for node in self.added.iter() {
-            let debug: debug::DefaultDebugRendererType =
-                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
-            data.debug.renderer.debug_default(debug, veclib::Vector3::Y, false);
-        }
-        for node in self.removed.iter() {
-            let debug: debug::DefaultDebugRendererType =
-                debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 1.9);
-            data.debug.renderer.debug_default(debug, veclib::Vector3::X, false);
-        }        
+        }     
 
         // Update the chunk manager
         //println!("{:?}", self.parent_child_count);

@@ -11,8 +11,11 @@ use super::{
 pub struct AdvancedOctree {
     // The original octree
     pub internal_octree: Octree,
+    // The combined twin and normal nodes
+    pub combined_nodes: SmartList<OctreeNode>
 }
 
+// Twin node generation
 impl AdvancedOctree {
     // Check if a node can be subdivided
     fn can_node_subdivide_twin(&self, node: &OctreeNode, target: &veclib::Vector3<f32>) -> bool {
@@ -22,7 +25,8 @@ impl AdvancedOctree {
     }
     // Calculate the nodes that are the twin nodes *and* normal nodes
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
-    fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &mut SmartList<OctreeNode>, lod_factor: f32) {
+    fn calculate_combined_nodes(&mut self, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32) {
+        let mut combined_nodes: SmartList<OctreeNode> = nodes.clone();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
 
@@ -37,13 +41,18 @@ impl AdvancedOctree {
             // If the node passes the collision check, subdivide it
             if self.can_node_subdivide_twin(&octree_node, target) {
                 // Add the children nodes
-                let child_nodes = octree_node.subdivide(nodes);
+                let child_nodes = octree_node.subdivide(&mut combined_nodes);
             }
 
             // Remove the node so we don't cause an infinite loop
             pending_nodes.remove(0);
         }
+
+        self.combined_nodes = combined_nodes;
     }
+}
+// Base / incremental generation
+impl AdvancedOctree {    
     // Generate the base octree with a target point at 0, 0, 0
     pub fn generate_base_octree(&mut self, lod_factor: f32) -> Vec<OctreeNode> {
         let t = std::time::Instant::now();
@@ -64,15 +73,11 @@ impl AdvancedOctree {
         Vec<OctreeNode>, // Removed nodes
         Vec<OctreeNode>, // Total nodes
     )> {
-        let t = std::time::Instant::now();
-        // Clamp the input position
         let root_node = self.internal_octree.get_root_node();
-        let target: veclib::Vector3<f32> = veclib::Vector3::<f32>::clamp(
-            *target,
-            veclib::Vector3::<f32>::from(root_node.position) + 32.0,
-            veclib::Vector3::<f32>::from(root_node.position + (root_node.half_extent * 2) as i64) - 32.0,
-        );
-        let a = (target / self.internal_octree.size as f32);
+        // Do nothing if the target is out of bounds
+        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) {
+            return None;
+        }
         // If we don't have a target node don't do anything
         if self.internal_octree.target_node.is_none() {
             return None;
