@@ -2,7 +2,7 @@ use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
 use resources::LoadableResource;
-use system_event_data::WorldData;
+use world_data::WorldData;
 use systems::{System, SystemData};
 
 #[derive(Default)]

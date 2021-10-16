@@ -1,4 +1,4 @@
-use system_event_data::WorldData;
+use world_data::WorldData;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 
 use crate::components;

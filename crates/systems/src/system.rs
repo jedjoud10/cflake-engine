@@ -1,7 +1,7 @@
 use ecs::*;
 use errors::ECSError;
 use others::Time;
-use system_event_data::*;
+use world_data::*;
 
 use crate::{InternalSystemData, SystemData};
 

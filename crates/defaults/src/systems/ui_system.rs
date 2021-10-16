@@ -7,7 +7,7 @@ use fonts::Font;
 use input::*;
 use rendering::Shader;
 use resources::LoadableResource;
-use system_event_data::WorldData;
+use world_data::WorldData;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use ui::{CoordinateType, Element, ElementType, Root};
 

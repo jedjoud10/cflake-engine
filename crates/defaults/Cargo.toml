@@ -9,7 +9,7 @@ edition = "2018"
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 ui = { path = "../ui" }
-system_event_data = { path = "../system_event_data" }
+world_data = { path = "../world_data" }
 math = { path = "../math" }
 fonts = { path = "../fonts"  }
 ecs = { path = "../ecs" }

@@ -9,4 +9,4 @@ edition = "2018"
 ecs = { path = "../ecs" }
 errors = { path = "../errors" }
 others = { path = "../others" }
-system_event_data = { path = "../system_event_data" }
+world_data = { path = "../world_data" }

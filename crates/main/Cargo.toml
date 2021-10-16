@@ -10,7 +10,7 @@ edition = "2018"
 glfw = "0.41.0"
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-system_event_data = { path = "../system_event_data" }
+world_data = { path = "../world_data" }
 systems = { path = "../systems"  }
 core = { path = "../core" }
 input = { path = "../input" }

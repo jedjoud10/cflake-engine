@@ -12,7 +12,7 @@ build = "build.rs"
 members = [
     "crates\\dev_game",
     "crates\\main",
-    "crates\\system_event_data",
+    "crates\\world_data",
     "crates\\errors",
     "crates\\debug",
     "crates\\core",

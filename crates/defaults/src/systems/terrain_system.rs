@@ -8,7 +8,7 @@ use math::octrees::*;
 use others::CacheManager;
 use rendering::*;
 use std::collections::{HashMap, HashSet};
-use system_event_data::WorldData;
+use world_data::WorldData;
 use systems::*;
 use terrain::VoxelGenerator;
 

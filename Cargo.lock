@@ -91,10 +91,10 @@ dependencies = [
  "others",
  "rendering",
  "resources",
- "system_event_data",
  "systems",
  "ui",
  "veclib",
+ "world_data",
 ]
 
 [[package]]
@@ -175,11 +175,11 @@ dependencies = [
  "others",
  "rendering",
  "resources",
- "system_event_data",
  "systems",
  "terrain",
  "ui",
  "veclib",
+ "world_data",
 ]
 
 [[package]]
@@ -423,11 +423,11 @@ dependencies = [
  "others",
  "rendering",
  "resources",
- "system_event_data",
  "systems",
  "terrain",
  "ui",
  "veclib",
+ "world_data",
 ]
 
 [[package]]
@@ -686,27 +686,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
-name = "system_event_data"
-version = "0.1.0"
-dependencies = [
- "debug",
- "ecs",
- "errors",
- "input",
- "others",
- "rendering",
- "resources",
- "ui",
-]
-
-[[package]]
 name = "systems"
 version = "0.1.0"
 dependencies = [
  "ecs",
  "errors",
  "others",
- "system_event_data",
+ "world_data",
 ]
 
 [[package]]
@@ -721,10 +707,10 @@ dependencies = [
  "others",
  "rayon",
  "rendering",
- "system_event_data",
  "systems",
  "ui",
  "veclib",
+ "world_data",
 ]
 
 [[package]]
@@ -806,6 +792,20 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "world_data"
+version = "0.1.0"
+dependencies = [
+ "debug",
+ "ecs",
+ "errors",
+ "input",
+ "others",
+ "rendering",
+ "resources",
+ "ui",
+]
 
 [[package]]
 name = "xml-rs"

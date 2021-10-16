@@ -12,7 +12,7 @@ use others::*;
 use rendering::*;
 use resources::*;
 use std::collections::HashSet;
-use system_event_data::*;
+use world_data::*;
 use ui::UIManager;
 
 use crate::GameConfig;

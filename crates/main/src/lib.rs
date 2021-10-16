@@ -17,7 +17,7 @@ pub use math;
 pub use others;
 pub use rendering;
 pub use resources;
-pub use system_event_data;
+pub use world_data;
 pub use systems;
 pub use terrain;
 pub use ui;
