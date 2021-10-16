@@ -16,7 +16,7 @@ impl Time {
         if self.last_tick_time < self.seconds_since_game_start {
             // Update again and set the average fps
             self.average_fps = self.fps;
-            self.last_tick_time = self.seconds_since_game_start + 0.5;
+            self.last_tick_time = self.seconds_since_game_start + 0.1;
         }
     }
 }
