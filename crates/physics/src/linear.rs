@@ -1,5 +1,5 @@
 // Linear momentum
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct LinearPhysics {
     pub acceleration: veclib::Vector3<f32>,
     pub velocity: veclib::Vector3<f32>,

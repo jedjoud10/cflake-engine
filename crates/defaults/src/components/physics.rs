@@ -2,7 +2,7 @@ use physics::PhysicsObject;
 use ecs::{Component, ComponentID, ComponentInternal};
 
 // A physics component
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Physics {
     pub object: PhysicsObject,
 }

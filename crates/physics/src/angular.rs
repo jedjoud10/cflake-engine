@@ -1,5 +1,5 @@
 // Angular momentum
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct AngularPhysics {
-
+    pub rotation: veclib::Quaternion<f32>,
 }

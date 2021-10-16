@@ -1,7 +1,7 @@
 use crate::{AngularPhysics, LinearPhysics};
 
 // Main physics object class
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PhysicsObject {
     pub mass: f32,
     pub linear: LinearPhysics,
