@@ -42,7 +42,7 @@ pub fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     sky.link_component::<components::Transform>(
         data.component_manager,
         components::Transform {
-            scale: veclib::Vector3::ONE * 900.0,
+            scale: veclib::Vector3::ONE * 9000.0,
             ..components::Transform::default()
         },
     )

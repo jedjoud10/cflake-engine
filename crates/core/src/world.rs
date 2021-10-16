@@ -147,15 +147,15 @@ impl World {
         self.config_file = config_file_values;
 
         // Enable disable vsync
-        glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-        /*
+        
         if self.config_file.vsync {
             // Enable VSync
+            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
         } else {
             // Disable VSync
             glfw.set_swap_interval(glfw::SwapInterval::None);
         }
-        */
+        
 
         // Set the window mode
         self.set_fullscreen(self.config_file.fullscreen, glfw, window);

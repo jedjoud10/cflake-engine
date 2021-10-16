@@ -122,18 +122,21 @@ impl AdvancedOctree {
             return None;
         }
 
+        // Update the children
+        let a = self.internal_octree.nodes.get_element_mut(common_target_node.index).unwrap().unwrap();
+        a.children_indices = None;
+
         // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
         // Keep track of the starting hashset
-        let original_dictionary = self
+        let old_hashset = self
             .internal_octree
             .nodes
             .elements
             .iter()
             .filter_map(|x| match x {
-                Some(x) => Some((x.get_center(), x.clone())),
+                Some(x) => Some(x.clone()),
                 None => None,
-            })
-            .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();
+            }).collect::<HashSet<OctreeNode>>();
             
         // Final nodes
         let mut nodes: SmartList<OctreeNode> = self.internal_octree.nodes.clone();
@@ -162,22 +165,6 @@ impl AdvancedOctree {
             // So we don't cause an infinite loop
             pending_nodes.remove(0);
         }
-        
-        // New dictionary to keep track of the deleted / added nodes
-        let new_dictionary = nodes
-            .elements
-            .iter()
-            .filter_map(|x| match x {
-                Some(x) => Some((x.get_center(), x.clone())),
-                None => None,
-            })
-            .collect::<HashMap<veclib::Vector3<i64>, OctreeNode>>();                  
-        // Get the nodes that where removed / added
-        let added_nodes = new_dictionary
-            .iter()
-            .filter(|x| !original_dictionary.contains_key(x.0))
-            .map(|x| x.1.clone())
-            .collect::<Vec<OctreeNode>>();
         // Just some basic remapping of the values
         let removed_nodes = removed_nodes
             .iter()
@@ -187,7 +174,13 @@ impl AdvancedOctree {
         for node in removed_nodes.iter() {
             nodes.remove_element(node.index).unwrap();
         }        
-        self.internal_octree.extern_update(target_node, nodes.clone());     
+        self.internal_octree.extern_update(target_node, nodes.clone());  
+        // The new hashset
+        let new_hashset = nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect::<HashSet<OctreeNode>>();
+        // Now actually detect the removed / added nodes
+        let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
+        let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
+
         let nodes = nodes.elements.iter().filter_map(|x| match x.as_ref() {
             Some(x) => Some(x.clone()),
             None => None,

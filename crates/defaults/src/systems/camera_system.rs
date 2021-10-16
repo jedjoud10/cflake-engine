@@ -54,10 +54,10 @@ pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: 
     }
     // Update the variables
     let physics = components.get_component_mut::<components::Physics>(data.component_manager).unwrap();
-    physics.object.linear.velocity = physics.object.linear.velocity.lerp(velocity, data.time_manager.delta_time as f32 * 10.0);
+    physics.object.linear.velocity = velocity;
     rotation = new_rotation;
     // Update the physics update so we have the velocity applied to the position
-    physics.object.update(&mut position, &mut rotation);
+    physics.object.update(&mut position, &mut rotation, 1.0);
     // Re-apply
     {
         let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();

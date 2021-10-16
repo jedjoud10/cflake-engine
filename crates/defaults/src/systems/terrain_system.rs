@@ -15,6 +15,7 @@ use crate::components;
 
 pub struct CustomData {
     pub lod_factor: f32,
+    pub nodes: Vec<OctreeNode>,
 }
 crate::impl_custom_system_data!(CustomData);
 
@@ -37,7 +38,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     // Get the camera location
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
     let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap();
-    let system = system_data.cast::<CustomData>().unwrap();
+    let system = system_data.cast_mut::<CustomData>().unwrap();
     // Get the camera transform values
     let camera_location = camera_transform.position;
     let camera_forward_vector = camera_transform.get_forward_vector();
@@ -48,7 +49,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     let clone_material = td.material.clone();
 
     // Generate the octree each frame and generate / delete the chunks
-    const speed: f64 = 0.01;
+    const speed: f64 = 0.08;
     let location = veclib::Vector3::new((data.time_manager.seconds_since_game_start * speed).sin() as f32, 0.01, (data.time_manager.seconds_since_game_start * speed).cos() as f32) * 2000.0;
     let debug: debug::DefaultDebugRendererType =
             debug::DefaultDebugRendererType::CUBE(location, veclib::Vector3::<f32>::ONE * 4.0);
@@ -56,6 +57,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     if td.chunk_manager.octree_update_valid() {
         match td.octree.generate_incremental_octree(&location, system.lod_factor) {
             Some((mut added, removed, total_nodes)) => {    
+                system.nodes = total_nodes;
                 // Filter first
                 added.retain(|node| BoundChecker::bound_check(&node));
                 // Turn all the newly added nodes into chunks and instantiate them into the world
@@ -79,7 +81,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
                     }
                 }
             }
-            None => { /* Nothing happened */  /*self.added.clear(); self.removed.clear();*/ }
+            None => { /* Nothing happened */ }
         }
         td.chunk_manager.update_camera_view(camera_location, camera_forward_vector);
     }     
@@ -136,6 +138,15 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
         // Removal the entity from the world
         data.entity_manager.remove_entity_s(entity_id).unwrap();
     }
+
+    for node in system.nodes.iter() {
+        let debug: debug::DefaultDebugRendererType =
+            debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
+        if node.children_indices.is_some() {
+            data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
+        } else {
+        }
+    }
 }
 fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let system = system_data.cast::<CustomData>().unwrap();
@@ -164,6 +175,6 @@ pub fn system(data: &mut WorldData) -> System {
     };
     data.debug.console.register_template_command(command);
     // Add the custom data
-    system.custom_data(CustomData { lod_factor: terrain::DEFAULT_LOD_FACTOR  });
+    system.custom_data(CustomData { lod_factor: terrain::DEFAULT_LOD_FACTOR, nodes: Vec::new() });
     system
 }

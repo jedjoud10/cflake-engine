@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, hash::Hash};
 use others::SmartList;
 
 // Simple node in the octree
@@ -15,9 +15,19 @@ pub struct OctreeNode {
 
 impl PartialEq for OctreeNode {
     fn eq(&self, other: &Self) -> bool {
-        // Ez since we have the index
-        return self.index == other.index; 
+        // Check coordinates, then check if we have the same child count
+        return self.get_center() == other.get_center() && self.children_indices.is_none() == other.children_indices.is_none() && self.depth == other.depth; 
     }
+}
+
+impl Hash for OctreeNode {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.get_center().hash(state);
+        self.children_indices.is_none().hash(state);
+    }
+}
+
+impl Eq for OctreeNode {
 }
 
 impl OctreeNode {
