@@ -27,12 +27,14 @@ pub fn world_initialized(world: &mut World) {
         instance_manager: &mut world.instance_manager,
     };
 
-    // Load the default commands system
-    let command_system = systems::command_system::system(&mut data);
-    world.system_manager.add_system(command_system);
+    // Load the default UI system
+    let mut ui_system = systems::ui_system::system(&mut data);
+    ui_system.enable(&mut data);
+    world.system_manager.add_system(ui_system);
 
     // ----Load the entities----
     // Create a camera entity
+    /*
     let mut camera = Entity::new("Default Camera");
     camera
         .link_component::<components::Transform>(
@@ -89,4 +91,5 @@ pub fn world_initialized(world: &mut World) {
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(material_inst, compute_shader_name, OCTREE_DEPTH))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
+    */
 }

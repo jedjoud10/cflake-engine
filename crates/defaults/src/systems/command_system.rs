@@ -17,8 +17,6 @@ fn system_enabled(data: &mut SystemData, world_data: &mut WorldData) {
 
 pub fn system(world_data: &mut WorldData) -> System {
     let mut system = System::new();
-    // Link the components
-    system.link_component::<components::Sky>(world_data.component_manager).unwrap();
     // Attach the events
     system.event(SystemEventType::SystemEnabled(system_enabled));
     // Attach the custom system data

@@ -67,13 +67,13 @@ impl SystemManager {
     // Gets a reference to the custom data of a specific system
     pub fn get_custom_system_data<T: InternalSystemData + 'static>(&self, system_id: u8) -> Result<&T, ECSError> {
         let system = self.get_system(system_id)?;
-        let data = system.system_data.as_any().downcast_ref::<T>().unwrap();
+        let data = system.system_data.cast::<T>().unwrap();
         return Ok(data);
     }
     // Gets a mutable reference to the custom data a specific system 
     pub fn get_custom_system_data_mut<T: InternalSystemData + 'static>(&mut self, system_id: u8) -> Result<&mut T, ECSError> {
         let system = self.get_system_mut(system_id)?;
-        let data = system.system_data.as_any_mut().downcast_mut::<T>().unwrap();
+        let data = system.system_data.cast_mut::<T>().unwrap();
         return Ok(data);
     }
 }
