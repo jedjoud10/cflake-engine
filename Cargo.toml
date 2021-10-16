@@ -19,6 +19,7 @@ members = [
     "crates\\systems",
     "crates\\ecs",
     "crates\\math",
+    "crates\\physics",
     "crates\\rendering",
     "crates\\input",
     "crates\\defaults",

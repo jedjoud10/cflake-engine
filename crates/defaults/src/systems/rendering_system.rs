@@ -24,16 +24,7 @@ pub struct CustomData {
     // The renderer for the screen quad
     quad_renderer: Renderer,
 }
-
-impl InternalSystemData for CustomData {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
+crate::impl_custom_system_data!(CustomData);
 
 // Draw functions 
 impl CustomData {
@@ -241,7 +232,6 @@ impl CustomData {
         &self,
         renderer: &Renderer,
         data: &WorldData,
-        camera_position: veclib::Vector3<f32>,
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
@@ -272,6 +262,7 @@ impl CustomData {
     }
 }
 
+// Events 
 fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
 
@@ -312,7 +303,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let dimensions = data.custom_data.window.dimensions;
     // At the end of each frame, disable the depth test and render the debug objects
     let vp_matrix: veclib::Matrix4x4<f32>;
-    let frustum: &math::Frustum;
     let camera_position: veclib::Vector3<f32>;
     // Get the (projection * view) matrix
     {
@@ -320,7 +310,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
         let projection_matrix = camera_data.projection_matrix;
         let view_matrix = camera_data.view_matrix;
-        frustum = &camera_data.frustum;
         vp_matrix = projection_matrix * view_matrix;
         camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
     }
@@ -390,7 +379,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
 
     // Draw the entity normally
     if system.wireframe {
-        system.draw_wireframe(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
+        system.draw_wireframe(rc, data, &projection_matrix, &view_matrix, &model_matrix);
     } else {
         system.draw_normal(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
     }
@@ -398,6 +387,10 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
 // Create the rendering system
 pub fn system(world_data: &mut WorldData) -> System {
     let mut system = System::new();
+    // Link the components
+    system.link_component::<components::Transform>(world_data.component_manager).unwrap();
+    system.link_component::<rendering::Renderer>(world_data.component_manager).unwrap();
+    system.link_component::<components::AABB>(world_data.component_manager).unwrap();
     // Attach the events
     system.event(SystemEventType::SystemEnabled(system_enabled));
     system.event(SystemEventType::SystemPrefire(system_prefire));

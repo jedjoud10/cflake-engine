@@ -39,16 +39,7 @@ pub struct CustomData {
     pub font_ui_shader_name: String,
     pub vertex_array: u32,
 }
-
-impl InternalSystemData for CustomData {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
+crate::impl_custom_system_data!(CustomData);
 
 // Draw functions
 impl CustomData {
