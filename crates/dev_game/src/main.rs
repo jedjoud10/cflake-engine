@@ -13,7 +13,7 @@ fn main() {
 pub fn world_initialized(world: &mut World) {
     // ----Load the default systems----
     // Create the custom data
-    let mut data: SystemEventData = SystemEventData {
+    let mut data: WorldData = WorldData {
         entity_manager: &mut world.entity_manager,
         component_manager: &mut world.component_manager,
         ui_manager: &mut world.ui_manager,

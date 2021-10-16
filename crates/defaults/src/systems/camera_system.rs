@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use input::*;
-use system_event_data::SystemEventData;
+use system_event_data::WorldData;
 use systems::{System, SystemData};
 #[derive(Default)]
 pub struct CameraSystem {
@@ -19,7 +19,7 @@ impl System for CameraSystem {
     }
 
     // Setup the system
-    fn setup_system(&mut self, data: &mut SystemEventData) {
+    fn setup_system(&mut self, data: &mut WorldData) {
         let system_data = self.get_system_data_mut();
         system_data.link_component::<components::Camera>(data.component_manager).unwrap();
         system_data.link_component::<components::Transform>(data.component_manager).unwrap();
@@ -34,7 +34,7 @@ impl System for CameraSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut WorldData) {
         let position: veclib::Vector3<f32>;
         let rotation: veclib::Quaternion<f32>;
         {
@@ -95,7 +95,7 @@ impl System for CameraSystem {
     }
 
     // When an entity gets added to this system
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventData) {
+    fn entity_added(&mut self, entity: &Entity, data: &mut WorldData) {
         // First time we initialize the camera, setup the matrices
         let position: veclib::Vector3<f32>;
         let rotation: veclib::Quaternion<f32>;

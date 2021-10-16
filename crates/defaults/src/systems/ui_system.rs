@@ -7,7 +7,7 @@ use fonts::Font;
 use input::*;
 use rendering::Shader;
 use resources::LoadableResource;
-use system_event_data::SystemEventData;
+use system_event_data::WorldData;
 use systems::{System, SystemData, SystemFiringType};
 use ui::{CoordinateType, Element, ElementType, Root};
 #[derive(Default)]
@@ -95,7 +95,7 @@ impl System for UISystem {
     }
 
     // Setup the system
-    fn setup_system(&mut self, data: &mut SystemEventData) {
+    fn setup_system(&mut self, data: &mut WorldData) {
         // Set the UI system stuff
         {
             let data = self.get_system_data_mut();
@@ -181,10 +181,10 @@ impl System for UISystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {}
+    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut WorldData) {}
 
     // Render all the elements onto the screen
-    fn post_fire(&mut self, data: &mut SystemEventData) {
+    fn post_fire(&mut self, data: &mut WorldData) {
         // Set the right OpenGL settings
         unsafe {
             gl::Disable(gl::CULL_FACE);

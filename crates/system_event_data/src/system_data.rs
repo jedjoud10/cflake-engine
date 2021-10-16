@@ -1,5 +1,5 @@
 // Data that will be passed to the fire events in systems
-pub struct SystemEventData<'a> {
+pub struct WorldData<'a> {
     pub entity_manager: &'a mut ecs::EntityManager,
     pub component_manager: &'a mut ecs::ComponentManager,
     pub ui_manager: &'a mut ui::UIManager,

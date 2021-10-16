@@ -110,7 +110,6 @@ pub trait ComponentID {
 // The filtered components that are linked to a specific entity, and that also match a specific c_bitfield
 #[derive(Default)]
 pub struct FilteredLinkedComponents {
-    pub entity_id: usize,
     pub components: HashMap<usize, usize>,
 }
 
@@ -130,7 +129,6 @@ impl FilteredLinkedComponents {
             .map(|(&x, &x1)| (x, x1))
             .collect();
         filtered_linked_components.components = global_ids;
-        filtered_linked_components.entity_id = entity.entity_id;
         filtered_linked_components
     }
     // Get a reference to a component using the component manager
@@ -145,8 +143,8 @@ impl FilteredLinkedComponents {
         } else {
             // We are not allowed to get this component
             return Err(ECSError::new(format!(
-                "Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}",
-                id, self.entity_id
+                "Cannot get component with ID: '{}' from FilteredLinkedComponents!",
+                id
             )));
         }
     }
@@ -162,8 +160,8 @@ impl FilteredLinkedComponents {
         } else {
             // We are not allowed to get this component
             return Err(ECSError::new(format!(
-                "Cannot get component with ID: '{}' from FilteredLinkedComponents for entity ID: {}",
-                id, self.entity_id
+                "Cannot get component with ID: '{}' from FilteredLinkedComponents!",
+                id
             )));
         }
     }

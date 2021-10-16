@@ -5,7 +5,7 @@ use math;
 use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, TextureShaderAccessType, Window};
 use resources::LoadableResource;
 use std::ptr::null;
-use system_event_data::SystemEventData;
+use system_event_data::WorldData;
 use systems::{System, SystemData};
 use ui::Root;
 
@@ -50,7 +50,7 @@ impl RenderingSystem {
         }
     }
     // Create the quad that will render the render buffer
-    fn create_screen_quad(&mut self, data: &mut SystemEventData) {
+    fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
         quad_renderer_component.model = Model::new().from_path("defaults\\models\\screen_quad.mdl3d", data.resource_manager).unwrap();
         // Create the screen quad material
@@ -78,7 +78,7 @@ impl RenderingSystem {
         }
     }
     // Setup all the settings for opengl like culling and the clear color
-    fn setup_opengl(&mut self, data: &mut SystemEventData) {
+    fn setup_opengl(&mut self, data: &mut WorldData) {
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
             gl::Viewport(0, 0, self.window.size.x as i32, self.window.size.y as i32);
@@ -153,7 +153,7 @@ impl RenderingSystem {
     fn draw_normal(
         &self,
         renderer: &Renderer,
-        data: &SystemEventData,
+        data: &WorldData,
         camera_position: veclib::Vector3<f32>,
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
@@ -230,7 +230,7 @@ impl RenderingSystem {
     fn draw_wireframe(
         &self,
         renderer: &Renderer,
-        data: &SystemEventData,
+        data: &WorldData,
         camera_position: veclib::Vector3<f32>,
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
@@ -273,12 +273,12 @@ impl System for RenderingSystem {
     }
 
     // When the system gets added to the world
-    fn system_added(&mut self, data: &mut SystemEventData, system_id: u8) {
+    fn system_added(&mut self, data: &mut WorldData, system_id: u8) {
         data.custom_data.render_system_id = system_id;
     }
 
     // Setup the system
-    fn setup_system(&mut self, data: &mut SystemEventData) {
+    fn setup_system(&mut self, data: &mut WorldData) {
         self.multisampling = None;
         let system_data = self.get_system_data_mut();
         system_data.link_component::<Renderer>(data.component_manager).unwrap();
@@ -304,7 +304,7 @@ impl System for RenderingSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut WorldData) {
         // Get the camera stuff
         let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
         let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
@@ -324,7 +324,7 @@ impl System for RenderingSystem {
     }
 
     // Called before each fire_entity event is fired
-    fn pre_fire(&mut self, data: &mut SystemEventData) {
+    fn pre_fire(&mut self, data: &mut WorldData) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -340,7 +340,7 @@ impl System for RenderingSystem {
     }
 
     // Called after each fire_entity event has been fired
-    fn post_fire(&mut self, data: &mut SystemEventData) {
+    fn post_fire(&mut self, data: &mut WorldData) {
         // At the end of each frame, disable the depth test and render the debug objects
         let vp_matrix: veclib::Matrix4x4<f32>;
         let frustum: &math::Frustum;
@@ -397,7 +397,7 @@ impl System for RenderingSystem {
     }
 
     // When an entity gets added to this system
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventData) {
+    fn entity_added(&mut self, entity: &Entity, data: &mut WorldData) {
         let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
         // Make sure we create the OpenGL data for this entity's model
         rc.refresh_model();
@@ -406,14 +406,14 @@ impl System for RenderingSystem {
     }
 
     // When an entity gets removed from this system
-    fn entity_removed(&mut self, entity: &Entity, data: &mut SystemEventData) {
+    fn entity_removed(&mut self, entity: &Entity, data: &mut WorldData) {
         let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
         // Dispose the model when the entity gets destroyed
         rc.dispose_model();
     }
 
     // Filter the entities with their AABB (TODO: Make this work with the octree hierarchy for faster culling)
-    fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &SystemEventData) -> bool {
+    fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &WorldData) -> bool {
         /*
         let camera = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
         let camera_transform = camera.get_component::<components::Transform>(data.component_manager).unwrap();

@@ -2,7 +2,7 @@ use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
 use resources::LoadableResource;
-use system_event_data::SystemEventData;
+use system_event_data::WorldData;
 use systems::{System, SystemData};
 
 #[derive(Default)]
@@ -21,7 +21,7 @@ impl System for SkySystem {
     }
 
     // Setup the system
-    fn setup_system(&mut self, data: &mut SystemEventData) {
+    fn setup_system(&mut self, data: &mut WorldData) {
         let system_data = self.get_system_data_mut();
         system_data.link_component::<components::Sky>(data.component_manager).unwrap();
         system_data.link_component::<components::Transform>(data.component_manager).unwrap();
@@ -81,7 +81,7 @@ impl System for SkySystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut WorldData) {
         // Set the position of the sky sphere to always be the camera's position
         let position = data
             .entity_manager

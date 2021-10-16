@@ -186,7 +186,7 @@ impl World {
         // Upate the console
         self.update_console();
         // Create the data for the systems
-        let mut data: SystemEventData = SystemEventData {
+        let mut data: WorldData = WorldData {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             ui_manager: &mut self.ui_manager,
@@ -341,7 +341,7 @@ impl World {
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {
-        let mut data: SystemEventData = SystemEventData {
+        let mut data: WorldData = WorldData {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             ui_manager: &mut self.ui_manager,
@@ -366,7 +366,7 @@ impl World {
         // Since we cloned the entity variable we gotta update the entity manager with the new one
         self.system_manager.add_entity_to_systems(
             &entity,
-            &mut SystemEventData {
+            &mut WorldData {
                 entity_manager: &mut self.entity_manager,
                 component_manager: &mut self.component_manager,
                 ui_manager: &mut self.ui_manager,
@@ -405,7 +405,7 @@ impl World {
     pub fn remove_entity_from_systems(&mut self, entity_id: usize) -> Result<Entity, ECSError> {
         // Remove this entity from the systems it was in first
         let entity = self.entity_manager.get_entity(entity_id)?.clone();
-        let mut data = SystemEventData {
+        let mut data = WorldData {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             ui_manager: &mut self.ui_manager,

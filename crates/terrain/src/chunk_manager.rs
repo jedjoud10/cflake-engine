@@ -5,7 +5,7 @@ use ecs::{ComponentManager, Entity};
 use math::octrees::OctreeNode;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rendering::{Model, Shader};
-use system_event_data::SystemEventData;
+use system_event_data::WorldData;
 
 use crate::CHUNK_SIZE;
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};

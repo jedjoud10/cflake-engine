@@ -8,7 +8,7 @@ use math::octrees::*;
 use others::CacheManager;
 use rendering::*;
 use std::collections::{HashMap, HashSet};
-use system_event_data::SystemEventData;
+use system_event_data::WorldData;
 use systems::*;
 use terrain::VoxelGenerator;
 
@@ -34,7 +34,7 @@ impl System for TerrainSystem {
     }
 
     // Setup the system
-    fn setup_system(&mut self, data: &mut SystemEventData) {
+    fn setup_system(&mut self, data: &mut WorldData) {
         // Link the components
         let system_data = self.get_system_data_mut();
         data.component_manager.register_component::<Chunk>();
@@ -52,7 +52,7 @@ impl System for TerrainSystem {
     }
 
     // Called for each entity in the system
-    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut SystemEventData) {
+    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut WorldData) {
         // Get the camera location
         let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
         let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap();
@@ -175,7 +175,7 @@ impl System for TerrainSystem {
     }
 
     // When a terrain generator gets added to the world
-    fn entity_added(&mut self, entity: &Entity, data: &mut SystemEventData) {
+    fn entity_added(&mut self, entity: &Entity, data: &mut WorldData) {
         // Setup the voxel generator for this generator
         let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
         // Generate the voxel texture
