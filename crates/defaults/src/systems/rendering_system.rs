@@ -270,7 +270,6 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.create_screen_quad(data);
 
     // Then setup opengl and the render buffer
-    let _default_size = others::get_default_window_size();
     system.setup_opengl(data);
 
     // Load the wireframe shad
@@ -284,7 +283,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.wireframe_shader_name = wireframe_shader_name;
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
-    let system = system_data.cast::<CustomData>().unwrap();
+    let system = system_data.cast_mut::<CustomData>().unwrap();
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, system.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -296,6 +295,15 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
+    }
+    // Change the debug view
+    if data.input_manager.map_pressed("change_debug_view") {
+        system.debug_view += 1;
+        system.debug_view %= 4;
+    }
+    // Enable / Disable wireframe
+    if data.input_manager.map_pressed("toggle_wireframe") {
+        system.wireframe = !system.wireframe;
     }
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
@@ -326,8 +334,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     // Sky params
-    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
-    /*
+    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));    
     let sky_component = data
         .entity_manager
         .get_entity(data.custom_data.sky_entity_id)
@@ -341,7 +348,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
         gl::TEXTURE4,
     );
-    */
+    
 
     // Other params
     shader.set_vec3f32("view_pos", &camera_position);
@@ -392,6 +399,9 @@ pub fn system(data: &mut WorldData) -> System {
     // Link the components
     system.link_component::<components::Transform>(data.component_manager).unwrap();
     system.link_component::<rendering::Renderer>(data.component_manager).unwrap();
+    // Some input events
+    data.input_manager.bind_key(input::Keys::F, "toggle_wireframe", input::MapType::Button);    
+    data.input_manager.bind_key(input::Keys::F3, "change_debug_view", input::MapType::Button);
     // Attach the events
     system.event(SystemEventType::SystemEnabled(system_enabled));
     system.event(SystemEventType::SystemPrefire(system_prefire));

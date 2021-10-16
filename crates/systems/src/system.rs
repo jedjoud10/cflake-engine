@@ -187,6 +187,12 @@ impl System {
     }
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut WorldData) {
+        // Pre fire event
+        match self.system_prefire_evn {
+            Some(x) => x(&mut self.system_data, data),
+            None => {},
+        } 
+        
         let entity_manager_immutable = &*data.entity_manager;
         // The filtered entities tuple that also contains the linked component data
         let filtered_entity_ids = self.entities

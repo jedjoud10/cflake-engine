@@ -70,9 +70,7 @@ impl World {
         self.input_manager.bind_key(Keys::Escape, "quit", MapType::Button);
         self.input_manager.bind_key(Keys::F1, "fullscreen", MapType::Button);
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
-        self.input_manager.bind_key(Keys::F3, "change_debug_view", MapType::Button);
-        self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
-        self.input_manager.bind_key(Keys::F, "toggle_wireframe", MapType::Button);
+        self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);        
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
@@ -419,16 +417,14 @@ impl World {
         self.custom_data.window.dimensions = veclib::Vector2::new(size.0, size.1);
         unsafe {
             gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
-            /*
-            let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
+            
+            let render_system = self.system_manager.get_custom_system_data::<systems::rendering_system::CustomData>(self.custom_data.render_system_id).unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            render_system.window.size = veclib::Vector2::new(size.0, size.1);
             render_system.diffuse_texture.update_size(size.0, size.1);
             render_system.depth_stencil_texture.update_size(size.0, size.1);
             render_system.normals_texture.update_size(size.0, size.1);
             render_system.position_texture.update_size(size.0, size.1);
-            render_system.emissive_texture.update_size(size.0, size.1);
-            */
+            render_system.emissive_texture.update_size(size.0, size.1);            
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

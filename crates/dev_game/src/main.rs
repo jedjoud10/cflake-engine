@@ -38,13 +38,12 @@ pub fn world_initialized(world: &mut World) {
     // Load the sky system
     let mut sky_system = systems::sky_system::system(&mut data);
     sky_system.enable(&mut data);
-    world.system_manager.add_system(sky_system);
-    /*
+    world.system_manager.add_system(sky_system);    
     // Load the default UI system
     let mut ui_system = systems::ui_system::system(&mut data);
     ui_system.enable(&mut data);
     world.system_manager.add_system(ui_system);
-    */
+    
     // ----Load the entities----
     // Create a camera entity
     
@@ -55,13 +54,6 @@ pub fn world_initialized(world: &mut World) {
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
 
-    // Create a simple cube
-    let mut cube = Entity::new("Cube");
-    let material = Material::new("Default Material").set_shader(&data.shader_cacher.1.id_get_default_object(0).unwrap().name).load_default_textures(data.texture_cacher);
-    let renderer = Renderer::new().load_model("defaults\\models\\cube.mdl3d", data.resource_manager).set_material(material);
-    cube.link_default_component::<components::Transform>(data.component_manager).unwrap();
-    cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
-    data.entity_manager.add_entity_s(cube);
     /*
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");

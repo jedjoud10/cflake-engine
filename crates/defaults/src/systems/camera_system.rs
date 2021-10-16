@@ -27,20 +27,23 @@ pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: 
 
     // Actually update the velocity
     let delta = data.time_manager.delta_time as f32;
+    // Forward and backward
     if data.input_manager.map_held("camera_forward").0 {
-        velocity = -forward * delta * speed;
+        velocity += -forward * delta * speed;
     } else if data.input_manager.map_held("camera_backwards").0 {
-        velocity = forward * delta * speed;
+        velocity += forward * delta * speed;
     }
+    // Left and right
     if data.input_manager.map_held("camera_right").0 {
-        velocity = right * delta * speed;
+        velocity += right * delta * speed;
     } else if data.input_manager.map_held("camera_left").0 {
-        velocity = -right * delta * speed;
+        velocity += -right * delta * speed;
     }
+    // Up and down
     if data.input_manager.map_held("camera_up").0 {
-        velocity = up * delta * speed;
+        velocity += up * delta * speed;
     } else if data.input_manager.map_held("camera_down").0 {
-        velocity = -up * delta * speed;
+        velocity += -up * delta * speed;
     }
 
     // Update the variables
