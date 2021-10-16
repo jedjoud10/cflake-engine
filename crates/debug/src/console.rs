@@ -81,6 +81,7 @@ impl Console {
     // Register for a specific command
     pub fn register_template_command(&mut self, command: Command) {
         self.template_command.push(command);
+        println!("{}", self.template_command.len());
     }
     // Check for a specific received command
     pub fn listen_command(&mut self, command_name: &str) -> Option<Command> {

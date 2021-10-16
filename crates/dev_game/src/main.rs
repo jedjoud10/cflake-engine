@@ -43,7 +43,10 @@ pub fn world_initialized(world: &mut World) {
     let mut ui_system = systems::ui_system::system(&mut data);
     ui_system.enable(&mut data);
     world.system_manager.add_system(ui_system);
-    
+    // Load the default command system
+    let mut command_system = systems::command_system::system(&mut data);
+    command_system.enable(&mut data);
+    world.system_manager.add_system(command_system);
     // ----Load the entities----
     // Create a camera entity
     

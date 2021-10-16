@@ -66,9 +66,7 @@ impl World {
     fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load all the default things
         // Load default bindings
-        self.input_manager.create_key_cache();
-        self.input_manager.bind_key(Keys::Escape, "quit", MapType::Button);
-        self.input_manager.bind_key(Keys::F1, "fullscreen", MapType::Button);
+        self.input_manager.create_key_cache();        
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);        
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
@@ -136,24 +134,13 @@ impl World {
         let console_text_id = console_root.add_element(console_text);
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
         console_root.visible = false;
-        self.ui_manager.add_root("console", console_root);
-
-        // Create the default commands
-        let template_command = debug::Command::new("set-vsync", vec![debug::CommandInput::new::<bool>("-v")]);
-        self.debug.console.register_template_command(template_command);
+        self.ui_manager.add_root("console", console_root);        
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
         // Load the default stuff
         self.load_defaults(window);
-        /*
-        // Test stuff
-        self.component_manager.register_component::<components::Transform>();
-        let mut test_entity = Entity::new("Test Entity");
-        test_entity.link_default_component::<components::Transform>(&mut self.component_manager).unwrap();
-        let entity_id = self.add_entity(test_entity);
-        self.entity_manager.remove_entity_s(&entity_id);
-        */
+        
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.che", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
@@ -227,17 +214,18 @@ impl World {
         // Update the FPS
         self.time_manager.fps = 1.0 / self.time_manager.delta_time;
         self.time_manager.update_average_fps();
-    }
-    // Check for default key map events
-    fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+
         // Check for default mapping events
-        if self.input_manager.map_pressed("quit") {
+        if self.debug.console.listen_command("quit").is_some() {
             window.set_should_close(true);
         }
         // Toggle the fullscreen
-        if self.input_manager.map_pressed("fullscreen") {
+        if self.debug.console.listen_command("toggle-fullscreen").is_some() {
             self.toggle_fullscreen(glfw, window);
         }
+    }
+    // Check for default key map events
+    fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {        
         // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
         if self.input_manager.map_pressed("debug_info") {
             println!("Component count: '{}'", self.component_manager.smart_components_list.elements.len());

@@ -1,26 +1,23 @@
 use world_data::WorldData;
-use systems::{InternalSystemData, System, SystemData, SystemEventType};
+use systems::{System, SystemData, SystemEventType};
 
-use crate::components;
-
-// Some custom system data
-pub struct CustomData {
+// Events
+fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
+    if data.debug.console.listen_command("toggle-vsync").is_some() {
+    }
 }
 
-impl InternalSystemData for CustomData {
-}
-
-// System events
-fn system_enabled(data: &mut SystemData, world_data: &mut WorldData) {
-    println!("Command system enabled!");
-}
-
-pub fn system(world_data: &mut WorldData) -> System {
+pub fn system(data: &mut WorldData) -> System {
     let mut system = System::new();
+    // Create some default template commands
+    let fullscreen_command = debug::Command::new("toggle-fullscreen", Vec::new());
+    data.debug.console.register_template_command(fullscreen_command);
+    let quit_command = debug::Command::new("quit", Vec::new());
+    data.debug.console.register_template_command(quit_command);
+    let template_command = debug::Command::new("toggle-vsync", Vec::new());
+    data.debug.console.register_template_command(template_command);
     // Attach the events
-    system.event(SystemEventType::SystemEnabled(system_enabled));
-    // Attach the custom system data
-    system.custom_data(CustomData { });
+    system.event(SystemEventType::SystemPostfire(system_postfire));
 
     system
 }

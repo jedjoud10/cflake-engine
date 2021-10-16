@@ -248,7 +248,7 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
 }
 
 // Create the UI system
-pub fn system(world_data: &mut WorldData) -> System {
+pub fn system(data: &mut WorldData) -> System {
     let mut system = System::new();
     // Attach the custom system data
     system.custom_data(CustomData::default());
