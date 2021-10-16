@@ -1,21 +1,17 @@
-use systems::System;
+use system_event_data::WorldData;
+use systems::{System, SystemEventType};
 
-use crate::engine::core::ecs::{
-    component::FilteredLinkedComponents,
-    system::System,
-    system_data::{SystemData, SystemEventData},
-};
-
-#[derive(Default)]
-pub struct TemplateSystem {
-    pub system_data: SystemData,
+// System added events
+fn system_added(data: &mut SystemData, world_data: &mut WorldData) {
+    println!("Command system added!");
 }
 
-impl System for TemplateSystem {
-    
-    // Setup the system
-    fn setup_system(&mut self, _data: &mut SystemEventData) {}
+fn create_command_system() -> System {
+    let mut system = System::new("Default Commands System");
+    // Link the components
+    system.lin
+    // Attach the events
+    system.event(SystemEventType::SystemAdded(system_added));
 
-    // Called for each entity in the system
-    fn fire_entity(&mut self, _components: &FilteredLinkedComponents, _data: &mut SystemEventData) {}    
+    return system;
 }
