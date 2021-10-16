@@ -65,9 +65,9 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
         .entity_manager
         .get_entity(data.custom_data.main_camera_entity_id)
         .unwrap()
-        .get_component::<components::Physics>(data.component_manager)
+        .get_component::<components::Transform>(data.component_manager)
         .unwrap()
-        .object.linear.position;
+        .position;
     let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
     // Update the position and update the matrix
     transform.position = position;

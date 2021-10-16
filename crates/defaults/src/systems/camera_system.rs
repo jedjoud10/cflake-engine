@@ -46,15 +46,25 @@ pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: 
         velocity += -up * delta * speed;
     }
 
+    // Clone first
+    let mut position: veclib::Vector3<f32>; let mut rotation: veclib::Quaternion<f32>;
+    {
+        let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
+        position = transform.position;
+    }
     // Update the variables
-    let physics =components.get_component_mut::<components::Physics>(data.component_manager).unwrap();
-    physics.object.linear.velocity = velocity;
-    physics.object.angular.rotation = new_rotation;
+    let physics = components.get_component_mut::<components::Physics>(data.component_manager).unwrap();
+    physics.object.linear.velocity = physics.object.linear.velocity.lerp(velocity, data.time_manager.delta_time as f32 * 10.0);
+    rotation = new_rotation;
     // Update the physics update so we have the velocity applied to the position
-    physics.object.update();
+    physics.object.update(&mut position, &mut rotation);
+    // Re-apply
+    {
+        let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
+        transform.position = position;
+        transform.rotation = rotation;
+    }
     // Update the matrices
-    let physics = components.get_component::<components::Physics>(data.component_manager).unwrap();
-    let (position, rotation) = (physics.object.linear.position, physics.object.angular.rotation);
     let camera = components.get_component_mut::<components::Camera>(data.component_manager).unwrap();
     camera.update_view_matrix(position, rotation);
     camera.update_projection_matrix(&data.custom_data.window);
@@ -67,6 +77,7 @@ pub fn system(data: &mut WorldData) -> System {
     // Link the components
     system.link_component::<components::Camera>(data.component_manager).unwrap();
     system.link_component::<components::Physics>(data.component_manager).unwrap();
+    system.link_component::<components::Transform>(data.component_manager).unwrap();
     // Create the inputs
     data.input_manager.bind_key(Keys::W, "camera_forward", MapType::Button);
     data.input_manager.bind_key(Keys::S, "camera_backwards", MapType::Button);

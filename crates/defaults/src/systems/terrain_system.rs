@@ -110,14 +110,10 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
                 },
             )
             .unwrap();
-        // TODO: Make a custom material instance system
+            
         let material = clone_material.clone().set_uniform("depth", ShaderArg::F32(coords.depth as f32 / depth));
         entity
             .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
-            .unwrap();
-        // TODO: Fix this
-        entity
-            .link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&entity, data.component_manager))
             .unwrap();
 
         let entity_id = data.entity_manager.add_entity_s(entity);

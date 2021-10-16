@@ -140,20 +140,22 @@ impl World {
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
         // Load the default stuff
         self.load_defaults(window);
-        
+
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.che", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
         self.config_file = config_file_values;
 
         // Enable disable vsync
+        glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+        /*
         if self.config_file.vsync {
             // Enable VSync
-            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
         } else {
             // Disable VSync
             glfw.set_swap_interval(glfw::SwapInterval::None);
         }
+        */
 
         // Set the window mode
         self.set_fullscreen(self.config_file.fullscreen, glfw, window);

@@ -55,6 +55,7 @@ pub fn world_initialized(world: &mut World) {
     // Create a camera entity
     
     let mut camera = Entity::new("Default Camera");
+    camera.link_default_component::<components::Transform>(data.component_manager).unwrap();
     camera.link_default_component::<components::Physics>(data.component_manager).unwrap();
     camera.link_default_component::<components::Camera>(data.component_manager).unwrap();
 
