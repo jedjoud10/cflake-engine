@@ -53,6 +53,7 @@ void main() {
 		} else {
 			color = final_color;
 		}
+		color = view_dir;
 		//color = ambient_lighting;
 	} else if (debug_view == 1) {
 		color = normal;

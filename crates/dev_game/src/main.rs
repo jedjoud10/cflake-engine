@@ -27,29 +27,42 @@ pub fn world_initialized(world: &mut World) {
         instance_manager: &mut world.instance_manager,
     };
 
+    // Load the rendering system
+    let mut rendering_system = systems::rendering_system::system(&mut data);
+    rendering_system.enable(&mut data);
+    world.system_manager.add_system(rendering_system);
+    // Load the camera system
+    let mut camera_system = systems::camera_system::system(&mut data);
+    camera_system.enable(&mut data);
+    world.system_manager.add_system(camera_system);
+    // Load the sky system
+    let mut sky_system = systems::sky_system::system(&mut data);
+    sky_system.enable(&mut data);
+    world.system_manager.add_system(sky_system);
+    /*
     // Load the default UI system
     let mut ui_system = systems::ui_system::system(&mut data);
     ui_system.enable(&mut data);
     world.system_manager.add_system(ui_system);
-
+    */
     // ----Load the entities----
     // Create a camera entity
-    /*
+    
     let mut camera = Entity::new("Default Camera");
-    camera
-        .link_component::<components::Transform>(
-            data.component_manager,
-            components::Transform {
-                position: veclib::Vector3::<f32>::new(5.0, 5.0, 5.0),
-                ..components::Transform::default()
-            },
-        )
-        .unwrap();
+    camera.link_default_component::<components::Physics>(data.component_manager).unwrap();
     camera.link_default_component::<components::Camera>(data.component_manager).unwrap();
 
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
 
+    // Create a simple cube
+    let mut cube = Entity::new("Cube");
+    let material = Material::new("Default Material").set_shader(&data.shader_cacher.1.id_get_default_object(0).unwrap().name).load_default_textures(data.texture_cacher);
+    let renderer = Renderer::new().load_model("defaults\\models\\cube.mdl3d", data.resource_manager).set_material(material);
+    cube.link_default_component::<components::Transform>(data.component_manager).unwrap();
+    cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
+    data.entity_manager.add_entity_s(cube);
+    /*
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
     const OCTREE_DEPTH: u8 = 7;

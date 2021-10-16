@@ -311,7 +311,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         let projection_matrix = camera_data.projection_matrix;
         let view_matrix = camera_data.view_matrix;
         vp_matrix = projection_matrix * view_matrix;
-        camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
+        camera_position = camera_entity.get_component::<components::Physics>(data.component_manager).unwrap().object.linear.position;
     }
     // Draw the debug primitives
     data.debug.renderer.draw_debug(&vp_matrix, &data.shader_cacher.1);
@@ -327,6 +327,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     // Sky params
     shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
+    /*
     let sky_component = data
         .entity_manager
         .get_entity(data.custom_data.sky_entity_id)
@@ -340,6 +341,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
         gl::TEXTURE4,
     );
+    */
 
     // Other params
     shader.set_vec3f32("view_pos", &camera_position);
@@ -372,7 +374,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
     let view_matrix: veclib::Matrix4x4<f32> = camera_data.view_matrix;
     let projection_matrix: veclib::Matrix4x4<f32> = camera_data.projection_matrix;
-    let camera_position: veclib::Vector3<f32> = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
+    let camera_position: veclib::Vector3<f32> = camera_entity.get_component::<components::Physics>(data.component_manager).unwrap().object.linear.position;
 
     let model_matrix: veclib::Matrix4x4<f32> = components.get_component::<components::Transform>(data.component_manager).unwrap().matrix;
     let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
@@ -385,12 +387,11 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     }
 }
 // Create the rendering system
-pub fn system(world_data: &mut WorldData) -> System {
+pub fn system(data: &mut WorldData) -> System {
     let mut system = System::new();
     // Link the components
-    system.link_component::<components::Transform>(world_data.component_manager).unwrap();
-    system.link_component::<rendering::Renderer>(world_data.component_manager).unwrap();
-    system.link_component::<components::AABB>(world_data.component_manager).unwrap();
+    system.link_component::<components::Transform>(data.component_manager).unwrap();
+    system.link_component::<rendering::Renderer>(data.component_manager).unwrap();
     // Attach the events
     system.event(SystemEventType::SystemEnabled(system_enabled));
     system.event(SystemEventType::SystemPrefire(system_prefire));

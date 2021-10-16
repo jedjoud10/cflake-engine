@@ -174,7 +174,6 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         // Always remember to clear the depth buffer
         gl::Clear(gl::DEPTH_BUFFER_BIT);
-        gl::Clear(gl::COLOR_BUFFER_BIT);
 
         // Enable transparency only for the UI elements
         gl::Enable(gl::BLEND);

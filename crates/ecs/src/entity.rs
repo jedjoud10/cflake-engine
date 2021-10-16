@@ -159,7 +159,7 @@ impl Entity {
     }
     // Gets a reference to a component
     pub fn get_component<'a, T: ComponentID + Component + 'static>(&self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
-        let component_id = component_manager.get_component_id::<T>().unwrap();
+        let component_id = component_manager.get_component_id::<T>()?;
         // Check if we even have the component
         if self.is_component_linked(component_id) {
             let global_id = self.linked_components.get(&component_id).unwrap();
@@ -171,7 +171,7 @@ impl Entity {
     }
     // Gets a specific component, mutably
     pub fn get_component_mut<'a, T: ComponentID + Component + 'static>(&self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
-        let component_id = component_manager.get_component_id::<T>().unwrap();
+        let component_id = component_manager.get_component_id::<T>()?;
         // Check if we even have the component
         if self.is_component_linked(component_id) {
             let global_id = self.linked_components.get(&component_id).unwrap();
