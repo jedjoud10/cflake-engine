@@ -200,14 +200,9 @@ impl World {
             instance_manager: &mut self.instance_manager,
         };
 
-        // Update the entities
-        self.system_manager.run_system_type(SystemType::Update, &mut data);
-        // And render them
-        self.system_manager.run_system_type(SystemType::Render, &mut data);
-        window.swap_buffers();
-        
-        // Update the timings of every system
-        self.system_manager.update_systems(&self.time_manager);
+        // Update the system
+        self.system_manager.update_systems(&mut data);
+        window.swap_buffers();        
         
         // Update the inputs
         self.input_manager.late_update(self.time_manager.delta_time as f32);
@@ -254,17 +249,6 @@ impl World {
                 "Time: '{}', Delta Time: '{}', FPS: '{}', Frame Count: {}",
                 self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps, self.time_manager.frame_count
             );
-        }
-        // Change the debug view
-        if self.input_manager.map_pressed("change_debug_view") {
-            let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
-            render_system.debug_view += 1;
-            render_system.debug_view %= 4;
-        }
-        // Enable / Disable wireframe
-        if self.input_manager.map_pressed("toggle_wireframe") {
-            let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
-            render_system.wireframe = !render_system.wireframe;
         }
     }
     // Update the console
@@ -435,7 +419,7 @@ impl World {
         self.custom_data.window.size = veclib::Vector2::new(size.0, size.1);
         unsafe {
             gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
-
+            /*
             let render_system = self.system_manager.get_system_mut::<systems::RenderingSystem>(self.custom_data.render_system_id).unwrap();
             // Update the size of each texture that is bound to the framebuffer
             render_system.window.size = veclib::Vector2::new(size.0, size.1);
@@ -444,6 +428,7 @@ impl World {
             render_system.normals_texture.update_size(size.0, size.1);
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);
+            */
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

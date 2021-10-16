@@ -39,6 +39,12 @@ impl SystemManager {
         self.systems.push(system);
         id
     }
+    // Update all the systems
+    pub fn update_systems(&mut self, data: &mut WorldData) {
+        for system in self.systems.iter_mut() {
+            system.run_system(data);
+        }
+    }
     // Kill all the systems
     pub fn kill_systems(&mut self, data: &mut WorldData) {
         for system in self.systems.iter_mut() {
@@ -57,6 +63,18 @@ impl SystemManager {
     // Gets a mutable reference to a system
     pub fn get_system_mut(&mut self, system_id: u8) -> Result<&mut System, ECSError> {
         self.systems.get_mut(system_id as usize).ok_or(ECSError::new_str("System does not exist!"))
+    }
+    // Gets a reference to the custom data of a specific system
+    pub fn get_custom_system_data<T: InternalSystemData + 'static>(&self, system_id: u8) -> Result<&T, ECSError> {
+        let system = self.get_system(system_id)?;
+        let data = system.system_data.as_any().downcast_ref::<T>().unwrap();
+        return Ok(data);
+    }
+    // Gets a mutable reference to the custom data a specific system 
+    pub fn get_custom_system_data_mut<T: InternalSystemData + 'static>(&mut self, system_id: u8) -> Result<&mut T, ECSError> {
+        let system = self.get_system_mut(system_id)?;
+        let data = system.system_data.as_any_mut().downcast_mut::<T>().unwrap();
+        return Ok(data);
     }
 }
 // A system event enum
@@ -175,8 +193,6 @@ impl System {
                 let entity_clone = &entity_manager_immutable.get_entity(*entity_id).unwrap();
                 // Get the linked components
                 let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.c_bitfield);
-                
-                
                 // Filtering the entities basically
                 /*
                 let valid_entity = self.filter_entity(entity_clone, &linked_components, &data);

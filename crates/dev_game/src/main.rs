@@ -27,30 +27,9 @@ pub fn world_initialized(world: &mut World) {
         instance_manager: &mut world.instance_manager,
     };
 
-    // Load the rendering system
-    let mut rendering_system = systems::RenderingSystem::default();
-    rendering_system.setup_system(&mut data);
-    world.system_manager.add_system(rendering_system);
-
-    // Load the camera system
-    let mut camera_system = systems::CameraSystem::default();
-    camera_system.setup_system(&mut data);
-    world.system_manager.add_system(camera_system);
-
-    // Load the sky system
-    let mut sky_system = systems::SkySystem::default();
-    sky_system.setup_system(&mut data);
-    world.system_manager.add_system(sky_system);
-
-    // Load the terrain generator system
-    let mut terrain_generator = systems::TerrainSystem::default();
-    terrain_generator.setup_system(&mut data);
-    world.system_manager.add_system(terrain_generator);
-
-    // Load the UI system
-    let mut ui_system = systems::UISystem::default();
-    ui_system.setup_system(&mut data);
-    world.system_manager.add_system(ui_system);
+    // Load the default commands system
+    let command_system = systems::command_system::system(&mut data);
+    world.system_manager.add_system(command_system);
 
     // ----Load the entities----
     // Create a camera entity
