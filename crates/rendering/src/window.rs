@@ -4,14 +4,14 @@ use others::get_default_window_size;
 #[derive(Clone)]
 pub struct Window {
     pub fullscreen: bool,
-    pub size: veclib::Vector2<u16>,
+    pub dimensions: veclib::Vector2<u16>,
 }
 
 impl Default for Window {
     fn default() -> Self {
         Self {
             fullscreen: false,
-            size: {
+            dimensions: {
                 let d = get_default_window_size();
                 veclib::Vector2::new(d.0, d.1)
             },

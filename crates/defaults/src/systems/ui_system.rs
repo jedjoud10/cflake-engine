@@ -218,7 +218,7 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
             let depth = (1.0 - ((element.depth as f32 / root.max_depth as f32) * root_depth_factor)) * 0.99;
             let size: veclib::Vector2<f32>;
             let position: veclib::Vector2<f32>;
-            let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.size);
+            let resolution = veclib::Vector2::<f32>::from(data.custom_data.window.dimensions);
             match element.coordinate_type {
                 ui::CoordinateType::Pixel => {
                     // Pixel coordinate type

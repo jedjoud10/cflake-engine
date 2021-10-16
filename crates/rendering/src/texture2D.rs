@@ -101,6 +101,13 @@ impl Texture2D {
         self.internal_texture.dimension_type = TextureDimensionType::D2D(width, height);
         self
     }
+    // Set the height and width of the soon to be generated texture using a vector
+    pub fn set_dimensions_vec2(mut self, dimensions: veclib::Vector2<u16>) -> Self {
+        self.height = dimensions.y;
+        self.width = dimensions.x;
+        self.internal_texture.dimension_type = TextureDimensionType::D2D(self.width, self.height);
+        self
+    }
     // Update the size of the current texture
     pub fn update_size(&self, width: u16, height: u16) {
         // This is a normal texture getting resized

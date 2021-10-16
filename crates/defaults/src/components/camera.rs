@@ -16,7 +16,7 @@ impl Camera {
     // Update the projection matrix of this camera
     pub fn update_projection_matrix(&mut self, window: &Window) {
         // Turn the horizontal fov into a vertical one
-        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (window.size.y as f32 / window.size.x as f32)).atan();
+        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (window.dimensions.y as f32 / window.dimensions.x as f32)).atan();
         self.projection_matrix = veclib::Matrix4x4::from_perspective(self.clip_planes.0, self.clip_planes.1, self.aspect_ratio, vertical_fov);
     }
     // Update the view matrix using a rotation and a position

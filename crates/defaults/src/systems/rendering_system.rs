@@ -6,29 +6,37 @@ use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader,
 use resources::LoadableResource;
 use std::ptr::null;
 use world_data::WorldData;
-use systems::{System, SystemData};
+use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use ui::Root;
 
 #[derive(Default)]
-pub struct RenderingSystem {
-    pub system_data: SystemData,
+pub struct CustomData {
     pub framebuffer: u32,
+    // The frame buffer textures
     pub diffuse_texture: Texture2D,
     pub normals_texture: Texture2D,
     pub position_texture: Texture2D,
     pub emissive_texture: Texture2D,
     pub depth_stencil_texture: Texture2D,
-    pub quad_renderer_index: u16,
     pub debug_view: u16,
     pub wireframe: bool,
-    pub window: Window,
-    pub multisampling: Option<u8>,
     wireframe_shader_name: String,
+    // The renderer for the screen quad
     quad_renderer: Renderer,
 }
 
-// Everything custom
-impl RenderingSystem {
+impl InternalSystemData for CustomData {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+}
+
+// Draw functions 
+impl CustomData {
     // Read the set uniforms from a renderer's ShaderUniformSetter and update the shader
     fn set_uniforms_from_custom_setter(&self, shader: &Shader, renderer: &Renderer) {
         // Use the shader first
@@ -79,9 +87,11 @@ impl RenderingSystem {
     }
     // Setup all the settings for opengl like culling and the clear color
     fn setup_opengl(&mut self, data: &mut WorldData) {
+        let dimensions = data.custom_data.window.dimensions;
+        // Initialize OpenGL
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-            gl::Viewport(0, 0, self.window.size.x as i32, self.window.size.y as i32);
+            gl::Viewport(0, 0, dimensions.x as i32, dimensions.y as i32);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
             gl::CullFace(gl::BACK);
@@ -92,27 +102,27 @@ impl RenderingSystem {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
             self.diffuse_texture = Texture2D::new()
-                .set_dimensions(self.window.size.x, self.window.size.y)
+                .set_dimensions_vec2(dimensions)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the normals render texture
             self.normals_texture = Texture2D::new()
-                .set_dimensions(self.window.size.x, self.window.size.y)
+                .set_dimensions_vec2(dimensions)
                 .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the position render texture
             self.position_texture = Texture2D::new()
-                .set_dimensions(self.window.size.x, self.window.size.y)
+                .set_dimensions_vec2(dimensions)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the emissive render texture
             self.emissive_texture = Texture2D::new()
-                .set_dimensions(self.window.size.x, self.window.size.y)
+                .set_dimensions_vec2(dimensions)
                 .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new());
             // Create the depth-stencil render texture
             self.depth_stencil_texture = Texture2D::new()
-                .set_dimensions(self.window.size.x, self.window.size.y)
+                .set_dimensions_vec2(dimensions)
                 .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
@@ -262,174 +272,140 @@ impl RenderingSystem {
     }
 }
 
-impl System for RenderingSystem {
-    // Wrappers around system data
-    fn get_system_data(&self) -> &SystemData {
-        &self.system_data
+fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
+    let system = system_data.cast_mut::<CustomData>().unwrap();
+
+    // Create the screen quad
+    system.create_screen_quad(data);
+
+    // Then setup opengl and the render buffer
+    let _default_size = others::get_default_window_size();
+    system.setup_opengl(data);
+
+    // Load the wireframe shad
+    let wireframe_shader_name = Shader::new(
+        vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
+        &mut data.resource_manager,
+        &mut data.shader_cacher,
+        None,
+    )
+    .1;
+    system.wireframe_shader_name = wireframe_shader_name;
+}
+fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
+    let system = system_data.cast::<CustomData>().unwrap();
+    unsafe {
+        gl::BindFramebuffer(gl::FRAMEBUFFER, system.framebuffer);
+        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
 
-    fn get_system_data_mut(&mut self) -> &mut SystemData {
-        &mut self.system_data
+    // Update the default values for each shader that exists in the shader cacher
+    for shader in data.shader_cacher.1.objects.iter() {
+        // Set the shader arguments
+        shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
+        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+        shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
     }
-
-    // When the system gets added to the world
-    fn system_added(&mut self, data: &mut WorldData, system_id: u8) {
-        data.custom_data.render_system_id = system_id;
-    }
-
-    // Setup the system
-    fn setup_system(&mut self, data: &mut WorldData) {
-        self.multisampling = None;
-        let system_data = self.get_system_data_mut();
-        system_data.link_component::<Renderer>(data.component_manager).unwrap();
-        system_data.link_component::<components::Transform>(data.component_manager).unwrap();
-        system_data.link_component::<components::AABB>(data.component_manager).unwrap();
-
-        // Create the screen quad
-        self.create_screen_quad(data);
-
-        // Then setup opengl and the render buffer
-        let _default_size = others::get_default_window_size();
-        self.setup_opengl(data);
-
-        // Load the wireframe shad
-        let wireframe_shader_name = Shader::new(
-            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
-            &mut data.resource_manager,
-            &mut data.shader_cacher,
-            None,
-        )
-        .1;
-        self.wireframe_shader_name = wireframe_shader_name;
-    }
-
-    // Called for each entity in the system
-    fn fire_entity(&mut self, components: &FilteredLinkedComponents, data: &mut WorldData) {
-        // Get the camera stuff
+}
+fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
+    let system = system_data.cast::<CustomData>().unwrap();
+    let dimensions = data.custom_data.window.dimensions;
+    // At the end of each frame, disable the depth test and render the debug objects
+    let vp_matrix: veclib::Matrix4x4<f32>;
+    let frustum: &math::Frustum;
+    let camera_position: veclib::Vector3<f32>;
+    // Get the (projection * view) matrix
+    {
         let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
         let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
-        let view_matrix: veclib::Matrix4x4<f32> = camera_data.view_matrix;
-        let projection_matrix: veclib::Matrix4x4<f32> = camera_data.projection_matrix;
-        let camera_position: veclib::Vector3<f32> = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
-
-        let model_matrix: veclib::Matrix4x4<f32> = components.get_component::<components::Transform>(data.component_manager).unwrap().matrix;
-        let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
-
-        // Draw the entity normally
-        if self.wireframe {
-            self.draw_wireframe(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
-        } else {
-            self.draw_normal(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
-        }
+        let projection_matrix = camera_data.projection_matrix;
+        let view_matrix = camera_data.view_matrix;
+        frustum = &camera_data.frustum;
+        vp_matrix = projection_matrix * view_matrix;
+        camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
     }
+    // Draw the debug primitives
+    data.debug.renderer.draw_debug(&vp_matrix, &data.shader_cacher.1);
 
-    // Called before each fire_entity event is fired
-    fn pre_fire(&mut self, data: &mut WorldData) {
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
+    // Draw the normal primitives
+    let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
+    shader.use_shader();
+    shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
+    shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
+    shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
+    shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
+    shader.set_vec2i32("resolution", &(dimensions.into()));
+    shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+    // Sky params
+    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
+    let sky_component = data
+        .entity_manager
+        .get_entity(data.custom_data.sky_entity_id)
+        .unwrap()
+        .get_component::<components::Sky>(data.component_manager)
+        .unwrap();
 
-        // Update the default values for each shader that exists in the shader cacher
-        for shader in data.shader_cacher.1.objects.iter() {
-            // Set the shader arguments
-            shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
-            shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
-            shader.set_vec2f32("resolution", &(data.custom_data.window.size.into()));
-        }
+    // Set the sky gradient
+    shader.set_t2d(
+        "default_sky_gradient",
+        data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
+        gl::TEXTURE4,
+    );
+
+    // Other params
+    shader.set_vec3f32("view_pos", &camera_position);
+    shader.set_i32("debug_view", &(system.debug_view as i32));
+    // Render the screen quad
+    unsafe {
+        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        gl::BindVertexArray(system.quad_renderer.gpu_data.vertex_array_object);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
+        gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
+}
+fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+    let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
+    // Make sure we create the OpenGL data for this entity's model
+    rc.refresh_model();
+    let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
+    transform.update_matrix();
+}
+fn entity_removed(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+    let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
+    // Dispose the model when the entity gets destroyed
+    rc.dispose_model();
+}
+fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+    let system = system_data.cast::<CustomData>().unwrap();
+    // Get the camera stuff
+    let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
+    let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
+    let view_matrix: veclib::Matrix4x4<f32> = camera_data.view_matrix;
+    let projection_matrix: veclib::Matrix4x4<f32> = camera_data.projection_matrix;
+    let camera_position: veclib::Vector3<f32> = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
 
-    // Called after each fire_entity event has been fired
-    fn post_fire(&mut self, data: &mut WorldData) {
-        // At the end of each frame, disable the depth test and render the debug objects
-        let vp_matrix: veclib::Matrix4x4<f32>;
-        let frustum: &math::Frustum;
-        let camera_position: veclib::Vector3<f32>;
-        // Get the (projection * view) matrix
-        {
-            let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
-            let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
-            let projection_matrix = camera_data.projection_matrix;
-            let view_matrix = camera_data.view_matrix;
-            frustum = &camera_data.frustum;
-            vp_matrix = projection_matrix * view_matrix;
-            camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
-        }
-        // Draw the debug primitives
-        data.debug.renderer.draw_debug(&vp_matrix, &data.shader_cacher.1);
+    let model_matrix: veclib::Matrix4x4<f32> = components.get_component::<components::Transform>(data.component_manager).unwrap().matrix;
+    let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
 
-        // Draw the normal primitives
-        let shader = data.shader_cacher.1.get_object(&self.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
-        shader.use_shader();
-        shader.set_t2d("diffuse_texture", &self.diffuse_texture, gl::TEXTURE0);
-        shader.set_t2d("normals_texture", &self.normals_texture, gl::TEXTURE1);
-        shader.set_t2d("position_texture", &self.position_texture, gl::TEXTURE2);
-        shader.set_t2d("emissive_texture", &self.emissive_texture, gl::TEXTURE3);
-        shader.set_vec2i32("resolution", &veclib::Vector2::new(self.window.size.x as i32, self.window.size.y as i32));
-        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
-        // Sky params
-        shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
-        let sky_component = data
-            .entity_manager
-            .get_entity(data.custom_data.sky_entity_id)
-            .unwrap()
-            .get_component::<components::Sky>(data.component_manager)
-            .unwrap();
-
-        // Set the sky gradient
-        shader.set_t2d(
-            "default_sky_gradient",
-            data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
-            gl::TEXTURE4,
-        );
-
-        // Other params
-        shader.set_vec3f32("view_pos", &camera_position);
-        shader.set_i32("debug_view", &(self.debug_view as i32));
-        // Render the screen quad
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(self.quad_renderer.gpu_data.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.quad_renderer.gpu_data.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, self.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
-        }
+    // Draw the entity normally
+    if system.wireframe {
+        system.draw_wireframe(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
+    } else {
+        system.draw_normal(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
     }
-
-    // When an entity gets added to this system
-    fn entity_added(&mut self, entity: &Entity, data: &mut WorldData) {
-        let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
-        // Make sure we create the OpenGL data for this entity's model
-        rc.refresh_model();
-        let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
-        transform.update_matrix();
-    }
-
-    // When an entity gets removed from this system
-    fn entity_removed(&mut self, entity: &Entity, data: &mut WorldData) {
-        let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
-        // Dispose the model when the entity gets destroyed
-        rc.dispose_model();
-    }
-
-    // Filter the entities with their AABB (TODO: Make this work with the octree hierarchy for faster culling)
-    fn filter_entity(&self, entity: &Entity, components: &FilteredLinkedComponents, data: &WorldData) -> bool {
-        /*
-        let camera = data.entity_manager.get_entity(&data.custom_data.main_camera_entity_id).unwrap();
-        let camera_transform = camera.get_component::<components::Transform>(data.component_manager).unwrap();
-        let normal = camera_transform.rotation.mul_point(veclib::Vector3::default_z());
-        let diff = components.get_component::<components::Transform>(data.component_manager).unwrap();
-        return ((camera_transform.position - diff.position).normalized()).dot(normal) > 0.8;
-        */
-        return true;
-    }
-
-    // Turn this into "Any" so we can cast into child systems
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
+}
+// Create the rendering system
+pub fn system(world_data: &mut WorldData) -> System {
+    let mut system = System::new();
+    // Attach the events
+    system.event(SystemEventType::SystemEnabled(system_enabled));
+    system.event(SystemEventType::SystemPrefire(system_prefire));
+    system.event(SystemEventType::SystemPostfire(system_postfire));
+    system.event(SystemEventType::EntityAdded(entity_added));
+    system.event(SystemEventType::EntityRemoved(entity_removed));
+    system.event(SystemEventType::EntityUpdate(entity_update));
+    // Attach the custom system data
+    system.custom_data(CustomData::default());
+    system
 }

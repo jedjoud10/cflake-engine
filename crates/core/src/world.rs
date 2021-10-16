@@ -416,7 +416,7 @@ impl World {
 impl World {
     // When we resize the window
     pub fn resize_window_event(&mut self, size: (u16, u16)) {
-        self.custom_data.window.size = veclib::Vector2::new(size.0, size.1);
+        self.custom_data.window.dimensions = veclib::Vector2::new(size.0, size.1);
         unsafe {
             gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
             /*

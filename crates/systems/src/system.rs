@@ -85,9 +85,9 @@ pub enum SystemEventType {
     SystemPrefire(fn(&mut SystemData, &mut WorldData)),
     SystemPostfire(fn(&mut SystemData, &mut WorldData)),
     // Entity events
-    EntityAdded(fn(&Entity, &mut WorldData)),
-    EntityRemoved(fn(usize, &mut WorldData)),
-    EntityUpdate(fn(&Entity, &FilteredLinkedComponents, &mut WorldData)),
+    EntityAdded(fn(&mut SystemData, &Entity, &mut WorldData)),
+    EntityRemoved(fn(&mut SystemData, &Entity, &mut WorldData)),
+    EntityUpdate(fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)),
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
@@ -107,9 +107,9 @@ pub struct System {
     system_prefire_evn: Option<fn(&mut SystemData, &mut WorldData)>,
     system_postfire_evn: Option<fn(&mut SystemData, &mut WorldData)>,
     // Entity events
-    entity_added_evn: Option<fn(&Entity, &mut WorldData)>,
-    entity_removed_evn: Option<fn(usize, &mut WorldData)>,
-    entity_update_evn: Option<fn(&Entity, &FilteredLinkedComponents, &mut WorldData)>,
+    entity_added_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
+    entity_removed_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
+    entity_update_evn: Option<fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)>,
 }
 
 // System code
@@ -156,7 +156,7 @@ impl System {
         self.entities.push(entity.entity_id);
         // Fire the event
         match self.entity_added_evn {
-            Some(x) => x(entity, data),
+            Some(x) => x(&mut self.system_data, entity, data),
             None => {},
         }
     }
@@ -164,10 +164,10 @@ impl System {
     fn remove_entity(&mut self, entity_id: usize, entity: &Entity, data: &mut WorldData) {
         // Search for the entity with the matching entity_id
         let system_entity_local_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
-        let entity = self.entities.remove(system_entity_local_id);
+        self.entities.remove(system_entity_local_id);
         // Fire the event
         match self.entity_removed_evn {
-            Some(x) => x(entity_id, data),
+            Some(x) => x(&mut self.system_data, entity, data),
             None => {},
         }
     }
@@ -177,7 +177,9 @@ impl System {
             Some(x) => {
                 // Fire the entity removed event
                 for entity_id in self.entities.iter() {
-                    (x)(*entity_id, data);
+                    // Get the entity
+                    let entity = data.entity_manager.get_entity(*entity_id).unwrap().clone();
+                    x(&mut self.system_data, &entity, data);
                 }
             },
             None => {},
@@ -217,7 +219,7 @@ impl System {
                     let entity_clone = data.entity_manager.get_entity(entity_id).unwrap().clone();
                     // Get the linked entity components from the current entity
                     let linked_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, self.c_bitfield);
-                    x(&entity_clone, &linked_components, data);
+                    x(&mut self.system_data, &entity_clone, &linked_components, data);
                 }
             },
             None => {},
