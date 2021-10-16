@@ -47,6 +47,10 @@ pub fn world_initialized(world: &mut World) {
     let mut command_system = systems::command_system::system(&mut data);
     command_system.enable(&mut data);
     world.system_manager.add_system(command_system);
+    // Load the terrain system
+    let mut terrain_system = systems::terrain_system::system(&mut data);
+    terrain_system.enable(&mut data);
+    world.system_manager.add_system(terrain_system);
     // ----Load the entities----
     // Create a camera entity
     
@@ -57,7 +61,7 @@ pub fn world_initialized(world: &mut World) {
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
 
-    /*
+    
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
     const OCTREE_DEPTH: u8 = 7;
@@ -99,5 +103,5 @@ pub fn world_initialized(world: &mut World) {
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(material_inst, compute_shader_name, OCTREE_DEPTH))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
-    */
+    
 }

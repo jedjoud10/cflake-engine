@@ -18,13 +18,7 @@ pub struct CustomData {
 }
 crate::impl_custom_system_data!(CustomData);
 
-
 // Events
-fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
-    let system = system_data.cast_mut::<CustomData>().unwrap();
-    // Default LOD factor
-    system.lod_factor = terrain::DEFAULT_LOD_FACTOR;
-}
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
     // Update the LOD factor using the commands
@@ -155,12 +149,6 @@ fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldD
     td.voxel_generator.setup_voxel_generator();
     // Generate the base octreee
     let nodes = td.octree.generate_base_octree(system.lod_factor);
-    
-    for node in nodes.iter() {
-        let debug: debug::DefaultDebugRendererType =
-            debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
-        //data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, true);
-    }
 }
 
 // Create the terrain system
@@ -170,7 +158,6 @@ pub fn system(data: &mut WorldData) -> System {
     system.link_component::<components::TerrainData>(data.component_manager).unwrap();
     data.component_manager.register_component::<Chunk>();
     // Attach the events
-    system.event(SystemEventType::SystemEnabled(system_enabled));
     system.event(SystemEventType::EntityAdded(entity_added));
     system.event(SystemEventType::EntityUpdate(entity_update));
     system.event(SystemEventType::SystemPrefire(system_prefire));
@@ -180,6 +167,7 @@ pub fn system(data: &mut WorldData) -> System {
         inputs: vec![debug::CommandInput::new::<f32>("-v")],
     };
     data.debug.console.register_template_command(command);
-    
+    // Add the custom data
+    system.custom_data(CustomData { lod_factor: terrain::DEFAULT_LOD_FACTOR  });
     system
 }
