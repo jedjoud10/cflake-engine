@@ -1,17 +1,28 @@
 use system_event_data::WorldData;
-use systems::{System, SystemEventType};
+use systems::{InternalSystemData, System, SystemData, SystemEventType};
 
-// System added events
-fn system_added(data: &mut SystemData, world_data: &mut WorldData) {
-    println!("Command system added!");
+use crate::components;
+
+// Some custom system data
+pub struct CustomData {
 }
 
-fn create_command_system() -> System {
-    let mut system = System::new("Default Commands System");
-    // Link the components
-    system.lin
-    // Attach the events
-    system.event(SystemEventType::SystemAdded(system_added));
+impl InternalSystemData for CustomData {
+}
 
-    return system;
+// System events
+fn system_enabled(data: &mut SystemData, world_data: &mut WorldData) {
+    println!("Command system enabled!");
+}
+
+pub fn system(world_data: &mut WorldData) -> System {
+    let mut system = System::new();
+    // Link the components
+    system.link_component::<components::Sky>(world_data.component_manager).unwrap();
+    // Attach the events
+    system.event(SystemEventType::SystemEnabled(system_enabled));
+    // Attach the custom system data
+    system.custom_data(CustomData { });
+
+    system
 }

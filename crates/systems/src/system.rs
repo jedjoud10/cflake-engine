@@ -3,7 +3,7 @@ use errors::ECSError;
 use others::Time;
 use system_event_data::*;
 
-use crate::SystemData;
+use crate::{InternalSystemData, SystemData};
 
 #[derive(Default)]
 // Manages the systems
@@ -230,5 +230,9 @@ impl System {
             Some(x) => x(&mut self.system_data, data),
             None => {},
         }
+    }
+    // With custom data
+    pub fn custom_data<T: InternalSystemData + 'static>(&mut self, data: T) {
+        self.system_data.convert(data)
     }
 }
