@@ -18,8 +18,8 @@ void main() {
     pos *= size;
     pos += node_pos;              
     // Create the pixel value
-    ColorVoxel voxel = get_color_voxel(pos, voxel_sampler, pixel_coords);
-    vec4 pixel = vec4(voxel.color, pos.z);    
+    ColorVoxel voxel = get_color_voxel(pos, voxel_sampler, vec3(pixel_coords + ivec3(1, 1, 1))/(gl_WorkGroupSize.xyz*gl_NumWorkGroups.xyz));
+    vec4 pixel = vec4(voxel.color, 0.0);    
     // Write the pixel
     imageStore(color_voxel_image, pixel_coords, pixel);
 }
