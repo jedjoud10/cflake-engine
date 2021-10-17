@@ -16,8 +16,9 @@ VoxelData get_voxel(vec3 pos) {
 
     // Make the terrain flatter
     density = opSmoothUnion(density + 80, pos.y - 16.0, 30.0);
+    
     int material_id = 0;
-    if (pos.x >= 0) {
+    if (pos.z > 0 && pos.x > 0) {
         material_id = 1;
     }
     return VoxelData(density * 20.0, 0, material_id);

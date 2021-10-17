@@ -3,8 +3,7 @@ use std::{collections::HashMap, fmt};
 // A cacher manager struct that can cache any type of data so it doesn't need to be reloaded later on
 pub struct CacheManager<A> {
     pub objects: Vec<A>,
-    pub names: HashMap<String, u16>,
-    pub defaults: Vec<String>,
+    pub names: HashMap<String, usize>,
 }
 
 impl<A> Default for CacheManager<A> {
@@ -12,7 +11,6 @@ impl<A> Default for CacheManager<A> {
         Self {
             objects: Vec::new(),
             names: HashMap::new(),
-            defaults: Vec::new(),
         }
     }
 }
@@ -47,25 +45,8 @@ impl<A> CacheManager<A> {
     pub fn is_cached(&self, name: &str) -> bool {
         self.names.contains_key(name)
     }
-    // Generate default objects maps so we can use them late
-    pub fn generate_defaults(&mut self, default_objects_names: Vec<&str>) {
-        let mut default_object_names: Vec<String> = default_objects_names.iter().map(|&x| x.to_string()).collect();
-        self.defaults.append(&mut default_object_names);
-    }
-    // Get a default object using it's ID
-    pub fn id_get_default_object(&self, id: u16) -> Result<&A, Error> {
-        if id < self.defaults.len() as u16 {
-            // The ID is valid
-            let name = self.defaults[id as usize].clone();
-            let object: &A = self.get_object(name.as_str()).unwrap();
-            Ok(object)
-        } else {
-            // ID isn't valid
-            return Err(Error::new(format!("Default cached object with ID '{}' does not exist!", id).as_str()));
-        }
-    }
     // Get the ID of an object using it's name
-    pub fn get_object_id(&self, name: &str) -> Result<u16, Error> {
+    pub fn get_object_id(&self, name: &str) -> Result<usize, Error> {
         if self.is_cached(name) {
             // That default object name is valid
             let id = self.names[name];
@@ -76,7 +57,7 @@ impl<A> CacheManager<A> {
         }
     }
     // Cached an object and gives back it's cached ID
-    pub fn cache_object(&mut self, object: A, name: &str) -> u16 {
+    pub fn cache_object(&mut self, object: A, name: &str) -> usize {
         // Cache the object, if it was already cached then just return it's id
         if self.is_cached(name) {
             let id = self.names.get(&name.to_string()).unwrap();
@@ -84,16 +65,16 @@ impl<A> CacheManager<A> {
         } else {
             // The object was never cached, so we've gotta cache it
             self.objects.push(object);
-            self.names.insert(name.to_string(), self.objects.len() as u16 - 1);
+            self.names.insert(name.to_string(), self.objects.len() - 1);
 
-            self.objects.len() as u16 - 1
+            self.objects.len() - 1
         }
     }
     // Get a reference to an object using it's object name
     pub fn get_object(&self, name: &str) -> Result<&A, Error> {
         if self.is_cached(name) {
             // The object exists, we can safely return it
-            return Ok(self.objects.get(self.names[&name.to_string()] as usize).unwrap());
+            return Ok(self.objects.get(self.names[&name.to_string()]).unwrap());
         } else {
             // The object does not exist
             return Err(Error::new(format!("Cached object with name '{}' does not exist!", name).as_str()));
@@ -103,23 +84,18 @@ impl<A> CacheManager<A> {
     pub fn get_object_mut(&mut self, name: &str) -> Result<&mut A, Error> {
         if self.names.contains_key(name) {
             // The object exists, we can safely return it
-            return Ok(self.objects.get_mut(self.names[&name.to_string()] as usize).unwrap());
+            return Ok(self.objects.get_mut(self.names[&name.to_string()]).unwrap());
         } else {
             // The object does not exist
             return Err(Error::new(format!("Cached object with name '{}' does not exist!", name).as_str()));
         }
     }
     // Get a reference to an object using it's object ID
-    pub fn id_get_object(&self, id: u16) -> Option<&A> {
-        self.objects.get(id as usize)
+    pub fn id_get_object(&self, id: usize) -> Option<&A> {
+        self.objects.get(id)
     }
     // Get a reference to an object using it's object ID
-    pub fn id_get_object_mut(&mut self, id: u16) -> Option<&mut A> {
-        self.objects.get_mut(id as usize)
+    pub fn id_get_object_mut(&mut self, id: usize) -> Option<&mut A> {
+        self.objects.get_mut(id)
     }
-}
-
-// The "From Resource" trait
-trait FromResource {
-    fn from_resource() -> Self;
 }

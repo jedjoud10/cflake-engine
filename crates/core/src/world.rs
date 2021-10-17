@@ -74,14 +74,36 @@ impl World {
         window.set_cursor_pos(0.0, 0.0);
 
         // Load the default objects for the CacheManagers
-        let _white_texture = Texture2D::new()
-            .load_texture("defaults\\textures\\white.png", &mut self.resource_manager, &mut self.texture_cacher)
-            .unwrap();
-        let _black_texture = Texture2D::new()
-            .load_texture("defaults\\textures\\black.png", &mut self.resource_manager, &mut self.texture_cacher)
-            .unwrap();
-        self.texture_cacher
-            .generate_defaults(vec!["defaults\\textures\\white.png", "defaults\\textures\\black.png"]);
+        // Create the black texture
+        Texture2D::new()
+            .set_dimensions(1, 1)
+            .set_filter(TextureFilter::Linear)
+            .set_mutable(true)
+            .enable_mipmaps()
+            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .generate_texture(vec![0, 0, 0])
+            .set_internal_name("black")
+            .cache_texture(&mut self.texture_cacher);
+        // Create the white texture
+        Texture2D::new()
+            .set_dimensions(1, 1)
+            .set_filter(TextureFilter::Linear)
+            .set_mutable(true)
+            .enable_mipmaps()
+            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .generate_texture(vec![255, 255, 255])
+            .set_internal_name("white")
+            .cache_texture(&mut self.texture_cacher);
+        // Create the default normals texture
+        Texture2D::new()
+            .set_dimensions(1, 1)
+            .set_filter(TextureFilter::Linear)
+            .set_mutable(true)
+            .enable_mipmaps()
+            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .generate_texture(vec![127, 128, 255])
+            .set_internal_name("default_normals")
+            .cache_texture(&mut self.texture_cacher);
 
         // Copy the default shader name
         let default_shader_name: String;
@@ -94,7 +116,6 @@ impl World {
             );
             default_shader_name = default_shader.1;
         }
-        self.shader_cacher.1.generate_defaults(vec![default_shader_name.as_str()]);
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);

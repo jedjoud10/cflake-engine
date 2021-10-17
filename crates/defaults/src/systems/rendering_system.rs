@@ -162,7 +162,7 @@ impl CustomData {
     ) {
         // Default material just in case
         let default_material = Material {
-            shader_name: data.shader_cacher.1.id_get_default_object(0).unwrap().name.clone(),
+            shader_name: data.shader_cacher.1.id_get_object(0).unwrap().name.clone(),
             ..Material::default()
         };
         // Get the material for this entity
@@ -190,19 +190,13 @@ impl CustomData {
         shader.set_vec3f32("view_pos", &camera_position);
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
 
-        // Get the OpenGL texture id so we can bind it to the shader
-        let mut textures: Vec<&Texture2D> = Vec::new();
-
-        // Load the textures
-        for &id in material.texture_cache_ids.iter() {
-            textures.push(data.texture_cacher.id_get_object(id).unwrap());
+        // Check if we already loaded the default textures or not
+        if material.diffuse_tex_id.is_none() || material.normal_tex_id.is_none() {
+            // Did not load all the default textures!
+            println!("Did not load all the default textures for material {}!", &material.material_name);
         }
-        // The rest of the textures are going to be the default ones
-        for i in material.texture_cache_ids.len()..2 {
-            textures.push(data.texture_cacher.id_get_default_object(0).unwrap());
-        }
-        shader.set_t2d("diffuse_tex", textures[0], gl::TEXTURE0);
-        shader.set_t2d("normals_tex", textures[1], gl::TEXTURE1);
+        shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
+        shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
 
         // Set the custom uniforms
         self.set_uniforms_from_custom_setter(shader, renderer);

@@ -15,9 +15,12 @@ pub struct Material {
     // Rendering stuff
     pub shader_name: String,
     pub material_name: String,
-    pub texture_cache_ids: Vec<u16>,
     pub uniform_setter: ShaderUniformSetter,
     pub flags: MaterialFlags,
+
+    // The default texture ID
+    pub diffuse_tex_id: Option<usize>,
+    pub normal_tex_id: Option<usize>,
 }
 
 impl Default for Material {
@@ -25,9 +28,10 @@ impl Default for Material {
         let mut material: Self = Material {
             shader_name: String::new(),
             material_name: String::new(),
-            texture_cache_ids: Vec::new(),
             uniform_setter: ShaderUniformSetter::default(),
             flags: MaterialFlags::empty(),
+            diffuse_tex_id: None,
+            normal_tex_id: None,
         };
         // Set the default shader args
         let material = material.set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE));
@@ -46,22 +50,18 @@ impl Material {
         }
     }
     // Load textures from their texture struct
-    pub fn load_textures(mut self, texture_ids: &Vec<u16>, texture_cacher: &CacheManager<Texture2D>) -> Self {
-        // Set the textures as the renderer's textures
-        for (&texture_id) in texture_ids.iter() {
-            // Since these are loadable textures, we already know they got cached beforehand
-            self.texture_cache_ids.push(texture_id);
-        }
+    pub fn load_textures(mut self, texture_ids: &Vec<Option<usize>>, texture_cacher: &CacheManager<Texture2D>) -> Self {
+        self.diffuse_tex_id = texture_ids[0];
+        self.normal_tex_id = texture_ids[1];
         // Load the default textures
         return self.load_default_textures(texture_cacher);
     }
     // Load the default textures
     pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture2D>) -> Self {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
-        // Diffuse, Normals, Roughness, Metallic, AO
-        for _i in (self.texture_cache_ids.len())..5 {
-            self.texture_cache_ids.push(texture_cacher.get_object_id("defaults\\textures\\white.png").unwrap());
-        }
+        // Diffuse, Normals
+        if self.diffuse_tex_id.is_none() { self.diffuse_tex_id = Some(texture_cacher.get_object_id("white").unwrap()); }
+        if self.normal_tex_id.is_none() { self.normal_tex_id = Some(texture_cacher.get_object_id("default_normals").unwrap()); }
         return self;
     }
     // Set a specific uniform, wrapper around ShaderUniformSetter
@@ -72,21 +72,31 @@ impl Material {
     // Load textures from their resource paths
     pub fn resource_load_textures(
         mut self,
-        texture_paths: Vec<&str>,
+        texture_paths: Vec<Option<&str>>,
         texture_cacher: &mut CacheManager<Texture2D>,
         resource_manager: &mut ResourceManager,
     ) -> Result<Self, errors::ResourceError> {
         // Load the textures
-        for (_i, &texture_path) in texture_paths.iter().enumerate() {
-            let _resource = resource_manager.load_packed_resource(texture_path)?;
-            let _texture = Texture2D::new()
-                .set_mutable(true)
-                .enable_mipmaps()
-                .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
-                .load_texture(texture_path, resource_manager, texture_cacher)
-                .unwrap();
-            self.texture_cache_ids.push(texture_cacher.get_object_id(texture_path).unwrap());
+        for (i, &texture_path) in texture_paths.iter().enumerate() {
+            match texture_path {
+                Some(texture_path) => {
+                    let _resource = resource_manager.load_packed_resource(texture_path)?;
+                    let (texture, texture_id) = Texture2D::new()
+                        .set_mutable(true)
+                        .enable_mipmaps()
+                        .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+                        .load_texture(texture_path, resource_manager, texture_cacher)
+                        .unwrap();  
+                    match i {
+                        0 => { self.diffuse_tex_id = Some(texture_id); }
+                        1 => { self.normal_tex_id = Some(texture_id); }
+                        _ => {}
+                    }
+                },
+                None => {},
+            }                      
         }
+
         // Load the default textures
         return Ok(self.load_default_textures(texture_cacher));
     }

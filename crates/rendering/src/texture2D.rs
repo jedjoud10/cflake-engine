@@ -54,7 +54,7 @@ impl LoadableResource for Texture2D {
 // Loading / caching stuff for Texture2D
 impl Texture2D {
     // Cache the current texture and return it's reference
-    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture2D>) -> Option<(&'a mut Self, u16)> {
+    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture2D>) -> Option<(&'a mut Self, usize)> {
         let texture_name = self.internal_texture.name.clone();
         let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
         return Some((texture_cacher.get_object_mut(texture_name.as_str()).unwrap(), texture_id));
@@ -65,7 +65,7 @@ impl Texture2D {
         local_path: &str,
         resource_manager: &mut ResourceManager,
         texture_cacher: &'a mut CacheManager<Texture2D>,
-    ) -> Result<(&'a Self, u16), ResourceError> {
+    ) -> Result<(&'a Self, usize), ResourceError> {
         // Load the resource
         let resource = resource_manager.load_packed_resource(local_path)?;
         // If the texture was already cached, just loaded from cache
@@ -159,6 +159,11 @@ impl Texture2D {
         let t = self.internal_texture.set_wrapping_mode(wrapping_mode);
         self.internal_texture = t;
         return self;
+    }
+    // Set the internal's texture name
+    pub fn set_internal_name(mut self, name: &str) -> Self {
+        self.internal_texture.name = name.to_string();
+        self
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
