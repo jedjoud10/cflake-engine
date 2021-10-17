@@ -1,3 +1,5 @@
+use crate::ISOLINE;
+
 use super::CHUNK_SIZE;
 use others::CacheManager;
 use rendering::{Shader, Texture2D, Texture3D};
@@ -91,28 +93,30 @@ impl VoxelGenerator {
         // Read back the compute shader data
         compute.get_compute_state();
         // Read back the texture into the data buffer
-        let pixels = self.voxel_texture.internal_texture.fill_array_elems::<f32>();
+        let pixels = self.voxel_texture.internal_texture.fill_array_elems::<u8>();
 
         //let pixels = vec![-10.0; data.len()];
         // Keep track of the min and max values
-        let mut min = f32::MAX;
-        let mut max = f32::MIN;
+        let mut min = u8::MAX;
+        let mut max = u8::MIN;
 
         // Turn the pixels into the data
         for (i, pixel) in pixels.iter().enumerate() {
             let density = *pixel;
-            data[i] = Voxel { density: density, color: veclib::Vector3::ZERO };
+            data[i] = Voxel { density: density, color: veclib::Vector3::ZERO, biomeID: 0, materialID: 0 };
             min = min.min(density);
             max = max.max(density);
         }
         // Only generate the mesh if we have a surface
-        min.signum() != max.signum()
+        (min < ISOLINE) != (max < ISOLINE)
     }
 }
 
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
-    pub color: veclib::Vector3<f32>,
-    pub density: f32,
+    pub color: veclib::Vector3<u8>,
+    pub density: u8,
+    pub biomeID: u8,
+    pub materialID: u8,
 }

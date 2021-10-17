@@ -1,3 +1,5 @@
+use crate::ISOLINE;
+
 use super::tables::*;
 use super::Voxel;
 use super::CHUNK_SIZE;
@@ -7,7 +9,7 @@ use std::collections::HashMap;
 use std::ptr::null;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
-const AVERAGE_DENSITY_THRESHOLD: f32 = 0.2;
+const AVERAGE_DENSITY_THRESHOLD: u8 = 170;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -22,7 +24,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
     let mut max_index: u32 = 0;
     // Calculate the density threshold for the skirts
-    let density_threshold = AVERAGE_DENSITY_THRESHOLD * (((size as f32) * 3.0) / (CHUNK_SIZE - 2) as f32);
+    let density_threshold = AVERAGE_DENSITY_THRESHOLD;
     // Loop over every voxel
     for x in 0..CHUNK_SIZE - 2 {
         for y in 0..CHUNK_SIZE - 2 {
@@ -30,14 +32,14 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= 0.0) as u8) * 1;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= 0.0) as u8) * 2;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= 0.0) as u8) * 4;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[3]].density >= 0.0) as u8) * 8;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[4]].density >= 0.0) as u8) * 16;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[5]].density >= 0.0) as u8) * 32;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[6]].density >= 0.0) as u8) * 64;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[7]].density >= 0.0) as u8) * 128;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[3]].density >= ISOLINE) as u8) * 8;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[4]].density >= ISOLINE) as u8) * 16;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[5]].density >= ISOLINE) as u8) * 32;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[6]].density >= ISOLINE) as u8) * 64;
+                case_index += ((voxels[i + DATA_OFFSET_TABLE[7]].density >= ISOLINE) as u8) * 128;
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -68,8 +70,8 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         let index2 = super::flatten(vert2_usize);
                         let voxel1 = voxels[index1];
                         let voxel2 = voxels[index2];
-                        let density1 = voxel1.density;
-                        let density2 = voxel2.density;
+                        let density1 = voxel1.density as f32;
+                        let density2 = voxel2.density as f32;
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation { inverse_lerp(density1, density2, 0.0) } else { 0.5 };
                         // Create the vertex
@@ -82,18 +84,18 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             let mut normal2 = veclib::Vector3::<f32>::ZERO;
 
                             // Create the normal
-                            normal1.x = voxels[index1 + DATA_OFFSET_TABLE[3]].density - density1;
-                            normal1.y = voxels[index1 + DATA_OFFSET_TABLE[4]].density - density1;
-                            normal1.z = voxels[index1 + DATA_OFFSET_TABLE[1]].density - density1;
-                            normal2.x = voxels[index2 + DATA_OFFSET_TABLE[3]].density - density2;
-                            normal2.y = voxels[index2 + DATA_OFFSET_TABLE[4]].density - density2;
-                            normal2.z = voxels[index2 + DATA_OFFSET_TABLE[1]].density - density2;
+                            normal1.x = voxels[index1 + DATA_OFFSET_TABLE[3]].density as f32 - density1;
+                            normal1.y = voxels[index1 + DATA_OFFSET_TABLE[4]].density as f32 - density1;
+                            normal1.z = voxels[index1 + DATA_OFFSET_TABLE[1]].density as f32 - density1;
+                            normal2.x = voxels[index2 + DATA_OFFSET_TABLE[3]].density as f32 - density2;
+                            normal2.y = voxels[index2 + DATA_OFFSET_TABLE[4]].density as f32 - density2;
+                            normal2.z = voxels[index2 + DATA_OFFSET_TABLE[1]].density as f32 - density2;
                             veclib::Vector3::<f32>::lerp(normal1, normal2, value)
                         };
                         // Get the color
                         let color: veclib::Vector3<f32> = {
-                            veclib::Vector3::<f32>::lerp(voxel1.color, voxel2.color, value)
-                        };
+                            veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value)
+                        } / 255.0;
 
                         let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -282,7 +284,7 @@ pub fn solve_marching_squares(
     i: usize,
     data: &Box<[Voxel]>,
     local_edges: &[(u32, u32, u32); 4],
-    density_threshold: f32,
+    density_threshold: u8,
     shared_vertices: &mut Vec<SkirtVertex>,
     axis: veclib::Vec3Axis,
     slice: usize,
@@ -302,10 +304,10 @@ pub fn solve_marching_squares(
         let voxel = data[i + density_offset[j]];
         local_voxels[j] = voxel;
         // Update the case index
-        case += ((voxel.density < 0.0) as u8) * 2_u8.pow(j as u32);
+        case += ((voxel.density < ISOLINE) as u8) * 2_u8.pow(j as u32);
     }
     // Get the average density
-    let average_density: f32 = local_voxels.iter().map(|x| x.density).sum::<f32>() / 4.0;
+    let average_density: u8 = (local_voxels.iter().map(|x| x.density as f32).sum::<f32>() / 4.0) as u8;
 
     // ----This is where the actual mesh generation starts----
 
@@ -313,7 +315,7 @@ pub fn solve_marching_squares(
         return; /* Always skip if it's empty */
     }
     // Check if it's full and it's out of range of the threshold
-    if case == 15 && (average_density < -density_threshold) {
+    if case == 15 && (average_density < density_threshold) {
         return;
     }
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
@@ -352,12 +354,12 @@ pub fn solve_marching_squares(
                         veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
                     };
                     // The 3 voxels that we will be using for derivatives
-                    let v0: Voxel = local_voxels[0]; let v1: Voxel = local_voxels[1]; let v3: Voxel = local_voxels[3];
+                    let v0: f32 = local_voxels[0].density as f32; let v1: f32 = local_voxels[1].density as f32; let v3: f32 = local_voxels[3].density as f32;
                     // Get the vertex data of the skirt vertex
                     let normal: veclib::Vector3<f32> = match axis {
-                        veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, v3.density - v1.density, v1.density - v0.density).normalized(),
-                        veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(v1.density - v0.density, 0.0, v3.density - v0.density).normalized(),
-                        veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(v3.density - v0.density, v1.density - v0.density, 0.0).normalized(),
+                        veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, v3 - v1, v1 - v0).normalized(),
+                        veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(v1 - v0, 0.0, v3 - v0).normalized(),
+                        veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(v3 - v0, v1 - v0, 0.0).normalized(),
                     };
 
                     // Add it
