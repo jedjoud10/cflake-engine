@@ -1,6 +1,6 @@
 use ecs::{Component, ComponentID, ComponentInternal};
 use math::octrees::*;
-use terrain::{ChunkManager, Voxel, VoxelGenerator, CHUNK_SIZE};
+use terrain::{ChunkManager, VoxelGenerator, CHUNK_SIZE};
 
 // Terrain data that will be on the terrain entity
 #[derive(Default)]

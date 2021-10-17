@@ -21,10 +21,10 @@ impl EntityManager {
             .entities
             .iter()
             .enumerate()
-            .position(|(i, e)| {
+            .position(|(_i, e)| {
                 match e {
                     // We found a free spot
-                    Some(entity) => false,
+                    Some(_entity) => false,
                     None => true,
                 }
             })

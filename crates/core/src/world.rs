@@ -3,7 +3,6 @@ use debug::*;
 use defaults::{components, systems};
 use ecs::*;
 use errors::*;
-use fonts::FontManager;
 use gl;
 use glfw::{self, Context};
 use input::*;
@@ -11,7 +10,6 @@ use io::SaverLoader;
 use others::*;
 use rendering::*;
 use resources::*;
-use std::collections::HashSet;
 use ui::UIManager;
 use world_data::*;
 
@@ -106,16 +104,12 @@ impl World {
             .cache_texture(&mut self.texture_cacher);
 
         // Copy the default shader name
-        let default_shader_name: String;
-        {
-            let default_shader = Shader::new(
-                vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
-                &mut self.resource_manager,
-                &mut self.shader_cacher,
-                None,
-            );
-            default_shader_name = default_shader.1;
-        }
+        Shader::new(
+            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
+            &mut self.resource_manager,
+            &mut self.shader_cacher,
+            None,
+        );
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
@@ -247,7 +241,7 @@ impl World {
         }
     }
     // Check for default key map events
-    fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+    fn check_default_input_events(&mut self, _window: &mut glfw::Window, _glfw: &mut glfw::Glfw) {
         // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
         if self.input_manager.map_pressed("debug_info") {
             println!("Component count: '{}'", self.component_manager.smart_components_list.elements.len());

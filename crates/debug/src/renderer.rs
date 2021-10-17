@@ -94,19 +94,19 @@ impl DebugRenderer {
                     lines.push(math::shapes::Line::construct(corners[5], corners[6]));
                     lines.push(math::shapes::Line::construct(corners[6], corners[7]));
                     lines.push(math::shapes::Line::construct(corners[7], corners[4]));
-                    for i in 0..(12 * 2) {
+                    for _i in 0..(12 * 2) {
                         self.colors.push(*icolor);
                     }
                 }
-                DebugRendererType::SPHERE(_center, _radius, icolor) => todo!(),
+                DebugRendererType::SPHERE(_center, _radius, _icolor) => todo!(),
                 DebugRendererType::LINE(line, icolor) => {
                     // Just use the line lol
                     lines.push(*line);
-                    for i in 0..2 {
+                    for _i in 0..2 {
                         self.colors.push(*icolor);
                     }
                 }
-                DebugRendererType::MODEL(_model, icolor) => todo!(),
+                DebugRendererType::MODEL(_model, _icolor) => todo!(),
             }
         }
 

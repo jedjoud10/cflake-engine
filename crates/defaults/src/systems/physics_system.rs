@@ -1,11 +1,11 @@
 use ecs::{Entity, FilteredLinkedComponents};
-use systems::{InternalSystemData, System, SystemData, SystemEventType};
+use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
 
 use crate::components;
 
 // Update the entities
-pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     // Update the physics
     let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
     let (mut position, mut rotation) = (transform.position, transform.rotation);
@@ -18,7 +18,7 @@ pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: 
 }
 
 // Create a physics system
-pub fn system(world_data: &mut WorldData) -> System {
+pub fn system(_world_data: &mut WorldData) -> System {
     let mut system = System::new();
     // Attach the events
     system.event(SystemEventType::EntityUpdate(entity_update));

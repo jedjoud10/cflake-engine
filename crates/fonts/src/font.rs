@@ -1,5 +1,5 @@
 use ascii::AsciiStr;
-use rendering::{Texture2D, TextureDimensionType};
+use rendering::{Texture2D};
 use resources::{LoadableResource, Resource};
 
 use crate::FontChar;

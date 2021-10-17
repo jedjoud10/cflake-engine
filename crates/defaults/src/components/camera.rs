@@ -20,7 +20,7 @@ impl Camera {
         self.projection_matrix = veclib::Matrix4x4::from_perspective(self.clip_planes.0, self.clip_planes.1, self.aspect_ratio, vertical_fov);
     }
     // Update the view matrix using a rotation and a position
-    pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, mut rotation: veclib::Quaternion<f32>) {
+    pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
         let rotation_matrix = veclib::Matrix4x4::from_quaternion(&rotation);
         let mut forward_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0));
         forward_vector.normalize();

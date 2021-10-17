@@ -3,7 +3,6 @@ use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
-use main::systems::*;
 use main::world_data::*;
 use main::*;
 fn main() {

@@ -1,9 +1,9 @@
 use crate::{LoadedValue, ValueGetter};
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use platform_dirs::AppDirs;
 use std::{
     fs::{File, OpenOptions},
-    io::{BufReader, BufWriter, Seek},
+    io::{BufReader, BufWriter},
     path::PathBuf,
 };
 
@@ -45,7 +45,6 @@ impl SaverLoader {
         let global_path = self.local_path.join(file_path);
         println!("{:?}", global_path);
         let mut reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
-        let cap = reader.buffer();
         let mut values: Vec<LoadedValue> = Vec::new();
         // Get the values from this reader
         loop {

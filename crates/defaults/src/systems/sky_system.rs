@@ -1,12 +1,12 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
-use rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
+use rendering::{Material, Model, Renderer, Shader, Texture2D, TextureWrapping};
 use resources::LoadableResource;
 use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
 
 // Events
-pub fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
+pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
     // Create the sky entity
     let mut sky = Entity::new("Sky");
 
@@ -59,7 +59,7 @@ pub fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     data.custom_data.sky_entity_id = sky.entity_id;
     data.entity_manager.add_entity_s(sky);
 }
-fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     // Set the position of the sky sphere to always be the camera's position
     let position = data
         .entity_manager

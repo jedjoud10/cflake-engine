@@ -1,16 +1,12 @@
 use debug::DefaultDebugRendererType;
-use terrain::{BoundChecker, ChunkCoords, ChunkData, ChunkManager};
+use terrain::{BoundChecker, ChunkCoords};
 
 use crate::components;
 use components::Chunk;
 use ecs::*;
-use input::*;
 use math::octrees::*;
-use others::CacheManager;
 use rendering::*;
-use std::collections::{HashMap, HashSet};
 use systems::*;
-use terrain::VoxelGenerator;
 use world_data::WorldData;
 
 pub struct CustomData {
@@ -35,7 +31,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         None => {}
     }
 }
-fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     // Get the camera location
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
     let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap();
@@ -145,7 +141,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
         }
     }
 }
-fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     // Setup the voxel generator for this generator
     let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
     // Generate the voxel texture

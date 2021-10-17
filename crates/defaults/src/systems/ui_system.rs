@@ -1,14 +1,11 @@
 use core::mem::size_of;
 use std::{ffi::c_void, ptr::null};
 
-use super::super::components;
-use ecs::{Entity, FilteredLinkedComponents};
 use fonts::Font;
-use input::*;
 use rendering::Shader;
 use resources::LoadableResource;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
-use ui::{CoordinateType, Element, ElementType, Root};
+use ui::{ElementType};
 use world_data::WorldData;
 
 // Constant values
@@ -183,7 +180,7 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Calculate the max root depth
     let max_root_depth = data.ui_manager.roots.iter().map(|x| x.1.root_depth).max().unwrap_or(1);
     // Loop over every root node
-    for (root_name, root) in data.ui_manager.roots.iter() {
+    for (_root_name, root) in data.ui_manager.roots.iter() {
         let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
         let shader = data.shader_cacher.1.get_object(&custom_data.ui_shader_name).unwrap();
         let root_depth = root.root_depth;
@@ -248,7 +245,7 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
 }
 
 // Create the UI system
-pub fn system(data: &mut WorldData) -> System {
+pub fn system(_data: &mut WorldData) -> System {
     let mut system = System::new();
     // Attach the custom system data
     system.custom_data(CustomData::default());

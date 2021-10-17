@@ -2,7 +2,6 @@ use super::Keys;
 use std::{
     array::IntoIter,
     collections::HashMap,
-    fmt::{self},
     iter::FromIterator,
 };
 
@@ -50,11 +49,9 @@ pub struct InputManager {
     scancode_cache: HashMap<Keys, i32>,
     last_mouse_pos: (i32, i32),
     last_mouse_scroll: f32,
-    glfw_get_scancode: fn(key: Keys) -> i32,
     update: bool,
 
     // Key sentence registering
-    last_key: String,
     pub full_sentence: Option<String>,
 }
 
@@ -66,9 +63,7 @@ impl Default for InputManager {
             scancode_cache: Default::default(),
             last_mouse_pos: Default::default(),
             last_mouse_scroll: Default::default(),
-            glfw_get_scancode: |x| -1,
             update: true,
-            last_key: String::new(),
             full_sentence: None,
         }
     }
@@ -312,7 +307,7 @@ impl InputManager {
         }
     }
     // Binds a key to a specific mapping
-    pub fn bind_key(&mut self, key: Keys, map_name: &str, map_type: MapType) {
+    pub fn bind_key(&mut self, key: Keys, map_name: &str, _map_type: MapType) {
         // Check if the binding exists
         let key_scancode = self.get_key_scancode(key).unwrap().clone();
         if !self.bindings.contains_key(map_name) {
@@ -411,7 +406,6 @@ impl InputManager {
                 match self.keys.get(key_scancode).unwrap().1 {
                     ToggleKeyStatus::ToggleOn => true,
                     ToggleKeyStatus::ToggleOff => false,
-                    _ => false,
                 }
             } else {
                 false

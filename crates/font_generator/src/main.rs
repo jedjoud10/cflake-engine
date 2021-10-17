@@ -1,13 +1,12 @@
 use std::{
     env,
-    fs::{File, OpenOptions},
+    fs::{OpenOptions},
     io::{BufRead, BufReader, BufWriter},
-    path::Path,
 };
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use fonts::FontChar;
-use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
+use image::{DynamicImage, GenericImage, GenericImageView};
 
 // Pack the font
 fn main() {
