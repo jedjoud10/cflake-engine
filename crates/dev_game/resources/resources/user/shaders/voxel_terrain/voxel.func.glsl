@@ -14,9 +14,6 @@ VoxelData get_voxel(vec3 pos) {
 
     // Make the terrain flatter
     density = min(density + 80, pos.y - 16.0);
-    return density;
-}
-// Generate the Vertex Color, Smoothness, Metallic and Material ID
-EffectsVoxelData get_effects_voxel(vec3 pos) {
-    return EffectVoxelData
+
+    return VoxelData(density, 0);
 }

@@ -14,7 +14,7 @@ pub struct TerrainData {
 // Create a new terrain data
 impl TerrainData {
     // New terrain data with specific parameters
-    pub fn new(material: rendering::Material, compute_shader_name: String, octree_depth: u8) -> Self {
+    pub fn new(material: rendering::Material, compute_name: String, color_compute_name: String, octree_depth: u8) -> Self {
         // Create a new octree
         let octree = AdvancedOctree {
             internal_octree: Octree {
@@ -28,7 +28,8 @@ impl TerrainData {
             material,
             octree,
             voxel_generator: VoxelGenerator {
-                compute_shader_name,
+                compute_name: compute_name,
+                color_compute_name: color_compute_name,
                 ..VoxelGenerator::default()
             },
             chunk_manager: ChunkManager::default(),

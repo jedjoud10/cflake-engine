@@ -2,8 +2,7 @@
 struct VoxelData {
     float density;
     int biome_id;
-}
-// Effects voxel data that is generated in a second compute shader pass
-struct EffectsVoxelData {
+};
+struct ColorVoxel {
     vec3 color;    
-}
+};
