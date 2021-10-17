@@ -65,7 +65,7 @@ impl AABB {
     }
     // Get the closest point of the AABB from a specific point
     pub fn get_nearest_point(&self, point: &veclib::Vector3<f32>) -> veclib::Vector3<f32> {
-        return self.min.max(point.min(self.max));
+        return point.clamp(self.min, self.max);
     }
     // Expand the AABB by a number
     pub fn expand(&mut self, factor: f32) {

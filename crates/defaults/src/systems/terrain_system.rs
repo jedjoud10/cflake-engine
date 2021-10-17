@@ -49,15 +49,10 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     let clone_material = td.material.clone();
 
     // Generate the octree each frame and generate / delete the chunks
-    const speed: f64 = 0.08;
-    let location = veclib::Vector3::new((data.time_manager.seconds_since_game_start * speed).sin() as f32, 0.01, (data.time_manager.seconds_since_game_start * speed).cos() as f32) * 2000.0;
-    let debug: debug::DefaultDebugRendererType =
-            debug::DefaultDebugRendererType::CUBE(location, veclib::Vector3::<f32>::ONE * 4.0);
-        data.debug.renderer.debug_default(debug, veclib::Vector3::Z, false);
     if td.chunk_manager.octree_update_valid() {
-        match td.octree.generate_incremental_octree(&location, system.lod_factor) {
-            Some((mut added, removed, total_nodes)) => {    
-                system.nodes = total_nodes;
+        match td.octree.generate_incremental_octree(&camera_location, system.lod_factor) {
+            Some((mut added, removed)) => {    
+                system.nodes.clear();
                 // Filter first
                 added.retain(|node| BoundChecker::bound_check(&node));
                 // Turn all the newly added nodes into chunks and instantiate them into the world
@@ -149,13 +144,10 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     }
 }
 fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
-    let system = system_data.cast::<CustomData>().unwrap();
     // Setup the voxel generator for this generator
     let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
     // Generate the voxel texture
     td.voxel_generator.setup_voxel_generator();
-    // Generate the base octreee
-    let nodes = td.octree.generate_base_octree(system.lod_factor);
 }
 
 // Create the terrain system

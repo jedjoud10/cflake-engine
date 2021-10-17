@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use debug::DefaultDebugRendererType;
@@ -93,7 +94,7 @@ impl ChunkManager {
                 // Get the dot product
                 let ad = Self::priority_function(&a, &camera_forward_vector, &camera_position);
                 let bd = Self::priority_function(&b, &camera_forward_vector, &camera_position);
-                bd.partial_cmp(&ad).unwrap()
+                bd.partial_cmp(&ad).unwrap_or(Ordering::Equal)
             });
         }
         // Debug draw the chunks to generate
