@@ -97,14 +97,16 @@ impl VoxelGenerator {
 
         //let pixels = vec![0; data.len()];
         // Keep track of the min and max values
-        let mut min = i16::MAX;
-        let mut max = i16::MIN;
+        let mut min = u16::MAX;
+        let mut max = u16::MIN;
 
         // Turn the pixels into the data
         for (i, pixel) in pixels.iter().enumerate() {
             let voxel_data = *pixel;
             // Convert the two bytes into an i16
-            let density: i16 = voxel_data.x as i16;
+            let mut density: u16 = voxel_data.x as u16;
+            density = density << 8;
+            density |= voxel_data.y as u16;
             data[i] = Voxel { density: density, color: veclib::Vector3::ONE * 255, biome_id: 0, material_id: 0 };
             min = min.min(density);
             max = max.max(density);
@@ -120,7 +122,7 @@ impl VoxelGenerator {
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
     pub color: veclib::Vector3<u8>,
-    pub density: i16,
+    pub density: u16,
     pub biome_id: u8,
     pub material_id: u8,
 }
