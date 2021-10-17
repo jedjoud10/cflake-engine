@@ -3,9 +3,9 @@
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(rgba8, binding = 0) uniform image3D voxel_image;
-layout(location = 1 ) uniform vec3 node_pos;
-layout(location = 2 ) uniform int node_size;
-layout(location = 3 ) uniform int chunk_size;
+layout(location = 1) uniform vec3 node_pos;
+layout(location = 2) uniform int node_size;
+layout(location = 3) uniform int chunk_size;
 
 void main() {
     // Get the pixel coord
@@ -22,7 +22,7 @@ void main() {
     uint density1 = density >> 8;
     uint density2 = density << 24;
     density2 = density2 >> 24;
-    vec4 pixel = vec4(float(density1) / 255, float(density2) / 255, float(voxel.biomeID) / 255, float(voxel.materialID) / 255);    
+    vec4 pixel = vec4(float(density1) / 255, float(density2) / 255, 1.0, 1.0);    
     
     // Write the pixel
     imageStore(voxel_image, pixel_coords, pixel);

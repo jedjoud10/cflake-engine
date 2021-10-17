@@ -3,7 +3,7 @@ pub struct ErrorCatcher {}
 
 impl ErrorCatcher {
     // Catch opengl error
-    pub fn catch_opengl_errors() {
+    pub fn catch_opengl_errors() -> Option<()> {
         // Check for OpenGL errors
         unsafe {
             let error: gl::types::GLenum = gl::GetError();
@@ -11,6 +11,9 @@ impl ErrorCatcher {
                 // We caught an error!
                 println!("\x1b[31mWe caught an OpenGL error! Error code: '{:?}'\x1b[0m", error);
                 //panic!();
+                return None;
+            } else {
+                return Some(());
             }
         }
     }

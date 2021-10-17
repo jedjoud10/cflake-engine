@@ -207,7 +207,7 @@ impl World {
         root.get_element_mut(3).update_text(component_text, 40.0);
 
         // Just in case
-        errors::ErrorCatcher::catch_opengl_errors();
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
         // Update the time
         self.time_manager.delta_time = delta;

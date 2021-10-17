@@ -168,7 +168,12 @@ impl Shader {
             unsafe {
                 gl::UseProgram(self.program);
             }
-            errors::ErrorCatcher::catch_opengl_errors();
+            match errors::ErrorCatcher::catch_opengl_errors() {
+                Some(x) => {},
+                None => {
+                    println!("{:?}", self.name);
+                },
+            }
         }
     }
     // Link a specific subshader to this shader
