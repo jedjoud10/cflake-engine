@@ -12,6 +12,7 @@ pub struct Model {
     pub normals: Vec<veclib::Vector3<f32>>,
     pub tangents: Vec<veclib::Vector4<f32>>,
     pub uvs: Vec<veclib::Vector2<f32>>,
+    pub colors: Vec<veclib::Vector3<f32>>,
     pub triangles: Vec<u32>,
 }
 
@@ -27,6 +28,7 @@ impl LoadableResource for Model {
                     tangents: model.tangents.clone(),
                     uvs: model.uvs.clone(),
                     triangles: model.indices.clone(),
+                    colors: model.colors.clone(),
                 };
                 Some(new_model)
             }
@@ -43,6 +45,7 @@ impl Model {
             normals: Vec::new(),
             tangents: Vec::new(),
             uvs: Vec::new(),
+            colors: Vec::new(),
             triangles: Vec::new(),
         }
     }
@@ -66,6 +69,7 @@ impl Model {
         output_model.vertices.extend(other.vertices.clone());
         output_model.normals.extend(other.normals.clone());
         output_model.uvs.extend(other.uvs.clone());
+        output_model.colors.extend(other.colors.clone());
         output_model.tangents.extend(other.tangents.clone());
         return output_model;
     }
@@ -77,6 +81,7 @@ impl Model {
         output_model.vertices.extend(other.vertices.clone());
         output_model.normals.extend(other.normals.clone());
         output_model.uvs.extend(other.uvs.clone());
+        output_model.colors.extend(other.colors.clone());
         output_model.tangents.extend(other.tangents.clone());
         return output_model;
     }
@@ -89,6 +94,7 @@ pub struct ModelDataGPU {
     pub normal_buf: u32,
     pub uv_buf: u32,
     pub tangent_buf: u32,
+    pub color_buf: u32,
     pub vertex_array_object: u32,
     pub element_buffer_object: u32,
     pub initialized: bool,

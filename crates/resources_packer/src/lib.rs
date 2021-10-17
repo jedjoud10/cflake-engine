@@ -65,6 +65,7 @@ pub fn convert_mdl3d(file: &File) -> Resource {
         indices: triangles,
         normals,
         uvs,
+        colors: Vec::new(),
         tangents,
     };
     Resource::Model(model)

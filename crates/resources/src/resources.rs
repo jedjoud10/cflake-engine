@@ -85,6 +85,8 @@ impl ResourceManager {
         }
 
         Option::Some(Resource::Model(LoadedModel {
+            // TODO: Do this
+            colors: vec![veclib::Vector3::ONE; vertices.len()],
             vertices,
             normals,
             tangents,
@@ -314,6 +316,7 @@ pub struct LoadedModel {
     pub normals: Vec<veclib::Vector3<f32>>,
     pub tangents: Vec<veclib::Vector4<f32>>,
     pub uvs: Vec<veclib::Vector2<f32>>,
+    pub colors: Vec<veclib::Vector3<f32>>,
     pub indices: Vec<u32>,
 }
 // A loaded texture resource

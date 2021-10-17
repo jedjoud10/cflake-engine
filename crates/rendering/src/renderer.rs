@@ -123,13 +123,22 @@ impl Renderer {
                 gl::STATIC_DRAW,
             );
 
-            // Finally, the texture coordinates buffer
+            // The texture coordinates buffer
             gl::GenBuffers(1, &mut self.gpu_data.uv_buf);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.uv_buf);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
                 (self.model.uvs.len() * size_of::<f32>() * 2) as isize,
                 self.model.uvs.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+            // Finally, the vertex colors buffer
+            gl::GenBuffers(1, &mut self.gpu_data.color_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.color_buf);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (self.model.colors.len() * size_of::<f32>() * 3) as isize,
+                self.model.colors.as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
             );
 
@@ -152,6 +161,11 @@ impl Renderer {
             gl::EnableVertexAttribArray(3);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.uv_buf);
             gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
+
+            // Vertex color attribute
+            gl::EnableVertexAttribArray(4);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.gpu_data.color_buf);
+            gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
 
             self.gpu_data.initialized = true;
             // Unbind

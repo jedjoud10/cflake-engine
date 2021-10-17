@@ -61,7 +61,7 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data immediatly
-        compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
+        compute.run_compute((CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4));
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {

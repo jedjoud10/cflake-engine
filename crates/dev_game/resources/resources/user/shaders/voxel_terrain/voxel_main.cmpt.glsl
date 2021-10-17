@@ -1,7 +1,7 @@
 #version 460 core
 #include "user\shaders\voxel_terrain\voxel.func.glsl"
 // Load the voxel function file
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(rg32f, binding = 0) coherent uniform image3D voxel_image;
 layout(location = 1 ) uniform vec3 node_pos;
 layout(location = 2 ) uniform int node_size;

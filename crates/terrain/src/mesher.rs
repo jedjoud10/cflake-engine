@@ -4,6 +4,7 @@ use super::CHUNK_SIZE;
 use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::ptr::null;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
 const AVERAGE_DENSITY_THRESHOLD: f32 = 0.2;
@@ -65,14 +66,17 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
                         let index1 = super::flatten(vert1_usize);
                         let index2 = super::flatten(vert2_usize);
-                        let density1 = voxels[index1].density;
-                        let density2 = voxels[index2].density;
+                        let voxel1 = voxels[index1];
+                        let voxel2 = voxels[index2];
+                        let density1 = voxel1.density;
+                        let density2 = voxel2.density;
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation { inverse_lerp(density1, density2, 0.0) } else { 0.5 };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
+                        // Get the normal
                         let normal: veclib::Vector3<f32> = {
                             let mut normal1 = veclib::Vector3::<f32>::ZERO;
                             let mut normal2 = veclib::Vector3::<f32>::ZERO;
@@ -85,6 +89,10 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             normal2.y = voxels[index2 + DATA_OFFSET_TABLE[4]].density - density2;
                             normal2.z = voxels[index2 + DATA_OFFSET_TABLE[1]].density - density2;
                             veclib::Vector3::<f32>::lerp(normal1, normal2, value)
+                        };
+                        // Get the color
+                        let color: veclib::Vector3<f32> = {
+                            veclib::Vector3::<f32>::lerp(voxel1.color, voxel2.color, value)
                         };
 
                         let edge_tuple: (u32, u32, u32) = (
@@ -100,6 +108,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
                             model.uvs.push(veclib::Vector2::<f32>::ZERO);
+                            model.colors.push(color);
                             model.normals.push(normal.normalized());
                             model.tangents.push(veclib::Vector4::<f32>::ZERO);
                         } else {
@@ -240,11 +249,12 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     // Turn the shared vertices into triangle indices
     for shared_vertex in shared_vertices {
         match shared_vertex {
-            SkirtVertex::Vertex(vertex, normal) => {
+            SkirtVertex::Vertex(vertex, normal, color) => {
                 // This vertex isn't a shared vertex
                 skirts_model.triangles.push(skirts_model.vertices.len() as u32 + model.vertices.len() as u32);
                 skirts_model.vertices.push(vertex.clone());
                 skirts_model.normals.push(normal);
+                skirts_model.colors.push(color);
             }
             SkirtVertex::SharedVertex(coord_tuple) => {
                 let tri = duplicate_vertices[&coord_tuple];
@@ -260,7 +270,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
 
 // The type of skirt vertex, normal or shared
 pub enum SkirtVertex {
-    Vertex(veclib::Vector3<f32>, veclib::Vector3<f32>),
+    Vertex(veclib::Vector3<f32>, veclib::Vector3<f32>, veclib::Vector3<f32>),
     SharedVertex((u32, u32, u32)),
 }
 
@@ -285,17 +295,17 @@ pub fn solve_marching_squares(
     //  |   |
     //  |   |
     //  0---1
-    let mut local_densities: [f32; 4] = [0.0; 4];
+    let mut local_voxels: [Voxel; 4] = [Voxel::default(); 4];
 
     // Get the local densities
     for j in 0..4 {
-        let density = data[i + density_offset[j]].density;
-        local_densities[j] = density;
+        let voxel = data[i + density_offset[j]];
+        local_voxels[j] = voxel;
         // Update the case index
-        case += ((density < 0.0) as u8) * 2_u8.pow(j as u32);
+        case += ((voxel.density < 0.0) as u8) * 2_u8.pow(j as u32);
     }
     // Get the average density
-    let average_density: f32 = local_densities.iter().sum::<f32>() / 4.0;
+    let average_density: f32 = local_voxels.iter().map(|x| x.density).sum::<f32>() / 4.0;
 
     // ----This is where the actual mesh generation starts----
 
@@ -341,14 +351,17 @@ pub fn solve_marching_squares(
                         veclib::Vec3Axis::Y => transform_y_local(slice, &vertex, &offset),
                         veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
                     };
-                    // Get the normal of the skirt vertex
+                    // The 3 voxels that we will be using for derivatives
+                    let v0: Voxel = local_voxels[0]; let v1: Voxel = local_voxels[1]; let v3: Voxel = local_voxels[3];
+                    // Get the vertex data of the skirt vertex
                     let normal: veclib::Vector3<f32> = match axis {
-                        veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, local_densities[3] - local_densities[0], local_densities[1] - local_densities[0]).normalized(),
-                        veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(local_densities[1] - local_densities[0], 0.0, local_densities[3] - local_densities[0]).normalized(),
-                        veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(local_densities[3] - local_densities[0], local_densities[1] - local_densities[0], 0.0).normalized(),
+                        veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, v3.density - v1.density, v1.density - v0.density).normalized(),
+                        veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(v1.density - v0.density, 0.0, v3.density - v0.density).normalized(),
+                        veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(v3.density - v0.density, v1.density - v0.density, 0.0).normalized(),
                     };
+
                     // Add it
-                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal));
+                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal, veclib::Vector3::ONE));
                 }
             }
         }
