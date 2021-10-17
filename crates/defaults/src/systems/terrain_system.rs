@@ -16,6 +16,7 @@ use crate::components;
 pub struct CustomData {
     pub lod_factor: f32,
     pub nodes: Vec<OctreeNode>,
+    pub terrain_gen: bool,
 }
 crate::impl_custom_system_data!(CustomData);
 
@@ -49,7 +50,10 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     let clone_material = td.material.clone();
 
     // Generate the octree each frame and generate / delete the chunks
-    if td.chunk_manager.octree_update_valid() {
+    if data.debug.console.listen_command("toggle-terrain-gen").is_some() {
+        system.terrain_gen = !system.terrain_gen;
+    }
+    if td.chunk_manager.octree_update_valid() && system.terrain_gen {
         match td.octree.generate_incremental_octree(&camera_location, system.lod_factor) {
             Some((mut added, removed)) => {    
                 system.nodes.clear();
@@ -165,7 +169,12 @@ pub fn system(data: &mut WorldData) -> System {
         inputs: vec![debug::CommandInput::new::<f32>("-v")],
     };
     data.debug.console.register_template_command(command);
+    let command = debug::Command {
+        name: "toggle-terrain-gen".to_string(),
+        inputs: Vec::new(),
+    };
+    data.debug.console.register_template_command(command);
     // Add the custom data
-    system.custom_data(CustomData { lod_factor: terrain::DEFAULT_LOD_FACTOR, nodes: Vec::new() });
+    system.custom_data(CustomData { lod_factor: terrain::DEFAULT_LOD_FACTOR, nodes: Vec::new(), terrain_gen: true });
     system
 }

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::ptr::null;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
-const AVERAGE_DENSITY_THRESHOLD: u8 = 170;
+const AVERAGE_DENSITY_THRESHOLD: u16 = 32767;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -284,7 +284,7 @@ pub fn solve_marching_squares(
     i: usize,
     data: &Box<[Voxel]>,
     local_edges: &[(u32, u32, u32); 4],
-    density_threshold: u8,
+    density_threshold: u16,
     shared_vertices: &mut Vec<SkirtVertex>,
     axis: veclib::Vec3Axis,
     slice: usize,
@@ -307,7 +307,7 @@ pub fn solve_marching_squares(
         case += ((voxel.density < ISOLINE) as u8) * 2_u8.pow(j as u32);
     }
     // Get the average density
-    let average_density: u8 = (local_voxels.iter().map(|x| x.density as f32).sum::<f32>() / 4.0) as u8;
+    let average_density: u16 = (local_voxels.iter().map(|x| x.density as f32).sum::<f32>() / 4.0) as u16;
 
     // ----This is where the actual mesh generation starts----
 

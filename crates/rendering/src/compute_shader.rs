@@ -30,6 +30,7 @@ impl ComputeShader {
             if self.running {
                 // Force the compute shader to complete
                 gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+                errors::ErrorCatcher::catch_opengl_errors();
                 self.running = false;
             } else {
             }

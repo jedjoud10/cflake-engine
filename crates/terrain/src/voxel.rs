@@ -3,6 +3,7 @@ use crate::ISOLINE;
 use super::CHUNK_SIZE;
 use others::CacheManager;
 use rendering::{Shader, Texture2D, Texture3D};
+use veclib::Swizzable;
 use world_data::WorldData;
 
 // Casually stole my old code lol
@@ -53,7 +54,7 @@ impl VoxelGenerator {
         // Set the compute shader variables and voxel texture
         let shader = shader_cacher.get_object_mut(&self.compute_name).unwrap();
         shader.use_shader();
-        shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::ReadWrite);
+        shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
         shader.set_i32("node_size", &(*size as i32));
@@ -67,24 +68,8 @@ impl VoxelGenerator {
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
-        // Second pass
-        /*
-        let shader = shader_cacher.get_object_mut(&self.color_compute_name).unwrap();
-        shader.use_shader();
-        shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::ReadOnly);
-        shader.set_i3d("color_voxel_image", &self.color_voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
-        shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
-        shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
-        shader.set_i32("node_size", &(*size as i32));
-        // Run the color compute shader
-        let color_compute = match &mut shader.additional_shader {
-            rendering::AdditionalShader::Compute(c) => c,
-            _ => todo!(),
-        };
-        // Dispatch the compute shader
-        //color_compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32));
-        */
         let shader = shader_cacher.get_object_mut(&self.compute_name).unwrap();
+        shader.use_shader();
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => panic!(),
@@ -92,9 +77,27 @@ impl VoxelGenerator {
 
         // Read back the compute shader data
         compute.get_compute_state();
+
+        // Dispatch the compute shader
+        // Second pass   
+        let color_shader = shader_cacher.get_object_mut(&self.color_compute_name).unwrap();
+        color_shader.use_shader();
+        color_shader.set_t3d("voxel_sampler", &self.voxel_texture, 0);
+        color_shader.set_i3d("color_voxel_image", &self.color_voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
+        color_shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
+        color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
+        color_shader.set_i32("node_size", &(*size as i32));
+        let color_compute = match &mut color_shader.additional_shader {
+            rendering::AdditionalShader::Compute(c) => c,
+            _ => todo!(),
+        };
+        // Run the color compute shader
+        color_compute.run_compute((CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4));
+        color_compute.get_compute_state();        
+
         // Read back the texture into the data buffer
         let pixels = self.voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
-
+        let pixels2 = self.color_voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
         //let pixels = vec![0; data.len()];
         // Keep track of the min and max values
         let mut min = u16::MAX;
@@ -107,14 +110,12 @@ impl VoxelGenerator {
             let mut density: u16 = voxel_data.x as u16;
             density = density << 8;
             density |= voxel_data.y as u16;
-            data[i] = Voxel { density: density, color: veclib::Vector3::ONE * 255, biome_id: 0, material_id: 0 };
+            data[i] = Voxel { density: density, color: pixels2[i].get3([0, 1, 2]), biome_id: voxel_data.z, material_id: voxel_data.w };
             min = min.min(density);
             max = max.max(density);
         }
-        println!("{} {}", min, max);
         // Only generate the mesh if we have a surface
         (min < ISOLINE) != (max < ISOLINE)
-        //false
     }
 }
 

@@ -2,7 +2,7 @@
 #include "user\shaders\voxel_terrain\color_voxel.func.glsl"
 // Load the color voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(rgba8, binding = 0) uniform image3D voxel_image;
+layout(binding = 0) uniform sampler3D voxel_sampler;
 layout(rgba8, binding = 1) uniform image3D color_voxel_image;
 uniform vec3 node_pos;
 uniform int node_size;
@@ -18,7 +18,7 @@ void main() {
     pos *= size;
     pos += node_pos;              
     // Create the pixel value
-    ColorVoxel voxel = get_color_voxel(pos);
+    ColorVoxel voxel = get_color_voxel(pos, voxel_sampler, pixel_coords);
     vec4 pixel = vec4(voxel.color, 0.0);    
     
     // Write the pixel
