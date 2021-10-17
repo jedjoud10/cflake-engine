@@ -142,10 +142,7 @@ impl FilteredLinkedComponents {
             Ok(component)
         } else {
             // We are not allowed to get this component
-            return Err(ECSError::new(format!(
-                "Cannot get component with ID: '{}' from FilteredLinkedComponents!",
-                id
-            )));
+            return Err(ECSError::new(format!("Cannot get component with ID: '{}' from FilteredLinkedComponents!", id)));
         }
     }
     // Get a mutable reference to a component using the component manager
@@ -159,10 +156,7 @@ impl FilteredLinkedComponents {
             Ok(component)
         } else {
             // We are not allowed to get this component
-            return Err(ECSError::new(format!(
-                "Cannot get component with ID: '{}' from FilteredLinkedComponents!",
-                id
-            )));
+            return Err(ECSError::new(format!("Cannot get component with ID: '{}' from FilteredLinkedComponents!", id)));
         }
     }
 }

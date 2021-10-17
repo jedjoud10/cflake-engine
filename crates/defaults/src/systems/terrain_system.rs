@@ -1,6 +1,7 @@
 use debug::DefaultDebugRendererType;
 use terrain::{BoundChecker, ChunkCoords, ChunkData, ChunkManager};
 
+use crate::components;
 use components::Chunk;
 use ecs::*;
 use input::*;
@@ -8,10 +9,9 @@ use math::octrees::*;
 use others::CacheManager;
 use rendering::*;
 use std::collections::{HashMap, HashSet};
-use world_data::WorldData;
 use systems::*;
 use terrain::VoxelGenerator;
-use crate::components;
+use world_data::WorldData;
 
 pub struct CustomData {
     pub lod_factor: f32,
@@ -55,7 +55,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     }
     if td.chunk_manager.octree_update_valid() && system.terrain_gen {
         match td.octree.generate_incremental_octree(&camera_location, system.lod_factor) {
-            Some((mut added, removed)) => {    
+            Some((mut added, removed)) => {
                 system.nodes.clear();
                 // Filter first
                 added.retain(|node| BoundChecker::bound_check(&node));
@@ -83,7 +83,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
             None => { /* Nothing happened */ }
         }
         td.chunk_manager.update_camera_view(camera_location, camera_forward_vector);
-    }     
+    }
 
     // Update the chunk manager
     let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, &mut data.shader_cacher.1, data.time_manager.frame_count);
@@ -110,7 +110,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
                 },
             )
             .unwrap();
-            
+
         let material = clone_material.clone().set_uniform("depth", ShaderArg::F32(coords.depth as f32 / depth));
         entity
             .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
@@ -138,8 +138,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
     }
 
     for node in system.nodes.iter() {
-        let debug: debug::DefaultDebugRendererType =
-            debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
+        let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
         if node.children_indices.is_some() {
             data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
         } else {
@@ -175,6 +174,10 @@ pub fn system(data: &mut WorldData) -> System {
     };
     data.debug.console.register_template_command(command);
     // Add the custom data
-    system.custom_data(CustomData { lod_factor: terrain::DEFAULT_LOD_FACTOR, nodes: Vec::new(), terrain_gen: true });
+    system.custom_data(CustomData {
+        lod_factor: terrain::DEFAULT_LOD_FACTOR,
+        nodes: Vec::new(),
+        terrain_gen: true,
+    });
     system
 }

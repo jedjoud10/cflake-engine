@@ -169,10 +169,10 @@ impl Shader {
                 gl::UseProgram(self.program);
             }
             match errors::ErrorCatcher::catch_opengl_errors() {
-                Some(x) => {},
+                Some(x) => {}
                 None => {
                     println!("{:?}", self.name);
-                },
+                }
             }
         }
     }

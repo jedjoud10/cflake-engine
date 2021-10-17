@@ -1,6 +1,6 @@
 use ecs::{Entity, FilteredLinkedComponents};
-use world_data::WorldData;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
+use world_data::WorldData;
 
 use crate::components;
 
@@ -13,7 +13,8 @@ pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: 
     let physics_object = &mut physics_object.object;
     physics_object.update(&mut position, &mut rotation, data.time_manager.delta_time as f32);
     let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
-    transform.position = position; transform.rotation = rotation;
+    transform.position = position;
+    transform.rotation = rotation;
 }
 
 // Create a physics system

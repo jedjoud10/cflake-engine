@@ -17,11 +17,11 @@ pub use math;
 pub use others;
 pub use rendering;
 pub use resources;
-pub use world_data;
 pub use systems;
 pub use terrain;
 pub use ui;
 pub use veclib;
+pub use world_data;
 
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {

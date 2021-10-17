@@ -11,7 +11,7 @@ pub struct SystemManager {
     pub systems: Vec<System>,
 }
 
-impl SystemManager {    
+impl SystemManager {
     // Remove an entity from it's corresponding systems, this is done before actually removing the entity to allow the systems to dispose of it's data
     pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: usize, data: &mut WorldData) {
         // Remove the entity from all the systems it was in
@@ -70,7 +70,7 @@ impl SystemManager {
         let data = system.system_data.cast::<T>().unwrap();
         return Ok(data);
     }
-    // Gets a mutable reference to the custom data a specific system 
+    // Gets a mutable reference to the custom data a specific system
     pub fn get_custom_system_data_mut<T: InternalSystemData + 'static>(&mut self, system_id: u8) -> Result<&mut T, ECSError> {
         let system = self.get_system_mut(system_id)?;
         let data = system.system_data.cast_mut::<T>().unwrap();
@@ -116,9 +116,7 @@ pub struct System {
 impl System {
     // Create a simple system
     pub fn new() -> Self {
-        Self {
-            ..Self::default()
-        }
+        Self { ..Self::default() }
     }
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(&self, entity: &Entity) -> bool {
@@ -157,7 +155,7 @@ impl System {
         // Fire the event
         match self.entity_added_evn {
             Some(x) => x(&mut self.system_data, entity, data),
-            None => {},
+            None => {}
         }
     }
     // Remove an entity from the current system
@@ -168,7 +166,7 @@ impl System {
         // Fire the event
         match self.entity_removed_evn {
             Some(x) => x(&mut self.system_data, entity, data),
-            None => {},
+            None => {}
         }
     }
     // Stop the system permanently
@@ -181,8 +179,8 @@ impl System {
                     let entity = data.entity_manager.get_entity(*entity_id).unwrap().clone();
                     x(&mut self.system_data, &entity, data);
                 }
-            },
-            None => {},
+            }
+            None => {}
         }
     }
     // Run the system for a single iteration
@@ -190,14 +188,15 @@ impl System {
         // Pre fire event
         match self.system_prefire_evn {
             Some(x) => x(&mut self.system_data, data),
-            None => {},
-        } 
-        
+            None => {}
+        }
+
         let entity_manager_immutable = &*data.entity_manager;
         // The filtered entities tuple that also contains the linked component data
-        let filtered_entity_ids = self.entities
+        let filtered_entity_ids = self
+            .entities
             .iter()
-            .filter_map(|entity_id| {                
+            .filter_map(|entity_id| {
                 let entity_clone = &entity_manager_immutable.get_entity(*entity_id).unwrap();
                 // Get the linked components
                 let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.c_bitfield);
@@ -227,15 +226,15 @@ impl System {
                     let linked_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, self.c_bitfield);
                     x(&mut self.system_data, &entity_clone, &linked_components, data);
                 }
-            },
-            None => {},
-        }        
-        
+            }
+            None => {}
+        }
+
         // Post fire event
         match self.system_postfire_evn {
             Some(x) => x(&mut self.system_data, data),
-            None => {},
-        } 
+            None => {}
+        }
     }
     // Enable this system
     pub fn enable(&mut self, data: &mut WorldData) {
@@ -243,7 +242,7 @@ impl System {
         // Fire the event
         match self.system_enabled_evn {
             Some(x) => x(&mut self.system_data, data),
-            None => {},
+            None => {}
         }
     }
     // Disable this system
@@ -252,7 +251,7 @@ impl System {
         // Fire the event
         match self.system_disabled_evn {
             Some(x) => x(&mut self.system_data, data),
-            None => {},
+            None => {}
         }
     }
     // With custom data

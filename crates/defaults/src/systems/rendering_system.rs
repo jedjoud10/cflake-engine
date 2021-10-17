@@ -5,9 +5,9 @@ use math;
 use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, TextureShaderAccessType, Window};
 use resources::LoadableResource;
 use std::ptr::null;
-use world_data::WorldData;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use ui::Root;
+use world_data::WorldData;
 
 #[derive(Default)]
 pub struct CustomData {
@@ -26,7 +26,7 @@ pub struct CustomData {
 }
 crate::impl_custom_system_data!(CustomData);
 
-// Draw functions 
+// Draw functions
 impl CustomData {
     // Read the set uniforms from a renderer's ShaderUniformSetter and update the shader
     fn set_uniforms_from_custom_setter(&self, shader: &Shader, renderer: &Renderer) {
@@ -256,7 +256,7 @@ impl CustomData {
     }
 }
 
-// Events 
+// Events
 fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
 
@@ -328,7 +328,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     // Sky params
-    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));    
+    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
     let sky_component = data
         .entity_manager
         .get_entity(data.custom_data.sky_entity_id)
@@ -342,7 +342,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
         gl::TEXTURE4,
     );
-    
 
     // Other params
     shader.set_vec3f32("view_pos", &camera_position);
@@ -394,7 +393,7 @@ pub fn system(data: &mut WorldData) -> System {
     system.link_component::<components::Transform>(data.component_manager).unwrap();
     system.link_component::<rendering::Renderer>(data.component_manager).unwrap();
     // Some input events
-    data.input_manager.bind_key(input::Keys::F, "toggle_wireframe", input::MapType::Button);    
+    data.input_manager.bind_key(input::Keys::F, "toggle_wireframe", input::MapType::Button);
     data.input_manager.bind_key(input::Keys::F3, "change_debug_view", input::MapType::Button);
     // Attach the events
     system.event(SystemEventType::SystemEnabled(system_enabled));

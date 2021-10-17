@@ -2,8 +2,8 @@ use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use rendering::{Material, Model, Renderer, Shader, Texture, Texture2D, TextureWrapping};
 use resources::LoadableResource;
-use world_data::WorldData;
 use systems::{System, SystemData, SystemEventType};
+use world_data::WorldData;
 
 // Events
 pub fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
@@ -78,8 +78,8 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
 pub fn system(data: &mut WorldData) -> System {
     let mut system = System::new();
     // Link the components
-    system.link_component::<components::Sky>(data.component_manager);
-    system.link_component::<components::Transform>(data.component_manager);
+    system.link_component::<components::Sky>(data.component_manager).unwrap();
+    system.link_component::<components::Transform>(data.component_manager).unwrap();
     // Attach the events
     system.event(SystemEventType::SystemEnabled(system_enabled));
     system.event(SystemEventType::EntityUpdate(entity_update));

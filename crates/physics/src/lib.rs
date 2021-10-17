@@ -1,9 +1,9 @@
-// Export 
-mod physics;
-mod linear;
+// Export
 mod angular;
+mod linear;
 mod object;
-pub use physics::*;
-pub use linear::*;
+mod physics;
 pub use angular::*;
+pub use linear::*;
 pub use object::*;
+pub use physics::*;

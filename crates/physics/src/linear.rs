@@ -7,7 +7,7 @@ pub struct LinearPhysics {
 
 // Update tick
 impl LinearPhysics {
-    // Update the physics. This must run at a constant tick rate 
+    // Update the physics. This must run at a constant tick rate
     pub fn update(&mut self, position: &mut veclib::Vector3<f32>, delta: f32) {
         // Update acceleration
         // Update velocity

@@ -3,8 +3,8 @@ use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
-use main::world_data::*;
 use main::systems::*;
+use main::world_data::*;
 use main::*;
 fn main() {
     // Load up the engine
@@ -38,7 +38,7 @@ pub fn world_initialized(world: &mut World) {
     // Load the sky system
     let mut sky_system = systems::sky_system::system(&mut data);
     sky_system.enable(&mut data);
-    world.system_manager.add_system(sky_system);    
+    world.system_manager.add_system(sky_system);
     // Load the default UI system
     let mut ui_system = systems::ui_system::system(&mut data);
     ui_system.enable(&mut data);
@@ -53,7 +53,7 @@ pub fn world_initialized(world: &mut World) {
     world.system_manager.add_system(terrain_system);
     // ----Load the entities----
     // Create a camera entity
-    
+
     let mut camera = Entity::new("Default Camera");
     camera.link_default_component::<components::Transform>(data.component_manager).unwrap();
     camera.link_default_component::<components::Physics>(data.component_manager).unwrap();
@@ -62,7 +62,6 @@ pub fn world_initialized(world: &mut World) {
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
 
-    
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
     const OCTREE_DEPTH: u8 = 7;
@@ -96,15 +95,15 @@ pub fn world_initialized(world: &mut World) {
     )
     .1;
     // Material
-    let material = Material::new("Terrain material")
-        .set_shader(&terrain_shader)
-        .load_default_textures(data.texture_cacher);
+    let material = Material::new("Terrain material").set_shader(&terrain_shader).load_default_textures(data.texture_cacher);
     let material_inst = material
         .instantiate(data.instance_manager)
         .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE * 0.2));
     terrain_entity
-        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(material_inst, compute_name, color_compute_name, OCTREE_DEPTH))
+        .link_component::<components::TerrainData>(
+            data.component_manager,
+            components::TerrainData::new(material_inst, compute_name, color_compute_name, OCTREE_DEPTH),
+        )
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
-    
 }

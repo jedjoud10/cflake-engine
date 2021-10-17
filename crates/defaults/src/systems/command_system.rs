@@ -1,10 +1,9 @@
-use world_data::WorldData;
 use systems::{System, SystemData, SystemEventType};
+use world_data::WorldData;
 
 // Events
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
-    if data.debug.console.listen_command("toggle-vsync").is_some() {
-    }
+    if data.debug.console.listen_command("toggle-vsync").is_some() {}
 }
 
 pub fn system(data: &mut WorldData) -> System {

@@ -7,9 +7,9 @@ use fonts::Font;
 use input::*;
 use rendering::Shader;
 use resources::LoadableResource;
-use world_data::WorldData;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use ui::{CoordinateType, Element, ElementType, Root};
+use world_data::WorldData;
 
 // Constant values
 const QUAD_VERTS: [veclib::Vector2<f32>; 6] = [

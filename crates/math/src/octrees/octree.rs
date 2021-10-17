@@ -1,6 +1,6 @@
 use others::SmartList;
 
-use super::{node::{self, OctreeNode}};
+use super::node::{self, OctreeNode};
 
 // A simple octree, no incremental generation what so ever
 #[derive(Default)]

@@ -79,7 +79,7 @@ impl VoxelGenerator {
         compute.get_compute_state().unwrap();
 
         // Dispatch the compute shader
-        // Second pass   
+        // Second pass
         let color_shader = shader_cacher.get_object_mut(&self.color_compute_name).unwrap();
         color_shader.use_shader();
         color_shader.set_i3d("color_voxel_image", &self.color_voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
@@ -93,7 +93,7 @@ impl VoxelGenerator {
         };
         // Run the color compute shader
         color_compute.run_compute((CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4)).unwrap();
-        color_compute.get_compute_state().unwrap();        
+        color_compute.get_compute_state().unwrap();
 
         // Read back the texture into the data buffer
         let pixels2 = self.color_voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
@@ -110,7 +110,12 @@ impl VoxelGenerator {
             let mut density: u16 = voxel_data.x as u16;
             density = density << 8;
             density |= voxel_data.y as u16;
-            data[i] = Voxel { density: density, color: pixels2[i].get3([0, 1, 2]), biome_id: voxel_data.z, material_id: voxel_data.w };
+            data[i] = Voxel {
+                density: density,
+                color: pixels2[i].get3([0, 1, 2]),
+                biome_id: voxel_data.z,
+                material_id: voxel_data.w,
+            };
             min = min.min(density);
             max = max.max(density);
         }

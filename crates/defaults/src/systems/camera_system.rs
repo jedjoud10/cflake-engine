@@ -1,19 +1,18 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use input::*;
-use world_data::WorldData;
 use systems::{System, SystemData, SystemEventType};
-
+use world_data::WorldData;
 
 // Events
-pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {   
+pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     // Rotate the camera around
     let mouse_pos = data.input_manager.get_accumulated_mouse_position();
     const SENSIVITY: f32 = 0.001;
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
         veclib::EulerAnglesOrder::YXZ,
         veclib::Vector3::new(-mouse_pos.1 as f32 * SENSIVITY, -mouse_pos.0 as f32 * SENSIVITY, 0.0),
-    );    
+    );
 
     // Keyboard input
     let forward = new_rotation.mul_point(veclib::Vector3::<f32>::Z);
@@ -47,7 +46,8 @@ pub fn entity_update(system_data: &mut SystemData, entity: &Entity, components: 
     }
 
     // Clone first
-    let mut position: veclib::Vector3<f32>; let mut rotation: veclib::Quaternion<f32>;
+    let mut position: veclib::Vector3<f32>;
+    let mut rotation: veclib::Quaternion<f32>;
     {
         let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
         position = transform.position;

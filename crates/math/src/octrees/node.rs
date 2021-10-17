@@ -1,5 +1,5 @@
-use std::{collections::HashSet, hash::Hash};
 use others::SmartList;
+use std::{collections::HashSet, hash::Hash};
 
 // Simple node in the octree
 #[derive(Clone, Debug)]
@@ -16,7 +16,7 @@ pub struct OctreeNode {
 impl PartialEq for OctreeNode {
     fn eq(&self, other: &Self) -> bool {
         // Check coordinates, then check if we have the same child count
-        return self.get_center() == other.get_center() && self.children_indices.is_none() == other.children_indices.is_none() && self.depth == other.depth; 
+        return self.get_center() == other.get_center() && self.children_indices.is_none() == other.children_indices.is_none() && self.depth == other.depth;
     }
 }
 
@@ -27,8 +27,7 @@ impl Hash for OctreeNode {
     }
 }
 
-impl Eq for OctreeNode {
-}
+impl Eq for OctreeNode {}
 
 impl OctreeNode {
     // Get the AABB from this octee node
@@ -61,16 +60,17 @@ impl OctreeNode {
                 Some(x) => {
                     // Add them
                     pending.extend(x.iter().map(|index| nodes.get_element(*index).unwrap().unwrap().clone()));
-                },
-                None => {},
+                }
+                None => {}
             }
 
             // A
             pending.remove(0);
-            if current.index != self.index { list.push(current.clone()); }
+            if current.index != self.index {
+                list.push(current.clone());
+            }
         }
         return list;
-
     }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide(&mut self, nodes: &mut SmartList<OctreeNode>) -> Vec<OctreeNode> {
@@ -90,7 +90,7 @@ impl OctreeNode {
                     let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * half_extent, y * half_extent, z * half_extent);
 
                     // Calculate the child's index
-                    let child_index = nodes.get_next_valid_id();                    
+                    let child_index = nodes.get_next_valid_id();
 
                     let child = OctreeNode {
                         position: self.position + offset,

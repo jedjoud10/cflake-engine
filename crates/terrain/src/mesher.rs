@@ -93,9 +93,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             veclib::Vector3::<f32>::lerp(normal1, normal2, value)
                         };
                         // Get the color
-                        let color: veclib::Vector3<f32> = {
-                            veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value)
-                        } / 255.0;
+                        let color: veclib::Vector3<f32> = { veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value) } / 255.0;
 
                         let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -354,7 +352,9 @@ pub fn solve_marching_squares(
                         veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
                     };
                     // The 3 voxels that we will be using for derivatives
-                    let v0: f32 = local_voxels[0].density as f32; let v1: f32 = local_voxels[1].density as f32; let v3: f32 = local_voxels[3].density as f32;
+                    let v0: f32 = local_voxels[0].density as f32;
+                    let v1: f32 = local_voxels[1].density as f32;
+                    let v3: f32 = local_voxels[3].density as f32;
                     // Get the vertex data of the skirt vertex
                     let normal: veclib::Vector3<f32> = match axis {
                         veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, v3 - v1, v1 - v0).normalized(),

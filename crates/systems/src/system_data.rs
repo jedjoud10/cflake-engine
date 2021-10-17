@@ -29,7 +29,6 @@ impl SystemData {
         return Some(output);
     }
     // As any
-
 }
 
 // An internal system data trait. The system data is stored on the heap with a Box pointer

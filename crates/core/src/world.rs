@@ -12,8 +12,8 @@ use others::*;
 use rendering::*;
 use resources::*;
 use std::collections::HashSet;
-use world_data::*;
 use ui::UIManager;
+use world_data::*;
 
 use crate::GameConfig;
 //  The actual world
@@ -66,9 +66,9 @@ impl World {
     fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load all the default things
         // Load default bindings
-        self.input_manager.create_key_cache();        
+        self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
-        self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);        
+        self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
@@ -155,7 +155,7 @@ impl World {
         let console_text_id = console_root.add_element(console_text);
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
         console_root.visible = false;
-        self.ui_manager.add_root("console", console_root);        
+        self.ui_manager.add_root("console", console_root);
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
@@ -168,7 +168,7 @@ impl World {
         self.config_file = config_file_values;
 
         // Enable disable vsync
-        
+
         if self.config_file.vsync {
             // Enable VSync
             glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
@@ -176,7 +176,6 @@ impl World {
             // Disable VSync
             glfw.set_swap_interval(glfw::SwapInterval::None);
         }
-        
 
         // Set the window mode
         self.set_fullscreen(self.config_file.fullscreen, glfw, window);
@@ -210,8 +209,8 @@ impl World {
 
         // Update the system
         self.system_manager.update_systems(&mut data);
-        window.swap_buffers();        
-        
+        window.swap_buffers();
+
         // Update the inputs
         self.input_manager.late_update(self.time_manager.delta_time as f32);
 
@@ -248,7 +247,7 @@ impl World {
         }
     }
     // Check for default key map events
-    fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {        
+    fn check_default_input_events(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
         // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
         if self.input_manager.map_pressed("debug_info") {
             println!("Component count: '{}'", self.component_manager.smart_components_list.elements.len());
@@ -428,14 +427,17 @@ impl World {
         self.custom_data.window.dimensions = veclib::Vector2::new(size.0, size.1);
         unsafe {
             gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
-            
-            let render_system = self.system_manager.get_custom_system_data::<systems::rendering_system::CustomData>(self.custom_data.render_system_id).unwrap();
+
+            let render_system = self
+                .system_manager
+                .get_custom_system_data::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
+                .unwrap();
             // Update the size of each texture that is bound to the framebuffer
             render_system.diffuse_texture.update_size(size.0, size.1);
             render_system.depth_stencil_texture.update_size(size.0, size.1);
             render_system.normals_texture.update_size(size.0, size.1);
             render_system.position_texture.update_size(size.0, size.1);
-            render_system.emissive_texture.update_size(size.0, size.1);            
+            render_system.emissive_texture.update_size(size.0, size.1);
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

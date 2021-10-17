@@ -1,10 +1,10 @@
-use std::collections::{HashMap, HashSet};
-use std::time::Instant;
-use others::SmartList;
 use super::{
     node::OctreeNode,
     octree::{self, Octree},
 };
+use others::SmartList;
+use std::collections::{HashMap, HashSet};
+use std::time::Instant;
 
 // An advanced octree with incremental generation and twin nodes
 #[derive(Default)]
@@ -14,7 +14,7 @@ pub struct AdvancedOctree {
     // Did we generate the base octree already?
     pub generated_base_octree: bool,
     // The combined twin and normal nodes
-    pub combined_nodes: HashSet<OctreeNode>
+    pub combined_nodes: HashSet<OctreeNode>,
 }
 
 // Twin node generation
@@ -50,7 +50,7 @@ impl AdvancedOctree {
     }
 }
 // Base / incremental generation
-impl AdvancedOctree {    
+impl AdvancedOctree {
     // Generate the octree at a specific position with a specific depth
     pub fn generate_incremental_octree(
         &mut self,
@@ -90,7 +90,7 @@ impl AdvancedOctree {
         // Loop through the tree recursively
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
-        let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();  
+        let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
         /*
         for (i, node) in self.internal_octree.nodes.elements.iter().enumerate() {
             match node {
@@ -107,24 +107,28 @@ impl AdvancedOctree {
                 // This node the common target node
                 common_target_node = parent.clone();
                 break;
-            }      
+            }
             // Update the current node
             current_node = parent.clone();
         }
 
         // Recursively get the removed nodes from the common target's node first valid child
-        let removed_nodes: HashMap<veclib::Vector3<i64>, usize> = common_target_node.find_children_recursive(&self.internal_octree.nodes).iter().map(|x| (x.get_center(), x.index)).collect();
+        let removed_nodes: HashMap<veclib::Vector3<i64>, usize> = common_target_node
+            .find_children_recursive(&self.internal_octree.nodes)
+            .iter()
+            .map(|x| (x.get_center(), x.index))
+            .collect();
         let different_parent = self.internal_octree.target_node.as_ref().unwrap().parent_index != common_target_node.index;
         if different_parent {
             // Update the children
             let a = self.internal_octree.nodes.get_element_mut(common_target_node.index).unwrap().unwrap();
             a.children_indices = None;
 
-            // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----           
+            // ----Update the normal nodes first, just normal sub-octree generation. We detect added/removed nodes at the end----
             // Final nodes
             let mut nodes: SmartList<OctreeNode> = self.internal_octree.nodes.clone();
             // The nodes that must be evaluated
-            let mut pending_nodes: Vec<OctreeNode> = Vec::new();        
+            let mut pending_nodes: Vec<OctreeNode> = Vec::new();
             // The targetted node that is specified using the target position
             let mut target_node: Option<OctreeNode> = None;
             pending_nodes.push(common_target_node);
@@ -153,11 +157,11 @@ impl AdvancedOctree {
                 .iter()
                 .map(|(_, index)| nodes.get_element(*index).unwrap().unwrap().clone())
                 .collect::<Vec<OctreeNode>>();
-            // Compensate for the removed nodes     
+            // Compensate for the removed nodes
             for node in removed_nodes.iter() {
                 nodes.remove_element(node.index).unwrap();
-            }        
-            self.internal_octree.extern_update(target_node, nodes.clone());  
+            }
+            self.internal_octree.extern_update(target_node, nodes.clone());
         }
         // The new hashset
         let new_hashset = self.calculate_combined_nodes(target, &self.internal_octree.nodes, lod_factor);
@@ -168,6 +172,6 @@ impl AdvancedOctree {
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
         let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
-        return Some((added_nodes, removed_nodes));        
+        return Some((added_nodes, removed_nodes));
     }
 }
