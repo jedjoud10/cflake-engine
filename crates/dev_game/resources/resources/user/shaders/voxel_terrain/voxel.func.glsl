@@ -3,6 +3,6 @@
 // Generate the voxel data here
 VoxelData get_voxel(vec3 pos) {
     // Actual function for voxels
-    
-    return VoxelData(int(pos.y), 0, 0);
+    float density = pos.y / 20.0;
+    return VoxelData(density, 0, 0);
 }

@@ -38,12 +38,12 @@ impl VoxelGenerator {
         // Create the voxel texture
         self.voxel_texture = Texture3D::new()
             .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)
-            .set_idf(gl::R32F, gl::RED, gl::FLOAT)
+            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new());
         self.color_voxel_texture = Texture3D::new()
             .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)
-            .set_idf(gl::RGB8, gl::RGB, gl::BYTE)
+            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new());
     }
@@ -93,22 +93,26 @@ impl VoxelGenerator {
         // Read back the compute shader data
         compute.get_compute_state();
         // Read back the texture into the data buffer
-        let pixels = self.voxel_texture.internal_texture.fill_array_elems::<u8>();
+        let pixels = self.voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
 
-        //let pixels = vec![-10.0; data.len()];
+        //let pixels = vec![0; data.len()];
         // Keep track of the min and max values
-        let mut min = u8::MAX;
-        let mut max = u8::MIN;
+        let mut min = i16::MAX;
+        let mut max = i16::MIN;
 
         // Turn the pixels into the data
         for (i, pixel) in pixels.iter().enumerate() {
-            let density = *pixel;
-            data[i] = Voxel { density: density, color: veclib::Vector3::ZERO, biomeID: 0, materialID: 0 };
+            let voxel_data = *pixel;
+            // Convert the two bytes into an i16
+            let density: i16 = voxel_data.x as i16;
+            data[i] = Voxel { density: density, color: veclib::Vector3::ONE * 255, biome_id: 0, material_id: 0 };
             min = min.min(density);
             max = max.max(density);
         }
+        println!("{} {}", min, max);
         // Only generate the mesh if we have a surface
         (min < ISOLINE) != (max < ISOLINE)
+        //false
     }
 }
 
@@ -116,7 +120,7 @@ impl VoxelGenerator {
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
     pub color: veclib::Vector3<u8>,
-    pub density: u8,
-    pub biomeID: u8,
-    pub materialID: u8,
+    pub density: i16,
+    pub biome_id: u8,
+    pub material_id: u8,
 }

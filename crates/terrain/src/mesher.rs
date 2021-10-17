@@ -73,7 +73,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         let density1 = voxel1.density as f32;
                         let density2 = voxel2.density as f32;
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = if interpolation { inverse_lerp(density1, density2, 0.0) } else { 0.5 };
+                        let value: f32 = if interpolation { inverse_lerp(density1, density2, ISOLINE as f32) } else { 0.5 };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex

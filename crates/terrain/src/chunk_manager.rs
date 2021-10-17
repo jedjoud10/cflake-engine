@@ -131,7 +131,7 @@ impl ChunkManager {
                     if has_surface {
                         // We have a surface, create the model
                         let coords = chunk_coords.clone();
-                        let (model, max_index) = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
+                        let (model, max_index) = mesher::generate_model(&voxels, chunk_coords.size as usize, true, false);
                         // TODO: Why the fuck is this happening bro
                         if max_index <= (model.vertices.len() as u32) {
                             // Save the chunk's data, though don't save the mode

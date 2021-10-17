@@ -5,7 +5,7 @@ pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // The default LOD factor
 pub const DEFAULT_LOD_FACTOR: f32 = 1.8;
 // The isoline
-pub const ISOLINE: u8 = 127;
+pub const ISOLINE: i16 = 127;
 // Export
 mod bound_checker;
 mod chunk_data;
