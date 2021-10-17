@@ -1,8 +1,7 @@
 #include "defaults\shaders\voxel_terrain\noise.func.glsl"
-#include "defaults\shaders\voxel_terrain\sdf.func.glsl"
-#include "defaults\shaders\voxel_terrain\erosion.func.glsl"
-// Generate the density here
-float get_density(vec3 pos) {
+#include "defaults\shaders\voxel_terrain\data.func.glsl"
+// Generate the voxel data here
+VoxelData get_voxel(vec3 pos) {
     // Actual function for voxels
     // FBM Invertex billow noise with 8 octaves
     float fd = 0;
@@ -13,10 +12,11 @@ float get_density(vec3 pos) {
     // Add the noise
     float density = pos.y + fd;
 
-    // Subtract a sphere from the terrain
-    density = max(-sdSphere(pos, 10.0), density);
-
     // Make the terrain flatter
     density = min(density + 80, pos.y - 16.0);
     return density;
+}
+// Generate the Vertex Color, Smoothness, Metallic and Material ID
+EffectsVoxelData get_effects_voxel(vec3 pos) {
+    return EffectVoxelData
 }
