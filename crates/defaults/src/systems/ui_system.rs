@@ -5,7 +5,7 @@ use fonts::Font;
 use rendering::Shader;
 use resources::LoadableResource;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
-use ui::{ElementType};
+use ui::ElementType;
 use world_data::WorldData;
 
 // Constant values

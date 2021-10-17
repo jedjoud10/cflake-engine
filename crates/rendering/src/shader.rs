@@ -8,7 +8,7 @@ use super::Texture2D;
 use gl;
 use others::CacheManager;
 use resources::ResourceManager;
-use std::{ffi::CString};
+use std::ffi::CString;
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {

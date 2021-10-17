@@ -1,4 +1,4 @@
-use super::{shapes};
+use super::shapes;
 
 // An aabb bound
 #[derive(Clone, Copy, Debug)]

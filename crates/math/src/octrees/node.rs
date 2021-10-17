@@ -1,5 +1,5 @@
 use others::SmartList;
-use std::{hash::Hash};
+use std::hash::Hash;
 
 // Simple node in the octree
 #[derive(Clone, Debug)]

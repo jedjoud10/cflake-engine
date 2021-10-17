@@ -1,7 +1,4 @@
-use super::{
-    node::OctreeNode,
-    octree::{Octree},
-};
+use super::{node::OctreeNode, octree::Octree};
 use others::SmartList;
 use std::collections::{HashMap, HashSet};
 

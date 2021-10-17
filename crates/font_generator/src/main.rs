@@ -1,6 +1,6 @@
 use std::{
     env,
-    fs::{OpenOptions},
+    fs::OpenOptions,
     io::{BufRead, BufReader, BufWriter},
 };
 

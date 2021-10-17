@@ -1,4 +1,4 @@
-use std::{ptr::null};
+use std::ptr::null;
 
 use super::{Texture, TextureDimensionType, TextureFilter, TextureWrapping};
 use errors::ResourceError;

@@ -1,9 +1,5 @@
 use super::Keys;
-use std::{
-    array::IntoIter,
-    collections::HashMap,
-    iter::FromIterator,
-};
+use std::{array::IntoIter, collections::HashMap, iter::FromIterator};
 
 // Status of a key
 #[derive(Clone, Copy, Debug)]
