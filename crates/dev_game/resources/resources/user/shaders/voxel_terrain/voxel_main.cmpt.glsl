@@ -18,8 +18,11 @@ void main() {
     pos += node_pos;              
     // Create the pixel value
     VoxelData voxel = get_voxel(pos);
-    float density = voxel.density;
-    vec4 pixel = vec4(density, density, voxel.biomeID, voxel.materialID);    
+    uint density = uint(clamp(voxel.density + 32767, 0, 65535));
+    uint density1 = density >> 8;
+    uint density2 = density << 24;
+    density2 = density2 >> 24;
+    vec4 pixel = vec4(float(density1) / 255, float(density2) / 255, voxel.biomeID, voxel.materialID);    
     
     // Write the pixel
     imageStore(voxel_image, pixel_coords, pixel);
