@@ -10,7 +10,7 @@ pub struct PhysicsObject {
 
 impl PhysicsObject {
     // Update
-    pub fn update(&mut self, position: &mut veclib::Vector3<f32>, rotation: &mut veclib::Quaternion<f32>, delta: f32) {
+    pub fn update(&mut self, position: &mut veclib::Vector3<f32>, _rotation: &mut veclib::Quaternion<f32>, delta: f32) {
         // Update linear then angular physics
         self.linear.update(position, delta);
     }

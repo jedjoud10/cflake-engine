@@ -1,7 +1,6 @@
-use super::{model::Model, model::ModelDataGPU, texture::Texture, Material, ShaderArg, ShaderUniformSetter};
+use super::{model::Model, model::ModelDataGPU, Material, ShaderArg};
 use bitflags::bitflags;
 use ecs::{Component, ComponentID, ComponentInternal};
-use others::CacheManager;
 use resources::{LoadableResource, ResourceManager};
 use std::{ffi::c_void, mem::size_of, ptr::null};
 

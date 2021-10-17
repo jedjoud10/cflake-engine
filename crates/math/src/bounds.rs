@@ -1,4 +1,4 @@
-use super::{frustum::Frustum, shapes};
+use super::{shapes};
 
 // An aabb bound
 #[derive(Clone, Copy, Debug)]

@@ -1,16 +1,14 @@
-use crate::texture3D::Texture3D;
+use crate::texture_3d::Texture3D;
 use crate::ComputeShader;
 use crate::SubShader;
 use crate::SubShaderType;
 use crate::TextureShaderAccessType;
 
 use super::Texture2D;
-use core::num;
 use gl;
 use others::CacheManager;
-use resources::Resource;
 use resources::ResourceManager;
-use std::{ffi::CString, ptr::null};
+use std::{ffi::CString};
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
@@ -169,7 +167,7 @@ impl Shader {
                 gl::UseProgram(self.program);
             }
             match errors::ErrorCatcher::catch_opengl_errors() {
-                Some(x) => {}
+                Some(_x) => {}
                 None => {
                     println!("{:?}", self.name);
                 }

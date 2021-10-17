@@ -1,5 +1,4 @@
 use super::{bounds, shapes};
-use std::default;
 
 // Intersection tests
 pub struct Intersection {}
@@ -34,7 +33,7 @@ impl Intersection {
         min && max
     }
     // Check if a segment intersects an aabb
-    pub fn edge_aabb(segment: &shapes::Line, aabb: &bounds::AABB) -> bool {
+    pub fn edge_aabb(_segment: &shapes::Line, _aabb: &bounds::AABB) -> bool {
         todo!();
     }
 }

@@ -1,6 +1,6 @@
-use std::{ffi::c_void, ptr::null};
+use std::{ptr::null};
 
-use super::{Texture, TextureDimensionType, TextureFilter, TextureFlags, TextureWrapping};
+use super::{Texture, TextureDimensionType, TextureFilter, TextureWrapping};
 use errors::ResourceError;
 use image::EncodableLayout;
 use others::CacheManager;

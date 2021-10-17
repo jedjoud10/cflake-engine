@@ -19,7 +19,7 @@ impl<T> SmartList<T> {
             .elements
             .iter()
             .enumerate()
-            .position(|(i, e)| {
+            .position(|(_i, e)| {
                 match e {
                     // We found a free spot
                     Some(_) => false,

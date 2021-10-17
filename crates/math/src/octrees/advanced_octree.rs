@@ -1,10 +1,9 @@
 use super::{
     node::OctreeNode,
-    octree::{self, Octree},
+    octree::{Octree},
 };
 use others::SmartList;
 use std::collections::{HashMap, HashSet};
-use std::time::Instant;
 
 // An advanced octree with incremental generation and twin nodes
 #[derive(Default)]

@@ -25,7 +25,7 @@ pub struct Material {
 
 impl Default for Material {
     fn default() -> Self {
-        let mut material: Self = Material {
+        let material: Self = Material {
             shader_name: String::new(),
             material_name: String::new(),
             uniform_setter: ShaderUniformSetter::default(),
@@ -60,12 +60,8 @@ impl Material {
     pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture2D>) -> Self {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals
-        if self.diffuse_tex_id.is_none() {
-            self.diffuse_tex_id = Some(texture_cacher.get_object_id("white").unwrap());
-        }
-        if self.normal_tex_id.is_none() {
-            self.normal_tex_id = Some(texture_cacher.get_object_id("default_normals").unwrap());
-        }
+        if self.diffuse_tex_id.is_none() { self.diffuse_tex_id = Some(texture_cacher.get_object_id("white").unwrap()); }
+        if self.normal_tex_id.is_none() { self.normal_tex_id = Some(texture_cacher.get_object_id("default_normals").unwrap()); }
         return self;
     }
     // Set a specific uniform, wrapper around ShaderUniformSetter
@@ -85,24 +81,20 @@ impl Material {
             match texture_path {
                 Some(texture_path) => {
                     let _resource = resource_manager.load_packed_resource(texture_path)?;
-                    let (texture, texture_id) = Texture2D::new()
+                    let (_ , texture_id) = Texture2D::new()
                         .set_mutable(true)
                         .enable_mipmaps()
                         .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
                         .load_texture(texture_path, resource_manager, texture_cacher)
-                        .unwrap();
+                        .unwrap();  
                     match i {
-                        0 => {
-                            self.diffuse_tex_id = Some(texture_id);
-                        }
-                        1 => {
-                            self.normal_tex_id = Some(texture_id);
-                        }
+                        0 => { self.diffuse_tex_id = Some(texture_id); }
+                        1 => { self.normal_tex_id = Some(texture_id); }
                         _ => {}
                     }
-                }
-                None => {}
-            }
+                },
+                None => {},
+            }                      
         }
 
         // Load the default textures

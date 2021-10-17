@@ -1,9 +1,5 @@
-use std::collections::HashMap;
-use std::ops::Index;
-
 use resources::LoadableResource;
 use resources::Resource;
-use resources::ResourceManager;
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug, Clone)]

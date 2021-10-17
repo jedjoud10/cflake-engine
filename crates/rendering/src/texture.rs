@@ -1,8 +1,5 @@
 use bitflags::bitflags;
 use gl;
-use image::EncodableLayout;
-use others::CacheManager;
-use resources::{LoadableResource, Resource, ResourceManager};
 
 use std::{ffi::c_void, ptr::null};
 
@@ -204,9 +201,11 @@ impl Texture {
             // Nobody loves you, OpenGL storage textures
             if self.flags.contains(TextureFlags::MIPMAPS) {
                 // Create the mipmaps
+                /*
                 unsafe {
                     //gl::GenerateMipmap(tex_type);
                 }
+                */
             }
         }
 
