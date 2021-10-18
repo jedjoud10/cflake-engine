@@ -51,7 +51,7 @@ void main() {
 	final_color += specular * specular_strength;
 
 	// Calculate some volumetric fog
-	vec3 pixel_forward = (inverse(camera_vp_matrix) * vec4(uv_coordinates, 0, 1)).xyz;
+	vec3 pixel_forward = normalize((inverse(camera_vp_matrix) * vec4(uv_coordinates * 2 - 1, 0, 1)).xyz);
 	vec3 fog_color = volumetric(camera_pos, pixel_forward);
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
@@ -59,7 +59,10 @@ void main() {
 		} else {
 			color = final_color;
 		}
-		color = fog_color;
+
+		if (any(notEqual(fog_color, vec3(0, 0, 0)))) {
+			color = fog_color;
+		}
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {

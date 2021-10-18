@@ -14,6 +14,7 @@ VoxelData get_voxel(vec3 pos) {
 
     // Add the noise
     float density = pos.y + (1-mountain(pos.xz * 0.008, 0.2).x) * 600 - 600;
+    density = pos.y - 1.0;
 
     // Make the terrain flatter
     //density = opSmoothUnion(density + 80, pos.y - 16.0, 30.0);

@@ -112,5 +112,5 @@ pub fn world_initialized(world: &mut World) {
             components::TerrainData::new(material_inst, compute_name, color_compute_name, OCTREE_DEPTH),
         )
         .unwrap();
-    //data.entity_manager.add_entity_s(terrain_entity);
+    data.entity_manager.add_entity_s(terrain_entity);
 }
