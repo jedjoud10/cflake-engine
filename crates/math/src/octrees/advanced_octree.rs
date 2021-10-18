@@ -1,6 +1,6 @@
 use super::{node::OctreeNode, octree::Octree};
 use others::SmartList;
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, time::Instant};
 
 // An advanced octree with incremental generation and twin nodes
 #[derive(Default)]
@@ -18,11 +18,13 @@ impl AdvancedOctree {
     // Check if a an already existing node could be subdivided even more
     fn can_node_subdivide_twin(&self, node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32) -> bool {
         let c: veclib::Vector3<f32> = node.get_center().into();
-        node.children_indices.is_none() && node.depth < self.internal_octree.depth && c.distance(*target) < (node.half_extent as f32 * lod_factor)
+        let max = node.depth == 1 || node.depth == 2;
+        let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
+        node.children_indices.is_none() && node.depth < self.internal_octree.depth && result 
     }
     // Calculate the nodes that are the twin nodes *and* normal nodes
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
-    fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32) -> HashSet<OctreeNode> {
+    fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32) -> HashSet<OctreeNode> {        
         let mut combined_nodes: SmartList<OctreeNode> = nodes.clone();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
@@ -40,8 +42,7 @@ impl AdvancedOctree {
 
             // Remove the node so we don't cause an infinite loop
             pending_nodes.remove(0);
-        }
-
+        }        
         return combined_nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect::<HashSet<OctreeNode>>();
     }
 }
@@ -56,6 +57,7 @@ impl AdvancedOctree {
         Vec<OctreeNode>, // Added nodes
         Vec<OctreeNode>, // Removed nodes
     )> {
+        let instant = Instant::now();
         let root_node = self.internal_octree.get_root_node();
         // Do nothing if the target is out of bounds
         if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) {
@@ -87,14 +89,7 @@ impl AdvancedOctree {
         let mut current_node = self.internal_octree.target_node.as_ref().cloned().unwrap();
         // The deepest node that has a collision with the new target point
         let mut common_target_node: OctreeNode = self.internal_octree.target_node.as_ref().cloned().unwrap();
-        /*
-        for (i, node) in self.internal_octree.nodes.elements.iter().enumerate() {
-            match node {
-                Some(x) => println!("I: {}, N: {:?}", i, x),
-                None => {},
-            }
-        }
-        */
+
         while current_node.depth != 0 {
             // Go up the tree
             let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap().unwrap();

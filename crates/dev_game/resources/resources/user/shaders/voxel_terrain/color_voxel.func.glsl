@@ -8,5 +8,5 @@ ColorVoxel get_color_voxel(vec3 pos, sampler3D voxel_texture, vec3 coords) {
     if (material_id == 1) {
         color = vec3(0, 0, 0);
     }
-    return ColorVoxel(snoise(pos * 0.003) * vec3(1, 1, 1));
+    return ColorVoxel(vec3(1, 1, 1));
 }

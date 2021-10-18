@@ -14,7 +14,6 @@ uniform int debug_view;
 uniform ivec2 resolution;
 uniform float time;
 in vec2 uv_coordinates;
-//TODO: Pass the roughness and metallic values to this shader
 
 void main() {	
 	// Sample the textures
