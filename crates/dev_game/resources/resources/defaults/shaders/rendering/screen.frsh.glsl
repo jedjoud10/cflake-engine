@@ -68,9 +68,9 @@ void main() {
 		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
 		float new_depth = volumetric_result.depth;
 		// Compare the depths
-		bool draw = old_depth > new_depth && any(notEqual(volumetric_result.color, vec3(0, 0, 0)));
+		bool draw = old_depth > new_depth;
 		if (draw) {
-			color = volumetric_result.depth * vec3(1, 1, 1);
+			color += volumetric_result.color;
 		}
 	} else if (debug_view == 1) {
 		color = normal;
