@@ -66,21 +66,21 @@ pub fn world_initialized(world: &mut World) {
     const OCTREE_DEPTH: u8 = 7;
 
     // Load the compute shaders
-    let compute_name = Shader::new(
+    let compute_id = Shader::new(
         vec!["user\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl"],
         data.resource_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
     )
-    .1;
+    .2;
 
-    let color_compute_name = Shader::new(
+    let color_compute_id = Shader::new(
         vec!["user\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
         data.resource_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
     )
-    .1;
+    .2;
 
     // The terrain shader
     let terrain_shader = Shader::new(
@@ -109,8 +109,8 @@ pub fn world_initialized(world: &mut World) {
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,
-            components::TerrainData::new(material_inst, compute_name, color_compute_name, OCTREE_DEPTH),
+            components::TerrainData::new(material_inst, compute_id, color_compute_id, OCTREE_DEPTH),
         )
         .unwrap();
-    data.entity_manager.add_entity_s(terrain_entity);
+    //data.entity_manager.add_entity_s(terrain_entity);
 }

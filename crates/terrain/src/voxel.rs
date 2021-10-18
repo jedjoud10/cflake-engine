@@ -24,9 +24,9 @@ pub fn flatten(position: (usize, usize, usize)) -> usize {
 #[derive(Default)]
 pub struct VoxelGenerator {
     // The compute shader's name used for voxel generation
-    pub compute_name: String,
+    pub compute_id: usize,
     // The seconday compute shader's name
-    pub color_compute_name: String,
+    pub color_compute_id: usize,
     // The 3D texture used for voxel generation as well
     pub voxel_texture: Texture3D,
     // The seconday 3D texture
@@ -52,7 +52,7 @@ impl VoxelGenerator {
     pub fn generate_voxels_start(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>) {
         // First pass
         // Set the compute shader variables and voxel texture
-        let shader = shader_cacher.get_object_mut(&self.compute_name).unwrap();
+        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
@@ -68,7 +68,7 @@ impl VoxelGenerator {
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
-        let shader = shader_cacher.get_object_mut(&self.compute_name).unwrap();
+        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
@@ -80,7 +80,7 @@ impl VoxelGenerator {
 
         // Dispatch the compute shader
         // Second pass
-        let color_shader = shader_cacher.get_object_mut(&self.color_compute_name).unwrap();
+        let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
         color_shader.use_shader();
         color_shader.set_i3d("color_voxel_image", &self.color_voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
