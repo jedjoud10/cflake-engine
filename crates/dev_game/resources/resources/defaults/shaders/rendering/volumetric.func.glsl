@@ -4,7 +4,7 @@ const int STEP_COUNT = 64;
 float scene(vec3 point) {
     return length(point) - 4 + sin(point.x * 2) * 2.0;
 }
-vec3 volumetric(vec3 camera_position, vec3 pixel_forward) {
+vec3 volumetric(vec3 camera_possition, vec3 pixel_forward) {
     // Starting point at camera
     vec3 point = camera_position;
     vec3 color = vec3(0, 0, 0);
