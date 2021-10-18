@@ -96,7 +96,11 @@ pub fn world_initialized(world: &mut World) {
     // Material
     let material = Material::new("Terrain material")
         .set_shader(&terrain_shader)
-        .resource_load_textures(vec![Some("defaults\\textures\\rock_diffuse.png"), Some("defaults\\textures\\rock_normal.png")], data.texture_cacher, data.resource_manager)
+        .resource_load_textures(
+            vec![Some("defaults\\textures\\rock_diffuse.png"), Some("defaults\\textures\\rock_normal.png")],
+            data.texture_cacher,
+            data.resource_manager,
+        )
         .unwrap()
         .load_default_textures(data.texture_cacher);
     let material_inst = material

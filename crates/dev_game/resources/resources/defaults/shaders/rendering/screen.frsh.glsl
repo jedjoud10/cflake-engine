@@ -12,6 +12,7 @@ uniform sampler2D default_sky_gradient;
 uniform vec3 directional_light_dir;
 uniform vec3 camera_pos;
 uniform vec3 camera_forward;
+uniform mat4 camera_vp_matrix;
 uniform int debug_view;
 uniform ivec2 resolution;
 uniform float time;
@@ -50,7 +51,8 @@ void main() {
 	final_color += specular * specular_strength;
 
 	// Calculate some volumetric fog
-	vec3 fog_color = volumetric(camera_pos, camera_forward, uv_coordinates);
+	vec3 pixel_forward = (inverse(camera_vp_matrix) * vec4(uv_coordinates, 0, 1)).xyz;
+	vec3 fog_color = volumetric(camera_pos, pixel_forward);
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
 			color = emissive;

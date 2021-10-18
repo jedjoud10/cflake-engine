@@ -1,7 +1,10 @@
 use super::{node::OctreeNode, octree::Octree};
 use others::SmartList;
-use std::{collections::{HashMap, HashSet}, time::Instant};
-use rayon::{iter::{IntoParallelRefIterator, ParallelIterator}};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Instant,
+};
 
 // An advanced octree with incremental generation and twin nodes
 #[derive(Default)]
@@ -21,11 +24,11 @@ impl AdvancedOctree {
         let c: veclib::Vector3<f32> = node.get_center().into();
         let max = node.depth == 1 || node.depth == 2;
         let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
-        node.children_indices.is_none() && node.depth < self.internal_octree.depth && result 
+        node.children_indices.is_none() && node.depth < self.internal_octree.depth && result
     }
     // Calculate the nodes that are the twin nodes *and* normal nodes
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
-    fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32) -> HashSet<OctreeNode> {        
+    fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32) -> HashSet<OctreeNode> {
         let mut combined_nodes: SmartList<OctreeNode> = nodes.clone();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = nodes.elements.par_iter().filter_map(|x| x.as_ref().cloned()).collect();
@@ -43,7 +46,7 @@ impl AdvancedOctree {
 
             // Remove the node so we don't cause an infinite loop
             pending_nodes.remove(0);
-        }        
+        }
         return combined_nodes.elements.par_iter().filter_map(|x| x.as_ref().cloned()).collect::<HashSet<OctreeNode>>();
     }
 }

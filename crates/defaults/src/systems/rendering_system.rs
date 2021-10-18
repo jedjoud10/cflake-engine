@@ -301,23 +301,12 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast::<CustomData>().unwrap();
     let dimensions = data.custom_data.window.dimensions;
-    // At the end of each frame, disable the depth test and render the debug objects
-    let vp_matrix: veclib::Matrix4x4<f32>;
-    let camera_position: veclib::Vector3<f32>;
-    let camera_forward: veclib::Vector3<f32>;
-    // Get the (projection * view) matrix
-    {
-        let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
-        let camera_data = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
-        let projection_matrix = camera_data.projection_matrix;
-        let view_matrix = camera_data.view_matrix;
-        vp_matrix = projection_matrix * view_matrix;
-        let transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap();
-        camera_position = transform.position;
-        camera_forward = transform.get_forward_vector();
-    }
+    let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
+    let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().clone();
+    let camera = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
+    let vp_m = (camera.projection_matrix * camera.view_matrix);
     // Draw the debug primitives
-    data.debug.renderer.draw_debug(&vp_matrix, &data.shader_cacher.1);
+    data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
@@ -345,8 +334,11 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     );
 
     // Other params
-    shader.set_vec3f32("camera_pos", &camera_position);
-    shader.set_vec3f32("camera_forward", &camera_forward);
+    shader.set_vec3f32("camera_pos", &camera_transform.position);
+    shader.set_vec3f32("camera_forward", &camera_transform.get_forward_vector());
+    // Create a custom View-Projection matrix that doesn't include the translation
+    let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
+    shader.set_mat44("camera_vp_matrix", &vp_m);
     shader.set_i32("debug_view", &(system.debug_view as i32));
     // Render the screen quad
     unsafe {
