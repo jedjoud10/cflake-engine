@@ -112,7 +112,7 @@ impl CustomData {
             // Create the depth-stencil render texture
             self.depth_stencil_texture = Texture2D::new()
                 .set_dimensions_vec2(dimensions)
-                .set_idf(gl::DEPTH24_STENCIL8, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8)
+                .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
                 .generate_texture(Vec::new());
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
@@ -123,14 +123,13 @@ impl CustomData {
             // Bind the emissive texture to the color attachement 3 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT3, &self.emissive_texture);
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
-            Self::bind_attachement(gl::DEPTH_STENCIL_ATTACHMENT, &self.depth_stencil_texture);
+            Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_stencil_texture);
 
             let attachements = vec![
                 gl::COLOR_ATTACHMENT0,
                 gl::COLOR_ATTACHMENT1,
                 gl::COLOR_ATTACHMENT2,
                 gl::COLOR_ATTACHMENT3,
-                gl::COLOR_ATTACHMENT4,
             ];
             // Set the frame buffer attachements
             gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
@@ -315,6 +314,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
     shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
     shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
+    shader.set_t2d("depth_texture", &system.depth_stencil_texture, gl::TEXTURE4);
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     // Sky params
@@ -330,15 +330,17 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t2d(
         "default_sky_gradient",
         data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
-        gl::TEXTURE4,
+        gl::TEXTURE5,
     );
 
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_vec3f32("camera_forward", &camera_transform.get_forward_vector());
+    shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(camera.clip_planes.0, camera.clip_planes.1));
+    shader.set_mat44("vp_matrix", &vp_m);
     // Create a custom View-Projection matrix that doesn't include the translation
     let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
-    shader.set_mat44("camera_vp_matrix", &vp_m);
+    shader.set_mat44("custom_vp_matrix", &vp_m);
     shader.set_i32("debug_view", &(system.debug_view as i32));
     // Render the screen quad
     unsafe {

@@ -5,6 +5,7 @@ uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D position_texture;
 uniform sampler2D emissive_texture;
+uniform sampler2D depth_texture;
 
 // Ambient sky gradient
 uniform sampler2D default_sky_gradient;
@@ -12,7 +13,9 @@ uniform sampler2D default_sky_gradient;
 uniform vec3 directional_light_dir;
 uniform vec3 camera_pos;
 uniform vec3 camera_forward;
-uniform mat4 camera_vp_matrix;
+uniform mat4 custom_vp_matrix;
+uniform mat4 vp_matrix;
+uniform vec2 nf_planes;
 uniform int debug_view;
 uniform ivec2 resolution;
 uniform float time;
@@ -51,8 +54,8 @@ void main() {
 	final_color += specular * specular_strength;
 
 	// Calculate some volumetric fog
-	vec3 pixel_forward = normalize((inverse(camera_vp_matrix) * vec4(uv_coordinates * 2 - 1, 0, 1)).xyz);
-	vec3 fog_color = volumetric(camera_pos, pixel_forward);
+	vec3 pixel_forward = normalize((inverse(custom_vp_matrix) * vec4(uv_coordinates * 2 - 1, 0, 1)).xyz);
+	VolumetricResult volumetric_result = volumetric(camera_pos, pixel_forward, nf_planes, vp_matrix);
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
 			color = emissive;
@@ -60,8 +63,13 @@ void main() {
 			color = final_color;
 		}
 
-		if (any(notEqual(fog_color, vec3(0, 0, 0)))) {
-			color = fog_color;
+		float depth = texture(depth_texture, uv_coordinates).x;
+		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
+		float new_depth = volumetric_result.depth;
+		// Compare the depths
+		color = vec3(1, 1, 1) * old_depth;
+		if (any(notEqual(volumetric_result.color, vec3(0, 0, 0)))) {
+			color = volumetric_result.color;
 		}
 	} else if (debug_view == 1) {
 		color = normal;
