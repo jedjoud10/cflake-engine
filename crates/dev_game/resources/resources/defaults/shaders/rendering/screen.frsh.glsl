@@ -14,7 +14,7 @@ uniform vec3 directional_light_dir;
 uniform vec3 camera_pos;
 uniform vec3 camera_forward;
 uniform mat4 custom_vp_matrix;
-uniform mat4 vp_matrix;
+uniform mat4 projection_matrix;
 uniform vec2 nf_planes;
 uniform int debug_view;
 uniform ivec2 resolution;
@@ -55,7 +55,8 @@ void main() {
 
 	// Calculate some volumetric fog
 	vec3 pixel_forward = normalize((inverse(custom_vp_matrix) * vec4(uv_coordinates * 2 - 1, 0, 1)).xyz);
-	VolumetricResult volumetric_result = volumetric(camera_pos, pixel_forward, nf_planes, vp_matrix);
+	vec3 pixel_forward_projection = normalize((inverse(projection_matrix) * vec4(uv_coordinates * 2 - 1, 0, 1)).xyz);
+	VolumetricResult volumetric_result = volumetric(camera_pos, pixel_forward, pixel_forward_projection, nf_planes);
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
 			color = emissive;
@@ -67,9 +68,9 @@ void main() {
 		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
 		float new_depth = volumetric_result.depth;
 		// Compare the depths
-		color = vec3(1, 1, 1) * old_depth;
-		if (any(notEqual(volumetric_result.color, vec3(0, 0, 0)))) {
-			color = volumetric_result.color;
+		bool draw = old_depth > new_depth && any(notEqual(volumetric_result.color, vec3(0, 0, 0)));
+		if (draw) {
+			color = volumetric_result.depth * vec3(1, 1, 1);
 		}
 	} else if (debug_view == 1) {
 		color = normal;

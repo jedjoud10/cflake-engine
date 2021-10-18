@@ -125,12 +125,7 @@ impl CustomData {
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
             Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_stencil_texture);
 
-            let attachements = vec![
-                gl::COLOR_ATTACHMENT0,
-                gl::COLOR_ATTACHMENT1,
-                gl::COLOR_ATTACHMENT2,
-                gl::COLOR_ATTACHMENT3,
-            ];
+            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
             // Set the frame buffer attachements
             gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
 
@@ -337,10 +332,10 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_vec3f32("camera_forward", &camera_transform.get_forward_vector());
     shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(camera.clip_planes.0, camera.clip_planes.1));
-    shader.set_mat44("vp_matrix", &vp_m);
     // Create a custom View-Projection matrix that doesn't include the translation
     let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
     shader.set_mat44("custom_vp_matrix", &vp_m);
+    shader.set_mat44("projection_matrix", &camera.projection_matrix);
     shader.set_i32("debug_view", &(system.debug_view as i32));
     // Render the screen quad
     unsafe {
