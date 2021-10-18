@@ -1,4 +1,5 @@
 #version 460 core
+#include "defaults\shaders\rendering\volumetric.func.glsl"
 out vec3 color;
 uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
@@ -9,7 +10,8 @@ uniform sampler2D emissive_texture;
 uniform sampler2D default_sky_gradient;
 
 uniform vec3 directional_light_dir;
-uniform vec3 view_pos;
+uniform vec3 camera_pos;
+uniform vec3 camera_forward;
 uniform int debug_view;
 uniform ivec2 resolution;
 uniform float time;
@@ -23,7 +25,7 @@ void main() {
 	vec3 emissive = texture(emissive_texture, uv_coordinates).xyz;
 
 	// Calculate specular
-	vec3 view_dir = normalize(view_pos - position);
+	vec3 view_dir = normalize(camera_pos - position);
 	vec3 reflect_dir = reflect(-directional_light_dir, normal);
 	const float specular_strength = 0.0;
 	float specular = pow(max(dot(view_dir, reflect_dir), 0), 32);
@@ -46,13 +48,16 @@ void main() {
 	vec3 final_color = ambient_lighting;
 	final_color += diffuse * light_val;
 	final_color += specular * specular_strength;
+
+	// Calculate some volumetric fog
+	vec3 fog_color = volumetric(camera_pos, camera_forward, uv_coordinates);
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
 			color = emissive;
 		} else {
 			color = final_color;
 		}
-		//color = ambient_lighting;
+		color = fog_color;
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {

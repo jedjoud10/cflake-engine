@@ -8,3 +8,4 @@ edition = "2018"
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 others = { path = "../others" }
+rayon = "1.5"

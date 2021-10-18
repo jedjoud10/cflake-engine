@@ -304,6 +304,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // At the end of each frame, disable the depth test and render the debug objects
     let vp_matrix: veclib::Matrix4x4<f32>;
     let camera_position: veclib::Vector3<f32>;
+    let camera_forward: veclib::Vector3<f32>;
     // Get the (projection * view) matrix
     {
         let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
@@ -311,7 +312,9 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         let projection_matrix = camera_data.projection_matrix;
         let view_matrix = camera_data.view_matrix;
         vp_matrix = projection_matrix * view_matrix;
-        camera_position = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().position;
+        let transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap();
+        camera_position = transform.position;
+        camera_forward = transform.get_forward_vector();
     }
     // Draw the debug primitives
     data.debug.renderer.draw_debug(&vp_matrix, &data.shader_cacher.1);
@@ -342,7 +345,8 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     );
 
     // Other params
-    shader.set_vec3f32("view_pos", &camera_position);
+    shader.set_vec3f32("camera_pos", &camera_position);
+    shader.set_vec3f32("camera_forward", &camera_forward);
     shader.set_i32("debug_view", &(system.debug_view as i32));
     // Render the screen quad
     unsafe {

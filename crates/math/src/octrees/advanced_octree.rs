@@ -1,6 +1,7 @@
 use super::{node::OctreeNode, octree::Octree};
 use others::SmartList;
 use std::{collections::{HashMap, HashSet}, time::Instant};
+use rayon::{iter::{IntoParallelRefIterator, ParallelIterator}};
 
 // An advanced octree with incremental generation and twin nodes
 #[derive(Default)]
@@ -27,7 +28,7 @@ impl AdvancedOctree {
     fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32) -> HashSet<OctreeNode> {        
         let mut combined_nodes: SmartList<OctreeNode> = nodes.clone();
         // The nodes that must be evaluated
-        let mut pending_nodes: Vec<OctreeNode> = nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
+        let mut pending_nodes: Vec<OctreeNode> = nodes.elements.par_iter().filter_map(|x| x.as_ref().cloned()).collect();
         // Evaluate each node
         while pending_nodes.len() > 0 {
             // Get the current pending node
@@ -43,7 +44,7 @@ impl AdvancedOctree {
             // Remove the node so we don't cause an infinite loop
             pending_nodes.remove(0);
         }        
-        return combined_nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect::<HashSet<OctreeNode>>();
+        return combined_nodes.elements.par_iter().filter_map(|x| x.as_ref().cloned()).collect::<HashSet<OctreeNode>>();
     }
 }
 // Base / incremental generation
