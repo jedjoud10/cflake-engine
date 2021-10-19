@@ -328,8 +328,8 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::TEXTURE5,
     );
 
-    // Other params    
-    shader.set_mat44("projection_matrix", &camera.projection_matrix);
+    // Other params
+    shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
     // Render the screen quad
     unsafe {
