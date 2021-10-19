@@ -221,7 +221,7 @@ impl Shader {
             return; /* Return early if the uniform location is invalid */
         }
         unsafe {
-            let ptr = vec.as_ptr() as *const f32;
+            let ptr: *const f32 = &vec[0].x;
             gl::Uniform3fv(u, vec.len() as i32, ptr);
         }
     }

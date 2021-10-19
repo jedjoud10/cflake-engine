@@ -9,7 +9,8 @@ uniform sampler2D depth_texture;
 // Ambient sky gradient
 uniform sampler2D default_sky_gradient;
 
-uniform sampler2D volumetric_texture_result;
+uniform sampler2D volumetric_texture;
+uniform sampler3D sdf_texture;
 
 uniform vec3 directional_light_dir;
 uniform int debug_view;
@@ -63,6 +64,7 @@ void main() {
 		} else {
 			color = final_color;
 		}
+		color = texture(sdf_texture, vec3(uvs * 10.0 * vec2(float(resolution.x) / float(resolution.y), 1), 0.0)).xyz;
 		/*
 		float depth = texture(depth_texture, uvs).x;
 		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));

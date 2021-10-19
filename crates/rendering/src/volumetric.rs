@@ -1,7 +1,7 @@
 use others::CacheManager;
 use resources::ResourceManager;
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture2D, Texture3D};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture2D, Texture3D, TextureWrapping};
 
 // Some volumetric shit
 #[derive(Default)]
@@ -28,9 +28,7 @@ impl Volumetric {
         ).2;
         // Load the volumetric compute
         //let compute_generator = Shader::new(vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"], resource_manager, shader_cacher, Some(AdditionalShader::Compute(ComputeShader::default()))).2;
-    }
-    // Dimensions of the SDF texture
-    const SDF_DIMENSIONS: u16 = 16;
+    }    
     // The scale down factor for the result texture
     const RESULT_SCALE_DOWN_FC: u16 = 4;
     // Create the SDF texture from a simple texture, loaded into a compute shader
@@ -38,7 +36,8 @@ impl Volumetric {
     pub fn create_textures(&mut self, resolution: veclib::Vector2<u16>) {
         self.sdf_tex = Texture3D::new()
             .set_dimensions(Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16)
-            .set_idf(gl::R8, gl::RED, gl::UNSIGNED_BYTE)
+            .set_wrapping_mode(TextureWrapping::Repeat)
+            .set_idf(gl::R16F, gl::RED, gl::FLOAT)
             .generate_texture(Vec::new());
         // This texture is going to be rescaled if the window resolution changes
         self.result_tex = Texture2D::new()
@@ -56,10 +55,32 @@ impl Volumetric {
     pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
         // Set the result sdf texture and run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
+        let sphere_size = 2.0;
         shader.use_shader();
         shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
-        shader.set_f32("sphere_size", &5.0);
-        let points = vec![veclib::Vector3::new(20.0, 20.0, 0.0)];
+        shader.set_f32("sphere_size", &sphere_size);
+        // Dimensions of the SDF texture
+        const SDF_DIMENSIONS: usize = 16;     
+        fn unflatten(mut index: usize) -> veclib::Vector3<u16> {
+            let z = index / (SDF_DIMENSIONS);
+            index -= z * (SDF_DIMENSIONS);
+            let y = index / (SDF_DIMENSIONS * SDF_DIMENSIONS);
+            let x = index % (SDF_DIMENSIONS);
+            return veclib::Vector3::new(x as u16, y as u16, z as u16);
+        }
+        // Get the index from a position
+        fn flatten(position: veclib::Vector3<u16>) -> usize {
+            return position.x as usize + (position.y as usize * SDF_DIMENSIONS * SDF_DIMENSIONS) + (position.z as usize * SDF_DIMENSIONS);
+        }
+
+        // Create the point grid
+        let mut grid: Vec<
+        let mut points: Vec<veclib::Vector3<f32>> = Vec::new(); 
+        // Randomly create the points
+        for i in 0..10 {
+
+        }
+
         shader.set_vec3f32_array("points", points.as_slice());
         // Actually generate the SDF
         let compute = match &mut shader.additional_shader {

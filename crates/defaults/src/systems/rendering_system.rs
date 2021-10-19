@@ -260,7 +260,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
     system.volumetric.create_textures(data.custom_data.window.dimensions);
-    //system.volumetric.generate_sdf(&mut data.shader_cacher.1);
+    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
@@ -283,12 +283,14 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     }
 
     // Update the default values for each shader that exists in the shader cacher
+    /*
     for shader in data.shader_cacher.1.objects.iter() {
         // Set the shader arguments
         shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
     }
+    */
     // Change the debug view
     if data.input_manager.map_pressed("change_debug_view") {
         system.debug_view += 1;
@@ -301,7 +303,6 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
-    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
     let dimensions = data.custom_data.window.dimensions;
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
     let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().clone();
@@ -335,6 +336,10 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
         gl::TEXTURE5,
     );
+
+    // Volumetric parameters
+    shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
+    shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE7);
 
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
