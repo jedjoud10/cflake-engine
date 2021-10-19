@@ -168,6 +168,7 @@ version = "0.1.0"
 dependencies = [
  "debug",
  "ecs",
+ "errors",
  "fonts",
  "gl",
  "input",

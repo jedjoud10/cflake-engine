@@ -26,6 +26,7 @@ pub fn world_initialized(world: &mut World) {
         instance_manager: &mut world.instance_manager,
     };
 
+    
     // Load the rendering system
     let mut rendering_system = systems::rendering_system::system(&mut data);
     rendering_system.enable(&mut data);

@@ -66,7 +66,7 @@ impl Default for Texture {
             internal_format: gl::RGBA,
             format: gl::RGBA,
             data_type: gl::UNSIGNED_BYTE,
-            flags: TextureFlags::MUTABLE,
+            flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
             dimension_type: TextureDimensionType::D2D(0, 0),
             wrap_mode: TextureWrapping::Repeat,
@@ -84,10 +84,13 @@ impl Texture {
     }
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
     pub fn set_mutable(mut self, mutable: bool) -> Self {
+        /*
+        todo!();
         match mutable {
             true => self.flags |= TextureFlags::MUTABLE,
             false => self.flags &= !TextureFlags::MUTABLE,
         }
+        */
         self
     }
     // Set the generation of mipmaps
@@ -123,12 +126,12 @@ impl Texture {
             TextureDimensionType::D3D(_, _, _) => gl::TEXTURE_3D,
         };
 
-        if self.flags.contains(TextureFlags::MUTABLE) {
+        if true {
             // It's a normal mutable texture
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
                 gl::BindTexture(tex_type, self.id);
-
+                errors::ErrorCatcher::catch_opengl_errors().unwrap();
                 // Use TexImage3D if it's a 3D texture, otherwise use TexImage2D
                 match dimension_type {
                     // This is a 2D texture
@@ -161,7 +164,7 @@ impl Texture {
                         );
                     }
                 }
-
+                errors::ErrorCatcher::catch_opengl_errors().unwrap();
                 // Set the texture parameters for a normal texture
                 match self.filter {
                     TextureFilter::Linear => {
@@ -175,6 +178,7 @@ impl Texture {
                         gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                     }
                 }
+                errors::ErrorCatcher::catch_opengl_errors().unwrap();
             }
 
             // The texture is already bound to the TEXTURE_2D
@@ -182,19 +186,22 @@ impl Texture {
                 // Create the mipmaps
                 unsafe {
                     gl::GenerateMipmap(tex_type);
+                    errors::ErrorCatcher::catch_opengl_errors().unwrap();
                     // Set the texture parameters for a mipmapped texture
                     match self.filter {
                         TextureFilter::Linear => {
                             // 'Linear' filter
                             gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
-                            gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+                            gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
                         }
                         TextureFilter::Nearest => {
                             // 'Nearest' filter
                             gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-                            gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                            gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                         }
                     }
+                    println!("{:?}", self);
+                    errors::ErrorCatcher::catch_opengl_errors().unwrap();
                 }
             }
         } else {

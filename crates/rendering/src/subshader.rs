@@ -50,20 +50,22 @@ impl SubShader {
             SubShaderType::Compute => shader_type = gl::COMPUTE_SHADER,
         }
         unsafe {
+            errors::ErrorCatcher::catch_opengl_errors().unwrap();
             self.program = gl::CreateShader(shader_type);
+            errors::ErrorCatcher::catch_opengl_errors().unwrap();
             // Compile the shader
             let cstring = CString::new(self.source.clone()).unwrap();
             let shader_source: *const i8 = cstring.as_ptr();
             gl::ShaderSource(self.program, 1, &shader_source, null());
             gl::CompileShader(self.program);
-
+            errors::ErrorCatcher::catch_opengl_errors().unwrap();
             // Check for any errors
             let mut info_log_length: i32 = 0;
             let info_log_length_ptr: *mut i32 = &mut info_log_length;
             let mut result: i32 = 0;
             let result_ptr: *mut i32 = &mut result;
             gl::GetShaderiv(self.program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-            gl::GetShaderiv(self.program, gl::LINK_STATUS, result_ptr);
+            errors::ErrorCatcher::catch_opengl_errors().unwrap();
             // Print any errors that might've happened while compiling this subshader
             if info_log_length > 0 {
                 let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
@@ -75,7 +77,7 @@ impl SubShader {
                 println!("\x1b[0m");
                 panic!();
             }
-
+            errors::ErrorCatcher::catch_opengl_errors().unwrap();
             println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", self.name);
         }
     }

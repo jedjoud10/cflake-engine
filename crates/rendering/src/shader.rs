@@ -64,6 +64,7 @@ impl Shader {
         shader.name = subshader_paths.join("__");
         let name = shader.name.clone();
         // Loop through all the subshaders and link them
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached
             if shader_cacher.0.is_cached(subshader_path) {
@@ -114,13 +115,16 @@ impl Shader {
                 subshader.source = subshader.source.lines().filter(|x| !x.starts_with("#include")).collect::<Vec<&str>>().join("\n");
                 //println!("{}", subshader.source);
                 // Compile the subshader
+                errors::ErrorCatcher::catch_opengl_errors().unwrap();
                 subshader.compile_subshader();
+                errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
                 // Cache it, and link it
                 let _subshader = shader_cacher.0.cache_object(subshader, subshader_path);
                 shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             }
         }
+        errors::ErrorCatcher::catch_opengl_errors().expect(format!("Ohno {}", shader.name).as_str());
         // Set the additional shader
         shader.additional_shader = additional_shader.unwrap_or(AdditionalShader::None);
         // Finalize the shader and cache it
@@ -218,6 +222,17 @@ impl Shader {
         }
         unsafe {
             gl::Uniform3f(u, vec[0], vec[1], vec[2]);
+        }
+    }
+    // Set a vec3 f32 array uniform
+    pub fn set_vec3f32_array(&self, name: &str, vec: &[veclib::Vector3<f32>]) {
+        let u = self.get_uniform_location(name);
+        if u == -1 {
+            return; /* Return early if the uniform location is invalid */
+        }
+        unsafe {
+            let ptr = vec.as_ptr() as *const f32;
+            gl::Uniform3fv(u, vec.len() as i32, ptr);
         }
     }
     // Set a vec4 f32 uniform

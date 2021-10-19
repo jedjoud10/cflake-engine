@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D};
+use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, Volumetric};
 use resources::LoadableResource;
 use std::ptr::null;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -19,6 +19,8 @@ pub struct CustomData {
     pub debug_view: u16,
     pub wireframe: bool,
     wireframe_shader_name: String,
+    // Volumetric renderer stuff
+    pub volumetric: Volumetric,
     // The renderer for the screen quad
     quad_renderer: Renderer,
 }
@@ -251,9 +253,14 @@ impl CustomData {
 // Events
 fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
-
+    
     // Create the screen quad
     system.create_screen_quad(data);
+
+    // Load volumetric stuff
+    system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
+    system.volumetric.create_textures(data.custom_data.window.dimensions);
+    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
@@ -266,7 +273,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         None,
     )
     .1;
-    system.wireframe_shader_name = wireframe_shader_name;
+    system.wireframe_shader_name = wireframe_shader_name;    
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
