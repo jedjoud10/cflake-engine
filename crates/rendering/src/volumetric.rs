@@ -30,7 +30,7 @@ impl Volumetric {
         //let compute_generator = Shader::new(vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"], resource_manager, shader_cacher, Some(AdditionalShader::Compute(ComputeShader::default()))).2;
     }
     // Dimensions of the SDF texture
-    const SDF_DIMENSIONS: u16 = 32;
+    const SDF_DIMENSIONS: u16 = 16;
     // The scale down factor for the result texture
     const RESULT_SCALE_DOWN_FC: u16 = 4;
     // Create the SDF texture from a simple texture, loaded into a compute shader
@@ -38,8 +38,7 @@ impl Volumetric {
     pub fn create_textures(&mut self, resolution: veclib::Vector2<u16>) {
         self.sdf_tex = Texture3D::new()
             .set_dimensions(Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16)
-            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
-            .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
+            .set_idf(gl::R8, gl::RED, gl::UNSIGNED_BYTE)
             .generate_texture(Vec::new());
         // This texture is going to be rescaled if the window resolution changes
         self.result_tex = Texture2D::new()

@@ -13,7 +13,6 @@ impl ComputeShader {
         }
         unsafe {
             // Do some num_groups checks
-            let mut max: i32 = 0;
             gl::DispatchCompute(num_groups.0, num_groups.1, num_groups.2);
             self.running = true;
         }
