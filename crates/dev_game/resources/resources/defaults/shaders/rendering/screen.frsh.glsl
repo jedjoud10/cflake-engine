@@ -23,10 +23,11 @@ in vec2 uv_coordinates;
 
 void main() {	
 	// Sample the textures
-	vec3 normal = normalize(texture(normals_texture, uv_coordinates).xyz);
-	vec3 diffuse = texture(diffuse_texture, uv_coordinates).xyz;
-	vec3 position = texture(position_texture, uv_coordinates).xyz;
-	vec3 emissive = texture(emissive_texture, uv_coordinates).xyz;
+	vec2 uvs = uv_coordinates;
+	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
+	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
+	vec3 position = texture(position_texture, uvs).xyz;
+	vec3 emissive = texture(emissive_texture, uvs).xyz;
 
 	// Calculate specular
 	vec3 view_dir = normalize(camera_pos - position);
@@ -54,8 +55,8 @@ void main() {
 	final_color += specular * specular_strength;
 
 	// Calculate some volumetric fog
-	vec3 pixel_forward = normalize((inverse(custom_vp_matrix) * vec4(uv_coordinates * 2 - 1, 0, 1)).xyz);
-	vec3 pixel_forward_projection = normalize((inverse(projection_matrix) * vec4(uv_coordinates * 2 - 1, 0, 1)).xyz);
+	vec3 pixel_forward = normalize((inverse(custom_vp_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
+	vec3 pixel_forward_projection = normalize((inverse(projection_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
 	VolumetricResult volumetric_result = volumetric(camera_pos, pixel_forward, pixel_forward_projection, nf_planes);
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
@@ -64,7 +65,7 @@ void main() {
 			color = final_color;
 		}
 
-		float depth = texture(depth_texture, uv_coordinates).x;
+		float depth = texture(depth_texture, uvs).x;
 		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
 		float new_depth = volumetric_result.depth;
 		// Compare the depths

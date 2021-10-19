@@ -328,13 +328,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::TEXTURE5,
     );
 
-    // Other params
-    shader.set_vec3f32("camera_pos", &camera_transform.position);
-    shader.set_vec3f32("camera_forward", &camera_transform.get_forward_vector());
-    shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(camera.clip_planes.0, camera.clip_planes.1));
-    // Create a custom View-Projection matrix that doesn't include the translation
-    let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
-    shader.set_mat44("custom_vp_matrix", &vp_m);
+    // Other params    
     shader.set_mat44("projection_matrix", &camera.projection_matrix);
     shader.set_i32("debug_view", &(system.debug_view as i32));
     // Render the screen quad
