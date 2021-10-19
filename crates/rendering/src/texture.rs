@@ -130,8 +130,7 @@ impl Texture {
             // It's a normal mutable texture
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
-                gl::BindTexture(tex_type, self.id);
-                errors::ErrorCatcher::catch_opengl_errors().unwrap();
+                gl::BindTexture(tex_type, self.id);                
                 // Use TexImage3D if it's a 3D texture, otherwise use TexImage2D
                 match dimension_type {
                     // This is a 2D texture
@@ -164,7 +163,7 @@ impl Texture {
                         );
                     }
                 }
-                errors::ErrorCatcher::catch_opengl_errors().unwrap();
+                
                 // Set the texture parameters for a normal texture
                 match self.filter {
                     TextureFilter::Linear => {
@@ -177,16 +176,14 @@ impl Texture {
                         gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
                         gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                     }
-                }
-                errors::ErrorCatcher::catch_opengl_errors().unwrap();
+                }                
             }
 
             // The texture is already bound to the TEXTURE_2D
             if self.flags.contains(TextureFlags::MIPMAPS) {
                 // Create the mipmaps
                 unsafe {
-                    gl::GenerateMipmap(tex_type);
-                    errors::ErrorCatcher::catch_opengl_errors().unwrap();
+                    gl::GenerateMipmap(tex_type);                    
                     // Set the texture parameters for a mipmapped texture
                     match self.filter {
                         TextureFilter::Linear => {
@@ -200,8 +197,6 @@ impl Texture {
                             gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                         }
                     }
-                    println!("{:?}", self);
-                    errors::ErrorCatcher::catch_opengl_errors().unwrap();
                 }
             }
         } else {

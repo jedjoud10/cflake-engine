@@ -37,11 +37,10 @@ impl Volumetric {
     // Create the textures
     pub fn create_textures(&mut self, resolution: veclib::Vector2<u16>) {
         self.sdf_tex = Texture3D::new()
-            .set_dimensions(Self::SDF_DIMENSIONS, Self::SDF_DIMENSIONS, Self::SDF_DIMENSIONS)
+            .set_dimensions(Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16)
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new());
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // This texture is going to be rescaled if the window resolution changes
         self.result_tex = Texture2D::new()
             .set_dimensions(resolution.x / Self::RESULT_SCALE_DOWN_FC, resolution.y / Self::RESULT_SCALE_DOWN_FC)
@@ -58,19 +57,19 @@ impl Volumetric {
     pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
         // Set the result sdf texture and run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
+        shader.use_shader();
         shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
         shader.set_f32("sphere_size", &5.0);
         let points = vec![veclib::Vector3::new(20.0, 20.0, 0.0)];
         shader.set_vec3f32_array("points", points.as_slice());
-
         // Actually generate the SDF
         let compute = match &mut shader.additional_shader {
             crate::AdditionalShader::None => panic!(),
             crate::AdditionalShader::Compute(x) => x,
         };
         // Run the compute
-        compute.run_compute((self.sdf_tex.width as u32, self.sdf_tex.height as u32, self.sdf_tex.depth as u32));
-        compute.get_compute_state();
+        compute.run_compute((self.sdf_tex.width as u32, self.sdf_tex.height as u32, self.sdf_tex.depth as u32)).unwrap();
+        compute.get_compute_state().unwrap();
     }
     // Run the compute shader and calculate the result texture
     pub fn calculate_volumetric(

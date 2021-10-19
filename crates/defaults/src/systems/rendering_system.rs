@@ -260,7 +260,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
     system.volumetric.create_textures(data.custom_data.window.dimensions);
-    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
+    //system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
@@ -300,12 +300,13 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     }
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
-    let system = system_data.cast::<CustomData>().unwrap();
+    let system = system_data.cast_mut::<CustomData>().unwrap();
+    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
     let dimensions = data.custom_data.window.dimensions;
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
     let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().clone();
     let camera = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
-    let vp_m = (camera.projection_matrix * camera.view_matrix);
+    let vp_m = camera.projection_matrix * camera.view_matrix;
     // Draw the debug primitives
     data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
 

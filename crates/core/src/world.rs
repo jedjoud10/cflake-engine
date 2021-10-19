@@ -70,7 +70,7 @@ impl World {
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
+        
         // Load the default objects for the CacheManagers
         // Create the black texture
         Texture2D::new()
@@ -80,9 +80,7 @@ impl World {
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .generate_texture(vec![0, 0, 0, 255])
             .set_internal_name("black")
-            .cache_texture(&mut self.texture_cacher);
-        
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
+            .cache_texture(&mut self.texture_cacher);        
         // Create the white texture
         Texture2D::new()
             .set_dimensions(1, 1)
@@ -92,7 +90,6 @@ impl World {
             .generate_texture(vec![255, 255, 255, 255])
             .set_internal_name("white")
             .cache_texture(&mut self.texture_cacher);
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create the default normals texture
         Texture2D::new()
             .set_dimensions(1, 1)
@@ -102,7 +99,6 @@ impl World {
             .generate_texture(vec![127, 128, 255, 255])
             .set_internal_name("default_normals")
             .cache_texture(&mut self.texture_cacher);
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
         // Copy the default shader name
         Shader::new(
@@ -154,7 +150,6 @@ impl World {
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Load the default stuff
         self.load_defaults(window);
 

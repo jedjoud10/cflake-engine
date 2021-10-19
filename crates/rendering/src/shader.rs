@@ -64,7 +64,6 @@ impl Shader {
         shader.name = subshader_paths.join("__");
         let name = shader.name.clone();
         // Loop through all the subshaders and link them
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached
             if shader_cacher.0.is_cached(subshader_path) {
@@ -115,16 +114,13 @@ impl Shader {
                 subshader.source = subshader.source.lines().filter(|x| !x.starts_with("#include")).collect::<Vec<&str>>().join("\n");
                 //println!("{}", subshader.source);
                 // Compile the subshader
-                errors::ErrorCatcher::catch_opengl_errors().unwrap();
                 subshader.compile_subshader();
-                errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
                 // Cache it, and link it
                 let _subshader = shader_cacher.0.cache_object(subshader, subshader_path);
                 shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             }
         }
-        errors::ErrorCatcher::catch_opengl_errors().expect(format!("Ohno {}", shader.name).as_str());
         // Set the additional shader
         shader.additional_shader = additional_shader.unwrap_or(AdditionalShader::None);
         // Finalize the shader and cache it
@@ -169,13 +165,7 @@ impl Shader {
         if self.finalized {
             unsafe {
                 gl::UseProgram(self.program);
-            }
-            match errors::ErrorCatcher::catch_opengl_errors() {
-                Some(_x) => {}
-                None => {
-                    println!("{:?}", self.name);
-                }
-            }
+            }            
         }
     }
     // Link a specific subshader to this shader
