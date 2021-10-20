@@ -10,7 +10,7 @@ layout(location = 5) uniform vec2 nf_planes;
 
 void main() {
     // Get the pixel coord
-    ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     /*
     vec2 uvs = pixel_coords.xy / gl_NumWorkGroups.xy;
     vec3 pixel_forward = normalize((inverse(custom_vp_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);

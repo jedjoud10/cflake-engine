@@ -28,7 +28,7 @@ impl Volumetric {
         )
         .2;
         // Load the volumetric compute
-        self.compute_generator_id = Shader::new(
+        self.compute_id = Shader::new(
             vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"],
             resource_manager,
             shader_cacher,
@@ -46,12 +46,12 @@ impl Volumetric {
         self.sdf_tex = Texture3D::new()
             .set_dimensions(Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16, Self::SDF_DIMENSIONS as u16)
             .set_wrapping_mode(TextureWrapping::Repeat)
-            .set_idf(gl::R16F, gl::RED, gl::FLOAT)
+            .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
             .generate_texture(Vec::new());
         // This texture is going to be rescaled if the window resolution changes
         self.result_tex = Texture2D::new()
             .set_dimensions(resolution.x / Self::RESULT_SCALE_DOWN_FC, resolution.y / Self::RESULT_SCALE_DOWN_FC)
-            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new());
     }
@@ -88,21 +88,26 @@ impl Volumetric {
     ) {
         // Run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
-        shader.set_vec3f32("camera_pos", &camera_position);
-        shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create a custom View-Projection matrix that doesn't include the translation
-        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
-        shader.set_mat44("custom_vp_matrix", &vp_m);
-        shader.set_t3d("sdf_tex", &self.sdf_tex, gl::TEXTURE0);
+        shader.use_shader();
+        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));    
         shader.set_i2d("result_tex", &self.result_tex, crate::TextureShaderAccessType::WriteOnly);
-
+        shader.set_t3d("sdf_tex", &self.sdf_tex, gl::TEXTURE1);        
+        shader.set_vec3f32("camera_pos", &camera_position);
+        shader.set_mat44("custom_vp_matrix", &vp_m);
+        shader.set_mat44("projection_matrix", &projection_matrix);
+        shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));        
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Get the actual compute shader
         let compute = match &mut shader.additional_shader {
-            crate::AdditionalShader::None => panic!(),
             crate::AdditionalShader::Compute(x) => x,
+            crate::AdditionalShader::None => panic!(),
         };
 
         // Run the actual compute shader
-        compute.run_compute((self.result_tex.width as u32, self.result_tex.height as u32, 0));
+        compute.run_compute((self.result_tex.width as u32, self.result_tex.height as u32, 1)).unwrap();
+        compute.get_compute_state().unwrap();
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
 }
