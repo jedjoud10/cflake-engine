@@ -253,7 +253,7 @@ impl CustomData {
 // Events
 fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
-    
+
     // Create the screen quad
     system.create_screen_quad(data);
 
@@ -273,7 +273,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         None,
     )
     .1;
-    system.wireframe_shader_name = wireframe_shader_name;    
+    system.wireframe_shader_name = wireframe_shader_name;
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -282,14 +282,14 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
     /*
-    // Update the default values for each shader that exists in the shader cacher    
+    // Update the default values for each shader that exists in the shader cacher
     for shader in data.shader_cacher.1.objects.iter() {
         // Set the shader arguments
         //shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
         shader.use_shader();
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         //shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
-    }    
+    }
     */
     // Change the debug view
     if data.input_manager.map_pressed("change_debug_view") {
@@ -310,6 +310,15 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let vp_m = camera.projection_matrix * camera.view_matrix;
     // Draw the debug primitives
     data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
+
+    // Draw the volumetric stuff
+    system.volumetric.calculate_volumetric(
+        &mut data.shader_cacher.1,
+        camera.projection_matrix,
+        camera_transform.rotation,
+        camera_transform.position,
+        camera.clip_planes,
+    );
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();

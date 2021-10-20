@@ -25,12 +25,19 @@ impl Volumetric {
             resource_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
-        ).2;
+        )
+        .2;
         // Load the volumetric compute
-        //let compute_generator = Shader::new(vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"], resource_manager, shader_cacher, Some(AdditionalShader::Compute(ComputeShader::default()))).2;
-    }    
+        self.compute_generator_id = Shader::new(
+            vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"],
+            resource_manager,
+            shader_cacher,
+            Some(AdditionalShader::Compute(ComputeShader::default())),
+        )
+        .2;
+    }
     // Dimensions of the SDF texture
-    const SDF_DIMENSIONS: usize = 64;  
+    const SDF_DIMENSIONS: usize = 64;
     // The scale down factor for the result texture
     const RESULT_SCALE_DOWN_FC: u16 = 4;
     // Create the SDF texture from a simple texture, loaded into a compute shader
@@ -65,7 +72,9 @@ impl Volumetric {
             crate::AdditionalShader::Compute(x) => x,
         };
         // Run the compute
-        compute.run_compute((self.sdf_tex.width as u32, self.sdf_tex.height as u32, self.sdf_tex.depth as u32)).unwrap();
+        compute
+            .run_compute((self.sdf_tex.width as u32, self.sdf_tex.height as u32, self.sdf_tex.depth as u32))
+            .unwrap();
         compute.get_compute_state().unwrap();
     }
     // Run the compute shader and calculate the result texture
@@ -79,12 +88,12 @@ impl Volumetric {
     ) {
         // Run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
-        shader.set_vec3f32("camera_position", &camera_position);
+        shader.set_vec3f32("camera_pos", &camera_position);
         shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));
         // Create a custom View-Projection matrix that doesn't include the translation
         let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
         shader.set_mat44("custom_vp_matrix", &vp_m);
-        shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
+        shader.set_t3d("sdf_tex", &self.sdf_tex, gl::TEXTURE0);
         shader.set_i2d("result_tex", &self.result_tex, crate::TextureShaderAccessType::WriteOnly);
 
         // Get the actual compute shader

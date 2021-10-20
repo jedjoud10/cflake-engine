@@ -165,7 +165,7 @@ impl Shader {
         if self.finalized {
             unsafe {
                 gl::UseProgram(self.program);
-            }            
+            }
         }
     }
     // Link a specific subshader to this shader

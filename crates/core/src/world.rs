@@ -70,7 +70,7 @@ impl World {
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
         window.set_cursor_mode(glfw::CursorMode::Disabled);
         window.set_cursor_pos(0.0, 0.0);
-        
+
         // Load the default objects for the CacheManagers
         // Create the black texture
         Texture2D::new()
@@ -80,7 +80,7 @@ impl World {
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .generate_texture(vec![0, 0, 0, 255])
             .set_internal_name("black")
-            .cache_texture(&mut self.texture_cacher);        
+            .cache_texture(&mut self.texture_cacher);
         // Create the white texture
         Texture2D::new()
             .set_dimensions(1, 1)

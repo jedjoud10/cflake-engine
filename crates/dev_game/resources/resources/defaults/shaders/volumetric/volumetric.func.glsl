@@ -9,7 +9,7 @@ const float STEP_SIZE = 0.1;
 const float THRESHOLD = 0.0;
 // SDF function
 float scene(vec3 point) {
-    return sdBox(point, vec3(5, 10, 10));
+    return point.y;
 }
 float map(float x, float ra, float rb, float r2a, float r2b) {
     // https://stackoverflow.com/questions/3451553/value-remapping
