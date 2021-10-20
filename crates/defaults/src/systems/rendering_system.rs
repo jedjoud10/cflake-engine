@@ -281,15 +281,15 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindFramebuffer(gl::FRAMEBUFFER, system.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
-
-    // Update the default values for each shader that exists in the shader cacher
     /*
+    // Update the default values for each shader that exists in the shader cacher    
     for shader in data.shader_cacher.1.objects.iter() {
         // Set the shader arguments
-        shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
+        //shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
+        shader.use_shader();
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
-        shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
-    }
+        //shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
+    }    
     */
     // Change the debug view
     if data.input_manager.map_pressed("change_debug_view") {
