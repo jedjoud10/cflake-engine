@@ -335,8 +335,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Draw the debug primitives
     data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
 
-    // Draw the volumetric stuff
-    /*
+    // Draw the volumetric stuff    
     system.volumetric.calculate_volumetric(
         &mut data.shader_cacher.1,
         camera.projection_matrix,
@@ -344,7 +343,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         camera_transform.position,
         camera.clip_planes,
     );
-    */
+    
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();

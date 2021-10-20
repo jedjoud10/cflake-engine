@@ -5,9 +5,9 @@ struct VolumetricResult {
     vec3 color;
     float depth;
 };
-const int STEP_COUNT = 512;
+const int STEP_COUNT = 64;
 const float THRESHOLD = 0.01;
-const float NORMAL_OFFSET = 0.01;
+const float NORMAL_OFFSET = 0.3;
 // Sampling the SDF texture
 float scene(vec3 point, sampler3D sdf_tex) {
     float d = texture(sdf_tex, -point * 0.1).x - 0.2;
