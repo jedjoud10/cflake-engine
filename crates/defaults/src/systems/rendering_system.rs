@@ -262,6 +262,16 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.volumetric.create_textures(data.custom_data.window.dimensions, 16, 3);
     system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
+    // Get the OpenGL version
+    unsafe {
+        let mut major: i32 = 0;
+        let mut minor: i32 = 0;
+        gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);     
+        gl::GetIntegerv(gl::MINOR_VERSION, &mut minor);
+
+        println!("OpenGL version; major: '{}', minor: '{}'", major, minor);
+    }
+
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
 
