@@ -7,6 +7,7 @@ pub struct ComputeShader {
 // Compute shader code
 impl ComputeShader {
     // Run the compute shader if this shader is a compute shader
+    // TODO: This runs very oddly on integrated GPU, it seems like the depth is always 1 for that case
     pub fn run_compute(&mut self, num_groups: (u32, u32, u32)) -> Option<()> {
         if self.running {
             return Some(());
@@ -24,7 +25,8 @@ impl ComputeShader {
         unsafe {
             if self.running {
                 // Force the compute shader to complete
-                gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+                gl::Finish();
+                gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
                 errors::ErrorCatcher::catch_opengl_errors()?;
                 self.running = false;
             } else {

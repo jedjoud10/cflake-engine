@@ -43,7 +43,7 @@ void main() {
             }
         }
     }
-    vec4 pixel = vec4(0.0, 0, 0, 0);
+    vec4 pixel = vec4(pixel_coords.xyz, 0);
     // Write the pixel
     imageStore(sdf_tex, pixel_coords, pixel);
 }
