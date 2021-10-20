@@ -109,9 +109,12 @@ impl Texture2D {
         self
     }
     // Update the size of the current texture
-    pub fn update_size(&self, width: u16, height: u16) {
+    pub fn update_size(&mut self, width: u16, height: u16) {
         // This is a normal texture getting resized
         unsafe {
+            self.height = height;
+            self.width = width;
+            self.internal_texture.dimension_type = TextureDimensionType::D2D(width, height);
             gl::BindTexture(gl::TEXTURE_2D, self.internal_texture.id);
             gl::TexImage2D(
                 gl::TEXTURE_2D,

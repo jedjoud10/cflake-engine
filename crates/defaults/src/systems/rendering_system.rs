@@ -259,7 +259,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
-    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 3);
+    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 2);
     system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
     // Get the OpenGL version

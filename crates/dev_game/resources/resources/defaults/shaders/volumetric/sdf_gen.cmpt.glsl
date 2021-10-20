@@ -1,13 +1,15 @@
 #version 460 core
 #include "defaults\shaders\others\hashes.func.glsl"
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 layout(r16f, binding = 0) uniform image3D sdf_tex;
-#define CELL_SIZE 32
-#define SPHERE_SIZE 0.2
+#define CELL_SIZE 16
+#define SPHERE_SIZE 0.0
+#define SPHERE_RANDOM_FC 0.4
 
 
 struct SDFSphere {
     bool enabled;
+    float size;
     vec3 location;
 };
 
@@ -15,7 +17,7 @@ struct SDFSphere {
 SDFSphere random_point(vec3 pixel, vec3 point_offset) {
     vec3 cell_coords = floor(pixel);
     vec3 point_coords = hash33(cell_coords);
-    return SDFSphere(hash13(cell_coords) > 0.0, point_coords + point_offset);
+    return SDFSphere(hash13(cell_coords) > 0.0, abs(hash13(cell_coords) * SPHERE_RANDOM_FC + SPHERE_SIZE), point_coords + point_offset);
 }
 
 void main() {
@@ -32,11 +34,11 @@ void main() {
                 // Check if the neighboring coordinates are at the min/max, and if they are, swap them
                 vec3 neighbor_coords = coords + vec3(x, y, z); 
                 // The see that will be used to get the random point
-                vec3 k = mod(neighbor_coords, gl_NumWorkGroups.x / CELL_SIZE);
+                vec3 k = mod(neighbor_coords, (gl_NumWorkGroups.x * gl_WorkGroupSize.x) / CELL_SIZE);
                 // Get the neighboring points
                 SDFSphere neighbor_point = random_point(k, floor(neighbor_coords));
                 if (neighbor_point.enabled) {
-                    float neighbor_d = distance(coords, neighbor_point.location) - SPHERE_SIZE;
+                    float neighbor_d = distance(coords, neighbor_point.location) - neighbor_point.size;
                     base_d = min(base_d, neighbor_d);
                 }
                 // Keep track of the min distance

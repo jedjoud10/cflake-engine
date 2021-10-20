@@ -87,7 +87,7 @@ impl Volumetric {
         };
         // Run the compute
         compute
-            .run_compute((self.sdf_tex.width as u32, self.sdf_tex.height as u32, self.sdf_tex.depth as u32))
+            .run_compute((self.sdf_tex.width as u32 / 4, self.sdf_tex.height as u32 / 4, self.sdf_tex.depth as u32 / 4))
             .unwrap();
         compute.get_compute_state().unwrap();
     }
@@ -121,7 +121,7 @@ impl Volumetric {
         };
 
         // Run the actual compute shader
-        compute.run_compute((self.result_tex.width as u32, self.result_tex.height as u32, 1)).unwrap();
+        compute.run_compute((self.result_tex.width as u32 / 4, self.result_tex.height as u32 / 4, 1)).unwrap();
         compute.get_compute_state().unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }

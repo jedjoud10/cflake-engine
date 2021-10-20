@@ -5,17 +5,33 @@ struct VolumetricResult {
     vec3 color;
     float depth;
 };
-const int STEP_COUNT = 64;
+const int STEP_COUNT = 512;
+const float MAX_DISTANCE = 500;
 const float THRESHOLD = 0.01;
-const float NORMAL_OFFSET = 0.3;
+const float NORMAL_OFFSET = 0.1;
+// Create some fBm noise from the SDF texture
+float fBm(vec3 point, sampler3D sdf_tex) {
+    float d = texture(sdf_tex, point).x;
+    for(int i = 0; i < 2; i++) {
+        float l = pow(i, 1.1);
+        float p = pow(i, 0.5);
+        d = min(d, texture(sdf_tex, point * l).x);
+    }
+    return d;
+}
+
 // Sampling the SDF texture
 float scene(vec3 point, sampler3D sdf_tex) {
-    float d = texture(sdf_tex, -point * 0.1).x - 0.2;
-    
+    vec3 scale = vec3(1, 1, 1) / 10;
+    float d = fBm(-point * scale, sdf_tex);
+    /*
     d = max(point.y, d);
     d = max(-point.y - 5, d);
-    
+    */
     return d;
+}
+float inverse_lerp(float a, float b, float x) {
+    return (x - a) / (b - a);
 }
 float map(float x, float ra, float rb, float r2a, float r2b) {
     // https://stackoverflow.com/questions/3451553/value-remapping
@@ -23,15 +39,23 @@ float map(float x, float ra, float rb, float r2a, float r2b) {
 }
 VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, vec3 pixel_forward_projection, vec2 nf_planes, sampler3D sdf_tex) {
     // Starting point at camera
-    vec3 point = camera_position + pixel_forward;
-    float last_d = scene(point, sdf_tex);
+    vec3 point = camera_position + pixel_forward;    
+    float d = scene(point, sdf_tex);
+    float last_d = d;
+    vec3 last_point = point;
     for(int i = 0; i < STEP_COUNT; i++) { 
+        // Max distance
+        if (distance(point, camera_position) > MAX_DISTANCE) {
+            break;
+        }
         // Offset the point using the forward vector and a dynamic step size
-        point += pixel_forward * last_d;
-        float d = scene(point, sdf_tex);
-        last_d = d;
+        d = scene(point, sdf_tex);
+        point += pixel_forward * d;
         // We hit the surface!!
         if (d < THRESHOLD) {
+            // Get the exact intersection point
+            //float v = inverse_lerp(last_d, d, THRESHOLD);
+            //point = mix(last_point, point, v);
             vec3 color = vec3(1, 1, 1);
             // Cos
             float cos_a = dot(vec3(0, 0, -1), pixel_forward_projection);
@@ -55,6 +79,10 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
             // Calculate the linear depth
             return VolumetricResult(normal, d_depth);     
         }
+
+        // Update values for the next iteration
+        last_d = d;
+        last_point = point;
     }
     // No hits
     return VolumetricResult(vec3(0, 0, 0), 0.0);
