@@ -259,11 +259,13 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
-    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 3);
+    system.volumetric.create_textures(data.custom_data.window.dimensions, 16, 3);
     system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
+
+    // Check for OpenGL default features
 
     // Load the default shader
     let default_shader_name = Shader::new(
@@ -324,6 +326,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
 
     // Draw the volumetric stuff
+    /*
     system.volumetric.calculate_volumetric(
         &mut data.shader_cacher.1,
         camera.projection_matrix,
@@ -331,6 +334,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         camera_transform.position,
         camera.clip_planes,
     );
+    */
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();

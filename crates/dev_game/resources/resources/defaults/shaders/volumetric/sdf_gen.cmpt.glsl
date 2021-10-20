@@ -2,7 +2,7 @@
 #include "defaults\shaders\others\hashes.func.glsl"
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(r16f, binding = 0) uniform image3D sdf_tex;
-#define CELL_SIZE 16
+#define CELL_SIZE 4
 #define SPHERE_SIZE 0.2
 
 
@@ -43,7 +43,7 @@ void main() {
             }
         }
     }
-    vec4 pixel = vec4(base_d, 0, 0, 0);
+    vec4 pixel = vec4(0.0, 0, 0, 0);
     // Write the pixel
     imageStore(sdf_tex, pixel_coords, pixel);
 }
