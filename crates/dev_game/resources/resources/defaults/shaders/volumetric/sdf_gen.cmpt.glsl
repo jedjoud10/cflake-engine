@@ -2,26 +2,20 @@
 #include "defaults\shaders\others\hashes.func.glsl"
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(r16f, binding = 0) uniform image3D sdf_tex;
-#define CELL_SIZE 4
+#define CELL_SIZE 16
+#define SPHERE_SIZE 1
 
+
+struct SDFSphere {
+    bool enabled;
+    vec3 location;
+};
 
 // Get the random point at a specific cell
-vec3 random_point(vec3 pixel) {
+SDFSphere random_point(vec3 pixel, vec3 point_offset) {
     vec3 cell_coords = floor(pixel);
     vec3 point_coords = hash33(cell_coords);
-    return point_coords;
-}
-// Get the distance of a specific pixel in a specific cell
-float get_sdf(vec3 pixel) {
-    vec3 cell_coords = floor(pixel);
-    vec3 random_point = random_point(pixel) + cell_coords;
-    float d = distance(pixel, random_point);
-    return d;
-}
-// Get the neighbor of a current cell
-vec3 get_neighbor(vec3 pixel, vec3 offset) {
-    vec3 neighbor_coords = pixel + offset; 
-    return neighbor_coords;
+    return SDFSphere(hash13(cell_coords) > 0.7, point_coords + point_offset);
 }
 
 void main() {
@@ -36,13 +30,15 @@ void main() {
         for(int y = -1; y < 2; y++) {
             for(int z = -1; z < 2; z++) {
                 // Check if the neighboring coordinates are at the min/max, and if they are, swap them
-                vec3 neighbor_coords = get_neighbor(coords, vec3(x, y, z)); 
+                vec3 neighbor_coords = coords + vec3(x, y, z); 
                 // The see that will be used to get the random point
                 vec3 k = mod(neighbor_coords, gl_NumWorkGroups.x / CELL_SIZE);
                 // Get the neighboring points
-                vec3 neighbor_point = random_point(k) + floor(neighbor_coords);
-                float neighbor_d = distance(coords, neighbor_point);
-                base_d = min(base_d, neighbor_d);
+                SDFSphere neighbor_point = random_point(k, floor(neighbor_coords));
+                if (neighbor_point.enabled) {
+                    float neighbor_d = distance(coords, neighbor_point.location) - SPHERE_SIZE;
+                    base_d = min(base_d, neighbor_d);
+                }
                 // Keep track of the min distance
             }
         }

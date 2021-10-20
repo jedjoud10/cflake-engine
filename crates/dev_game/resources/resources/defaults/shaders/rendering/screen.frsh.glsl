@@ -64,7 +64,7 @@ void main() {
 		} else {
 			color = final_color;
 		}
-		color = texture(sdf_texture, vec3(uvs * 2.0 * vec2(float(resolution.x) / float(resolution.y), 1), 0.5)).x * vec3(1, 1, 1);
+		color = texture(sdf_texture, vec3(uvs * 2.0 * vec2(float(resolution.x) / float(resolution.y), 1), time * 0.1)).x * vec3(1, 1, 1);
 		/*
 		float depth = texture(depth_texture, uvs).x;
 		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
