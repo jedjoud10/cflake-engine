@@ -3,7 +3,7 @@
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(r16f, binding = 0) uniform image3D sdf_tex;
 #define CELL_SIZE 16
-#define SPHERE_SIZE 1
+#define SPHERE_SIZE 0.2
 
 
 struct SDFSphere {
@@ -15,7 +15,7 @@ struct SDFSphere {
 SDFSphere random_point(vec3 pixel, vec3 point_offset) {
     vec3 cell_coords = floor(pixel);
     vec3 point_coords = hash33(cell_coords);
-    return SDFSphere(hash13(cell_coords) > 0.7, point_coords + point_offset);
+    return SDFSphere(hash13(cell_coords) > 0.0, point_coords + point_offset);
 }
 
 void main() {

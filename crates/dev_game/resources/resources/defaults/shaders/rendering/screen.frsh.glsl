@@ -10,9 +10,11 @@ uniform sampler2D depth_texture;
 uniform sampler2D default_sky_gradient;
 
 uniform sampler2D volumetric_texture;
+uniform sampler2D volumetric_depth_texture;
 uniform sampler3D sdf_texture;
 
 uniform vec3 directional_light_dir;
+uniform vec2 nf_planes;
 uniform int debug_view;
 uniform vec3 camera_pos;
 uniform ivec2 resolution;
@@ -22,6 +24,7 @@ in vec2 uv_coordinates;
 void main() {	
 	// Sample the textures
 	vec2 uvs = uv_coordinates;
+	ivec2 pixel = ivec2(uv_coordinates * resolution);
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
 	vec3 position = texture(position_texture, uvs).xyz;
@@ -58,17 +61,21 @@ void main() {
 		} else {
 			color = final_color;
 		}
-		color = texture(volumetric_texture, uvs).xyz;
-		/*
+		
+		// Sample the volumetric result texture
+		vec3 volumetric_color = texture(volumetric_texture, uvs).xyz;
+		float new_depth = texture(volumetric_depth_texture, uvs).r;
 		float depth = texture(depth_texture, uvs).x;
 		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
-		float new_depth = volumetric_result.depth;
 		// Compare the depths
-		bool draw = old_depth > new_depth;
+		bool draw = old_depth > new_depth && new_depth != 0;
 		if (draw) {
-			color += volumetric_result.color;
+			color = volumetric_color;
+		}		
+		// Preview the SDF texture
+		if (pixel.x < 256 && pixel.y > resolution.y-256) {
+			color = texture(sdf_texture, vec3((pixel/vec2(resolution))*9.0 * vec2(float(resolution.x) / float(resolution.y), 1), time * 0.2)).x * vec3(1, 1, 1);
 		}
-		*/
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {

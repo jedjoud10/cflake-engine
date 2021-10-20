@@ -259,7 +259,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
-    system.volumetric.create_textures(data.custom_data.window.dimensions);
+    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 3);
     system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
     // Then setup opengl and the render buffer
@@ -342,6 +342,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t2d("depth_texture", &system.depth_stencil_texture, gl::TEXTURE4);
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+    shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
     // Sky params
     shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
     let sky_component = data
@@ -360,7 +361,8 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Volumetric parameters
     shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
-    shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE7);
+    shader.set_t2d("volumetric_depth_texture", &system.volumetric.depth_tex, gl::TEXTURE7);
+    shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
 
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
