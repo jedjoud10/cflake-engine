@@ -98,15 +98,7 @@ impl World {
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .generate_texture(vec![127, 128, 255, 255])
             .set_internal_name("default_normals")
-            .cache_texture(&mut self.texture_cacher);
-
-        // Copy the default shader name
-        Shader::new(
-            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
-            &mut self.resource_manager,
-            &mut self.shader_cacher,
-            None,
-        );
+            .cache_texture(&mut self.texture_cacher);        
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);

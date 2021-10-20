@@ -19,6 +19,7 @@ pub struct CustomData {
     pub debug_view: u16,
     pub wireframe: bool,
     wireframe_shader_name: String,
+    default_material: Material,
     // Volumetric renderer stuff
     pub volumetric: Volumetric,
     // The renderer for the screen quad
@@ -153,20 +154,15 @@ impl CustomData {
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
-    ) {
-        // Default material just in case
-        let default_material = Material {
-            shader_name: data.shader_cacher.1.id_get_object(0).unwrap().name.clone(),
-            ..Material::default()
-        };
+    ) {        
         // Get the material for this entity
         let material = match renderer.material.as_ref() {
             Some(mat) => mat,
-            None => &default_material,
+            None => &self.default_material,
         };
         // Shader name
         let shader_name = match material.shader_name.as_str() {
-            "" => default_material.shader_name.clone(),
+            "" => self.default_material.shader_name.clone(),
             a => a.to_string(),
         };
 
@@ -187,10 +183,14 @@ impl CustomData {
         // Check if we already loaded the default textures or not
         if material.diffuse_tex_id.is_none() || material.normal_tex_id.is_none() {
             // Did not load all the default textures!
-            println!("Did not load all the default textures for material {}!", &material.material_name);
+            // TODO: Refactor
+            shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(self.default_material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
+            shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(self.default_material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
+            
+        } else {
+            shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
+            shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
         }
-        shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
-        shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
 
         // Set the custom uniforms
         self.set_uniforms_from_custom_setter(shader, renderer);
@@ -265,15 +265,27 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
 
-    // Load the wireframe shad
+    // Load the default shader
+    let default_shader_name = Shader::new(
+        vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
+        data.resource_manager,
+        data.shader_cacher,
+        None,
+    )
+    .1;
+
+    // Load the wireframe shader
     let wireframe_shader_name = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
-        &mut data.resource_manager,
-        &mut data.shader_cacher,
+        data.resource_manager,
+        data.shader_cacher,
         None,
     )
     .1;
     system.wireframe_shader_name = wireframe_shader_name;
+
+    // Load the default material
+    system.default_material = Material::new("Default Material").set_shader(&default_shader_name).load_default_textures(data.texture_cacher);
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();

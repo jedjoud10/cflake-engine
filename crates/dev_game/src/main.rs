@@ -5,6 +5,7 @@ use main::others::Instance;
 use main::rendering::*;
 use main::world_data::*;
 use main::*;
+use main::resources::LoadableResource;
 fn main() {
     // Load up the engine
     main::start("DevJed", "DevGame", world_initialized);
@@ -112,5 +113,15 @@ pub fn world_initialized(world: &mut World) {
             components::TerrainData::new(material_inst, compute_id, color_compute_id, OCTREE_DEPTH),
         )
         .unwrap();
-    data.entity_manager.add_entity_s(terrain_entity);
+    
+
+
+    // Create some entities
+    let mut cube = Entity::new("Cube");
+    cube.link_default_component::<components::Transform>(data.component_manager).unwrap();
+    let model = Model::new().from_path("defaults\\models\\cube.mdl3d", data.resource_manager).unwrap();
+    let renderer = Renderer::new().set_model(model);
+    cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
+    data.entity_manager.add_entity_s(cube);
+    //data.entity_manager.add_entity_s(terrain_entity);
 }
