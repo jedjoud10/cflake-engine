@@ -68,7 +68,7 @@ impl Volumetric {
             .generate_texture(Vec::new());
     }
     // When the screen resolution changes
-    pub fn update_texture_resolution(&mut self, resolution: veclib::Vector3<u16>) {
+    pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>) {
         self.result_tex
             .update_size(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result);
         self.depth_tex

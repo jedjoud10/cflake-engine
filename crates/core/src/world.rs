@@ -413,7 +413,7 @@ impl World {
 
             let render_system = self
                 .system_manager
-                .get_custom_system_data::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
+                .get_custom_system_data_mut::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
             render_system.diffuse_texture.update_size(size.0, size.1);
@@ -421,6 +421,11 @@ impl World {
             render_system.normals_texture.update_size(size.0, size.1);
             render_system.position_texture.update_size(size.0, size.1);
             render_system.emissive_texture.update_size(size.0, size.1);
+            /*
+            TODO: This
+            render_system.volumetric.result_tex.update_size(size.0, size.1);
+            render_system.volumetric.depth_tex.update_size(size.0, size.1);
+            */
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
