@@ -116,13 +116,16 @@ pub fn world_initialized(world: &mut World) {
     
 
 
-    // Create some entities
+    // Template entity
+    /*
     let mut cube = Entity::new("Cube");
-    cube.link_default_component::<components::Transform>(data.component_manager).unwrap();
+    cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(x as f32, 0.0, 0.0))).unwrap();
     let model = Model::new().from_path("user\\models\\tools2.mdl3d", data.resource_manager).unwrap();
     let m = Material::new("M").load_diffuse("user\\textures\\palette.png", data.texture_cacher, data.resource_manager).load_default_textures(data.texture_cacher);
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);
-    //data.entity_manager.add_entity_s(terrain_entity);
+    */
+    
+    data.entity_manager.add_entity_s(terrain_entity);
 }
