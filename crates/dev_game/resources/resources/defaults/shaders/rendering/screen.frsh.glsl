@@ -79,11 +79,6 @@ void main() {
 		} else {
 			color = final_color;
 		}
-		// The volumetric fog overwrites everything
-		if (draw) {
-			color += volumetric_color;
-		}
-
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {

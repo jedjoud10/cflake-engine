@@ -19,8 +19,15 @@ def write_some_data(context, filepath, skeletal_animation):
 	tempmesh = bmesh.new()
 	tempmesh.from_mesh(mesh)
 	bmesh.ops.triangulate(tempmesh, faces = tempmesh.faces[:])
-	edges_to_split = filter(filter_edges, tempmesh.edges)
-	bmesh.ops.split_edges(tempmesh, edges = list(edges_to_split))
+	# Loop through the faces, and get the faces that are flat, and also get the edges that are flat and make a dictionary out of the sum of the two
+	edges_to_split = list(filter(filter_edges, tempmesh.edges))
+	for ele in tempmesh.faces:
+		# Get the edges
+		edges = ele.edges
+		for edge in edges:
+			if not ele.smooth and not edges_to_split.__contains__(edge):
+				edges_to_split.append(edge)		
+	bmesh.ops.split_edges(tempmesh, edges = edges_to_split)
 	tempmesh.to_mesh(mesh)
 	tempmesh.free()
 	f = open(filepath, 'w', encoding='utf-8')
@@ -116,8 +123,8 @@ class ExportSomeData(Operator, ExportHelper):
 	# List of operator properties, the attributes will be assigned
 	# to the class instance from the operator settings before calling.
 	skeletal_animation: BoolProperty(
-		name="Skeletal Animation",
-		description="Should we also export the Skeletal animation of this object if it is a Skeleton?",
+		name="Rigged",
+		description="Should we also export the Skeletal rig of this object?",
 		default=False,
 	)
 	def execute(self, context):
@@ -126,7 +133,7 @@ class ExportSomeData(Operator, ExportHelper):
 
 # Only needed if you want to add into a dynamic menu
 def menu_func_export(self, context):
-	self.layout.operator(ExportSomeData.bl_idname, text="Hypoengine3D (.mdl3d)")
+	self.layout.operator(ExportSomeData.bl_idname, text="cFlake Engine (.mdl3d)")
 
 
 def register():

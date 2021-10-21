@@ -119,9 +119,9 @@ pub fn world_initialized(world: &mut World) {
     // Create some entities
     let mut cube = Entity::new("Cube");
     cube.link_default_component::<components::Transform>(data.component_manager).unwrap();
-    let model = Model::new().from_path("defaults\\models\\cube.mdl3d", data.resource_manager).unwrap();
+    let model = Model::new().from_path("user\\models\\pickaxe.mdl3d", data.resource_manager).unwrap();
     let renderer = Renderer::new().set_model(model);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);
-    data.entity_manager.add_entity_s(terrain_entity);
+    //data.entity_manager.add_entity_s(terrain_entity);
 }
