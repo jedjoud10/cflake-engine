@@ -1,3 +1,5 @@
+use crate::TextureFilter;
+
 use super::Texture2D;
 use bitflags::bitflags;
 use others::CacheManager;
@@ -49,6 +51,31 @@ impl Material {
             ..Self::default()
         }
     }
+    // Load the diffuse texture
+    pub fn load_diffuse(mut self, diffuse_path: &str, texture_cacher: &mut CacheManager<Texture2D>, resource_manager: &mut ResourceManager) -> Self {
+        // Load the texture
+        let (_, id) = Texture2D::new()
+            .set_mutable(true)
+            .enable_mipmaps()
+            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .set_filter(TextureFilter::Nearest)
+            .load_texture(diffuse_path, resource_manager, texture_cacher)
+            .unwrap();
+        self.diffuse_tex_id = Some(id);
+        return self;
+    }
+    // Load the normal texture
+    pub fn load_normal(mut self, normal_path: &str, texture_cacher: &mut CacheManager<Texture2D>, resource_manager: &mut ResourceManager) -> Self {
+        // Load the texture
+        let (_, id) = Texture2D::new()
+            .set_mutable(true)
+            .enable_mipmaps()
+            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .load_texture(normal_path, resource_manager, texture_cacher)
+            .unwrap();
+        self.normal_tex_id = Some(id);
+        return self;
+    }
     // Load textures from their texture struct
     pub fn load_textures(mut self, texture_ids: &Vec<Option<usize>>, texture_cacher: &CacheManager<Texture2D>) -> Self {
         self.diffuse_tex_id = texture_ids[0];
@@ -86,7 +113,6 @@ impl Material {
                 Some(texture_path) => {
                     let _resource = resource_manager.load_packed_resource(texture_path)?;
                     let (_, texture_id) = Texture2D::new()
-                        .set_mutable(true)
                         .enable_mipmaps()
                         .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
                         .load_texture(texture_path, resource_manager, texture_cacher)
