@@ -19,14 +19,7 @@ def write_some_data(context, filepath, skeletal_animation):
 	tempmesh = bmesh.new()
 	tempmesh.from_mesh(mesh)
 	bmesh.ops.triangulate(tempmesh, faces = tempmesh.faces[:])
-	# Loop through the faces, and get the faces that are flat, and also get the edges that are flat and make a dictionary out of the sum of the two
-	edges_to_split = list(filter(filter_edges, tempmesh.edges))
-	for ele in tempmesh.faces:
-		# Get the edges
-		edges = ele.edges
-		for edge in edges:
-			if not ele.smooth and not edges_to_split.__contains__(edge):
-				edges_to_split.append(edge)		
+	edges_to_split = list(filter(filter_edges, tempmesh.edges))	
 	bmesh.ops.split_edges(tempmesh, edges = edges_to_split)
 	tempmesh.to_mesh(mesh)
 	tempmesh.free()

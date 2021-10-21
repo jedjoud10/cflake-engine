@@ -46,7 +46,7 @@ void main() {
 
 	vec3 sky_normal_lookup = reflect(-view_dir, normal);
 	float sky_light_val = dot(sky_normal_lookup, vec3(0, 1, 0)); 
-	vec3 ambient_lighting_color = texture(default_sky_gradient, vec2(0, 1 - sky_light_val)).xyz;
+	vec3 ambient_lighting_color = texture(default_sky_gradient, vec2(0, sky_light_val)).xyz;
 
 	vec3 reflect_color = ambient_lighting_color;
 	// Add everything
@@ -74,11 +74,13 @@ void main() {
 
 
 	if (debug_view == 0) {
+		/*
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
 			color = emissive;
 		} else {
-			color = final_color;
 		}
+		*/
+		color = final_color + emissive;
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {

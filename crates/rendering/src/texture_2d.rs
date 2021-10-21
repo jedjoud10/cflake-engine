@@ -33,6 +33,8 @@ impl LoadableResource for Texture2D {
                 let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
                 image.set_format(image::ImageFormat::Png);
                 let decoded = image.with_guessed_format().unwrap().decode().unwrap();
+                // Well it seems like the images are flipped vertically so I have to manually flip them
+                let decoded = decoded.flipv();
                 // Read the image as a 32 bit image
                 let rgba8_image = decoded.to_rgba8();
 
