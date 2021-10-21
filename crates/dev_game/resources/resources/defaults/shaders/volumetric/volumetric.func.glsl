@@ -5,17 +5,28 @@ struct VolumetricResult {
     vec3 color;
     float depth;
 };
-const int STEP_COUNT = 512;
+const int STEP_COUNT = 128;
 const float MAX_DISTANCE = 500;
 const float THRESHOLD = 0.01;
 const float NORMAL_OFFSET = 0.1;
+
+float opSmoothUnion( float d1, float d2, float k ) {
+    float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
+    return mix( d2, d1, h ) - k*h*(1.0-h); 
+}
+
 // Create some fBm noise from the SDF texture
 float fBm(vec3 point, sampler3D sdf_tex) {
     float d = texture(sdf_tex, point).x;
-    for(int i = 0; i < 2; i++) {
-        float l = pow(i, 1.1);
-        float p = pow(i, 0.5);
-        d = min(d, texture(sdf_tex, point * l).x);
+    for(int i = 0; i < 6; i++) {
+        float l = pow(i, 1.2);
+        float p = pow(i, 0.02);
+        // The inflated new distance
+        float i_d = d - 0.0002 * p;
+        float new_d = texture(sdf_tex, point * l + hash31(i)).x;
+        // Clamp
+        new_d = max(new_d, i_d);
+        d = opSmoothUnion(d, new_d, 0.3);
     }
     return d;
 }
@@ -24,14 +35,10 @@ float fBm(vec3 point, sampler3D sdf_tex) {
 float scene(vec3 point, sampler3D sdf_tex) {
     vec3 scale = vec3(1, 1, 1) / 10;
     float d = fBm(-point * scale, sdf_tex);
-    /*
-    d = max(point.y, d);
-    d = max(-point.y - 5, d);
-    */
+    d = min(point.y, d);
+    d = max(point.y - 1, d);
+    //d = max(-point.y - 10, d);
     return d;
-}
-float inverse_lerp(float a, float b, float x) {
-    return (x - a) / (b - a);
 }
 float map(float x, float ra, float rb, float r2a, float r2b) {
     // https://stackoverflow.com/questions/3451553/value-remapping
@@ -54,8 +61,6 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
         // We hit the surface!!
         if (d < THRESHOLD) {
             // Get the exact intersection point
-            //float v = inverse_lerp(last_d, d, THRESHOLD);
-            //point = mix(last_point, point, v);
             vec3 color = vec3(1, 1, 1);
             // Cos
             float cos_a = dot(vec3(0, 0, -1), pixel_forward_projection);
@@ -77,7 +82,7 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
             vec3 normal = normalize(vec3(nd1-d, nd2-d, nd3-d));
             
             // Calculate the linear depth
-            return VolumetricResult(normal, d_depth);     
+            return VolumetricResult(float(i) / float(STEP_COUNT) * vec3(1, 1, 1), d_depth);     
         }
 
         // Update values for the next iteration
