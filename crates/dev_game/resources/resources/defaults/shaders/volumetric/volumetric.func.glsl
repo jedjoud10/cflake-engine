@@ -5,38 +5,16 @@ struct VolumetricResult {
     vec3 color;
     float depth;
 };
-const int STEP_COUNT = 128;
+const int STEP_COUNT = 512;
 const float MAX_DISTANCE = 500;
-const float THRESHOLD = 0.01;
-const float NORMAL_OFFSET = 0.1;
-
-float opSmoothUnion( float d1, float d2, float k ) {
-    float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
-    return mix( d2, d1, h ) - k*h*(1.0-h); 
-}
-
-// Create some fBm noise from the SDF texture
-float fBm(vec3 point, sampler3D sdf_tex) {
-    float d = texture(sdf_tex, point).x;
-    for(int i = 0; i < 6; i++) {
-        float l = pow(i, 1.2);
-        float p = pow(i, 0.02);
-        // The inflated new distance
-        float i_d = d - 0.0002 * p;
-        float new_d = texture(sdf_tex, point * l + hash31(i)).x;
-        // Clamp
-        new_d = max(new_d, i_d);
-        d = opSmoothUnion(d, new_d, 0.3);
-    }
-    return d;
-}
-
+const float THRESHOLD = 0.3;
+const float NORMAL_OFFSET = 0.5;
 // Sampling the SDF texture
-float scene(vec3 point, sampler3D sdf_tex) {
-    vec3 scale = vec3(1, 1, 1) / 10;
-    float d = fBm(-point * scale, sdf_tex);
+float scene(vec3 point, sampler3D sdf_tex, float time) {
+    vec3 scale = vec3(1, 1, 1) / 100;
+    float d = texture(sdf_tex, -point * scale).x * 10;
     d = min(point.y, d);
-    d = max(point.y - 1, d);
+    d = max(point.y - 30, d);
     //d = max(-point.y - 10, d);
     return d;
 }
@@ -44,10 +22,10 @@ float map(float x, float ra, float rb, float r2a, float r2b) {
     // https://stackoverflow.com/questions/3451553/value-remapping
     return r2a + (x - ra) * (r2b - r2a) / (rb - ra);
 }
-VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, vec3 pixel_forward_projection, vec2 nf_planes, sampler3D sdf_tex) {
+VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, vec3 pixel_forward_projection, vec2 nf_planes, sampler3D sdf_tex, float time) {
     // Starting point at camera
     vec3 point = camera_position + pixel_forward;    
-    float d = scene(point, sdf_tex);
+    float d = scene(point, sdf_tex, time);
     float last_d = d;
     vec3 last_point = point;
     for(int i = 0; i < STEP_COUNT; i++) { 
@@ -56,7 +34,7 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
             break;
         }
         // Offset the point using the forward vector and a dynamic step size
-        d = scene(point, sdf_tex);
+        d = scene(point, sdf_tex, time);
         point += pixel_forward * d;
         // We hit the surface!!
         if (d < THRESHOLD) {
@@ -70,11 +48,11 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
             
             
             // Calculate the normal at the specific intersection point
-            float nd1 = scene(point + vec3(NORMAL_OFFSET*vec3(1, 0, 0)), sdf_tex);
-            float nd2 = scene(point + vec3(NORMAL_OFFSET*vec3(0, 1, 0)), sdf_tex);
-            float nd3 = scene(point + vec3(NORMAL_OFFSET*vec3(0, 0, 1)), sdf_tex);
-            /*
+            float nd1 = scene(point + vec3(NORMAL_OFFSET*vec3(1, 0, 0)), sdf_tex, time);
+            float nd2 = scene(point + vec3(NORMAL_OFFSET*vec3(0, 1, 0)), sdf_tex, time);
+            float nd3 = scene(point + vec3(NORMAL_OFFSET*vec3(0, 0, 1)), sdf_tex, time);
 
+            /*
             float nd4 = scene(point - vec3(NORMAL_OFFSET*vec3(1, 0, 0)), sdf_tex);
             float nd5 = scene(point - vec3(NORMAL_OFFSET*vec3(0, 1, 0)), sdf_tex);
             float nd6 = scene(point - vec3(NORMAL_OFFSET*vec3(0, 0, 1)), sdf_tex);
@@ -82,7 +60,7 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
             vec3 normal = normalize(vec3(nd1-d, nd2-d, nd3-d));
             
             // Calculate the linear depth
-            return VolumetricResult(float(i) / float(STEP_COUNT) * vec3(1, 1, 1), d_depth);     
+            return VolumetricResult(dot(normal, vec3(0, 1, 0)) * vec3(1, 1, 1), d_depth);     
         }
 
         // Update values for the next iteration

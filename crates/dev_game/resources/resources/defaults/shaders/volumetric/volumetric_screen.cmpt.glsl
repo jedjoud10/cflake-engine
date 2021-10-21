@@ -8,6 +8,7 @@ layout(location = 3) uniform vec3 camera_pos;
 layout(location = 4) uniform mat4 custom_vp_matrix;
 layout(location = 5) uniform mat4 projection_matrix;
 layout(location = 6) uniform vec2 nf_planes;
+layout(location = 7) uniform float time;
 
 void main() {
     // Get the pixel coord
@@ -15,7 +16,7 @@ void main() {
     vec2 uvs = vec2(pixel_coords.xy) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
     vec3 pixel_forward = normalize((inverse(custom_vp_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
 	vec3 pixel_forward_projection = normalize((inverse(projection_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
-	VolumetricResult volumetric_result = volumetric(camera_pos, uvs, pixel_forward, pixel_forward_projection, nf_planes, sdf_tex);
+	VolumetricResult volumetric_result = volumetric(camera_pos, uvs, pixel_forward, pixel_forward_projection, nf_planes, sdf_tex, time);
     
     vec4 pixel = vec4(volumetric_result.color, 0.0);
     // Write the pixel
