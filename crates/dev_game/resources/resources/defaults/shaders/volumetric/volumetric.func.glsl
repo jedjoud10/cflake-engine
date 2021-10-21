@@ -7,14 +7,14 @@ struct VolumetricResult {
 };
 const int STEP_COUNT = 512;
 const float MAX_DISTANCE = 500;
-const float THRESHOLD = 0.3;
-const float NORMAL_OFFSET = 0.5;
+const float THRESHOLD = 0.03;
+const float NORMAL_OFFSET = 0.05;
 // Sampling the SDF texture
 float scene(vec3 point, sampler3D sdf_tex, float time) {
-    vec3 scale = vec3(1, 1, 1) / 100;
-    float d = texture(sdf_tex, -point * scale).x * 10;
+    vec3 scale = vec3(1, 1, 1) / 30;
+    float d = texture(sdf_tex, -point * scale).x * 1.0;
     d = min(point.y, d);
-    d = max(point.y - 30, d);
+    d = max(point.y - 2, d);
     //d = max(-point.y - 10, d);
     return d;
 }
@@ -30,7 +30,7 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
     vec3 last_point = point;
     for(int i = 0; i < STEP_COUNT; i++) { 
         // Max distance
-        if (distance(point, camera_position) > MAX_DISTANCE) {
+        if (distance(point, camera_position) > MAX_DISTANCE || (point.y > 2 && pixel_forward.y > 0) || (point.y < 0 && pixel_forward.y < 0)) {
             break;
         }
         // Offset the point using the forward vector and a dynamic step size
@@ -48,19 +48,19 @@ VolumetricResult volumetric(vec3 camera_position, vec2 uvs, vec3 pixel_forward, 
             
             
             // Calculate the normal at the specific intersection point
+            /*
             float nd1 = scene(point + vec3(NORMAL_OFFSET*vec3(1, 0, 0)), sdf_tex, time);
             float nd2 = scene(point + vec3(NORMAL_OFFSET*vec3(0, 1, 0)), sdf_tex, time);
             float nd3 = scene(point + vec3(NORMAL_OFFSET*vec3(0, 0, 1)), sdf_tex, time);
 
-            /*
             float nd4 = scene(point - vec3(NORMAL_OFFSET*vec3(1, 0, 0)), sdf_tex);
             float nd5 = scene(point - vec3(NORMAL_OFFSET*vec3(0, 1, 0)), sdf_tex);
             float nd6 = scene(point - vec3(NORMAL_OFFSET*vec3(0, 0, 1)), sdf_tex);
-            */
             vec3 normal = normalize(vec3(nd1-d, nd2-d, nd3-d));
-            
+            */
+            vec3 ic = float(i) / float(STEP_COUNT) * vec3(1, 1, 1);
             // Calculate the linear depth
-            return VolumetricResult(dot(normal, vec3(0, 1, 0)) * vec3(1, 1, 1), d_depth);     
+            return VolumetricResult(ic, d_depth);     
         }
 
         // Update values for the next iteration

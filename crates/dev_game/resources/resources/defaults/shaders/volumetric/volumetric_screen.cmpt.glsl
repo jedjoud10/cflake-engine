@@ -1,6 +1,6 @@
 #version 460 core
 #include "defaults\shaders\volumetric\volumetric.func.glsl"
-layout(local_size_x = 4, local_size_y = 4) in;
+layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba8, binding = 1) uniform image2D result_tex;
 layout(r32f, binding = 0) uniform image2D depth_tex;
 layout(location = 2) uniform sampler3D sdf_tex;

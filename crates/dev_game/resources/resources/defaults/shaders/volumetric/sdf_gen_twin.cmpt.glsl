@@ -1,7 +1,8 @@
 #version 460 core
 #include "defaults\shaders\others\hashes.func.glsl"
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
-layout(location = 0) uniform sampler3D sdf_tex;
+layout(r16f, binding = 0) uniform image3D sdf_tex;
+layout(location = 1) uniform sampler3D sdf_tex_original;
 
 float opSmoothUnion( float d1, float d2, float k ) {
     float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
@@ -13,28 +14,29 @@ float opSmoothSubtraction( float d1, float d2, float k ) {
 }
 
 // Create some fBm noise from the SDF texture
-float fBm(vec3 point, sampler3D sdf_tex, float time) {
-    float d = texture(sdf_tex, point).x;
-    for(int i = 0; i < 5; i++) {
-        float l = pow(1.9, i);
-        float p = pow(0.1, i);
+float fBm(vec3 point) {
+    float d = texture(sdf_tex_original, point).x - 0.3;
+    for(int i = 1; i < 4; i++) {
+        float l = pow(5.5354, i);
+        float p = pow(0.2, i);
         // The inflated new distance
         float i_d = d - p;
-        float new_d = texture(sdf_tex, point * l + hash31(i)).x;
+        float new_d = texture(sdf_tex_original, point * l + hash31(i*24.2436)).x;
         // Clamp
-        new_d = min(opSmoothSubtraction(-new_d, i_d, (sin(time) + 1) * 2), d);
-        d = opSmoothUnion(d, new_d, 0.5);
+        new_d = min(max(new_d, i_d), d);
+        d = min(d, new_d);
     }
     return d;
 }
 
+
 void main() {
     // Get the pixel coord
     ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);
-    // Dafuq happened here with the terrain gen compute?
-    // Get the cell coordinates
+    vec3 uvs = vec3(pixel_coords) / vec3(gl_NumWorkGroups.xyz * gl_WorkGroupSize.xyz);
     // Run the fBm stuff and save it to da texture
-    vec4 pixel = vec4(0, 0, 0, 0);
+    float d = fBm(uvs * vec3(1, 1, 1));
+    vec4 pixel = vec4(d, 0, 0, 0);
     // Write the pixel
     imageStore(sdf_tex, pixel_coords, pixel);
 }
