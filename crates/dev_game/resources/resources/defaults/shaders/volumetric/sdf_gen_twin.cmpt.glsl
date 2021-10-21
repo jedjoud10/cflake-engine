@@ -17,7 +17,7 @@ float opSmoothSubtraction( float d1, float d2, float k ) {
 float fBm(vec3 point) {
     float d = texture(sdf_tex_original, point).x - 0.3;
     for(int i = 1; i < 4; i++) {
-        float l = pow(5.5354, i);
+        float l = pow(2.5354, i);
         float p = pow(0.2, i);
         // The inflated new distance
         float i_d = d - p;

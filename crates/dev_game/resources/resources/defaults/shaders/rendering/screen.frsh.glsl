@@ -55,27 +55,34 @@ void main() {
 	final_color += diffuse * light_val;
 	final_color += specular * specular_strength;
 
+	// Sample the volumetric result texture
+	// Blur the texture
+	vec3 volumetric_color = texture(volumetric_texture, uvs).rgb;
+	/*
+	for(int x = -1; x < 1; x++) {
+		for(int y = -1; y < 1; y++) {
+			//volumetric_color += texture(volumetric_texture, uvs + vec2(x / float(resolution.x), y / float(resolution.y)) * 4.0).rgb;			
+		}
+	}
+	volumetric_color /= 9.0;
+	*/
+	/*
+	float new_depth = texture(volumetric_depth_texture, uvs).r;
+	float depth = texture(depth_texture, uvs).x;
+	float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
+	// Compare the depths
+	bool draw = old_depth > new_depth && new_depth != 0;
+	*/
+
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
 			color = emissive;
 		} else {
 			color = final_color;
 		}
-		
-		// Sample the volumetric result texture
-		vec3 volumetric_color = texture(volumetric_texture, uvs).xyz;
-		float new_depth = texture(volumetric_depth_texture, uvs).r;
-		float depth = texture(depth_texture, uvs).x;
-		float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
-		// Compare the depths
-		bool draw = old_depth > new_depth && new_depth != 0;
-		if (draw) {
-			color = volumetric_color;
-		}		
-		// Preview the SDF texture
-		if (pixel.x < 256 && pixel.y > resolution.y-256) {
-			color = texture(sdf_texture, vec3((pixel/vec2(resolution))*9.0 * vec2(float(resolution.x) / float(resolution.y), 1), time * 0.2)).x * vec3(1, 1, 1);
-		}
+		// The volumetric fog overwrites everything
+		color += volumetric_color;
+
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
@@ -84,5 +91,6 @@ void main() {
 		color = emissive;
 		color = reflect_color;
 	} else if (debug_view == 4) {
+		color = volumetric_color;
 	}
 }

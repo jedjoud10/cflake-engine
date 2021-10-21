@@ -259,7 +259,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
-    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 1);
+    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 2);
     system.volumetric.generate_sdf(&mut data.shader_cacher.1);
 
     // Get the OpenGL version
@@ -318,7 +318,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     // Change the debug view
     if data.input_manager.map_pressed("change_debug_view") {
         system.debug_view += 1;
-        system.debug_view %= 4;
+        system.debug_view %= 5;
     }
     // Enable / Disable wireframe
     if data.input_manager.map_pressed("toggle_wireframe") {
