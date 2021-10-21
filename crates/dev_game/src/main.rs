@@ -123,5 +123,5 @@ pub fn world_initialized(world: &mut World) {
     let renderer = Renderer::new().set_model(model);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);
-    //data.entity_manager.add_entity_s(terrain_entity);
+    data.entity_manager.add_entity_s(terrain_entity);
 }

@@ -2,7 +2,7 @@
 #include "defaults\shaders\others\hashes.func.glsl"
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 layout(r16f, binding = 0) uniform image3D sdf_tex;
-#define CELL_SIZE 16
+#define CELL_SIZE 4
 #define SPHERE_SIZE 0.0
 #define SPHERE_RANDOM_FC 0.4
 

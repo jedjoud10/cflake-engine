@@ -20,6 +20,8 @@ pub struct Volumetric {
     pub compute_generator_twin_id: usize,
     // The compute shader ID
     pub compute_id: usize,
+    // Check if the volumetric rendering is enabled
+    pub enabled: bool,
 
     // Sizes
     sdf_dimension: u16,
@@ -133,6 +135,7 @@ impl Volumetric {
         camera_position: veclib::Vector3<f32>,
         clip_planes: (f32, f32),
     ) {
+        if !self.enabled { return; }
         // Run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
@@ -158,4 +161,8 @@ impl Volumetric {
         compute.get_compute_state().unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
+    // Enable volumetric rendering
+    pub fn enable(&mut self) { self.enabled = true; }
+    // Disable volumetric rendering
+    pub fn disable(&mut self) { self.enabled = false; }
 }

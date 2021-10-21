@@ -66,13 +66,12 @@ void main() {
 	}
 	volumetric_color /= 9.0;
 	*/
-	/*
 	float new_depth = texture(volumetric_depth_texture, uvs).r;
 	float depth = texture(depth_texture, uvs).x;
 	float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
 	// Compare the depths
 	bool draw = old_depth > new_depth && new_depth != 0;
-	*/
+
 
 	if (debug_view == 0) {
 		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
@@ -81,7 +80,9 @@ void main() {
 			color = final_color;
 		}
 		// The volumetric fog overwrites everything
-		color += volumetric_color;
+		if (draw) {
+			color += volumetric_color;
+		}
 
 	} else if (debug_view == 1) {
 		color = normal;

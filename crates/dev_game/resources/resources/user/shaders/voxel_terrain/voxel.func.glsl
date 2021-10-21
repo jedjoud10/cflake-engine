@@ -19,5 +19,5 @@ VoxelData get_voxel(vec3 pos) {
     density = opSmoothUnion(density + 80, pos.y - 16.0, 30.0);
     
     int material_id = 0;
-    return VoxelData(pos.y * 20.0, 0, material_id);
+    return VoxelData(density * 20.0, 0, material_id);
 }
