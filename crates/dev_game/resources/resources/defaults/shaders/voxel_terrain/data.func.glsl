@@ -1,8 +1,12 @@
 // Some voxel data that is generated in the first pass of the compute shader
 struct Voxel {
     float density;
-    int biomeID;
-    int materialID;
+};
+struct MaterialVoxel {
+    int material_id;
+    int biome_id;
+    int hardness;
+    int texture_id;
 };
 struct ColorVoxel {
     vec3 color;    
@@ -17,16 +21,3 @@ struct Detail {
     vec3 rotation;
     float scale;
 };
-// Pack the density data into two integers
-ivec2 pack_density(float s_density) {
-    uint density = uint(clamp(s_density + 32767, 0, 65535));
-    uint density1 = density >> 8;
-    uint density2 = density << 24;
-    density2 = density2 >> 24;
-    return ivec2(density1, density2);
-}
-// Unpack the density data to a main float
-float unpack_density(uvec2 packed_density) {
-    
-    return d1+d2;
-}

@@ -4,7 +4,7 @@
 #include "defaults\shaders\voxel_terrain\data.func.glsl"
 #include "defaults\shaders\voxel_terrain\sdf.func.glsl"
 // Generate the voxel data here
-Voxel get_voxel(vec3 pos) {
+get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     // Actual function for voxels
     // Actual function for voxels
     // FBM Invertex billow noise with 8 octaves
@@ -25,14 +25,20 @@ Voxel get_voxel(vec3 pos) {
     if (snoise(pos * 0.002) > -0.5) {
         material_id = 1;
     }
-    return Voxel(density * 20.0, 0, material_id);
+    int biome_id = 0;
+    int hardness = 0;
+    int texture_id = 0;
+
+    // Write the result
+    voxel = Voxel(density * 20);
+    material_voxel = MaterialVoxel(material_id, biome_id, hardness, texture_id);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
-ColorVoxel get_color_voxel(vec3 pos, sampler3D voxel_texture, Voxel voxel, vec3 voxel_normal, vec3 coords) {
+get_color_voxel(vec3 pos, sampler3D voxel_texture, Voxel voxel, out ColorVoxel color_voxel) {
     vec3 color = vec3(1, 1, 1);  
-    return ColorVoxel(color * voxel.materialID);
+    color_voxel = ColorVoxel(color * voxel.materialID);
 }
 // Get the detail data at a specific point3
-Detail get_detail(vec3 pos, Voxel voxel, vec3 voxel_normal, ColorVoxel color) {
-    return Detail(ivec3(0, 0, 0), false, vec3(0, 0, 0), 1.0);
+get_detail(vec3 pos, Voxel voxel, vec3 voxel_normal, ColorVoxel color, out Detail detail) {
+    detail = Detail(ivec3(0, 0, 0), false, vec3(0, 0, 0), 1.0);
 } 

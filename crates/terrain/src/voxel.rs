@@ -20,6 +20,17 @@ pub fn flatten(position: (usize, usize, usize)) -> usize {
     return position.0 + (position.1 * CHUNK_SIZE * CHUNK_SIZE) + (position.2 * CHUNK_SIZE);
 }
 
+// Just a simple voxel
+#[derive(Default, Clone, Copy)]
+pub struct Voxel {
+    pub color: veclib::Vector3<u8>,
+    pub density: u16,
+    pub biome_id: u8,
+    pub material_id: u8,
+    // Very hard ( ͡° ͜ʖ ͡°)
+    pub hardness: u8,
+    pub texture_id: u8,
+}
 // Handles the generation of voxel data
 #[derive(Default)]
 pub struct VoxelGenerator {
@@ -27,10 +38,12 @@ pub struct VoxelGenerator {
     pub compute_id: usize,
     // The seconday compute shader's name
     pub color_compute_id: usize,
-    // The 3D texture used for voxel generation as well
+    // The 3D texture used for voxel generation, only stores the density in a 16 bit value
     pub voxel_texture: Texture3D,
-    // The seconday 3D texture
-    pub color_voxel_texture: Texture3D,
+    // The 3D texture used to store MaterialID, BiomeID, Hardness and Smoothness
+    pub material_texture: Texture3D,
+    // The secondary 3D texture, stores the color (RGB)
+    pub color_texture: Texture3D,
 }
 
 impl VoxelGenerator {
@@ -39,12 +52,17 @@ impl VoxelGenerator {
         // Create the voxel texture
         self.voxel_texture = Texture3D::new()
             .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)
+            .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE)
+            .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
+            .generate_texture(Vec::new());
+        self.material_texture = Texture3D::new()
+            .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new());
-        self.color_voxel_texture = Texture3D::new()
+        self.color_texture = Texture3D::new()
             .set_dimensions(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16)
-            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
+            .set_idf(gl::RGB8, gl::RGB, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new());
     }
@@ -55,6 +73,7 @@ impl VoxelGenerator {
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
+        shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
         shader.set_i32("node_size", &(*size as i32));
@@ -82,8 +101,9 @@ impl VoxelGenerator {
         // Second pass
         let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
         color_shader.use_shader();
-        color_shader.set_i3d("color_voxel_image", &self.color_voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
+        color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
+        color_shader.set_t3d("material_sampler", &self.voxel_texture, gl::TEXTURE2);
         color_shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
         color_shader.set_i32("node_size", &(*size as i32));
@@ -96,39 +116,30 @@ impl VoxelGenerator {
         color_compute.get_compute_state().unwrap();
 
         // Read back the texture into the data buffer
-        let pixels2 = self.color_voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
-        let pixels = self.voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
-        //let pixels = vec![0; data.len()];
+        let color_pixels = self.voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector3<u8>, u8>();
+        let material_pixels = self.material_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
+        let voxel_pixels = self.material_texture.internal_texture.fill_array_elems::<u16>();
         // Keep track of the min and max values
         let mut min = u16::MAX;
         let mut max = u16::MIN;
-
         // Turn the pixels into the data
-        for (i, pixel) in pixels.iter().enumerate() {
-            let voxel_data = *pixel;
-            // Convert the two bytes into an i16
-            let mut density: u16 = voxel_data.x as u16;
-            density = density << 8;
-            density |= voxel_data.y as u16;
+        for (i, pixel) in voxel_pixels.iter().enumerate() {
+            let density = *pixel;
+            let material_data = material_pixels[i];
+            let color = color_pixels[i];
             data[i] = Voxel {
                 density: density,
-                color: pixels2[i].get3([0, 1, 2]),
-                biome_id: voxel_data.z,
-                material_id: voxel_data.w,
+                color: color,
+                biome_id: material_data.x,
+                material_id: material_data.y,
+                hardness: material_data.z,
+                texture_id: material_data.w
             };
+            // Keep the min and max
             min = min.min(density);
             max = max.max(density);
         }
         // Only generate the mesh if we have a surface
         (min < ISOLINE) != (max < ISOLINE)
     }
-}
-
-// Just a simple voxel
-#[derive(Default, Clone, Copy)]
-pub struct Voxel {
-    pub color: veclib::Vector3<u8>,
-    pub density: u16,
-    pub biome_id: u8,
-    pub material_id: u8,
 }

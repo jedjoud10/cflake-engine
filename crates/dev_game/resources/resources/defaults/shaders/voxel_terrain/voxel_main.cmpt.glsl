@@ -2,7 +2,8 @@
 #includep {"0"}
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(rgba8, binding = 0) uniform image3D voxel_image;
+layout(r16, binding = 0) uniform image3D voxel_image;
+layout(rgba8, binding = 1) uniform image3D material_image;
 layout(location = 1) uniform vec3 node_pos;
 layout(location = 2) uniform int node_size;
 layout(location = 3) uniform int chunk_size;
@@ -17,10 +18,14 @@ void main() {
     pos *= size;
     pos += node_pos;              
     // Create the pixel value
-    Voxel voxel = get_voxel(pos);
-    ivec2 densities = pack_density(voxel.density);
-    vec4 pixel = vec4(float(densities.x) / 255, float(densities.y) / 255, float(voxel.biomeID) / 255, float(voxel.materialID) / 255);    
-    
-    // Write the pixel
+    Voxel voxel;
+    MaterialVoxel material_voxel;
+    get_voxel(pos, out voxel, out material_voxel);
+
+    // Write the voxel pixel
+    vec4 pixel = vec4(uint(clamp(voxel.density + 32767, 0, 65535)), 0, 0, 0);        
+    // Write the material pixel
     imageStore(voxel_image, pixel_coords, pixel);
+    vec4 material_pixel = vec4(material_voxel.material_id, material_voxel.biome_id, material_voxel.hardness, material_voxel.texture_id);
+    imageStore(material_image, pixel_coords, material_pixel);
 }
