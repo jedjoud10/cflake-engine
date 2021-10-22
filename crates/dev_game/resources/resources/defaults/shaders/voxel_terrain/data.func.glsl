@@ -27,8 +27,8 @@ ivec2 pack_density(float s_density) {
 }
 // Unpack the density data to a main float
 float unpack_density(ivec2 packed_density) {
-    float density = 0;
+    int density = 0;
     density = packed_density.x << 8;
     density |= packed_density.y;
-    return density;
+    return intBitsToFloat(density);
 }

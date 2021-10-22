@@ -15,20 +15,18 @@ pub struct AdvancedOctree {
     pub generated_base_octree: bool,
     // The combined twin and normal nodes
     pub combined_nodes: HashSet<OctreeNode>,
+    // The twin rule, if this is none, don't generate twin nodes
+    pub subdivide_twin_rule: Option<fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool>,
+    // The last position
+    pub last_pos: veclib::Vector3<f32>
 }
 
-// Twin node generation
-impl AdvancedOctree {
-    // Check if a an already existing node could be subdivided even more
-    fn can_node_subdivide_twin(&self, node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32) -> bool {
-        let c: veclib::Vector3<f32> = node.get_center().into();
-        let max = node.depth == 1 || node.depth == 2;
-        let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
-        node.children_indices.is_none() && node.depth < self.internal_octree.depth && result
-    }
+// Code
+// TODO: Multithread this
+impl AdvancedOctree {    
     // Calculate the nodes that are the twin nodes *and* normal nodes
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
-    fn calculate_combined_nodes(&self, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32) -> HashSet<OctreeNode> {
+    fn calculate_combined_nodes(twin_rule: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32, max_depth: u8) -> HashSet<OctreeNode> {
         let mut combined_nodes: SmartList<OctreeNode> = nodes.clone();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = nodes.elements.par_iter().filter_map(|x| x.as_ref().cloned()).collect();
@@ -38,7 +36,7 @@ impl AdvancedOctree {
             let mut octree_node = pending_nodes[0].clone();
 
             // If the node passes the collision check, subdivide it
-            if self.can_node_subdivide_twin(&octree_node, target, lod_factor) {
+            if (twin_rule)(&octree_node, target, lod_factor, max_depth) {
                 // Add the children nodes
                 let child_nodes = octree_node.subdivide(&mut combined_nodes);
                 pending_nodes.extend(child_nodes);
@@ -61,10 +59,9 @@ impl AdvancedOctree {
         Vec<OctreeNode>, // Added nodes
         Vec<OctreeNode>, // Removed nodes
     )> {
-        let instant = Instant::now();
         let root_node = self.internal_octree.get_root_node();
         // Do nothing if the target is out of bounds
-        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) {
+        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) || self.last_pos.distance(*target) < 3.0  {
             return None;
         }
         // Check if we generated the base octree
@@ -158,8 +155,17 @@ impl AdvancedOctree {
             }
             self.internal_octree.extern_update(target_node, nodes.clone());
         }
-        // The new hashset
-        let new_hashset = self.calculate_combined_nodes(target, &self.internal_octree.nodes, lod_factor);
+        // Should we generate twin nodes?
+        let new_hashset = match self.subdivide_twin_rule {
+            Some(twin_rule) => {
+                // Yep, generate the twin nodes
+                Self::calculate_combined_nodes(twin_rule, target, &self.internal_octree.nodes, lod_factor, self.internal_octree.depth)
+            },
+            None => {
+                // Nope, just take the newly generated nodes and get the diff
+                self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect::<HashSet<OctreeNode>>()
+            },
+        };
         // The old hashset
         let old_hashset = &self.combined_nodes;
 
@@ -167,6 +173,11 @@ impl AdvancedOctree {
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
         let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
+        self.last_pos = target.clone();
         return Some((added_nodes, removed_nodes));
+    }
+    // Set the twin rule
+    pub fn set_twin_generation_rule(&mut self, function: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool) {
+        self.subdivide_twin_rule = Some(function);
     }
 }

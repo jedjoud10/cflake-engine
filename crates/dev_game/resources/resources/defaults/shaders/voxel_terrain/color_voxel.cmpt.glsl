@@ -18,13 +18,14 @@ void main() {
     vec3 pos = vec3(pixel_coords.xzy);    
     float size = float(node_size) / (float(chunk_size) - 2.0);
     pos *= size;
-    pos += node_pos;              
-    // Create the pixel value
-    ColorVoxel color_voxel = get_color_voxel(pos, voxel_sampler, vec3(pixel_coords));
-    vec4 pixel = vec4(color_voxel.color, 0.0);    
+    pos += node_pos;        
+    // Read the voxel data
     // Unpack the normal voxel
-    vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords) / vec3(gl_WorkGroupSize.xyz)).rgba; 
-    Voxel voxel = Voxel(unpack_density(ivec2(voxel_pixel.xy * 255)), int(voxel_pixel.z * 255), int(voxel_pixel.w * 255));
+    vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
+    Voxel voxel = Voxel(unpack_density(ivec2(voxel_pixel.xy * 255)), int(voxel_pixel.z * 255), int(voxel_pixel.w * 255));      
+    // Create the pixel value
+    ColorVoxel color_voxel = get_color_voxel(pos, voxel_sampler, voxel, vec3(pixel_coords));
+    vec4 pixel = vec4(color_voxel.color, 0.0);        
     // Write the pixel
     imageStore(color_voxel_image, pixel_coords, pixel);
 }
