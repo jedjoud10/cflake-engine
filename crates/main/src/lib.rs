@@ -28,7 +28,7 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let default_size = others::get_default_window_size();
     let (mut window, events) = glfw
-        .create_window(default_size.0 as u32, default_size.1 as u32, "Hypothermia", glfw::WindowMode::Windowed)
+        .create_window(default_size.0 as u32, default_size.1 as u32, app_name, glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
     gl::load_with(|s| window.get_proc_address(s) as *const _);
     // Set the type of events that we want to listen to

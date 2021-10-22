@@ -13,6 +13,12 @@ impl ComputeShader {
             return Some(());
         }
         unsafe {
+            // The invocation count
+            for i in 0..3 {
+                let mut x = 5;
+                gl::GetIntegeri_v(gl::MAX_COMPUTE_WORK_GROUP_COUNT, 0, &mut x);
+                //println!("Index: {} {}", i, x);            
+            }            
             // Do some num_groups checks
             gl::DispatchCompute(num_groups.0, num_groups.1, num_groups.2);
             self.running = true;
