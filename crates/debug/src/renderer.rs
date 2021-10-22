@@ -62,6 +62,7 @@ impl DebugRenderer {
             resource_manager,
             shader_cacher,
             None,
+            None,
         )
         .1;
     }

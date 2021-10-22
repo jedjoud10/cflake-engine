@@ -35,18 +35,34 @@ impl Default for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(lines: Vec<String>, resource_manager: &'a mut ResourceManager) -> Vec<String> {
+    fn load_includes<'a>(lines: Vec<String>, resource_manager: &'a mut ResourceManager, additional_shader_paths: Option<&Vec<&str>>) -> Vec<String> {
         let mut included_lines: Vec<String> = Vec::new();
-        for line in lines {
+        for line in lines.iter() {
             // Check if this is an include statement
-            if line.starts_with("#include") {
+            if line.starts_with("#include ") {
                 // Get the local path of the include file
-                let local_path = line.split("#include").collect::<Vec<&str>>()[1].replace(r#"""#, "");
+                let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace(r#"""#, "");
                 let local_path = local_path.trim_start();
                 // Load the function shader text
                 let text = resource_manager.load_lines_packed_resource(&local_path, 1).unwrap();
                 let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                 included_lines.extend(new_lines);
+            }
+            // Custom path include statement
+            match additional_shader_paths {
+                Some(paths) => {
+                    if line.starts_with("#includep") {
+                        // Get the local path ID
+                        let c = line.split("#includep ").collect::<Vec<&str>>()[1];
+                        let local_path_id = &c[2..(c.len() - 2)].parse::<usize>().unwrap();
+                        println!("{}", local_path_id);                        
+                        // Load the function shader text
+                        let text = resource_manager.load_lines_packed_resource(paths.get(*local_path_id).unwrap(), 1).unwrap();
+                        let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+                        included_lines.extend(new_lines);                        
+                    }
+                },
+                None => {},
             }
         }
         // Return the included lines and the original lines that are without the include statement
@@ -58,6 +74,7 @@ impl Shader {
         resource_manager: &'a mut ResourceManager,
         shader_cacher: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
         additional_shader: Option<AdditionalShader>,
+        additional_shader_paths: Option<Vec<&str>>,
     ) -> (&'a mut Self, String, usize) {
         let mut shader = Self::default();
         // Create the shader name
@@ -92,7 +109,7 @@ impl Shader {
                     // Get the lines
                     let lines = shader_sources_to_evalute[0].clone();
                     // Recursively load the includes
-                    let orignal_local_included_lines = Self::load_includes(lines.clone(), resource_manager);
+                    let orignal_local_included_lines = Self::load_includes(lines.clone(), resource_manager, (&additional_shader_paths).as_ref());
                     // Extend from the start of the vector
                     let mut local_indluded_lines = orignal_local_included_lines.clone();
                     local_indluded_lines.extend(included_lines);

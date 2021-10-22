@@ -150,6 +150,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
+        None
     )
     .1;
     // Load the UI font shader
@@ -158,6 +159,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
+        None
     )
     .1;
 }

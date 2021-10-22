@@ -16,6 +16,7 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
         &mut data.resource_manager,
         &mut data.shader_cacher,
         None,
+        None
     )
     .1;
 

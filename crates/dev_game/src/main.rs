@@ -68,18 +68,20 @@ pub fn world_initialized(world: &mut World) {
 
     // Load the compute shaders
     let compute_id = Shader::new(
-        vec!["user\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl"],
+        vec!["defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl"],
         data.resource_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
+        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"])
     )
     .2;
 
     let color_compute_id = Shader::new(
-        vec!["user\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
+        vec!["defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
         data.resource_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
+        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"])
     )
     .2;
 
@@ -92,6 +94,7 @@ pub fn world_initialized(world: &mut World) {
         data.resource_manager,
         data.shader_cacher,
         None,
+        None
     )
     .1;
     // Material

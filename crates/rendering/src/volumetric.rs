@@ -8,16 +8,12 @@ use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture2D, Textu
 pub struct Volumetric {
     // The main SDF texture used for the volumetric sampling
     pub sdf_tex: Texture3D,
-    // The internal SDF texture that has no fBm whatsoever
-    internal_sdf_tex: Texture3D,
     // The output, screen texture that will be rendered (PS: This texture might be downscaled from the original screen size)
     pub result_tex: Texture2D,
     // The depth texture
     pub depth_tex: Texture2D,
     // The compute shader ID for the SDF generator compute
     pub compute_generator_id: usize,
-    // The twin compute shader ID for the twin SDF generator compute
-    pub compute_generator_twin_id: usize,
     // The compute shader ID
     pub compute_id: usize,
     // Check if the volumetric rendering is enabled
@@ -37,14 +33,7 @@ impl Volumetric {
             resource_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
-        )
-        .2;
-        // Load 2nd generator compute
-        self.compute_generator_twin_id = Shader::new(
-            vec!["defaults\\shaders\\volumetric\\sdf_gen_twin.cmpt.glsl"],
-            resource_manager,
-            shader_cacher,
-            Some(AdditionalShader::Compute(ComputeShader::default())),
+            None
         )
         .2;
         // Load the volumetric compute
@@ -53,6 +42,7 @@ impl Volumetric {
             resource_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
+            None
         )
         .2;
     }
@@ -62,11 +52,6 @@ impl Volumetric {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
         self.sdf_tex = Texture3D::new()
-            .set_dimensions(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension)
-            .set_wrapping_mode(TextureWrapping::Repeat)
-            .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
-            .generate_texture(Vec::new());
-        self.internal_sdf_tex = Texture3D::new()
             .set_dimensions(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension)
             .set_wrapping_mode(TextureWrapping::Repeat)
             .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
@@ -95,26 +80,9 @@ impl Volumetric {
     }
     // Create the SDF texture from a compute shader complitely
     pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
-        // Set the result sdf texture and run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
         shader.use_shader();
-        shader.set_i3d("sdf_tex", &self.internal_sdf_tex, crate::TextureShaderAccessType::WriteOnly);
-        // Actually generate the SDF
-        let compute = match &mut shader.additional_shader {
-            crate::AdditionalShader::None => panic!(),
-            crate::AdditionalShader::Compute(x) => x,
-        };
-        // Run the compute
-        compute
-            .run_compute((self.internal_sdf_tex.width as u32 / 4, self.internal_sdf_tex.height as u32 / 4, self.internal_sdf_tex.depth as u32 / 4))
-            .unwrap();
-        compute.get_compute_state().unwrap();
-
-        // Run the twin shader as well
-        let shader = shader_cacher.id_get_object_mut(self.compute_generator_twin_id).unwrap();
-        shader.use_shader();
         shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
-        shader.set_t3d("sdf_tex_original", &self.internal_sdf_tex, gl::TEXTURE1);
         // Actually generate the SDF
         let compute = match &mut shader.additional_shader {
             crate::AdditionalShader::None => panic!(),

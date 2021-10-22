@@ -60,6 +60,7 @@ impl CustomData {
                 &mut data.resource_manager,
                 &mut data.shader_cacher,
                 None,
+                None
             )
             .1
             .as_str(),
@@ -284,6 +285,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
+        None
     )
     .1;
 
@@ -293,6 +295,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
+        None
     )
     .1;
     system.wireframe_shader_name = wireframe_shader_name;

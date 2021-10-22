@@ -1,5 +1,5 @@
 #version 460 core
-#include "user\shaders\voxel_terrain\voxel.func.glsl"
+#includep {"0"}
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(rgba8, binding = 0) uniform image3D voxel_image;
