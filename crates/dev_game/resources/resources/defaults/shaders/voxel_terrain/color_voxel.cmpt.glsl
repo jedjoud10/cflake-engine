@@ -3,6 +3,8 @@
 // Load the color voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(rgba8, binding = 0) uniform image3D color_voxel_image;
+layout(rgba8, binding = 1) uniform image3D detail1_image;
+layout(rgba32f, binding = 2) uniform image3D detail2_image;
 layout(location = 1) uniform sampler3D voxel_sampler;
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
@@ -18,8 +20,11 @@ void main() {
     pos *= size;
     pos += node_pos;              
     // Create the pixel value
-    ColorVoxel voxel = get_color_voxel(pos, voxel_sampler, vec3(pixel_coords));
-    vec4 pixel = vec4(voxel.color, 0.0);    
+    ColorVoxel color_voxel = get_color_voxel(pos, voxel_sampler, vec3(pixel_coords));
+    vec4 pixel = vec4(color_voxel.color, 0.0);    
+    // Unpack the normal voxel
+    vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords) / vec3(gl_WorkGroupSize.xyz)).rgba; 
+    Voxel voxel = Voxel(unpack_density(ivec2(voxel_pixel.xy * 255)), int(voxel_pixel.z * 255), int(voxel_pixel.w * 255));
     // Write the pixel
     imageStore(color_voxel_image, pixel_coords, pixel);
 }
