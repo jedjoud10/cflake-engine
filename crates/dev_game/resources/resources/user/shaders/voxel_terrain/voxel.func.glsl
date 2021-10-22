@@ -28,13 +28,11 @@ Voxel get_voxel(vec3 pos) {
     return Voxel(density * 20.0, 0, material_id);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
-ColorVoxel get_color_voxel(vec3 pos, sampler3D voxel_texture, Voxel voxel, vec3 coords) {
+ColorVoxel get_color_voxel(vec3 pos, sampler3D voxel_texture, Voxel voxel, vec3 voxel_normal, vec3 coords) {
     vec3 color = vec3(1, 1, 1);  
     return ColorVoxel(color * voxel.materialID);
 }
-/*
 // Get the detail data at a specific point3
-DetailData get_detail_data(vec3 pos, Voxel voxel, ColorVoxel color) {
-
+Detail get_detail(vec3 pos, Voxel voxel, vec3 voxel_normal, ColorVoxel color) {
+    return Detail(ivec3(0, 0, 0), false, vec3(0, 0, 0), 1.0);
 } 
-*/

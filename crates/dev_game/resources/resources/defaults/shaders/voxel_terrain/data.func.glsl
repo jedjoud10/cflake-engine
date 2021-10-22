@@ -8,14 +8,14 @@ struct ColorVoxel {
     vec3 color;    
 };
 // Detail data for the detail spawner
-struct DetailData {
+struct Detail {
     // For the first texture
     // Position offset from the current pixel, the offset is actually calculated by dividing this value with 255
     ivec3 position_offset;
     bool spawn;
     // For the second texture
-    float scale;
     vec3 rotation;
+    float scale;
 };
 // Pack the density data into two integers
 ivec2 pack_density(float s_density) {
@@ -26,9 +26,9 @@ ivec2 pack_density(float s_density) {
     return ivec2(density1, density2);
 }
 // Unpack the density data to a main float
-float unpack_density(ivec2 packed_density) {
-    int density = 0;
-    density = packed_density.x << 8;
-    density |= packed_density.y;
-    return intBitsToFloat(density);
+float unpack_density(uvec2 packed_density) {
+    // TODO: AAAAAAAA
+    float d1 = uintBitsToFloat(packed_density.x << 24);
+    float d2 = uintBitsToFloat(packed_density.y << 16);
+    return d1+d2;
 }
