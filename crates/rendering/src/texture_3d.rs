@@ -31,33 +31,8 @@ impl Texture3D {
         }
     }
 
-    // Set the height and width of the soon to be generated texture
-    pub fn set_dimensions(mut self, width: u16, height: u16, depth: u16) -> Self {
-        self.height = height;
-        self.width = width;
-        self.depth = depth;
-        self.internal_texture.dimension_type = TextureDimensionType::D3D(width, height, depth);
-        self
-    }
-    // Update the size of the current texture
-    pub fn update_size(&self, width: u16, height: u16, depth: u16) {
-        // This is a normal texture getting resized
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_3D, self.internal_texture.id);
-            gl::TexImage3D(
-                gl::TEXTURE_3D,
-                0,
-                self.internal_texture.internal_format as i32,
-                width as i32,
-                height as i32,
-                depth as i32,
-                0,
-                self.internal_texture.format,
-                self.internal_texture.data_type,
-                null(),
-            );
-        }
-    }
+    
+    
 }
 
 // Implement the wrapper stuff

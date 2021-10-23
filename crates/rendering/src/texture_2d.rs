@@ -20,69 +20,11 @@ impl Default for Texture2D {
     }
 }
 
-// Loadable resource
-impl LoadableResource for Texture2D {
-    // Load a texture 2D from a resource file
-    fn from_resource(self, resource: &Resource) -> Option<Self> {
-        match resource {
-            Resource::Texture(texture, texture_name) => {
-                let width = texture.width;
-                let height = texture.height;
 
-                // Turn the compressed png bytes into their raw form
-                let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
-                image.set_format(image::ImageFormat::Png);
-                let decoded = image.with_guessed_format().unwrap().decode().unwrap();
-                // Well it seems like the images are flipped vertically so I have to manually flip them
-                let decoded = decoded.flipv();
-                // Read the image as a 32 bit image
-                let rgba8_image = decoded.to_rgba8();
-
-                // Set the proper dimensions and generate the texture from the resource's bytes
-                let mut texture = self.set_dimensions(width, height);
-                // Set the texture name since the texture has an empty name
-                texture.internal_texture.name = texture_name.clone();
-                let new_texture = texture
-                    .internal_texture
-                    .generate_texture(rgba8_image.as_bytes().to_vec(), TextureDimensionType::D2D(width, height));
-                texture.internal_texture = new_texture;
-                Some(texture)
-            }
-            _ => None,
-        }
-    }
-}
 
 // Loading / caching stuff for Texture2D
 impl Texture2D {
-    // Cache the current texture and return it's reference
-    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture2D>) -> Option<(&'a mut Self, usize)> {
-        let texture_name = self.internal_texture.name.clone();
-        let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
-        return Some((texture_cacher.get_object_mut(texture_name.as_str()).unwrap(), texture_id));
-    }
-    // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
-    pub fn load_texture<'a>(
-        self,
-        local_path: &str,
-        resource_manager: &mut ResourceManager,
-        texture_cacher: &'a mut CacheManager<Texture2D>,
-    ) -> Result<(&'a Self, usize), ResourceError> {
-        // Load the resource
-        let resource = resource_manager.load_packed_resource(local_path)?;
-        // If the texture was already cached, just loaded from cache
-        if texture_cacher.is_cached(local_path) {
-            // It is indeed cached
-            let texture = texture_cacher.get_object(local_path).unwrap();
-            let texture_id = texture_cacher.get_object_id(local_path).unwrap();
-            Ok((texture, texture_id))
-        } else {
-            // If it not cached, then load the texture from that resource
-            let texture = self.from_resource(resource).ok_or(ResourceError::new_str("Could not load texture!"))?;
-            let (texture, texture_id) = texture.cache_texture(texture_cacher).unwrap();
-            Ok((texture, texture_id))
-        }
-    }
+    
 }
 
 // Impl of a texture2D
@@ -113,23 +55,7 @@ impl Texture2D {
     // Update the size of the current texture
     pub fn update_size(&mut self, width: u16, height: u16) {
         // This is a normal texture getting resized
-        unsafe {
-            self.height = height;
-            self.width = width;
-            self.internal_texture.dimension_type = TextureDimensionType::D2D(width, height);
-            gl::BindTexture(gl::TEXTURE_2D, self.internal_texture.id);
-            gl::TexImage2D(
-                gl::TEXTURE_2D,
-                0,
-                self.internal_texture.internal_format as i32,
-                width as i32,
-                height as i32,
-                0,
-                self.internal_texture.format,
-                self.internal_texture.data_type,
-                null(),
-            );
-        }
+        
     }
 }
 
