@@ -31,6 +31,7 @@ impl ComputeShader {
                 errors::ErrorCatcher::catch_opengl_errors()?;
                 self.running = false;
             } else {
+                return None;
             }
         }
         errors::ErrorCatcher::catch_opengl_errors()?;

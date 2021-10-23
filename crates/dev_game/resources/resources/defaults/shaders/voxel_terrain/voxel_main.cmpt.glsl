@@ -2,7 +2,7 @@
 #includep {"0"}
 // Load the voxel function file
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-layout(r16, binding = 0) uniform image3D voxel_image;
+layout(binding = 0) writeonly uniform image3D voxel_image;
 layout(location = 1) uniform vec3 node_pos;
 layout(location = 2) uniform int node_size;
 layout(location = 3) uniform int chunk_size;
@@ -23,7 +23,7 @@ void main() {
     get_voxel(pos, voxel, material_voxel);
     */
     // Write the voxel pixel
-    vec4 pixel = vec4(2.0, 0.0, 0.0, 1.0);        
+    vec4 pixel = vec4(1.0, 0.0, 0.0, 1.0);        
     // Write the material pixel
     imageStore(voxel_image, pixel_coords, pixel);    
     /*

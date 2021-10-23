@@ -2,7 +2,7 @@ use crate::ISOLINE;
 
 use super::CHUNK_SIZE;
 use others::CacheManager;
-use rendering::{Shader, Texture, TextureDimensions};
+use rendering::{Shader, Texture, TextureDimensions, TextureFilter};
 use veclib::Swizzable;
 
 // Casually stole my old code lol
@@ -51,9 +51,10 @@ impl VoxelGenerator {
         // Create the voxel texture
         self.voxel_texture = Texture::new()
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
-            .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE)
+            .set_idf(gl::R16, gl::RED, gl::UNSIGNED_SHORT)
+            .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(vec![255; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 2]).unwrap();
+            .generate_texture(Vec::new()).unwrap();
         self.material_texture = Texture::new()
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -69,10 +70,9 @@ impl VoxelGenerator {
     pub fn generate_voxels_start(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>) {
         // First pass
         // Set the compute shader variables and voxel texture
-        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
-        /*
+        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();        
         shader.use_shader();
-        //shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
+        shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         //shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
@@ -83,22 +83,21 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data immediatly
-        //compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32)).unwrap();
-        */
+        compute.run_compute((CHUNK_SIZE as u32+1, CHUNK_SIZE as u32+1, CHUNK_SIZE as u32+1)).unwrap();
+        compute.get_compute_state().unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
-        /*
+    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {        
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => panic!(),
         };
-        */
+        
 
         // Read back the compute shader data
-        //compute.get_compute_state().unwrap();
+        
 
         // Dispatch the compute shader
         // Second pass
@@ -131,12 +130,7 @@ impl VoxelGenerator {
         let mut max = u16::MIN;
         // Turn the pixels into the data
         for (i, pixel) in voxel_pixels.iter().enumerate() {
-            println!("{}", pixel);
             let density = *pixel;
-            /*
-            let material_data = material_pixels[i];
-            let color = color_pixels[i];
-            */
             data[i] = Voxel {
                 density: density,
                 color: veclib::Vector3::ZERO,
