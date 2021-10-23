@@ -38,6 +38,7 @@ pub enum TextureDimensionType {
 // Custom format
 
 // Access type when binding the texture
+#[derive(Clone, Copy)]
 pub enum TextureShaderAccessType {
     ReadOnly,
     WriteOnly,

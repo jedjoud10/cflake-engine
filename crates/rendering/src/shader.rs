@@ -196,24 +196,24 @@ impl Shader {
 }
 
 // A simple uniform enum
-pub enum Uniform {
+pub enum Uniform<'a> {
     // Singles
     F32(f32),
     I32(i32),
     // Vectors
-    Vec2F32(veclib::Vector2<f32>),
-    Vec3F32(veclib::Vector3<f32>),
-    Vec4F32(veclib::Vector4<f32>),
+    Vec2F32(&'a veclib::Vector2<f32>),
+    Vec3F32(&'a veclib::Vector3<f32>),
+    Vec4F32(&'a veclib::Vector4<f32>),
 
-    Vec2I32(veclib::Vector2<i32>),
-    Vec3I32(veclib::Vector3<i32>),
-    Vec4I32(veclib::Vector4<i32>),
+    Vec2I32(&'a veclib::Vector2<i32>),
+    Vec3I32(&'a veclib::Vector3<i32>),
+    Vec4I32(&'a veclib::Vector4<i32>),
     // Others
-    Texture2D(Texture2D),
-    Texture3D(Texture3D),
-    Image2D(Texture2D),
-    Image3D(Texture3D),
-    Mat44F32(veclib::Matrix4x4<f32>),
+    Texture2D(&'a Texture2D, u32),
+    Texture3D(&'a Texture3D, u32),
+    Image2D(&'a Texture2D, TextureShaderAccessType),
+    Image3D(&'a Texture3D, TextureShaderAccessType),
+    Mat44F32(&'a veclib::Matrix4x4<f32>),
 
 }
 
@@ -221,33 +221,57 @@ pub enum Uniform {
 impl Shader {
     // Get the location of a specific uniform, using it's name
     #[allow(temporary_cstring_as_ptr)]
-    pub fn get_uniform_location(&self, name: &str) -> i32 {
-        unsafe { gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr()) }
+    pub fn get_uniform_location(&self, name: &str) -> Option<i32> {
+        unsafe { 
+            let x = gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
+            if x == -1 {
+                // Invalid location
+                return None;
+            }
+            Some(x)
+        }
     }
-    // Automatic error
-    fn location_valid(location: i32) -> Option<()> {
-        if location == -1 {
-            return None;
+    // Set a single uniform
+    pub fn val(&self, name: &str, uniform: Uniform) -> Option<()> {
+        let loc = self.get_uniform_location(name)?;
+        match &uniform {
+            Uniform::F32(x) => self.set_f32(loc, *x),
+            Uniform::I32(x) => self.set_i32(loc, *x),
+            Uniform::Vec2F32(x) => self.set_vec2f32(loc, x),
+            Uniform::Vec3F32(x) => self.set_vec3f32(loc, x),
+            Uniform::Vec4F32(x) => self.set_vec4f32(loc, x),
+            Uniform::Vec2I32(x) => self.set_vec2i32(loc, x),
+            Uniform::Vec3I32(x) => self.set_vec3i32(loc, x),
+            Uniform::Vec4I32(x) => self.set_vec4i32(loc, x),
+            Uniform::Texture2D(x, active_texture_id) => self.set_t2d(loc, x, *active_texture_id),
+            Uniform::Texture3D(x, active_texture_id) => self.set_t3d(loc, x, *active_texture_id),
+            Uniform::Image2D(x, access_type) => self.set_i2d(loc, x, *access_type),
+            Uniform::Image3D(x, access_type) => self.set_i3d(loc, x, *access_type),
+            Uniform::Mat44F32(x) => self.set_mat44(loc, x),
         }
         Some(())
     }
     // Set some uniforms
-    pub fn set_uniforms(&self, uniforms: Vec<(&str, Uniform)>) -> Result<(), RenderingError> {
-
+    pub fn set_vals(&self, uniforms: Vec<(&str, Uniform)>) -> Result<(), RenderingError> {
+        // First of all, check that we have this shader enabled
+        self.use_shader();
+        for uniform in uniforms {
+            let name = uniform.0.to_string();
+            self.val(&name, uniform.1).ok_or(RenderingError::new(format!("Could not set uniform '{}'!", name)));
+        }
+        Ok(())
     }
     // Set a f32 uniform
-    fn set_f32(&self, name: &str, value: &f32) {
+    fn set_f32(&self, loc: i32, value: f32) {
         unsafe {
-            gl::Uniform1f(u, *value);
+            gl::Uniform1f(loc, value);
         }
-        Ok(())
     }
     // Set a vec2 f32 uniform
-    fn set_vec2f32(&self, name: &str, vec: &veclib::Vector2<f32>) -> Result<RenderingError> {
+    fn set_vec2f32(&self, loc: i32, vec: &veclib::Vector2<f32>) {
         unsafe {
-            gl::Uniform2f(u, vec[0], vec[1]);
+            gl::Uniform2f(loc, vec[0], vec[1]);
         }
-        Ok(())
     }
     // Set a vec3 f32 uniform
     fn set_vec3f32(&self, loc: i32, vec: &veclib::Vector3<f32>) {
@@ -331,9 +355,9 @@ impl Shader {
         }
     }
     // Set a i32
-    fn set_i32(&self, loc: i32, value: &i32) {
+    fn set_i32(&self, loc: i32, value: i32) {
         unsafe {
-            gl::Uniform1i(loc, *value);
+            gl::Uniform1i(loc, value);
         }
     }
     // Set a vec2 i32 uniform

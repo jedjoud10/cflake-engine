@@ -1,7 +1,7 @@
 use others::CacheManager;
 use resources::ResourceManager;
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture2D, Texture3D, TextureWrapping};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture2D, Texture3D, TextureWrapping, Uniform};
 
 // Some volumetric shit
 #[derive(Default)]
@@ -82,7 +82,7 @@ impl Volumetric {
     pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
         shader.use_shader();
-        shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
+        shader.val("sdf_tex", Uniform::Image3D(&self.sdf_tex, crate::TextureShaderAccessType::WriteOnly));
         // Actually generate the SDF
         let compute = match &mut shader.additional_shader {
             crate::AdditionalShader::None => panic!(),
@@ -108,15 +108,19 @@ impl Volumetric {
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create a custom View-Projection matrix that doesn't include the translation
-        shader.use_shader();
-        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));    
-        shader.set_i2d("result_tex", &self.result_tex, crate::TextureShaderAccessType::WriteOnly);
-        shader.set_i2d("depth_tex", &self.depth_tex, crate::TextureShaderAccessType::WriteOnly);
-        shader.set_t3d("sdf_tex", &self.sdf_tex, gl::TEXTURE2);        
-        shader.set_vec3f32("camera_pos", &camera_position);
-        shader.set_mat44("custom_vp_matrix", &vp_m);
-        shader.set_mat44("projection_matrix", &projection_matrix);
-        shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));        
+        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));   
+        let clip_planes = veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1);
+        let vals = vec![
+            ("result_tex", Uniform::Image2D(&self.result_tex, crate::TextureShaderAccessType::WriteOnly)),
+            ("depth_tex", Uniform::Texture2D(&self.depth_tex, gl::TEXTURE1)),
+            ("sdf_tex", Uniform::Texture3D(&self.sdf_tex, gl::TEXTURE2)),
+            ("camera_pos", Uniform::Vec3F32(&camera_position)),
+            ("custom_vp_matrix", Uniform::Mat44F32(&vp_m)),
+            ("projection_matrix", Uniform::Mat44F32(&projection_matrix)),
+            ("nf_planes", Uniform::Vec2F32(&clip_planes)),    
+        ]; 
+        // Set the values
+        shader.set_vals(vals);        
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Get the actual compute shader
         let compute = match &mut shader.additional_shader {

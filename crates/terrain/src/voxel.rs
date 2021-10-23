@@ -71,7 +71,7 @@ impl VoxelGenerator {
         // First pass
         // Set the compute shader variables and voxel texture
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
-        shader.use_shader();
+        let vals = vec![]
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
