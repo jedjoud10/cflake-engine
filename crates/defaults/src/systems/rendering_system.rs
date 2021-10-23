@@ -99,6 +99,7 @@ impl CustomData {
                 .set_dimensions(dims)
                 .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
                 .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
+            println!("{} {} {} {} {}", self.diffuse_texture, self.normals_texture, self.position_texture, self.emissive_texture, self.depth_texture);
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, data.texture_cacher.id_get_object(self.diffuse_texture).unwrap());
             // Bind the normal texture to the color attachement 1 of the frame buffer

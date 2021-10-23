@@ -128,8 +128,16 @@ impl Texture {
     // Cache the current texture and return it's reference
     pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture>) -> Option<(&'a mut Self, usize)> {
         let texture_name = self.name.clone();
-        let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
-        return Some((texture_cacher.get_object_mut(texture_name.as_str()).unwrap(), texture_id));
+        // If the name is empty, cache it as an unnamed object
+        if texture_name.trim().is_empty() {
+            // Unnamed object
+            let texture_id = texture_cacher.cache_unnamed_object(self);
+            Some((texture_cacher.id_get_object_mut(texture_id).unwrap(), texture_id))
+        } else {
+            let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
+            Some((texture_cacher.id_get_object_mut(texture_id).unwrap(), texture_id))
+        }
+        
     }
     // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
     pub fn load_texture<'a>(
