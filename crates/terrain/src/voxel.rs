@@ -71,12 +71,14 @@ impl VoxelGenerator {
         // First pass
         // Set the compute shader variables and voxel texture
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
-        let vals = vec![]
-        shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
-        shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
-        shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
-        shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
-        shader.set_i32("node_size", &(*size as i32));
+        let node_pos = veclib::Vector3::<f32>::from(*position);
+        let vals = vec![
+            ("voxel_image", rendering::Uniform::Image3D(&self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly)),
+            ("material_image", rendering::Uniform::Image3D(&self.material_texture, rendering::TextureShaderAccessType::WriteOnly)),
+            ("chunk_size", rendering::Uniform::I32(CHUNK_SIZE as i32)),
+            ("node_pos", rendering::Uniform::Vec3F32(&node_pos)),
+            ("node_size", rendering::Uniform::I32(*size as i32)),
+        ];
         // Run the compute shader
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
@@ -100,13 +102,17 @@ impl VoxelGenerator {
         // Dispatch the compute shader
         // Second pass
         let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
-        color_shader.use_shader();
-        color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
-        color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
-        color_shader.set_t3d("material_sampler", &self.voxel_texture, gl::TEXTURE2);
-        color_shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
-        color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
-        color_shader.set_i32("node_size", &(*size as i32));
+        let node_pos = veclib::Vector3::<f32>::from(*position);
+        let vals = vec![
+            ("color_image", rendering::Uniform::Image3D(&self.color_texture, rendering::TextureShaderAccessType::WriteOnly)),
+            ("voxel_sampler", rendering::Uniform::Texture3D(&self.voxel_texture, gl::TEXTURE1)),
+            ("material_sampler", rendering::Uniform::Texture3D(&self.voxel_texture, gl::TEXTURE2)),
+            ("material_image", rendering::Uniform::Image3D(&self.material_texture, rendering::TextureShaderAccessType::WriteOnly)),
+            ("chunk_size", rendering::Uniform::I32(CHUNK_SIZE as i32)),
+            ("node_pos", rendering::Uniform::Vec3F32(&node_pos)),
+            ("node_size", rendering::Uniform::I32(*size as i32)),
+        ];
+        color_shader.set_vals(vals).unwrap();
         let color_compute = match &mut color_shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),

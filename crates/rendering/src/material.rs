@@ -95,11 +95,6 @@ impl Material {
         }
         return self;
     }
-    // Set a specific uniform, wrapper around ShaderUniformSetter
-    pub fn set_uniform(mut self, uniform_name: &str, value: ShaderArg) -> Self {
-        self.uniform_setter.set_uniform(uniform_name, value);
-        return self;
-    }
     // Load textures from their resource paths
     pub fn resource_load_textures(
         mut self,
@@ -161,28 +156,14 @@ impl others::Instance for Material {
 
 // Used to manually set some uniforms for the shaders
 #[derive(Default, Debug, Clone)]
-pub struct ShaderUniformSetter {
+pub struct ShaderUniformSetter<'a> {
     // The arguments that are going to be written to
-    pub uniforms: Vec<(String, ShaderArg)>,
+    pub vals: Vec<(String, crate::Uniform<'a>)>,
 }
 
-impl ShaderUniformSetter {
+impl<'a> ShaderUniformSetter<'a> {
     // Set a specific uniform to a specific value
-    pub fn set_uniform(&mut self, uniform_name: &str, value: ShaderArg) {
+    pub fn set_val(&mut self, uniform_name: &str, value: crate::Uniform) {
         self.uniforms.push((uniform_name.to_string(), value));
     }
-}
-
-// The type of shader argument
-#[derive(Debug, Clone)]
-pub enum ShaderArg {
-    F32(f32),
-    I32(i32),
-    V2F32(veclib::Vector2<f32>),
-    V3F32(veclib::Vector3<f32>),
-    V4F32(veclib::Vector4<f32>),
-    V2I32(veclib::Vector2<i32>),
-    V3I32(veclib::Vector3<i32>),
-    V4I32(veclib::Vector4<i32>),
-    MAT44(veclib::Matrix4x4<f32>),
 }
