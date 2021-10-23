@@ -201,19 +201,19 @@ pub enum Uniform<'a> {
     F32(f32),
     I32(i32),
     // Vectors
-    Vec2F32(&'a veclib::Vector2<f32>),
-    Vec3F32(&'a veclib::Vector3<f32>),
-    Vec4F32(&'a veclib::Vector4<f32>),
+    Vec2F32(veclib::Vector2<f32>),
+    Vec3F32(veclib::Vector3<f32>),
+    Vec4F32(veclib::Vector4<f32>),
 
-    Vec2I32(&'a veclib::Vector2<i32>),
-    Vec3I32(&'a veclib::Vector3<i32>),
-    Vec4I32(&'a veclib::Vector4<i32>),
+    Vec2I32(veclib::Vector2<i32>),
+    Vec3I32(veclib::Vector3<i32>),
+    Vec4I32(veclib::Vector4<i32>),
     // Others
     Texture2D(&'a Texture2D, u32),
     Texture3D(&'a Texture3D, u32),
     Image2D(&'a Texture2D, TextureShaderAccessType),
     Image3D(&'a Texture3D, TextureShaderAccessType),
-    Mat44F32(&'a veclib::Matrix4x4<f32>),
+    Mat44F32(veclib::Matrix4x4<f32>),
 
 }
 

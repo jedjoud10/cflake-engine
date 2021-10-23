@@ -1,5 +1,7 @@
 use std::ptr::null;
 
+use others::CacheManager;
+
 use super::{Texture, TextureDimensionType, TextureFilter, TextureWrapping};
 
 // A 3D texture
@@ -99,5 +101,15 @@ impl Texture3D {
         return self;
     }
     // Cache
-    pub fn cache(mut self, )
+    pub fn cache(mut self, cacher: &mut CacheManager<Texture>) -> usize {
+        let t = self.internal_texture;
+        let name = t.name.clone();
+
+        if name.trim().is_empty() {
+            // If name is empty, create an unnamed object
+            cacher.cache_unnamed_object(t)
+        } else {
+            cacher.cache_object(t, &name)
+        }
+    }
 }

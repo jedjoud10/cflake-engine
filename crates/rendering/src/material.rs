@@ -1,4 +1,6 @@
-use crate::TextureFilter;
+use std::collections::HashMap;
+
+use crate::{TextureFilter, Uniform};
 
 use super::Texture2D;
 use bitflags::bitflags;
@@ -12,7 +14,7 @@ bitflags! {
 }
 
 // A material that can have multiple parameters and such
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Material {
     // Rendering stuff
     pub shader_name: String,
@@ -34,11 +36,7 @@ impl Default for Material {
             flags: MaterialFlags::empty(),
             diffuse_tex_id: None,
             normal_tex_id: None,
-        };
-        // Set the default shader args
-        let material = material.set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE));
-        let material = material.set_uniform("tint", ShaderArg::V3F32(veclib::Vector3::ONE));
-        let material = material.set_uniform("normals_strength", ShaderArg::F32(1.0));
+        };        
         return material;
     }
 }
@@ -142,6 +140,11 @@ impl Material {
         }
         return self;
     }
+    // Set some default uniforms
+    pub fn val(mut self, uniform_name: &str, value: crate::Uniform) -> Self {
+        self.uniform_setter.set_val(uniform_name, value);
+        self
+    }
 }
 
 // Each material can be instanced
@@ -155,15 +158,15 @@ impl others::Instance for Material {
 }
 
 // Used to manually set some uniforms for the shaders
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Clone)]
 pub struct ShaderUniformSetter<'a> {
     // The arguments that are going to be written to
-    pub vals: Vec<(String, crate::Uniform<'a>)>,
+    pub vals: HashMap<String, crate::Uniform<'a>>,
 }
 
 impl<'a> ShaderUniformSetter<'a> {
     // Set a specific uniform to a specific value
     pub fn set_val(&mut self, uniform_name: &str, value: crate::Uniform) {
-        self.uniforms.push((uniform_name.to_string(), value));
+        self.vals.insert(uniform_name.to_string(), value);
     }
 }
