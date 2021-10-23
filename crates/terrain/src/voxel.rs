@@ -53,7 +53,7 @@ impl VoxelGenerator {
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()).unwrap();
+            .generate_texture(vec![255; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 2]).unwrap();
         self.material_texture = Texture::new()
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -70,9 +70,10 @@ impl VoxelGenerator {
         // First pass
         // Set the compute shader variables and voxel texture
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
+        /*
         shader.use_shader();
-        shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
-        shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
+        //shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
+        //shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
         shader.set_i32("node_size", &(*size as i32));
@@ -82,19 +83,22 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data immediatly
-        compute.run_compute((CHUNK_SIZE as u32 / 4 + 1, CHUNK_SIZE as u32 / 4 + 1, CHUNK_SIZE as u32 / 4 + 1)).unwrap();
+        //compute.run_compute((CHUNK_SIZE as u32, CHUNK_SIZE as u32, CHUNK_SIZE as u32)).unwrap();
+        */
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
+        /*
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => panic!(),
         };
+        */
 
         // Read back the compute shader data
-        compute.get_compute_state().unwrap();
+        //compute.get_compute_state().unwrap();
 
         // Dispatch the compute shader
         // Second pass
@@ -118,28 +122,34 @@ impl VoxelGenerator {
 
         // Read back the texture into the data buffer
         let voxel_pixels = self.voxel_texture.fill_array_elems::<u16>();
+        /*
         let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
         let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
+        */
         // Keep track of the min and max values
         let mut min = u16::MAX;
         let mut max = u16::MIN;
         // Turn the pixels into the data
         for (i, pixel) in voxel_pixels.iter().enumerate() {
+            println!("{}", pixel);
             let density = *pixel;
+            /*
             let material_data = material_pixels[i];
             let color = color_pixels[i];
+            */
             data[i] = Voxel {
                 density: density,
-                color: color.get3([0, 1, 2]),
-                biome_id: material_data.x,
-                material_id: material_data.y,
-                hardness: material_data.z,
-                texture_id: material_data.w
+                color: veclib::Vector3::ZERO,
+                biome_id: 0,
+                material_id: 0,
+                hardness: 0,
+                texture_id: 0
             };
             // Keep the min and max
             min = min.min(density);
             max = max.max(density);
         }
+        println!("{} {}", min, max);
         // Only generate the mesh if we have a surface
         (min < ISOLINE) != (max < ISOLINE)
     }
