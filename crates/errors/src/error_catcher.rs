@@ -9,7 +9,7 @@ impl ErrorCatcher {
             let error: gl::types::GLenum = gl::GetError();
             if error != gl::NO_ERROR {
                 // We caught an error!
-                println!("\x1b[31mWe caught an OpenGL error! Error code: '{:?}'\x1b[0m", error);
+                println!("\x1b[31mWe caught an OpenGL error! Error code: '{:x?}'\x1b[0m", error);
                 //panic!();
                 return None;
             } else {

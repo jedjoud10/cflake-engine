@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Texture, TextureFilter, Uniform};
+use crate::{Texture, TextureFilter};
 
 use bitflags::bitflags;
 use others::CacheManager;
@@ -137,13 +137,6 @@ impl Material {
         }
         return self;
     }
-    /*
-    // Set some default uniforms
-    pub fn val(mut self, uniform_name: &str, value: crate::Uniform) -> Self {
-        self.uniform_setter.set_val(uniform_name, value);
-        self
-    }
-    */
 }
 
 // Each material can be instanced

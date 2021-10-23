@@ -165,7 +165,7 @@ impl CustomData {
         let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
 
         // Pass the MVP and the model matrix to the shader
-        /*
+        
         shader.set_mat44("mvp_matrix", &mvp_matrix);
         shader.set_mat44("model_matrix", model_matrix);
         shader.set_mat44("view_matrix", view_matrix);
@@ -183,10 +183,7 @@ impl CustomData {
             shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
             shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
         }
-
-        // Set the custom uniforms
-        self.set_uniforms_from_custom_setter(shader, renderer);
-        */
+        
         // Draw normally
         if renderer.gpu_data.initialized {
             // Enable / Disable vertex culling
@@ -220,12 +217,10 @@ impl CustomData {
             let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
             wireframe_shader.use_shader();
             // Calculate the mvp matrix
-            let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
-            /*
+            let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;            
             wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
             wireframe_shader.set_mat44("model_matrix", model_matrix);
-            wireframe_shader.set_mat44("view_matrix", view_matrix);
-            */
+            wireframe_shader.set_mat44("view_matrix", view_matrix);            
             unsafe {
                 // Set the wireframe rendering
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -254,7 +249,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
     system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 4);
-    system.volumetric.generate_sdf(&mut data.shader_cacher.1, &data.texture_cacher);
+    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
     system.volumetric.disable();
 
     // Get the OpenGL version
@@ -341,18 +336,17 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         camera_transform.rotation,
         camera_transform.position,
         camera.clip_planes,
-        data.texture_cacher,
     );
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
     shader.use_shader();
-    /*
+    
     shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
     shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
     shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
     shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
-    shader.set_t2d("depth_texture", &system.depth_stencil_texture, gl::TEXTURE4);
+    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
@@ -388,7 +382,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
-    */
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();

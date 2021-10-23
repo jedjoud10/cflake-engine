@@ -82,7 +82,6 @@ impl ChunkManager {
         &mut self,
         voxel_generator: &VoxelGenerator,
         shader_cacher: &mut CacheManager<Shader>,
-        texture_cacher: &CacheManager<Texture>,
         frame_count: u64,
     ) -> (Vec<(ChunkCoords, Model)>, Vec<usize>) {
         // Check if we are currently generating the chunks
@@ -129,7 +128,7 @@ impl ChunkManager {
                     self.voxels_generating = false;
                     self.last_frame_voxels_generated = 0;
                     // Generate the data for this chunk
-                    let has_surface = voxel_generator.generate_voxels_end(shader_cacher, texture_cacher, &chunk_coords.size, &chunk_coords.position, &mut voxels);
+                    let has_surface = voxel_generator.generate_voxels_end(shader_cacher, &chunk_coords.size, &chunk_coords.position, &mut voxels);
                     // Since we just generated the chunk we can remove it from the generated chunks
                     self.chunks_to_generate.remove(0);
 

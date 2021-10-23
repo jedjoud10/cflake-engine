@@ -1,5 +1,3 @@
-use crate::Uniform;
-
 use super::{model::Model, model::ModelDataGPU, Material};
 use bitflags::bitflags;
 use ecs::{Component, ComponentID, ComponentInternal};

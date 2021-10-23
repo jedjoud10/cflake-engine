@@ -1,7 +1,7 @@
 use others::CacheManager;
 use resources::ResourceManager;
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureDimensions, TextureWrapping, Uniform, texture};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureDimensions, TextureWrapping};
 
 // Some volumetric shit
 #[derive(Default)]
@@ -33,7 +33,7 @@ impl Volumetric {
             resource_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
-            None,
+            None
         )
         .2;
         // Load the volumetric compute
@@ -42,7 +42,7 @@ impl Volumetric {
             resource_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
-            None,
+            None
         )
         .2;
     }
@@ -58,20 +58,14 @@ impl Volumetric {
             .generate_texture(Vec::new()).unwrap();
         // This texture is going to be rescaled if the window resolution changes
         self.result_tex = Texture::new()
-            .set_dimensions(TextureDimensions::D2D(
-                resolution.x / self.scale_down_factor_result,
-                resolution.y / self.scale_down_factor_result,
-            ))
+            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_filter(crate::TextureFilter::Linear)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new()).unwrap();
         // Depth texture
         self.depth_tex = Texture::new()
-            .set_dimensions(TextureDimensions::D2D(
-                resolution.x / self.scale_down_factor_result,
-                resolution.y / self.scale_down_factor_result,
-            ))
+            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
             .set_idf(gl::R32F, gl::RED, gl::UNSIGNED_BYTE)
             .set_filter(crate::TextureFilter::Nearest)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
@@ -79,20 +73,16 @@ impl Volumetric {
     }
     // When the screen resolution changes
     pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>) {
-        self.result_tex.update_size(TextureDimensions::D2D(
-            resolution.x / self.scale_down_factor_result,
-            resolution.y / self.scale_down_factor_result,
-        ));
-        self.depth_tex.update_size(TextureDimensions::D2D(
-            resolution.x / self.scale_down_factor_result,
-            resolution.y / self.scale_down_factor_result,
-        ));
+        self.result_tex
+            .update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
+        self.depth_tex
+            .update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
     }
     // Create the SDF texture from a compute shader complitely
-    pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>, texture_cacher: &CacheManager<Texture>) {
+    pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
         shader.use_shader();
-        //shader.val("sdf_tex", Uniform::Image3D(self.sdf_tex, crate::TextureShaderAccessType::WriteOnly));
+        shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
         // Actually generate the SDF
         let compute = match &mut shader.additional_shader {
             crate::AdditionalShader::None => panic!(),
@@ -112,28 +102,22 @@ impl Volumetric {
         rotation: veclib::Quaternion<f32>,
         camera_position: veclib::Vector3<f32>,
         clip_planes: (f32, f32),
-        texture_cacher: &CacheManager<Texture>,
     ) {
-        if !self.enabled {
-            return;
-        }
+        if !self.enabled { return; }
         // Run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create a custom View-Projection matrix that doesn't include the translation
-        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
-        let clip_planes = veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1);
-        let vals = [
-            ("camera_pos", Uniform::Vec3F32(camera_position)),
-            ("custom_vp_matrix", Uniform::Mat44F32(vp_m)),
-            ("projection_matrix", Uniform::Mat44F32(projection_matrix)),
-            ("nf_planes", Uniform::Vec2F32(clip_planes)),
-            ("result_tex", Uniform::Image2D(&self.result_tex, crate::TextureShaderAccessType::WriteOnly)),
-            ("depth_tex", Uniform::Texture2D(&self.depth_tex, gl::TEXTURE1)),
-            ("sdf_tex", Uniform::Texture3D(&self.sdf_tex, gl::TEXTURE2)),
-        ];
-        // Set the values
-        shader.set_vals(&vals).unwrap();   
+        shader.use_shader();
+        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));    
+        shader.set_i2d("result_tex", &self.result_tex, crate::TextureShaderAccessType::WriteOnly);
+        shader.set_i2d("depth_tex", &self.depth_tex, crate::TextureShaderAccessType::WriteOnly);
+        shader.set_t3d("sdf_tex", &self.sdf_tex, gl::TEXTURE2);        
+        shader.set_vec3f32("camera_pos", &camera_position);
+        shader.set_mat44("custom_vp_matrix", &vp_m);
+        shader.set_mat44("projection_matrix", &projection_matrix);
+        shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));        
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Get the actual compute shader
         let compute = match &mut shader.additional_shader {
             crate::AdditionalShader::Compute(x) => x,
@@ -146,11 +130,7 @@ impl Volumetric {
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
     // Enable volumetric rendering
-    pub fn enable(&mut self) {
-        self.enabled = true;
-    }
+    pub fn enable(&mut self) { self.enabled = true; }
     // Disable volumetric rendering
-    pub fn disable(&mut self) {
-        self.enabled = false;
-    }
+    pub fn disable(&mut self) { self.enabled = false; }
 }
