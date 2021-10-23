@@ -11,11 +11,11 @@ use world_data::WorldData;
 pub struct CustomData {
     pub framebuffer: u32,
     // The frame buffer textures
-    pub diffuse_texture: usize,
-    pub normals_texture: usize,
-    pub position_texture: usize,
-    pub emissive_texture: usize,
-    pub depth_texture: usize,
+    pub diffuse_texture: Texture,
+    pub normals_texture: Texture,
+    pub position_texture: Texture,
+    pub emissive_texture: Texture,
+    pub depth_texture: Texture,
     pub debug_view: u16,
     pub wireframe: bool,
     wireframe_shader_name: String,
@@ -79,55 +79,45 @@ impl CustomData {
                 .set_dimensions(dims)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new())
-                .cache_texture(data.texture_cacher)
-                .unwrap()
-                .1;
+                .unwrap();
             // Create the normals render texture
             self.normals_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new())
-                .cache_texture(data.texture_cacher)
-                .unwrap()
-                .1;
+                .unwrap();
             // Create the position render texture
             self.position_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new())
-                .cache_texture(data.texture_cacher)
-                .unwrap()
-                .1;
+                .unwrap();
             // Create the emissive render texture
             self.emissive_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new())
-                .cache_texture(data.texture_cacher)
-                .unwrap()
-                .1;
+                .unwrap();
             // Create the depth render texture
             self.depth_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
                 .generate_texture(Vec::new())
-                .cache_texture(data.texture_cacher)
-                .unwrap()
-                .1;
+                .unwrap();
             println!(
-                "{} {} {} {} {}",
+                "{:?} {:?} {:?} {:?} {:?}",
                 self.diffuse_texture, self.normals_texture, self.position_texture, self.emissive_texture, self.depth_texture
             );
             // Bind the color texture to the color attachement 0 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT0, data.texture_cacher.id_get_object(self.diffuse_texture).unwrap());
+            Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
             // Bind the normal texture to the color attachement 1 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT1, data.texture_cacher.id_get_object(self.normals_texture).unwrap());
+            Self::bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
             // Bind the position texture to the color attachement 2 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT2, data.texture_cacher.id_get_object(self.position_texture).unwrap());
+            Self::bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
             // Bind the emissive texture to the color attachement 3 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT3, data.texture_cacher.id_get_object(self.emissive_texture).unwrap());
+            Self::bind_attachement(gl::COLOR_ATTACHMENT3, &self.emissive_texture);
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
-            Self::bind_attachement(gl::DEPTH_ATTACHMENT, data.texture_cacher.id_get_object(self.depth_texture).unwrap());
+            Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture);
 
             let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
             // Set the frame buffer attachements
@@ -263,7 +253,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
-    system.volumetric.create_textures(&mut data.texture_cacher, data.custom_data.window.dimensions, 64, 4);
+    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 4);
     system.volumetric.generate_sdf(&mut data.shader_cacher.1, &data.texture_cacher);
     system.volumetric.disable();
 

@@ -54,7 +54,7 @@ impl Font {
                     .set_filter(rendering::TextureFilter::Linear)
                     .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE);
                 // Create the texture data from the bitmap pixels
-                let texture = texture.generate_texture(self.texture_pixels.clone());
+                let texture = texture.generate_texture(self.texture_pixels.clone()).unwrap();
                 self.texture = Some(texture);
             }
             _ => { /* The texture already exists */ }

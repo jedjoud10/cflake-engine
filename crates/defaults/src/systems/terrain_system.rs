@@ -147,7 +147,7 @@ fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut World
     // Setup the voxel generator for this generator
     let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
     // Generate the voxel texture
-    td.voxel_generator.setup_voxel_generator(&mut data.texture_cacher);
+    td.voxel_generator.setup_voxel_generator();
 }
 
 // Create the terrain system

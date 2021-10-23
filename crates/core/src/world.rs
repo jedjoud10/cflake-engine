@@ -78,8 +78,9 @@ impl World {
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
-            .generate_texture(vec![0, 0, 0, 255])
             .set_name("black")
+            .generate_texture(vec![0, 0, 0, 255])
+            .unwrap()
             .cache_texture(&mut self.texture_cacher);
         // Create the white texture
         Texture::new()
@@ -87,8 +88,9 @@ impl World {
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
-            .generate_texture(vec![255, 255, 255, 255])
             .set_name("white")
+            .generate_texture(vec![255, 255, 255, 255])
+            .unwrap()
             .cache_texture(&mut self.texture_cacher);
         // Create the default normals texture
         Texture::new()
@@ -96,8 +98,9 @@ impl World {
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
-            .generate_texture(vec![127, 128, 255, 255])
             .set_name("default_normals")
+            .generate_texture(vec![127, 128, 255, 255])
+            .unwrap()
             .cache_texture(&mut self.texture_cacher);
 
         // Create some default UI that prints some default info to the screen
@@ -428,7 +431,7 @@ impl World {
             //TODO: This
             render_system
                 .volumetric
-                .update_texture_resolution(self.custom_data.window.dimensions, &mut self.texture_cacher);
+                .update_texture_resolution(self.custom_data.window.dimensions);
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

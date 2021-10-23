@@ -16,6 +16,8 @@ pub struct Shader {
     pub finalized: bool,
     pub linked_subshaders_programs: Vec<(SubShaderType, u32)>,
     pub additional_shader: AdditionalShader,
+    // Cache the uniform locations
+    uniform_locations: Vec<i32>
 }
 
 impl Default for Shader {
@@ -27,6 +29,7 @@ impl Default for Shader {
                 finalized: false,
                 linked_subshaders_programs: Vec::new(),
                 additional_shader: AdditionalShader::None,
+                uniform_locations: Vec::new()
             }
         }
     }
@@ -195,7 +198,7 @@ impl Shader {
 
 // A simple uniform enum
 #[derive(Clone)]
-pub enum Uniform {
+pub enum Uniform<'a> {
     // Singles
     F32(f32),
     I32(i32),
@@ -208,10 +211,14 @@ pub enum Uniform {
     Vec3I32(veclib::Vector3<i32>),
     Vec4I32(veclib::Vector4<i32>),
     // Others
-    Texture2D(usize, u32),
-    Texture3D(usize, u32),
-    Image2D(usize, TextureShaderAccessType),
-    Image3D(usize, TextureShaderAccessType),
+    Texture2D(&'a Texture, u32),
+    Texture3D(&'a Texture, u32),
+    Image2D(&'a Texture, TextureShaderAccessType),
+    Image3D(&'a Texture, TextureShaderAccessType),
+    Texture2DI(usize, u32),
+    Texture3DI(usize, u32),
+    Image2DI(usize, TextureShaderAccessType),
+    Image3DI(usize, TextureShaderAccessType),
     Mat44F32(veclib::Matrix4x4<f32>),
 }
 
@@ -229,53 +236,87 @@ impl Shader {
             Some(x)
         }
     }
+    // Set a single uniform value that requires the texture cacher
+    pub fn valt(&self, uniform_name: &str, uniform: Uniform, texture_cacher: &CacheManager<Texture>) -> Result<(), RenderingError> {
+        let name = uniform_name.to_string();
+        let loc = self.get_uniform_location(&name).ok_or(RenderingError::new_str("Could not fetch uniform location!"))?;
+        match uniform {            
+            // Texture types
+            Uniform::Texture2DI(x, active_texture_id) => {
+                // Get the texture
+                let t = texture_cacher
+                    .id_get_object(x)
+                    .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                self.set_t2d(loc, t, active_texture_id);
+            }
+            Uniform::Texture3DI(x, active_texture_id) => {
+                // Get the texture
+                let t = texture_cacher
+                    .id_get_object(x)
+                    .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                self.set_t3d(loc, t, active_texture_id);
+            }
+            Uniform::Image2DI(x, access_type) => {
+                // Get the texture
+                let t = texture_cacher
+                    .id_get_object(x)
+                    .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                self.set_i2d(loc, t, access_type);
+            }
+            Uniform::Image3DI(x, access_type) => {
+                // Get the texture
+                let t = texture_cacher
+                    .id_get_object(x)
+                    .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                self.set_i3d(loc, t, access_type);
+            }
+            Uniform::Mat44F32(x) => self.set_mat44(loc, x),
+            // Invalid
+            _ => { return Err(RenderingError::new_str("Oopsie woopsie, we did a little fucky wuckie, a little fucko boingo. The code monkey (Me) is working VEWWY hard to fix this >.<!!")); }
+        }
+        errors::ErrorCatcher::catch_opengl_errors().ok_or(RenderingError::new_str("OpenGL error while setting indexed texture uniforms/values!"))?;
+        Ok(())
+    }
+    // Set a single uniform
+    pub fn val(&self, uniform_name: &str, uniform: Uniform) -> Result<(), RenderingError> {
+        let name = uniform_name.to_string();
+        let loc = self.get_uniform_location(&name).ok_or(RenderingError::new_str("Could not fetch uniform location!"))?;
+        match uniform {
+            Uniform::F32(x) => self.set_f32(loc, x),
+            Uniform::I32(x) => self.set_i32(loc, x),
+            Uniform::Vec2F32(x) => self.set_vec2f32(loc, x),
+            Uniform::Vec3F32(x) => self.set_vec3f32(loc, x),
+            Uniform::Vec4F32(x) => self.set_vec4f32(loc, x),
+            Uniform::Vec2I32(x) => self.set_vec2i32(loc, x),
+            Uniform::Vec3I32(x) => self.set_vec3i32(loc, x),
+            Uniform::Vec4I32(x) => self.set_vec4i32(loc, x),
+            Uniform::Mat44F32(x) => self.set_mat44(loc, x),
+            // Texture types
+            Uniform::Texture2D(x, active_texture_id) => self.set_t2d(loc, x, active_texture_id),
+            Uniform::Texture3D(x, active_texture_id) => self.set_t3d(loc, x, active_texture_id),
+            Uniform::Image2D(x, access_type) => self.set_i2d(loc, x, access_type),
+            Uniform::Image3D(x, access_type) => self.set_i3d(loc, x, access_type),
+            // Invalid
+            _ => { return Err(RenderingError::new_str("Oopsie woopsie, we did a little fucky wuckie, a little fucko boingo. The code monkey (Me) is working VEWWY hard to fix this >.<!!")); }
+        }
+        errors::ErrorCatcher::catch_opengl_errors().ok_or(RenderingError::new_str("OpenGL error while setting uniforms/values!"))?;
+        Ok(())
+    }
     // Set some uniforms
-    pub fn set_vals(&self, uniforms: Vec<(&str, Uniform)>, texture_cacher: &CacheManager<Texture>) -> Result<(), RenderingError> {
+    pub fn set_vals(&self, uniforms: &[(&str, Uniform)]) -> Result<(), RenderingError> {
         // First of all, check that we have this shader enabled
         self.use_shader();
         for uniform in uniforms {
-            let name = uniform.0.to_string();
-            let loc = self.get_uniform_location(&name).ok_or(RenderingError::new_str("Could not fetch uniform location!"))?;
-            match uniform.1 {
-                Uniform::F32(x) => self.set_f32(loc, x),
-                Uniform::I32(x) => self.set_i32(loc, x),
-                Uniform::Vec2F32(x) => self.set_vec2f32(loc, x),
-                Uniform::Vec3F32(x) => self.set_vec3f32(loc, x),
-                Uniform::Vec4F32(x) => self.set_vec4f32(loc, x),
-                Uniform::Vec2I32(x) => self.set_vec2i32(loc, x),
-                Uniform::Vec3I32(x) => self.set_vec3i32(loc, x),
-                Uniform::Vec4I32(x) => self.set_vec4i32(loc, x),
-                // Texture types
-                Uniform::Texture2D(x, active_texture_id) => {
-                    // Get the texture
-                    let t = texture_cacher
-                        .id_get_object(x)
-                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
-                    self.set_t2d(loc, t, active_texture_id);
-                }
-                Uniform::Texture3D(x, active_texture_id) => {
-                    // Get the texture
-                    let t = texture_cacher
-                        .id_get_object(x)
-                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
-                    self.set_t3d(loc, t, active_texture_id);
-                }
-                Uniform::Image2D(x, access_type) => {
-                    // Get the texture
-                    let t = texture_cacher
-                        .id_get_object(x)
-                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
-                    self.set_i2d(loc, t, access_type);
-                }
-                Uniform::Image3D(x, access_type) => {
-                    // Get the texture
-                    let t = texture_cacher
-                        .id_get_object(x)
-                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
-                    self.set_i3d(loc, t, access_type);
-                }
-                Uniform::Mat44F32(x) => self.set_mat44(loc, x),
-            }
+            self.val(uniform.0, uniform.1.clone())?;
+        }
+        Ok(())
+    }
+    // Set the texture uniforms
+    pub fn set_valst(&self, uniforms: &[(&str, Uniform)], texture_cacher: &CacheManager<Texture>) -> Result<(), RenderingError> {
+        // First of all, check that we have this shader enabled
+        self.use_shader();
+        for uniform in uniforms {
+            self.valt(uniform.0, uniform.1.clone(), texture_cacher)?;
         }
         Ok(())
     }

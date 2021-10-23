@@ -104,7 +104,7 @@ impl LoadableResource for Texture {
                         let mut texture = self.set_dimensions(TextureDimensions::D2D(width, height));
                         // Set the texture name since the texture has an empty name
                         texture.name = texture_name.clone();
-                        let new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec());
+                        let new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec()).unwrap();
                         texture = new_texture;
                         Some(texture)
                     }
@@ -259,7 +259,7 @@ impl Texture {
         self
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
-    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
+    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Option<Self> {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
@@ -308,7 +308,7 @@ impl Texture {
                         );
                     }
                 }
-
+                errors::ErrorCatcher::catch_opengl_errors()?;
                 // Set the texture parameters for a normal texture
                 match self.filter {
                     TextureFilter::Linear => {
@@ -322,6 +322,7 @@ impl Texture {
                         gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                     }
                 }
+                errors::ErrorCatcher::catch_opengl_errors()?;
             }
 
             // The texture is already bound to the TEXTURE_2D
@@ -342,6 +343,7 @@ impl Texture {
                             gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                         }
                     }
+                    errors::ErrorCatcher::catch_opengl_errors()?;
                 }
             }
         } else {
@@ -368,8 +370,9 @@ impl Texture {
             // Now set the actual wrapping mode in the opengl texture
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
+            errors::ErrorCatcher::catch_opengl_errors()?;
         }
-        self
+        Some(self)
     }
     // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
     pub fn fill_array_veclib<V, U>(&self) -> Vec<V>
