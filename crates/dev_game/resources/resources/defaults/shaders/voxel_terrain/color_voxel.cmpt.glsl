@@ -2,18 +2,12 @@
 #includep {"0"}
 // Load the color voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(rgb8, binding = 0) uniform image3D color_image;
+layout(rgba8, binding = 0) uniform image3D color_image;
 layout(location = 1) uniform sampler3D voxel_sampler;
 layout(location = 2) uniform sampler3D material_sampler;
 layout(location = 3) uniform vec3 node_pos;
 layout(location = 4) uniform int node_size;
 layout(location = 5) uniform int chunk_size;
-// Get a single voxel from a pixel coordinate
-Voxel get_voxel_pixel(ivec3 pixel_coords) {
-    vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
-    Voxel out_voxel = Voxel((voxel_pixel * 2) - 1);    
-    return out_voxel;
-}
 void main() {
     // Get the pixel coord
     ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);
@@ -25,10 +19,14 @@ void main() {
     pos += node_pos;        
     // Read the voxel data
     // Get normal
+    vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
+    Voxel voxel = Voxel((voxel_pixel.x * 2) - 1);   
+    vec4 mvp = texture(material_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
     vec3 normal = vec3(0, 0, 0);
-    ColorVoxel color_voxel;
-    get_color_voxel(pos, voxel_sampler, voxel, out color_voxel);
-    vec4 pixel = vec4(color_voxel.color, 0.0);        
+    ColorVoxel color_voxel = ColorVoxel(vec3(0, 0, 0));
+    get_color_voxel(pos, voxel, MaterialVoxel(int(mvp.x * 255), int(mvp.y * 255), int(mvp.z * 255), int(mvp.a * 255)), color_voxel);
+    vec4 pixel = vec4(color_voxel.color, 0.0);       
+    
     // Write the pixel
-    imageStore(color_voxel_image, pixel_coords, pixel);
+    imageStore(color_image, pixel_coords, pixel);
 }

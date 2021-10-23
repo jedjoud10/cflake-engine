@@ -100,6 +100,7 @@ impl VoxelGenerator {
         // Dispatch the compute shader
         // Second pass
         let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
+        /*
         color_shader.use_shader();
         color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
@@ -114,7 +115,7 @@ impl VoxelGenerator {
         // Run the color compute shader
         color_compute.run_compute((CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4)).unwrap();
         color_compute.get_compute_state().unwrap();
-
+        */
         // Read back the texture into the data buffer
         let color_pixels = self.voxel_texture.internal_texture.fill_array_veclib::<veclib::Vector3<u8>, u8>();
         let material_pixels = self.material_texture.internal_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
