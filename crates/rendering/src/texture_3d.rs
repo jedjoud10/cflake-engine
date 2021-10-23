@@ -98,4 +98,6 @@ impl Texture3D {
         self.internal_texture = t;
         return self;
     }
+    // Cache
+    pub fn cache(mut self, )
 }
