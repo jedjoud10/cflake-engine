@@ -164,14 +164,31 @@ impl CustomData {
         // Calculate the mvp matrix
         let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
 
-        // Pass the MVP and the model matrix to the shader
-        
+        // Pass the MVP and the model matrix to the shader        
         shader.set_mat44("mvp_matrix", &mvp_matrix);
         shader.set_mat44("model_matrix", model_matrix);
         shader.set_mat44("view_matrix", view_matrix);
         shader.set_vec3f32("view_pos", &camera_position);
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
 
+        // Set the default/custom uniforms
+        for uniform in material.default_uniforms.iter() {
+            let name = uniform.0.as_str();
+            match &uniform.1 {
+                rendering::DefaultUniform::F32(x) => shader.set_f32(name, x),
+                rendering::DefaultUniform::I32(x) => shader.set_i32(name, x),
+                rendering::DefaultUniform::Vec2F32(x) => shader.set_vec2f32(name, x),
+                rendering::DefaultUniform::Vec3F32(x) => shader.set_vec3f32(name, x),
+                rendering::DefaultUniform::Vec4F32(x) => shader.set_vec4f32(name, x),
+                rendering::DefaultUniform::Vec2I32(x) => shader.set_vec2i32(name, x),
+                rendering::DefaultUniform::Vec3I32(x) => shader.set_vec3i32(name, x),
+                rendering::DefaultUniform::Vec4I32(x) => shader.set_vec4i32(name, x),
+                rendering::DefaultUniform::Mat44F32(x) => shader.set_mat44(name, x),
+                rendering::DefaultUniform::Texture2D(x, y) => shader.set_t2d(name, data.texture_cacher.id_get_object(*x).unwrap(), *y),
+                rendering::DefaultUniform::Texture3D(x, y) => shader.set_t2d(name, data.texture_cacher.id_get_object(*x).unwrap(), *y),
+            }
+        }
+ 
         // Check if we already loaded the default textures or not
         if material.diffuse_tex_id.is_none() || material.normal_tex_id.is_none() {
             // Did not load all the default textures!

@@ -96,13 +96,12 @@ impl VoxelGenerator {
         
         // Read back the compute shader data
         compute.get_compute_state().unwrap();
-        // Dispatch the compute shader
         // Second pass
         let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
         color_shader.use_shader();
         color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
-        color_shader.set_t3d("material_sampler", &self.voxel_texture, gl::TEXTURE2);
+        color_shader.set_t3d("material_sampler", &self.material_texture, gl::TEXTURE2);
         color_shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
         color_shader.set_i32("node_size", &(*size as i32));
@@ -124,13 +123,14 @@ impl VoxelGenerator {
         // Turn the pixels into the data
         for (i, pixel) in voxel_pixels.iter().enumerate() {
             let density = *pixel;
+            let material = material_pixels[i];
             data[i] = Voxel {
                 density: density,
                 color: color_pixels[i].get3([0, 1, 2]),
-                biome_id: 0,
-                material_id: 0,
-                hardness: 0,
-                texture_id: 0
+                biome_id: material.x,
+                material_id: material.y,
+                hardness: material.z,
+                texture_id: material.w
             };
             // Keep the min and max
             min = min.min(density);

@@ -19,11 +19,31 @@ pub struct Material {
     pub shader_name: String,
     pub material_name: String,
     pub flags: MaterialFlags,
-
+    pub default_uniforms: Vec<(String, DefaultUniform)>,
     // The default texture ID
     pub diffuse_tex_id: Option<usize>,
-    pub normal_tex_id: Option<usize>,
+    pub normal_tex_id: Option<usize>,    
 }
+
+// Some default uniforms that we will set
+#[derive(Clone)]
+pub enum DefaultUniform {
+    // Singles
+    F32(f32),
+    I32(i32),
+    // Vectors
+    Vec2F32(veclib::Vector2<f32>),
+    Vec3F32(veclib::Vector3<f32>),
+    Vec4F32(veclib::Vector4<f32>),
+    Vec2I32(veclib::Vector2<i32>),
+    Vec3I32(veclib::Vector3<i32>),
+    Vec4I32(veclib::Vector4<i32>),
+    Mat44F32(veclib::Matrix4x4<f32>),
+    // Others
+    Texture2D(usize, u32),
+    Texture3D(usize, u32),
+}
+
 
 impl Default for Material {
     fn default() -> Self {
@@ -31,9 +51,14 @@ impl Default for Material {
             shader_name: String::new(),
             material_name: String::new(),
             flags: MaterialFlags::empty(),
+            default_uniforms: Vec::new(),
             diffuse_tex_id: None,
             normal_tex_id: None,
         };
+        // Set the default shader args
+        let material = material.set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE));
+        let material = material.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::ONE));
+        let material = material.set_uniform("normals_strength", DefaultUniform::F32(1.0));
         return material;
     }
 }
@@ -135,6 +160,11 @@ impl Material {
             true => self.flags.insert(MaterialFlags::DOUBLE_SIDED),
             false => self.flags.remove(MaterialFlags::DOUBLE_SIDED),
         }
+        return self;
+    }
+    // Set a default uniform
+    pub fn set_uniform(mut self, uniform_name: &str, uniform: DefaultUniform) -> Self {
+        self.default_uniforms.push((uniform_name.to_string(), uniform));
         return self;
     }
 }

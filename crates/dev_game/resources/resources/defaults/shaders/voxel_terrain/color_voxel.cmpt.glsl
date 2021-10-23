@@ -21,11 +21,9 @@ void main() {
     vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
     Voxel voxel = Voxel((voxel_pixel.x * 65535) - 32767);   
     vec4 mvp = texture(material_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
-    vec3 normal = vec3(0, 0, 0);
     ColorVoxel color_voxel = ColorVoxel(vec3(0, 0, 0));
     get_color_voxel(pos, voxel, MaterialVoxel(int(mvp.x * 255), int(mvp.y * 255), int(mvp.z * 255), int(mvp.a * 255)), color_voxel);
-    vec4 pixel = vec4(color_voxel.color, 0.0);       
-    
+    vec4 pixel = vec4(color_voxel.color, 0.0);           
     // Write the pixel
     imageStore(color_image, pixel_coords, pixel);
 }

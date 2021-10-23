@@ -25,6 +25,6 @@ void main() {
     vec4 pixel = vec4(clamp(voxel.density + 32767, 0.0, 65535.0) / 65535, 0.0, 0.0, 0.0);        
     // Write the material pixel
     imageStore(voxel_image, pixel_coords, pixel);        
-    vec4 material_pixel = vec4(material_voxel.material_id, material_voxel.biome_id, material_voxel.hardness, material_voxel.texture_id);
+    vec4 material_pixel = vec4(material_voxel.material_id/255.0, material_voxel.biome_id/255.0, material_voxel.hardness/255.0, material_voxel.texture_id/255.0);
     imageStore(material_image, pixel_coords, material_pixel);  
 }

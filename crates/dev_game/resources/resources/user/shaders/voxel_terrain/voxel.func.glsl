@@ -21,7 +21,7 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     //density = abs(density) - 30;
     
     int material_id = 0;
-    if (snoise(pos * 0.002) > -0.5) {
+    if (sin(pos.x) > -0.0) {
         material_id = 1;
     }
     int biome_id = 0;
@@ -29,7 +29,7 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     int texture_id = 0;
 
     // Write the result
-    voxel = Voxel(pos.y * 20);
+    voxel = Voxel(density * 20);
     material_voxel = MaterialVoxel(material_id, biome_id, hardness, texture_id);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
