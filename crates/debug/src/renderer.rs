@@ -141,7 +141,7 @@ impl DebugRenderer {
         let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();
         // Since we don't have a model matrix you can set it directly
         shader.use_shader();
-        shader.val("vp_matrix", rendering::Uniform::Mat44F32(vp_matrix));
+        //shader.val("vp_matrix", rendering::Uniform::Mat44F32(vp_matrix));
 
         // Draw each line
         unsafe {

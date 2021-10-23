@@ -423,8 +423,7 @@ impl World {
             render_system.emissive_texture.update_size(size.0, size.1);
             
             //TODO: This
-            render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions)
-            
+            render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions, &self.texture_cacher);            
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

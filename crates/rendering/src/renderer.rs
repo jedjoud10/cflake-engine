@@ -46,9 +46,11 @@ impl Renderer {
         // Create a default material, just contains the shader arguments only though, no textures
         let material = Material::default();
         // Set the default uniforms
+        /*
         let material = material.val("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE));
         let material = material.val("tint", Uniform::Vec3F32(veclib::Vector3::ONE));
         let material = material.val("normals_strength", Uniform::F32(1.0));
+        */
         return new_self.set_material(material);
     }
     // Load a model

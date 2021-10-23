@@ -1,7 +1,7 @@
 use others::CacheManager;
 use resources::ResourceManager;
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, Texture, TextureDimensions, TextureWrapping, Uniform};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureDimensions, TextureWrapping, Uniform};
 
 // Some volumetric shit
 #[derive(Default)]
@@ -48,7 +48,7 @@ impl Volumetric {
     }
     // Create the SDF texture from a simple texture, loaded into a compute shader
     // Create the textures
-    pub fn create_textures(&mut self, texture_cacher: CacheManager<Texture>, resolution: veclib::Vector2<u16>, sdf_dimensions: u16, scale_down_factor_result: u16) {
+    pub fn create_textures(&mut self, texture_cacher: &mut CacheManager<Texture>, resolution: veclib::Vector2<u16>, sdf_dimensions: u16, scale_down_factor_result: u16) {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
         self.sdf_tex = texture_cacher.cache_unnamed_object(Texture::new()
@@ -79,18 +79,19 @@ impl Volumetric {
         depth_texture.update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
     }
     // Create the SDF texture from a compute shader complitely
-    pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
+    pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>, texture_cacher: &CacheManager<Texture>) {
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
         shader.use_shader();
-        shader.val("sdf_tex", Uniform::Image3D(self.sdf_tex, crate::TextureShaderAccessType::WriteOnly));
+        //shader.val("sdf_tex", Uniform::Image3D(self.sdf_tex, crate::TextureShaderAccessType::WriteOnly));
         // Actually generate the SDF
         let compute = match &mut shader.additional_shader {
             crate::AdditionalShader::None => panic!(),
             crate::AdditionalShader::Compute(x) => x,
         };
         // Run the compute
+        let texture = texture_cacher.id_get_object(self.sdf_tex).unwrap();
         compute
-            .run_compute((self.sdf_tex as u32 / 4, self.sdf_tex.height as u32 / 4, self.sdf_tex.depth as u32 / 4))
+            .run_compute((texture.get_width() as u32 / 4, texture.get_height() as u32 / 4, texture.get_depth() as u32 / 4))
             .unwrap();
         compute.get_compute_state().unwrap();
     }
@@ -102,6 +103,7 @@ impl Volumetric {
         rotation: veclib::Quaternion<f32>,
         camera_position: veclib::Vector3<f32>,
         clip_planes: (f32, f32),
+        texture_cacher: &CacheManager<Texture>,
     ) {
         if !self.enabled { return; }
         // Run the compute shader
@@ -120,7 +122,7 @@ impl Volumetric {
             ("nf_planes", Uniform::Vec2F32(clip_planes)),    
         ]; 
         // Set the values
-        shader.set_vals(vals);        
+        shader.set_vals(vals, texture_cacher);        
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Get the actual compute shader
         let compute = match &mut shader.additional_shader {
@@ -129,7 +131,8 @@ impl Volumetric {
         };
 
         // Run the actual compute shader
-        compute.run_compute((self.result_tex.width as u32 / 16, self.result_tex.height as u32 / 16, 1)).unwrap();
+        let texture = texture_cacher.id_get_object(self.result_tex).unwrap();
+        compute.run_compute((texture.get_width() as u32 / 16, texture.get_height() as u32 / 16, 1)).unwrap();
         compute.get_compute_state().unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }

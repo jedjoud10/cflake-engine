@@ -2,7 +2,7 @@ use crate::ISOLINE;
 
 use super::CHUNK_SIZE;
 use others::CacheManager;
-use rendering::{Shader, Texture2D, Texture3D};
+use rendering::{Shader, Texture};
 use veclib::Swizzable;
 use world_data::WorldData;
 

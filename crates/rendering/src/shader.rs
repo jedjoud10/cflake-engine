@@ -1,10 +1,8 @@
-use crate::texture_3d::Texture3D;
+use crate::Texture;
 use crate::ComputeShader;
 use crate::SubShader;
 use crate::SubShaderType;
 use crate::TextureShaderAccessType;
-
-use super::Texture2D;
 use gl;
 use others::CacheManager;
 use resources::ResourceManager;
@@ -196,7 +194,8 @@ impl Shader {
 }
 
 // A simple uniform enum
-pub enum Uniform<'a> {
+#[derive(Clone)]
+pub enum Uniform {
     // Singles
     F32(f32),
     I32(i32),
@@ -209,10 +208,10 @@ pub enum Uniform<'a> {
     Vec3I32(veclib::Vector3<i32>),
     Vec4I32(veclib::Vector4<i32>),
     // Others
-    Texture2D(&'a Texture2D, u32),
-    Texture3D(&'a Texture3D, u32),
-    Image2D(&'a Texture2D, TextureShaderAccessType),
-    Image3D(&'a Texture3D, TextureShaderAccessType),
+    Texture2D(usize, u32),
+    Texture3D(usize, u32),
+    Image2D(usize, TextureShaderAccessType),
+    Image3D(usize, TextureShaderAccessType),
     Mat44F32(veclib::Matrix4x4<f32>),
 
 }
@@ -231,33 +230,45 @@ impl Shader {
             Some(x)
         }
     }
-    // Set a single uniform
-    pub fn val(&self, name: &str, uniform: Uniform) -> Option<()> {
-        let loc = self.get_uniform_location(name)?;
-        match &uniform {
-            Uniform::F32(x) => self.set_f32(loc, *x),
-            Uniform::I32(x) => self.set_i32(loc, *x),
-            Uniform::Vec2F32(x) => self.set_vec2f32(loc, x),
-            Uniform::Vec3F32(x) => self.set_vec3f32(loc, x),
-            Uniform::Vec4F32(x) => self.set_vec4f32(loc, x),
-            Uniform::Vec2I32(x) => self.set_vec2i32(loc, x),
-            Uniform::Vec3I32(x) => self.set_vec3i32(loc, x),
-            Uniform::Vec4I32(x) => self.set_vec4i32(loc, x),
-            Uniform::Texture2D(x, active_texture_id) => self.set_t2d(loc, x, *active_texture_id),
-            Uniform::Texture3D(x, active_texture_id) => self.set_t3d(loc, x, *active_texture_id),
-            Uniform::Image2D(x, access_type) => self.set_i2d(loc, x, *access_type),
-            Uniform::Image3D(x, access_type) => self.set_i3d(loc, x, *access_type),
-            Uniform::Mat44F32(x) => self.set_mat44(loc, x),
-        }
-        Some(())
-    }
     // Set some uniforms
-    pub fn set_vals(&self, uniforms: Vec<(&str, Uniform)>) -> Result<(), RenderingError> {
+    pub fn set_vals(&self, uniforms: Vec<(&str, Uniform)>, texture_cacher: &CacheManager<Texture>) -> Result<(), RenderingError> {
         // First of all, check that we have this shader enabled
         self.use_shader();
         for uniform in uniforms {
             let name = uniform.0.to_string();
-            self.val(&name, uniform.1).ok_or(RenderingError::new(format!("Could not set uniform '{}'!", name)));
+            let loc = self.get_uniform_location(&name).ok_or(RenderingError::new_str("Could not fetch uniform location!"))?;
+            match uniform.1 {
+                Uniform::F32(x) => self.set_f32(loc, x),
+                Uniform::I32(x) => self.set_i32(loc, x),
+                Uniform::Vec2F32(x) => self.set_vec2f32(loc, x),
+                Uniform::Vec3F32(x) => self.set_vec3f32(loc, x),
+                Uniform::Vec4F32(x) => self.set_vec4f32(loc, x),
+                Uniform::Vec2I32(x) => self.set_vec2i32(loc, x),
+                Uniform::Vec3I32(x) => self.set_vec3i32(loc, x),
+                Uniform::Vec4I32(x) => self.set_vec4i32(loc, x),
+                // Texture types
+                Uniform::Texture2D(x, active_texture_id) =>  {
+                    // Get the texture 
+                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                    self.set_t2d(loc, t, active_texture_id);
+                },
+                Uniform::Texture3D(x, active_texture_id) => {
+                    // Get the texture 
+                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                    self.set_t3d(loc, t, active_texture_id);
+                },
+                Uniform::Image2D(x, access_type) => {
+                    // Get the texture 
+                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                    self.set_i2d(loc, t, access_type);
+                },
+                Uniform::Image3D(x, access_type) => {
+                    // Get the texture 
+                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                    self.set_i3d(loc, t, access_type);
+                },
+                Uniform::Mat44F32(x) => self.set_mat44(loc, x),
+            }
         }
         Ok(())
     }
@@ -268,48 +279,48 @@ impl Shader {
         }
     }
     // Set a vec2 f32 uniform
-    fn set_vec2f32(&self, loc: i32, vec: &veclib::Vector2<f32>) {
+    fn set_vec2f32(&self, loc: i32, vec: veclib::Vector2<f32>) {
         unsafe {
             gl::Uniform2f(loc, vec[0], vec[1]);
         }
     }
     // Set a vec3 f32 uniform
-    fn set_vec3f32(&self, loc: i32, vec: &veclib::Vector3<f32>) {
+    fn set_vec3f32(&self, loc: i32, vec: veclib::Vector3<f32>) {
         unsafe {
             gl::Uniform3f(loc, vec[0], vec[1], vec[2]);
         }
     }
     // Set a vec4 f32 uniform
-    fn set_vec4f32(&self, loc: i32, vec: &veclib::Vector4<f32>) {
+    fn set_vec4f32(&self, loc: i32, vec: veclib::Vector4<f32>) {
         unsafe {
             gl::Uniform4f(loc, vec[0], vec[1], vec[2], vec[3]);
         }
     }
     // Set a matrix 4x4 f32
-    fn set_mat44(&self, loc: i32, matrix: &veclib::Matrix4x4<f32>) {
+    fn set_mat44(&self, loc: i32, matrix: veclib::Matrix4x4<f32>) {
         unsafe {
             let ptr: *const f32 = &matrix[0][0];
             gl::UniformMatrix4fv(loc, 1, gl::FALSE, ptr);
         }
     }
     // Set a 2D texture
-    fn set_t2d(&self, loc: i32, texture: &Texture2D, active_texture_id: u32) {
+    fn set_t2d(&self, loc: i32, texture: &Texture, active_texture_id: u32) {
         unsafe {
             gl::ActiveTexture(active_texture_id);
-            gl::BindTexture(gl::TEXTURE_2D, texture.internal_texture.id);
+            gl::BindTexture(gl::TEXTURE_2D, texture.id);
             gl::Uniform1i(loc, active_texture_id as i32 - 33984);
         }
     }
     // Set a 3D texture
-    fn set_t3d(&self, loc: i32, texture: &Texture3D, active_texture_id: u32) {
+    fn set_t3d(&self, loc: i32, texture: &Texture, active_texture_id: u32) {
         unsafe {
             gl::ActiveTexture(active_texture_id);
-            gl::BindTexture(gl::TEXTURE_3D, texture.internal_texture.id);
+            gl::BindTexture(gl::TEXTURE_3D, texture.id);
             gl::Uniform1i(loc, active_texture_id as i32 - 33984);
         }
     }
     // Set a 2D image
-    fn set_i2d(&self, loc: i32, texture: &Texture2D, access_type: TextureShaderAccessType) {
+    fn set_i2d(&self, loc: i32, texture: &Texture, access_type: TextureShaderAccessType) {
         unsafe {
             // Converstion from wrapper to actual opengl values
             let new_access_type: u32;
@@ -319,20 +330,20 @@ impl Shader {
                 TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
             };
             let unit = loc as u32;
-            gl::BindTexture(gl::TEXTURE_2D, texture.internal_texture.id);
+            gl::BindTexture(gl::TEXTURE_2D, texture.id);
             gl::BindImageTexture(
                 unit,
-                texture.internal_texture.id,
+                texture.id,
                 0,
                 gl::FALSE,
                 0,
                 new_access_type,
-                texture.internal_texture.internal_format,
+                texture.internal_format,
             );
         }
     }
     // Set a 3D image
-    fn set_i3d(&self, loc: i32, texture: &Texture3D, access_type: TextureShaderAccessType) {
+    fn set_i3d(&self, loc: i32, texture: &Texture, access_type: TextureShaderAccessType) {
         unsafe {
             // Converstion from wrapper to actual opengl values
             let new_access_type: u32;
@@ -342,15 +353,15 @@ impl Shader {
                 TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
             };
             let unit = loc as u32;
-            gl::BindTexture(gl::TEXTURE_3D, texture.internal_texture.id);
+            gl::BindTexture(gl::TEXTURE_3D, texture.id);
             gl::BindImageTexture(
                 unit,
-                texture.internal_texture.id,
+                texture.id,
                 0,
                 gl::FALSE,
                 0,
                 new_access_type,
-                texture.internal_texture.internal_format,
+                texture.internal_format,
             );
         }
     }
@@ -361,19 +372,19 @@ impl Shader {
         }
     }
     // Set a vec2 i32 uniform
-    fn set_vec2i32(&self, loc: i32, vec: &veclib::Vector2<i32>) {
+    fn set_vec2i32(&self, loc: i32, vec: veclib::Vector2<i32>) {
         unsafe {
             gl::Uniform2i(loc, vec[0], vec[1]);
         }
     }
     // Set a vec3 i32 uniform
-    fn set_vec3i32(&self, loc: i32, vec: &veclib::Vector3<i32>) {
+    fn set_vec3i32(&self, loc: i32, vec: veclib::Vector3<i32>) {
         unsafe {
             gl::Uniform3i(loc, vec[0], vec[1], vec[2]);
         }
     }
     // Set a vec4 i32 uniform
-    fn set_vec4i32(&self, loc: i32, vec: &veclib::Vector4<i32>) {
+    fn set_vec4i32(&self, loc: i32, vec: veclib::Vector4<i32>) {
         unsafe {
             gl::Uniform4i(loc, vec[0], vec[1], vec[2], vec[3]);
         }

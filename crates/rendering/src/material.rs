@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use crate::{TextureFilter, Uniform};
+use crate::{Texture, TextureFilter, Uniform};
 
-use super::Texture2D;
 use bitflags::bitflags;
 use others::CacheManager;
 use resources::ResourceManager;
@@ -19,7 +18,6 @@ pub struct Material {
     // Rendering stuff
     pub shader_name: String,
     pub material_name: String,
-    pub uniform_setter: ShaderUniformSetter,
     pub flags: MaterialFlags,
 
     // The default texture ID
@@ -32,7 +30,6 @@ impl Default for Material {
         let material: Self = Material {
             shader_name: String::new(),
             material_name: String::new(),
-            uniform_setter: ShaderUniformSetter::default(),
             flags: MaterialFlags::empty(),
             diffuse_tex_id: None,
             normal_tex_id: None,
@@ -50,9 +47,9 @@ impl Material {
         }
     }
     // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, texture_cacher: &mut CacheManager<Texture2D>, resource_manager: &mut ResourceManager) -> Self {
+    pub fn load_diffuse(mut self, diffuse_path: &str, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
         // Load the texture
-        let (_, id) = Texture2D::new()
+        let (_, id) = Texture::new()
             .set_mutable(true)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -63,9 +60,9 @@ impl Material {
         return self;
     }
     // Load the normal texture
-    pub fn load_normal(mut self, normal_path: &str, texture_cacher: &mut CacheManager<Texture2D>, resource_manager: &mut ResourceManager) -> Self {
+    pub fn load_normal(mut self, normal_path: &str, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
         // Load the texture
-        let (_, id) = Texture2D::new()
+        let (_, id) = Texture::new()
             .set_mutable(true)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -75,14 +72,14 @@ impl Material {
         return self;
     }
     // Load textures from their texture struct
-    pub fn load_textures(mut self, texture_ids: &Vec<Option<usize>>, texture_cacher: &CacheManager<Texture2D>) -> Self {
+    pub fn load_textures(mut self, texture_ids: &Vec<Option<usize>>, texture_cacher: &CacheManager<Texture>) -> Self {
         self.diffuse_tex_id = texture_ids[0];
         self.normal_tex_id = texture_ids[1];
         // Load the default textures
         return self.load_default_textures(texture_cacher);
     }
     // Load the default textures
-    pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture2D>) -> Self {
+    pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture>) -> Self {
         // For the rest of the textures that weren't explicitly given a texture path, load the default ones
         // Diffuse, Normals
         if self.diffuse_tex_id.is_none() {
@@ -97,7 +94,7 @@ impl Material {
     pub fn resource_load_textures(
         mut self,
         texture_paths: Vec<Option<&str>>,
-        texture_cacher: &mut CacheManager<Texture2D>,
+        texture_cacher: &mut CacheManager<Texture>,
         resource_manager: &mut ResourceManager,
     ) -> Result<Self, errors::ResourceError> {
         // Load the textures
@@ -105,7 +102,7 @@ impl Material {
             match texture_path {
                 Some(texture_path) => {
                     let _resource = resource_manager.load_packed_resource(texture_path)?;
-                    let (_, texture_id) = Texture2D::new()
+                    let (_, texture_id) = Texture::new()
                         .enable_mipmaps()
                         .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
                         .load_texture(texture_path, resource_manager, texture_cacher)
@@ -140,11 +137,13 @@ impl Material {
         }
         return self;
     }
+    /*
     // Set some default uniforms
     pub fn val(mut self, uniform_name: &str, value: crate::Uniform) -> Self {
         self.uniform_setter.set_val(uniform_name, value);
         self
     }
+    */
 }
 
 // Each material can be instanced
@@ -154,19 +153,5 @@ impl others::Instance for Material {
     }
     fn get_name(&self) -> String {
         self.material_name.clone()
-    }
-}
-
-// Used to manually set some uniforms for the shaders
-#[derive(Default, Clone)]
-pub struct ShaderUniformSetter<'a> {
-    // The arguments that are going to be written to
-    pub vals: HashMap<String, crate::Uniform<'a>>,
-}
-
-impl<'a> ShaderUniformSetter<'a> {
-    // Set a specific uniform to a specific value
-    pub fn set_val(&mut self, uniform_name: &str, value: crate::Uniform) {
-        self.vals.insert(uniform_name.to_string(), value);
     }
 }

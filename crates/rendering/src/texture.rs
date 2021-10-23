@@ -1,5 +1,9 @@
 use bitflags::bitflags;
+use errors::ResourceError;
 use gl;
+use image::EncodableLayout;
+use others::CacheManager;
+use resources::{LoadableResource, Resource, ResourceManager};
 
 use std::{ffi::c_void, ptr::null};
 
@@ -28,10 +32,11 @@ pub enum TextureWrapping {
 
 // Texture dimension type
 #[derive(Debug, Clone)]
-pub enum TextureDimensionType {
+pub enum TextureDimensions {
     D2D(u16, u16),
     D3D(u16, u16, u16),
 }
+
 
 // Custom internal format
 // Custom data type
@@ -56,7 +61,7 @@ pub struct Texture {
     pub flags: TextureFlags,
     pub filter: TextureFilter,
     pub wrap_mode: TextureWrapping,
-    pub dimension_type: TextureDimensionType,
+    pub dimensions: TextureDimensions,
 }
 
 impl Default for Texture {
@@ -69,8 +74,83 @@ impl Default for Texture {
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
-            dimension_type: TextureDimensionType::D2D(0, 0),
+            dimensions: TextureDimensions::D2D(0, 0),
             wrap_mode: TextureWrapping::Repeat,
+        }
+    }
+}
+
+// Loadable resource
+impl LoadableResource for Texture {
+    // Load a texture from a resource file
+    fn from_resource(self, resource: &Resource) -> Option<Self> {
+        match resource {
+            Resource::Texture(texture, texture_name) => {
+                // Load either a 2D texture or a custom 3D texture
+                match self.dimensions {
+                    TextureDimensions::D2D(_, _) => {
+                        let width = texture.width;
+                        let height = texture.height;
+
+                        // Turn the compressed png bytes into their raw form
+                        let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
+                        image.set_format(image::ImageFormat::Png);
+                        let decoded = image.with_guessed_format().unwrap().decode().unwrap();
+                        // Well it seems like the images are flipped vertically so I have to manually flip them
+                        let decoded = decoded.flipv();
+                        // Read the image as a 32 bit image
+                        let rgba8_image = decoded.to_rgba8();
+
+                        // Set the proper dimensions and generate the texture from the resource's bytes
+                        let mut texture = self.set_dimensions(TextureDimensions::D2D(width, height));
+                        // Set the texture name since the texture has an empty name
+                        texture.name = texture_name.clone();
+                        let new_texture = texture
+                            .generate_texture(rgba8_image.as_bytes().to_vec());
+                        texture = new_texture;
+                        Some(texture)
+                    },
+                    TextureDimensions::D3D(_, _, _) => todo!(),
+                }                
+                
+            }
+            _ => None,
+        }
+    }
+}
+
+// Loading / caching stuff
+impl Texture {
+    // New
+    pub fn new() -> Self {
+        Self::default()
+    }
+    // Cache the current texture and return it's reference
+    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture>) -> Option<(&'a mut Self, usize)> {
+        let texture_name = self.name.clone();
+        let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
+        return Some((texture_cacher.get_object_mut(texture_name.as_str()).unwrap(), texture_id));
+    }
+    // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
+    pub fn load_texture<'a>(
+        self,
+        local_path: &str,
+        resource_manager: &mut ResourceManager,
+        texture_cacher: &'a mut CacheManager<Texture>,
+    ) -> Result<(&'a Self, usize), ResourceError> {
+        // Load the resource
+        let resource = resource_manager.load_packed_resource(local_path)?;
+        // If the texture was already cached, just loaded from cache
+        if texture_cacher.is_cached(local_path) {
+            // It is indeed cached
+            let texture = texture_cacher.get_object(local_path).unwrap();
+            let texture_id = texture_cacher.get_object_id(local_path).unwrap();
+            Ok((texture, texture_id))
+        } else {
+            // If it not cached, then load the texture from that resource
+            let texture = self.from_resource(resource).ok_or(ResourceError::new_str("Could not load texture!"))?;
+            let (texture, texture_id) = texture.cache_texture(texture_cacher).unwrap();
+            Ok((texture, texture_id))
         }
     }
 }
@@ -82,6 +162,64 @@ impl Texture {
         self.format = format;
         self.data_type = data_type;
         self
+    }
+    // Set the height and width of the soon to be generated texture
+    pub fn set_dimensions(mut self, dimensions: TextureDimensions) -> Self {
+        self.dimensions = dimensions;
+        self
+    }
+    // Update the size of the current texture
+    pub fn update_size(&mut self, dimensions: TextureDimensions) {
+        // Check if the current dimension type matches up with the new one
+        let valid = match self.dimensions {
+            TextureDimensions::D2D(_, _) => { match dimensions {
+                    TextureDimensions::D2D(_, _) => true,
+                    TextureDimensions::D3D(_, _, _) => false,
+                }
+            },
+            TextureDimensions::D3D(_, _, _) => { match dimensions {
+                    TextureDimensions::D2D(_, _) => false,
+                    TextureDimensions::D3D(_, _, _) => true,
+                }
+            },
+        };
+        if !valid { /* Oopsie woopsie, we did a little fucky wuckie, a little fucko boingo. The code monkey (Me) is working VEWWY hard to fix this >.<!! */ }
+        self.dimensions = dimensions;
+        // This is a normal texture getting resized
+        unsafe {
+            match self.dimensions {
+                TextureDimensions::D2D(width, height) => {
+                    gl::BindTexture(gl::TEXTURE_2D, self.id);
+                    gl::TexImage2D(
+                        gl::TEXTURE_2D,
+                        0,
+                        self.internal_format as i32,
+                        width as i32,
+                        height as i32,
+                        0,
+                        self.format,
+                        self.data_type,
+                        null(),
+                    );
+                },
+                TextureDimensions::D3D(width, height, depth) => {
+                    gl::BindTexture(gl::TEXTURE_3D, self.id);
+                    gl::TexImage3D(
+                        gl::TEXTURE_3D,
+                        0,
+                        self.internal_format as i32,
+                        width as i32,
+                        height as i32,
+                        depth as i32,
+                        0,
+                        self.format,
+                        self.data_type,
+                        null(),
+                    );
+                },
+            }
+            
+        }
     }
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
     pub fn set_mutable(mut self, mutable: bool) -> Self {
@@ -115,16 +253,16 @@ impl Texture {
         self
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
-    pub fn generate_texture(mut self, bytes: Vec<u8>, dimension_type: TextureDimensionType) -> Self {
+    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Self {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
         }
 
         // Get the tex_type based on the TextureDimensionType
-        let tex_type = match dimension_type {
-            TextureDimensionType::D2D(_, _) => gl::TEXTURE_2D,
-            TextureDimensionType::D3D(_, _, _) => gl::TEXTURE_3D,
+        let tex_type = match self.dimensions {
+            TextureDimensions::D2D(_, _) => gl::TEXTURE_2D,
+            TextureDimensions::D3D(_, _, _) => gl::TEXTURE_3D,
         };
 
         if true {
@@ -133,9 +271,9 @@ impl Texture {
                 gl::GenTextures(1, &mut self.id as *mut u32);
                 gl::BindTexture(tex_type, self.id);
                 // Use TexImage3D if it's a 3D texture, otherwise use TexImage2D
-                match dimension_type {
+                match self.dimensions {
                     // This is a 2D texture
-                    TextureDimensionType::D2D(width, height) => {
+                    TextureDimensions::D2D(width, height) => {
                         gl::TexImage2D(
                             tex_type,
                             0,
@@ -149,7 +287,7 @@ impl Texture {
                         );
                     }
                     // This is a 3D texture
-                    TextureDimensionType::D3D(width, height, depth) => {
+                    TextureDimensions::D3D(width, height, depth) => {
                         gl::TexImage3D(
                             tex_type,
                             0,
@@ -234,22 +372,22 @@ impl Texture {
         U: veclib::DefaultStates,
     {
         // Get the length of the vector
-        let length: usize = match self.dimension_type {
-            TextureDimensionType::D2D(x, y) => (x * y) as usize,
-            TextureDimensionType::D3D(x, y, z) => (x * y * z) as usize,
+        let length: usize = match self.dimensions {
+            TextureDimensions::D2D(x, y) => (x * y) as usize,
+            TextureDimensions::D3D(x, y, z) => (x * y * z) as usize,
         };
         // Create the vector
         let mut pixels: Vec<V> = vec![V::default(); length];
 
         // Actually read the pixels
         unsafe {
-            match self.dimension_type {
-                TextureDimensionType::D2D(_, _) => {
+            match self.dimensions {
+                TextureDimensions::D2D(_, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
                 }
-                TextureDimensionType::D3D(_, _, _) => {
+                TextureDimensions::D3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
@@ -264,22 +402,22 @@ impl Texture {
         U: Clone + Default,
     {
         // Get the length of the vector
-        let length: usize = match self.dimension_type {
-            TextureDimensionType::D2D(x, y) => (x * y) as usize,
-            TextureDimensionType::D3D(x, y, z) => (x * y * z) as usize,
+        let length: usize = match self.dimensions {
+            TextureDimensions::D2D(x, y) => (x * y) as usize,
+            TextureDimensions::D3D(x, y, z) => (x * y * z) as usize,
         };
         // Create the vector
         let mut pixels: Vec<U> = vec![U::default(); length];
 
         // Actually read the pixels
         unsafe {
-            match self.dimension_type {
-                TextureDimensionType::D2D(_, _) => {
+            match self.dimensions {
+                TextureDimensions::D2D(_, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
                 }
-                TextureDimensionType::D3D(_, _, _) => {
+                TextureDimensions::D3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
@@ -287,5 +425,26 @@ impl Texture {
             }
         }
         return pixels;
+    }
+    // Get the width of this texture
+    pub fn get_width(&self) -> u16 {
+        match self.dimensions {
+            TextureDimensions::D2D(x, _) => x,
+            TextureDimensions::D3D(x, _, _) => x,
+        }
+    }
+    // Get the height of this texture
+    pub fn get_height(&self) -> u16 {
+        match self.dimensions {
+            TextureDimensions::D2D(_, y) => y,
+            TextureDimensions::D3D(_, y, _) => y,
+        }
+    }
+    // Get the depth of this texture, if it is a 3D texture
+    pub fn get_depth(&self) -> u16 {
+        match self.dimensions {
+            TextureDimensions::D2D(_, _) => panic!(),
+            TextureDimensions::D3D(_, _, z) => z,
+        }
     }
 }

@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture2D, Volumetric};
+use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Volumetric};
 use resources::LoadableResource;
 use std::ptr::null;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -346,6 +346,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         camera_transform.rotation,
         camera_transform.position,
         camera.clip_planes,
+        data.texture_cacher
     );
     
 

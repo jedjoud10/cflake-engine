@@ -5,7 +5,7 @@ pub struct WorldData<'a> {
     pub ui_manager: &'a mut ui::UIManager,
     pub input_manager: &'a mut input::InputManager,
     pub shader_cacher: &'a mut (others::CacheManager<rendering::SubShader>, others::CacheManager<rendering::Shader>),
-    pub texture_cacher: &'a mut others::CacheManager<rendering::Texture2D>,
+    pub texture_cacher: &'a mut others::CacheManager<rendering::Texture>,
     pub resource_manager: &'a mut resources::ResourceManager,
     pub time_manager: &'a mut others::Time,
     pub debug: &'a mut debug::MainDebug,
