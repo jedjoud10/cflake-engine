@@ -31,7 +31,7 @@ pub enum TextureWrapping {
 }
 
 // Texture dimension type
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum TextureDimensions {
     D2D(u16, u16),
     D3D(u16, u16, u16),
@@ -156,6 +156,11 @@ impl Texture {
 }
 
 impl Texture {
+    // Set name
+    pub fn set_name(mut self, name: &str) -> Self {
+        self.name = name.to_string();
+        self
+    }
     // The internal format and data type of the soon to be generated texture
     pub fn set_idf(mut self, internal_format: u32, format: u32, data_type: u32) -> Self {
         self.internal_format = internal_format;

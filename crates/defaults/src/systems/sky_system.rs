@@ -1,6 +1,6 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
-use rendering::{Material, Model, Renderer, Shader, Texture2D, TextureWrapping};
+use rendering::{Material, Model, Renderer, Shader, Texture, TextureWrapping};
 use resources::LoadableResource;
 use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
@@ -21,7 +21,7 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
     .1;
 
     // Load texture
-    let cached_texture_id = Texture2D::new()
+    let cached_texture_id = Texture::new()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
         .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
         .unwrap()

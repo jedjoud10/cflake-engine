@@ -73,31 +73,31 @@ impl World {
 
         // Load the default objects for the CacheManagers
         // Create the black texture
-        Texture2D::new()
-            .set_dimensions(1, 1)
+        Texture::new()
+            .set_dimensions(TextureDimensions::D2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .generate_texture(vec![0, 0, 0, 255])
-            .set_internal_name("black")
+            .set_name("black")
             .cache_texture(&mut self.texture_cacher);
         // Create the white texture
-        Texture2D::new()
-            .set_dimensions(1, 1)
+        Texture::new()
+            .set_dimensions(TextureDimensions::D2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .generate_texture(vec![255, 255, 255, 255])
-            .set_internal_name("white")
+            .set_name("white")
             .cache_texture(&mut self.texture_cacher);
         // Create the default normals texture
-        Texture2D::new()
-            .set_dimensions(1, 1)
+        Texture::new()
+            .set_dimensions(TextureDimensions::D2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .generate_texture(vec![127, 128, 255, 255])
-            .set_internal_name("default_normals")
+            .set_name("default_normals")
             .cache_texture(&mut self.texture_cacher);        
 
         // Create some default UI that prints some default info to the screen
@@ -416,14 +416,17 @@ impl World {
                 .get_custom_system_data_mut::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            render_system.diffuse_texture.update_size(size.0, size.1);
-            render_system.depth_stencil_texture.update_size(size.0, size.1);
-            render_system.normals_texture.update_size(size.0, size.1);
-            render_system.position_texture.update_size(size.0, size.1);
-            render_system.emissive_texture.update_size(size.0, size.1);
+            let dims = TextureDimensions::D2D(size.0, size.1);
+            /*
+            render_system.diffuse_texture.update_size(dims);
+            render_system.depth_texture.update_size(dims);
+            render_system.normals_texture.update_size(dims);
+            render_system.position_texture.update_size(dims);
+            render_system.emissive_texture.update_size(dims);
+            */
             
             //TODO: This
-            render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions, &self.texture_cacher);            
+            render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions, &mut self.texture_cacher);            
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

@@ -108,8 +108,7 @@ pub fn world_initialized(world: &mut World) {
         .unwrap()
         .load_default_textures(data.texture_cacher);
     let material_inst = material
-        .instantiate(data.instance_manager)
-        .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE * 0.2));
+        .instantiate(data.instance_manager);
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,

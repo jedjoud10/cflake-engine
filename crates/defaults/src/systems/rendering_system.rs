@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Volumetric};
+use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture, TextureDimensions, Volumetric};
 use resources::LoadableResource;
 use std::ptr::null;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -11,11 +11,11 @@ use world_data::WorldData;
 pub struct CustomData {
     pub framebuffer: u32,
     // The frame buffer textures
-    pub diffuse_texture: Texture2D,
-    pub normals_texture: Texture2D,
-    pub position_texture: Texture2D,
-    pub emissive_texture: Texture2D,
-    pub depth_stencil_texture: Texture2D,
+    pub diffuse_texture: usize,
+    pub normals_texture: usize,
+    pub position_texture: usize,
+    pub emissive_texture: usize,
+    pub depth_texture: usize,
     pub debug_view: u16,
     pub wireframe: bool,
     wireframe_shader_name: String,
@@ -29,26 +29,6 @@ crate::impl_custom_system_data!(CustomData);
 
 // Draw functions
 impl CustomData {
-    // Read the set uniforms from a renderer's ShaderUniformSetter and update the shader
-    fn set_uniforms_from_custom_setter(&self, shader: &Shader, renderer: &Renderer) {
-        // Use the shader first
-        shader.use_shader();
-        // Loop over all the set uniforms
-        for (name, data) in renderer.material.as_ref().unwrap().uniform_setter.uniforms.iter() {
-            // Now it's the painful part
-            match data {
-                ShaderArg::F32(v) => shader.set_f32(name, v),
-                ShaderArg::I32(v) => shader.set_i32(name, v),
-                ShaderArg::V2F32(v) => shader.set_vec2f32(name, v),
-                ShaderArg::V3F32(v) => shader.set_vec3f32(name, v),
-                ShaderArg::V4F32(v) => shader.set_vec4f32(name, v),
-                ShaderArg::V2I32(v) => shader.set_vec2i32(name, v),
-                ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
-                ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
-                ShaderArg::MAT44(v) => shader.set_mat44(name, v),
-            }
-        }
-    }
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
@@ -70,12 +50,12 @@ impl CustomData {
         self.quad_renderer = quad_renderer_component;
     }
     // Bind a specific texture attachement to the frame buffer
-    fn bind_attachement(attachement: u32, texture: &Texture2D) {
+    fn bind_attachement(attachement: u32, texture: &Texture) {
         unsafe {
             // Default target, no multisamplind
             let target: u32 = gl::TEXTURE_2D;
-            gl::BindTexture(target, texture.internal_texture.id);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.internal_texture.id, 0);
+            gl::BindTexture(target, texture.id);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.id, 0);
         }
     }
     // Setup all the settings for opengl like culling and the clear color
@@ -93,41 +73,42 @@ impl CustomData {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
+            let dims = TextureDimensions::D2D(dimensions.x, dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.diffuse_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
             // Create the normals render texture
-            self.normals_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.normals_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
             // Create the position render texture
-            self.position_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.position_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
             // Create the emissive render texture
-            self.emissive_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.emissive_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
-            // Create the depth-stencil render texture
-            self.depth_stencil_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
+            // Create the depth render texture
+            self.depth_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
             // Bind the color texture to the color attachement 0 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
+            Self::bind_attachement(gl::COLOR_ATTACHMENT0, data.texture_cacher.id_get_object(self.diffuse_texture).unwrap());
             // Bind the normal texture to the color attachement 1 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
+            Self::bind_attachement(gl::COLOR_ATTACHMENT1,data.texture_cacher.id_get_object(self.normals_texture).unwrap());
             // Bind the position texture to the color attachement 2 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
+            Self::bind_attachement(gl::COLOR_ATTACHMENT2, data.texture_cacher.id_get_object(self.position_texture).unwrap());
             // Bind the emissive texture to the color attachement 3 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT3, &self.emissive_texture);
+            Self::bind_attachement(gl::COLOR_ATTACHMENT3,data.texture_cacher.id_get_object(self.emissive_texture).unwrap());
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
-            Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_stencil_texture);
+            Self::bind_attachement(gl::DEPTH_ATTACHMENT, data.texture_cacher.id_get_object(self.depth_texture).unwrap());
 
             let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
             // Set the frame buffer attachements
@@ -175,6 +156,7 @@ impl CustomData {
         let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
 
         // Pass the MVP and the model matrix to the shader
+        /*
         shader.set_mat44("mvp_matrix", &mvp_matrix);
         shader.set_mat44("model_matrix", model_matrix);
         shader.set_mat44("view_matrix", view_matrix);
@@ -195,7 +177,7 @@ impl CustomData {
 
         // Set the custom uniforms
         self.set_uniforms_from_custom_setter(shader, renderer);
-
+        */
         // Draw normally
         if renderer.gpu_data.initialized {
             // Enable / Disable vertex culling
@@ -230,9 +212,11 @@ impl CustomData {
             wireframe_shader.use_shader();
             // Calculate the mvp matrix
             let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
+            /*
             wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
             wireframe_shader.set_mat44("model_matrix", model_matrix);
             wireframe_shader.set_mat44("view_matrix", view_matrix);
+            */
             unsafe {
                 // Set the wireframe rendering
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -260,8 +244,8 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Load volumetric stuff
     system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
-    system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 4);
-    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
+    system.volumetric.create_textures(&mut data.texture_cacher, data.custom_data.window.dimensions, 64, 4);
+    system.volumetric.generate_sdf(&mut data.shader_cacher.1, &data.texture_cacher);
     system.volumetric.disable();
 
     // Get the OpenGL version
@@ -315,7 +299,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         // Set the shader arguments
         //shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
         shader.use_shader();
-        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+        //shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         //shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
     }
     
@@ -353,6 +337,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
     shader.use_shader();
+    /*
     shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
     shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
     shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
@@ -393,6 +378,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
+    */
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
