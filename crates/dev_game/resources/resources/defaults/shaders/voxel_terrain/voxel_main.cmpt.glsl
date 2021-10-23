@@ -18,14 +18,16 @@ void main() {
     pos *= size;
     pos += node_pos;              
     // Create the pixel value
-    Voxel voxel;
-    MaterialVoxel material_voxel;
-    get_voxel(pos, out voxel, out material_voxel);
+    Voxel voxel = Voxel(0.0);
+    MaterialVoxel material_voxel = MaterialVoxel(0, 0, 0, 0);
+    get_voxel(pos, voxel, material_voxel);
 
     // Write the voxel pixel
     vec4 pixel = vec4(uint(clamp(voxel.density + 32767, 0, 65535)), 0, 0, 0);        
     // Write the material pixel
     imageStore(voxel_image, pixel_coords, pixel);
+    /*
     vec4 material_pixel = vec4(material_voxel.material_id, material_voxel.biome_id, material_voxel.hardness, material_voxel.texture_id);
     imageStore(material_image, pixel_coords, material_pixel);
+    */
 }
