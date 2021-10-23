@@ -33,7 +33,7 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     material_voxel = MaterialVoxel(material_id, biome_id, hardness, texture_id);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
-void get_color_voxel(vec3 pos, sampler3D voxel_texture, Voxel voxel, MaterialVoxel material_voxel, out ColorVoxel color_voxel) {
+void get_color_voxel(vec3 pos, Voxel voxel, MaterialVoxel material_voxel, out ColorVoxel color_voxel) {
     vec3 color = vec3(1, 1, 1);  
     color_voxel = ColorVoxel(color * material_voxel.material_id);
 }
