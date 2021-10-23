@@ -29,7 +29,7 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     int texture_id = 0;
 
     // Write the result
-    voxel = Voxel(density * 20);
+    voxel = Voxel(pos.y * 20);
     material_voxel = MaterialVoxel(material_id, biome_id, hardness, texture_id);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID

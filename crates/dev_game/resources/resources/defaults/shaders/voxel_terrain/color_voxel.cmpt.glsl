@@ -2,7 +2,7 @@
 #includep {"0"}
 // Load the color voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(rgba8, binding = 0) uniform image3D color_image;
+layout(binding = 0) writeonly uniform image3D color_image;
 layout(location = 1) uniform sampler3D voxel_sampler;
 layout(location = 2) uniform sampler3D material_sampler;
 layout(location = 3) uniform vec3 node_pos;
@@ -18,9 +18,8 @@ void main() {
     pos *= size;
     pos += node_pos;        
     // Read the voxel data
-    // Get normal
     vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
-    Voxel voxel = Voxel((voxel_pixel.x * 2) - 1);   
+    Voxel voxel = Voxel((voxel_pixel.x * 65535) - 32767);   
     vec4 mvp = texture(material_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
     vec3 normal = vec3(0, 0, 0);
     ColorVoxel color_voxel = ColorVoxel(vec3(0, 0, 0));

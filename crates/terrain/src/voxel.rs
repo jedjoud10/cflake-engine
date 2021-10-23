@@ -73,7 +73,7 @@ impl VoxelGenerator {
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();        
         shader.use_shader();
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
-        //shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
+        shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
         shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
         shader.set_i32("node_size", &(*size as i32));
@@ -83,8 +83,7 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data immediatly
-        compute.run_compute((CHUNK_SIZE as u32+1, CHUNK_SIZE as u32+1, CHUNK_SIZE as u32+1)).unwrap();
-        compute.get_compute_state().unwrap();
+        compute.run_compute((CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1)).unwrap();
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {        
@@ -95,13 +94,10 @@ impl VoxelGenerator {
             _ => panic!(),
         };
         
-
         // Read back the compute shader data
-        
-
+        compute.get_compute_state().unwrap();
         // Dispatch the compute shader
         // Second pass
-        /*
         let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
         color_shader.use_shader();
         color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
@@ -115,16 +111,13 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Run the color compute shader
-        color_compute.run_compute((CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4)).unwrap();
-        color_compute.get_compute_state().unwrap();
-        */
+        color_compute.run_compute((CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1)).unwrap();
+        color_compute.get_compute_state().unwrap();  
 
         // Read back the texture into the data buffer
         let voxel_pixels = self.voxel_texture.fill_array_elems::<u16>();
-        /*
         let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
-        let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
-        */
+        let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();    
         // Keep track of the min and max values
         let mut min = u16::MAX;
         let mut max = u16::MIN;
@@ -133,7 +126,7 @@ impl VoxelGenerator {
             let density = *pixel;
             data[i] = Voxel {
                 density: density,
-                color: veclib::Vector3::ZERO,
+                color: color_pixels[i].get3([0, 1, 2]),
                 biome_id: 0,
                 material_id: 0,
                 hardness: 0,
@@ -143,7 +136,7 @@ impl VoxelGenerator {
             min = min.min(density);
             max = max.max(density);
         }
-        println!("{} {}", min, max);
+        //println!("{} {}", min, max);
         // Only generate the mesh if we have a surface
         (min < ISOLINE) != (max < ISOLINE)
     }
