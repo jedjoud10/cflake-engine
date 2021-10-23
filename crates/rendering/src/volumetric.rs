@@ -1,7 +1,7 @@
 use others::CacheManager;
 use resources::ResourceManager;
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, Texture2D, Texture3D, TextureWrapping, Uniform};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, Texture, TextureDimensions, TextureWrapping, Uniform};
 
 // Some volumetric shit
 #[derive(Default)]
@@ -51,32 +51,32 @@ impl Volumetric {
     pub fn create_textures(&mut self, texture_cacher: CacheManager<Texture>, resolution: veclib::Vector2<u16>, sdf_dimensions: u16, scale_down_factor_result: u16) {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
-        self.sdf_tex = texture_cacher.cache_unnamed_object(Texture3D::new()
-            .set_dimensions(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension)
+        self.sdf_tex = texture_cacher.cache_unnamed_object(Texture::new()
+            .set_dimensions(TextureDimensions::D3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
             .set_wrapping_mode(TextureWrapping::Repeat)
             .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
             .generate_texture(Vec::new()));
         // This texture is going to be rescaled if the window resolution changes
-        self.result_tex = texture_cacher.cache_unnamed_object(Texture2D::new()
-            .set_dimensions(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result)
+        self.result_tex = texture_cacher.cache_unnamed_object(Texture::new()
+            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_filter(crate::TextureFilter::Linear)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new()));
         // Depth texture
-        self.depth_tex = texture_cacher.cache_unnamed_object(Texture2D::new()
-            .set_dimensions(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result)
+        self.depth_tex = texture_cacher.cache_unnamed_object(Texture::new()
+            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
             .set_idf(gl::R32F, gl::RED, gl::UNSIGNED_BYTE)
             .set_filter(crate::TextureFilter::Nearest)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new()));
     }
     // When the screen resolution changes
-    pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>) {
-        self.result_tex
-            .update_size(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result);
-        self.depth_tex
-            .update_size(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result);
+    pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>, texture_cacher: &mut CacheManager<Texture>) {
+        let result_texture = texture_cacher.id_get_object_mut(self.result_tex).unwrap();
+        result_texture.update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
+        let depth_texture = texture_cacher.id_get_object_mut(self.depth_tex).unwrap();
+        depth_texture.update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
     }
     // Create the SDF texture from a compute shader complitely
     pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
@@ -90,7 +90,7 @@ impl Volumetric {
         };
         // Run the compute
         compute
-            .run_compute((self.sdf_tex.width as u32 / 4, self.sdf_tex.height as u32 / 4, self.sdf_tex.depth as u32 / 4))
+            .run_compute((self.sdf_tex as u32 / 4, self.sdf_tex.height as u32 / 4, self.sdf_tex.depth as u32 / 4))
             .unwrap();
         compute.get_compute_state().unwrap();
     }
