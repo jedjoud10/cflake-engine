@@ -98,7 +98,7 @@ impl World {
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .generate_texture(vec![127, 128, 255, 255])
             .set_name("default_normals")
-            .cache_texture(&mut self.texture_cacher);        
+            .cache_texture(&mut self.texture_cacher);
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
@@ -424,9 +424,11 @@ impl World {
             render_system.position_texture.update_size(dims);
             render_system.emissive_texture.update_size(dims);
             */
-            
+
             //TODO: This
-            render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions, &mut self.texture_cacher);            
+            render_system
+                .volumetric
+                .update_texture_resolution(self.custom_data.window.dimensions, &mut self.texture_cacher);
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

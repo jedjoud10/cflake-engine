@@ -19,7 +19,7 @@ impl TerrainData {
         let max = (node.depth == 1 || node.depth == 2) || (c.distance(*target) < 400.0 && node.depth == 3);
         let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
         node.children_indices.is_none() && node.depth < max_depth && result
-    } 
+    }
     // New terrain data with specific parameters
     pub fn new(material: rendering::Material, compute_id: usize, color_compute_id: usize, octree_depth: u8) -> Self {
         // Create a new octree

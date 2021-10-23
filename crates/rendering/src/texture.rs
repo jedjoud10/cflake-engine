@@ -37,7 +37,6 @@ pub enum TextureDimensions {
     D3D(u16, u16, u16),
 }
 
-
 // Custom internal format
 // Custom data type
 // Custom format
@@ -105,14 +104,12 @@ impl LoadableResource for Texture {
                         let mut texture = self.set_dimensions(TextureDimensions::D2D(width, height));
                         // Set the texture name since the texture has an empty name
                         texture.name = texture_name.clone();
-                        let new_texture = texture
-                            .generate_texture(rgba8_image.as_bytes().to_vec());
+                        let new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec());
                         texture = new_texture;
                         Some(texture)
-                    },
+                    }
                     TextureDimensions::D3D(_, _, _) => todo!(),
-                }                
-                
+                }
             }
             _ => None,
         }
@@ -137,7 +134,6 @@ impl Texture {
             let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
             Some((texture_cacher.id_get_object_mut(texture_id).unwrap(), texture_id))
         }
-        
     }
     // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
     pub fn load_texture<'a>(
@@ -185,15 +181,13 @@ impl Texture {
     pub fn update_size(&mut self, dimensions: TextureDimensions) {
         // Check if the current dimension type matches up with the new one
         let valid = match self.dimensions {
-            TextureDimensions::D2D(_, _) => { match dimensions {
-                    TextureDimensions::D2D(_, _) => true,
-                    TextureDimensions::D3D(_, _, _) => false,
-                }
+            TextureDimensions::D2D(_, _) => match dimensions {
+                TextureDimensions::D2D(_, _) => true,
+                TextureDimensions::D3D(_, _, _) => false,
             },
-            TextureDimensions::D3D(_, _, _) => { match dimensions {
-                    TextureDimensions::D2D(_, _) => false,
-                    TextureDimensions::D3D(_, _, _) => true,
-                }
+            TextureDimensions::D3D(_, _, _) => match dimensions {
+                TextureDimensions::D2D(_, _) => false,
+                TextureDimensions::D3D(_, _, _) => true,
             },
         };
         if !valid { /* Oopsie woopsie, we did a little fucky wuckie, a little fucko boingo. The code monkey (Me) is working VEWWY hard to fix this >.<!! */ }
@@ -214,7 +208,7 @@ impl Texture {
                         self.data_type,
                         null(),
                     );
-                },
+                }
                 TextureDimensions::D3D(width, height, depth) => {
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::TexImage3D(
@@ -229,9 +223,8 @@ impl Texture {
                         self.data_type,
                         null(),
                     );
-                },
+                }
             }
-            
         }
     }
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one

@@ -18,15 +18,21 @@ pub struct AdvancedOctree {
     // The twin rule, if this is none, don't generate twin nodes
     pub subdivide_twin_rule: Option<fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool>,
     // The last position
-    pub last_pos: veclib::Vector3<f32>
+    pub last_pos: veclib::Vector3<f32>,
 }
 
 // Code
 // TODO: Multithread this
-impl AdvancedOctree {    
+impl AdvancedOctree {
     // Calculate the nodes that are the twin nodes *and* normal nodes
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
-    fn calculate_combined_nodes(twin_rule: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool, target: &veclib::Vector3<f32>, nodes: &SmartList<OctreeNode>, lod_factor: f32, max_depth: u8) -> HashSet<OctreeNode> {
+    fn calculate_combined_nodes(
+        twin_rule: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool,
+        target: &veclib::Vector3<f32>,
+        nodes: &SmartList<OctreeNode>,
+        lod_factor: f32,
+        max_depth: u8,
+    ) -> HashSet<OctreeNode> {
         let mut combined_nodes: SmartList<OctreeNode> = nodes.clone();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = nodes.elements.par_iter().filter_map(|x| x.as_ref().cloned()).collect();
@@ -61,7 +67,7 @@ impl AdvancedOctree {
     )> {
         let root_node = self.internal_octree.get_root_node();
         // Do nothing if the target is out of bounds
-        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) || self.last_pos.distance(*target) < 3.0  {
+        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) || self.last_pos.distance(*target) < 3.0 {
             return None;
         }
         // Check if we generated the base octree
@@ -160,11 +166,16 @@ impl AdvancedOctree {
             Some(twin_rule) => {
                 // Yep, generate the twin nodes
                 Self::calculate_combined_nodes(twin_rule, target, &self.internal_octree.nodes, lod_factor, self.internal_octree.depth)
-            },
+            }
             None => {
                 // Nope, just take the newly generated nodes and get the diff
-                self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect::<HashSet<OctreeNode>>()
-            },
+                self.internal_octree
+                    .nodes
+                    .elements
+                    .iter()
+                    .filter_map(|x| x.as_ref().cloned())
+                    .collect::<HashSet<OctreeNode>>()
+            }
         };
         // The old hashset
         let old_hashset = &self.combined_nodes;

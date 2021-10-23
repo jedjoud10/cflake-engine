@@ -67,7 +67,7 @@ impl SubShader {
                 println!("Error while compiling sub-shader {}!:", self.name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
-                
+
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
                 panic!();

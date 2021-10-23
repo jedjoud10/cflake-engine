@@ -54,17 +54,26 @@ impl VoxelGenerator {
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()).cache_texture(texture_cacher).unwrap().1;
+            .generate_texture(Vec::new())
+            .cache_texture(texture_cacher)
+            .unwrap()
+            .1;
         self.material_texture = Texture::new()
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()).cache_texture(texture_cacher).unwrap().1;
+            .generate_texture(Vec::new())
+            .cache_texture(texture_cacher)
+            .unwrap()
+            .1;
         self.color_texture = Texture::new()
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGB8, gl::RGB, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()).cache_texture(texture_cacher).unwrap().1;
+            .generate_texture(Vec::new())
+            .cache_texture(texture_cacher)
+            .unwrap()
+            .1;
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>) {
@@ -72,8 +81,14 @@ impl VoxelGenerator {
         // Set the compute shader variables and voxel texture
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         let vals = vec![
-            ("voxel_image", rendering::Uniform::Image3D(self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly)),
-            ("material_image", rendering::Uniform::Image3D(self.material_texture, rendering::TextureShaderAccessType::WriteOnly)),
+            (
+                "voxel_image",
+                rendering::Uniform::Image3D(self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly),
+            ),
+            (
+                "material_image",
+                rendering::Uniform::Image3D(self.material_texture, rendering::TextureShaderAccessType::WriteOnly),
+            ),
             ("chunk_size", rendering::Uniform::I32(CHUNK_SIZE as i32)),
             ("node_pos", rendering::Uniform::Vec3F32(veclib::Vector3::<f32>::from(*position))),
             ("node_size", rendering::Uniform::I32(*size as i32)),
@@ -87,7 +102,14 @@ impl VoxelGenerator {
         compute.run_compute((CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4, CHUNK_SIZE as u32 / 4)).unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, texture_cacher: &CacheManager<Texture>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
+    pub fn generate_voxels_end(
+        &self,
+        shader_cacher: &mut CacheManager<Shader>,
+        texture_cacher: &CacheManager<Texture>,
+        size: &u64,
+        position: &veclib::Vector3<i64>,
+        data: &mut Box<[Voxel]>,
+    ) -> bool {
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
@@ -102,10 +124,16 @@ impl VoxelGenerator {
         // Second pass
         let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
         let vals = vec![
-            ("color_image", rendering::Uniform::Image3D(self.color_texture, rendering::TextureShaderAccessType::WriteOnly)),
+            (
+                "color_image",
+                rendering::Uniform::Image3D(self.color_texture, rendering::TextureShaderAccessType::WriteOnly),
+            ),
             ("voxel_sampler", rendering::Uniform::Texture3D(self.voxel_texture, gl::TEXTURE1)),
             ("material_sampler", rendering::Uniform::Texture3D(self.voxel_texture, gl::TEXTURE2)),
-            ("material_image", rendering::Uniform::Image3D(self.material_texture, rendering::TextureShaderAccessType::WriteOnly)),
+            (
+                "material_image",
+                rendering::Uniform::Image3D(self.material_texture, rendering::TextureShaderAccessType::WriteOnly),
+            ),
             ("chunk_size", rendering::Uniform::I32(CHUNK_SIZE as i32)),
             ("node_pos", rendering::Uniform::Vec3F32(veclib::Vector3::<f32>::from(*position))),
             ("node_size", rendering::Uniform::I32(*size as i32)),
@@ -143,7 +171,7 @@ impl VoxelGenerator {
                 biome_id: material_data.x,
                 material_id: material_data.y,
                 hardness: material_data.z,
-                texture_id: material_data.w
+                texture_id: material_data.w,
             };
             // Keep the min and max
             min = min.min(density);

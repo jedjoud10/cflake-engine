@@ -122,7 +122,5 @@ impl SaverLoader {
         }
     }
     // Save a string to a specific log file in the local user data
-    pub fn save_string(&self, file_path: &str, string: String) {
-
-    }
+    pub fn save_string(&self, file_path: &str, string: String) {}
 }

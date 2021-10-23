@@ -82,7 +82,9 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     }
 
     // Update the chunk manager
-    let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, &mut data.shader_cacher.1, &data.texture_cacher, data.time_manager.frame_count);
+    let (added_chunks, removed_chunks) = td
+        .chunk_manager
+        .update(&td.voxel_generator, &mut data.shader_cacher.1, &data.texture_cacher, data.time_manager.frame_count);
     let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
     let depth = td.octree.internal_octree.depth as f32;
 

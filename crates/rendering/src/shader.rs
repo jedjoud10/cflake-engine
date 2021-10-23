@@ -1,13 +1,13 @@
-use crate::Texture;
 use crate::ComputeShader;
 use crate::SubShader;
 use crate::SubShaderType;
+use crate::Texture;
 use crate::TextureShaderAccessType;
+use errors::RenderingError;
 use gl;
 use others::CacheManager;
 use resources::ResourceManager;
 use std::ffi::CString;
-use errors::RenderingError;
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
@@ -54,14 +54,14 @@ impl Shader {
                         // Get the local path ID
                         let c = line.split("#includep ").collect::<Vec<&str>>()[1];
                         let local_path_id = &c[2..(c.len() - 2)].parse::<usize>().unwrap();
-                        println!("{}", local_path_id);                        
+                        println!("{}", local_path_id);
                         // Load the function shader text
                         let text = resource_manager.load_lines_packed_resource(paths.get(*local_path_id).unwrap(), 1).unwrap();
                         let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                        included_lines.extend(new_lines);                        
+                        included_lines.extend(new_lines);
                     }
-                },
-                None => {},
+                }
+                None => {}
             }
         }
         // Return the included lines and the original lines that are without the include statement
@@ -163,7 +163,7 @@ impl Shader {
                 gl::GetProgramInfoLog(self.program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                 println!("Error while finalizing shader {}!:", self.name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                let string = String::from_utf8(printable_log).unwrap();                
+                let string = String::from_utf8(printable_log).unwrap();
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
                 panic!();
@@ -213,7 +213,6 @@ pub enum Uniform {
     Image2D(usize, TextureShaderAccessType),
     Image3D(usize, TextureShaderAccessType),
     Mat44F32(veclib::Matrix4x4<f32>),
-
 }
 
 // Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh
@@ -221,7 +220,7 @@ impl Shader {
     // Get the location of a specific uniform, using it's name
     #[allow(temporary_cstring_as_ptr)]
     pub fn get_uniform_location(&self, name: &str) -> Option<i32> {
-        unsafe { 
+        unsafe {
             let x = gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
             if x == -1 {
                 // Invalid location
@@ -247,26 +246,34 @@ impl Shader {
                 Uniform::Vec3I32(x) => self.set_vec3i32(loc, x),
                 Uniform::Vec4I32(x) => self.set_vec4i32(loc, x),
                 // Texture types
-                Uniform::Texture2D(x, active_texture_id) =>  {
-                    // Get the texture 
-                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                Uniform::Texture2D(x, active_texture_id) => {
+                    // Get the texture
+                    let t = texture_cacher
+                        .id_get_object(x)
+                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
                     self.set_t2d(loc, t, active_texture_id);
-                },
+                }
                 Uniform::Texture3D(x, active_texture_id) => {
-                    // Get the texture 
-                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                    // Get the texture
+                    let t = texture_cacher
+                        .id_get_object(x)
+                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
                     self.set_t3d(loc, t, active_texture_id);
-                },
+                }
                 Uniform::Image2D(x, access_type) => {
-                    // Get the texture 
-                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                    // Get the texture
+                    let t = texture_cacher
+                        .id_get_object(x)
+                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
                     self.set_i2d(loc, t, access_type);
-                },
+                }
                 Uniform::Image3D(x, access_type) => {
-                    // Get the texture 
-                    let t = texture_cacher.id_get_object(x).ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
+                    // Get the texture
+                    let t = texture_cacher
+                        .id_get_object(x)
+                        .ok_or(RenderingError::new(format!("Texture with ID '{}' could not be fetched while setting uniform!", x)))?;
                     self.set_i3d(loc, t, access_type);
-                },
+                }
                 Uniform::Mat44F32(x) => self.set_mat44(loc, x),
             }
         }
@@ -331,15 +338,7 @@ impl Shader {
             };
             let unit = loc as u32;
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            gl::BindImageTexture(
-                unit,
-                texture.id,
-                0,
-                gl::FALSE,
-                0,
-                new_access_type,
-                texture.internal_format,
-            );
+            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
         }
     }
     // Set a 3D image
@@ -354,15 +353,7 @@ impl Shader {
             };
             let unit = loc as u32;
             gl::BindTexture(gl::TEXTURE_3D, texture.id);
-            gl::BindImageTexture(
-                unit,
-                texture.id,
-                0,
-                gl::FALSE,
-                0,
-                new_access_type,
-                texture.internal_format,
-            );
+            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
         }
     }
     // Set a i32

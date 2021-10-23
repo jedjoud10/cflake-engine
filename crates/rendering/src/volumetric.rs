@@ -33,7 +33,7 @@ impl Volumetric {
             resource_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
-            None
+            None,
         )
         .2;
         // Load the volumetric compute
@@ -42,7 +42,7 @@ impl Volumetric {
             resource_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
-            None
+            None,
         )
         .2;
     }
@@ -51,32 +51,50 @@ impl Volumetric {
     pub fn create_textures(&mut self, texture_cacher: &mut CacheManager<Texture>, resolution: veclib::Vector2<u16>, sdf_dimensions: u16, scale_down_factor_result: u16) {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
-        self.sdf_tex = texture_cacher.cache_unnamed_object(Texture::new()
-            .set_dimensions(TextureDimensions::D3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
-            .set_wrapping_mode(TextureWrapping::Repeat)
-            .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
-            .generate_texture(Vec::new()));
+        self.sdf_tex = texture_cacher.cache_unnamed_object(
+            Texture::new()
+                .set_dimensions(TextureDimensions::D3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
+                .set_wrapping_mode(TextureWrapping::Repeat)
+                .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
+                .generate_texture(Vec::new()),
+        );
         // This texture is going to be rescaled if the window resolution changes
-        self.result_tex = texture_cacher.cache_unnamed_object(Texture::new()
-            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
-            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
-            .set_filter(crate::TextureFilter::Linear)
-            .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()));
+        self.result_tex = texture_cacher.cache_unnamed_object(
+            Texture::new()
+                .set_dimensions(TextureDimensions::D2D(
+                    resolution.x / self.scale_down_factor_result,
+                    resolution.y / self.scale_down_factor_result,
+                ))
+                .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
+                .set_filter(crate::TextureFilter::Linear)
+                .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
+                .generate_texture(Vec::new()),
+        );
         // Depth texture
-        self.depth_tex = texture_cacher.cache_unnamed_object(Texture::new()
-            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
-            .set_idf(gl::R32F, gl::RED, gl::UNSIGNED_BYTE)
-            .set_filter(crate::TextureFilter::Nearest)
-            .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()));
+        self.depth_tex = texture_cacher.cache_unnamed_object(
+            Texture::new()
+                .set_dimensions(TextureDimensions::D2D(
+                    resolution.x / self.scale_down_factor_result,
+                    resolution.y / self.scale_down_factor_result,
+                ))
+                .set_idf(gl::R32F, gl::RED, gl::UNSIGNED_BYTE)
+                .set_filter(crate::TextureFilter::Nearest)
+                .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
+                .generate_texture(Vec::new()),
+        );
     }
     // When the screen resolution changes
     pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>, texture_cacher: &mut CacheManager<Texture>) {
         let result_texture = texture_cacher.id_get_object_mut(self.result_tex).unwrap();
-        result_texture.update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
+        result_texture.update_size(TextureDimensions::D2D(
+            resolution.x / self.scale_down_factor_result,
+            resolution.y / self.scale_down_factor_result,
+        ));
         let depth_texture = texture_cacher.id_get_object_mut(self.depth_tex).unwrap();
-        depth_texture.update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
+        depth_texture.update_size(TextureDimensions::D2D(
+            resolution.x / self.scale_down_factor_result,
+            resolution.y / self.scale_down_factor_result,
+        ));
     }
     // Create the SDF texture from a compute shader complitely
     pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>, texture_cacher: &CacheManager<Texture>) {
@@ -105,12 +123,14 @@ impl Volumetric {
         clip_planes: (f32, f32),
         texture_cacher: &CacheManager<Texture>,
     ) {
-        if !self.enabled { return; }
+        if !self.enabled {
+            return;
+        }
         // Run the compute shader
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create a custom View-Projection matrix that doesn't include the translation
-        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));   
+        let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
         let clip_planes = veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1);
         let vals = vec![
             ("result_tex", Uniform::Image2D(self.result_tex, crate::TextureShaderAccessType::WriteOnly)),
@@ -119,10 +139,10 @@ impl Volumetric {
             ("camera_pos", Uniform::Vec3F32(camera_position)),
             ("custom_vp_matrix", Uniform::Mat44F32(vp_m)),
             ("projection_matrix", Uniform::Mat44F32(projection_matrix)),
-            ("nf_planes", Uniform::Vec2F32(clip_planes)),    
-        ]; 
+            ("nf_planes", Uniform::Vec2F32(clip_planes)),
+        ];
         // Set the values
-        shader.set_vals(vals, texture_cacher);        
+        shader.set_vals(vals, texture_cacher);
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Get the actual compute shader
         let compute = match &mut shader.additional_shader {
@@ -137,7 +157,11 @@ impl Volumetric {
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
     // Enable volumetric rendering
-    pub fn enable(&mut self) { self.enabled = true; }
+    pub fn enable(&mut self) {
+        self.enabled = true;
+    }
     // Disable volumetric rendering
-    pub fn disable(&mut self) { self.enabled = false; }
+    pub fn disable(&mut self) {
+        self.enabled = false;
+    }
 }

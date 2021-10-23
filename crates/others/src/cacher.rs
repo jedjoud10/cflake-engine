@@ -1,4 +1,8 @@
-use std::{collections::{HashMap, hash_map::DefaultHasher}, fmt, hash::{self, Hash, Hasher}};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    fmt,
+    hash::{self, Hash, Hasher},
+};
 
 // A cacher manager struct that can cache any type of data so it doesn't need to be reloaded later on
 pub struct CacheManager<A> {

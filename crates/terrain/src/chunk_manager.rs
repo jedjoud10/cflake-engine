@@ -78,7 +78,13 @@ impl ChunkManager {
         self.camera_forward_vector = forward_vector;
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, shader_cacher: &mut CacheManager<Shader>, texture_cacher: &CacheManager<Texture>, frame_count: u64) -> (Vec<(ChunkCoords, Model)>, Vec<usize>) {
+    pub fn update(
+        &mut self,
+        voxel_generator: &VoxelGenerator,
+        shader_cacher: &mut CacheManager<Shader>,
+        texture_cacher: &CacheManager<Texture>,
+        frame_count: u64,
+    ) -> (Vec<(ChunkCoords, Model)>, Vec<usize>) {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating

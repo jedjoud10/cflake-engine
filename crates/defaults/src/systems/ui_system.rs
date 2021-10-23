@@ -43,7 +43,7 @@ impl CustomData {
     // Set the default shader arguments to draw a normal panel
     fn set_default_draw_arguments(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader) {
         // Update the shader arguments
-        /*        
+        /*
         shader.set_f32("depth", &element_data.3);
         shader.set_vec2f32("size", &element_data.1);
         shader.set_vec2f32("offset_position", &element_data.0);
@@ -77,7 +77,7 @@ impl CustomData {
         let mut i: f32 = 0.0;
         for char in chars {
             /*
-            
+
             // Set the default panel arguments
             self.set_default_draw_arguments(element_data, shader);
             // Set the atlas texture and the character padding
@@ -155,7 +155,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
     // Load the UI font shader
@@ -164,7 +164,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
 }

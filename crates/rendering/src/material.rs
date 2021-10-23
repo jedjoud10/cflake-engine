@@ -33,7 +33,7 @@ impl Default for Material {
             flags: MaterialFlags::empty(),
             diffuse_tex_id: None,
             normal_tex_id: None,
-        };        
+        };
         return material;
     }
 }

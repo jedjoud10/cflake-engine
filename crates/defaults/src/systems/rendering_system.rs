@@ -40,7 +40,7 @@ impl CustomData {
                 &mut data.resource_manager,
                 &mut data.shader_cacher,
                 None,
-                None
+                None,
             )
             .1
             .as_str(),
@@ -78,36 +78,54 @@ impl CustomData {
             self.diffuse_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
+                .generate_texture(Vec::new())
+                .cache_texture(data.texture_cacher)
+                .unwrap()
+                .1;
             // Create the normals render texture
             self.normals_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
+                .generate_texture(Vec::new())
+                .cache_texture(data.texture_cacher)
+                .unwrap()
+                .1;
             // Create the position render texture
             self.position_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
+                .generate_texture(Vec::new())
+                .cache_texture(data.texture_cacher)
+                .unwrap()
+                .1;
             // Create the emissive render texture
             self.emissive_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
+                .generate_texture(Vec::new())
+                .cache_texture(data.texture_cacher)
+                .unwrap()
+                .1;
             // Create the depth render texture
             self.depth_texture = Texture::new()
                 .set_dimensions(dims)
                 .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
-                .generate_texture(Vec::new()).cache_texture(data.texture_cacher).unwrap().1;
-            println!("{} {} {} {} {}", self.diffuse_texture, self.normals_texture, self.position_texture, self.emissive_texture, self.depth_texture);
+                .generate_texture(Vec::new())
+                .cache_texture(data.texture_cacher)
+                .unwrap()
+                .1;
+            println!(
+                "{} {} {} {} {}",
+                self.diffuse_texture, self.normals_texture, self.position_texture, self.emissive_texture, self.depth_texture
+            );
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, data.texture_cacher.id_get_object(self.diffuse_texture).unwrap());
             // Bind the normal texture to the color attachement 1 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT1,data.texture_cacher.id_get_object(self.normals_texture).unwrap());
+            Self::bind_attachement(gl::COLOR_ATTACHMENT1, data.texture_cacher.id_get_object(self.normals_texture).unwrap());
             // Bind the position texture to the color attachement 2 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT2, data.texture_cacher.id_get_object(self.position_texture).unwrap());
             // Bind the emissive texture to the color attachement 3 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT3,data.texture_cacher.id_get_object(self.emissive_texture).unwrap());
+            Self::bind_attachement(gl::COLOR_ATTACHMENT3, data.texture_cacher.id_get_object(self.emissive_texture).unwrap());
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
             Self::bind_attachement(gl::DEPTH_ATTACHMENT, data.texture_cacher.id_get_object(self.depth_texture).unwrap());
 
@@ -137,7 +155,7 @@ impl CustomData {
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
-    ) {        
+    ) {
         // Get the material for this entity
         let material = match renderer.material.as_ref() {
             Some(mat) => mat,
@@ -170,7 +188,7 @@ impl CustomData {
             // TODO: Refactor
             shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(self.default_material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
             shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(self.default_material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
-            
+
         } else {
             shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
             shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
@@ -253,7 +271,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     unsafe {
         let mut major: i32 = 0;
         let mut minor: i32 = 0;
-        gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);     
+        gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);
         gl::GetIntegerv(gl::MINOR_VERSION, &mut minor);
 
         println!("OpenGL version; major: '{}', minor: '{}'", major, minor);
@@ -270,7 +288,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
 
@@ -280,13 +298,15 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
     system.wireframe_shader_name = wireframe_shader_name;
 
     // Load the default material
-    system.default_material = Material::new("Default Material").set_shader(&default_shader_name).load_default_textures(data.texture_cacher);
+    system.default_material = Material::new("Default Material")
+        .set_shader(&default_shader_name)
+        .load_default_textures(data.texture_cacher);
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -294,7 +314,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindFramebuffer(gl::FRAMEBUFFER, system.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
-    
+
     // Update the default values for each shader that exists in the shader cacher
     for shader in data.shader_cacher.1.objects.iter() {
         // Set the shader arguments
@@ -303,7 +323,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         //shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         //shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
     }
-    
+
     // Change the debug view
     if data.input_manager.map_pressed("change_debug_view") {
         system.debug_view += 1;
@@ -324,16 +344,15 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Draw the debug primitives
     data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
 
-    // Draw the volumetric stuff    
+    // Draw the volumetric stuff
     system.volumetric.calculate_volumetric(
         &mut data.shader_cacher.1,
         camera.projection_matrix,
         camera_transform.rotation,
         camera_transform.position,
         camera.clip_planes,
-        data.texture_cacher
+        data.texture_cacher,
     );
-    
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
