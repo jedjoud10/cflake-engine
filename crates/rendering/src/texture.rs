@@ -54,7 +54,14 @@ impl Default for TextureWrapping {
 pub enum TextureDimensions {
     D2D(u16, u16),
     D3D(u16, u16, u16),
-    TextureArray(u16, u16, u16),
+}
+
+// Texture type
+#[derive(Debug, Clone, Copy)]
+pub enum TextureType {
+    Texture2D,
+    Texture3D,
+    ArrayTexture,
 }
 
 // Custom internal format
@@ -81,6 +88,7 @@ pub struct Texture {
     pub filter: TextureFilter,
     pub wrap_mode: TextureWrapping,
     pub dimensions: TextureDimensions,
+    pub ttype: TextureType,
 }
 
 impl Default for Texture {
@@ -95,6 +103,7 @@ impl Default for Texture {
             filter: TextureFilter::default(),
             dimensions: TextureDimensions::D2D(0, 0),
             wrap_mode: TextureWrapping::default(),
+            ttype: TextureType::Texture2D
         }
     }
 }
@@ -106,8 +115,8 @@ impl LoadableResource for Texture {
         match resource {
             Resource::Texture(texture, texture_name) => {
                 // Load either a 2D texture or a custom 3D texture
-                match self.dimensions {
-                    TextureDimensions::D2D(_, _) => {
+                match self.ttype {
+                    TextureType::Texture2D => {
                         let width = texture.width;
                         let height = texture.height;
 
@@ -128,8 +137,8 @@ impl LoadableResource for Texture {
                         texture = new_texture;
                         Some(texture)
                     }
-                    TextureDimensions::D3D(_, _, _) => todo!(),
-                    TextureDimensions::TextureArray(_, _, _) => todo!(),
+                    TextureType::Texture3D => todo!(),
+                    TextureType::ArrayTexture => todo!(),
                 }
             }
             _ => None,
@@ -196,6 +205,11 @@ impl Texture {
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, dimensions: TextureDimensions) -> Self {
         self.dimensions = dimensions;
+        self
+    }
+    // Set the texture type
+    pub fn set_type(mut self, ttype: TextureType) -> Self {
+        self.ttype = ttype;
         self
     }
     // Update the size of the current texture

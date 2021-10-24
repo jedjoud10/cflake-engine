@@ -28,7 +28,10 @@ pub trait LoadableResource {
     // Turn mutliple resource into the current struct
     fn from_resource_shared(self, resources: Vec<&Resource>) -> Option<Self>
     where
-        Self: Sized;
+        Self: Sized
+    {
+        todo!();
+    }
     // Load this resource directly from a path
     fn from_path(self, local_path: &str, resource_manager: &mut ResourceManager) -> Option<Self>
     where
@@ -44,7 +47,12 @@ pub trait LoadableResource {
     {
         let mut resources: Vec<&Resource> = Vec::new();
         for local_path in local_paths.iter() {
-            let resource = unsafe { resource_manager.load_packed_resource(local_path).as_ref().ok()? };
+            // Make sure the resources are cached
+            resource_manager.load_packed_resource(local_path).ok()?;
+        }
+        for local_path in local_paths.iter() {
+            // Read back the cached resources
+            let resource = resource_manager.load_cached_resource(local_path).ok()?;
             resources.push(resource);
         }
         return Self::from_resource_shared(self, resources);
@@ -278,6 +286,12 @@ impl ResourceManager {
             println!("Loaded resource: '{}' succsessfully!", local_path);
         }
         Ok(resource)
+    }
+    // Loads a specific cached resource
+    pub fn load_cached_resource(&self, local_path: &str) -> Result<&Resource, ResourceError> {
+        let (_, _, hashed_name) = Self::local_to_global_path(local_path)?;
+        let resource = self.cached_resources.get(&hashed_name).unwrap();
+        return Ok(resource);
     }
     // Unloads a resource to save on memory
     pub fn unload_resouce(&mut self, local_path: &str) {

@@ -38,6 +38,7 @@ impl Default for Material {
             default_uniforms: Vec::new(),
             diffuse_tex_id: None,
             normal_tex_id: None,
+            texture_arr: None,
             visible: true,
         };
         // Set the default shader args
