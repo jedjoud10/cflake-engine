@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    fmt,
+    hash::{self, Hash, Hasher},
+};
 
 // A cacher manager struct that can cache any type of data so it doesn't need to be reloaded later on
 pub struct CacheManager<A> {
@@ -69,6 +73,18 @@ impl<A> CacheManager<A> {
 
             self.objects.len() - 1
         }
+    }
+    // Cache an unnamed object
+    pub fn cache_unnamed_object(&mut self, object: A) -> usize {
+        // Get a random name using the current cached objects count and a string hash generator
+        let random_name: String = {
+            let mut hash = DefaultHasher::new();
+            self.objects.len().hash(&mut hash);
+            let x = hash.finish();
+            x.to_string()
+        };
+        // Caching
+        self.cache_object(object, &random_name)
     }
     // Get a reference to an object using it's object name
     pub fn get_object(&self, name: &str) -> Result<&A, Error> {

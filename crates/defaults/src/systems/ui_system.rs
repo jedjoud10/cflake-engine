@@ -85,7 +85,6 @@ impl CustomData {
             let width = char.get_width() as f32;
             let height = char.get_height() as f32;
             let ratio = (width as f32) / (height as f32);
-            //
             let character_offset = veclib::Vector2::X * (width * i) * ratio * element_data.1.x * (font_size / height) * 2.0;
             shader.set_f32("font_size", &font_size);
             shader.set_vec2f32("character_offset", &character_offset);
@@ -150,7 +149,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
     // Load the UI font shader
@@ -159,7 +158,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
 }

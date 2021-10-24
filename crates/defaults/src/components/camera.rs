@@ -48,7 +48,7 @@ impl Default for Camera {
             frustum: math::Frustum::default(),
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
-            clip_planes: (0.3, 2000.0),
+            clip_planes: (0.3, 4000.0),
         }
     }
 }

@@ -1,11 +1,11 @@
-use std::time::SystemTime;
 use crate::SaverLoader;
+use std::time::SystemTime;
 
 // Logs errors catched by the error catcher
 #[derive(Clone)]
 pub struct ErrorLogger {
     // The currently saved errors that we must log
-    pub errors: Vec<String>
+    pub errors: Vec<String>,
 }
 
 impl ErrorLogger {

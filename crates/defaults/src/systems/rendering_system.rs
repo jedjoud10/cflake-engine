@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, ShaderArg, Texture2D, Volumetric};
+use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture, TextureDimensions, Volumetric};
 use resources::LoadableResource;
 use std::ptr::null;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -11,11 +11,11 @@ use world_data::WorldData;
 pub struct CustomData {
     pub framebuffer: u32,
     // The frame buffer textures
-    pub diffuse_texture: Texture2D,
-    pub normals_texture: Texture2D,
-    pub position_texture: Texture2D,
-    pub emissive_texture: Texture2D,
-    pub depth_stencil_texture: Texture2D,
+    pub diffuse_texture: Texture,
+    pub normals_texture: Texture,
+    pub position_texture: Texture,
+    pub emissive_texture: Texture,
+    pub depth_texture: Texture,
     pub debug_view: u16,
     pub wireframe: bool,
     wireframe_shader_name: String,
@@ -29,26 +29,6 @@ crate::impl_custom_system_data!(CustomData);
 
 // Draw functions
 impl CustomData {
-    // Read the set uniforms from a renderer's ShaderUniformSetter and update the shader
-    fn set_uniforms_from_custom_setter(&self, shader: &Shader, renderer: &Renderer) {
-        // Use the shader first
-        shader.use_shader();
-        // Loop over all the set uniforms
-        for (name, data) in renderer.material.as_ref().unwrap().uniform_setter.uniforms.iter() {
-            // Now it's the painful part
-            match data {
-                ShaderArg::F32(v) => shader.set_f32(name, v),
-                ShaderArg::I32(v) => shader.set_i32(name, v),
-                ShaderArg::V2F32(v) => shader.set_vec2f32(name, v),
-                ShaderArg::V3F32(v) => shader.set_vec3f32(name, v),
-                ShaderArg::V4F32(v) => shader.set_vec4f32(name, v),
-                ShaderArg::V2I32(v) => shader.set_vec2i32(name, v),
-                ShaderArg::V3I32(v) => shader.set_vec3i32(name, v),
-                ShaderArg::V4I32(v) => shader.set_vec4i32(name, v),
-                ShaderArg::MAT44(v) => shader.set_mat44(name, v),
-            }
-        }
-    }
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
@@ -60,7 +40,7 @@ impl CustomData {
                 &mut data.resource_manager,
                 &mut data.shader_cacher,
                 None,
-                None
+                None,
             )
             .1
             .as_str(),
@@ -70,12 +50,12 @@ impl CustomData {
         self.quad_renderer = quad_renderer_component;
     }
     // Bind a specific texture attachement to the frame buffer
-    fn bind_attachement(attachement: u32, texture: &Texture2D) {
+    fn bind_attachement(attachement: u32, texture: &Texture) {
         unsafe {
             // Default target, no multisamplind
             let target: u32 = gl::TEXTURE_2D;
-            gl::BindTexture(target, texture.internal_texture.id);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.internal_texture.id, 0);
+            gl::BindTexture(target, texture.id);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.id, 0);
         }
     }
     // Setup all the settings for opengl like culling and the clear color
@@ -93,31 +73,37 @@ impl CustomData {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
+            let dims = TextureDimensions::D2D(dimensions.x, dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.diffuse_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new())
+                .unwrap();
             // Create the normals render texture
-            self.normals_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.normals_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new())
+                .unwrap();
             // Create the position render texture
-            self.position_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.position_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new())
+                .unwrap();
             // Create the emissive render texture
-            self.emissive_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+            self.emissive_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new());
-            // Create the depth-stencil render texture
-            self.depth_stencil_texture = Texture2D::new()
-                .set_dimensions_vec2(dimensions)
+                .generate_texture(Vec::new())
+                .unwrap();
+            // Create the depth render texture
+            self.depth_texture = Texture::new()
+                .set_dimensions(dims)
                 .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
-                .generate_texture(Vec::new());
+                .generate_texture(Vec::new())
+                .unwrap();
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
             // Bind the normal texture to the color attachement 1 of the frame buffer
@@ -127,7 +113,7 @@ impl CustomData {
             // Bind the emissive texture to the color attachement 3 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT3, &self.emissive_texture);
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
-            Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_stencil_texture);
+            Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture);
 
             let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
             // Set the frame buffer attachements
@@ -155,7 +141,7 @@ impl CustomData {
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
-    ) {        
+    ) {
         // Get the material for this entity
         let material = match renderer.material.as_ref() {
             Some(mat) => mat,
@@ -174,28 +160,43 @@ impl CustomData {
         // Calculate the mvp matrix
         let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
 
-        // Pass the MVP and the model matrix to the shader
+        // Pass the MVP and the model matrix to the shader        
         shader.set_mat44("mvp_matrix", &mvp_matrix);
         shader.set_mat44("model_matrix", model_matrix);
         shader.set_mat44("view_matrix", view_matrix);
         shader.set_vec3f32("view_pos", &camera_position);
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
 
+        // Set the default/custom uniforms
+        for uniform in material.default_uniforms.iter() {
+            let name = uniform.0.as_str();
+            match &uniform.1 {
+                rendering::DefaultUniform::F32(x) => shader.set_f32(name, x),
+                rendering::DefaultUniform::I32(x) => shader.set_i32(name, x),
+                rendering::DefaultUniform::Vec2F32(x) => shader.set_vec2f32(name, x),
+                rendering::DefaultUniform::Vec3F32(x) => shader.set_vec3f32(name, x),
+                rendering::DefaultUniform::Vec4F32(x) => shader.set_vec4f32(name, x),
+                rendering::DefaultUniform::Vec2I32(x) => shader.set_vec2i32(name, x),
+                rendering::DefaultUniform::Vec3I32(x) => shader.set_vec3i32(name, x),
+                rendering::DefaultUniform::Vec4I32(x) => shader.set_vec4i32(name, x),
+                rendering::DefaultUniform::Mat44F32(x) => shader.set_mat44(name, x),
+                rendering::DefaultUniform::Texture2D(x, y) => shader.set_t2d(name, data.texture_cacher.id_get_object(*x).unwrap(), *y),
+                rendering::DefaultUniform::Texture3D(x, y) => shader.set_t2d(name, data.texture_cacher.id_get_object(*x).unwrap(), *y),
+            }
+        }
+ 
         // Check if we already loaded the default textures or not
         if material.diffuse_tex_id.is_none() || material.normal_tex_id.is_none() {
             // Did not load all the default textures!
             // TODO: Refactor
             shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(self.default_material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
             shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(self.default_material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
-            
+
         } else {
             shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
             shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
         }
-
-        // Set the custom uniforms
-        self.set_uniforms_from_custom_setter(shader, renderer);
-
+        
         // Draw normally
         if renderer.gpu_data.initialized {
             // Enable / Disable vertex culling
@@ -229,10 +230,10 @@ impl CustomData {
             let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
             wireframe_shader.use_shader();
             // Calculate the mvp matrix
-            let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
+            let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;            
             wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
             wireframe_shader.set_mat44("model_matrix", model_matrix);
-            wireframe_shader.set_mat44("view_matrix", view_matrix);
+            wireframe_shader.set_mat44("view_matrix", view_matrix);            
             unsafe {
                 // Set the wireframe rendering
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -268,7 +269,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     unsafe {
         let mut major: i32 = 0;
         let mut minor: i32 = 0;
-        gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);     
+        gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);
         gl::GetIntegerv(gl::MINOR_VERSION, &mut minor);
 
         println!("OpenGL version; major: '{}', minor: '{}'", major, minor);
@@ -276,8 +277,19 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
+    let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
 
-    // Check for OpenGL default features
+    // Set the default uniforms
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
+    
+    /*
+    // Volumetric parameters
+    shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
+    shader.set_t2d("volumetric_depth_texture", &system.volumetric.depth_tex, gl::TEXTURE7);
+    shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
+    */
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
     // Load the default shader
     let default_shader_name = Shader::new(
@@ -285,7 +297,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
 
@@ -295,13 +307,15 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
     system.wireframe_shader_name = wireframe_shader_name;
 
     // Load the default material
-    system.default_material = Material::new("Default Material").set_shader(&default_shader_name).load_default_textures(data.texture_cacher);
+    system.default_material = Material::new("Default Material")
+        .set_shader(&default_shader_name)
+        .load_default_textures(data.texture_cacher);
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -309,16 +323,16 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindFramebuffer(gl::FRAMEBUFFER, system.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
-    
+
     // Update the default values for each shader that exists in the shader cacher
     for shader in data.shader_cacher.1.objects.iter() {
         // Set the shader arguments
-        //shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
         shader.use_shader();
+        shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         //shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
     }
-    
+
     // Change the debug view
     if data.input_manager.map_pressed("change_debug_view") {
         system.debug_view += 1;
@@ -339,7 +353,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Draw the debug primitives
     data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
 
-    // Draw the volumetric stuff    
+    // Draw the volumetric stuff
     system.volumetric.calculate_volumetric(
         &mut data.shader_cacher.1,
         camera.projection_matrix,
@@ -347,43 +361,30 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         camera_transform.position,
         camera.clip_planes,
     );
-    
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
-    shader.use_shader();
+    shader.use_shader();    
+    shader.set_vec2i32("resolution", &(dimensions.into()));
+    shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+    shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
+    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
+    // Textures
     shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
     shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
     shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
     shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
-    shader.set_t2d("depth_texture", &system.depth_stencil_texture, gl::TEXTURE4);
-    shader.set_vec2i32("resolution", &(dimensions.into()));
-    shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
-    shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
-    // Sky params
-    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
-    let sky_component = data
-        .entity_manager
-        .get_entity(data.custom_data.sky_entity_id)
-        .unwrap()
-        .get_component::<components::Sky>(data.component_manager)
-        .unwrap();
-
-    // Set the sky gradient
+    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);    
+    shader.use_shader();
     shader.set_t2d(
         "default_sky_gradient",
-        data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
+        data.texture_cacher.id_get_object(data.custom_data.sky_texture).unwrap(),
         gl::TEXTURE5,
     );
-
-    // Volumetric parameters
-    shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
-    shader.set_t2d("volumetric_depth_texture", &system.volumetric.depth_tex, gl::TEXTURE7);
-    shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
-
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // Render the screen quad
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -393,12 +394,16 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
 }
-fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     // Make sure we create the OpenGL data for this entity's model
     rc.refresh_model();
     let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
     transform.update_matrix();
+
+    // If this is the sky entity, update the binded sky texture
+    // Set the sky gradient
+    
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();

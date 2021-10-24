@@ -67,17 +67,7 @@ impl SubShader {
                 println!("Error while compiling sub-shader {}!:", self.name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
-                // Print all the lines that have errors
-                for x in string.lines().enumerate() {
-                    /*
-                    let line = string.lines().nth(x.0).unwrap();
-                    let f1 = line.split("").position(|x| x == "(").unwrap();
-                    let f2 = line.split("").position(|x| x == ")").unwrap()-1;
-                    let line_number = &line[f1..f2].parse::<usize>().unwrap();
-                    println!("Line ID '{}': {}", line_number, self.source.lines().nth(*line_number).unwrap().trim());
-                    */
-                }
-                
+
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
                 panic!();

@@ -14,7 +14,6 @@ in vec3 m_normal;
 in vec4 m_tangent;
 in vec3 m_color;
 in vec2 m_uv;
-in mat3 tbn;
 vec3 get_blend(vec3 normal) {
 	const float offset = -0.3;
 	normal = abs(normal);

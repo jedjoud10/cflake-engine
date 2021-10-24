@@ -82,7 +82,9 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     }
 
     // Update the chunk manager
-    let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, &mut data.shader_cacher.1, data.time_manager.frame_count);
+    let (added_chunks, removed_chunks) = td
+        .chunk_manager
+        .update(&td.voxel_generator, &mut data.shader_cacher.1, data.time_manager.frame_count);
     let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
     let depth = td.octree.internal_octree.depth as f32;
 
@@ -107,7 +109,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             )
             .unwrap();
 
-        let material = clone_material.clone().set_uniform("depth", ShaderArg::F32(coords.depth as f32 / depth));
+        let material = clone_material.clone();
         entity
             .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
             .unwrap();

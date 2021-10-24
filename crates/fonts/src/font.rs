@@ -1,5 +1,5 @@
 use ascii::AsciiStr;
-use rendering::Texture2D;
+use rendering::{Texture, TextureDimensions};
 use resources::{LoadableResource, Resource};
 
 use crate::FontChar;
@@ -9,7 +9,7 @@ pub struct Font {
     pub name: String,
     pub atlas_dimensions: veclib::Vector2<u16>,
     pub texture_pixels: Vec<u8>,
-    pub texture: Option<Texture2D>,
+    pub texture: Option<Texture>,
     pub chars: Vec<FontChar>,
 }
 
@@ -49,12 +49,12 @@ impl Font {
         match self.texture {
             None => {
                 // Create the texture and set it's parameters
-                let texture = Texture2D::new()
-                    .set_dimensions(self.atlas_dimensions.x, self.atlas_dimensions.y)
+                let texture = Texture::new()
+                    .set_dimensions(TextureDimensions::D2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
                     .set_filter(rendering::TextureFilter::Linear)
                     .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE);
                 // Create the texture data from the bitmap pixels
-                let texture = texture.generate_texture(self.texture_pixels.clone());
+                let texture = texture.generate_texture(self.texture_pixels.clone()).unwrap();
                 self.texture = Some(texture);
             }
             _ => { /* The texture already exists */ }

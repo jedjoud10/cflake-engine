@@ -1,6 +1,6 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
-use rendering::{Material, Model, Renderer, Shader, Texture2D, TextureWrapping};
+use rendering::{Material, Model, Renderer, Shader, Texture, TextureWrapping};
 use resources::LoadableResource;
 use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
@@ -16,17 +16,17 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
         &mut data.resource_manager,
         &mut data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
 
     // Load texture
-    let cached_texture_id = Texture2D::new()
+    let cached_texture_id = Texture::new()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
         .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
         .unwrap()
         .1;
-
+    data.custom_data.sky_texture = cached_texture_id;
     // Load model
     let mut model = Model::new().from_path("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
     model.flip_triangles();
@@ -43,19 +43,13 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
     sky.link_component::<components::Transform>(
         data.component_manager,
         components::Transform {
-            scale: veclib::Vector3::ONE * 1900.0,
+            scale: veclib::Vector3::ONE * 3900.0,
             ..components::Transform::default()
         },
     )
     .unwrap();
 
-    sky.link_component::<components::Sky>(
-        &mut data.component_manager,
-        components::Sky {
-            sky_gradient_texture_id: cached_texture_id,
-        },
-    )
-    .unwrap();
+    sky.link_default_component::<components::Sky>(data.component_manager).unwrap();
     // Add entity
     data.custom_data.sky_entity_id = sky.entity_id;
     data.entity_manager.add_entity_s(sky);

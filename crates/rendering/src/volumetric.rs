@@ -1,17 +1,17 @@
 use others::CacheManager;
 use resources::ResourceManager;
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture2D, Texture3D, TextureWrapping};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureDimensions, TextureWrapping};
 
 // Some volumetric shit
 #[derive(Default)]
 pub struct Volumetric {
     // The main SDF texture used for the volumetric sampling
-    pub sdf_tex: Texture3D,
+    pub sdf_tex: Texture,
     // The output, screen texture that will be rendered (PS: This texture might be downscaled from the original screen size)
-    pub result_tex: Texture2D,
+    pub result_tex: Texture,
     // The depth texture
-    pub depth_tex: Texture2D,
+    pub depth_tex: Texture,
     // The compute shader ID for the SDF generator compute
     pub compute_generator_id: usize,
     // The compute shader ID
@@ -51,32 +51,32 @@ impl Volumetric {
     pub fn create_textures(&mut self, resolution: veclib::Vector2<u16>, sdf_dimensions: u16, scale_down_factor_result: u16) {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
-        self.sdf_tex = Texture3D::new()
-            .set_dimensions(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension)
+        self.sdf_tex = Texture::new()
+            .set_dimensions(TextureDimensions::D3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
             .set_wrapping_mode(TextureWrapping::Repeat)
             .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
-            .generate_texture(Vec::new());
+            .generate_texture(Vec::new()).unwrap();
         // This texture is going to be rescaled if the window resolution changes
-        self.result_tex = Texture2D::new()
-            .set_dimensions(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result)
+        self.result_tex = Texture::new()
+            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_filter(crate::TextureFilter::Linear)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new());
+            .generate_texture(Vec::new()).unwrap();
         // Depth texture
-        self.depth_tex = Texture2D::new()
-            .set_dimensions(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result)
+        self.depth_tex = Texture::new()
+            .set_dimensions(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result))
             .set_idf(gl::R32F, gl::RED, gl::UNSIGNED_BYTE)
             .set_filter(crate::TextureFilter::Nearest)
             .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new());
+            .generate_texture(Vec::new()).unwrap();
     }
     // When the screen resolution changes
     pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>) {
         self.result_tex
-            .update_size(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result);
+            .update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
         self.depth_tex
-            .update_size(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result);
+            .update_size(TextureDimensions::D2D(resolution.x / self.scale_down_factor_result, resolution.y / self.scale_down_factor_result));
     }
     // Create the SDF texture from a compute shader complitely
     pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
@@ -90,7 +90,7 @@ impl Volumetric {
         };
         // Run the compute
         compute
-            .run_compute((self.sdf_tex.width as u32 / 4, self.sdf_tex.height as u32 / 4, self.sdf_tex.depth as u32 / 4))
+            .run_compute((self.sdf_tex.get_width() as u32 / 4, self.sdf_tex.get_height() as u32 / 4, self.sdf_tex.get_depth() as u32 / 4))
             .unwrap();
         compute.get_compute_state().unwrap();
     }
@@ -125,7 +125,7 @@ impl Volumetric {
         };
 
         // Run the actual compute shader
-        compute.run_compute((self.result_tex.width as u32 / 16, self.result_tex.height as u32 / 16, 1)).unwrap();
+        compute.run_compute((self.result_tex.get_width() as u32 / 16, self.result_tex.get_height() as u32 / 16, 1)).unwrap();
         compute.get_compute_state().unwrap();
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }

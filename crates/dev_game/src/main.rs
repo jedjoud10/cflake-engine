@@ -3,9 +3,9 @@ use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
+use main::resources::LoadableResource;
 use main::world_data::*;
 use main::*;
-use main::resources::LoadableResource;
 fn main() {
     // Load up the engine
     main::start("DevJed", "DevGame", world_initialized);
@@ -72,7 +72,7 @@ pub fn world_initialized(world: &mut World) {
         data.resource_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
-        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"])
+        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
     )
     .2;
 
@@ -81,7 +81,7 @@ pub fn world_initialized(world: &mut World) {
         data.resource_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
-        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"])
+        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
     )
     .2;
 
@@ -94,7 +94,7 @@ pub fn world_initialized(world: &mut World) {
         data.resource_manager,
         data.shader_cacher,
         None,
-        None
+        None,
     )
     .1;
     // Material
@@ -107,17 +107,13 @@ pub fn world_initialized(world: &mut World) {
         )
         .unwrap()
         .load_default_textures(data.texture_cacher);
-    let material_inst = material
-        .instantiate(data.instance_manager)
-        .set_uniform("uv_scale", ShaderArg::V2F32(veclib::Vector2::ONE * 0.2));
+    let material_inst = material.instantiate(data.instance_manager);
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,
             components::TerrainData::new(material_inst, compute_id, color_compute_id, OCTREE_DEPTH),
         )
         .unwrap();
-    
-
 
     // Template entity
     /*
@@ -129,6 +125,6 @@ pub fn world_initialized(world: &mut World) {
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);
     */
-    
+
     data.entity_manager.add_entity_s(terrain_entity);
 }

@@ -6,7 +6,6 @@ struct MaterialVoxel {
     int material_id;
     int biome_id;
     int hardness;
-    int texture_id;
 };
 struct ColorVoxel {
     vec3 color;    

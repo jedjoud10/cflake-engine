@@ -25,11 +25,13 @@ impl ComputeShader {
         unsafe {
             if self.running {
                 // Force the compute shader to complete
-                gl::Finish();
-                gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+                //gl::Finish();
+                gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+                //gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
                 errors::ErrorCatcher::catch_opengl_errors()?;
                 self.running = false;
             } else {
+                return None;
             }
         }
         errors::ErrorCatcher::catch_opengl_errors()?;

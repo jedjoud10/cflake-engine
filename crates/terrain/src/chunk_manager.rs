@@ -6,7 +6,7 @@ use ecs::{ComponentManager, Entity};
 use math::octrees::OctreeNode;
 use others::CacheManager;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rendering::{Model, Shader};
+use rendering::{Model, Shader, Texture};
 use world_data::WorldData;
 
 use crate::CHUNK_SIZE;
@@ -78,7 +78,12 @@ impl ChunkManager {
         self.camera_forward_vector = forward_vector;
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &VoxelGenerator, shader_cacher: &mut CacheManager<Shader>, frame_count: u64) -> (Vec<(ChunkCoords, Model)>, Vec<usize>) {
+    pub fn update(
+        &mut self,
+        voxel_generator: &VoxelGenerator,
+        shader_cacher: &mut CacheManager<Shader>,
+        frame_count: u64,
+    ) -> (Vec<(ChunkCoords, Model)>, Vec<usize>) {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating
