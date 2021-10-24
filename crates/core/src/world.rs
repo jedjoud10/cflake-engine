@@ -236,8 +236,8 @@ impl World {
     fn check_default_input_events(&mut self, _window: &mut glfw::Window, _glfw: &mut glfw::Glfw) {
         // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
         if self.input_manager.map_pressed("debug_info") {
-            println!("Component count: '{}'", self.component_manager.smart_components_list.elements.len());
-            println!("Entity count: '{}'", self.entity_manager.entities.len());
+            println!("Component count: '{}'", self.component_manager.smart_components_list.count_valid());
+            println!("Entity count: '{}'", self.entity_manager.entities.);
             println!("System count: '{}'", self.system_manager.systems.len());
             println!(
                 "Time: '{}', Delta Time: '{}', FPS: '{}', Frame Count: {}",
