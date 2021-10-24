@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Texture, TextureFilter};
+use crate::{DefaultUniform, Texture, TextureFilter};
 
 use bitflags::bitflags;
 use others::CacheManager;
@@ -24,26 +24,6 @@ pub struct Material {
     pub diffuse_tex_id: Option<usize>,
     pub normal_tex_id: Option<usize>,    
 }
-
-// Some default uniforms that we will set
-#[derive(Clone)]
-pub enum DefaultUniform {
-    // Singles
-    F32(f32),
-    I32(i32),
-    // Vectors
-    Vec2F32(veclib::Vector2<f32>),
-    Vec3F32(veclib::Vector3<f32>),
-    Vec4F32(veclib::Vector4<f32>),
-    Vec2I32(veclib::Vector2<i32>),
-    Vec3I32(veclib::Vector3<i32>),
-    Vec4I32(veclib::Vector4<i32>),
-    Mat44F32(veclib::Matrix4x4<f32>),
-    // Others
-    Texture2D(usize, u32),
-    Texture3D(usize, u32),
-}
-
 
 impl Default for Material {
     fn default() -> Self {

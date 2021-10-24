@@ -55,7 +55,7 @@ impl std::error::Error for ResourceError {
 }
 
 // Rendering error
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RenderingError {
     details: String,
 }

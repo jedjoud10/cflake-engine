@@ -21,7 +21,7 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     //density = abs(density) - 30;
     
     int material_id = 0;
-    if (sin(pos.x) > -0.0) {
+    if (snoise(pos * 0.003) > -0.5) {
         material_id = 1;
     }
     int biome_id = 0;
