@@ -102,10 +102,12 @@ pub fn world_initialized(world: &mut World) {
         .set_shader(&terrain_shader)
         .resource_load_textures(
             vec![Some("defaults\\textures\\rock_diffuse.png"), Some("defaults\\textures\\rock_normal.png")],
+            None,
             data.texture_cacher,
             data.resource_manager,
         )
         .unwrap()
+        .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.01))
         .load_default_textures(data.texture_cacher);
     let material_inst = material.instantiate(data.instance_manager);
     terrain_entity

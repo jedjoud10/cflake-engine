@@ -1,12 +1,12 @@
 use super::{Component, ComponentID, ComponentManager};
 use errors::ECSError;
-use others::Instance;
-use std::collections::{HashMap, HashSet};
+use others::{Instance, SmartList};
+use std::{any::Any, collections::{HashMap, HashSet}};
 
 // An entity manager that handles entities
 #[derive(Default)]
 pub struct EntityManager {
-    pub entities: Vec<Option<Entity>>,
+    pub entities: SmartList<Entity>,
 
     // Entities to add / remove from systems
     pub entities_to_remove: HashSet<usize>,
@@ -14,35 +14,11 @@ pub struct EntityManager {
 }
 
 impl EntityManager {
-    // Calculate the next valid ID from the actual entities
-    pub fn get_next_valid_id(&self) -> usize {
-        // Calculate the next valid free ID
-        return self
-            .entities
-            .iter()
-            .enumerate()
-            .position(|(_i, e)| {
-                match e {
-                    // We found a free spot
-                    Some(_entity) => false,
-                    None => true,
-                }
-            })
-            .unwrap_or(self.entities.len());
-    }
     // Add an entity to the entity manager temporarily, then call the actual add entity function on the world to actually add it
     pub fn add_entity_s(&mut self, mut entity: Entity) -> usize {
         // Get the id of the entity inside the temp vector (Local ID)
-        let id = self.get_next_valid_id();
-        entity.entity_id = id;
-        // Update
-        if id < self.entities.len() {
-            // Turn the none into a valid entity
-            self.entities[id as usize] = Some(entity.clone());
-        } else {
-            // Add this to the entities
-            self.entities.push(Some(entity.clone()));
-        }
+        entity.entity_id = self.entities.get_next_valid_id();
+        let id = self.entities.add_element(entity.clone());
         self.entities_to_add.push(entity);
         id
     }
@@ -50,11 +26,11 @@ impl EntityManager {
     pub fn remove_entity_s(&mut self, entity_id: usize) -> Result<Option<Entity>, ECSError> {
         // If we wish to remove an entity that was already queued for removal, don't do anything
         if self.entities_to_remove.contains(&entity_id) {
-            let entity = self.entities.get(entity_id).unwrap().clone();
+            let entity = self.entities.get_element(entity_id).unwrap().cloned();
             return Ok(Some(entity.unwrap()));
         }
         // Ez check first
-        if entity_id < self.entities.len() {
+        if entity_id < self.entities.elements.len() {
             // Check if we can cancel out this entity
             if self.entities_to_add.iter().any(|x| x.entity_id == entity_id) {
                 // We have the entity in the entities_to_add vector, so we can cancel it out
@@ -65,7 +41,7 @@ impl EntityManager {
             } else {
                 // Can't cancel it out, so just add it to the removed vector
                 self.entities_to_remove.insert(entity_id);
-                let entity = self.entities.get(entity_id).unwrap().clone();
+                let entity = self.entities.get_element(entity_id).unwrap().cloned();
                 return Ok(Some(entity.unwrap()));
             }
         } else {
@@ -74,26 +50,13 @@ impl EntityManager {
     }
     // Get a mutable reference to a stored entity
     pub fn get_entity_mut(&mut self, entity_id: usize) -> Result<&mut Entity, ECSError> {
-        if entity_id < self.entities.len() {
-            let entity = self.entities.get_mut(entity_id).unwrap().as_mut().unwrap();
-            return Ok(entity);
-        } else {
-            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
-        }
+        let entity = self.entities.get_element_mut(entity_id).ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?.unwrap();
+        Ok(entity)
     }
     // Get an entity using it's entity id
     pub fn get_entity(&self, entity_id: usize) -> Result<&Entity, ECSError> {
-        if entity_id < self.entities.len() {
-            let entity = self
-                .entities
-                .get(entity_id)
-                .unwrap()
-                .as_ref()
-                .ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?;
-            return Ok(entity);
-        } else {
-            return Err(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)));
-        }
+        let entity = self.entities.get_element(entity_id).ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?.unwrap();
+        Ok(entity)
     }
 }
 

@@ -207,9 +207,9 @@ impl World {
         let root = self.ui_manager.get_default_root_mut();
         let fps_text = &format!("FPS: {}", self.time_manager.average_fps.round());
         root.get_element_mut(1).update_text(fps_text, 40.0);
-        let entity_text = &format!("#Entities: {}", self.entity_manager.entities.len());
+        let entity_text = &format!("#Entities: {}", self.entity_manager.entities.count_valid());
         root.get_element_mut(2).update_text(entity_text, 40.0);
-        let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.elements.len());
+        let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.count_valid());
         root.get_element_mut(3).update_text(component_text, 40.0);
 
         // Just in case
@@ -237,7 +237,7 @@ impl World {
         // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
         if self.input_manager.map_pressed("debug_info") {
             println!("Component count: '{}'", self.component_manager.smart_components_list.count_valid());
-            println!("Entity count: '{}'", self.entity_manager.entities.);
+            println!("Entity count: '{}'", self.entity_manager.entities.count_valid());
             println!("System count: '{}'", self.system_manager.systems.len());
             println!(
                 "Time: '{}', Delta Time: '{}', FPS: '{}', Frame Count: {}",
@@ -374,7 +374,7 @@ impl World {
             for entity_id in self.entity_manager.entities_to_remove.clone() {
                 self.remove_entity_from_systems(entity_id).unwrap();
                 // After removing it from the systems, we can actually remove the entity
-                self.entity_manager.entities[entity_id as usize] = None;
+                self.entity_manager.entities.remove_element(entity_id);
             }
             self.entity_manager.entities_to_remove.clear();
         }

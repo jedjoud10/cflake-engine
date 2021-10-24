@@ -31,7 +31,7 @@ void main() {
 	vec3 emissive = texture(emissive_texture, uvs).xyz;
 	
 	// Calculate the diffuse lighting
-	const float directional_light_strength = 2.0;
+	const float directional_light_strength = 1.0;
 	float light_val = max(dot(normal, normalize(directional_light_dir)), 0) * directional_light_strength;
 
 	// Used for ambient lighting

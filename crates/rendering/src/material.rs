@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{DefaultUniform, Texture, TextureFilter};
+use crate::{DefaultUniform, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
 
 use bitflags::bitflags;
 use others::CacheManager;
@@ -23,6 +23,8 @@ pub struct Material {
     // The default texture ID
     pub diffuse_tex_id: Option<usize>,
     pub normal_tex_id: Option<usize>,    
+    // Is this material even visible?
+    pub visible: bool
 }
 
 impl Default for Material {
@@ -34,6 +36,7 @@ impl Default for Material {
             default_uniforms: Vec::new(),
             diffuse_tex_id: None,
             normal_tex_id: None,
+            visible: true,
         };
         // Set the default shader args
         let material = material.set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE));
@@ -52,25 +55,26 @@ impl Material {
         }
     }
     // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
+    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
         // Load the texture
         let (_, id) = Texture::new()
             .set_mutable(true)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
-            .set_filter(TextureFilter::Nearest)
+            .apply_texture_load_options(opt)
             .load_texture(diffuse_path, resource_manager, texture_cacher)
-            .unwrap();
+            .unwrap();          
         self.diffuse_tex_id = Some(id);
         return self;
     }
     // Load the normal texture
-    pub fn load_normal(mut self, normal_path: &str, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
+    pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, texture_cacher: &mut CacheManager<Texture>, resource_manager: &mut ResourceManager) -> Self {
         // Load the texture
         let (_, id) = Texture::new()
             .set_mutable(true)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .apply_texture_load_options(opt)
             .load_texture(normal_path, resource_manager, texture_cacher)
             .unwrap();
         self.normal_tex_id = Some(id);
@@ -99,6 +103,7 @@ impl Material {
     pub fn resource_load_textures(
         mut self,
         texture_paths: Vec<Option<&str>>,
+        opt: Option<TextureLoadOptions>,
         texture_cacher: &mut CacheManager<Texture>,
         resource_manager: &mut ResourceManager,
     ) -> Result<Self, errors::ResourceError> {
@@ -110,6 +115,7 @@ impl Material {
                     let (_, texture_id) = Texture::new()
                         .enable_mipmaps()
                         .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+                        .apply_texture_load_options(opt)
                         .load_texture(texture_path, resource_manager, texture_cacher)
                         .unwrap();
                     match i {
@@ -140,6 +146,11 @@ impl Material {
             true => self.flags.insert(MaterialFlags::DOUBLE_SIDED),
             false => self.flags.remove(MaterialFlags::DOUBLE_SIDED),
         }
+        return self;
+    }
+    // Toggle the visibility of this material
+    pub fn set_visible(mut self, visible: bool) -> Self {
+        self.visible = visible;
         return self;
     }
     // Set a default uniform

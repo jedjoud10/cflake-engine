@@ -14,20 +14,39 @@ bitflags! {
     }
 }
 
+// How we load texture
+#[derive(Default, Clone, Copy)]
+pub struct TextureLoadOptions {
+    pub filter: TextureFilter,
+    pub wrapping: TextureWrapping,
+}
+
 // Texture filters
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TextureFilter {
     Linear,
     Nearest,
 }
 
+impl Default for TextureFilter {
+    fn default() -> Self {
+        Self::Linear
+    }
+}
+
 // Texture wrapping filters
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TextureWrapping {
     ClampToEdge,
     ClampToBorder,
     Repeat,
     MirroredRepeat,
+}
+
+impl Default for TextureWrapping {
+    fn default() -> Self {
+        Self::Repeat
+    }
 }
 
 // Texture dimension type
@@ -72,9 +91,9 @@ impl Default for Texture {
             format: gl::RGBA,
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::empty(),
-            filter: TextureFilter::Linear,
+            filter: TextureFilter::default(),
             dimensions: TextureDimensions::D2D(0, 0),
-            wrap_mode: TextureWrapping::Repeat,
+            wrap_mode: TextureWrapping::default(),
         }
     }
 }
@@ -257,6 +276,13 @@ impl Texture {
     pub fn set_flags(mut self, flags: TextureFlags) -> Self {
         self.flags = flags;
         self
+    }    
+    // Apply the texture load options on a texture
+    pub fn apply_texture_load_options(mut self, opt: Option<TextureLoadOptions>) -> Texture {
+        let opt = opt.unwrap_or_default();
+        let texture = self.set_filter(opt.filter);
+        let texture = texture.set_wrapping_mode(opt.wrapping);
+        return texture;
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, errors::RenderingError> {

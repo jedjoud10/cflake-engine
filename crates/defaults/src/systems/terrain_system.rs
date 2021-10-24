@@ -111,7 +111,10 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             .unwrap();
         // Multi Material Renderer
         let mut mm_renderer = MultiMaterialRenderer::default();
-        let materials = [clone_material.clone(), clone_material.clone(), clone_material.clone()];
+        let materials = [clone_material.clone(), clone_material.clone().load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(TextureLoadOptions {
+            filter: TextureFilter::Nearest,
+            ..TextureLoadOptions::default()
+        }), data.texture_cacher, data.resource_manager), clone_material.clone()];
         // Add the sub models into the Multi Material renderer
         for (material_id, sub_model) in tmodel.shader_model_hashmap {
             mm_renderer = mm_renderer.add_submodel(sub_model, Some(materials.get(material_id as usize).unwrap().clone()));            

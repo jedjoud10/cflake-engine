@@ -41,7 +41,7 @@ void main() {
 	normalz = vec3(vec2(normalz.x, -normalz.y) * normals_strength + world_normal.xy, world_normal.z) * blending.z;
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
 	frag_diffuse = diffuse_final * m_color * tint;
-	frag_normal = world_normal;
+	frag_normal = normal_final;
 	frag_pos = m_position;
 	frag_emissive = vec3(0, 0, 0);
 }

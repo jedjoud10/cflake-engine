@@ -149,6 +149,8 @@ impl CustomData {
             Some(mat) => mat,
             None => &self.default_material,
         };
+        // Exit early
+        if !material.visible { return; }
         // Shader name
         let shader_name = match material.shader_name.as_str() {
             "" => self.default_material.shader_name.clone(),
