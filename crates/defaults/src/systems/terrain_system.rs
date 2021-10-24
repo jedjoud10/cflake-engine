@@ -98,6 +98,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         let chunk = Chunk { coords: coords.clone() };
         // Link the components
         entity.link_component::<Chunk>(data.component_manager, chunk).unwrap();
+        // Transform
         entity
             .link_component::<components::Transform>(
                 data.component_manager,
@@ -108,12 +109,12 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 },
             )
             .unwrap();
-
+        // Multi Material Renderer
         let material = clone_material.clone();
-        entity
-            .link_component::<Renderer>(data.component_manager, Renderer::new().set_model(model).set_wireframe(true).set_material(material))
-            .unwrap();
-
+        let mut mm_renderer = MultiMaterialRenderer::default().add_submodel(model, Some(material));
+        mm_renderer.refresh_sub_models();
+        let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
+        entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
         let entity_id = data.entity_manager.add_entity_s(entity);
         added_chunk_entities_ids.push((entity_id, coords.clone()));
     }

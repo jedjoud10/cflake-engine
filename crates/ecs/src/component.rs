@@ -32,6 +32,7 @@ impl ComponentManager {
         // Bit shift to the left
         self.current_component_id <<= 1;
         // Return the component id before the bit shift
+        println!("Registered component '{}' with c_ID: '{:b}'", T::get_component_name(), component_id);
         component_id
     }
     // Get the component id for a specific entity

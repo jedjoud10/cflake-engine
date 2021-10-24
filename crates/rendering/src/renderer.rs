@@ -1,3 +1,5 @@
+use crate::MultiMaterialRenderer;
+
 use super::{model::Model, model::ModelDataGPU, Material, RendererFlags};
 use ecs::{Component, ComponentID, ComponentInternal};
 use resources::{LoadableResource, ResourceManager};
@@ -10,6 +12,8 @@ pub struct Renderer {
     pub material: Option<Material>,
     // Flags
     pub flags: RendererFlags,
+    // Multi material support
+    pub multi_material: Option<MultiMaterialRenderer>,
 }
 
 impl Default for Renderer {
@@ -20,6 +24,7 @@ impl Default for Renderer {
             model: Model::default(),
             material: None,
             flags: RendererFlags::DEFAULT,
+            multi_material: None,
         }
     }
 }
@@ -59,11 +64,17 @@ impl Renderer {
         self.material = Some(material);
         return self;
     }
+    // Set Multi Material Renderer
+    pub fn set_multimat(mut self, multi_mat_renderer: MultiMaterialRenderer) -> Self {
+        self.multi_material = Some(multi_mat_renderer);
+        return self;
+    }
 }
 
 impl Renderer {    
     // When we update the model and want to refresh it's OpenGL data
-    pub fn refresh_model(&mut self) {        
+    pub fn refresh_model(&mut self) {      
+        self.gpu_data = self.model.refresh_gpu_data();  
     }
     // Dispose of our model
     pub fn dispose_model(&mut self) {

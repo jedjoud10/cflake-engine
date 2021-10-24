@@ -67,7 +67,7 @@ impl AdvancedOctree {
     )> {
         let root_node = self.internal_octree.get_root_node();
         // Do nothing if the target is out of bounds
-        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) || self.last_pos.distance(*target) < 3.0 {
+        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) || (self.last_pos.distance(*target) < 3.0 && self.generated_base_octree) {
             return None;
         }
         // Check if we generated the base octree

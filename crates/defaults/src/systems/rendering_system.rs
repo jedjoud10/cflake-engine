@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, Renderer, RendererFlags, Shader, Texture, TextureDimensions, Volumetric};
+use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureDimensions, Volumetric};
 use resources::LoadableResource;
 use std::ptr::null;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -135,7 +135,9 @@ impl CustomData {
     // Draw an entity normally
     fn draw_normal(
         &self,
-        renderer: &Renderer,
+        material: Option<&Material>,
+        gpu_data: &ModelDataGPU,
+        indices_count: i32,
         data: &WorldData,
         camera_position: veclib::Vector3<f32>,
         projection_matrix: &veclib::Matrix4x4<f32>,
@@ -143,7 +145,7 @@ impl CustomData {
         model_matrix: &veclib::Matrix4x4<f32>,
     ) {
         // Get the material for this entity
-        let material = match renderer.material.as_ref() {
+        let material = match material {
             Some(mat) => mat,
             None => &self.default_material,
         };
@@ -198,7 +200,7 @@ impl CustomData {
         }
         
         // Draw normally
-        if renderer.gpu_data.initialized {
+        if gpu_data.initialized {
             // Enable / Disable vertex culling
             if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
                 unsafe {
@@ -211,10 +213,27 @@ impl CustomData {
             }
             unsafe {
                 // Actually draw the array
-                gl::BindVertexArray(renderer.gpu_data.vertex_array_object);
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, renderer.gpu_data.element_buffer_object);
-                gl::DrawElements(gl::TRIANGLES, renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
+                gl::BindVertexArray(gpu_data.vertex_array_object);
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
+                gl::DrawElements(gl::TRIANGLES, indices_count, gl::UNSIGNED_INT, null());
             }
+        }
+    }
+    // Draw a multi material renderer
+    fn draw_multi_material(
+        &self,
+        mm_renderer: &MultiMaterialRenderer,
+        data: &WorldData,
+        camera_position: veclib::Vector3<f32>,
+        projection_matrix: &veclib::Matrix4x4<f32>,
+        view_matrix: &veclib::Matrix4x4<f32>,
+        model_matrix: &veclib::Matrix4x4<f32>,
+    ) {
+        // Loop the sub models and use them to make a sub renderer and render that separately
+        for (i, sub_model) in mm_renderer.sub_models.iter().enumerate() {
+            let material = mm_renderer.materials.get(i).unwrap();
+            let gpu_data = mm_renderer.sub_models_gpu_data.get(i).unwrap();            
+            self.draw_normal(material.as_ref(), &gpu_data, sub_model.triangles.len() as i32, data, camera_position, projection_matrix, view_matrix, model_matrix)
         }
     }
     // Draw a wireframe entity
@@ -394,23 +413,19 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
 }
-fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     // Make sure we create the OpenGL data for this entity's model
     rc.refresh_model();
     let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
-    transform.update_matrix();
-
-    // If this is the sky entity, update the binded sky texture
-    // Set the sky gradient
-    
+    transform.update_matrix();    
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     // Dispose the model when the entity gets destroyed
     rc.dispose_model();
 }
-fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     let system = system_data.cast::<CustomData>().unwrap();
     // Get the camera stuff
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
@@ -426,7 +441,16 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     if system.wireframe {
         system.draw_wireframe(rc, data, &projection_matrix, &view_matrix, &model_matrix);
     } else {
-        system.draw_normal(rc, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
+        // Is this a Multi Material renderer?
+        match rc.multi_material.as_ref() {
+            Some(mm_renderer) => {
+                // This is a Multi Material renderer
+                system.draw_multi_material(mm_renderer, data, camera_position, &projection_matrix, &view_matrix, &&model_matrix);
+            },
+            None => {
+                system.draw_normal(rc.material.as_ref(), &rc.gpu_data, rc.model.triangles.len() as i32, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
+            },
+        }
     }
 }
 // Create the rendering system

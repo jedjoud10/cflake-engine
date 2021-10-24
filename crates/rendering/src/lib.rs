@@ -2,7 +2,6 @@
 mod compute_shader;
 mod material;
 mod model;
-mod complex_model;
 mod renderer;
 mod mm_renderer;
 mod shader;
@@ -15,7 +14,6 @@ pub use renderer_flags::RendererFlags;
 pub use compute_shader::*;
 pub use material::*;
 pub use model::*;
-pub use complex_model::*;
 pub use renderer::*;
 pub use mm_renderer::*;
 pub use shader::*;

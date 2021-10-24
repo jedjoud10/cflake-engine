@@ -93,7 +93,8 @@ pub enum SystemEventType {
 // A system, stored on the stack, but it's SystemData is a trait object
 #[derive(Default)]
 pub struct System {
-    c_bitfield: usize,
+    required_c_bitfield: usize,
+    flc_c_bitfield: usize,
     system_id: u8,
     enabled: bool,
     entities: Vec<usize>,
@@ -121,17 +122,31 @@ impl System {
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(&self, entity: &Entity) -> bool {
         // Check if the system matches the component ID of the entity
-        let bitfield: usize = self.c_bitfield & !entity.c_bitfield;
+        let bitfield: usize = self.required_c_bitfield & !entity.c_bitfield;
         // If the entity is valid, all the bits would be 0
         bitfield == 0
     }
     // Add a component to this system's component bitfield id
     pub fn link_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         if component_manager.is_component_registered::<T>() {
-            self.c_bitfield |= component_manager.get_component_id::<T>()?;
+            let c = component_manager.get_component_id::<T>()?;
+            self.required_c_bitfield |= c;
+            self.flc_c_bitfield |= c;
         } else {
             component_manager.register_component::<T>();
-            self.c_bitfield |= component_manager.get_component_id::<T>()?;
+            let c = component_manager.get_component_id::<T>()?;
+            self.required_c_bitfield |= c;
+            self.flc_c_bitfield |= c;
+        }
+        Ok(())
+    }
+    // Add a component that each entity *can* have, this is not necessary
+    pub fn link_component_flc_extra<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
+        if component_manager.is_component_registered::<T>() {
+            self.flc_c_bitfield |= component_manager.get_component_id::<T>()?;
+        } else {
+            component_manager.register_component::<T>();
+            self.flc_c_bitfield |= component_manager.get_component_id::<T>()?;
         }
         Ok(())
     }
@@ -199,7 +214,7 @@ impl System {
             .filter_map(|entity_id| {
                 let entity_clone = &entity_manager_immutable.get_entity(*entity_id).unwrap();
                 // Get the linked components
-                let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.c_bitfield);
+                let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.flc_c_bitfield);
                 // Filtering the entities basically
                 /*
                 let valid_entity = self.filter_entity(entity_clone, &linked_components, &data);
@@ -223,7 +238,7 @@ impl System {
                 for entity_id in filtered_entity_ids {
                     let entity_clone = data.entity_manager.get_entity(entity_id).unwrap().clone();
                     // Get the linked entity components from the current entity
-                    let linked_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, self.c_bitfield);
+                    let linked_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, self.flc_c_bitfield);
                     x(&mut self.system_data, &entity_clone, &linked_components, data);
                 }
             }
