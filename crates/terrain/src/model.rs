@@ -4,5 +4,6 @@ use rendering::Model;
 
 // A custom terrain model
 pub struct TModel {
-    pub material_model_hashmap: HashMap<u8, Model>
+    pub shader_model_hashmap: HashMap<u8, Model>,
+    pub skirt_model: Model,
 }

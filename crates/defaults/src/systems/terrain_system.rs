@@ -113,7 +113,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         let material = clone_material.clone();
         let mut mm_renderer = MultiMaterialRenderer::default();
         // Add the sub models into the Multi Material renderer
-        for (material_id, sub_model) in tmodel.material_model_hashmap {
+        for (material_id, sub_model) in tmodel.shader_model_hashmap {
             let mut m: Material = material.clone();
             if material_id == 1 {
                 m = m.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::X));
@@ -122,6 +122,8 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             }
             mm_renderer = mm_renderer.add_submodel(sub_model, Some(m));
         }
+        // Don't forget to add the skirts
+        mm_renderer = mm_renderer.add_submodel(tmodel.skirt_model, Some(material.clone()));
         mm_renderer.refresh_sub_models();
         let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
         entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();

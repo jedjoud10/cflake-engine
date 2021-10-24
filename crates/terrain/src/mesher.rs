@@ -20,10 +20,8 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 
 // Generate the Marching Cubes model
 pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> TModel {
-    let mut skirts_model: Model = Model::default();
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
-    let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
-    let mut sub_model_hashmap: HashMap<u8, Model> = HashMap::new();
+    let mut sub_model_hashmap: HashMap<u8, (Model, Vec<SkirtVertex>)> = HashMap::new();
     // Calculate the density threshold for the skirts
     let density_threshold = AVERAGE_DENSITY_THRESHOLD;
     // Loop over every voxel
@@ -36,8 +34,8 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 let shader_id = voxels[i + DATA_OFFSET_TABLE[0]].shader_id;
 
                 // Make sure we have the default submodel/material for this material ID
-                sub_model_hashmap.entry(shader_id).or_insert(Model::default());
-                let model = sub_model_hashmap.get_mut(&shader_id).unwrap();
+                sub_model_hashmap.entry(shader_id).or_insert((Model::default(), Vec::new()));
+                let (model, shared_vertices) = sub_model_hashmap.get_mut(&shader_id).unwrap();
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
@@ -124,29 +122,28 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         }
 
                         // For the X axis
-                        if skirts {
-                            /*
+                        let skirts_edge_tuple = (edge_tuple.0, edge_tuple.1, edge_tuple.2);
+                        if skirts {                            
                             if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
+                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = skirts_edge_tuple;
                             }
                             if vert1_usize.0 == CHUNK_SIZE - 2 && vert2_usize.0 == CHUNK_SIZE - 2 && x == CHUNK_SIZE - 3 {
-                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
+                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = skirts_edge_tuple;
                             }
                             // For the Y axis
                             if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
-                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
+                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = skirts_edge_tuple;
                             }
                             if vert1_usize.1 == CHUNK_SIZE - 2 && vert2_usize.1 == CHUNK_SIZE - 2 && y == CHUNK_SIZE - 3 {
-                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = edge_tuple;
+                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = skirts_edge_tuple;
                             }
                             // For the Z axis
                             if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
-                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
+                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = skirts_edge_tuple;
                             }
                             if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
-                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
-                            }
-                            */
+                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = skirts_edge_tuple;
+                            }                            
                         }
                     }
                 }
@@ -161,7 +158,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             &voxels,
                             &local_edges_x,
                             density_threshold,
-                            &mut shared_vertices,
+                            shared_vertices,
                             veclib::Vec3Axis::X,
                             0,
                             DENSITY_OFFSET_X,
@@ -176,7 +173,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             &voxels,
                             &local_edges_x,
                             density_threshold,
-                            &mut shared_vertices,
+                            shared_vertices,
                             veclib::Vec3Axis::X,
                             CHUNK_SIZE - 2,
                             DENSITY_OFFSET_X,
@@ -192,7 +189,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             &voxels,
                             &local_edges_y,
                             density_threshold,
-                            &mut shared_vertices,
+                            shared_vertices,
                             veclib::Vec3Axis::Y,
                             0,
                             DENSITY_OFFSET_Y,
@@ -207,7 +204,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             &voxels,
                             &local_edges_y,
                             density_threshold,
-                            &mut shared_vertices,
+                            shared_vertices,
                             veclib::Vec3Axis::Y,
                             CHUNK_SIZE - 2,
                             DENSITY_OFFSET_Y,
@@ -224,7 +221,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             &voxels,
                             &local_edges_z,
                             density_threshold,
-                            &mut shared_vertices,
+                            shared_vertices,
                             veclib::Vec3Axis::Z,
                             0,
                             DENSITY_OFFSET_Z,
@@ -239,7 +236,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             &voxels,
                             &local_edges_z,
                             density_threshold,
-                            &mut shared_vertices,
+                            shared_vertices,
                             veclib::Vec3Axis::Z,
                             CHUNK_SIZE - 2,
                             DENSITY_OFFSET_Z,
@@ -250,30 +247,37 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
             }
         }
     }
-    /*
-    // Turn the shared vertices into triangle indices
-    for shared_vertex in shared_vertices {
-        match shared_vertex {
-            SkirtVertex::Vertex(vertex, normal, color) => {
-                // This vertex isn't a shared vertex
-                skirts_model.triangles.push(skirts_model.vertices.len() as u32 + model.vertices.len() as u32);
-                skirts_model.vertices.push(vertex.clone());
-                skirts_model.normals.push(normal);
-                skirts_model.colors.push(color);
-            }
-            SkirtVertex::SharedVertex(coord_tuple) => {
-                let tri = duplicate_vertices[&coord_tuple];
-                // This vertex is a vertex that already exists in the main model
-                skirts_model.triangles.push(tri);
+    // The skirts' models
+    let mut skirt_model: Model = Model::default();
+    for (shader_id, (model, shared_vertices)) in sub_model_hashmap.iter() {
+        // Turn the shared vertices into triangle indices
+        for shared_vertex in shared_vertices {
+            match shared_vertex {
+                SkirtVertex::Vertex(vertex, normal, color) => {
+                    // This vertex isn't a shared vertex
+                    skirt_model.triangles.push(skirt_model.vertices.len() as u32);
+                    skirt_model.vertices.push(vertex.clone());
+                    skirt_model.normals.push(normal.clone());
+                    skirt_model.colors.push(color.clone());
+                }
+                SkirtVertex::SharedVertex(coord_tuple) => {
+                    let tri = *duplicate_vertices.get(&(coord_tuple.0, coord_tuple.1, coord_tuple.2, *shader_id)).unwrap();
+                    // Get the vertex, and duplicate it, since the skirts are in their own sub model
+                    let vert_data = (model.vertices[tri as usize], model.normals[tri as usize], model.colors[tri as usize]); 
+                    skirt_model.triangles.push(skirt_model.vertices.len() as u32);
+                    skirt_model.vertices.push(vert_data.0);
+                    skirt_model.normals.push(vert_data.1);
+                    skirt_model.colors.push(vert_data.2);
+                }
             }
         }
-    }
-    model = model.combine_smart(&skirts_model);
-    */
+    }   
+    let new_model_hashmap = sub_model_hashmap.into_iter().map(|(shader_id, (model, _))| (shader_id, model)).collect::<HashMap<u8, Model>>();
     // Return the model
-    return (TModel {
-        material_model_hashmap: sub_model_hashmap,
-    });
+    return TModel {
+        shader_model_hashmap: new_model_hashmap,
+        skirt_model: skirt_model,
+    };
 }
 
 // The type of skirt vertex, normal or shared
