@@ -22,13 +22,13 @@ pub fn flatten(position: (usize, usize, usize)) -> usize {
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
-    pub color: veclib::Vector3<u8>,
     pub density: u16,
-    pub biome_id: u8,
-    pub material_id: u8,
-    // Very hard ( ͡° ͜ʖ ͡°)
-    pub hardness: u8,
+    pub color: veclib::Vector3<u8>,
+    pub shader_id: u8,
     pub texture_id: u8,
+    pub biome_id: u8,
+    pub hardness: u8,
+    // Very hard ( ͡° ͜ʖ ͡°)
 }
 // Handles the generation of voxel data
 #[derive(Default)]
@@ -126,10 +126,10 @@ impl VoxelGenerator {
             data[i] = Voxel {
                 density: density,
                 color: color_pixels[i].get3([0, 1, 2]),
-                material_id: material.x,
-                biome_id: material.y,
-                hardness: material.z,
-                texture_id: material.w
+                shader_id: material.x,
+                texture_id: material.y,
+                biome_id: material.z,
+                hardness: material.w,
             };
             // Keep the min and max
             min = min.min(density);

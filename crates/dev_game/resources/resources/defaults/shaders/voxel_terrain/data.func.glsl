@@ -3,7 +3,8 @@ struct Voxel {
     float density;
 };
 struct MaterialVoxel {
-    int material_id;
+    int shader_id;
+    int texture_id;
     int biome_id;
     int hardness;
 };

@@ -19,8 +19,10 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     //density = opSmoothUnion(density + 80, pos.y - 16.0, 30.0);
     density = max(density + 80, pos.y - 60);
     
+    int shader_id = 0;
+    int texture_id = 0;
     int biome_id = snoise(pos * 0.001 * vec3(1, 0, 1)) > 0 ? 1 : 0;
-    int material_id = 0;
+    int hardness = 0;
     /*
     if (biome_id == 1) {
         density = pos.y;
@@ -28,16 +30,13 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     } else {
     }
     */
-    if (snoise(pos * 0.003) > 0) {
-        material_id = 1;
-    } else if (snoise(pos * 0.003 + 352.0) > 0) {
-        material_id = 2;
+    if (snoise(pos * 0.0005) > 0) {
+        shader_id = 1;
     }
-    int hardness = 0;
 
     // Write the result
     voxel = Voxel(density * 20);
-    material_voxel = MaterialVoxel(material_id, biome_id, hardness);
+    material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
 void get_color_voxel(vec3 pos, vec3 local_uv, Voxel voxel, MaterialVoxel material_voxel, out ColorVoxel color_voxel) {

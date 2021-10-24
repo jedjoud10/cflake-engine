@@ -33,11 +33,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
-                let mc_material_id = voxels[i + DATA_OFFSET_TABLE[0]].material_id;
+                let shader_id = voxels[i + DATA_OFFSET_TABLE[0]].shader_id;
 
                 // Make sure we have the default submodel/material for this material ID
-                sub_model_hashmap.entry(mc_material_id).or_insert(Model::default());
-                let model = sub_model_hashmap.get_mut(&mc_material_id).unwrap();
+                sub_model_hashmap.entry(shader_id).or_insert(Model::default());
+                let model = sub_model_hashmap.get_mut(&shader_id).unwrap();
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
@@ -105,7 +105,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
                             2 * y as u32 + vert1.y as u32 + vert2.y as u32,
                             2 * z as u32 + vert1.z as u32 + vert2.z as u32,
-                            mc_material_id
+                            shader_id
                         );
 
                         // Check if this vertex was already added
