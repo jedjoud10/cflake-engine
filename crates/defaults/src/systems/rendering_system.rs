@@ -104,10 +104,6 @@ impl CustomData {
                 .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
                 .generate_texture(Vec::new())
                 .unwrap();
-            println!(
-                "{:?} {:?} {:?} {:?} {:?}",
-                self.diffuse_texture, self.normals_texture, self.position_texture, self.emissive_texture, self.depth_texture
-            );
             // Bind the color texture to the color attachement 0 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
             // Bind the normal texture to the color attachement 1 of the frame buffer
@@ -284,17 +280,16 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
 
     // Set the default uniforms
-    shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
-    shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
-    shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
-    shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
-    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);    
-
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
+    
+    /*
     // Volumetric parameters
     shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
     shader.set_t2d("volumetric_depth_texture", &system.volumetric.depth_tex, gl::TEXTURE7);
     shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
-
+    */
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
     // Load the default shader
     let default_shader_name = Shader::new(
@@ -332,9 +327,9 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     // Update the default values for each shader that exists in the shader cacher
     for shader in data.shader_cacher.1.objects.iter() {
         // Set the shader arguments
-        //shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
         shader.use_shader();
-        //shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+        shader.set_f32("delta_time", &(data.time_manager.delta_time as f32));
+        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         //shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
     }
 
@@ -369,16 +364,27 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Draw the normal primitives
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
-    shader.use_shader();
-    
+    shader.use_shader();    
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
     shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
-    
+    // Textures
+    shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
+    shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
+    shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
+    shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
+    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);    
+    shader.use_shader();
+    shader.set_t2d(
+        "default_sky_gradient",
+        data.texture_cacher.id_get_object(data.custom_data.sky_texture).unwrap(),
+        gl::TEXTURE5,
+    );
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // Render the screen quad
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -397,12 +403,7 @@ fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldD
 
     // If this is the sky entity, update the binded sky texture
     // Set the sky gradient
-    let shader = data.shader_cacher.1.get_object(&system_data.cast::<CustomData>().unwrap().quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
-    shader.set_t2d(
-        "default_sky_gradient",
-        data.texture_cacher.id_get_object(data.custom_data.sky_texture).unwrap(),
-        gl::TEXTURE5,
-    );
+    
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
