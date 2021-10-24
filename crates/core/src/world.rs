@@ -426,17 +426,15 @@ impl World {
                 .get_custom_system_data_mut::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            let dims = TextureDimensions::D2D(size.0, size.1);            
+            let dims = TextureDimensions::D2D(size.0, size.1);
             render_system.diffuse_texture.update_size(dims);
             render_system.depth_texture.update_size(dims);
             render_system.normals_texture.update_size(dims);
             render_system.position_texture.update_size(dims);
-            render_system.emissive_texture.update_size(dims);            
+            render_system.emissive_texture.update_size(dims);
 
             //TODO: This
-            render_system
-                .volumetric
-                .update_texture_resolution(self.custom_data.window.dimensions);
+            render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions);
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

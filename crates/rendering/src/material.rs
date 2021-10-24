@@ -22,11 +22,11 @@ pub struct Material {
     pub default_uniforms: Vec<(String, DefaultUniform)>,
     // The default texture ID
     pub diffuse_tex_id: Option<usize>,
-    pub normal_tex_id: Option<usize>,    
+    pub normal_tex_id: Option<usize>,
     // Some texture array that we might need in case of a multi texture material
     pub texture_arr: Option<usize>,
     // Is this material even visible?
-    pub visible: bool
+    pub visible: bool,
 }
 
 impl Default for Material {
@@ -66,7 +66,7 @@ impl Material {
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
             .load_texture(diffuse_path, resource_manager, texture_cacher)
-            .unwrap();          
+            .unwrap();
         self.diffuse_tex_id = Some(id);
         return self;
     }

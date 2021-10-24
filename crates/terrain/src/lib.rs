@@ -12,13 +12,13 @@ mod chunk_data;
 mod chunk_manager;
 mod density;
 pub mod mesher;
+mod model;
 mod tables;
 mod voxel;
-mod model;
 
 pub use bound_checker::*;
 pub use chunk_data::*;
 pub use chunk_manager::*;
+pub use model::*;
 pub use tables::*;
 pub use voxel::*;
-pub use model::*;

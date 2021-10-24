@@ -54,23 +54,26 @@ impl VoxelGenerator {
             .set_idf(gl::R16, gl::RED, gl::UNSIGNED_SHORT)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()).unwrap();
+            .generate_texture(Vec::new())
+            .unwrap();
         self.material_texture = Texture::new()
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()).unwrap();
+            .generate_texture(Vec::new())
+            .unwrap();
         self.color_texture = Texture::new()
             .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new()).unwrap();
+            .generate_texture(Vec::new())
+            .unwrap();
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>) {
         // First pass
         // Set the compute shader variables and voxel texture
-        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();        
+        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
@@ -83,21 +86,23 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data immediatly
-        compute.run_compute((CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1)).unwrap();
+        compute
+            .run_compute((CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1))
+            .unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {        
+    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => panic!(),
         };
-        
+
         // Read back the compute shader data
         compute.get_compute_state().unwrap();
         // Second pass
-        let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();        
+        let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
         color_shader.use_shader();
         color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
@@ -110,12 +115,14 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Run the color compute shader
-        color_compute.run_compute((CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1)).unwrap();
-        color_compute.get_compute_state().unwrap();  
+        color_compute
+            .run_compute((CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1, CHUNK_SIZE as u32 / 8 + 1))
+            .unwrap();
+        color_compute.get_compute_state().unwrap();
         // Read back the texture into the data buffer
         let voxel_pixels = self.voxel_texture.fill_array_elems::<u16>();
         let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
-        let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();    
+        let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
         // Keep track of the min and max values
         let mut min = u16::MAX;
         let mut max = u16::MIN;

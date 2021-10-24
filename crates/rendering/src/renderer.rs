@@ -71,10 +71,10 @@ impl Renderer {
     }
 }
 
-impl Renderer {    
+impl Renderer {
     // When we update the model and want to refresh it's OpenGL data
-    pub fn refresh_model(&mut self) {      
-        self.gpu_data = self.model.refresh_gpu_data();  
+    pub fn refresh_model(&mut self) {
+        self.gpu_data = self.model.refresh_gpu_data();
     }
     // Dispose of our model
     pub fn dispose_model(&mut self) {

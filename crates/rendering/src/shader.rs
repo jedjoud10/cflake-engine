@@ -54,14 +54,14 @@ impl Shader {
                         // Get the local path ID
                         let c = line.split("#includep ").collect::<Vec<&str>>()[1];
                         let local_path_id = &c[2..(c.len() - 2)].parse::<usize>().unwrap();
-                        println!("{}", local_path_id);                        
+                        println!("{}", local_path_id);
                         // Load the function shader text
                         let text = resource_manager.load_lines_packed_resource(paths.get(*local_path_id).unwrap(), 1).unwrap();
                         let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                        included_lines.extend(new_lines);                        
+                        included_lines.extend(new_lines);
                     }
-                },
-                None => {},
+                }
+                None => {}
             }
         }
         // Return the included lines and the original lines that are without the include statement
@@ -164,7 +164,7 @@ impl Shader {
                 gl::GetProgramInfoLog(self.program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                 println!("Error while finalizing shader {}!:", self.name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                let string = String::from_utf8(printable_log).unwrap();                
+                let string = String::from_utf8(printable_log).unwrap();
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
                 panic!();
@@ -172,7 +172,7 @@ impl Shader {
 
             for subshader_program in self.linked_subshaders_programs.iter() {
                 gl::DetachShader(self.program, subshader_program.1);
-            }  
+            }
             errors::ErrorCatcher::catch_opengl_errors().unwrap();
             self.finalized = true;
         }
@@ -219,12 +219,12 @@ impl Shader {
     // Get the location of a specific uniform, using it's name
     #[allow(temporary_cstring_as_ptr)]
     pub fn get_uniform_location(&self, name: &str) -> Result<i32, RenderingError> {
-        unsafe { 
+        unsafe {
             let x = gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
-            if x == -1 {                      
+            if x == -1 {
                 // Invalid uniform location
                 let error: Result<i32, RenderingError> = Err(RenderingError::new(format!("Could not fetch uniform location for '{}' on shader '{}'", name, self.name)));
-                
+
                 return Ok(-1);
             }
             return Ok(x);
@@ -234,7 +234,7 @@ impl Shader {
     pub fn set_f32(&self, name: &str, value: &f32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::Uniform1f(u, *value);            
+            gl::Uniform1f(u, *value);
         }
     }
     // Set a vec2 f32 uniform
@@ -305,15 +305,7 @@ impl Shader {
             };
             let unit = u as u32;
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            gl::BindImageTexture(
-                unit,
-                texture.id,
-                0,
-                gl::FALSE,
-                0,
-                new_access_type,
-                texture.internal_format,
-            );
+            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
         }
     }
     // Set a 3D image
@@ -329,15 +321,7 @@ impl Shader {
             };
             let unit = u as u32;
             gl::BindTexture(gl::TEXTURE_3D, texture.id);
-            gl::BindImageTexture(
-                unit,
-                texture.id,
-                0,
-                gl::FALSE,
-                0,
-                new_access_type,
-                texture.internal_format,
-            );
+            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
         }
     }
     // Set a i32

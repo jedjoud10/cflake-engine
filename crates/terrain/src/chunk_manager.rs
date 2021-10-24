@@ -9,8 +9,8 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rendering::{Model, Shader, Texture};
 use world_data::WorldData;
 
-use crate::{CHUNK_SIZE, TModel};
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
+use crate::{TModel, CHUNK_SIZE};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -78,12 +78,7 @@ impl ChunkManager {
         self.camera_forward_vector = forward_vector;
     }
     // Update the chunk manager
-    pub fn update(
-        &mut self,
-        voxel_generator: &VoxelGenerator,
-        shader_cacher: &mut CacheManager<Shader>,
-        frame_count: u64,
-    ) -> (Vec<(ChunkCoords, TModel)>, Vec<usize>) {
+    pub fn update(&mut self, voxel_generator: &VoxelGenerator, shader_cacher: &mut CacheManager<Shader>, frame_count: u64) -> (Vec<(ChunkCoords, TModel)>, Vec<usize>) {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating

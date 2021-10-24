@@ -12,7 +12,7 @@ use world_data::WorldData;
 pub struct CustomData {
     pub lod_factor: f32,
     pub nodes: Vec<OctreeNode>,
-    pub terrain_gen: bool,    
+    pub terrain_gen: bool,
 }
 crate::impl_custom_system_data!(CustomData);
 
@@ -82,9 +82,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     }
 
     // Update the chunk manager
-    let (added_chunks, removed_chunks) = td
-        .chunk_manager
-        .update(&td.voxel_generator, &mut data.shader_cacher.1, data.time_manager.frame_count);
+    let (added_chunks, removed_chunks) = td.chunk_manager.update(&td.voxel_generator, &mut data.shader_cacher.1, data.time_manager.frame_count);
     let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
 
     // Add the entities to the entity manager
@@ -112,7 +110,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bound_materials.clone());
         // Add the sub models into the Multi Material renderer
         for (material_id, sub_model) in tmodel.shader_model_hashmap {
-            mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);            
+            mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);
         }
         for (material_id, skirt_model) in tmodel.skirt_models {
             // Don't forget the skirts

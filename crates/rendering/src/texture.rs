@@ -61,7 +61,7 @@ pub enum TextureDimensions {
 pub enum TextureType {
     Texture2D,
     Texture3D,
-    ArrayTexture,
+    TextureArray,
 }
 
 // Custom internal format
@@ -103,7 +103,7 @@ impl Default for Texture {
             filter: TextureFilter::default(),
             dimensions: TextureDimensions::D2D(0, 0),
             wrap_mode: TextureWrapping::default(),
-            ttype: TextureType::Texture2D
+            ttype: TextureType::Texture2D,
         }
     }
 }
@@ -138,7 +138,7 @@ impl LoadableResource for Texture {
                         Some(texture)
                     }
                     TextureType::Texture3D => todo!(),
-                    TextureType::ArrayTexture => todo!(),
+                    TextureType::TextureArray => todo!(),
                 }
             }
             _ => None,
@@ -292,7 +292,7 @@ impl Texture {
     pub fn set_flags(mut self, flags: TextureFlags) -> Self {
         self.flags = flags;
         self
-    }    
+    }
     // Apply the texture load options on a texture
     pub fn apply_texture_load_options(mut self, opt: Option<TextureLoadOptions>) -> Texture {
         let opt = opt.unwrap_or_default();
@@ -308,9 +308,10 @@ impl Texture {
         }
 
         // Get the tex_type based on the TextureDimensionType
-        let tex_type = match self.dimensions {
-            TextureDimensions::D2D(_, _) => gl::TEXTURE_2D,
-            TextureDimensions::D3D(_, _, _) => gl::TEXTURE_3D,
+        let tex_type = match self.ttype {
+            TextureType::Texture2D => gl::TEXTURE_2D,
+            TextureType::Texture3D => gl::TEXTURE_3D,
+            TextureType::TextureArray => gl::TEXTURE_2D_ARRAY,
         };
 
         if true {
@@ -318,16 +319,15 @@ impl Texture {
             unsafe {
                 gl::GenTextures(1, &mut self.id as *mut u32);
                 gl::BindTexture(tex_type, self.id);
-                // Use TexImage3D if it's a 3D texture, otherwise use TexImage2D
-                match self.dimensions {
+                match self.ttype {
                     // This is a 2D texture
-                    TextureDimensions::D2D(width, height) => {
+                    TextureType::Texture2D => {
                         gl::TexImage2D(
                             tex_type,
                             0,
                             self.internal_format as i32,
-                            width as i32,
-                            height as i32,
+                            self.get_width() as i32,
+                            self.get_height() as i32,
                             0,
                             self.format,
                             self.data_type,
@@ -335,15 +335,39 @@ impl Texture {
                         );
                     }
                     // This is a 3D texture
-                    TextureDimensions::D3D(width, height, depth) => {
+                    TextureType::Texture3D => {
                         gl::TexImage3D(
                             tex_type,
                             0,
                             self.internal_format as i32,
-                            width as i32,
-                            height as i32,
-                            depth as i32,
+                            self.get_width() as i32,
+                            self.get_height() as i32,
+                            self.get_depth() as i32,
                             0,
+                            self.format,
+                            self.data_type,
+                            pointer,
+                        );
+                    }
+                    // This is a texture array
+                    TextureType::TextureArray => {
+                        gl::TexStorage3D(
+                            tex_type,
+                            1,
+                            self.internal_format,
+                            self.get_width() as i32,
+                            self.get_height() as i32,
+                            self.get_depth() as i32,
+                        );
+                        gl::TexSubImage3D(
+                            tex_type,
+                            0,
+                            0,
+                            0,
+                            0,
+                            self.get_width() as i32,
+                            self.get_height() as i32,
+                            self.get_depth() as i32,
                             self.format,
                             self.data_type,
                             pointer,
@@ -412,7 +436,7 @@ impl Texture {
             // Now set the actual wrapping mode in the opengl texture
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
-            errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture wrapping mode!"))?;;
+            errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture wrapping mode!"))?;
         }
         Ok(self)
     }

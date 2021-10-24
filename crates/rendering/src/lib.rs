@@ -1,21 +1,21 @@
 // Export
 mod compute_shader;
 mod material;
+mod mm_renderer;
 mod model;
 mod renderer;
-mod mm_renderer;
+mod renderer_flags;
 mod shader;
 mod subshader;
 mod texture;
 mod volumetric;
 mod window;
-mod renderer_flags;
-pub use renderer_flags::RendererFlags;
 pub use compute_shader::*;
 pub use material::*;
+pub use mm_renderer::*;
 pub use model::*;
 pub use renderer::*;
-pub use mm_renderer::*;
+pub use renderer_flags::RendererFlags;
 pub use shader::*;
 pub use subshader::*;
 pub use texture::*;

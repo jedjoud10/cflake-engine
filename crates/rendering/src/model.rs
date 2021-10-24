@@ -1,6 +1,6 @@
-use std::{ffi::c_void, mem::size_of, ptr::null};
 use resources::LoadableResource;
 use resources::Resource;
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug, Clone)]

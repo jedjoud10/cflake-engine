@@ -1,5 +1,5 @@
-use resources::{LoadableResource, ResourceManager};
 use crate::{Material, Model, ModelDataGPU};
+use resources::{LoadableResource, ResourceManager};
 
 // A Multi Material renderer, this renders a Complex Model
 pub struct MultiMaterialRenderer {
@@ -58,15 +58,15 @@ impl MultiMaterialRenderer {
         for (i, (sub_model, material_id)) in self.sub_models.iter().enumerate() {
             let gpu_data = sub_model.refresh_gpu_data();
             self.sub_models_gpu_data[i] = gpu_data;
-        }        
+        }
     }
 
     // Dispose of our complex model data
     pub fn dispose_models(&mut self) {
         unsafe {
             for sub_model_gpu_data in self.sub_models_gpu_data.iter_mut() {
-                    // Delete the vertex array
-                    gl::DeleteBuffers(1, &mut sub_model_gpu_data.vertex_array_object);        
+                // Delete the vertex array
+                gl::DeleteBuffers(1, &mut sub_model_gpu_data.vertex_array_object);
             }
         }
     }

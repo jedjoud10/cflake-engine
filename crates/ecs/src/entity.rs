@@ -1,7 +1,10 @@
 use super::{Component, ComponentID, ComponentManager};
 use errors::ECSError;
 use others::{Instance, SmartList};
-use std::{any::Any, collections::{HashMap, HashSet}};
+use std::{
+    any::Any,
+    collections::{HashMap, HashSet},
+};
 
 // An entity manager that handles entities
 #[derive(Default)]
@@ -50,12 +53,20 @@ impl EntityManager {
     }
     // Get a mutable reference to a stored entity
     pub fn get_entity_mut(&mut self, entity_id: usize) -> Result<&mut Entity, ECSError> {
-        let entity = self.entities.get_element_mut(entity_id).ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?.unwrap();
+        let entity = self
+            .entities
+            .get_element_mut(entity_id)
+            .ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?
+            .unwrap();
         Ok(entity)
     }
     // Get an entity using it's entity id
     pub fn get_entity(&self, entity_id: usize) -> Result<&Entity, ECSError> {
-        let entity = self.entities.get_element(entity_id).ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?.unwrap();
+        let entity = self
+            .entities
+            .get_element(entity_id)
+            .ok_or(ECSError::new(format!("Entity with ID '{}' does not exist in EntityManager!", entity_id)))?
+            .unwrap();
         Ok(entity)
     }
 }

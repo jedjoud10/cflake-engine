@@ -28,7 +28,7 @@ pub trait LoadableResource {
     // Turn mutliple resource into the current struct
     fn from_resource_shared(self, resources: Vec<&Resource>) -> Option<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         todo!();
     }
@@ -42,7 +42,7 @@ pub trait LoadableResource {
     }
     // Load this resource directly from multiple paths
     fn from_paths(self, local_paths: Vec<&str>, resource_manager: &mut ResourceManager) -> Option<Self>
-        where
+    where
         Self: Sized,
     {
         let mut resources: Vec<&Resource> = Vec::new();

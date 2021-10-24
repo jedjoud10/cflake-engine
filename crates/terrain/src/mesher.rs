@@ -1,5 +1,5 @@
-use crate::ISOLINE;
 use crate::TModel;
+use crate::ISOLINE;
 
 use super::tables::*;
 use super::Voxel;
@@ -105,7 +105,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
                             2 * y as u32 + vert1.y as u32 + vert2.y as u32,
                             2 * z as u32 + vert1.z as u32 + vert2.z as u32,
-                            shader_id
+                            shader_id,
                         );
 
                         // Check if this vertex was already added
@@ -125,7 +125,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
 
                         // For the X axis
                         let skirts_edge_tuple = (edge_tuple.0, edge_tuple.1, edge_tuple.2);
-                        if skirts {                            
+                        if skirts {
                             if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                                 local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = skirts_edge_tuple;
                             }
@@ -145,7 +145,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             }
                             if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
                                 local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = skirts_edge_tuple;
-                            }                            
+                            }
                         }
                     }
                 }
@@ -268,7 +268,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 SkirtVertex::SharedVertex(coord_tuple) => {
                     let tri = *duplicate_vertices.get(&(coord_tuple.0, coord_tuple.1, coord_tuple.2, *shader_id)).unwrap();
                     // Get the vertex, and duplicate it, since the skirts are in their own sub model
-                    let vert_data = (model.vertices[tri as usize], model.normals[tri as usize], model.colors[tri as usize]); 
+                    let vert_data = (model.vertices[tri as usize], model.normals[tri as usize], model.colors[tri as usize]);
                     skirt_model.triangles.push(skirt_model.vertices.len() as u32);
                     skirt_model.vertices.push(vert_data.0);
                     skirt_model.normals.push(vert_data.1);
@@ -276,8 +276,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 }
             }
         }
-    }   
-    let new_model_hashmap = sub_model_hashmap.into_iter().map(|(shader_id, (model, _))| (shader_id, model)).collect::<HashMap<u8, Model>>();
+    }
+    let new_model_hashmap = sub_model_hashmap
+        .into_iter()
+        .map(|(shader_id, (model, _))| (shader_id, model))
+        .collect::<HashMap<u8, Model>>();
     println!("Elapsed ms: {}", instant.elapsed().as_millis());
     // Return the model
     return TModel {
