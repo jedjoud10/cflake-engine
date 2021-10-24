@@ -1,5 +1,5 @@
 use ascii::AsciiStr;
-use rendering::{Texture, TextureDimensions};
+use rendering::{Texture, TextureType};
 use resources::{LoadableResource, Resource};
 
 use crate::FontChar;
@@ -50,7 +50,7 @@ impl Font {
             None => {
                 // Create the texture and set it's parameters
                 let texture = Texture::new()
-                    .set_dimensions(TextureDimensions::D2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
+                    .set_dimensions(TextureType::Texture2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
                     .set_filter(rendering::TextureFilter::Linear)
                     .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE);
                 // Create the texture data from the bitmap pixels

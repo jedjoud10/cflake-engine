@@ -1,7 +1,7 @@
 use others::CacheManager;
 use resources::ResourceManager;
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureDimensions, TextureWrapping};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureType, TextureWrapping};
 
 // Some volumetric shit
 #[derive(Default)]
@@ -52,14 +52,14 @@ impl Volumetric {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
         self.sdf_tex = Texture::new()
-            .set_dimensions(TextureDimensions::D3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
+            .set_dimensions(TextureType::Texture3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
             .set_wrapping_mode(TextureWrapping::Repeat)
             .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
             .generate_texture(Vec::new())
             .unwrap();
         // This texture is going to be rescaled if the window resolution changes
         self.result_tex = Texture::new()
-            .set_dimensions(TextureDimensions::D2D(
+            .set_dimensions(TextureType::Texture2D(
                 resolution.x / self.scale_down_factor_result,
                 resolution.y / self.scale_down_factor_result,
             ))
@@ -70,7 +70,7 @@ impl Volumetric {
             .unwrap();
         // Depth texture
         self.depth_tex = Texture::new()
-            .set_dimensions(TextureDimensions::D2D(
+            .set_dimensions(TextureType::Texture2D(
                 resolution.x / self.scale_down_factor_result,
                 resolution.y / self.scale_down_factor_result,
             ))
@@ -82,11 +82,11 @@ impl Volumetric {
     }
     // When the screen resolution changes
     pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>) {
-        self.result_tex.update_size(TextureDimensions::D2D(
+        self.result_tex.update_size(TextureType::Texture2D(
             resolution.x / self.scale_down_factor_result,
             resolution.y / self.scale_down_factor_result,
         ));
-        self.depth_tex.update_size(TextureDimensions::D2D(
+        self.depth_tex.update_size(TextureType::Texture2D(
             resolution.x / self.scale_down_factor_result,
             resolution.y / self.scale_down_factor_result,
         ));

@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureDimensions, Volumetric};
+use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, Volumetric};
 use resources::LoadableResource;
 use std::ptr::null;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -73,7 +73,7 @@ impl CustomData {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            let dims = TextureDimensions::D2D(dimensions.x, dimensions.y);
+            let dims = TextureType::Texture2D(dimensions.x, dimensions.y);
             // Create the diffuse render texture
             self.diffuse_texture = Texture::new()
                 .set_dimensions(dims)

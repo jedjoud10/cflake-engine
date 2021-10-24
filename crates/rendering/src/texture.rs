@@ -49,19 +49,12 @@ impl Default for TextureWrapping {
     }
 }
 
-// Texture dimension type
-#[derive(Debug, Clone, Copy)]
-pub enum TextureDimensions {
-    D2D(u16, u16),
-    D3D(u16, u16, u16),
-}
-
 // Texture type
 #[derive(Debug, Clone, Copy)]
 pub enum TextureType {
-    Texture2D,
-    Texture3D,
-    TextureArray,
+    Texture2D(u16, u16),
+    Texture3D(u16, u16, u16),
+    TextureArray(u16, u16, u16),
 }
 
 // Custom internal format
@@ -87,7 +80,6 @@ pub struct Texture {
     pub flags: TextureFlags,
     pub filter: TextureFilter,
     pub wrap_mode: TextureWrapping,
-    pub dimensions: TextureDimensions,
     pub ttype: TextureType,
 }
 
@@ -101,9 +93,8 @@ impl Default for Texture {
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::empty(),
             filter: TextureFilter::default(),
-            dimensions: TextureDimensions::D2D(0, 0),
             wrap_mode: TextureWrapping::default(),
-            ttype: TextureType::Texture2D,
+            ttype: TextureType::Texture2D(0, 0),
         }
     }
 }
@@ -116,7 +107,7 @@ impl LoadableResource for Texture {
             Resource::Texture(texture, texture_name) => {
                 // Load either a 2D texture or a custom 3D texture
                 match self.ttype {
-                    TextureType::Texture2D => {
+                    TextureType::Texture2D(_, _) => {
                         let width = texture.width;
                         let height = texture.height;
 
@@ -130,15 +121,15 @@ impl LoadableResource for Texture {
                         let rgba8_image = decoded.to_rgba8();
 
                         // Set the proper dimensions and generate the texture from the resource's bytes
-                        let mut texture = self.set_dimensions(TextureDimensions::D2D(width, height));
+                        let mut texture = self.set_dimensions(TextureType::Texture2D(width, height));
                         // Set the texture name since the texture has an empty name
                         texture.name = texture_name.clone();
                         let new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec()).unwrap();
                         texture = new_texture;
                         Some(texture)
                     }
-                    TextureType::Texture3D => todo!(),
-                    TextureType::TextureArray => todo!(),
+                    TextureType::Texture3D(_, _, _) => todo!(),
+                    TextureType::TextureArray(_, _, _) => todo!(),
                 }
             }
             _ => None,
@@ -203,8 +194,8 @@ impl Texture {
         self
     }
     // Set the height and width of the soon to be generated texture
-    pub fn set_dimensions(mut self, dimensions: TextureDimensions) -> Self {
-        self.dimensions = dimensions;
+    pub fn set_dimensions(mut self, ttype: TextureType) -> Self {
+        self.ttype = ttype;
         self
     }
     // Set the texture type
@@ -213,24 +204,14 @@ impl Texture {
         self
     }
     // Update the size of the current texture
-    pub fn update_size(&mut self, dimensions: TextureDimensions) {
+    pub fn update_size(&mut self, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one
-        let valid = match self.dimensions {
-            TextureDimensions::D2D(_, _) => match dimensions {
-                TextureDimensions::D2D(_, _) => true,
-                TextureDimensions::D3D(_, _, _) => false,
-            },
-            TextureDimensions::D3D(_, _, _) => match dimensions {
-                TextureDimensions::D2D(_, _) => false,
-                TextureDimensions::D3D(_, _, _) => true,
-            },
-        };
-        if !valid { /* Oopsie woopsie, we did a little fucky wuckie, a little fucko boingo. The code monkey (Me) is working VEWWY hard to fix this >.<!! */ }
-        self.dimensions = dimensions;
+        if false { /* Oopsie woopsie, we did a little fucky wuckie, a little fucko boingo. The code monkey (Me) is working VEWWY hard to fix this >.<!! */ }
+        self.ttype = ttype;
         // This is a normal texture getting resized
         unsafe {
-            match self.dimensions {
-                TextureDimensions::D2D(width, height) => {
+            match self.ttype {
+                TextureType::Texture2D(width, height) => {
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::TexImage2D(
                         gl::TEXTURE_2D,
@@ -244,7 +225,7 @@ impl Texture {
                         null(),
                     );
                 }
-                TextureDimensions::D3D(width, height, depth) => {
+                TextureType::Texture3D(width, height, depth) => {
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::TexImage3D(
                         gl::TEXTURE_3D,
@@ -259,6 +240,7 @@ impl Texture {
                         null(),
                     );
                 }
+                TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
     }
@@ -309,9 +291,9 @@ impl Texture {
 
         // Get the tex_type based on the TextureDimensionType
         let tex_type = match self.ttype {
-            TextureType::Texture2D => gl::TEXTURE_2D,
-            TextureType::Texture3D => gl::TEXTURE_3D,
-            TextureType::TextureArray => gl::TEXTURE_2D_ARRAY,
+            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
 
         if true {
@@ -321,7 +303,7 @@ impl Texture {
                 gl::BindTexture(tex_type, self.id);
                 match self.ttype {
                     // This is a 2D texture
-                    TextureType::Texture2D => {
+                    TextureType::Texture2D(_, _) => {
                         gl::TexImage2D(
                             tex_type,
                             0,
@@ -335,7 +317,7 @@ impl Texture {
                         );
                     }
                     // This is a 3D texture
-                    TextureType::Texture3D => {
+                    TextureType::Texture3D(_, _, _) => {
                         gl::TexImage3D(
                             tex_type,
                             0,
@@ -350,7 +332,7 @@ impl Texture {
                         );
                     }
                     // This is a texture array
-                    TextureType::TextureArray => {
+                    TextureType::TextureArray(_, _, _) => {
                         gl::TexStorage3D(
                             tex_type,
                             1,
@@ -447,26 +429,28 @@ impl Texture {
         U: veclib::DefaultStates,
     {
         // Get the length of the vector
-        let length: usize = match self.dimensions {
-            TextureDimensions::D2D(x, y) => (x * y) as usize,
-            TextureDimensions::D3D(x, y, z) => (x * y * z) as usize,
+        let length: usize = match self.ttype {
+            TextureType::Texture2D(x, y) => (x * y) as usize,
+            TextureType::Texture3D(x, y, z) => (x * y * z) as usize,
+            TextureType::TextureArray(_, _, _) => todo!(),
         };
         // Create the vector
         let mut pixels: Vec<V> = vec![V::default(); length];
 
         // Actually read the pixels
         unsafe {
-            match self.dimensions {
-                TextureDimensions::D2D(_, _) => {
+            match self.ttype {
+                TextureType::Texture2D(_, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                }
-                TextureDimensions::D3D(_, _, _) => {
+                },
+                TextureType::Texture3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                }
+                },
+                TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
         return pixels;
@@ -477,49 +461,54 @@ impl Texture {
         U: Clone + Default,
     {
         // Get the length of the vector
-        let length: usize = match self.dimensions {
-            TextureDimensions::D2D(x, y) => (x * y) as usize,
-            TextureDimensions::D3D(x, y, z) => (x * y * z) as usize,
+        let length: usize = match self.ttype {
+            TextureType::Texture2D(x, y) => (x * y) as usize,
+            TextureType::Texture3D(x, y, z) => (x * y * z) as usize,
+            TextureType::TextureArray(_, _, _) => todo!(),
         };
         // Create the vector
         let mut pixels: Vec<U> = vec![U::default(); length];
 
         // Actually read the pixels
         unsafe {
-            match self.dimensions {
-                TextureDimensions::D2D(_, _) => {
+            match self.ttype {
+                TextureType::Texture2D(_, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                }
-                TextureDimensions::D3D(_, _, _) => {
+                },
+                TextureType::Texture3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                }
+                },
+                TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
         return pixels;
     }
     // Get the width of this texture
     pub fn get_width(&self) -> u16 {
-        match self.dimensions {
-            TextureDimensions::D2D(x, _) => x,
-            TextureDimensions::D3D(x, _, _) => x,
+        match self.ttype {
+            TextureType::Texture2D(x, _) => x,
+            TextureType::Texture3D(x, _, _) => x,
+            TextureType::TextureArray(x, _, _) => x,
         }
     }
     // Get the height of this texture
     pub fn get_height(&self) -> u16 {
-        match self.dimensions {
-            TextureDimensions::D2D(_, y) => y,
-            TextureDimensions::D3D(_, y, _) => y,
+        match self.ttype {
+            TextureType::Texture2D(_, y) => y,
+            TextureType::Texture3D(_, y, _) => y,
+            TextureType::TextureArray(_, y, _) => y,
         }
     }
     // Get the depth of this texture, if it is a 3D texture
     pub fn get_depth(&self) -> u16 {
-        match self.dimensions {
-            TextureDimensions::D2D(_, _) => panic!(),
-            TextureDimensions::D3D(_, _, z) => z,
+        match self.ttype {
+            TextureType::Texture2D(_, _) => todo!(),
+            TextureType::Texture3D(_, _, z) => z,
+            TextureType::TextureArray(_, _, z) => z,
         }
     }
 }

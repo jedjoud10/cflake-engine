@@ -74,7 +74,7 @@ impl World {
         // Load the default objects for the CacheManagers
         // Create the black texture
         Texture::new()
-            .set_dimensions(TextureDimensions::D2D(1, 1))
+            .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -84,7 +84,7 @@ impl World {
             .cache_texture(&mut self.texture_cacher);
         // Create the white texture
         Texture::new()
-            .set_dimensions(TextureDimensions::D2D(1, 1))
+            .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -94,7 +94,7 @@ impl World {
             .cache_texture(&mut self.texture_cacher);
         // Create the default normals texture
         Texture::new()
-            .set_dimensions(TextureDimensions::D2D(1, 1))
+            .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
@@ -426,7 +426,7 @@ impl World {
                 .get_custom_system_data_mut::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            let dims = TextureDimensions::D2D(size.0, size.1);
+            let dims = TextureType::Texture2D(size.0, size.1);
             render_system.diffuse_texture.update_size(dims);
             render_system.depth_texture.update_size(dims);
             render_system.normals_texture.update_size(dims);

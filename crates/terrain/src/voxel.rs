@@ -2,7 +2,7 @@ use crate::ISOLINE;
 
 use super::CHUNK_SIZE;
 use others::CacheManager;
-use rendering::{Shader, Texture, TextureDimensions, TextureFilter};
+use rendering::{Shader, Texture, TextureFilter, TextureType};
 use veclib::Swizzable;
 
 // Casually stole my old code lol
@@ -50,20 +50,20 @@ impl VoxelGenerator {
     pub fn setup_voxel_generator(&mut self) {
         // Create the voxel texture
         self.voxel_texture = Texture::new()
-            .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
+            .set_dimensions(TextureType::Texture3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::R16, gl::RED, gl::UNSIGNED_SHORT)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
         self.material_texture = Texture::new()
-            .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
+            .set_dimensions(TextureType::Texture3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
         self.color_texture = Texture::new()
-            .set_dimensions(TextureDimensions::D3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
+            .set_dimensions(TextureType::Texture3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
