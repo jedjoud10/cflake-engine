@@ -109,7 +109,7 @@ pub fn world_initialized(world: &mut World) {
         .unwrap()
         .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.1))
         .load_default_textures(data.texture_cacher);
-    let bound_materials = vec![Some(material.instantiate(data.instance_manager))];
+    let bound_materials = vec![Some(material.instantiate(data.instance_manager)), Some(material.instantiate(data.instance_manager).set_visible(false))];
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,

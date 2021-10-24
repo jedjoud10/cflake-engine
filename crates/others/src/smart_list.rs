@@ -45,7 +45,8 @@ impl<T> SmartList<T> {
     // Remove an element from this SmartList
     pub fn remove_element(&mut self, element_id: usize) -> Option<T> {
         // Remove the element
-        let element = std::mem::replace(&mut self.elements[element_id], None);
+        self.elements.push(None);
+        let element = self.elements.swap_remove(element_id);
         return element;
     }
     // Get a mutable reference to a stored element
@@ -65,6 +66,15 @@ impl<T> SmartList<T> {
         } else {
             return None;
         }
+    }
+    // Get all the valid elements
+    pub fn get_valids(&self) -> Vec<&T> {
+        let x: Vec<&T> = self.elements.iter().filter_map(|x| x.as_ref()).collect();
+        return x;
+    }
+    // Remove all the elements
+    pub fn remove_all(&mut self) {
+        self.elements.clear();
     }
     // Count how many valid elements we have inside the smart list
     pub fn count_valid(&self) -> usize {
