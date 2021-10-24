@@ -233,8 +233,8 @@ impl CustomData {
         model_matrix: &veclib::Matrix4x4<f32>,
     ) {
         // Loop the sub models and use them to make a sub renderer and render that separately
-        for (i, sub_model) in mm_renderer.sub_models.iter().enumerate() {
-            let material = mm_renderer.materials.get(i).unwrap();
+        for (i, (sub_model, material_id)) in mm_renderer.sub_models.iter().enumerate() {
+            let material = mm_renderer.materials.get(*material_id).unwrap_or(mm_renderer.materials.get(0).unwrap());
             let gpu_data = mm_renderer.sub_models_gpu_data.get(i).unwrap();            
             if wireframe {
                 self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, data, projection_matrix, view_matrix, model_matrix);

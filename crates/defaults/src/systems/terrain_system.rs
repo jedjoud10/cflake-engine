@@ -12,7 +12,7 @@ use world_data::WorldData;
 pub struct CustomData {
     pub lod_factor: f32,
     pub nodes: Vec<OctreeNode>,
-    pub terrain_gen: bool,
+    pub terrain_gen: bool,    
 }
 crate::impl_custom_system_data!(CustomData);
 
@@ -42,8 +42,8 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
 
     // Get the terrain data
     let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
+    let bound_materials = td.bound_materials.clone();
     let octree_size = td.octree.internal_octree.size;
-    let clone_material = td.material.clone();
 
     // Generate the octree each frame and generate / delete the chunks
     if data.debug.console.listen_command("toggle-terrain-gen").is_some() {
@@ -86,7 +86,6 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         .chunk_manager
         .update(&td.voxel_generator, &mut data.shader_cacher.1, data.time_manager.frame_count);
     let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
-    let depth = td.octree.internal_octree.depth as f32;
 
     // Add the entities to the entity manager
     for (coords, tmodel) in added_chunks {
@@ -110,18 +109,14 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             )
             .unwrap();
         // Multi Material Renderer
-        let mut mm_renderer = MultiMaterialRenderer::default();
-        let materials = [clone_material.clone(), clone_material.clone().load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(TextureLoadOptions {
-            filter: TextureFilter::Nearest,
-            ..TextureLoadOptions::default()
-        }), data.texture_cacher, data.resource_manager), clone_material.clone()];
+        let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bound_materials.clone());
         // Add the sub models into the Multi Material renderer
         for (material_id, sub_model) in tmodel.shader_model_hashmap {
-            mm_renderer = mm_renderer.add_submodel(sub_model, Some(materials.get(material_id as usize).unwrap().clone()));            
+            mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);            
         }
         for (material_id, skirt_model) in tmodel.skirt_models {
             // Don't forget the skirts
-            mm_renderer = mm_renderer.add_submodel(skirt_model, Some(materials.get(material_id as usize).unwrap().clone()));
+            mm_renderer = mm_renderer.add_submodel_m(skirt_model, material_id as usize);
         }
         // Refresh the data
         mm_renderer.refresh_sub_models();

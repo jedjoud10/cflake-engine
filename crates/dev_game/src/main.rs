@@ -107,13 +107,13 @@ pub fn world_initialized(world: &mut World) {
             data.resource_manager,
         )
         .unwrap()
-        .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.01))
+        .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.1))
         .load_default_textures(data.texture_cacher);
-    let material_inst = material.instantiate(data.instance_manager);
+    let bound_materials = vec![Some(material.instantiate(data.instance_manager))];
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,
-            components::TerrainData::new(material_inst, compute_id, color_compute_id, OCTREE_DEPTH),
+            components::TerrainData::new(compute_id, color_compute_id, OCTREE_DEPTH, bound_materials),
         )
         .unwrap();
 

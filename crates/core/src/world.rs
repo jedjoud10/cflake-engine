@@ -118,9 +118,14 @@ impl World {
             .set_position(veclib::Vector2::Y * 40.0)
             .set_text("entity_text_here", 40.0);
         root.add_element(text_element_2);
-        let text_element_3 = ui::Element::new()
+        let text_element_2 = ui::Element::new()
             .set_coordinate_system(ui::CoordinateType::Pixel)
             .set_position(veclib::Vector2::Y * 40.0 * 2.0)
+            .set_text("entity_text_here", 40.0);
+        root.add_element(text_element_2);
+        let text_element_3 = ui::Element::new()
+            .set_coordinate_system(ui::CoordinateType::Pixel)
+            .set_position(veclib::Vector2::Y * 40.0 * 3.0)
             .set_text("component_text_here", 40.0);
         root.add_element(text_element_3);
 
@@ -209,8 +214,10 @@ impl World {
         root.get_element_mut(1).update_text(fps_text, 40.0);
         let entity_text = &format!("#Entities: {}", self.entity_manager.entities.count_valid());
         root.get_element_mut(2).update_text(entity_text, 40.0);
+        let entity_text = &format!("#Invalid Entities: {}", self.entity_manager.entities.count_invalid());
+        root.get_element_mut(3).update_text(entity_text, 40.0);
         let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.count_valid());
-        root.get_element_mut(3).update_text(component_text, 40.0);
+        root.get_element_mut(4).update_text(component_text, 40.0);
 
         // Just in case
         errors::ErrorCatcher::catch_opengl_errors().unwrap();

@@ -139,14 +139,6 @@ impl ChunkManager {
                         let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
                         let chunk_data = ChunkData { coords: coords, voxels: voxels };
                         final_chunk = Some((chunk_data, model));
-                        // TODO: Why the fuck is this happening bro
-                        /*
-                        if max_index <= (model.vertices.len() as u32) {
-                            // Save the chunk's data, though don't save the mode
-                            let chunk_data = ChunkData { coords: coords, voxels: voxels };
-                            final_chunk = Some((chunk_data, model));
-                        }
-                        */
                     }
                 } else {
                     // The voxels didn't start generation yet, so start it

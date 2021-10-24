@@ -9,6 +9,7 @@ use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::ptr::null;
+use std::time::Instant;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
 const AVERAGE_DENSITY_THRESHOLD: u16 = 32767;
@@ -22,6 +23,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
     let mut sub_model_hashmap: HashMap<u8, (Model, Vec<SkirtVertex>)> = HashMap::new();
+    let instant = Instant::now();
     // Calculate the density threshold for the skirts
     let density_threshold = AVERAGE_DENSITY_THRESHOLD;
     // Loop over every voxel
@@ -276,6 +278,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
         }
     }   
     let new_model_hashmap = sub_model_hashmap.into_iter().map(|(shader_id, (model, _))| (shader_id, model)).collect::<HashMap<u8, Model>>();
+    println!("Elapsed ms: {}", instant.elapsed().as_millis());
     // Return the model
     return TModel {
         shader_model_hashmap: new_model_hashmap,
