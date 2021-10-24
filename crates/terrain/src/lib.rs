@@ -3,7 +3,7 @@ pub const MAIN_CHUNK_SIZE: usize = 32;
 // How many voxels in one axis in each chunk?
 pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 // The default LOD factor
-pub const DEFAULT_LOD_FACTOR: f32 = 1.8;
+pub const DEFAULT_LOD_FACTOR: f32 = 2.0;
 // The isoline
 pub const ISOLINE: u16 = 32767;
 // Export

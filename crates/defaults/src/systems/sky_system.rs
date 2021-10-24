@@ -43,19 +43,13 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
     sky.link_component::<components::Transform>(
         data.component_manager,
         components::Transform {
-            scale: veclib::Vector3::ONE * 1900.0,
+            scale: veclib::Vector3::ONE * 3900.0,
             ..components::Transform::default()
         },
     )
     .unwrap();
 
-    sky.link_component::<components::Sky>(
-        &mut data.component_manager,
-        components::Sky {
-            sky_gradient_texture_id: cached_texture_id,
-        },
-    )
-    .unwrap();
+    sky.link_default_component::<components::Sky>(data.component_manager).unwrap();
     // Add entity
     data.custom_data.sky_entity_id = sky.entity_id;
     data.entity_manager.add_entity_s(sky);

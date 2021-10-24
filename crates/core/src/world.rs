@@ -419,14 +419,12 @@ impl World {
                 .get_custom_system_data_mut::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
                 .unwrap();
             // Update the size of each texture that is bound to the framebuffer
-            let dims = TextureDimensions::D2D(size.0, size.1);
-            /*
+            let dims = TextureDimensions::D2D(size.0, size.1);            
             render_system.diffuse_texture.update_size(dims);
             render_system.depth_texture.update_size(dims);
             render_system.normals_texture.update_size(dims);
             render_system.position_texture.update_size(dims);
-            render_system.emissive_texture.update_size(dims);
-            */
+            render_system.emissive_texture.update_size(dims);            
 
             //TODO: This
             render_system

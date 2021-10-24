@@ -177,7 +177,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             true,
                         );
                     }
-                    // TODO: Fix the bug where this crashes when the density value doesn't have a decimal
                     // Skirts for the Y axis
                     if y == 0 {
                         solve_marching_squares(
@@ -361,9 +360,11 @@ pub fn solve_marching_squares(
                         veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(v1 - v0, 0.0, v3 - v0).normalized(),
                         veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(v3 - v0, v1 - v0, 0.0).normalized(),
                     };
-
+                    // Get the vertex color
+                    let color: veclib::Vector3<f32> = (local_voxels[0].color + local_voxels[1].color + local_voxels[2].color + local_voxels[3].color).into();
+                    let color = color / 255.0 / 4.0;
                     // Add it
-                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal, veclib::Vector3::ONE));
+                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal, (color).into()));
                 }
             }
         }
