@@ -124,7 +124,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         added_chunk_entities_ids.push((entity_id, coords.clone()));
     }
 
-    // Reassign
+    // Reassign    
     let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
     for (entity_id, coords) in added_chunk_entities_ids {
         td.chunk_manager.add_chunk_entity(&coords, entity_id);
@@ -145,7 +145,6 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
         if node.children_indices.is_some() {
             data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
-        } else {
         }
     }
 }

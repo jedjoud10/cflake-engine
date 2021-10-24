@@ -127,14 +127,14 @@ impl ChunkManager {
                     // Since we just generated the chunk we can remove it from the generated chunks
                     self.chunks_to_generate.remove(0);
 
-                    // If we don't have a surface, no need to create a model for this chunk
+                    // If we don't have a surface, no need to create a model for this chunk                    
                     if has_surface {
                         // We have a surface, create the model
                         let coords = chunk_coords.clone();
                         let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
                         let chunk_data = ChunkData { coords: coords, voxels: voxels };
                         final_chunk = Some((chunk_data, model));
-                    }
+                    }                    
                 } else {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;
