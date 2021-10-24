@@ -24,7 +24,7 @@ void main() {
     vec4 mvp = texture(material_sampler, local_uv).rgba; 
     ColorVoxel color_voxel = ColorVoxel(vec3(0, 0, 0));
     get_color_voxel(pos, local_uv, voxel, MaterialVoxel(int(mvp.x * 255), int(mvp.y * 255), int(mvp.z * 255)), color_voxel);
-    vec4 pixel = vec4(color_voxel.color, 0.0);           
+    vec4 pixel = vec4(color_voxel.color, 0.0);     
     // Write the pixel
     imageStore(color_image, pixel_coords, pixel);
 }
