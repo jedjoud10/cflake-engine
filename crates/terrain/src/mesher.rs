@@ -248,8 +248,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
         }
     }
     // The skirts' models
-    let mut skirt_model: Model = Model::default();
+    let mut skirt_models: HashMap<u8, Model> = HashMap::new();
     for (shader_id, (model, shared_vertices)) in sub_model_hashmap.iter() {
+        // Make sure the skirts model exists
+        skirt_models.entry(*shader_id).or_default();
+        let skirt_model = skirt_models.get_mut(shader_id).unwrap();
         // Turn the shared vertices into triangle indices
         for shared_vertex in shared_vertices {
             match shared_vertex {
@@ -276,7 +279,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     // Return the model
     return TModel {
         shader_model_hashmap: new_model_hashmap,
-        skirt_model: skirt_model,
+        skirt_models: skirt_models,
     };
 }
 
@@ -377,7 +380,7 @@ pub fn solve_marching_squares(
                     let color: veclib::Vector3<f32> = (local_voxels[0].color + local_voxels[1].color + local_voxels[2].color + local_voxels[3].color).into();
                     let color = color / 255.0 / 4.0;
                     // Add it
-                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal, (color).into()));
+                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal, (veclib::Vector3::<f32>::ONE).into()));
                 }
             }
         }

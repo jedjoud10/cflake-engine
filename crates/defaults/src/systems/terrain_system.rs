@@ -110,20 +110,17 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             )
             .unwrap();
         // Multi Material Renderer
-        let material = clone_material.clone();
         let mut mm_renderer = MultiMaterialRenderer::default();
+        let materials = [clone_material.clone(), clone_material.clone(), clone_material.clone()];
         // Add the sub models into the Multi Material renderer
         for (material_id, sub_model) in tmodel.shader_model_hashmap {
-            let mut m: Material = material.clone();
-            if material_id == 1 {
-                m = m.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::X));
-            } else if material_id == 2 {
-                m =  m.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::Y));
-            }
-            mm_renderer = mm_renderer.add_submodel(sub_model, Some(m));
+            mm_renderer = mm_renderer.add_submodel(sub_model, Some(materials.get(material_id as usize).unwrap().clone()));            
         }
-        // Don't forget to add the skirts
-        mm_renderer = mm_renderer.add_submodel(tmodel.skirt_model, Some(material.clone()));
+        for (material_id, skirt_model) in tmodel.skirt_models {
+            // Don't forget the skirts
+            mm_renderer = mm_renderer.add_submodel(skirt_model, Some(materials.get(material_id as usize).unwrap().clone()));
+        }
+        // Refresh the data
         mm_renderer.refresh_sub_models();
         let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
         entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
