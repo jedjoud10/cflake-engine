@@ -54,6 +54,7 @@ impl Default for TextureWrapping {
 pub enum TextureDimensions {
     D2D(u16, u16),
     D3D(u16, u16, u16),
+    TextureArray(u16, u16, u16),
 }
 
 // Custom internal format
@@ -128,6 +129,7 @@ impl LoadableResource for Texture {
                         Some(texture)
                     }
                     TextureDimensions::D3D(_, _, _) => todo!(),
+                    TextureDimensions::TextureArray(_, _, _) => todo!(),
                 }
             }
             _ => None,

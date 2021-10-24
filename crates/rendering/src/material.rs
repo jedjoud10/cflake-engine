@@ -23,6 +23,8 @@ pub struct Material {
     // The default texture ID
     pub diffuse_tex_id: Option<usize>,
     pub normal_tex_id: Option<usize>,    
+    // Some texture array that we might need in case of a multi texture material
+    pub texture_arr: Option<usize>,
     // Is this material even visible?
     pub visible: bool
 }

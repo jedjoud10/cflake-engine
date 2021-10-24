@@ -25,13 +25,29 @@ pub trait LoadableResource {
     fn from_resource(self, resource: &Resource) -> Option<Self>
     where
         Self: Sized;
-    // Load this resource directly from a path, this is implemented by default
+    // Turn mutliple resource into the current struct
+    fn from_resource_shared(self, resources: Vec<&Resource>) -> Option<Self>
+    where
+        Self: Sized;
+    // Load this resource directly from a path
     fn from_path(self, local_path: &str, resource_manager: &mut ResourceManager) -> Option<Self>
     where
         Self: Sized,
     {
         let resource = resource_manager.load_packed_resource(local_path).ok()?;
         return Self::from_resource(self, resource);
+    }
+    // Load this resource directly from multiple paths
+    fn from_paths(self, local_paths: Vec<&str>, resource_manager: &mut ResourceManager) -> Option<Self>
+        where
+        Self: Sized,
+    {
+        let mut resources: Vec<&Resource> = Vec::new();
+        for local_path in local_paths.iter() {
+            let resource = unsafe { resource_manager.load_packed_resource(local_path).as_ref().ok()? };
+            resources.push(resource);
+        }
+        return Self::from_resource_shared(self, resources);
     }
 }
 
