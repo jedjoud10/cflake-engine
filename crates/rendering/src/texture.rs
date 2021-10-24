@@ -259,7 +259,7 @@ impl Texture {
         self
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
-    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Option<Self> {
+    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, errors::RenderingError> {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
@@ -308,7 +308,7 @@ impl Texture {
                         );
                     }
                 }
-                errors::ErrorCatcher::catch_opengl_errors()?;
+                errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed texture creation!"))?;
                 // Set the texture parameters for a normal texture
                 match self.filter {
                     TextureFilter::Linear => {
@@ -322,7 +322,7 @@ impl Texture {
                         gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                     }
                 }
-                errors::ErrorCatcher::catch_opengl_errors()?;
+                errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture filter!"))?;
             }
 
             // The texture is already bound to the TEXTURE_2D
@@ -343,7 +343,7 @@ impl Texture {
                             gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                         }
                     }
-                    errors::ErrorCatcher::catch_opengl_errors()?;
+                    errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture mipmap filter!"))?;
                 }
             }
         } else {
@@ -370,9 +370,9 @@ impl Texture {
             // Now set the actual wrapping mode in the opengl texture
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
-            errors::ErrorCatcher::catch_opengl_errors()?;
+            errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture wrapping mode!"))?;;
         }
-        Some(self)
+        Ok(self)
     }
     // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
     pub fn fill_array_veclib<V, U>(&self) -> Vec<V>

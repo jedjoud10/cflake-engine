@@ -281,8 +281,20 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
+    let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
 
-    // Check for OpenGL default features
+    // Set the default uniforms
+    shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
+    shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
+    shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
+    shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
+    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);    
+
+    // Volumetric parameters
+    shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
+    shader.set_t2d("volumetric_depth_texture", &system.volumetric.depth_tex, gl::TEXTURE7);
+    shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
+
 
     // Load the default shader
     let default_shader_name = Shader::new(
@@ -359,35 +371,11 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
     shader.use_shader();
     
-    shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
-    shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
-    shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
-    shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
-    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
-    // Sky params
     shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 0.0));
-    let sky_component = data
-        .entity_manager
-        .get_entity(data.custom_data.sky_entity_id)
-        .unwrap()
-        .get_component::<components::Sky>(data.component_manager)
-        .unwrap();
-
-    // Set the sky gradient
-    shader.set_t2d(
-        "default_sky_gradient",
-        data.texture_cacher.id_get_object(sky_component.sky_gradient_texture_id).unwrap(),
-        gl::TEXTURE5,
-    );
-
-    // Volumetric parameters
-    shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
-    shader.set_t2d("volumetric_depth_texture", &system.volumetric.depth_tex, gl::TEXTURE7);
-    shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
-
+    
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
@@ -400,12 +388,21 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
 }
-fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+fn entity_added(system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     // Make sure we create the OpenGL data for this entity's model
     rc.refresh_model();
     let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
     transform.update_matrix();
+
+    // If this is the sky entity, update the binded sky texture
+    // Set the sky gradient
+    let shader = data.shader_cacher.1.get_object(&system_data.cast::<CustomData>().unwrap().quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
+    shader.set_t2d(
+        "default_sky_gradient",
+        data.texture_cacher.id_get_object(data.custom_data.sky_texture).unwrap(),
+        gl::TEXTURE5,
+    );
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();

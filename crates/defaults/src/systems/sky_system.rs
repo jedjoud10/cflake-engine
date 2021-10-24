@@ -26,7 +26,7 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
         .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
         .unwrap()
         .1;
-
+    data.custom_data.sky_texture = cached_texture_id;
     // Load model
     let mut model = Model::new().from_path("defaults\\models\\sphere.mdl3d", data.resource_manager).unwrap();
     model.flip_triangles();
