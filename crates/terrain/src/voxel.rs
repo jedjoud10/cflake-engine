@@ -126,8 +126,8 @@ impl VoxelGenerator {
             data[i] = Voxel {
                 density: density,
                 color: color_pixels[i].get3([0, 1, 2]),
-                biome_id: material.x,
-                material_id: material.y,
+                material_id: material.x,
+                biome_id: material.y,
                 hardness: material.z,
                 texture_id: material.w
             };

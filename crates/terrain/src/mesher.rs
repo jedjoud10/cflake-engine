@@ -1,8 +1,10 @@
 use crate::ISOLINE;
+use crate::TModel;
 
 use super::tables::*;
 use super::Voxel;
 use super::CHUNK_SIZE;
+use rendering::Material;
 use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -17,12 +19,11 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> (Model, u32) {
-    let mut model: Model = Model::default();
+pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> TModel {
     let mut skirts_model: Model = Model::default();
-    let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
+    let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
     let mut shared_vertices: Vec<SkirtVertex> = Vec::new();
-    let mut max_index: u32 = 0;
+    let mut sub_model_hashmap: HashMap<u8, Model> = HashMap::new();
     // Calculate the density threshold for the skirts
     let density_threshold = AVERAGE_DENSITY_THRESHOLD;
     // Loop over every voxel
@@ -32,6 +33,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
+                let mc_material_id = voxels[i + DATA_OFFSET_TABLE[0]].material_id;
+
+                // Make sure we have the default submodel/material for this material ID
+                sub_model_hashmap.entry(mc_material_id).or_insert(Model::default());
+                let model = sub_model_hashmap.get_mut(&mc_material_id).unwrap();
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
@@ -95,10 +101,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         // Get the color
                         let color: veclib::Vector3<f32> = { veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value) } / 255.0;
 
-                        let edge_tuple: (u32, u32, u32) = (
+                        let edge_tuple: (u32, u32, u32, u8) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
                             2 * y as u32 + vert1.y as u32 + vert2.y as u32,
                             2 * z as u32 + vert1.z as u32 + vert2.z as u32,
+                            mc_material_id
                         );
 
                         // Check if this vertex was already added
@@ -116,11 +123,9 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
                         }
 
-                        // Get the max index
-                        max_index = max_index.max(*model.triangles.last().unwrap());
-
                         // For the X axis
                         if skirts {
+                            /*
                             if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
                                 local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = edge_tuple;
                             }
@@ -141,6 +146,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
                                 local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = edge_tuple;
                             }
+                            */
                         }
                     }
                 }
@@ -244,7 +250,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
             }
         }
     }
-
+    /*
     // Turn the shared vertices into triangle indices
     for shared_vertex in shared_vertices {
         match shared_vertex {
@@ -263,8 +269,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
         }
     }
     model = model.combine_smart(&skirts_model);
+    */
     // Return the model
-    return (model, max_index);
+    return (TModel {
+        material_model_hashmap: sub_model_hashmap,
+    });
 }
 
 // The type of skirt vertex, normal or shared

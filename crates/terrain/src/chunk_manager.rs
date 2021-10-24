@@ -9,7 +9,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rendering::{Model, Shader, Texture};
 use world_data::WorldData;
 
-use crate::CHUNK_SIZE;
+use crate::{CHUNK_SIZE, TModel};
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
@@ -41,7 +41,7 @@ impl ChunkManager {
         // Only update the octree if we don't have entities to remove and we don't have chunks to generate
         let entities_to_remove = self.entities_to_remove.len();
         let chunks_to_generate = self.chunks_to_generate.len();
-        return (entities_to_remove == 0 && chunks_to_generate == 0);
+        return entities_to_remove == 0 && chunks_to_generate == 0;
     }
     // Add a chunk
     pub fn add_chunk(&mut self, coords: ChunkCoords) {
@@ -83,7 +83,7 @@ impl ChunkManager {
         voxel_generator: &VoxelGenerator,
         shader_cacher: &mut CacheManager<Shader>,
         frame_count: u64,
-    ) -> (Vec<(ChunkCoords, Model)>, Vec<usize>) {
+    ) -> (Vec<(ChunkCoords, TModel)>, Vec<usize>) {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating
@@ -111,10 +111,10 @@ impl ChunkManager {
             );
         }
         // Generate the data for some chunks, then create their model
-        let mut new_chunks: Vec<(ChunkCoords, Model)> = Vec::new();
+        let mut new_chunks: Vec<(ChunkCoords, TModel)> = Vec::new();
 
         // This chunk will always have a valid model and chunk data
-        let mut final_chunk: Option<(ChunkData, Model)> = None;
+        let mut final_chunk: Option<(ChunkData, TModel)> = None;
         match self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0) {
             Some(coord) => {
                 // Get the chunk coords
@@ -136,13 +136,17 @@ impl ChunkManager {
                     if has_surface {
                         // We have a surface, create the model
                         let coords = chunk_coords.clone();
-                        let (model, max_index) = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
+                        let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, false);
+                        let chunk_data = ChunkData { coords: coords, voxels: voxels };
+                        final_chunk = Some((chunk_data, model));
                         // TODO: Why the fuck is this happening bro
+                        /*
                         if max_index <= (model.vertices.len() as u32) {
                             // Save the chunk's data, though don't save the mode
                             let chunk_data = ChunkData { coords: coords, voxels: voxels };
                             final_chunk = Some((chunk_data, model));
                         }
+                        */
                     }
                 } else {
                     // The voxels didn't start generation yet, so start it
@@ -160,7 +164,7 @@ impl ChunkManager {
         match final_chunk {
             Some((data, model)) => {
                 self.chunks.insert(data.coords.center.clone());
-                new_chunks.push((data.coords, model.clone()));
+                new_chunks.push((data.coords, model));
             }
             None => {}
         }

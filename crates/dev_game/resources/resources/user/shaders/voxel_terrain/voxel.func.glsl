@@ -21,10 +21,17 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     
     int biome_id = snoise(pos * 0.001 * vec3(1, 0, 1)) > 0 ? 1 : 0;
     int material_id = 0;
+    /*
     if (biome_id == 1) {
         density = pos.y;
-        material_id = 1;
+        material_id = 0;
     } else {
+    }
+    */
+    if (snoise(pos * 0.003) > 0) {
+        material_id = 1;
+    } else if (snoise(pos * 0.003 + 352.0) > 0) {
+        material_id = 2;
     }
     int hardness = 0;
 

@@ -89,7 +89,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     let depth = td.octree.internal_octree.depth as f32;
 
     // Add the entities to the entity manager
-    for (coords, model) in added_chunks {
+    for (coords, tmodel) in added_chunks {
         // Add the entity
         let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
         let mut entity = Entity::new(name.as_str());
@@ -111,7 +111,17 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             .unwrap();
         // Multi Material Renderer
         let material = clone_material.clone();
-        let mut mm_renderer = MultiMaterialRenderer::default().add_submodel(model, Some(material));
+        let mut mm_renderer = MultiMaterialRenderer::default();
+        // Add the sub models into the Multi Material renderer
+        for (material_id, sub_model) in tmodel.material_model_hashmap {
+            let mut m: Material = material.clone();
+            if material_id == 1 {
+                m = m.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::X));
+            } else if material_id == 2 {
+                m =  m.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::Y));
+            }
+            mm_renderer = mm_renderer.add_submodel(sub_model, Some(m));
+        }
         mm_renderer.refresh_sub_models();
         let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
         entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
