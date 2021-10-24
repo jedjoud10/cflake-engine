@@ -223,6 +223,7 @@ impl CustomData {
     fn draw_multi_material(
         &self,
         mm_renderer: &MultiMaterialRenderer,
+        wireframe: bool,
         data: &WorldData,
         camera_position: veclib::Vector3<f32>,
         projection_matrix: &veclib::Matrix4x4<f32>,
@@ -233,41 +234,44 @@ impl CustomData {
         for (i, sub_model) in mm_renderer.sub_models.iter().enumerate() {
             let material = mm_renderer.materials.get(i).unwrap();
             let gpu_data = mm_renderer.sub_models_gpu_data.get(i).unwrap();            
-            self.draw_normal(material.as_ref(), &gpu_data, sub_model.triangles.len() as i32, data, camera_position, projection_matrix, view_matrix, model_matrix)
+            if wireframe {
+                self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, data, projection_matrix, view_matrix, model_matrix);
+            } else {
+                self.draw_normal(material.as_ref(), &gpu_data, sub_model.triangles.len() as i32, data, camera_position, projection_matrix, view_matrix, model_matrix);
+            }
         }
     }
     // Draw a wireframe entity
     fn draw_wireframe(
         &self,
-        renderer: &Renderer,
+        gpu_data: &ModelDataGPU,
+        indices_count: i32,
         data: &WorldData,
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
     ) {
-        if renderer.gpu_data.initialized && renderer.flags.contains(RendererFlags::WIREFRAME) {
-            let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
-            wireframe_shader.use_shader();
-            // Calculate the mvp matrix
-            let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;            
-            wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
-            wireframe_shader.set_mat44("model_matrix", model_matrix);
-            wireframe_shader.set_mat44("view_matrix", view_matrix);            
-            unsafe {
-                // Set the wireframe rendering
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-                gl::Disable(gl::CULL_FACE);
+        let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
+        wireframe_shader.use_shader();
+        // Calculate the mvp matrix
+        let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;            
+        wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
+        wireframe_shader.set_mat44("model_matrix", model_matrix);
+        wireframe_shader.set_mat44("view_matrix", view_matrix);            
+        unsafe {
+            // Set the wireframe rendering
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            gl::Disable(gl::CULL_FACE);
 
-                gl::BindVertexArray(renderer.gpu_data.vertex_array_object);
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, renderer.gpu_data.element_buffer_object);
-                gl::DrawElements(gl::TRIANGLES, renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(gpu_data.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, indices_count, gl::UNSIGNED_INT, null());
 
-                // Reset the wireframe settings
-                gl::BindTexture(gl::TEXTURE_2D, 0);
-                gl::Enable(gl::CULL_FACE);
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-            }
-        }
+            // Reset the wireframe settings
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+            gl::Enable(gl::CULL_FACE);
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+        }        
     }
 }
 
@@ -436,23 +440,23 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
 
     let model_matrix: veclib::Matrix4x4<f32> = components.get_component::<components::Transform>(data.component_manager).unwrap().matrix;
     let rc = components.get_component::<Renderer>(data.component_manager).unwrap();
-
-    // Draw the entity normally
-    if system.wireframe {
-        system.draw_wireframe(rc, data, &projection_matrix, &view_matrix, &model_matrix);
-    } else {
-        // Is this a Multi Material renderer?
-        match rc.multi_material.as_ref() {
-            Some(mm_renderer) => {
-                // This is a Multi Material renderer
-                system.draw_multi_material(mm_renderer, data, camera_position, &projection_matrix, &view_matrix, &&model_matrix);
-            },
-            None => {
+    // Should we render in wireframe?
+    let wireframe = system.wireframe && rc.flags.contains(RendererFlags::WIREFRAME);
+    match rc.multi_material.as_ref() {
+        Some(mm_renderer) => {
+            // This is a Multi Material renderer
+            system.draw_multi_material(mm_renderer, wireframe, data, camera_position, &projection_matrix, &view_matrix, &&model_matrix);
+        }
+        None => {
+            if wireframe {
+                system.draw_wireframe(&rc.gpu_data, rc.model.triangles.len() as i32, data, &projection_matrix, &view_matrix, &model_matrix);
+            } else  {
                 system.draw_normal(rc.material.as_ref(), &rc.gpu_data, rc.model.triangles.len() as i32, data, camera_position, &projection_matrix, &view_matrix, &model_matrix);
-            },
+            }
         }
     }
 }
+
 // Create the rendering system
 pub fn system(data: &mut WorldData) -> System {
     let mut system = System::new();
