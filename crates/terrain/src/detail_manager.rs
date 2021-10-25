@@ -1,0 +1,1 @@
+// Manager for detail spawning and such

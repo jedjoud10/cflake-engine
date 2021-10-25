@@ -1,3 +1,5 @@
+use crate::{LoadState, load_state};
+
 use super::{Component, ComponentID, ComponentManager};
 use errors::ECSError;
 use others::{Instance, SmartList};
@@ -72,12 +74,13 @@ impl EntityManager {
 }
 
 // A simple entity in the world
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default)]
 pub struct Entity {
     pub name: String,
     pub entity_id: usize,
     pub linked_components: HashMap<usize, usize>,
     pub c_bitfield: usize,
+    pub load_state: LoadState,
 }
 
 // ECS time bois

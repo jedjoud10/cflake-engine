@@ -9,7 +9,9 @@ pub const ISOLINE: u16 = 32767;
 // Export
 mod bound_checker;
 mod chunk_data;
+mod chunk;
 mod chunk_manager;
+mod detail_manager;
 mod density;
 pub mod mesher;
 mod model;
@@ -18,6 +20,8 @@ mod voxel;
 
 pub use bound_checker::*;
 pub use chunk_data::*;
+pub use chunk::*;
+pub use detail_manager::*;
 pub use chunk_manager::*;
 pub use model::*;
 pub use tables::*;
