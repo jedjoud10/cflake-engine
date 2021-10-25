@@ -87,6 +87,7 @@ pub enum SystemEventType {
     // Entity events
     EntityAdded(fn(&mut SystemData, &Entity, &mut WorldData)),
     EntityRemoved(fn(&mut SystemData, &Entity, &mut WorldData)),
+    EntityRemovedIncremental(fn(&mut SystemData, usize, &mut WorldData)),
     EntityUpdate(fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)),
 }
 
@@ -110,6 +111,7 @@ pub struct System {
     // Entity events
     entity_added_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
     entity_removed_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
+    entity_removed_incremental_evn: Option<fn(&mut SystemData, usize, &mut WorldData)>,
     entity_update_evn: Option<fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)>,
 }
 
@@ -162,6 +164,7 @@ impl System {
             SystemEventType::EntityAdded(x) => self.entity_added_evn = Some(x),
             SystemEventType::EntityRemoved(x) => self.entity_removed_evn = Some(x),
             SystemEventType::EntityUpdate(x) => self.entity_update_evn = Some(x),
+            SystemEventType::EntityRemovedIncremental(x) => self.entity_removed_incremental_evn = Some(x),
         };
     }
     // Add an entity to the current system
