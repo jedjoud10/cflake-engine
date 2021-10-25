@@ -89,6 +89,8 @@ pub enum SystemEventType {
     EntityRemoved(fn(&mut SystemData, &Entity, &mut WorldData)),
     EntityRemovedIncremental(fn(&mut SystemData, usize, &mut WorldData)),
     EntityUpdate(fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)),
+    // Entity custom event
+    EntitycustomEvent(fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent))
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
@@ -113,6 +115,7 @@ pub struct System {
     entity_removed_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
     entity_removed_incremental_evn: Option<fn(&mut SystemData, usize, &mut WorldData)>,
     entity_update_evn: Option<fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)>,
+    entity_custom_event: Option<fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent)>,
 }
 
 // System code
@@ -165,7 +168,22 @@ impl System {
             SystemEventType::EntityRemoved(x) => self.entity_removed_evn = Some(x),
             SystemEventType::EntityUpdate(x) => self.entity_update_evn = Some(x),
             SystemEventType::EntityRemovedIncremental(x) => self.entity_removed_incremental_evn = Some(x),
+            SystemEventType::EntitycustomEvent(x) => self.entity_custom_event = Some(x),
         };
+    }
+    // Update the load state of a specific entity
+    pub fn update_entity_load_state(&self, entity: &Entity, data: &WorldData, new_ls_and_reason: (LoadState, LoadStateUpdateReason)) {
+        // Send the custom entity event to the specific entity
+        self.custom_entity_event(entity, data, EntityCustomEvent::LoadStateUpdate(new_ls_and_reason.0, new_ls_and_reason.1));
+    }
+    // Run a specific custom entity event on a specific entity
+    fn custom_entity_event(&self, entity: &Entity, data: &WorldData, custom_entity_event: EntityCustomEvent) {
+        match self.entity_custom_event {
+            Some(x) => {
+                x(&self.system_data, entity, &FilteredLinkedComponents::get_filtered_linked_components(entity, self.required_c_bitfield), data, custom_entity_event)
+            },
+            None => {},
+        }
     }
     // Add an entity to the current system
     fn add_entity(&mut self, entity: &Entity, data: &mut WorldData) {

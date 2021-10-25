@@ -11,3 +11,10 @@ impl Default for LoadState {
         Self::Loaded
     }
 }
+
+// The sole reason why we update the load state of the current entity
+pub enum LoadStateUpdateReason {
+    ExtremeFrustumCulling,
+    Region,
+    Explicit,
+}
