@@ -109,7 +109,11 @@ pub fn world_initialized(world: &mut World) {
         .unwrap()
         .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.1))
         .load_default_textures(data.texture_cacher);
-    let bound_materials = vec![Some(material.instantiate(data.instance_manager)), Some(material.instantiate(data.instance_manager).set_visible(false))];
+    let a = TextureLoadOptions {
+        filter: TextureFilter::Nearest,
+        ..TextureLoadOptions::default()
+    };
+    let bound_materials = vec![Some(material.instantiate(data.instance_manager)), Some(material.instantiate(data.instance_manager).set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02)).load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), data.texture_cacher, data.resource_manager).load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), data.texture_cacher, data.resource_manager))];
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,

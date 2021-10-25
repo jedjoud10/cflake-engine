@@ -78,10 +78,7 @@ impl Renderer {
     }
     // Dispose of our model
     pub fn dispose_model(&mut self) {
-        unsafe {
-            // Delete the vertex array
-            gl::DeleteBuffers(1, &mut self.gpu_data.vertex_buf);
-        }
+        self.gpu_data.dispose();
     }
 }
 

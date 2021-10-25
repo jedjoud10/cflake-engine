@@ -92,7 +92,7 @@ impl ComponentManager {
     // Remove a specified component from the list
     pub fn id_remove_linked_component(&mut self, global_id: usize) -> Result<(), ECSError> {
         // To remove a specific component just set it's component slot to None
-        self.smart_components_list.remove_element(global_id);
+        self.smart_components_list.remove_element(global_id).unwrap();
         return Ok(());
     }
 }

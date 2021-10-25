@@ -1,12 +1,13 @@
 // The smart list system
 #[derive(Debug, Clone)]
-pub struct SmartList<T> {
+pub struct SmartList<T> where T: Sized {
     pub elements: Vec<Option<T>>,
+    pub size_in_bytes: usize,
 }
 
 impl<T> Default for SmartList<T> {
     fn default() -> Self {
-        Self { elements: Vec::new() }
+        Self { elements: Vec::new(), size_in_bytes: 0 }
     }
 }
 
@@ -33,6 +34,7 @@ impl<T> SmartList<T> {
         // Get the id of the elements inside the temp vector (Local ID)
         let id = self.get_next_valid_id();
         // Update
+        self.size_in_bytes += std::mem::size_of_val(&element);
         if id < self.elements.len() {
             // Turn the none into a valid element
             self.elements[id as usize] = Some(element);
@@ -47,6 +49,7 @@ impl<T> SmartList<T> {
         // Remove the element
         self.elements.push(None);
         let element = self.elements.swap_remove(element_id);
+        self.size_in_bytes -= std::mem::size_of_val(element.as_ref().unwrap());
         return element;
     }
     // Get a mutable reference to a stored element

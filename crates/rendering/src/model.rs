@@ -196,6 +196,30 @@ pub struct ModelDataGPU {
     pub initialized: bool,
 }
 
+impl ModelDataGPU {
+    // Dipose
+    pub fn dispose(&mut self) {
+        unsafe {
+            if self.initialized {
+                println!("Dispose of ModelDataGPU! {}", self.vertex_array_object);
+                
+                // Delete the VBOs
+                gl::DeleteBuffers(1, &mut self.vertex_buf);
+                gl::DeleteBuffers(1, &mut self.normal_buf);
+                gl::DeleteBuffers(1, &mut self.uv_buf);
+                gl::DeleteBuffers(1, &mut self.tangent_buf);
+                gl::DeleteBuffers(1, &mut self.color_buf);
+                gl::DeleteBuffers(1, &mut self.element_buffer_object);
+                
+                // Delete the vertex array
+                gl::DeleteVertexArrays(1, &mut self.vertex_array_object);
+                self.initialized = false;
+                errors::ErrorCatcher::catch_opengl_errors();
+            }
+        }
+    }
+}
+
 // Trait that allows you to make procedural models
 pub trait ProceduralModelGenerator {
     // Generate the model

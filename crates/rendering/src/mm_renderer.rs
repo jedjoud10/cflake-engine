@@ -63,11 +63,8 @@ impl MultiMaterialRenderer {
 
     // Dispose of our complex model data
     pub fn dispose_models(&mut self) {
-        unsafe {
-            for sub_model_gpu_data in self.sub_models_gpu_data.iter_mut() {
-                // Delete the vertex array
-                gl::DeleteBuffers(1, &mut sub_model_gpu_data.vertex_array_object);
-            }
-        }
+        for sub_model_gpu_data in self.sub_models_gpu_data.iter_mut() {
+            sub_model_gpu_data.dispose();
+        }        
     }
 }

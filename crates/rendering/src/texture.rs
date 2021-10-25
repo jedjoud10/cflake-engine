@@ -20,6 +20,13 @@ pub struct TextureLoadOptions {
     pub filter: TextureFilter,
     pub wrapping: TextureWrapping,
 }
+/*
+impl TextureLoadOptions {
+    pub fn get_hashed_state(&self) -> u64 {
+
+    }
+}
+*/
 
 // Texture filters
 #[derive(Debug, Clone, Copy)]

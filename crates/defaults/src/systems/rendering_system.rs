@@ -244,21 +244,25 @@ impl CustomData {
         // Loop the sub models and use them to make a sub renderer and render that separately
         for (i, (sub_model, material_id)) in mm_renderer.sub_models.iter().enumerate() {
             let material = mm_renderer.materials.get(*material_id).unwrap_or(mm_renderer.materials.get(0).unwrap());
-            let gpu_data = mm_renderer.sub_models_gpu_data.get(i).unwrap();
-            if wireframe {
-                self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, data, projection_matrix, view_matrix, model_matrix);
-            } else {
-                self.draw_normal(
-                    material.as_ref(),
-                    &gpu_data,
-                    sub_model.triangles.len() as i32,
-                    data,
-                    camera_position,
-                    projection_matrix,
-                    view_matrix,
-                    model_matrix,
-                );
-            }
+            match mm_renderer.sub_models_gpu_data.get(i) {
+                Some(gpu_data) => {
+                    if wireframe {
+                        self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, data, projection_matrix, view_matrix, model_matrix);
+                    } else {
+                        self.draw_normal(
+                            material.as_ref(),
+                            &gpu_data,
+                            sub_model.triangles.len() as i32,
+                            data,
+                            camera_position,
+                            projection_matrix,
+                            view_matrix,
+                            model_matrix,
+                        );
+                    }
+                },
+                None => {},
+            }            
         }
     }
     // Draw a wireframe entity
@@ -448,6 +452,14 @@ fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut Wor
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     // Dispose the model when the entity gets destroyed
     rc.dispose_model();
+    // Dispose of a complex model if it exists
+    match rc.multi_material.as_mut() {
+        Some(x) => {
+            // Dispose
+            x.dispose_models();
+        },
+        None => {},
+    }
 }
 fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     let system = system_data.cast::<CustomData>().unwrap();
