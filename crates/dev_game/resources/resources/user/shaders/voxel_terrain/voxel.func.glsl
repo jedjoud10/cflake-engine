@@ -21,18 +21,8 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     
     int shader_id = 0;
     int texture_id = 0;
-    int biome_id = snoise(pos * 0.001 * vec3(1, 0, 1)) > 0 ? 1 : 0;
+    int biome_id = 0;
     int hardness = 0;
-    /*
-    if (biome_id == 1) {
-        density = pos.y;
-        material_id = 0;
-    } else {
-    }
-    */
-    if (snoise(pos * 0.0005) > 0) {
-        shader_id = 1;
-    }
 
     // Write the result
     voxel = Voxel(density * 20);
@@ -41,9 +31,6 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
 void get_color_voxel(vec3 pos, vec3 local_uv, Voxel voxel, MaterialVoxel material_voxel, out ColorVoxel color_voxel) {
     vec3 color = vec3(1, 1, 1);  
-    if (all(lessThan(local_uv.xy, vec2(0.6, 0.6)) && greaterThan(local_uv.xy, vec2(0.4, 0.4))) ) {
-        //color = vec3(0, 0, 0);
-    }
     color_voxel = ColorVoxel(color);
 }
 /*

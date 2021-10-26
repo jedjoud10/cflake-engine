@@ -188,6 +188,7 @@ impl System {
     // Add an entity to the current system
     fn add_entity(&mut self, entity: &Entity, data: &mut WorldData) {
         self.entities.push(entity.entity_id);
+        self.update_entity_load_state(entity, data, (LoadState::Loaded, LoadStateUpdateReason::AddedEntity));
         // Fire the event
         match self.entity_added_evn {
             Some(x) => x(&mut self.system_data, entity, data),

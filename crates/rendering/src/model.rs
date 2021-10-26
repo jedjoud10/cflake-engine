@@ -201,8 +201,6 @@ impl ModelDataGPU {
     pub fn dispose(&mut self) {
         unsafe {
             if self.initialized {
-                println!("Dispose of ModelDataGPU! {}", self.vertex_array_object);
-                
                 // Delete the VBOs
                 gl::DeleteBuffers(1, &mut self.vertex_buf);
                 gl::DeleteBuffers(1, &mut self.normal_buf);

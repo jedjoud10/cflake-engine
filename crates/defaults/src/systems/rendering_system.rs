@@ -3,7 +3,7 @@ use ecs::{Entity, FilteredLinkedComponents};
 use gl;
 use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, Volumetric};
 use resources::LoadableResource;
-use std::ptr::null;
+use std::{ptr::null, time::Instant};
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use world_data::WorldData;
 
@@ -450,6 +450,7 @@ fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut World
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
+    let i = Instant::now();
     // Dispose the model when the entity gets destroyed
     rc.dispose_model();
     // Dispose of a complex model if it exists

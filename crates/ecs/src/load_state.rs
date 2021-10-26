@@ -14,6 +14,7 @@ impl Default for LoadState {
 
 // The sole reason why we update the load state of the current entity
 pub enum LoadStateUpdateReason {
+    AddedEntity,
     ExtremeFrustumCulling,
     Region,
     Explicit,

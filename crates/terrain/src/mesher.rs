@@ -281,7 +281,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
         .into_iter()
         .map(|(shader_id, (model, _))| (shader_id, model))
         .collect::<HashMap<u8, Model>>();
-    println!("Elapsed ms: {}", instant.elapsed().as_millis());
     // Return the model
     return TModel {
         shader_model_hashmap: new_model_hashmap,
