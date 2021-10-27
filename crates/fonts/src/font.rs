@@ -11,6 +11,7 @@ pub struct Font {
     pub texture_pixels: Vec<u8>,
     pub texture: Option<Texture>,
     pub chars: Vec<FontChar>,
+    pub font_options: FontOptions,
 }
 
 // Font options
@@ -25,9 +26,9 @@ pub struct FontOptions {
 impl Default for FontOptions {
     fn default() -> Self {
         Self {
-            thickness: 20.0,
+            thickness: 30.0,
             outline_thickness: 0.0,
-            color: veclib::Vector4::new(0.0, 0.0, 0.0, 1.0),
+            color: veclib::Vector4::ONE,
             outline_color: veclib::Vector4::ONE,
         }
     }
@@ -68,6 +69,7 @@ impl Font {
             texture_pixels: Vec::new(),
             texture: None,
             chars: Vec::new(),
+            font_options: FontOptions::default(),
         }
     }
     // Turn some text into an array of font chars
@@ -97,6 +99,7 @@ impl LoadableResource for Font {
                     texture_pixels: font.texture_pixels.clone(),
                     texture: None,
                     chars: chars,
+                    font_options: FontOptions::default(),
                 };
                 // Create the OpenGL texture after the atlas was created
                 output.create_texture();
