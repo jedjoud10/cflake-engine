@@ -1,10 +1,10 @@
-use std::{ffi::c_void, os::raw::c_float, ptr::null};
+use std::{ffi::c_void, mem::size_of, os::raw::c_float, ptr::null};
 
 // A shader storage buffer object struct
 #[derive(Default)]
 pub struct ArrayData {
     pub buf_id: u32,
-    pub len: usize,
+    pub byte_size: usize,
 }
 impl ArrayData {
     // Create the array data using the max size that the array can possibly get to
@@ -16,7 +16,7 @@ impl ArrayData {
             // Size in bytes
             let size = std::mem::size_of::<T>() * max_size;
             gl::BufferData(gl::SHADER_STORAGE_BUFFER, size as isize, null(), gl::DYNAMIC_READ);
-            self.len = max_size;
+            self.byte_size = size;
             self.buf_id = ssbo;
             // Unbind
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
@@ -31,11 +31,9 @@ impl ArrayData {
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, ssbo);
             // Size in bytes
             let size = std::mem::size_of::<T>() * vec.len();
-            gl::BufferData(gl::SHADER_STORAGE_BUFFER, size as isize, vec.as_ptr() as *const c_void, gl::DYNAMIC_READ);
-            self.len = vec.len();
+            gl::NamedBufferStorage(ssbo, size as isize, vec.as_ptr() as *const c_void, gl::MAP_WRITE_BIT | gl::MAP_READ_BIT);
+            self.byte_size = vec.len();
             self.buf_id = ssbo;
-            // Unbind
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
             errors::ErrorCatcher::catch_opengl_errors().expect("Could not create ArrayData initial data!");
         }
     }
@@ -45,21 +43,14 @@ impl ArrayData {
             gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, self.buf_id);
         }
     }
-    // Clear the data of this array data 
-    pub fn clear(&mut self) {
-        unsafe {
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.buf_id);
-            let val = 0.0f32;
-            let ptr = &val as *const c_float as *const c_void;
-            gl::ClearNamedBufferData(gl::SHADER_STORAGE_BUFFER, gl::R32F, gl::RED, gl::FLOAT, ptr);
-            errors::ErrorCatcher::catch_opengl_errors().expect("Could not clear ArrayData SSBO!");
-        }
-    }
     // Read back the data from this array data
     pub fn read<T: Sized + Clone>(&self) -> Vec<T> {
         unsafe {
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.buf_id);
-            let ptr = gl::MapBuffer(gl::SHADER_STORAGE_BUFFER, gl::WRITE_ONLY).cast::<Vec<T>>();
+            let ptr = gl::MapNamedBufferRange(self.buf_id, 0, self.byte_size as isize, gl::MAP_READ_BIT).cast::<Vec<T>>();
+            if ptr.as_ref().is_none() {
+                // Shit
+                panic!();
+            }
             let vec = ptr.as_ref().unwrap().clone();
             // Check for corruption
             let corrupt = gl::UnmapBuffer(gl::SHADER_STORAGE_BUFFER);
