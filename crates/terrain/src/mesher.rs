@@ -122,6 +122,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
                             model.uvs.push(veclib::Vector2::<f32>::ZERO);
+                            let c: veclib::Vector3<f32> = lv.color.into();
                             model.colors.push(color);
                             model.normals.push(normal.normalized());
                             model.tangents.push(veclib::Vector4::<f32>::ZERO);

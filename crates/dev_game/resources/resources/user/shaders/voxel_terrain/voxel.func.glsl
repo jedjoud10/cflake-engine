@@ -13,12 +13,11 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     }
 
     // Add the noise
-    float density = (1-mountain(pos.xz * 0.002, 0.1).x) * 6000 + pos.y - 3000;
+    float density = (1-cellular(pos * 0.009).x) * 160.0 - 100.0;
 
     // Make the terrain flatter
-    //density = opSmoothUnion(density + 80, pos.y - 16.0, 30.0);
-    //density = max(density, pos.y - 60);
-    //density = min(density, pos.y + 60);
+    density = opSmoothUnion(density + pos.y, pos.y, 0.1);
+    density = max(density, pos.y - 30);
     
     int shader_id = 0;
     int texture_id = 0;
@@ -26,7 +25,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     int hardness = (snoise(pos * 0.001) > 0.5) ? 0 : 1;
 
     // Write the result
-    voxel = Voxel(density * 20);
+    voxel = Voxel(density * 20.0);
     material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID

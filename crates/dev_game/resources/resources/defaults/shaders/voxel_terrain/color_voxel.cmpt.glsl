@@ -9,6 +9,11 @@ layout(location = 3) uniform vec3 node_pos;
 layout(location = 4) uniform int node_size;
 layout(location = 5) uniform int chunk_size;
 layout(location = 6) uniform int depth;
+Voxel sample_voxel(ivec3 pixel_coords) {
+    vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
+    Voxel voxel = Voxel((voxel_pixel.x * 65535) - 32767);       
+    return voxel;
+}
 void main() {
     // Get the pixel coord
     ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);
@@ -19,12 +24,11 @@ void main() {
     pos *= size;
     pos += node_pos;        
     // Read the voxel data
-    vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
-    Voxel voxel = Voxel((voxel_pixel.x * 65535) - 32767);   
+    Voxel v0 = sample_voxel(pixel_coords);
     vec3 local_uv = vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size);
     vec4 mvp = texture(material_sampler, local_uv).rgba; 
     ColorVoxel color_voxel = ColorVoxel(vec3(0, 0, 0));
-    get_color_voxel(pos, local_uv, voxel, MaterialVoxel(int(mvp.x * 255), int(mvp.y * 255), int(mvp.z * 255), int(mvp.w * 255)), depth, color_voxel);
+    get_color_voxel(pos, local_uv, v0, MaterialVoxel(int(mvp.x * 255), int(mvp.y * 255), int(mvp.z * 255), int(mvp.w * 255)), depth, color_voxel);
     vec4 pixel = vec4(color_voxel.color, 0.0);     
     // Write the pixel
     imageStore(color_image, pixel_coords, pixel);
