@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use debug::DefaultDebugRendererType;
-use terrain::{BoundChecker, ChunkCoords};
+use terrain::{BoundChecker, ChunkCoords, TerrainStats};
 
 use crate::components;
 use components::Chunk;
@@ -15,25 +15,21 @@ pub struct CustomData {
     pub lod_factor: f32,
     pub nodes: Vec<OctreeNode>,
     pub terrain_gen: bool,
+    pub terrain_stats: TerrainStats,
 }
 crate::impl_custom_system_data!(CustomData);
 
 // Events
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
-    // Update the LOD factor using the commands
-    match data.debug.console.listen_command("terrain-set-lod-factor") {
-        Some(x) => match x.get_input("-v") {
-            Some(x) => match x {
-                debug::CommandInputEnum::F32(x) => system.lod_factor = *x,
-                _ => {}
-            },
-            _ => {}
-        },
-        None => {}
+    // Println the terrain stats
+    if data.debug.console.listen_command("stat-terrain").is_some() {
+        println!("{:?}", system.terrain_stats);
     }
 }
 fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+    // Timing
+    let t = Instant::now();
     // Get the camera location
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
     let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap();
@@ -41,6 +37,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     // Get the camera transform values
     let camera_location = camera_transform.position;
     let camera_forward_vector = camera_transform.get_forward_vector();
+    let camera_velocity = camera_entity.get_component::<components::Physics>(data.component_manager).unwrap().object.linear.velocity;
 
     // Get the terrain data
     let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
@@ -52,20 +49,19 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         system.terrain_gen = !system.terrain_gen;
     }
     if td.chunk_manager.octree_update_valid() && system.terrain_gen {
-        match td.octree.generate_incremental_octree(&camera_location, system.lod_factor) {
+        match td.octree.generate_incremental_octree(&camera_location, &camera_velocity, system.lod_factor) {
             Some((mut added, removed)) => {
                 system.nodes.clear();
                 // Filter first
-                added.retain(|node| BoundChecker::bound_check(&node));
+                added.retain(|node| BoundChecker::bound_check(&node) && node.children_indices.is_none());
+                system.terrain_stats.max_chunks_generated = system.terrain_stats.max_chunks_generated.max(added.len());
                 // Turn all the newly added nodes into chunks and instantiate them into the world
                 for octree_node in added {
-                    // Only add the octree nodes that have no children
-                    if octree_node.children_indices.is_none() {
-                        // Add the chunk in the chunk manager
-                        td.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));
-                    }
+                    // Add the chunk in the chunk manager
+                    td.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));                    
                 }
                 // Delete all the removed octree nodes from the world
+                system.terrain_stats.max_chunks_deleted = system.terrain_stats.max_chunks_deleted.max(removed.len());
                 for octree_node in removed {
                     let chunk_coords = ChunkCoords::new(&octree_node);
                     // Remove the chunk from the chunk manager
@@ -149,6 +145,10 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
         }
     }
+
+    // Update stats
+    system.terrain_stats.best_update_speed = system.terrain_stats.best_update_speed.min(t.elapsed().as_millis());
+    system.terrain_stats.worst_update_speed = system.terrain_stats.worst_update_speed.max(t.elapsed().as_millis());
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     // Setup the voxel generator for this generator
@@ -173,11 +173,17 @@ pub fn system(data: &mut WorldData) -> System {
         inputs: Vec::new(),
     };
     data.debug.console.register_template_command(command);
+    let command = debug::Command {
+        name: "stat-terrain".to_string(),
+        inputs: Vec::new(),
+    };
+    data.debug.console.register_template_command(command);
     // Add the custom data
     system.custom_data(CustomData {
         lod_factor: terrain::DEFAULT_LOD_FACTOR,
         nodes: Vec::new(),
         terrain_gen: true,
+        terrain_stats: TerrainStats::default()
     });
     system
 }

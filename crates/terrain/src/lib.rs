@@ -6,6 +6,8 @@ pub const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 2;
 pub const DEFAULT_LOD_FACTOR: f32 = 2.0;
 // The isoline
 pub const ISOLINE: u16 = 32767;
+// The amount of frames that the compute shader is allowed
+pub const FRAME_THRESHOLD: u64 = 1;
 // Export
 mod bound_checker;
 mod chunk;
@@ -14,6 +16,7 @@ mod chunk_manager;
 mod density;
 mod detail_manager;
 pub mod mesher;
+mod terrain_stats;
 mod model;
 mod tables;
 mod voxel;
@@ -23,6 +26,7 @@ pub use chunk::*;
 pub use chunk_data::*;
 pub use chunk_manager::*;
 pub use detail_manager::*;
+pub use terrain_stats::*;
 pub use model::*;
 pub use tables::*;
 pub use voxel::*;

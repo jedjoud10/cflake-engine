@@ -72,17 +72,11 @@ impl CustomData {
     ) {
         // Draw each character in the string as a separate element
         let chars = font.convert_text_to_font_chars(text_content);
-        let mut i: f32 = 0.0;
-        let font_options: FontOptions = FontOptions {
-            thickness: 0.2,
-            outline_thickness: 0.5,
-            color: veclib::Vector4::ZERO,
-            outline_color: veclib::Vector4::ONE,
-        };
-        shader.set_vec4f32("font_color", &font_options.color);
-        shader.set_f32("font_thickness", &(font_options.thickness));
-        shader.set_f32("font_outline_thickness", &(font_options.outline_thickness));
-        shader.set_vec4f32("font_outline_color", &font_options.outline_color);
+        let mut i: f32 = 0.0;        
+        shader.set_vec4f32("font_color", &font.font_options.color);
+        shader.set_f32("font_thickness", &(font.font_options.thickness));
+        shader.set_f32("font_outline_thickness", &(font.font_options.outline_thickness));
+        shader.set_vec4f32("font_outline_color", &font.font_options.outline_color);
         for char in chars {
             // Set the default panel arguments
             self.set_default_draw_arguments(element_data, shader);

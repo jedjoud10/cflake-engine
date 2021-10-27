@@ -60,6 +60,7 @@ impl AdvancedOctree {
     pub fn generate_incremental_octree(
         &mut self,
         target: &veclib::Vector3<f32>,
+        target_velocity: &veclib::Vector3<f32>,
         lod_factor: f32,
     ) -> Option<(
         Vec<OctreeNode>, // Added nodes

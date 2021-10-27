@@ -122,7 +122,7 @@ impl ChunkManager {
                 let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
 
                 // Decide between generating the chunk or start the generation of the voxel data
-                if self.voxels_generating {
+                if self.voxels_generating && (self.last_frame_voxels_generated + crate::FRAME_THRESHOLD) >= frame_count {
                     // The voxels are generating, so wait until we reached a satisfactory frame count
                     // We reached the limit, read the compute buffer
                     self.voxels_generating = false;

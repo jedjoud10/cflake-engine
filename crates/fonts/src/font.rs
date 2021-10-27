@@ -26,9 +26,9 @@ pub struct FontOptions {
 impl Default for FontOptions {
     fn default() -> Self {
         Self {
-            thickness: 30.0,
-            outline_thickness: 0.0,
-            color: veclib::Vector4::ONE,
+            thickness: 0.2,
+            outline_thickness: 0.3,
+            color: veclib::Vector4::ZERO,
             outline_color: veclib::Vector4::ONE,
         }
     }
