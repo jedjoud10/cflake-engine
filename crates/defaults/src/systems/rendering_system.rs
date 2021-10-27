@@ -327,6 +327,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
 
     // Set the default uniforms
+    /*
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
@@ -337,6 +338,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
     */
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
+    */
 
     // Load the default shader
     let default_shader_name = Shader::new(
@@ -431,7 +433,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
+    errors::ErrorCatcher::catch_opengl_errors().expect("Could not set Deferred rendering uniforms!");
     // Render the screen quad
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);

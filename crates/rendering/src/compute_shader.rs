@@ -1,7 +1,12 @@
+use crate::ArrayData;
+
 // Compute shader containing the compute shader code
 #[derive(Default)]
 pub struct ComputeShader {
     pub running: bool,
+    // Do we have any array data?
+    // TODO: Make this support multiple array data
+    pub array_data: Option<ArrayData>
 }
 
 // Compute shader code
@@ -37,4 +42,23 @@ impl ComputeShader {
         errors::ErrorCatcher::catch_opengl_errors()?;
         return Some(());
     }
+    // Create some array data with a specific max size and a specific binding
+    pub fn create_array_data<T>(&mut self, max_size: usize) {
+        // Create some array data
+        let mut ad = ArrayData::default();
+        ad.create_array::<T>(max_size);
+        self.array_data = Some(ad);
+    }
+    // Read back some array data that was ran inside the compute shader
+    pub fn read_array_data<T: Sized + Clone>(&mut self) -> Option<Vec<T>> {
+        match self.array_data.as_mut() {
+            Some(x) => {
+                let x = x.read::<T>();
+                return Some(x);
+            },
+            None => todo!(),
+        }
+        // Were we sucsessful?
+        return None;
+    } 
 }

@@ -214,7 +214,7 @@ impl World {
         root.get_element_mut(7).update_text(component_text, 40.0);
 
         // Just in case
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
+        errors::ErrorCatcher::catch_opengl_errors().expect("Main OpenGL error occured in world!");
 
         // Update the time
         self.time_manager.delta_time = delta;
