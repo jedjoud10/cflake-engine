@@ -36,9 +36,9 @@ void main() {
 	vec3 normalx = texture(normals_tex, m_position.zy * uv_scale).xyz * 2 - 1;
 	vec3 normaly = texture(normals_tex, m_position.xz * uv_scale).xyz * 2 - 1;
 	vec3 normalz = texture(normals_tex, m_position.xy * uv_scale).xyz * 2 - 1;
-	normalx = vec3(vec2(normalx.x, -normalx.y) * normals_strength + world_normal.zy, world_normal.x) * blending.x;
-	normaly = vec3(vec2(normaly.x, -normaly.y) * normals_strength + world_normal.xz, world_normal.y) * blending.y;
-	normalz = vec3(vec2(normalz.x, -normalz.y) * normals_strength + world_normal.xy, world_normal.z) * blending.z;
+	normalx = vec3(vec2(normalx.x, normalx.y) * normals_strength + world_normal.zy, world_normal.x) * blending.x;
+	normaly = vec3(vec2(normaly.x, normaly.y) * normals_strength + world_normal.xz, world_normal.y) * blending.y;
+	normalz = vec3(vec2(normalz.x, normalz.y) * normals_strength + world_normal.xy, world_normal.z) * blending.z;
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
 	frag_diffuse = diffuse_final * m_color * tint;
 	frag_normal = normal_final;

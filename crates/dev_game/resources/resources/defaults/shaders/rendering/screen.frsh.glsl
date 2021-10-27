@@ -14,6 +14,7 @@ uniform sampler2D volumetric_depth_texture;
 uniform sampler3D sdf_texture;
 
 uniform vec3 directional_light_dir;
+uniform mat4 custom_vp_matrix;
 uniform vec2 nf_planes;
 uniform int debug_view;
 uniform vec3 camera_pos;
@@ -55,6 +56,12 @@ void main() {
 	// Compare the depths
 	bool draw = old_depth > new_depth && new_depth != 0;
 
+	// Sky gradient texture moment
+    vec3 pixel_dir = normalize((inverse(custom_vp_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
+	float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
+	vec3 sky_color = texture(default_sky_gradient, vec2(0, sky_uv_sampler)).xyz;
+	// Add the sun
+	sky_color += max(pow(dot(pixel_dir, normalize(directional_light_dir)), 512), 0);
 
 	if (debug_view == 0) {
 		/*
@@ -63,7 +70,12 @@ void main() {
 		} else {
 		}
 		*/
-		color = final_color + emissive;
+		// Depth test the sky
+		if (old_depth > 0.999) {
+			color = sky_color;
+		} else {
+			color = final_color;
+		}
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {

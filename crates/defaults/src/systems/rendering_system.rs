@@ -427,12 +427,13 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
     shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
     shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);
-    shader.use_shader();
     shader.set_t2d(
         "default_sky_gradient",
         data.texture_cacher.id_get_object(data.custom_data.sky_texture).unwrap(),
         gl::TEXTURE5,
     );
+    let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
+    shader.set_mat44("custom_vp_matrix", &vp_m);
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
