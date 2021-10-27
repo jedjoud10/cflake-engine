@@ -1,14 +1,13 @@
+use crate::TCase;
 use crate::TModel;
 use crate::ISOLINE;
 
 use super::tables::*;
 use super::Voxel;
 use super::CHUNK_SIZE;
-use rendering::Material;
 use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::ptr::null;
 use std::time::Instant;
 
 // If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
@@ -23,6 +22,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
     let mut sub_model_hashmap: HashMap<u8, (Model, Vec<SkirtVertex>)> = HashMap::new();
+    let mut intersection_cases: Vec<TCase> = Vec::new();
     let instant = Instant::now();
     // Calculate the density threshold for the skirts
     let density_threshold = AVERAGE_DENSITY_THRESHOLD;
@@ -33,11 +33,12 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
-                let shader_id = voxels[i + DATA_OFFSET_TABLE[0]].shader_id;
+                // Leading Voxel
+                let lv = voxels[i + DATA_OFFSET_TABLE[0]]; 
 
                 // Make sure we have the default submodel/material for this material ID
-                sub_model_hashmap.entry(shader_id).or_insert((Model::default(), Vec::new()));
-                let (model, shared_vertices) = sub_model_hashmap.get_mut(&shader_id).unwrap();
+                sub_model_hashmap.entry(lv.shader_id).or_insert((Model::default(), Vec::new()));
+                let (model, shared_vertices) = sub_model_hashmap.get_mut(&lv.shader_id).unwrap();
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
                 case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
@@ -49,7 +50,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
-                    //continue;
+                    continue;
                 }
                 // Get triangles
                 let edges: [i8; 16] = TRI_TABLE[case_index as usize];
@@ -61,6 +62,9 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 // Local edges for the X axis
                 let mut local_edges_z: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
 
+                // Average normal
+                let mut average_normal: veclib::Vector3<f32> = veclib::Vector3::ZERO;
+                let mut average_normal_count: u8 = 0;
                 // The vertex indices that are gonna be used for the skirts
                 for edge in edges {
                     // Make sure the triangle is valid
@@ -98,6 +102,9 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             normal2.z = voxels[index2 + DATA_OFFSET_TABLE[1]].density as f32 - density2;
                             veclib::Vector3::<f32>::lerp(normal1, normal2, value)
                         };
+                        // Sum up the average normal
+                        average_normal += normal;
+                        average_normal_count += 1;
                         // Get the color
                         let color: veclib::Vector3<f32> = { veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value) } / 255.0;
 
@@ -105,7 +112,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
                             2 * y as u32 + vert1.y as u32 + vert2.y as u32,
                             2 * z as u32 + vert1.z as u32 + vert2.z as u32,
-                            shader_id,
+                            lv.shader_id,
                         );
 
                         // Check if this vertex was already added
@@ -149,7 +156,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         }
                     }
                 }
-
+                // Skirts
                 if skirts {
                     // Skirts for the X axis
                     if x == 0 {
@@ -246,6 +253,12 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         );
                     }
                 }
+                // Push this intersecting case
+                intersection_cases.push(TCase {
+                    cube_position: veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32),
+                    leading_normal: average_normal / (average_normal_count as f32),
+                    leading_voxel: lv,
+                });
             }
         }
     }
@@ -285,6 +298,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     return TModel {
         shader_model_hashmap: new_model_hashmap,
         skirt_models: skirt_models,
+        intersection_cases: Some(intersection_cases),
     };
 }
 

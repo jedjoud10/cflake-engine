@@ -8,8 +8,8 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
     // Actual function for voxels
     // FBM Invertex billow noise with 8 octaves
     float fd = 0;
-    for(int i = 0; i < 8; i++) {
-        fd -= (1-abs(snoise(pos * vec3(1, 0.2, 1) * 0.001 * pow(2, i)))) * 100 * pow(0.43, i);
+    for(int i = 0; i < 5; i++) {
+        fd -= ((cellular(pos * vec3(1, 0.3, 1) * 0.001 * pow(2.0, i)).x)) * 200 * pow(0.5, i);
     }
 
     // Add the noise
@@ -17,9 +17,9 @@ void get_voxel(vec3 pos, out Voxel voxel, out MaterialVoxel material_voxel) {
 
     // Make the terrain flatter
     //density = opSmoothUnion(density + 80, pos.y - 16.0, 30.0);
-    density = max(density + 80, pos.y - 60);
+    density = max(density + 200, pos.y - 60);
     
-    int shader_id = 0;
+    int shader_id = snoise(pos * 0.001 + snoise(pos * -0.002 + 211) * 2.0) > 0.0 ? 0 : 1;
     int texture_id = 0;
     int biome_id = 0;
     int hardness = 0;
