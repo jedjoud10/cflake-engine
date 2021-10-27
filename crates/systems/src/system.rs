@@ -1,6 +1,7 @@
 use ecs::*;
 use errors::ECSError;
 use others::Time;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use world_data::*;
 
 use crate::{InternalSystemData, SystemData};
@@ -90,7 +91,8 @@ pub enum SystemEventType {
     EntityRemovedIncremental(fn(&mut SystemData, usize, &mut WorldData)),
     EntityUpdate(fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)),
     // Entity custom event
-    EntitycustomEvent(fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent)),
+    EntityCustomEvent(fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent)),
+    EntityFilter(fn(&FilteredLinkedComponents, &WorldData) -> bool),
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
@@ -116,6 +118,7 @@ pub struct System {
     entity_removed_incremental_evn: Option<fn(&mut SystemData, usize, &mut WorldData)>,
     entity_update_evn: Option<fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)>,
     entity_custom_event: Option<fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent)>,
+    entity_filter: Option<fn(&FilteredLinkedComponents, &WorldData) -> bool>,
 }
 
 // System code
@@ -168,7 +171,8 @@ impl System {
             SystemEventType::EntityRemoved(x) => self.entity_removed_evn = Some(x),
             SystemEventType::EntityUpdate(x) => self.entity_update_evn = Some(x),
             SystemEventType::EntityRemovedIncremental(x) => self.entity_removed_incremental_evn = Some(x),
-            SystemEventType::EntitycustomEvent(x) => self.entity_custom_event = Some(x),
+            SystemEventType::EntityCustomEvent(x) => self.entity_custom_event = Some(x),
+            SystemEventType::EntityFilter(x) => self.entity_filter = Some(x),
         };
     }
     // Update the load state of a specific entity
@@ -245,30 +249,21 @@ impl System {
         }
 
         let entity_manager_immutable = &*data.entity_manager;
-        // The filtered entities tuple that also contains the linked component data
-        let filtered_entity_ids = self
-            .entities
-            .iter()
-            .filter_map(|entity_id| {
-                let entity_clone = &entity_manager_immutable.get_entity(*entity_id).unwrap();
-                // Get the linked components
-                let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.flc_c_bitfield);
-                // Filtering the entities basically
-                /*
-                let valid_entity = self.filter_entity(entity_clone, &linked_components, &data);
-                // Check if it is a valid entity
-                if valid_entity {
-                    // This entity passed the filter
-                    Some(*entity_id)
-                } else {
-                    // This entity failed the filter
-                    None
-                }
-                */
-                Some(*entity_id)
-            })
-            .collect::<Vec<usize>>();
-
+        let filtered_entity_ids = match self.entity_filter {
+            Some(x) => {
+                self.entities.par_iter().filter(|entity_id| {
+                    // Filter the entities
+                    let entity_clone = &entity_manager_immutable.get_entity(**entity_id).unwrap();
+                    // Get the linked components
+                    let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.flc_c_bitfield);
+                    x(&linked_components, data)
+                }).cloned().collect()                
+            },
+            None => {
+                // No filtering, just return all the entities
+                self.entities.clone()
+            },
+        };
         // Only update the entities if we have a a valid event. No need to waste time updating them ¯\_(ツ)_/¯
         match self.entity_update_evn {
             Some(x) => {

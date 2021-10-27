@@ -703,6 +703,7 @@ dependencies = [
  "ecs",
  "errors",
  "others",
+ "rayon",
  "world_data",
 ]
 

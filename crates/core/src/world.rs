@@ -164,6 +164,8 @@ impl World {
         self.update_entity_manager();
 
         
+        self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 1.0).normalized();
+
 
         // Callback
         callback(self);
@@ -219,9 +221,6 @@ impl World {
 
         // Just in case
         errors::ErrorCatcher::catch_opengl_errors().expect("Main OpenGL error occured in world!");
-
-        self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, (self.time_manager.seconds_since_game_start * 0.1).sin() as f32, (self.time_manager.seconds_since_game_start*0.1).cos() as f32).normalized();
-
         // Update the time
         self.time_manager.delta_time = delta;
         self.time_manager.seconds_since_game_start += delta;

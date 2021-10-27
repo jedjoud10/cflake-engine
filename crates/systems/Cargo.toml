@@ -10,3 +10,4 @@ ecs = { path = "../ecs" }
 errors = { path = "../errors" }
 others = { path = "../others" }
 world_data = { path = "../world_data" }
+rayon = "1.5"

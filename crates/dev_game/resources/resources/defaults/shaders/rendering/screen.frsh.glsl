@@ -81,8 +81,7 @@ void main() {
 	} else if (debug_view == 2) {
 		color = diffuse;
 	} else if (debug_view == 3) {
-		color = emissive;
-		color = reflect_color;
+		color = light_val * vec3(1, 1, 1);
 	} else if (debug_view == 4) {
 		color = volumetric_color;
 	}

@@ -3,6 +3,7 @@ use ecs::{Entity, FilteredLinkedComponents};
 use gl;
 use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
 use resources::LoadableResource;
+use veclib::Swizzable;
 use std::{ptr::null, time::Instant};
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use world_data::WorldData;
@@ -504,6 +505,10 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
         }
     }
 }
+// Aa frustum culling
+fn entity_filter(components: &FilteredLinkedComponents, data: &WorldData) -> bool {
+    true
+}
 
 // Create the rendering system
 pub fn system(data: &mut WorldData) -> System {
@@ -521,6 +526,7 @@ pub fn system(data: &mut WorldData) -> System {
     system.event(SystemEventType::EntityAdded(entity_added));
     system.event(SystemEventType::EntityRemoved(entity_removed));
     system.event(SystemEventType::EntityUpdate(entity_update));
+    system.event(SystemEventType::EntityFilter(entity_filter));
     // Attach the custom system data
     system.custom_data(CustomData::default());
     system

@@ -32,7 +32,7 @@ impl SystemData {
 }
 
 // An internal system data trait. The system data is stored on the heap with a Box pointer
-pub trait InternalSystemData {
+pub trait InternalSystemData: Sync {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
