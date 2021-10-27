@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::ISOLINE;
 
 use super::CHUNK_SIZE;
@@ -98,7 +100,7 @@ impl VoxelGenerator {
             rendering::AdditionalShader::Compute(c) => c,
             _ => panic!(),
         };
-
+        let i = Instant::now();
         // Read back the compute shader data
         compute.get_compute_state().unwrap();
         // Second pass
@@ -142,7 +144,7 @@ impl VoxelGenerator {
             min = min.min(density);
             max = max.max(density);
         }
-        //println!("{} {}", min, max);
+        println!("{}", i.elapsed().as_micros());
         // Only generate the mesh if we have a surface
         (min < ISOLINE) != (max < ISOLINE)
     }

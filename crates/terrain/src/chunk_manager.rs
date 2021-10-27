@@ -108,9 +108,14 @@ impl ChunkManager {
         // Generate the data for some chunks, then create their model
         let mut new_chunks: Vec<(ChunkCoords, TModel)> = Vec::new();
 
+        if frame_count % 2 != 0 {
+            //return (Vec::new(), Vec::new());
+        }
+
         // This chunk will always have a valid model and chunk data
         let mut final_chunk: Option<(ChunkData, TModel)> = None;
-        match self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0) {
+        let x = self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0);
+        match x {
             Some(coord) => {
                 // Get the chunk coords
                 let chunk_coords = coord.clone();
