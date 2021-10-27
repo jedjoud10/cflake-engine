@@ -72,7 +72,7 @@ impl CustomData {
     ) {
         // Draw each character in the string as a separate element
         let chars = font.convert_text_to_font_chars(text_content);
-        let mut i: f32 = 0.0;        
+        let mut i: f32 = 0.0;
         shader.set_vec4f32("font_color", &font.font_options.color);
         shader.set_f32("font_thickness", &(font.font_options.thickness));
         shader.set_f32("font_outline_thickness", &(font.font_options.outline_thickness));

@@ -9,16 +9,16 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     // FBM Invertex billow noise with 8 octaves
     float fd = 0;
     for(int i = 0; i < 5; i++) {
-        fd -= (1-abs(snoise(pos * vec3(1, 1.0, 1) * 0.001 * pow(2.0, i)))) * 200 * pow(0.5, i);
+        fd -= (1-abs(snoise(pos * vec3(1, 2.4, 1) * 0.001 * pow(2.0, i) + snoise(pos * 0.004) * 0.3))) * 200 * pow(0.5, i);
     }
 
     // Add the noise
-    float density = pos.y * 0.0 + fd + 200;
+    float density = (1-mountain(pos.xz * 0.002, 0.1).x) * 6000 + pos.y - 3000;
 
     // Make the terrain flatter
     //density = opSmoothUnion(density + 80, pos.y - 16.0, 30.0);
-    density = max(density, pos.y - 60);
-    density = min(density, pos.y + 60);
+    //density = max(density, pos.y - 60);
+    //density = min(density, pos.y + 60);
     
     int shader_id = 0;
     int texture_id = 0;
@@ -32,7 +32,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
 void get_color_voxel(vec3 pos, vec3 local_uv, Voxel voxel, MaterialVoxel material_voxel, int depth, out ColorVoxel color_voxel) {
     vec3 color = vec3(1, 1, 1);  
-    color_voxel = ColorVoxel(color * material_voxel.hardness);
+    color_voxel = ColorVoxel(color);
 }
 /*
 // Get the detail data at a specific point3

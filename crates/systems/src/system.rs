@@ -251,18 +251,22 @@ impl System {
         let entity_manager_immutable = &*data.entity_manager;
         let filtered_entity_ids = match self.entity_filter {
             Some(x) => {
-                self.entities.par_iter().filter(|entity_id| {
-                    // Filter the entities
-                    let entity_clone = &entity_manager_immutable.get_entity(**entity_id).unwrap();
-                    // Get the linked components
-                    let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.flc_c_bitfield);
-                    x(&linked_components, data)
-                }).cloned().collect()                
-            },
+                self.entities
+                    .par_iter()
+                    .filter(|entity_id| {
+                        // Filter the entities
+                        let entity_clone = &entity_manager_immutable.get_entity(**entity_id).unwrap();
+                        // Get the linked components
+                        let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.flc_c_bitfield);
+                        x(&linked_components, data)
+                    })
+                    .cloned()
+                    .collect()
+            }
             None => {
                 // No filtering, just return all the entities
                 self.entities.clone()
-            },
+            }
         };
         // Only update the entities if we have a a valid event. No need to waste time updating them ¯\_(ツ)_/¯
         match self.entity_update_evn {

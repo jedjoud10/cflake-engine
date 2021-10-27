@@ -83,6 +83,6 @@ void main() {
 	} else if (debug_view == 3) {
 		color = light_val * vec3(1, 1, 1);
 	} else if (debug_view == 4) {
-		color = volumetric_color;
+		color = ambient_lighting_color;
 	}
 }

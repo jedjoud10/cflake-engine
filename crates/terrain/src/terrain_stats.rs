@@ -1,6 +1,6 @@
 // Terrain stats
 #[derive(Default, Debug)]
-pub struct TerrainStats{
+pub struct TerrainStats {
     pub max_chunks_generated: usize,
     pub max_chunks_deleted: usize,
     pub terrain_size: usize,

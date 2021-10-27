@@ -163,9 +163,7 @@ impl World {
         // Update entity manager
         self.update_entity_manager();
 
-        
         self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 1.0).normalized();
-
 
         // Callback
         callback(self);

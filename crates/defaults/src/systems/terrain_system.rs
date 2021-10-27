@@ -58,7 +58,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 // Turn all the newly added nodes into chunks and instantiate them into the world
                 for octree_node in added {
                     // Add the chunk in the chunk manager
-                    td.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));                    
+                    td.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));
                 }
                 // Delete all the removed octree nodes from the world
                 system.terrain_stats.max_chunks_deleted = system.terrain_stats.max_chunks_deleted.max(removed.len());
@@ -183,7 +183,7 @@ pub fn system(data: &mut WorldData) -> System {
         lod_factor: terrain::DEFAULT_LOD_FACTOR,
         nodes: Vec::new(),
         terrain_gen: true,
-        terrain_stats: TerrainStats::default()
+        terrain_stats: TerrainStats::default(),
     });
     system
 }
