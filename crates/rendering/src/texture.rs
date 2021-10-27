@@ -267,6 +267,11 @@ impl Texture {
         self.flags |= TextureFlags::MIPMAPS;
         self
     }
+    // Disable mipmaps
+    pub fn disable_mipmaps(mut self) -> Self {
+        self.flags &= !TextureFlags::MIPMAPS;
+        self
+    }
     // Set the mag and min filters
     pub fn set_filter(mut self, filter: TextureFilter) -> Self {
         self.filter = filter;

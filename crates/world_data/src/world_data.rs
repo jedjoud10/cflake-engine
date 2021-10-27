@@ -16,7 +16,6 @@ pub struct WorldData<'a> {
 #[derive(Default)]
 pub struct CustomWorldData {
     pub main_camera_entity_id: usize,
-    pub sky_entity_id: usize,
     pub sky_texture: usize,
     pub render_system_id: u8,
     pub window: rendering::Window,

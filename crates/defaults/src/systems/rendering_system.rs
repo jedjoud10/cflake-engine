@@ -1,7 +1,7 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, Volumetric};
+use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
 use resources::LoadableResource;
 use std::{ptr::null, time::Instant};
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -340,6 +340,9 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
     */
 
+    // Load sky gradient texture
+    let texture = Texture::new().set_wrapping_mode(TextureWrapping::ClampToEdge).load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher).unwrap();
+    data.custom_data.sky_texture = texture.1;
     // Load the default shader
     let default_shader_name = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],

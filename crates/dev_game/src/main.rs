@@ -35,10 +35,6 @@ pub fn world_initialized(world: &mut World) {
     let mut camera_system = systems::camera_system::system(&mut data);
     camera_system.enable(&mut data);
     world.system_manager.add_system(camera_system);
-    // Load the sky system
-    let mut sky_system = systems::sky_system::system(&mut data);
-    sky_system.enable(&mut data);
-    world.system_manager.add_system(sky_system);
     // Load the default UI system
     let mut ui_system = systems::ui_system::system(&mut data);
     ui_system.enable(&mut data);
