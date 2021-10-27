@@ -110,9 +110,9 @@ impl World {
         // Create a text element
         for x in 0..8 {
             let text_element_1 = ui::Element::new()
-            .set_coordinate_system(ui::CoordinateType::Pixel)
-            .set_position(veclib::Vector2::Y * 40.0 * x as f32)
-            .set_text("", 40.0);
+                .set_coordinate_system(ui::CoordinateType::Pixel)
+                .set_position(veclib::Vector2::Y * 40.0 * x as f32)
+                .set_text("", 40.0);
             root.add_element(text_element_1);
         }
 
@@ -163,6 +163,8 @@ impl World {
         // Update entity manager
         self.update_entity_manager();
 
+        self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 1.0).normalized();
+
         // Callback
         callback(self);
     }
@@ -205,7 +207,7 @@ impl World {
         root.get_element_mut(2).update_text(entity_text, 40.0);
         let entity_text = &format!("#Invalid Entities: {}", self.entity_manager.entities.count_invalid());
         root.get_element_mut(3).update_text(entity_text, 40.0);
-        let x: &[Option<Entity>] = &self.entity_manager.entities.elements; 
+        let x: &[Option<Entity>] = &self.entity_manager.entities.elements;
         let entity_text = &format!("#Valid Entities Byte Size: {}", std::mem::size_of_val(x));
         root.get_element_mut(4).update_text(entity_text, 40.0);
         let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.count_valid());

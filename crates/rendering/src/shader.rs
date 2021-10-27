@@ -142,7 +142,7 @@ impl Shader {
         // Finalize the shader and cache it
         shader.finalize_shader();
         let cached_shader_id = shader_cacher.1.cache_object(shader, &name);
-        
+
         return (shader_cacher.1.id_get_object_mut(cached_shader_id).unwrap(), name, cached_shader_id);
     }
     // Finalizes a vert/frag shader by compiling it
@@ -173,7 +173,7 @@ impl Shader {
             for subshader_program in self.linked_subshaders_programs.iter() {
                 gl::DetachShader(self.program, subshader_program.1);
             }
-            
+
             errors::ErrorCatcher::catch_opengl_errors().expect("Could not finalize shader properly!");
             self.finalized = true;
         }

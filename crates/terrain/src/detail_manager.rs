@@ -17,7 +17,7 @@ pub struct TDetail {
 
 // Manager for detail spawning and such
 pub struct DetailManager {
-    pub chunks_to_groups: HashMap<veclib::Vector3<i64>, Vec<TDetail>> 
+    pub chunks_to_groups: HashMap<veclib::Vector3<i64>, Vec<TDetail>>,
 }
 
 impl DetailManager {

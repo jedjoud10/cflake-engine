@@ -126,7 +126,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         added_chunk_entities_ids.push((entity_id, coords.clone()));
     }
 
-    // Reassign    
+    // Reassign
     let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
     for (entity_id, coords) in added_chunk_entities_ids {
         td.chunk_manager.add_chunk_entity(&coords, entity_id);

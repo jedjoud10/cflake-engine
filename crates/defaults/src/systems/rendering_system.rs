@@ -260,9 +260,9 @@ impl CustomData {
                             model_matrix,
                         );
                     }
-                },
-                None => {},
-            }            
+                }
+                None => {}
+            }
         }
     }
     // Draw a wireframe entity
@@ -417,7 +417,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
     shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
-    shader.set_vec3f32("directional_light_dir", &veclib::Vector3::new(0.0, 1.0, 1.0));
+    shader.set_vec3f32("directional_light_dir", &data.custom_data.light_dir);
     // Textures
     shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
     shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
@@ -460,8 +460,8 @@ fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut Wor
         Some(x) => {
             // Dispose
             x.dispose_models();
-        },
-        None => {},
+        }
+        None => {}
     }
 }
 fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {

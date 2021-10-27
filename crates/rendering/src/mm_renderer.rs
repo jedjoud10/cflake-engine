@@ -65,6 +65,6 @@ impl MultiMaterialRenderer {
     pub fn dispose_models(&mut self) {
         for sub_model_gpu_data in self.sub_models_gpu_data.iter_mut() {
             sub_model_gpu_data.dispose();
-        }        
+        }
     }
 }

@@ -108,12 +108,23 @@ pub fn world_initialized(world: &mut World) {
         )
         .unwrap()
         .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.1))
+        .0
         .load_default_textures(data.texture_cacher);
     let a = TextureLoadOptions {
         filter: TextureFilter::Nearest,
         ..TextureLoadOptions::default()
     };
-    let bound_materials = vec![Some(material.instantiate(data.instance_manager)), Some(material.instantiate(data.instance_manager).set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02)).load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), data.texture_cacher, data.resource_manager).load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), data.texture_cacher, data.resource_manager))];
+    let bound_materials = vec![
+        Some(material.instantiate(data.instance_manager)),
+        Some(
+            material
+                .instantiate(data.instance_manager)
+                .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
+                .0
+                .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), data.texture_cacher, data.resource_manager)
+                .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), data.texture_cacher, data.resource_manager),
+        ),
+    ];
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,
@@ -122,18 +133,25 @@ pub fn world_initialized(world: &mut World) {
         .unwrap();
 
     // Template entity
-    
+
     let mut cube = Entity::new("Cube");
-    cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0))).unwrap();
+    cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
+        .unwrap();
     let model = Model::new().from_path("user\\models\\tools2.mdl3d", data.resource_manager).unwrap();
-    let m = Material::new("M").load_diffuse("user\\textures\\palette.png", Some(TextureLoadOptions {
-        filter: TextureFilter::Nearest,
-        ..TextureLoadOptions::default()
-    }), data.texture_cacher, data.resource_manager).load_default_textures(data.texture_cacher);
+    let m = Material::new("M")
+        .load_diffuse(
+            "user\\textures\\palette.png",
+            Some(TextureLoadOptions {
+                filter: TextureFilter::Nearest,
+                ..TextureLoadOptions::default()
+            }),
+            data.texture_cacher,
+            data.resource_manager,
+        )
+        .load_default_textures(data.texture_cacher);
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);
-    
 
     data.entity_manager.add_entity_s(terrain_entity);
 }

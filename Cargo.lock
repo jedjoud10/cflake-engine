@@ -817,6 +817,7 @@ dependencies = [
  "rendering",
  "resources",
  "ui",
+ "veclib",
 ]
 
 [[package]]

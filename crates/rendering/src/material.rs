@@ -42,9 +42,9 @@ impl Default for Material {
             visible: true,
         };
         // Set the default shader args
-        let material = material.set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE));
-        let material = material.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::ONE));
-        let material = material.set_uniform("normals_strength", DefaultUniform::F32(1.0));
+        let material = material.set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE)).0;
+        let material = material.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::ONE)).0;
+        let material = material.set_uniform("normals_strength", DefaultUniform::F32(1.0)).0;
         return material;
     }
 }
@@ -157,9 +157,15 @@ impl Material {
         return self;
     }
     // Set a default uniform
-    pub fn set_uniform(mut self, uniform_name: &str, uniform: DefaultUniform) -> Self {
+    pub fn set_uniform(mut self, uniform_name: &str, uniform: DefaultUniform) -> (Self, usize) {
+        let i = self.default_uniforms.len();
         self.default_uniforms.push((uniform_name.to_string(), uniform));
-        return self;
+        return (self, i);
+    }
+    // Update a default uniform
+    pub fn update_uniform(&mut self, uniform_index: usize, new_uniform: DefaultUniform) {
+        let name = self.default_uniforms.get(uniform_index).unwrap().0.clone();
+        self.default_uniforms[uniform_index] = (name, new_uniform);
     }
 }
 

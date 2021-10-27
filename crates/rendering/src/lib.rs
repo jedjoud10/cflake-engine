@@ -1,4 +1,5 @@
 // Export
+mod array_data;
 mod compute_shader;
 mod material;
 mod mm_renderer;
@@ -10,7 +11,7 @@ mod subshader;
 mod texture;
 mod volumetric;
 mod window;
-mod array_data;
+pub use array_data::*;
 pub use compute_shader::*;
 pub use material::*;
 pub use mm_renderer::*;
@@ -21,5 +22,4 @@ pub use shader::*;
 pub use subshader::*;
 pub use texture::*;
 pub use volumetric::*;
-pub use array_data::*;
 pub use window::Window;

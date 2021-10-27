@@ -6,7 +6,7 @@ pub struct ComputeShader {
     pub running: bool,
     // Do we have any array data?
     // TODO: Make this support multiple array data
-    pub array_data: Option<ArrayData>
+    pub array_data: Option<ArrayData>,
 }
 
 // Compute shader code
@@ -55,10 +55,10 @@ impl ComputeShader {
             Some(x) => {
                 let x = x.read::<T>();
                 return Some(x);
-            },
+            }
             None => todo!(),
         }
         // Were we sucsessful?
         return None;
-    } 
+    }
 }

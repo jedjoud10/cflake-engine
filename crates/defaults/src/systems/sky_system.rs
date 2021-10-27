@@ -1,6 +1,6 @@
 use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
-use rendering::{Material, Model, Renderer, Shader, Texture, TextureWrapping};
+use rendering::{DefaultUniform, Material, Model, Renderer, Shader, Texture, TextureWrapping};
 use resources::LoadableResource;
 use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
@@ -37,6 +37,7 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
         .set_shader(sky_shader_name.as_str());
 
     // Link components
+    let (material, id) = material.set_uniform("light_dir", DefaultUniform::Vec3F32(data.custom_data.light_dir));
     sky.link_component::<Renderer>(data.component_manager, Renderer::default().set_material(material).set_model(model).set_wireframe(false))
         .unwrap();
 
@@ -49,7 +50,8 @@ pub fn system_enabled(_system_data: &mut SystemData, data: &mut WorldData) {
     )
     .unwrap();
 
-    sky.link_default_component::<components::Sky>(data.component_manager).unwrap();
+    sky.link_component::<components::Sky>(data.component_manager, components::Sky { light_dir_index: id })
+        .unwrap();
     // Add entity
     data.custom_data.sky_entity_id = sky.entity_id;
     data.entity_manager.add_entity_s(sky);
@@ -67,6 +69,10 @@ fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &F
     // Update the position and update the matrix
     transform.position = position;
     transform.update_matrix();
+    let id = components.get_component::<components::Sky>(data.component_manager).unwrap().light_dir_index;
+    // Update the light direction uniform
+    let material = components.get_component_mut::<Renderer>(data.component_manager).unwrap().material.as_mut().unwrap();
+    material.update_uniform(id, DefaultUniform::Vec3F32(data.custom_data.light_dir));
 }
 
 // Create the sky system
@@ -74,6 +80,7 @@ pub fn system(data: &mut WorldData) -> System {
     let mut system = System::new();
     // Link the components
     system.link_component::<components::Sky>(data.component_manager).unwrap();
+    system.link_component::<Renderer>(data.component_manager).unwrap();
     system.link_component::<components::Transform>(data.component_manager).unwrap();
     // Attach the events
     system.event(SystemEventType::SystemEnabled(system_enabled));

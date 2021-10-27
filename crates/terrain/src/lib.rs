@@ -8,21 +8,21 @@ pub const DEFAULT_LOD_FACTOR: f32 = 2.0;
 pub const ISOLINE: u16 = 32767;
 // Export
 mod bound_checker;
-mod chunk_data;
 mod chunk;
+mod chunk_data;
 mod chunk_manager;
-mod detail_manager;
 mod density;
+mod detail_manager;
 pub mod mesher;
 mod model;
 mod tables;
 mod voxel;
 
 pub use bound_checker::*;
-pub use chunk_data::*;
 pub use chunk::*;
-pub use detail_manager::*;
+pub use chunk_data::*;
 pub use chunk_manager::*;
+pub use detail_manager::*;
 pub use model::*;
 pub use tables::*;
 pub use voxel::*;

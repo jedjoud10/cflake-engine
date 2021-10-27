@@ -34,7 +34,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
                 // Leading Voxel
-                let lv = voxels[i + DATA_OFFSET_TABLE[0]]; 
+                let lv = voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
                 sub_model_hashmap.entry(lv.shader_id).or_insert((Model::default(), Vec::new()));

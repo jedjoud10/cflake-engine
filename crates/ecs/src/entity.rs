@@ -1,4 +1,4 @@
-use crate::{LoadState, load_state};
+use crate::{load_state, LoadState};
 
 use super::{Component, ComponentID, ComponentManager};
 use errors::ECSError;

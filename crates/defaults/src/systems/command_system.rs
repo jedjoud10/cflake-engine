@@ -15,7 +15,7 @@ fn system_postfire(_system_data: &mut SystemData, data: &mut WorldData) {
     if data.debug.console.listen_command("toggle-ui").is_some() {
         let r = data.ui_manager.get_default_root_mut();
         r.visible = !r.visible;
-    }    
+    }
 }
 
 pub fn system(data: &mut WorldData) -> System {

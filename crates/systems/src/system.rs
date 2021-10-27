@@ -90,7 +90,7 @@ pub enum SystemEventType {
     EntityRemovedIncremental(fn(&mut SystemData, usize, &mut WorldData)),
     EntityUpdate(fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)),
     // Entity custom event
-    EntitycustomEvent(fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent))
+    EntitycustomEvent(fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent)),
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
@@ -178,17 +178,25 @@ impl System {
     }
     // Run a specific custom entity event on a specific entity
     fn custom_entity_event(&self, entity: &Entity, data: &WorldData, custom_entity_event: EntityCustomEvent) {
-        if !self.enabled { return; }
+        if !self.enabled {
+            return;
+        }
         match self.entity_custom_event {
-            Some(x) => {
-                x(&self.system_data, entity, &FilteredLinkedComponents::get_filtered_linked_components(entity, self.required_c_bitfield), data, custom_entity_event)
-            },
-            None => {},
+            Some(x) => x(
+                &self.system_data,
+                entity,
+                &FilteredLinkedComponents::get_filtered_linked_components(entity, self.required_c_bitfield),
+                data,
+                custom_entity_event,
+            ),
+            None => {}
         }
     }
     // Add an entity to the current system
     fn add_entity(&mut self, entity: &Entity, data: &mut WorldData) {
-        if !self.enabled { return; }
+        if !self.enabled {
+            return;
+        }
         self.entities.push(entity.entity_id);
         self.update_entity_load_state(entity, data, (LoadState::Loaded, LoadStateUpdateReason::AddedEntity));
         // Fire the event
@@ -199,7 +207,9 @@ impl System {
     }
     // Remove an entity from the current system
     fn remove_entity(&mut self, entity_id: usize, entity: &Entity, data: &mut WorldData) {
-        if !self.enabled { return; }
+        if !self.enabled {
+            return;
+        }
         // Search for the entity with the matching entity_id
         let system_entity_local_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
         self.entities.remove(system_entity_local_id);
@@ -225,7 +235,9 @@ impl System {
     }
     // Run the system for a single iteration
     fn run_system(&mut self, data: &mut WorldData) {
-        if !self.enabled { return; }
+        if !self.enabled {
+            return;
+        }
         // Pre fire event
         match self.system_prefire_evn {
             Some(x) => x(&mut self.system_data, data),

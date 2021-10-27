@@ -208,7 +208,7 @@ impl ModelDataGPU {
                 gl::DeleteBuffers(1, &mut self.tangent_buf);
                 gl::DeleteBuffers(1, &mut self.color_buf);
                 gl::DeleteBuffers(1, &mut self.element_buffer_object);
-                
+
                 // Delete the vertex array
                 gl::DeleteVertexArrays(1, &mut self.vertex_array_object);
                 self.initialized = false;

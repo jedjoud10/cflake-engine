@@ -16,6 +16,6 @@ pub struct TModel {
     // The sub models and their corresponding material
     pub shader_model_hashmap: HashMap<u8, Model>,
     pub skirt_models: HashMap<u8, Model>,
-    // The marching cube cases where we had a surface intersection 
-    pub intersection_cases: Option<Vec<TCase>>, 
+    // The marching cube cases where we had a surface intersection
+    pub intersection_cases: Option<Vec<TCase>>,
 }

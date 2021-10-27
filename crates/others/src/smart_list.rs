@@ -1,13 +1,19 @@
 // The smart list system
 #[derive(Debug, Clone)]
-pub struct SmartList<T> where T: Sized {
+pub struct SmartList<T>
+where
+    T: Sized,
+{
     pub elements: Vec<Option<T>>,
     pub size_in_bytes: usize,
 }
 
 impl<T> Default for SmartList<T> {
     fn default() -> Self {
-        Self { elements: Vec::new(), size_in_bytes: 0 }
+        Self {
+            elements: Vec::new(),
+            size_in_bytes: 0,
+        }
     }
 }
 

@@ -14,3 +14,4 @@ errors = { path = "../errors" }
 rendering = { path = "../rendering" }
 resources = { path = "../resources" }
 debug = { path = "../debug" }
+veclib = { git = "https://github.com/jedjoud10/veclib" }

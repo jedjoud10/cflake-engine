@@ -20,4 +20,5 @@ pub struct CustomWorldData {
     pub sky_texture: usize,
     pub render_system_id: u8,
     pub window: rendering::Window,
+    pub light_dir: veclib::Vector3<f32>,
 }

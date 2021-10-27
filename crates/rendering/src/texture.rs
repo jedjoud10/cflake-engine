@@ -451,12 +451,12 @@ impl Texture {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                },
+                }
                 TextureType::Texture3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                },
+                }
                 TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
@@ -483,12 +483,12 @@ impl Texture {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::GetTexImage(gl::TEXTURE_2D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                },
+                }
                 TextureType::Texture3D(_, _, _) => {
                     // Bind the buffer before reading
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
                     gl::GetTexImage(gl::TEXTURE_3D, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-                },
+                }
                 TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
