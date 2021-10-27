@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use debug::DefaultDebugRendererType;
 use terrain::{BoundChecker, ChunkCoords};
 
@@ -166,11 +168,6 @@ pub fn system(data: &mut WorldData) -> System {
     system.event(SystemEventType::EntityUpdate(entity_update));
     system.event(SystemEventType::SystemPrefire(system_prefire));
     // Create debug commands
-    let command = debug::Command {
-        name: "terrain-set-lod-factor".to_string(),
-        inputs: vec![debug::CommandInput::new::<f32>("-v")],
-    };
-    data.debug.console.register_template_command(command);
     let command = debug::Command {
         name: "toggle-terrain-gen".to_string(),
         inputs: Vec::new(),

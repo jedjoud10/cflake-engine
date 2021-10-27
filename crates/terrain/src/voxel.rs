@@ -72,7 +72,7 @@ impl VoxelGenerator {
             .unwrap();
     }
     // Update the last frame variable and dispatch the compute shader
-    pub fn generate_voxels_start(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>) {
+    pub fn generate_voxels_start(&self, shader_cacher: &mut CacheManager<Shader>, size: u64, depth: u8, position: veclib::Vector3<i64>) {
         // First pass
         // Set the compute shader variables and voxel texture
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
@@ -80,8 +80,9 @@ impl VoxelGenerator {
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
-        shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
-        shader.set_i32("node_size", &(*size as i32));
+        shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(position));
+        shader.set_i32("node_size", &(size as i32));
+        shader.set_i32("depth", &(depth as i32));
         // Run the compute shader
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
@@ -93,7 +94,7 @@ impl VoxelGenerator {
             .unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: &u64, position: &veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
+    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: u64, depth: u8, position: veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
         let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
@@ -110,8 +111,9 @@ impl VoxelGenerator {
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
         color_shader.set_t3d("material_sampler", &self.material_texture, gl::TEXTURE2);
         color_shader.set_i32("chunk_size", &(CHUNK_SIZE as i32));
-        color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(*position));
-        color_shader.set_i32("node_size", &(*size as i32));
+        color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(position));
+        color_shader.set_i32("node_size", &(size as i32));
+        color_shader.set_i32("depth", &(depth as i32));
         let color_compute = match &mut color_shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
             _ => todo!(),
@@ -144,7 +146,6 @@ impl VoxelGenerator {
             min = min.min(density);
             max = max.max(density);
         }
-        println!("{}", i.elapsed().as_micros());
         // Only generate the mesh if we have a surface
         (min < ISOLINE) != (max < ISOLINE)
     }

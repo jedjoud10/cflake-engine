@@ -234,6 +234,11 @@ impl World {
         if self.debug.console.listen_command("toggle-fullscreen").is_some() {
             self.toggle_fullscreen(glfw, window);
         }
+        // Toggle the rendering
+        if self.debug.console.listen_command("toggle-render").is_some() {
+            let rendering_system = self.system_manager.get_system_mut(0).unwrap();
+            rendering_system.disable();
+        }
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, _window: &mut glfw::Window, _glfw: &mut glfw::Glfw) {

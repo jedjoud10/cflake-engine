@@ -7,6 +7,7 @@ layout(binding = 1) writeonly uniform image3D voxel_image;
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
 layout(location = 4) uniform int chunk_size;
+layout(location = 5) uniform int depth;
 
 void main() {
     // Get the pixel coord
@@ -20,7 +21,7 @@ void main() {
     // Create the pixel value    
     Voxel voxel = Voxel(0.0);
     MaterialVoxel material_voxel = MaterialVoxel(0, 0, 0, 0);
-    get_voxel(pos, voxel, material_voxel);    
+    get_voxel(pos, depth, voxel, material_voxel);    
     // Write the voxel pixel
     vec4 pixel = vec4(clamp(voxel.density + 32767, 0.0, 65535.0) / 65535, 0.0, 0.0, 0.0);        
     // Write the material pixel

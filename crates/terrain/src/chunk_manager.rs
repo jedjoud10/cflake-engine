@@ -128,7 +128,7 @@ impl ChunkManager {
                     self.voxels_generating = false;
                     self.last_frame_voxels_generated = 0;
                     // Generate the data for this chunk
-                    let has_surface = voxel_generator.generate_voxels_end(shader_cacher, &chunk_coords.size, &chunk_coords.position, &mut voxels);
+                    let has_surface = voxel_generator.generate_voxels_end(shader_cacher, chunk_coords.size, chunk_coords.depth, chunk_coords.position, &mut voxels);
                     // Since we just generated the chunk we can remove it from the generated chunks
                     self.chunks_to_generate.remove(0);
 
@@ -144,7 +144,7 @@ impl ChunkManager {
                     // The voxels didn't start generation yet, so start it
                     self.voxels_generating = true;
                     self.last_frame_voxels_generated = frame_count;
-                    voxel_generator.generate_voxels_start(shader_cacher, &chunk_coords.size, &chunk_coords.position);
+                    voxel_generator.generate_voxels_start(shader_cacher, chunk_coords.size, chunk_coords.depth, chunk_coords.position);
                     // We aren't generating a mesh so return none
                 }
             }

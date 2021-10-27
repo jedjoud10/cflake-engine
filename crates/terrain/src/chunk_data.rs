@@ -1,8 +1,6 @@
 use math::octrees::OctreeNode;
 
 use super::Voxel;
-use super::VoxelGenerator;
-use super::CHUNK_SIZE;
 
 // Some chunk data
 pub struct ChunkData {
