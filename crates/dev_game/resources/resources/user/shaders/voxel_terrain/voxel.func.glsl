@@ -17,7 +17,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
 
     // Make the terrain flatter
     density = opSmoothUnion(density + pos.y, pos.y, 0.1);
-    density = max(density, pos.y - 30);
+    //density = max(density, pos.y - 30);
     
     int shader_id = 0;
     int texture_id = 0;
@@ -31,6 +31,9 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
 void get_color_voxel(vec3 pos, vec3 local_uv, Voxel voxel, MaterialVoxel material_voxel, int depth, out ColorVoxel color_voxel) {
     vec3 color = vec3(1, 1, 1);  
+    if (pos.y > 60) {
+        color = vec3(1, 0, 0);
+    }
     color_voxel = ColorVoxel(color);
 }
 /*
