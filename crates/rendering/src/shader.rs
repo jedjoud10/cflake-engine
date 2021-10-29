@@ -135,6 +135,8 @@ impl Shader {
                 // Cache it, and link it
                 let _subshader = shader_cacher.0.cache_object(subshader, subshader_path);
                 shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
+                // Unload the resource since we just cached the shader
+                //resource_manager.unload_resouce(subshader_path);
             }
         }
         // Set the additional shader
