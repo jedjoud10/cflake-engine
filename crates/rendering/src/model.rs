@@ -1,6 +1,6 @@
-use resources::LoadableResource;
-use resources::Resource;
 use std::{ffi::c_void, mem::size_of, ptr::null};
+
+use assets::Asset;
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Debug, Clone)]
@@ -13,24 +13,10 @@ pub struct Model {
     pub triangles: Vec<u32>,
 }
 
-impl LoadableResource for Model {
-    // Turns a loaded resource model into an actual model
-    fn from_resource(self, resource: &Resource) -> Option<Self> {
-        match resource {
-            Resource::Model(model) => {
-                // Turn the loaded model into a normal model
-                let new_model = Self {
-                    vertices: model.vertices.clone(),
-                    normals: model.normals.clone(),
-                    tangents: model.tangents.clone(),
-                    uvs: model.uvs.clone(),
-                    triangles: model.indices.clone(),
-                    colors: model.colors.clone(),
-                };
-                Some(new_model)
-            }
-            _ => None,
-        }
+impl Asset for Model {
+    // Load a model from an asset
+    fn load(data: assets::AssetMetadata) -> Self where Self: Sized {
+        todo!()
     }
 }
 

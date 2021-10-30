@@ -1,6 +1,6 @@
 use std::{ffi::CString, ptr::null};
 
-use resources::Resource;
+use assets::Asset;
 
 // Sub shader type
 #[derive(Debug, Copy, Clone)]
@@ -19,28 +19,14 @@ pub struct SubShader {
     pub subshader_type: SubShaderType,
 }
 
-impl SubShader {
-    // Create a subshader from a loaded subshader resource
-    pub fn from_resource(resource: &Resource) -> Option<Self> {
-        match resource {
-            Resource::Shader(shader, shader_name) => {
-                // Turn the loaded sub shader into a normal sub shader
-                let subshader = Self {
-                    name: shader_name.clone(),
-                    program: 0,
-                    source: shader.source.clone(),
-                    subshader_type: match shader.subshader_type {
-                        0 => SubShaderType::Vertex,
-                        1 => SubShaderType::Fragment,
-                        2 => SubShaderType::Compute,
-                        _ => panic!("Subshader type not valid!"),
-                    },
-                };
-                Some(subshader)
-            }
-            _ => None,
-        }
+// Create a subshader from an asset
+impl Asset for SubShader {
+    fn load(data: assets::AssetMetadata) -> Self where Self: Sized {
+        todo!()
     }
+}
+
+impl SubShader {
     // Compile the current subshader's source code
     pub fn compile_subshader(&mut self) {
         let shader_type: u32;

@@ -1,9 +1,8 @@
 use bitflags::bitflags;
-use errors::ResourceError;
 use gl;
 use image::EncodableLayout;
 use others::CacheManager;
-use resources::{LoadableResource, Resource, ResourceManager};
+use assets::*;
 
 use std::{ffi::c_void, ptr::null};
 
@@ -106,9 +105,13 @@ impl Default for Texture {
     }
 }
 
-// Loadable resource
-impl LoadableResource for Texture {
-    // Load a texture from a resource file
+// Loadable asset
+impl Asset for Texture {
+    fn load(data: AssetMetadata) -> Self where Self: Sized {
+        todo!()
+    }
+    // Load a texture from the bundled metadata
+    /*
     fn from_resource(self, resource: &Resource) -> Option<Self> {
         match resource {
             Resource::Texture(texture, texture_name) => {
@@ -142,6 +145,7 @@ impl LoadableResource for Texture {
             _ => None,
         }
     }
+    */
 }
 
 // Loading / caching stuff
@@ -167,9 +171,9 @@ impl Texture {
     pub fn load_texture<'a>(
         self,
         local_path: &str,
-        resource_manager: &mut ResourceManager,
+        resource_manager: &AssetManager,
         texture_cacher: &'a mut CacheManager<Texture>,
-    ) -> Result<(&'a Self, usize), ResourceError> {
+    ) -> Result<(&'a Self, usize), AssetLoadError> {
         // Load the resource
         let resource = resource_manager.load_packed_resource(local_path)?;
         // If the texture was already cached, just loaded from cache
@@ -180,7 +184,7 @@ impl Texture {
             Ok((texture, texture_id))
         } else {
             // If it not cached, then load the texture from that resource
-            let texture = self.from_resource(resource).ok_or(ResourceError::new_str("Could not load texture!"))?;
+            let texture = self.from_resource(resource).ok_or(Asset::new_str("Could not load texture!"))?;
             let (texture, texture_id) = texture.cache_texture(texture_cacher).unwrap();
             Ok((texture, texture_id))
         }

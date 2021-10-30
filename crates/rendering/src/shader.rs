@@ -3,10 +3,10 @@ use crate::SubShader;
 use crate::SubShaderType;
 use crate::Texture;
 use crate::TextureShaderAccessType;
+use assets::AssetManager;
 use errors::RenderingError;
 use gl;
 use others::CacheManager;
-use resources::ResourceManager;
 use std::ffi::CString;
 
 // A shader that contains two sub shaders that are compiled independently
@@ -34,7 +34,7 @@ impl Default for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(lines: Vec<String>, resource_manager: &'a mut ResourceManager, additional_shader_paths: Option<&Vec<&str>>) -> Vec<String> {
+    fn load_includes<'a>(lines: Vec<String>, asset_manager: &'a AssetManager, additional_shader_paths: Option<&Vec<&str>>) -> Vec<String> {
         let mut included_lines: Vec<String> = Vec::new();
         for line in lines.iter() {
             // Check if this is an include statement
@@ -43,7 +43,7 @@ impl Shader {
                 let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace(r#"""#, "");
                 let local_path = local_path.trim_start();
                 // Load the function shader text
-                let text = resource_manager.load_lines_packed_resource(&local_path, 1).unwrap();
+                let text = asset_manager.load_lines_packed_resource(&local_path, 1).unwrap();
                 let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                 included_lines.extend(new_lines);
             }
@@ -56,7 +56,7 @@ impl Shader {
                         let local_path_id = &c[2..(c.len() - 2)].parse::<usize>().unwrap();
                         println!("{}", local_path_id);
                         // Load the function shader text
-                        let text = resource_manager.load_lines_packed_resource(paths.get(*local_path_id).unwrap(), 1).unwrap();
+                        let text = asset_manager.load_lines_packed_resource(paths.get(*local_path_id).unwrap(), 1).unwrap();
                         let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                         included_lines.extend(new_lines);
                     }
@@ -70,7 +70,7 @@ impl Shader {
     // Creates a shader from multiple subshader files
     pub fn new<'a>(
         subshader_paths: Vec<&str>,
-        resource_manager: &'a mut ResourceManager,
+        asset_manager: &'a AssetManager,
         shader_cacher: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
         additional_shader: Option<AdditionalShader>,
         additional_shader_paths: Option<Vec<&str>>,
@@ -86,7 +86,7 @@ impl Shader {
                 shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
             } else {
                 // It was not cached, so we need to cache it
-                let resource = resource_manager.load_packed_resource(subshader_path).unwrap();
+                let resource = asset_manager.load_packed_resource(subshader_path).unwrap();
                 let mut subshader = SubShader::from_resource(resource).unwrap();
 
                 // Recursively load the shader includes
@@ -108,7 +108,7 @@ impl Shader {
                     // Get the lines
                     let lines = shader_sources_to_evalute[0].clone();
                     // Recursively load the includes
-                    let orignal_local_included_lines = Self::load_includes(lines.clone(), resource_manager, (&additional_shader_paths).as_ref());
+                    let orignal_local_included_lines = Self::load_includes(lines.clone(), asset_manager, (&additional_shader_paths).as_ref());
                     // Extend from the start of the vector
                     let mut local_indluded_lines = orignal_local_included_lines.clone();
                     local_indluded_lines.extend(included_lines);

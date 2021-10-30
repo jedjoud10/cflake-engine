@@ -1,7 +1,6 @@
 use math;
 use others::CacheManager;
 use rendering::{Model, Shader, SubShader};
-use resources::ResourceManager;
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // Constants

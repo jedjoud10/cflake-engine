@@ -4,7 +4,6 @@ use crate::{DefaultUniform, Texture, TextureFilter, TextureLoadOptions, TextureW
 
 use bitflags::bitflags;
 use others::CacheManager;
-use resources::ResourceManager;
 
 bitflags! {
     pub struct MaterialFlags: u8 {

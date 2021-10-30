@@ -11,6 +11,12 @@ pub struct AssetMetadata {
     // Doodoo water
     pub load_type: AssetLoadType
 }
+impl AssetMetadata {
+    // Turn the bytes into a UTF8 string
+    pub fn read_string(&self) -> String {
+        String::from_utf8(self.bytes.clone()).unwrap()
+    }
+}
 // A single asset, that can be loaded directly from raw bytes bundled in the .dll
 pub trait Asset {
     // Load this asset from some bytes with some sprinkles of metadata

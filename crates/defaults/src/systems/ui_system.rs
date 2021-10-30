@@ -3,7 +3,6 @@ use std::{ffi::c_void, ptr::null};
 
 use fonts::{Font, FontOptions};
 use rendering::Shader;
-use resources::LoadableResource;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use ui::ElementType;
 use world_data::WorldData;

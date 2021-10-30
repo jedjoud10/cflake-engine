@@ -1,8 +1,8 @@
 use crate::MultiMaterialRenderer;
 
 use super::{model::Model, model::ModelDataGPU, Material, RendererFlags};
+use assets::AssetManager;
 use ecs::{Component, ComponentID, ComponentInternal};
-use resources::{LoadableResource, ResourceManager};
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub render_state: EntityRenderState,
@@ -39,8 +39,8 @@ impl Renderer {
         return Self::default().set_material(Material::default());
     }
     // Load a model
-    pub fn load_model(mut self, model_path: &str, resource_manager: &mut ResourceManager) -> Self {
-        let resource = resource_manager.load_packed_resource(model_path).unwrap();
+    pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Self {
+        let resource = asset_manager.load_packed_resource(model_path).unwrap();
         let model = Model::new().from_resource(resource).unwrap();
         self.model = model;
         return self;

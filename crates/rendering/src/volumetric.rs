@@ -1,5 +1,5 @@
+use assets::AssetManager;
 use others::CacheManager;
-use resources::ResourceManager;
 
 use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureType, TextureWrapping};
 
@@ -26,11 +26,11 @@ pub struct Volumetric {
 
 impl Volumetric {
     // Load the necessary compute shaders
-    pub fn load_compute_shaders(&mut self, resource_manager: &mut ResourceManager, shader_cacher: &mut (CacheManager<SubShader>, CacheManager<Shader>)) {
+    pub fn load_compute_shaders(&mut self, asset_manager: &AssetManager, shader_cacher: &mut (CacheManager<SubShader>, CacheManager<Shader>)) {
         // Load generator compute
         self.compute_generator_id = Shader::new(
             vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"],
-            resource_manager,
+            asset_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
             None,
@@ -39,7 +39,7 @@ impl Volumetric {
         // Load the volumetric compute
         self.compute_id = Shader::new(
             vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"],
-            resource_manager,
+            asset_manager,
             shader_cacher,
             Some(AdditionalShader::Compute(ComputeShader::default())),
             None,
