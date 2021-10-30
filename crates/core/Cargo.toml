@@ -17,7 +17,7 @@ ecs = { path = "../ecs" }
 ui = { path = "../ui" }
 errors = { path = "../errors" }
 rendering = { path = "../rendering" }
-resources = { path = "../resources" }
+assets = { path = "../assets" }
 debug = { path = "../debug" }
 fonts = { path = "../fonts" }
 defaults = { path = "../defaults" }

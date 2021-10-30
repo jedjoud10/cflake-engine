@@ -8,6 +8,3 @@ build = "build.rs"
 
 [dependencies]
 main = { path = "../main" }
-
-[build-dependencies]
-resources_packer = { path = "../resources_packer" }

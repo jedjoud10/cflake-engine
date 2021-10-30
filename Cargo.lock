@@ -21,6 +21,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbf56136a5198c7b01a49e3afcbef6cf84597273d298f54432926024107b0109"
 
 [[package]]
+name = "assets"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "errors",
+ "image",
+ "veclib",
+ "walkdir",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -79,6 +90,7 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 name = "core"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "debug",
  "defaults",
  "ecs",
@@ -90,7 +102,6 @@ dependencies = [
  "io",
  "others",
  "rendering",
- "resources",
  "systems",
  "ui",
  "veclib",
@@ -154,11 +165,11 @@ dependencies = [
 name = "debug"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "gl",
  "math",
  "others",
  "rendering",
- "resources",
  "veclib",
 ]
 
@@ -166,6 +177,7 @@ dependencies = [
 name = "defaults"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "debug",
  "ecs",
  "errors",
@@ -176,7 +188,6 @@ dependencies = [
  "others",
  "physics",
  "rendering",
- "resources",
  "systems",
  "terrain",
  "ui",
@@ -199,7 +210,6 @@ name = "dev_game"
 version = "0.1.0"
 dependencies = [
  "main",
- "resources_packer",
 ]
 
 [[package]]
@@ -259,9 +269,9 @@ name = "fonts"
 version = "0.1.0"
 dependencies = [
  "ascii",
+ "assets",
  "gl",
  "rendering",
- "resources",
  "veclib",
 ]
 
@@ -414,6 +424,7 @@ dependencies = [
 name = "main"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "core",
  "debug",
  "defaults",
@@ -425,7 +436,6 @@ dependencies = [
  "math",
  "others",
  "rendering",
- "resources",
  "systems",
  "terrain",
  "ui",
@@ -628,36 +638,14 @@ dependencies = [
 name = "rendering"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "bitflags",
  "ecs",
  "errors",
  "gl",
  "image",
  "others",
- "resources",
  "veclib",
-]
-
-[[package]]
-name = "resources"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "errors",
- "image",
- "veclib",
- "walkdir",
-]
-
-[[package]]
-name = "resources_packer"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "image",
- "resources",
- "veclib",
- "walkdir",
 ]
 
 [[package]]
@@ -741,9 +729,9 @@ dependencies = [
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "fonts",
  "others",
- "resources",
  "veclib",
 ]
 
@@ -810,13 +798,13 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 name = "world_data"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "debug",
  "ecs",
  "errors",
  "input",
  "others",
  "rendering",
- "resources",
  "ui",
  "veclib",
 ]

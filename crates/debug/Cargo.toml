@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-resources = { path = "../resources" }
+assets = { path = "../assets" }
 others = { path = "../others" }
 rendering = { path = "../rendering" }
 math = { path = "../math" }

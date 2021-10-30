@@ -9,4 +9,4 @@ edition = "2018"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 others = { path = "../others" }
 fonts = { path = "../fonts" }
-resources = { path = "../resources" }
+assets = { path = "../assets" }

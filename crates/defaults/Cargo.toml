@@ -20,5 +20,5 @@ terrain = { path = "../terrain" }
 debug = { path = "../debug" }
 input = { path = "../input" }
 others = { path = "../others" }
-resources = { path = "../resources" }
+assets = { path = "../assets" }
 errors = { path = "../errors" }

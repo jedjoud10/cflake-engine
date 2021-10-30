@@ -18,7 +18,7 @@ others = { path = "../others" }
 ecs = { path = "../ecs" }
 errors = { path = "../errors" }
 rendering = { path = "../rendering" }
-resources = { path = "../resources" }
+assets = { path = "../assets" }
 debug = { path = "../debug" }
 math = { path = "../math" }
 ui = { path = "../ui" }
