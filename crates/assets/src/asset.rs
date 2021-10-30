@@ -25,14 +25,14 @@ impl AssetMetadata {
 // A cached asset
 pub struct CachedObject {
     pub cache_name: String,
-    pub object: Rc<dyn Asset>
+    pub object: Rc<dyn Any>
 }
 
 impl CachedObject {
     // Cast this cached asset to a specific struct
     pub fn cast<T: Sized + 'static>(&self) -> &T {
         let r = &self.object;
-        let t = r.as_any().downcast_ref::<T>().unwrap();
+        let t = r.downcast_ref::<T>().unwrap();
         return t;
     }
 }
@@ -51,9 +51,12 @@ pub trait Asset {
         if asset_manager.cached(object_name) {
             // This object is cached
             let object = asset_manager.load_cached(object_name).unwrap();
-            let borrow = object.object.as_any().downcast_ref::<Self>().unwrap(); 
+            let any = &object.object;
+            let t = any;
+            let borrow = t.as_ref().unwrap(); 
             // Put it back into an Rc
-            let rc_object = Rc::new()
+            let rc_object = Rc::clone(borrow);
+            rc_object
         } else {
             // This object was not cached, cache it
             let rc_object = asset_manager.cache(object_name, self).unwrap();
