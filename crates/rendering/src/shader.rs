@@ -70,7 +70,6 @@ impl Shader {
     pub fn new<'a>(
         subshader_paths: Vec<&str>,
         asset_manager: &'a AssetManager,
-        shader_cacher: &'a mut (CacheManager<SubShader>, CacheManager<Shader>),
         additional_shader: Option<AdditionalShader>,
         additional_shader_paths: Option<Vec<&str>>,
     ) -> (&'a mut Self, String, usize) {

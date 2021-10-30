@@ -6,7 +6,7 @@ use std::{any::Any, collections::HashMap};
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
     component_ids: HashMap<String, usize>,
-    pub smart_components_list: SmartList<Box<dyn ComponentInternal + Send + Sync>>,
+    pub smart_components_list: SmartList<Box<dyn ComponentInternal>>,
     pub current_component_id: usize,
 }
 
@@ -51,18 +51,18 @@ impl ComponentManager {
         self.component_ids.contains_key(&T::get_component_name())
     }
     // Add a specific linked componment to the component manager, returns the global IDs of the components
-    pub fn add_linked_component<T: Component + ComponentID + Send + Sync + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
+    pub fn add_linked_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
         let global_id = self.smart_components_list.add_element(Box::new(component));
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a Box<dyn ComponentInternal + Send + Sync>) -> Result<&'a T, ECSError> {
+    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a Box<dyn ComponentInternal>) -> Result<&'a T, ECSError> {
         let component_any: &dyn Any = boxed_component.as_any();
         let final_component = component_any.downcast_ref::<T>().ok_or(ECSError::new_str("Could not cast component"))?;
         Ok(final_component)
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut Box<dyn ComponentInternal + Send + Sync>) -> Result<&'a mut T, ECSError> {
+    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut Box<dyn ComponentInternal>) -> Result<&'a mut T, ECSError> {
         let component_any: &mut dyn Any = boxed_component.as_any_mut();
         let final_component = component_any.downcast_mut::<T>().ok_or(ECSError::new_str("Could not cast component"))?;
         Ok(final_component)
@@ -98,7 +98,7 @@ impl ComponentManager {
 }
 // The main component trait
 // We do a little bit of googling https://stackoverflow.com/questions/26983355/is-there-a-way-to-combine-multiple-traits-in-order-to-define-a-new-trait
-pub trait Component: ComponentInternal + ComponentID + Send + Sync + Default {}
+pub trait Component: ComponentInternal + ComponentID + Default {}
 // A component trait that can be added to other components
 pub trait ComponentInternal {
     fn as_any(&self) -> &dyn Any;

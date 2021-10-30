@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use gl;
-use image::EncodableLayout;
+use image::{DynamicImage, EncodableLayout, GenericImageView};
 use assets::*;
 
 use std::{ffi::c_void, ptr::null};
@@ -106,8 +106,31 @@ impl Default for Texture {
 
 // Loadable asset
 impl Asset for Texture {
-    fn load(data: AssetMetadata) -> Self where Self: Sized {
-        todo!()
+    // Load a texture from scratch
+    fn load(data: &AssetMetadata) -> Self where Self: Sized {
+        // Load this texture from the bytes
+        let png_bytes = data.bytes.as_bytes();
+        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+        // Return a texture with the default parameters
+        let texture = Texture::new()
+            .set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16))
+            .set_filter(TextureFilter::Linear)
+            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .enable_mipmaps()
+            .generate_texture(image.to_bytes())
+            .unwrap();
+        return texture;
+    }
+    // Load a texture that already has it's parameters set
+    fn load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
+        // Load this texture from the bytes
+        let png_bytes = data.bytes.as_bytes();
+        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+        // Return a texture with the default parameters
+        let texture = self
+            .generate_texture(image.to_bytes())
+            .unwrap();
+        return texture;
     }
     // Load a texture from the bundled metadata
     /*
@@ -145,6 +168,10 @@ impl Asset for Texture {
         }
     }
     */
+}
+
+impl Object for Texture {
+    
 }
 
 // Loading / caching stuff

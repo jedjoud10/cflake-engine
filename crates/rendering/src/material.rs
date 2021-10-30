@@ -1,6 +1,6 @@
 use std::{collections::HashMap, rc::Rc};
 use crate::{DefaultUniform, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
-use assets::{Asset, AssetManager};
+use assets::{Asset, AssetManager, Object};
 use bitflags::bitflags;
 
 bitflags! {
@@ -45,88 +45,38 @@ impl Default for Material {
 
 impl Material {
     // Create a new material with a name
-    pub fn new(material_name: &str) -> Self {
-        Self {
+    pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
+        let texture = Self {
             material_name: material_name.to_string(),
             ..Self::default()
-        }
+        };
+        // Load the default textures
+        texture.diffuse_tex = Some(Texture::load_o("white", &mut asset_manager.object_cacher));
+        texture.normal_tex = Some(Texture::load_o("default_normals", &mut asset_manager.object_cacher));
+        
+        texture
     }
     // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &AssetManager) -> Self {
+    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
         let rc_texture = Texture::new()
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .cl_object(diffuse_path, &mut asset_manager);
+            .cl_object(diffuse_path, &mut asset_manager.object_cacher);
         self.diffuse_tex = Some(rc_texture);
         return self;
     }
     // Load the normal texture
-    pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &AssetManager) -> Self {
+    pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
         let rc_texture = Texture::new()
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .cl_object(normal_path, &mut asset_manager);
+            .cl_object(normal_path, &mut asset_manager.object_cacher);
         self.normal_tex = Some(rc_texture);
         return self;
-    }
-    // Load textures from their texture struct
-    pub fn load_textures(mut self, texture_ids: &Vec<Option<usize>>, texture_cacher: &CacheManager<Texture>) -> Self {
-        self.diffuse_tex_id = texture_ids[0];
-        self.normal_tex_id = texture_ids[1];
-        // Load the default textures
-        return self.load_default_textures(texture_cacher);
-    }
-    // Load the default textures
-    pub fn load_default_textures(mut self, texture_cacher: &CacheManager<Texture>) -> Self {
-        // For the rest of the textures that weren't explicitly given a texture path, load the default ones
-        // Diffuse, Normals
-        if self.diffuse_tex_id.is_none() {
-            self.diffuse_tex_id = Some(texture_cacher.get_object_id("white").unwrap());
-        }
-        if self.normal_tex_id.is_none() {
-            self.normal_tex_id = Some(texture_cacher.get_object_id("default_normals").unwrap());
-        }
-        return self;
-    }
-    // Load textures from their resource paths
-    pub fn resource_load_textures(
-        mut self,
-        texture_paths: Vec<Option<&str>>,
-        opt: Option<TextureLoadOptions>,
-        texture_cacher: &mut CacheManager<Texture>,
-        resource_manager: &mut ResourceManager,
-    ) -> Result<Self, errors::ResourceError> {
-        // Load the textures
-        for (i, &texture_path) in texture_paths.iter().enumerate() {
-            match texture_path {
-                Some(texture_path) => {
-                    let _resource = resource_manager.load_packed_resource(texture_path)?;
-                    let (_, texture_id) = Texture::new()
-                        .enable_mipmaps()
-                        .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
-                        .apply_texture_load_options(opt)
-                        .load_texture(texture_path, resource_manager, texture_cacher)
-                        .unwrap();
-                    match i {
-                        0 => {
-                            self.diffuse_tex_id = Some(texture_id);
-                        }
-                        1 => {
-                            self.normal_tex_id = Some(texture_id);
-                        }
-                        _ => {}
-                    }
-                }
-                None => {}
-            }
-        }
-
-        // Load the default textures
-        return Ok(self.load_default_textures(texture_cacher));
     }
     // Set the main shader
     pub fn set_shader(mut self, shader_name: &str) -> Self {
