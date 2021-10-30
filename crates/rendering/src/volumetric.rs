@@ -1,5 +1,4 @@
 use assets::AssetManager;
-use others::CacheManager;
 
 use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureType, TextureWrapping};
 
@@ -92,7 +91,7 @@ impl Volumetric {
         ));
     }
     // Create the SDF texture from a compute shader complitely
-    pub fn generate_sdf(&mut self, shader_cacher: &mut CacheManager<Shader>) {
+    pub fn generate_sdf(&mut self) {
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
         shader.use_shader();
         shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);

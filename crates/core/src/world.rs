@@ -42,9 +42,6 @@ impl World {
             input_manager: InputManager::default(),
             resource_manager: ResourceManager::default(),
             ui_manager: UIManager::default(),
-
-            texture_cacher: CacheManager::default(),
-            shader_cacher: (CacheManager::default(), CacheManager::default()),
             debug: MainDebug::default(),
 
             entity_manager: EntityManager::default(),

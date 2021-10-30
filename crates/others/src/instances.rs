@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use crate::cacher;
-
 // An instance manager that keeps track of the number of unique instances in the world
 #[derive(Default)]
 pub struct InstanceManager {
@@ -41,19 +39,6 @@ pub trait Instance {
     fn set_name(&mut self, string: String);
     // Get the current name for this object
     fn get_name(&self) -> String;
-    // Create an instance of the current object and store it in it's cache manager
-    fn instantiate_cm<'a>(&self, cache_manager: &'a mut cacher::CacheManager<Self>, instance_manager: &mut InstanceManager) -> &'a Self
-    where
-        Self: Sized + Clone,
-    {
-        let mut instance = self.clone();
-        // Get the instance name
-        let name = instance_manager.add_instance(&self.get_name());
-        // Get a new name for this insance
-        instance.set_name(name.clone());
-        let cached_object = cache_manager.cache_object(instance, &name);
-        return cache_manager.id_get_object(cached_object).unwrap();
-    }
     // Create an instance of the current object without storing in the cache manager
     fn instantiate(&self, instance_manager: &mut InstanceManager) -> Self
     where

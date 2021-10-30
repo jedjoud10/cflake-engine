@@ -1,7 +1,6 @@
 use bitflags::bitflags;
 use gl;
 use image::EncodableLayout;
-use others::CacheManager;
 use assets::*;
 
 use std::{ffi::c_void, ptr::null};
@@ -153,41 +152,6 @@ impl Texture {
     // New
     pub fn new() -> Self {
         Self::default()
-    }
-    // Cache the current texture and return it's reference
-    pub fn cache_texture<'a>(self, texture_cacher: &'a mut CacheManager<Texture>) -> Option<(&'a mut Self, usize)> {
-        let texture_name = self.name.clone();
-        // If the name is empty, cache it as an unnamed object
-        if texture_name.trim().is_empty() {
-            // Unnamed object
-            let texture_id = texture_cacher.cache_unnamed_object(self);
-            Some((texture_cacher.id_get_object_mut(texture_id).unwrap(), texture_id))
-        } else {
-            let texture_id = texture_cacher.cache_object(self, texture_name.as_str());
-            Some((texture_cacher.id_get_object_mut(texture_id).unwrap(), texture_id))
-        }
-    }
-    // Load a texture from a file and auto caches it. Returns the cached texture and the cached ID
-    pub fn load_texture<'a>(
-        self,
-        local_path: &str,
-        resource_manager: &AssetManager,
-        texture_cacher: &'a mut CacheManager<Texture>,
-    ) -> Result<(&'a Self, usize), AssetLoadError> {
-        // Load the resource
-        let resource = resource_manager.load_packed_resource(local_path)?;
-        // If the texture was already cached, just loaded from cache
-        if texture_cacher.is_cached(local_path) {
-            // It is indeed cached
-            let texture = texture_cacher.get_object(local_path).unwrap();
-            let texture_id = texture_cacher.get_object_id(local_path).unwrap();
-            Ok((texture, texture_id))
-        } else {
-            // If it not cached, then load the texture from that resource
-            let texture = self.from_resource(resource).ok_or(Asset::new_str("Could not load texture!"))?;
-            let (texture, texture_id) = texture.cache_texture(texture_cacher).unwrap();
-            Ok((texture, texture_id))
-        }
     }
 }
 

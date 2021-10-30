@@ -6,7 +6,6 @@ use crate::TextureShaderAccessType;
 use assets::AssetManager;
 use errors::RenderingError;
 use gl;
-use others::CacheManager;
 use std::ffi::CString;
 
 // A shader that contains two sub shaders that are compiled independently
