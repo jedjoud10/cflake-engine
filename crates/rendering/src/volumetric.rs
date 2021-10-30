@@ -12,9 +12,9 @@ pub struct Volumetric {
     // The depth texture
     pub depth_tex: Texture,
     // The compute shader ID for the SDF generator compute
-    pub compute_generator_id: usize,
+    pub compute_generator_id: Shader,
     // The compute shader ID
-    pub compute_id: usize,
+    pub compute_id: Shader,
     // Check if the volumetric rendering is enabled
     pub enabled: bool,
 
@@ -32,8 +32,7 @@ impl Volumetric {
             asset_manager,
             Some(AdditionalShader::Compute(ComputeShader::default())),
             None,
-        )
-        .2;
+        );
         // Load the volumetric compute
         self.compute_id = Shader::new(
             vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"],
@@ -89,7 +88,7 @@ impl Volumetric {
         ));
     }
     // Create the SDF texture from a compute shader complitely
-    pub fn generate_sdf(&mut self) {
+    pub fn generate_sdf(&mut self, asset_manager: &AssetManager) {
         let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
         shader.use_shader();
         shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);

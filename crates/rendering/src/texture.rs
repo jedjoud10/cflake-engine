@@ -107,7 +107,7 @@ impl Default for Texture {
 // Loadable asset
 impl Asset for Texture {
     // Load a texture from scratch
-    fn load(data: &AssetMetadata) -> Self where Self: Sized {
+    fn asset_load(data: &AssetMetadata) -> Self where Self: Sized {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
@@ -122,7 +122,7 @@ impl Asset for Texture {
         return texture;
     }
     // Load a texture that already has it's parameters set
-    fn load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
+    fn asset_load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();

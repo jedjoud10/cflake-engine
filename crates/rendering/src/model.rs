@@ -15,7 +15,7 @@ pub struct Model {
 
 impl Asset for Model {
     // Load a model from an asset
-    fn load(data: assets::AssetMetadata) -> Self where Self: Sized {
+    fn asset_load(data: &assets::AssetMetadata) -> Self where Self: Sized {
         todo!()
     }
 }

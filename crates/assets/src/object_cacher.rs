@@ -39,7 +39,7 @@ pub trait Object {
         local_path.to_string()
     }
     // Only load this object knowing that it was already cached
-    fn load_o(local_path: &str, object_cacher: &mut ObjectCacher) -> Rc<Self> where Self: Sized + 'static {
+    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> Rc<Self> where Self: Sized + 'static {
         if object_cacher.cached(local_path) {
             // This object is cached
             let object = object_cacher.load_cached(local_path).unwrap();
@@ -53,7 +53,7 @@ pub trait Object {
         }
     }
     // Load this asset as a cached asset, but also cache it if it was never loaded
-    fn cl_object(self, local_path: &str, object_cacher: &mut ObjectCacher) -> Rc<Self> where Self: Sized + 'static {
+    fn object_cache_load(self, local_path: &str, object_cacher: &mut ObjectCacher) -> Rc<Self> where Self: Sized + 'static {
         let name = self.get_unique_object_name(local_path);
         // Check if it was cached or not
         if object_cacher.cached(&name) {

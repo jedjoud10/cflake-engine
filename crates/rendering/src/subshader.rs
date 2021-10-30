@@ -1,6 +1,6 @@
 use std::{ffi::CString, ptr::null};
 
-use assets::Asset;
+use assets::{Asset, Object};
 
 // Sub shader type
 #[derive(Debug, Copy, Clone)]
@@ -21,9 +21,25 @@ pub struct SubShader {
 
 // Create a subshader from an asset
 impl Asset for SubShader {
-    fn load(data: assets::AssetMetadata) -> Self where Self: Sized {
-        todo!()
+    fn asset_load(data: &assets::AssetMetadata) -> Self where Self: Sized {
+        // Load a subshader from this metadata
+        let text = String::from_utf8(data.bytes.clone()).unwrap();
+        Self {
+            program: 0,
+            name: data.name,
+            source: text,
+            subshader_type: match &data.asset_type {
+                assets::AssetType::VertSubshader => { SubShaderType::Vertex },
+                assets::AssetType::FragSubshader => { SubShaderType::Fragment },
+                assets::AssetType::ComputeSubshader => { SubShaderType::Compute },        
+                _ => { /* Nothing */ panic!() }    
+            },
+        }
     }
+}
+
+// A subshader is also an object
+impl Object for SubShader {
 }
 
 impl SubShader {

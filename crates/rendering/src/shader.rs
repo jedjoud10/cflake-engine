@@ -3,7 +3,9 @@ use crate::SubShader;
 use crate::SubShaderType;
 use crate::Texture;
 use crate::TextureShaderAccessType;
+use assets::Asset;
 use assets::AssetManager;
+use assets::Object;
 use errors::RenderingError;
 use gl;
 use std::ffi::CString;
@@ -31,6 +33,13 @@ impl Default for Shader {
     }
 }
 
+// A shader is an asset object, while a subshader is an asset
+impl Object for Shader {
+    fn get_unique_object_name(&self, local_path: &str) -> String {
+        self.name
+    }
+}
+
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
     fn load_includes<'a>(lines: Vec<String>, asset_manager: &'a AssetManager, additional_shader_paths: Option<&Vec<&str>>) -> Vec<String> {
@@ -42,7 +51,7 @@ impl Shader {
                 let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace(r#"""#, "");
                 let local_path = local_path.trim_start();
                 // Load the function shader text
-                let text = asset_manager.load_lines_packed_resource(&local_path, 1).unwrap();
+                let text = asset_manager.asset_cacher.load_text(local_path).unwrap();
                 let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                 included_lines.extend(new_lines);
             }
@@ -55,7 +64,8 @@ impl Shader {
                         let local_path_id = &c[2..(c.len() - 2)].parse::<usize>().unwrap();
                         println!("{}", local_path_id);
                         // Load the function shader text
-                        let text = asset_manager.load_lines_packed_resource(paths.get(*local_path_id).unwrap(), 1).unwrap();
+                        let path = paths[*local_path_id];
+                        let text = asset_manager.asset_cacher.load_text(path).unwrap();
                         let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                         included_lines.extend(new_lines);
                     }
@@ -80,12 +90,13 @@ impl Shader {
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached
-            if shader_cacher.0.is_cached(subshader_path) {
-                shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
+            if asset_manager.object_cacher.cached(subshader_path) {
+                let rc_subshader = SubShader::object_load_o(subshader_path, &asset_manager.object_cacher);
+                let subshader = rc_subshader.as_ref();
+                shader.link_subshader(subshader);
             } else {
                 // It was not cached, so we need to cache it
-                let resource = asset_manager.load_packed_resource(subshader_path).unwrap();
-                let mut subshader = SubShader::from_resource(resource).unwrap();
+                let mut subshader = SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap());
 
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();

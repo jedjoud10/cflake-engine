@@ -10,10 +10,12 @@ pub struct AssetCacher {
 
 impl AssetCacher {
     // Pre-load some asset metadata
-    pub fn pre_load(&mut self, name: &str, bytes: &[u8], load_type: AssetLoadType) -> Result<(), AssetMetadataLoadError> {
+    pub fn pre_load(&mut self, name: &str, bytes: &[u8], load_type: AssetLoadType, asset_type: AssetType) -> Result<(), AssetMetadataLoadError> {
         let data = AssetMetadata {
             bytes: bytes.to_vec(),
             load_type,
+            asset_type,
+            name: name.clone().to_string()
         };
         self.cached_metadata.insert(name.to_string(), data);
         Ok(())
@@ -23,6 +25,18 @@ impl AssetCacher {
         // Load
         let data = self.cached_metadata.get(name).ok_or(AssetMetadataLoadError::new_str("Asset was not pre-loaded!"))?;
         return Ok(data);
+    }
+    // Load a text file from the asset cacher
+    pub fn load_text(&self, name: &str) -> Result<String, AssetMetadataLoadError> {
+        let md = self.load_md(name)?;
+        match &md.asset_type {
+            // This asset is a text asset
+            AssetType::Text => {
+                let text = String::from_utf8(md.bytes.clone()).ok().unwrap();
+                return Ok(text);
+            },
+            _ => { panic!() }
+        }
     }
     // Unload asset metadata (if possible)
     pub fn unload(&mut self, name: &str) -> Result<AssetMetadata, AssetMetadataLoadError> {
@@ -45,12 +59,24 @@ pub enum AssetLoadType {
     Dynamic, // You can load it, and you can also unload it
     CustomCached, // Dispose of the bytes data, since the asset is customly cached
 }
+// Asset type
+pub enum AssetType {
+    VertSubshader,
+    FragSubshader,
+    ComputeSubshader,
+    Text,
+    Texture,
+    Model,
+    Sound,
+}
 // Some data
 pub struct AssetMetadata {
     // Bytes
     pub bytes: Vec<u8>,
     // Doodoo water
-    pub load_type: AssetLoadType
+    pub load_type: AssetLoadType,
+    pub asset_type: AssetType,
+    pub name: String
 }
 impl AssetMetadata {
     // Turn the bytes into a UTF8 string
@@ -61,9 +87,9 @@ impl AssetMetadata {
 // A single asset, that can be loaded directly from raw bytes bundled in the .dll
 pub trait Asset {
     // Load this asset from metadata
-    fn load(data: &AssetMetadata) -> Self where Self: Sized; 
+    fn asset_load(data: &AssetMetadata) -> Self where Self: Sized; 
     // Load this asset, but only if we already have some data initalized in the struct
-    fn load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
+    fn asset_load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
         panic!()
     }       
 }

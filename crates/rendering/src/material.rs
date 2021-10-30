@@ -51,8 +51,8 @@ impl Material {
             ..Self::default()
         };
         // Load the default textures
-        texture.diffuse_tex = Some(Texture::load_o("white", &mut asset_manager.object_cacher));
-        texture.normal_tex = Some(Texture::load_o("default_normals", &mut asset_manager.object_cacher));
+        texture.diffuse_tex = Some(Texture::object_load_o("white", &mut asset_manager.object_cacher));
+        texture.normal_tex = Some(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher));
         
         texture
     }
@@ -63,7 +63,7 @@ impl Material {
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .cl_object(diffuse_path, &mut asset_manager.object_cacher);
+            .object_cache_load(diffuse_path, &mut asset_manager.object_cacher);
         self.diffuse_tex = Some(rc_texture);
         return self;
     }
@@ -74,7 +74,7 @@ impl Material {
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .cl_object(normal_path, &mut asset_manager.object_cacher);
+            .object_cache_load(normal_path, &mut asset_manager.object_cacher);
         self.normal_tex = Some(rc_texture);
         return self;
     }
