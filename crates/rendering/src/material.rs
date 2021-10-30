@@ -54,23 +54,23 @@ impl Material {
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &AssetManager) -> Self {
         // Load the texture
-        let texture = Texture::new()
+        let rc_texture = Texture::new()
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .load_t(asset_manager.load(diffuse_path).unwrap());
-        
+            .cl_object(diffuse_path, &mut asset_manager);
+        self.diffuse_tex = Some(rc_texture);
         return self;
     }
     // Load the normal texture
     pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &AssetManager) -> Self {
         // Load the texture
-        let texture = Texture::new()
+        let rc_texture = Texture::new()
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .load_t(asset_manager.load(normal_path).unwrap());
-        self.normal_tex = Some()
+            .cl_object(normal_path, &mut asset_manager);
+        self.normal_tex = Some(rc_texture);
         return self;
     }
     // Load textures from their texture struct

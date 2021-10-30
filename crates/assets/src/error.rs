@@ -27,13 +27,13 @@ impl std::error::Error for AssetMetadataLoadError {
     }
 }
 
-// Asset load error
+// Object load error
 #[derive(Debug)]
-pub struct AssetLoadError {
+pub struct ObjectLoadError {
     details: String,
 }
 
-impl AssetLoadError {
+impl ObjectLoadError {
     pub fn new(msg: String) -> Self {
         Self { details: msg }
     }
@@ -42,13 +42,13 @@ impl AssetLoadError {
     }
 }
 
-impl fmt::Display for AssetLoadError {
+impl fmt::Display for ObjectLoadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.details)
     }
 }
 
-impl std::error::Error for AssetLoadError {
+impl std::error::Error for ObjectLoadError {
     fn description(&self) -> &str {
         &self.details
     }
