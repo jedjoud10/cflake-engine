@@ -59,6 +59,7 @@ impl Material {
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
             .load_t(asset_manager.load(diffuse_path).unwrap());
+        
         return self;
     }
     // Load the normal texture
@@ -69,7 +70,7 @@ impl Material {
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
             .load_t(asset_manager.load(normal_path).unwrap());
-        self.diffuse_tex = Some(Rc::new)
+        self.normal_tex = Some()
         return self;
     }
     // Load textures from their texture struct
