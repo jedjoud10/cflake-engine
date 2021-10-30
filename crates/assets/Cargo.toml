@@ -7,8 +7,4 @@ edition = "2018"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-errors = { path = "../errors" }
-walkdir = "2.3.2"
-byteorder = "1.4.3"
-image = "0.23.14"
 
