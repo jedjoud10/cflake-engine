@@ -9,7 +9,7 @@ use input::*;
 use io::SaverLoader;
 use others::*;
 use rendering::*;
-use resources::*;
+use assets::*;
 use ui::UIManager;
 use world_data::*;
 
@@ -21,9 +21,6 @@ pub struct World {
     pub input_manager: InputManager,
     pub resource_manager: ResourceManager,
     pub ui_manager: UIManager,
-    // Rendering
-    pub texture_cacher: CacheManager<Texture>,
-    pub shader_cacher: (CacheManager<SubShader>, CacheManager<Shader>),
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
