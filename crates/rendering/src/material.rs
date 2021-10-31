@@ -1,5 +1,5 @@
 use std::{collections::HashMap, rc::Rc};
-use crate::{DefaultUniform, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
+use crate::{DefaultUniform, Shader, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
 use assets::{Asset, AssetManager, Object};
 use bitflags::bitflags;
 
@@ -13,7 +13,7 @@ bitflags! {
 #[derive(Clone)]
 pub struct Material {
     // Rendering stuff
-    pub shader_name: String,
+    pub shader: Option<Rc<Shader>>,
     pub material_name: String,
     pub flags: MaterialFlags,
     pub default_uniforms: Vec<(String, DefaultUniform)>,
@@ -27,7 +27,7 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         let material: Self = Material {
-            shader_name: String::new(),
+            shader: None,
             material_name: String::new(),
             flags: MaterialFlags::empty(),
             default_uniforms: Vec::new(),
@@ -76,8 +76,8 @@ impl Material {
         return self;
     }
     // Set the main shader
-    pub fn set_shader(mut self, shader_name: &str) -> Self {
-        self.shader_name = shader_name.to_string();
+    pub fn set_shader(mut self, shader: Rc<Shader>) -> Self {
+        self.shader = Some(shader);
         return self;
     }
     // Toggle the double sided flag for this material

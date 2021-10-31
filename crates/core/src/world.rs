@@ -19,7 +19,6 @@ pub struct World {
     // Managers
     pub component_manager: ComponentManager,
     pub input_manager: InputManager,
-    pub resource_manager: ResourceManager,
     pub ui_manager: UIManager,
     pub asset_manager: AssetManager,
     // ECS
@@ -41,7 +40,6 @@ impl World {
         Self {
             component_manager: ComponentManager::default(),
             input_manager: InputManager::default(),
-            resource_manager: ResourceManager::default(),
             ui_manager: UIManager::default(),
             asset_manager: AssetManager::default(),
             debug: MainDebug::default(),
@@ -77,7 +75,7 @@ impl World {
             .set_name("black")
             .generate_texture(vec![0, 0, 0, 255])
             .unwrap()
-            .cache_texture(&mut self.texture_cacher);
+            .object_cache_load("black", &mut self.asset_manager.object_cacher);
         // Create the white texture
         Texture::new()
             .set_dimensions(TextureType::Texture2D(1, 1))
@@ -87,7 +85,7 @@ impl World {
             .set_name("white")
             .generate_texture(vec![255, 255, 255, 255])
             .unwrap()
-            .cache_texture(&mut self.texture_cacher);
+            .object_cache_load("white", &mut self.asset_manager.object_cacher);
         // Create the default normals texture
         Texture::new()
             .set_dimensions(TextureType::Texture2D(1, 1))
@@ -97,7 +95,7 @@ impl World {
             .set_name("default_normals")
             .generate_texture(vec![127, 128, 255, 255])
             .unwrap()
-            .cache_texture(&mut self.texture_cacher);
+            .object_cache_load("default_normals", &mut self.asset_manager.object_cacher);
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
@@ -350,7 +348,7 @@ impl World {
                 component_manager: &mut self.component_manager,
                 ui_manager: &mut self.ui_manager,
                 input_manager: &mut self.input_manager,
-                asset_manager: &mut self.resource_manager,
+                asset_manager: &mut self.asset_manager,
                 time_manager: &mut self.time_manager,
                 debug: &mut self.debug,
                 custom_data: &mut self.custom_data,
@@ -387,7 +385,7 @@ impl World {
             component_manager: &mut self.component_manager,
             ui_manager: &mut self.ui_manager,
             input_manager: &mut self.input_manager,
-            asset_manager: &mut self.resource_manager,
+            asset_manager: &mut self.asset_manager,
             time_manager: &mut self.time_manager,
             debug: &mut self.debug,
             custom_data: &mut self.custom_data,

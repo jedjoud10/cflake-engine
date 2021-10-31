@@ -41,7 +41,7 @@ impl CustomData {
                 &mut data.asset_manager,
                 None,
                 None,
-            ).cache(data.asset_manager).name.as_str(),
+            ).cache(data.asset_manager),
         );
         let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
@@ -152,13 +152,11 @@ impl CustomData {
             return;
         }
         // Shader name
-        let shader_name = match material.shader_name.as_str() {
-            "" => self.default_material.shader_name.clone(),
-            a => a.to_string(),
+        let shader = match &material.shader {
+            None => self.default_material.shader.as_ref().unwrap(),
+            Some(x) => x,
         };
-
-        // Load the shader
-        let shader = Shader::object_load_o(&shader_name, &data.asset_manager.object_cacher);
+        
         // Use the shader, and update any uniforms
         shader.use_shader();
         // Calculate the mvp matrix
@@ -230,7 +228,7 @@ impl CustomData {
             match mm_renderer.sub_models_gpu_data.get(i) {
                 Some(gpu_data) => {
                     if wireframe {
-                        self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, data, projection_matrix, view_matrix, model_matrix);
+                        self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, projection_matrix, view_matrix, model_matrix);
                     } else {
                         self.draw_normal(
                             material.as_ref(),
@@ -250,10 +248,9 @@ impl CustomData {
     }
     // Draw a wireframe entity
     fn draw_wireframe(
-        &mut self,
+        &self,
         gpu_data: &ModelDataGPU,
         indices_count: i32,
-        data: &WorldData,
         projection_matrix: &veclib::Matrix4x4<f32>,
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
@@ -306,7 +303,8 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
-    let shader = Shader::object_load_o(&system.quad_renderer.material.as_ref().unwrap().shader_name, &data.asset_manager.object_cacher).as_ref();
+    let material = system.quad_renderer.material.as_ref().unwrap();
+    let shader = material.shader.as_ref().unwrap();
 
     // Set the default uniforms
     /*
@@ -390,7 +388,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     );
 
     // Draw the normal primitives
-    let shader = Shader::object_load_o(&system.quad_renderer.material.as_ref().unwrap().shader_name, &data.asset_manager.object_cacher).as_ref();
+    let shader = system.quad_renderer.material.as_ref().unwrap().shader.as_ref().unwrap();
     shader.use_shader();
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
@@ -463,7 +461,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
         }
         None => {
             if wireframe {
-                system.draw_wireframe(&rc.gpu_data, rc.model.triangles.len() as i32, data, &projection_matrix, &view_matrix, &model_matrix);
+                system.draw_wireframe(&rc.gpu_data, rc.model.triangles.len() as i32, &projection_matrix, &view_matrix, &model_matrix);
             } else {
                 system.draw_normal(
                     rc.material.as_ref(),

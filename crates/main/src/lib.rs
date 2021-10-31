@@ -16,7 +16,7 @@ pub use input;
 pub use math;
 pub use others;
 pub use rendering;
-pub use resources;
+pub use assets;
 pub use systems;
 pub use terrain;
 pub use ui;

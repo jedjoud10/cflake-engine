@@ -1,6 +1,7 @@
 use core::mem::size_of;
 use std::{ffi::c_void, ptr::null};
 
+use assets::Asset;
 use fonts::{Font, FontOptions};
 use rendering::Shader;
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
@@ -31,8 +32,8 @@ const QUAD_UVS: [veclib::Vector2<f32>; 6] = [
 
 #[derive(Default)]
 pub struct CustomData {
-    pub ui_shader_name: String,
-    pub font_ui_shader_name: String,
+    pub ui_shader: Shader,
+    pub font_ui_shader: Shader,
     pub vertex_array: u32,
 }
 crate::impl_custom_system_data!(CustomData);
@@ -143,27 +144,23 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         custom_data.vertex_array = vertex_array;
     }
     // Load a default font that we can use for testing
-    let default_font = Font::new().from_path("defaults\\fonts\\default_font.font", data.asset_manager).unwrap();
+    let default_font = Font::new().asset_load_easy_t("defaults\\fonts\\default_font.font", &data.asset_manager.asset_cacher);
     // Set the default font
     data.ui_manager.font_manager.add_font(default_font);
     // Load the UI shader
-    custom_data.ui_shader_name = Shader::new(
+    custom_data.ui_shader = Shader::new(
         vec!["defaults\\shaders\\ui\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui\\ui_panel.frsh.glsl"],
         data.asset_manager,
-        data.shader_cacher,
         None,
         None,
-    )
-    .1;
+    );
     // Load the UI font shader
-    custom_data.font_ui_shader_name = Shader::new(
+    custom_data.ui_shader = Shader::new(
         vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
         data.asset_manager,
-        data.shader_cacher,
         None,
         None,
-    )
-    .1;
+    );
 }
 
 // Post fire event
@@ -186,10 +183,7 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Loop over every root node
     for (_root_name, root) in data.ui_manager.roots.iter() {
         let elements = root.smart_element_list.elements.iter().filter_map(|x| x.as_ref()).collect::<Vec<&ui::Element>>();
-        let shader = data.shader_cacher.1.get_object(&custom_data.ui_shader_name).unwrap();
         let root_depth = root.root_depth;
-        // Get the font shader
-        let font_shader = data.shader_cacher.1.get_object(&custom_data.font_ui_shader_name).unwrap();
         // Default font
         let default_font = data.ui_manager.font_manager.get_font("defaults\\fonts\\default_font.font");
         if !root.visible {
@@ -229,15 +223,15 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
             match &element.element_type {
                 ElementType::Text(text_content, font_size) => {
                     // Use the font shader
-                    font_shader.use_shader();
+                    custom_data.font_ui_shader.use_shader();
                     // Draw the text
-                    custom_data.draw_text(tuple, &font_shader, text_content, *font_size, default_font);
+                    custom_data.draw_text(tuple, &custom_data.font_ui_shader, text_content, *font_size, default_font);
                 }
                 _ => {
                     // Use the normal panel shader
-                    shader.use_shader();
+                    custom_data.ui_shader.use_shader();
                     // Draw the panel
-                    custom_data.draw_panel(tuple, &shader);
+                    custom_data.draw_panel(tuple, &custom_data.ui_shader);
                 }
             }
         }
