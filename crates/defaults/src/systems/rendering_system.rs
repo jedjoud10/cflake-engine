@@ -48,6 +48,7 @@ impl CustomData {
         let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
     // Bind a specific texture attachement to the frame buffer
     fn bind_attachement(attachement: u32, texture: &Texture) {
@@ -131,6 +132,7 @@ impl CustomData {
 
         // Setup the debug renderer
         data.debug.renderer.setup_debug_renderer(data.asset_manager);
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
     // Draw an entity normally
     fn draw_normal(
@@ -307,6 +309,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.setup_opengl(data);
     let material = system.quad_renderer.material.as_ref().unwrap();
     let shader = material.shader.as_ref().unwrap();
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
     // Set the default uniforms
     /*
@@ -344,6 +347,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     ).unwrap();
     // Default material    
     system.default_material = Material::new("Default Material", &mut data.asset_manager).set_shader(default_shader);
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();

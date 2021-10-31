@@ -49,6 +49,7 @@ impl VoxelGenerator {
     // Generate the voxel texture
     pub fn setup_voxel_generator(&mut self) {
         // Create the voxel texture
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         self.voxel_texture = Texture::new()
             .set_dimensions(TextureType::Texture3D(CHUNK_SIZE as u16, CHUNK_SIZE as u16, CHUNK_SIZE as u16))
             .set_idf(gl::R16, gl::RED, gl::UNSIGNED_SHORT)
