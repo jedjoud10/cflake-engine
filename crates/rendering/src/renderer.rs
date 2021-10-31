@@ -1,7 +1,7 @@
 use crate::MultiMaterialRenderer;
 
 use super::{model::Model, model::ModelDataGPU, Material, RendererFlags};
-use assets::AssetManager;
+use assets::{Asset, AssetManager};
 use ecs::{Component, ComponentID, ComponentInternal};
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
@@ -40,9 +40,8 @@ impl Renderer {
     }
     // Load a model
     pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Self {
-        let resource = asset_manager.load_packed_resource(model_path).unwrap();
-        let model = Model::new().from_resource(resource).unwrap();
-        self.model = model;
+        let md = asset_manager.asset_cacher.load_md(model_path).unwrap(); 
+        self.model = Model::asset_load(md);
         return self;
     }
     // Set a model

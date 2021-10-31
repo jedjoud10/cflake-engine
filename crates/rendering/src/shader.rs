@@ -9,6 +9,7 @@ use assets::Object;
 use errors::RenderingError;
 use gl;
 use std::ffi::CString;
+use std::rc::Rc;
 
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
@@ -76,13 +77,13 @@ impl Shader {
         // Return the included lines and the original lines that are without the include statement
         return included_lines;
     }
-    // Creates a shader from multiple subshader files
+    // Creates a shader from multiple subshader files, no automatic caching though
     pub fn new<'a>(
         subshader_paths: Vec<&str>,
         asset_manager: &'a AssetManager,
         additional_shader: Option<AdditionalShader>,
         additional_shader_paths: Option<Vec<&str>>,
-    ) -> (&'a mut Self, String, usize) {
+    ) -> Self {
         let mut shader = Self::default();
         // Create the shader name
         shader.name = subshader_paths.join("__");
@@ -142,8 +143,8 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
-                let _subshader = shader_cacher.0.cache_object(subshader, subshader_path);
-                shader.link_subshader(shader_cacher.0.get_object(subshader_path).unwrap());
+                let _subshader = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap().as_ref();
+                shader.link_subshader(_subshader);
                 // Unload the resource since we just cached the shader
                 //resource_manager.unload_resouce(subshader_path);
             }
@@ -152,9 +153,13 @@ impl Shader {
         shader.additional_shader = additional_shader.unwrap_or(AdditionalShader::None);
         // Finalize the shader and cache it
         shader.finalize_shader();
-        let cached_shader_id = shader_cacher.1.cache_object(shader, &name);
-
-        return (shader_cacher.1.id_get_object_mut(cached_shader_id).unwrap(), name, cached_shader_id);
+        return shader;
+    }
+    // Cache this shader
+    pub fn cache<'a>(self, asset_manager: &'a AssetManager) -> Rc<Self> {
+        let name = self.name.clone();
+        let shader = asset_manager.object_cacher.cache(&name, self).unwrap();
+        return shader;
     }
     // Finalizes a vert/frag shader by compiling it
     pub fn finalize_shader(&mut self) {

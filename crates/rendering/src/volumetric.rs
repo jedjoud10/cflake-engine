@@ -12,9 +12,9 @@ pub struct Volumetric {
     // The depth texture
     pub depth_tex: Texture,
     // The compute shader ID for the SDF generator compute
-    pub compute_generator_id: Shader,
+    pub compute_generator: Shader,
     // The compute shader ID
-    pub compute_id: Shader,
+    pub compute: Shader,
     // Check if the volumetric rendering is enabled
     pub enabled: bool,
 
@@ -27,20 +27,19 @@ impl Volumetric {
     // Load the necessary compute shaders
     pub fn load_compute_shaders(&mut self, asset_manager: &AssetManager) {
         // Load generator compute
-        self.compute_generator_id = Shader::new(
+        self.compute_generator = Shader::new(
             vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"],
             asset_manager,
             Some(AdditionalShader::Compute(ComputeShader::default())),
             None,
         );
         // Load the volumetric compute
-        self.compute_id = Shader::new(
+        self.compute = Shader::new(
             vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"],
             asset_manager,
             Some(AdditionalShader::Compute(ComputeShader::default())),
             None,
-        )
-        .2;
+        );
     }
     // Create the SDF texture from a simple texture, loaded into a compute shader
     // Create the textures
@@ -88,12 +87,11 @@ impl Volumetric {
         ));
     }
     // Create the SDF texture from a compute shader complitely
-    pub fn generate_sdf(&mut self, asset_manager: &AssetManager) {
-        let shader = shader_cacher.id_get_object_mut(self.compute_generator_id).unwrap();
-        shader.use_shader();
-        shader.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
+    pub fn generate_sdf(&mut self, asset_manager: &AssetManager) {        
+        self.compute_generator.use_shader();
+        self.compute_generator.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
         // Actually generate the SDF
-        let compute = match &mut shader.additional_shader {
+        let compute = match &mut self.compute_generator.additional_shader {
             crate::AdditionalShader::None => panic!(),
             crate::AdditionalShader::Compute(x) => x,
         };
@@ -110,7 +108,6 @@ impl Volumetric {
     // Run the compute shader and calculate the result texture
     pub fn calculate_volumetric(
         &mut self,
-        shader_cacher: &mut CacheManager<Shader>,
         projection_matrix: veclib::Matrix4x4<f32>,
         rotation: veclib::Quaternion<f32>,
         camera_position: veclib::Vector3<f32>,
@@ -120,7 +117,7 @@ impl Volumetric {
             return;
         }
         // Run the compute shader
-        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
+        let shader = self.compute;
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create a custom View-Projection matrix that doesn't include the translation
         shader.use_shader();
