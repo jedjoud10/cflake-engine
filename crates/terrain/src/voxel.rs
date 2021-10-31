@@ -1,8 +1,8 @@
-use std::time::Instant;
-use crate::ISOLINE;
 use super::CHUNK_SIZE;
+use crate::ISOLINE;
 use assets::AssetManager;
 use rendering::{Shader, Texture, TextureFilter, TextureType};
+use std::time::Instant;
 use veclib::Swizzable;
 
 // Casually stole my old code lol

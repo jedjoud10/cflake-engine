@@ -27,7 +27,6 @@ impl std::error::Error for ECSError {
     }
 }
 
-
 // Rendering error
 #[derive(Debug, Clone)]
 pub struct RenderingError {

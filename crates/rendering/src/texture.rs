@@ -1,7 +1,7 @@
+use assets::*;
 use bitflags::bitflags;
 use gl;
 use image::{DynamicImage, EncodableLayout, GenericImageView};
-use assets::*;
 
 use std::{ffi::c_void, ptr::null};
 
@@ -107,7 +107,10 @@ impl Default for Texture {
 // Loadable asset
 impl Asset for Texture {
     // Load a texture from scratch
-    fn asset_load(data: &AssetMetadata) -> Option<Self> where Self: Sized {
+    fn asset_load(data: &AssetMetadata) -> Option<Self>
+    where
+        Self: Sized,
+    {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
@@ -122,14 +125,15 @@ impl Asset for Texture {
         return Some(texture);
     }
     // Load a texture that already has it's parameters set
-    fn asset_load_t(self, data: &AssetMetadata) -> Option<Self> where Self: Sized {
+    fn asset_load_t(self, data: &AssetMetadata) -> Option<Self>
+    where
+        Self: Sized,
+    {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
         // Return a texture with the default parameters
-        let texture = self
-            .generate_texture(image.to_bytes())
-            .unwrap();
+        let texture = self.generate_texture(image.to_bytes()).unwrap();
         return Some(texture);
     }
     // Load a texture from the bundled metadata
@@ -170,9 +174,7 @@ impl Asset for Texture {
     */
 }
 
-impl Object for Texture {
-    
-}
+impl Object for Texture {}
 
 // Loading / caching stuff
 impl Texture {

@@ -40,7 +40,7 @@ impl Renderer {
     }
     // Load a model
     pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Option<Self> {
-        let md = asset_manager.asset_cacher.load_md(model_path).unwrap(); 
+        let md = asset_manager.asset_cacher.load_md(model_path).unwrap();
         self.model = Model::asset_load(md)?;
         return Some(self);
     }

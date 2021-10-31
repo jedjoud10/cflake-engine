@@ -15,7 +15,10 @@ pub struct Model {
 
 impl Asset for Model {
     // Load a model from an asset
-    fn asset_load(data: &assets::AssetMetadata) -> Option<Self> where Self: Sized {
+    fn asset_load(data: &assets::AssetMetadata) -> Option<Self>
+    where
+        Self: Sized,
+    {
         let string = String::from_utf8(data.bytes.clone()).unwrap();
         let lines = string.lines();
         let mut model = Model::default();

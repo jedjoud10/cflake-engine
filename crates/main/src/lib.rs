@@ -7,6 +7,7 @@ extern crate glfw;
 pub use core::World;
 
 // Re-Export
+pub use assets;
 pub use debug;
 pub use defaults;
 pub use ecs;
@@ -16,7 +17,6 @@ pub use input;
 pub use math;
 pub use others;
 pub use rendering;
-pub use assets;
 pub use systems;
 pub use terrain;
 pub use ui;

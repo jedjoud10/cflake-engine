@@ -1,7 +1,7 @@
-use std::{collections::HashMap, rc::Rc};
 use crate::{DefaultUniform, Shader, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
 use assets::{Asset, AssetManager, Object};
 use bitflags::bitflags;
+use std::{collections::HashMap, rc::Rc};
 
 bitflags! {
     pub struct MaterialFlags: u8 {

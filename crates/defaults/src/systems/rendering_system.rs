@@ -41,7 +41,9 @@ impl CustomData {
                 &mut data.asset_manager,
                 None,
                 None,
-            ).unwrap().cache(data.asset_manager),
+            )
+            .unwrap()
+            .cache(data.asset_manager),
         );
         let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
@@ -156,7 +158,7 @@ impl CustomData {
             None => self.default_material.shader.as_ref().unwrap(),
             Some(x) => x,
         };
-        
+
         // Use the shader, and update any uniforms
         shader.use_shader();
         // Calculate the mvp matrix
@@ -189,7 +191,7 @@ impl CustomData {
 
         // Set the textures
         shader.set_t2d("diffuse_tex", material.diffuse_tex.as_ref().unwrap(), gl::TEXTURE0);
-        shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), gl::TEXTURE1);        
+        shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), gl::TEXTURE1);
 
         // Draw normally
         if gpu_data.initialized {
@@ -339,7 +341,8 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.asset_manager,
         None,
         None,
-    ).unwrap();
+    )
+    .unwrap();
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -380,12 +383,9 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     data.debug.renderer.draw_debug(&vp_m);
 
     // Draw the volumetric stuff
-    system.volumetric.calculate_volumetric(
-        camera.projection_matrix,
-        camera_transform.rotation,
-        camera_transform.position,
-        camera.clip_planes,
-    );
+    system
+        .volumetric
+        .calculate_volumetric(camera.projection_matrix, camera_transform.rotation, camera_transform.position, camera.clip_planes);
 
     // Draw the normal primitives
     let shader = system.quad_renderer.material.as_ref().unwrap().shader.as_ref().unwrap();
@@ -400,11 +400,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
     shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
     shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);
-    shader.set_t2d(
-        "default_sky_gradient",
-        data.custom_data.sky_texture.as_ref().unwrap(),
-        gl::TEXTURE5,
-    );
+    shader.set_t2d("default_sky_gradient", data.custom_data.sky_texture.as_ref().unwrap(), gl::TEXTURE5);
     let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
     shader.set_mat44("custom_vp_matrix", &vp_m);
     // Other params

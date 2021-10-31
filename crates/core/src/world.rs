@@ -1,4 +1,5 @@
 use ::systems::*;
+use assets::*;
 use debug::*;
 use defaults::{components, systems};
 use ecs::*;
@@ -9,7 +10,6 @@ use input::*;
 use io::SaverLoader;
 use others::*;
 use rendering::*;
-use assets::*;
 use ui::UIManager;
 use world_data::*;
 

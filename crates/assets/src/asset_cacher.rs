@@ -6,7 +6,7 @@ use crate::AssetMetadataLoadError;
 #[derive(Default)]
 pub struct AssetCacher {
     // The cached metadata
-    pub cached_metadata: HashMap<String, AssetMetadata>
+    pub cached_metadata: HashMap<String, AssetMetadata>,
 }
 
 impl AssetCacher {
@@ -16,7 +16,7 @@ impl AssetCacher {
             bytes: bytes.to_vec(),
             load_type,
             asset_type,
-            name: name.clone().to_string()
+            name: name.clone().to_string(),
         };
         self.cached_metadata.insert(name.to_string(), data);
         Ok(())
@@ -35,20 +35,25 @@ impl AssetCacher {
             AssetType::Text => {
                 let text = String::from_utf8(md.bytes.clone()).ok().unwrap();
                 return Ok(text);
-            },
-            _ => { panic!() }
+            }
+            _ => {
+                panic!()
+            }
         }
     }
     // Unload asset metadata (if possible)
     pub fn unload(&mut self, name: &str) -> Result<AssetMetadata, AssetMetadataLoadError> {
         // Check the load type
-        let _type = self.cached_metadata.get(name).ok_or(AssetMetadataLoadError::new_str("Asset is not loaded in the first place!"))?;
+        let _type = self
+            .cached_metadata
+            .get(name)
+            .ok_or(AssetMetadataLoadError::new_str("Asset is not loaded in the first place!"))?;
         match &_type.load_type {
             AssetLoadType::Dynamic => {
                 // Unload
                 return Ok(self.cached_metadata.remove(name).unwrap());
-            },
-            _ => { /* Nothing */}
+            }
+            _ => { /* Nothing */ }
         }
         Err(AssetMetadataLoadError::new_str("No"))
     }
@@ -56,8 +61,8 @@ impl AssetCacher {
 
 // For how long will this asset be alive?
 pub enum AssetLoadType {
-    Static, // You can only load it, you can't unload it
-    Dynamic, // You can load it, and you can also unload it
+    Static,       // You can only load it, you can't unload it
+    Dynamic,      // You can load it, and you can also unload it
     CustomCached, // Dispose of the bytes data, since the asset is customly cached
 }
 // Asset type
@@ -77,7 +82,7 @@ pub struct AssetMetadata {
     // Doodoo water
     pub load_type: AssetLoadType,
     pub asset_type: AssetType,
-    pub name: String
+    pub name: String,
 }
 impl AssetMetadata {
     // Turn the bytes into a UTF8 string
@@ -88,19 +93,30 @@ impl AssetMetadata {
 // A single asset, that can be loaded directly from raw bytes bundled in the .dll
 pub trait Asset {
     // Load this asset from metadata
-    fn asset_load(data: &AssetMetadata) -> Option<Self> where Self: Sized; 
+    fn asset_load(data: &AssetMetadata) -> Option<Self>
+    where
+        Self: Sized;
     // Load this asset from metadata automatically loaded from the asset cacher
-    fn asset_load_easy(name: &str, asset_cacher: &AssetCacher) -> Option<Self> where Self: Sized {
+    fn asset_load_easy(name: &str, asset_cacher: &AssetCacher) -> Option<Self>
+    where
+        Self: Sized,
+    {
         let s = asset_cacher.load_md(name).ok()?;
         Self::asset_load(s)
     }
     // Load this asset, but only if we already have some data initalized in the struct
-    fn asset_load_t(self, data: &AssetMetadata) -> Option<Self> where Self: Sized {
+    fn asset_load_t(self, data: &AssetMetadata) -> Option<Self>
+    where
+        Self: Sized,
+    {
         panic!()
     }
     // Combination of the two
-    fn asset_load_easy_t(self, name: &str, asset_cacher: &AssetCacher) -> Option<Self> where Self: Sized {
+    fn asset_load_easy_t(self, name: &str, asset_cacher: &AssetCacher) -> Option<Self>
+    where
+        Self: Sized,
+    {
         let s = asset_cacher.load_md(name).ok()?;
         self.asset_load_t(s)
-    }       
+    }
 }

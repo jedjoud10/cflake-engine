@@ -1,9 +1,9 @@
 // Export
-mod assets_manager;
 mod asset_cacher;
-mod object_cacher;
+mod assets_manager;
 mod error;
-pub use assets_manager::*;
+mod object_cacher;
 pub use asset_cacher::*;
-pub use object_cacher::*;
+pub use assets_manager::*;
 pub use error::*;
+pub use object_cacher::*;

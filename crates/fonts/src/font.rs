@@ -85,11 +85,12 @@ impl Font {
 
 // The font is loadable
 impl Asset for Font {
-    fn asset_load(data: &assets::AssetMetadata) -> Option<Self> where Self: Sized {
+    fn asset_load(data: &assets::AssetMetadata) -> Option<Self>
+    where
+        Self: Sized,
+    {
         // Load this font from the metadata bytes
         panic!()
     }
 }
-impl Object for Font {
-    
-}
+impl Object for Font {}

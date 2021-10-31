@@ -1,10 +1,10 @@
+use main::assets::*;
 use main::defaults::components;
 use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
 use main::world_data::*;
-use main::assets::*;
 use main::*;
 fn main() {
     // Load up the engine
@@ -69,14 +69,16 @@ pub fn world_initialized(world: &mut World) {
         data.asset_manager,
         Some(AdditionalShader::Compute(ComputeShader::default())),
         Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
-    ).unwrap();
+    )
+    .unwrap();
 
     let color_compute = Shader::new(
         vec!["defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
         data.asset_manager,
         Some(AdditionalShader::Compute(ComputeShader::default())),
         Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
-    ).unwrap();
+    )
+    .unwrap();
 
     // The terrain shader
     let terrain_shader = Shader::new(
@@ -87,31 +89,33 @@ pub fn world_initialized(world: &mut World) {
         data.asset_manager,
         None,
         None,
-    ).unwrap().cache(&mut data.asset_manager);
+    )
+    .unwrap()
+    .cache(&mut data.asset_manager);
     // Material
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
         .load_diffuse("defaults\\textures\\rock_diffuse.png", None, &mut data.asset_manager)
         .load_normal("defaults\\textures\\rock_normal.png", None, &mut data.asset_manager)
-        .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.7)).0;
+        .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.7))
+        .0;
     let a = TextureLoadOptions {
         filter: TextureFilter::Nearest,
         ..TextureLoadOptions::default()
     };
     let bound_materials = vec![
         Some(material.instantiate(data.instance_manager)),
-        Some(material
-            .instantiate(data.instance_manager)
-            .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02)).0
-            .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), &mut data.asset_manager)
-            .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), &mut data.asset_manager),
+        Some(
+            material
+                .instantiate(data.instance_manager)
+                .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
+                .0
+                .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), &mut data.asset_manager)
+                .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), &mut data.asset_manager),
         ),
     ];
     terrain_entity
-        .link_component::<components::TerrainData>(
-            data.component_manager,
-            components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials),
-        )
+        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
         .unwrap();
 
     // Template entity
@@ -120,15 +124,14 @@ pub fn world_initialized(world: &mut World) {
     cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
         .unwrap();
     let model = Model::asset_load_easy("user\\models\\tools2.mdl3d", &data.asset_manager.asset_cacher).unwrap();
-    let m = Material::new("M", &mut data.asset_manager)
-        .load_diffuse(
-            "user\\textures\\palette.png",
-            Some(TextureLoadOptions {
-                filter: TextureFilter::Nearest,
-                ..TextureLoadOptions::default()
-            }),
-            &mut data.asset_manager,
-        );
+    let m = Material::new("M", &mut data.asset_manager).load_diffuse(
+        "user\\textures\\palette.png",
+        Some(TextureLoadOptions {
+            filter: TextureFilter::Nearest,
+            ..TextureLoadOptions::default()
+        }),
+        &mut data.asset_manager,
+    );
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);

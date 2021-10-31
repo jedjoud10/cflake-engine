@@ -6,7 +6,7 @@ use crate::ObjectLoadError;
 #[derive(Default)]
 pub struct ObjectCacher {
     // Cached object
-    pub cached_objects: HashMap<String, Rc<dyn Any>>
+    pub cached_objects: HashMap<String, Rc<dyn Any>>,
 }
 
 impl ObjectCacher {
@@ -30,17 +30,22 @@ impl ObjectCacher {
         return Ok(obj);
     }
     // Check if an object is already cached
-    pub fn cached(&self, object_name: &str) -> bool { return self.cached_objects.contains_key(object_name) }
+    pub fn cached(&self, object_name: &str) -> bool {
+        return self.cached_objects.contains_key(object_name);
+    }
 }
 
 // An object that will be cached inside the object cacher
-pub trait Object {    
-    // Get unique object 
+pub trait Object {
+    // Get unique object
     fn get_unique_object_name(&self, local_path: &str) -> String {
         local_path.to_string()
     }
     // Only load this object knowing that it was already cached
-    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> Rc<Self> where Self: Sized + 'static {
+    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> Rc<Self>
+    where
+        Self: Sized + 'static,
+    {
         if object_cacher.cached(local_path) {
             // This object is cached
             let object = object_cacher.load_cached(local_path).unwrap();
@@ -54,7 +59,10 @@ pub trait Object {
         }
     }
     // Load this asset as a cached asset, but also cache it if it was never loaded
-    fn object_cache_load(self, local_path: &str, object_cacher: &mut ObjectCacher) -> Rc<Self> where Self: Sized + 'static {
+    fn object_cache_load(self, local_path: &str, object_cacher: &mut ObjectCacher) -> Rc<Self>
+    where
+        Self: Sized + 'static,
+    {
         let name = self.get_unique_object_name(local_path);
         // Check if it was cached or not
         if object_cacher.cached(&name) {
