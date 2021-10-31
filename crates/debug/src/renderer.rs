@@ -1,5 +1,5 @@
+use assets::AssetManager;
 use math;
-use others::CacheManager;
 use rendering::{Model, Shader, SubShader};
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
@@ -13,7 +13,7 @@ pub const DRAW_DEBUG: bool = false;
 pub struct DebugRenderer {
     pub debug_primitives: Vec<DebugRendererType>,
     pub permanent_debug_primitives: Vec<DebugRendererType>,
-    pub shader_name: String,
+    pub shader: Shader,
     pub vao: u32,
     pub vertices: Vec<veclib::Vector3<f32>>,
     pub colors: Vec<veclib::Vector3<f32>>,
@@ -23,7 +23,7 @@ pub struct DebugRenderer {
 
 impl DebugRenderer {
     // Generate the vao and load the shader
-    pub fn setup_debug_renderer(&mut self, resource_manager: &mut ResourceManager, shader_cacher: &mut (CacheManager<SubShader>, CacheManager<Shader>)) {
+    pub fn setup_debug_renderer(&mut self, asset_manager: &mut AssetManager) {
         if !DRAW_DEBUG {
             return;
         }

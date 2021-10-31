@@ -2,7 +2,6 @@ use super::super::components;
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
 use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
-use resources::LoadableResource;
 use std::{ptr::null, time::Instant};
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use veclib::Swizzable;
