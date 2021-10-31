@@ -131,15 +131,12 @@ pub fn world_initialized(world: &mut World) {
         ..TextureLoadOptions::default()
     };
     let bound_materials = vec![
-        Some(material.instantiate(data.instance_manager)),
-        Some(
-            material
-                .instantiate(data.instance_manager)
-                .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
-                .0
-                .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), &mut data.asset_manager)
-                .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), &mut data.asset_manager),
-        ),
+        material.instantiate(data.instance_manager),
+        material.instantiate(data.instance_manager)
+            .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
+            .0
+            .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), &mut data.asset_manager)
+            .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), &mut data.asset_manager),        
     ];
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))

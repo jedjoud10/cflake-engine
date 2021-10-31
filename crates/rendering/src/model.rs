@@ -1,9 +1,9 @@
-use std::{ffi::c_void, mem::size_of, ptr::null};
+use std::{ffi::c_void, fmt::Display, mem::size_of, ptr::null};
 
 use assets::Asset;
 
 // A simple model that holds vertex, normal, and color data
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Clone)]
 pub struct Model {
     pub vertices: Vec<veclib::Vector3<f32>>,
     pub normals: Vec<veclib::Vector3<f32>>,
@@ -11,6 +11,12 @@ pub struct Model {
     pub uvs: Vec<veclib::Vector2<f32>>,
     pub colors: Vec<veclib::Vector3<f32>>,
     pub triangles: Vec<u32>,
+}
+
+impl Display for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("Model: Verts: {}, Normals: {}, Tangents: {}, UVs: {}, Colors: {}, Tris: {}", self.vertices.len(), self.normals.len(), self.tangents.len(), self.uvs.len(), self.colors.len(), self.triangles.len()))        
+    }
 }
 
 impl Asset for Model {
@@ -55,6 +61,9 @@ impl Asset for Model {
                 _ => {}
             }
         }
+        // ISTFG If this fixes the issue I will be so angry
+        model.colors = vec![veclib::Vector3::ONE; model.vertices.len()];
+        println!("Model: {}", model);
         // Return
         return Some(model);
     }

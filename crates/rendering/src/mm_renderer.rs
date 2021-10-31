@@ -5,7 +5,7 @@ use assets::{Asset, AssetManager};
 pub struct MultiMaterialRenderer {
     pub sub_models: Vec<(Model, usize)>,
     pub sub_models_gpu_data: Vec<ModelDataGPU>,
-    pub materials: Vec<Option<Material>>,
+    pub materials: Vec<Material>,
 }
 
 impl Default for MultiMaterialRenderer {
@@ -25,7 +25,7 @@ impl MultiMaterialRenderer {
         return Self::default();
     }
     // Load a model into this mm renderer, with a specific material binded to the model
-    pub fn load_model(mut self, model_path: &str, material: Option<Material>, asset_manager: &AssetManager) -> Option<Self> {
+    pub fn load_model(mut self, model_path: &str, material: Material, asset_manager: &AssetManager) -> Option<Self> {
         let md = asset_manager.asset_cacher.load_md(model_path).unwrap();
         let model = Model::asset_load(md)?;
         self.sub_models.push((model, self.materials.len()));
@@ -33,13 +33,13 @@ impl MultiMaterialRenderer {
         return Some(self);
     }
     // Add a specific model to the complex model as a submodel
-    pub fn add_submodel(mut self, model: Model, material: Option<Material>) -> Self {
+    pub fn add_submodel(mut self, model: Model, material: Material) -> Self {
         self.sub_models.push((model, self.materials.len()));
         self.materials.push(material);
         return self;
     }
     // Set the materials
-    pub fn set_materials(mut self, materials: Vec<Option<Material>>) -> Self {
+    pub fn set_materials(mut self, materials: Vec<Material>) -> Self {
         self.materials = materials;
         return self;
     }
@@ -56,6 +56,7 @@ impl MultiMaterialRenderer {
         // Loop through each sub model and consider it as a unique model
         self.sub_models_gpu_data = vec![ModelDataGPU::default(); self.sub_models.len()];
         for (i, (sub_model, material_id)) in self.sub_models.iter().enumerate() {
+            errors::ErrorCatcher::catch_opengl_errors().unwrap();
             let gpu_data = sub_model.refresh_gpu_data();
             self.sub_models_gpu_data[i] = gpu_data;
         }

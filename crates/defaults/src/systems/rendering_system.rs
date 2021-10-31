@@ -137,7 +137,7 @@ impl CustomData {
     // Draw an entity normally
     fn draw_normal(
         &self,
-        material: Option<&Material>,
+        material: &Material,
         gpu_data: &ModelDataGPU,
         indices_count: i32,
         data: &WorldData,
@@ -146,11 +146,6 @@ impl CustomData {
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
     ) {
-        // Get the material for this entity
-        let material = match material {
-            Some(mat) => mat,
-            None => &self.default_material,
-        };
         // Exit early
         if !material.visible {
             return;
@@ -235,7 +230,7 @@ impl CustomData {
                         self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, projection_matrix, view_matrix, model_matrix);
                     } else {
                         self.draw_normal(
-                            material.as_ref(),
+                            material,
                             &gpu_data,
                             sub_model.triangles.len() as i32,
                             data,
@@ -307,7 +302,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
-    let material = system.quad_renderer.material.as_ref().unwrap();
+    let material = &system.quad_renderer.material;
     let shader = material.shader.as_ref().unwrap();
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
@@ -376,6 +371,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     if data.input_manager.map_pressed("toggle_wireframe") {
         system.wireframe = !system.wireframe;
     }
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -391,9 +387,9 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     system
         .volumetric
         .calculate_volumetric(camera.projection_matrix, camera_transform.rotation, camera_transform.position, camera.clip_planes);
-
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // Draw the normal primitives
-    let shader = system.quad_renderer.material.as_ref().unwrap().shader.as_ref().unwrap();
+    let shader = system.quad_renderer.material.shader.as_ref().unwrap();
     shader.use_shader();
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
@@ -420,9 +416,11 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // Make sure we create the OpenGL data for this entity's model
     rc.refresh_model();
     let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
@@ -465,7 +463,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
                 system.draw_wireframe(&rc.gpu_data, rc.model.triangles.len() as i32, &projection_matrix, &view_matrix, &model_matrix);
             } else {
                 system.draw_normal(
-                    rc.material.as_ref(),
+                    &rc.material,
                     &rc.gpu_data,
                     rc.model.triangles.len() as i32,
                     data,

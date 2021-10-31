@@ -9,7 +9,7 @@ pub struct Renderer {
     pub gpu_data: ModelDataGPU,
     pub model: Model,
     // This renderer can only have one material for now (TODO: Make a multi material system)
-    pub material: Option<Material>,
+    pub material: Material,
     // Flags
     pub flags: RendererFlags,
     // Multi material support
@@ -22,7 +22,7 @@ impl Default for Renderer {
             render_state: EntityRenderState::Visible,
             gpu_data: ModelDataGPU::default(),
             model: Model::default(),
-            material: None,
+            material: Material::default(),
             flags: RendererFlags::DEFAULT,
             multi_material: None,
         }
@@ -36,7 +36,7 @@ ecs::impl_component!(Renderer);
 impl Renderer {
     // Create a renderer
     pub fn new() -> Self {
-        return Self::default().set_material(Material::default());
+        return Self::default();
     }
     // Load a model
     pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Option<Self> {
@@ -60,7 +60,7 @@ impl Renderer {
     }
     // With a specific material
     pub fn set_material(mut self, material: Material) -> Self {
-        self.material = Some(material);
+        self.material = material;
         return self;
     }
     // Set Multi Material Renderer
@@ -73,6 +73,7 @@ impl Renderer {
 impl Renderer {
     // When we update the model and want to refresh it's OpenGL data
     pub fn refresh_model(&mut self) {
+        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         self.gpu_data = self.model.refresh_gpu_data();
     }
     // Dispose of our model
