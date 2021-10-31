@@ -19,7 +19,7 @@ pub struct CustomData {
     pub depth_texture: Texture,
     pub debug_view: u16,
     pub wireframe: bool,
-    wireframe_shader_name: String,
+    wireframe_shader: Shader,
     default_material: Material,
     // Volumetric renderer stuff
     pub volumetric: Volumetric,
@@ -250,7 +250,7 @@ impl CustomData {
     }
     // Draw a wireframe entity
     fn draw_wireframe(
-        &self,
+        &mut self,
         gpu_data: &ModelDataGPU,
         indices_count: i32,
         data: &WorldData,
@@ -258,13 +258,12 @@ impl CustomData {
         view_matrix: &veclib::Matrix4x4<f32>,
         model_matrix: &veclib::Matrix4x4<f32>,
     ) {
-        let wireframe_shader = data.shader_cacher.1.get_object(&self.wireframe_shader_name).unwrap();
-        wireframe_shader.use_shader();
+        self.wireframe_shader.use_shader();
         // Calculate the mvp matrix
         let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
-        wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
-        wireframe_shader.set_mat44("model_matrix", model_matrix);
-        wireframe_shader.set_mat44("view_matrix", view_matrix);
+        self.wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
+        self.wireframe_shader.set_mat44("model_matrix", model_matrix);
+        self.wireframe_shader.set_mat44("view_matrix", view_matrix);
         unsafe {
             // Set the wireframe rendering
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -290,9 +289,9 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.create_screen_quad(data);
 
     // Load volumetric stuff
-    system.volumetric.load_compute_shaders(data.asset_manager, data.shader_cacher);
+    system.volumetric.load_compute_shaders(&mut data.asset_manager);
     system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 4);
-    system.volumetric.generate_sdf(&mut data.shader_cacher.1);
+    system.volumetric.generate_sdf(&mut data.asset_manager);
     system.volumetric.disable();
 
     // Get the OpenGL version
@@ -307,7 +306,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     // Then setup opengl and the render buffer
     system.setup_opengl(data);
-    let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
+    let shader = Shader::object_load_o(&system.quad_renderer.material.as_ref().unwrap().shader_name, &data.asset_manager.object_cacher).as_ref();
 
     // Set the default uniforms
     /*
@@ -326,34 +325,23 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load sky gradient texture
     let texture = Texture::new()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
-        .load_texture("defaults\\textures\\sky_gradient.png", data.asset_manager, data.texture_cacher)
-        .unwrap();
-    data.custom_data.sky_texture = texture.1;
+        .object_cache_load("defaults\\textures\\sky_gradient.png", &mut data.asset_manager.object_cacher);
+    data.custom_data.sky_texture = Some(texture);
     // Load the default shader
     let default_shader_name = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
         data.asset_manager,
-        data.shader_cacher,
         None,
         None,
-    )
-    .1;
+    );
 
     // Load the wireframe shader
-    let wireframe_shader_name = Shader::new(
+    system.wireframe_shader = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
         data.asset_manager,
-        data.shader_cacher,
         None,
         None,
-    )
-    .1;
-    system.wireframe_shader_name = wireframe_shader_name;
-
-    // Load the default material
-    system.default_material = Material::new("Default Material")
-        .set_shader(&default_shader_name)
-        .load_default_textures(data.texture_cacher);
+    );
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -362,6 +350,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
 
+    /*
     // Update the default values for each shader that exists in the shader cacher
     for shader in data.shader_cacher.1.objects.iter() {
         // Set the shader arguments
@@ -370,6 +359,7 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
         shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
         //shader.set_vec2f32("resolution", &(data.custom_data.window.dimensions.into()));
     }
+    */
 
     // Change the debug view
     if data.input_manager.map_pressed("change_debug_view") {
@@ -389,11 +379,10 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let camera = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
     let vp_m = camera.projection_matrix * camera.view_matrix;
     // Draw the debug primitives
-    data.debug.renderer.draw_debug(&vp_m, &data.shader_cacher.1);
+    data.debug.renderer.draw_debug(&vp_m);
 
     // Draw the volumetric stuff
     system.volumetric.calculate_volumetric(
-        &mut data.shader_cacher.1,
         camera.projection_matrix,
         camera_transform.rotation,
         camera_transform.position,
@@ -401,7 +390,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     );
 
     // Draw the normal primitives
-    let shader = data.shader_cacher.1.get_object(&system.quad_renderer.material.as_ref().unwrap().shader_name).unwrap();
+    let shader = Shader::object_load_o(&system.quad_renderer.material.as_ref().unwrap().shader_name, &data.asset_manager.object_cacher).as_ref();
     shader.use_shader();
     shader.set_vec2i32("resolution", &(dimensions.into()));
     shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
@@ -415,7 +404,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);
     shader.set_t2d(
         "default_sky_gradient",
-        data.texture_cacher.id_get_object(data.custom_data.sky_texture).unwrap(),
+        data.custom_data.sky_texture.as_ref().unwrap(),
         gl::TEXTURE5,
     );
     let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));

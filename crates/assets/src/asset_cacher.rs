@@ -97,5 +97,10 @@ pub trait Asset {
     // Load this asset, but only if we already have some data initalized in the struct
     fn asset_load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
         panic!()
+    }
+    // Combination of the two
+    fn asset_load_easy_t(self, name: &str, asset_cacher: &AssetCacher) -> Self where Self: Sized {
+        let s = asset_cacher.load_md(name).unwrap();
+        self.asset_load_t(s)
     }       
 }

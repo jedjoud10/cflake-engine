@@ -133,7 +133,7 @@ impl FilteredLinkedComponents {
         filtered_linked_components
     }
     // Get a reference to a component using the component manager
-    pub fn get_component<'a, T: Component + ComponentID + Sync + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
+    pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
         let id = component_manager.get_component_id::<T>()?;
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
@@ -147,7 +147,7 @@ impl FilteredLinkedComponents {
         }
     }
     // Get a mutable reference to a component using the component manager
-    pub fn get_component_mut<'a, T: Component + ComponentID + Sync + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
+    pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
         let id = component_manager.get_component_id::<T>()?;
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
