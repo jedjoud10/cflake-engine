@@ -13,7 +13,18 @@ fn main() {
 pub fn world_initialized(world: &mut World) {
     // Pre load the resources
     let cacher = &mut world.asset_manager.asset_cacher;
-    //cacher.pre_load("", bytes, load_type, asset_type)
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\wireframe.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\fonts\\default_font.font", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d", cacher);
+
     // ----Load the default systems----
     // Create the custom data
     let mut data: WorldData = WorldData {

@@ -10,12 +10,30 @@ pub struct AssetCacher {
 }
 
 impl AssetCacher {
+    // Guess the asset type of a specific asset using it's name
+    fn guess_asset_type(name: &str) -> AssetType {
+        let first_dot_index = name.split("").position(|c| c == ".").unwrap();
+        let extension = name.split_at(first_dot_index).1;
+        println!("{}", extension);
+        match extension {
+            "vrsh.glsl" => AssetType::VertSubshader,
+            "frsh.glsl" => AssetType::FragSubshader,
+            "mdl3d" => AssetType::Model,
+            "cmpt.glsl" => AssetType::ComputeSubshader,
+            "func.glsl" => AssetType::Text,
+            "png" => AssetType::Texture,
+            "font" => AssetType::Font,
+            _ => { /* Nothing */ panic!() }
+        }
+    }
     // Pre-load some asset metadata
-    pub fn pre_load(&mut self, name: &str, bytes: &[u8], load_type: AssetLoadType, asset_type: AssetType) -> Result<(), AssetMetadataLoadError> {
+    pub fn pre_load(&mut self, name: &str, bytes: &[u8]) -> Result<(), AssetMetadataLoadError> {
+        let name = name.split("resources\\").last().unwrap();
+        println!("{}", name);
         let data = AssetMetadata {
             bytes: bytes.to_vec(),
-            load_type,
-            asset_type,
+            load_type: AssetLoadType::Dynamic,
+            asset_type: Self::guess_asset_type(name),
             name: name.clone().to_string(),
         };
         self.cached_metadata.insert(name.to_string(), data);
@@ -24,6 +42,7 @@ impl AssetCacher {
     // Load asset metadata
     pub fn load_md(&self, name: &str) -> Result<&AssetMetadata, AssetMetadataLoadError> {
         // Load
+        println!("Asset: {} was not preloaded!", name);
         let data = self.cached_metadata.get(name).ok_or(AssetMetadataLoadError::new_str("Asset was not pre-loaded!"))?;
         return Ok(data);
     }
@@ -74,6 +93,7 @@ pub enum AssetType {
     Texture,
     Model,
     Sound,
+    Font,
 }
 // Some data
 pub struct AssetMetadata {
