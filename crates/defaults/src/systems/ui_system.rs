@@ -143,13 +143,13 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         custom_data.vertex_array = vertex_array;
     }
     // Load a default font that we can use for testing
-    let default_font = Font::new().from_path("defaults\\fonts\\default_font.font", data.resource_manager).unwrap();
+    let default_font = Font::new().from_path("defaults\\fonts\\default_font.font", data.asset_manager).unwrap();
     // Set the default font
     data.ui_manager.font_manager.add_font(default_font);
     // Load the UI shader
     custom_data.ui_shader_name = Shader::new(
         vec!["defaults\\shaders\\ui\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui\\ui_panel.frsh.glsl"],
-        data.resource_manager,
+        data.asset_manager,
         data.shader_cacher,
         None,
         None,
@@ -158,7 +158,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load the UI font shader
     custom_data.font_ui_shader_name = Shader::new(
         vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
-        data.resource_manager,
+        data.asset_manager,
         data.shader_cacher,
         None,
         None,

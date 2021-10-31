@@ -32,12 +32,12 @@ impl CustomData {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::new().from_path("defaults\\models\\screen_quad.mdl3d", data.resource_manager).unwrap();
+        quad_renderer_component.model = Model::new().from_path("defaults\\models\\screen_quad.mdl3d", data.asset_manager).unwrap();
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
             Shader::new(
                 vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
-                &mut data.resource_manager,
+                &mut data.asset_manager,
                 &mut data.shader_cacher,
                 None,
                 None,
@@ -130,7 +130,7 @@ impl CustomData {
         }
 
         // Setup the debug renderer
-        data.debug.renderer.setup_debug_renderer(data.resource_manager, data.shader_cacher);
+        data.debug.renderer.setup_debug_renderer(data.asset_manager);
     }
     // Draw an entity normally
     fn draw_normal(
@@ -307,7 +307,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.create_screen_quad(data);
 
     // Load volumetric stuff
-    system.volumetric.load_compute_shaders(data.resource_manager, data.shader_cacher);
+    system.volumetric.load_compute_shaders(data.asset_manager, data.shader_cacher);
     system.volumetric.create_textures(data.custom_data.window.dimensions, 64, 4);
     system.volumetric.generate_sdf(&mut data.shader_cacher.1);
     system.volumetric.disable();
@@ -343,13 +343,13 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load sky gradient texture
     let texture = Texture::new()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
-        .load_texture("defaults\\textures\\sky_gradient.png", data.resource_manager, data.texture_cacher)
+        .load_texture("defaults\\textures\\sky_gradient.png", data.asset_manager, data.texture_cacher)
         .unwrap();
     data.custom_data.sky_texture = texture.1;
     // Load the default shader
     let default_shader_name = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
-        data.resource_manager,
+        data.asset_manager,
         data.shader_cacher,
         None,
         None,
@@ -359,7 +359,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load the wireframe shader
     let wireframe_shader_name = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
-        data.resource_manager,
+        data.asset_manager,
         data.shader_cacher,
         None,
         None,

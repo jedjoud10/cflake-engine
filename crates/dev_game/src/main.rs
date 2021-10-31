@@ -20,7 +20,7 @@ pub fn world_initialized(world: &mut World) {
         input_manager: &mut world.input_manager,
         shader_cacher: &mut world.shader_cacher,
         texture_cacher: &mut world.texture_cacher,
-        resource_manager: &mut world.resource_manager,
+        asset_manager: &mut world.resource_manager,
         time_manager: &mut world.time_manager,
         debug: &mut world.debug,
         custom_data: &mut world.custom_data,
@@ -65,7 +65,7 @@ pub fn world_initialized(world: &mut World) {
     // Load the compute shaders
     let compute_id = Shader::new(
         vec!["defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl"],
-        data.resource_manager,
+        data.asset_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
         Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
@@ -74,7 +74,7 @@ pub fn world_initialized(world: &mut World) {
 
     let color_compute_id = Shader::new(
         vec!["defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
-        data.resource_manager,
+        data.asset_manager,
         data.shader_cacher,
         Some(AdditionalShader::Compute(ComputeShader::default())),
         Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
@@ -87,7 +87,7 @@ pub fn world_initialized(world: &mut World) {
             "defaults\\shaders\\rendering\\default.vrsh.glsl",
             "defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl",
         ],
-        data.resource_manager,
+        data.asset_manager,
         data.shader_cacher,
         None,
         None,
@@ -100,7 +100,7 @@ pub fn world_initialized(world: &mut World) {
             vec![Some("defaults\\textures\\rock_diffuse.png"), Some("defaults\\textures\\rock_normal.png")],
             None,
             data.texture_cacher,
-            data.resource_manager,
+            data.asset_manager,
         )
         .unwrap()
         .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.7))
@@ -117,8 +117,8 @@ pub fn world_initialized(world: &mut World) {
                 .instantiate(data.instance_manager)
                 .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
                 .0
-                .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), data.texture_cacher, data.resource_manager)
-                .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), data.texture_cacher, data.resource_manager),
+                .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), data.texture_cacher, data.asset_manager)
+                .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), data.texture_cacher, data.asset_manager),
         ),
     ];
     terrain_entity
@@ -133,7 +133,7 @@ pub fn world_initialized(world: &mut World) {
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
         .unwrap();
-    let model = Model::new().from_path("user\\models\\tools2.mdl3d", data.resource_manager).unwrap();
+    let model = Model::new().from_path("user\\models\\tools2.mdl3d", data.asset_manager).unwrap();
     let m = Material::new("M")
         .load_diffuse(
             "user\\textures\\palette.png",
@@ -142,7 +142,7 @@ pub fn world_initialized(world: &mut World) {
                 ..TextureLoadOptions::default()
             }),
             data.texture_cacher,
-            data.resource_manager,
+            data.asset_manager,
         )
         .load_default_textures(data.texture_cacher);
     let renderer = Renderer::new().set_model(model).set_material(m);

@@ -56,17 +56,15 @@ impl DebugRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
         // Set the shader name
-        self.shader_name = Shader::new(
+        self.shader = Shader::new(
             vec!["defaults\\shaders\\others\\debug.vrsh.glsl", "defaults\\shaders\\others\\debug.frsh.glsl"],
-            resource_manager,
-            shader_cacher,
+            asset_manager,
             None,
-            None,
-        )
-        .1;
+            None
+        );
     }
     // Draw the debug renderers
-    pub fn draw_debug(&mut self, vp_matrix: &veclib::Matrix4x4<f32>, shader_cacher_1: &CacheManager<Shader>) {
+    pub fn draw_debug(&mut self, vp_matrix: &veclib::Matrix4x4<f32>) {
         if !DRAW_DEBUG {
             return;
         }
@@ -137,7 +135,7 @@ impl DebugRenderer {
         }
 
         // Set the shader
-        let shader = shader_cacher_1.get_object(self.shader_name.as_str()).unwrap();
+        let shader = &mut self.shader;
         // Since we don't have a model matrix you can set it directly
         shader.use_shader();
         //shader.val("vp_matrix", rendering::Uniform::Mat44F32(vp_matrix));
