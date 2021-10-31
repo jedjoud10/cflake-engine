@@ -32,14 +32,14 @@ impl Volumetric {
             asset_manager,
             Some(AdditionalShader::Compute(ComputeShader::default())),
             None,
-        );
+        ).unwrap();
         // Load the volumetric compute
         self.compute = Shader::new(
             vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"],
             asset_manager,
             Some(AdditionalShader::Compute(ComputeShader::default())),
             None,
-        );
+        ).unwrap();
     }
     // Create the SDF texture from a simple texture, loaded into a compute shader
     // Create the textures

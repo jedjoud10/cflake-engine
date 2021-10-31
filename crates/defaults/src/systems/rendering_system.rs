@@ -33,7 +33,7 @@ impl CustomData {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::asset_load_easy("defaults\\models\\screen_quad.mdl3d", &mut data.asset_manager.asset_cacher);
+        quad_renderer_component.model = Model::asset_load_easy("defaults\\models\\screen_quad.mdl3d", &mut data.asset_manager.asset_cacher).unwrap();
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
             Shader::new(
@@ -41,7 +41,7 @@ impl CustomData {
                 &mut data.asset_manager,
                 None,
                 None,
-            ).cache(data.asset_manager),
+            ).unwrap().cache(data.asset_manager),
         );
         let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
@@ -339,7 +339,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.asset_manager,
         None,
         None,
-    );
+    ).unwrap();
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();

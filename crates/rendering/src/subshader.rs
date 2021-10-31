@@ -21,10 +21,10 @@ pub struct SubShader {
 
 // Create a subshader from an asset
 impl Asset for SubShader {
-    fn asset_load(data: &assets::AssetMetadata) -> Self where Self: Sized {
+    fn asset_load(data: &assets::AssetMetadata) -> Option<Self> where Self: Sized {
         // Load a subshader from this metadata
-        let text = String::from_utf8(data.bytes.clone()).unwrap();
-        Self {
+        let text = String::from_utf8(data.bytes.clone()).ok()?;
+        Some(Self {
             program: 0,
             name: data.name.clone(),
             source: text,
@@ -34,7 +34,7 @@ impl Asset for SubShader {
                 assets::AssetType::ComputeSubshader => { SubShaderType::Compute },        
                 _ => { /* Nothing */ panic!() }    
             },
-        }
+        })
     }
 }
 

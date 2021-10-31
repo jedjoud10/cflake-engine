@@ -39,10 +39,10 @@ impl Renderer {
         return Self::default().set_material(Material::default());
     }
     // Load a model
-    pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Self {
+    pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Option<Self> {
         let md = asset_manager.asset_cacher.load_md(model_path).unwrap(); 
-        self.model = Model::asset_load(md);
-        return self;
+        self.model = Model::asset_load(md)?;
+        return Some(self);
     }
     // Set a model
     pub fn set_model(mut self, model: Model) -> Self {

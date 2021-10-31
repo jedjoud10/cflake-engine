@@ -107,10 +107,10 @@ impl Default for Texture {
 // Loadable asset
 impl Asset for Texture {
     // Load a texture from scratch
-    fn asset_load(data: &AssetMetadata) -> Self where Self: Sized {
+    fn asset_load(data: &AssetMetadata) -> Option<Self> where Self: Sized {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
-        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
         // Return a texture with the default parameters
         let texture = Texture::new()
             .set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16))
@@ -119,18 +119,18 @@ impl Asset for Texture {
             .enable_mipmaps()
             .generate_texture(image.to_bytes())
             .unwrap();
-        return texture;
+        return Some(texture);
     }
     // Load a texture that already has it's parameters set
-    fn asset_load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
+    fn asset_load_t(self, data: &AssetMetadata) -> Option<Self> where Self: Sized {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
-        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
         // Return a texture with the default parameters
         let texture = self
             .generate_texture(image.to_bytes())
             .unwrap();
-        return texture;
+        return Some(texture);
     }
     // Load a texture from the bundled metadata
     /*

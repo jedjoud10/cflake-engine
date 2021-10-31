@@ -144,7 +144,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         custom_data.vertex_array = vertex_array;
     }
     // Load a default font that we can use for testing
-    let default_font = Font::new().asset_load_easy_t("defaults\\fonts\\default_font.font", &data.asset_manager.asset_cacher);
+    let default_font = Font::new().asset_load_easy_t("defaults\\fonts\\default_font.font", &data.asset_manager.asset_cacher).unwrap();
     // Set the default font
     data.ui_manager.font_manager.add_font(default_font);
     // Load the UI shader
@@ -153,14 +153,14 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.asset_manager,
         None,
         None,
-    );
+    ).unwrap();
     // Load the UI font shader
     custom_data.ui_shader = Shader::new(
         vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
         data.asset_manager,
         None,
         None,
-    );
+    ).unwrap();
 }
 
 // Post fire event

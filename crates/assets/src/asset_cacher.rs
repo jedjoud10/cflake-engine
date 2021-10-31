@@ -88,19 +88,19 @@ impl AssetMetadata {
 // A single asset, that can be loaded directly from raw bytes bundled in the .dll
 pub trait Asset {
     // Load this asset from metadata
-    fn asset_load(data: &AssetMetadata) -> Self where Self: Sized; 
+    fn asset_load(data: &AssetMetadata) -> Option<Self> where Self: Sized; 
     // Load this asset from metadata automatically loaded from the asset cacher
-    fn asset_load_easy(name: &str, asset_cacher: &AssetCacher) -> Self where Self: Sized {
-        let s = asset_cacher.load_md(name).unwrap();
+    fn asset_load_easy(name: &str, asset_cacher: &AssetCacher) -> Option<Self> where Self: Sized {
+        let s = asset_cacher.load_md(name).ok()?;
         Self::asset_load(s)
     }
     // Load this asset, but only if we already have some data initalized in the struct
-    fn asset_load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
+    fn asset_load_t(self, data: &AssetMetadata) -> Option<Self> where Self: Sized {
         panic!()
     }
     // Combination of the two
-    fn asset_load_easy_t(self, name: &str, asset_cacher: &AssetCacher) -> Self where Self: Sized {
-        let s = asset_cacher.load_md(name).unwrap();
+    fn asset_load_easy_t(self, name: &str, asset_cacher: &AssetCacher) -> Option<Self> where Self: Sized {
+        let s = asset_cacher.load_md(name).ok()?;
         self.asset_load_t(s)
     }       
 }

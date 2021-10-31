@@ -61,7 +61,7 @@ impl DebugRenderer {
             asset_manager,
             None,
             None
-        );
+        ).unwrap();
     }
     // Draw the debug renderers
     pub fn draw_debug(&mut self, vp_matrix: &veclib::Matrix4x4<f32>) {

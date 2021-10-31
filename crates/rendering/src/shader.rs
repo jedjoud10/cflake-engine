@@ -83,7 +83,7 @@ impl Shader {
         asset_manager: &'a mut AssetManager,
         additional_shader: Option<AdditionalShader>,
         additional_shader_paths: Option<Vec<&str>>,
-    ) -> Self {
+    ) -> Option<Self> {
         let mut shader = Self::default();
         // Create the shader name
         shader.name = subshader_paths.join("__");
@@ -97,7 +97,7 @@ impl Shader {
                 shader.link_subshader(subshader);
             } else {
                 // It was not cached, so we need to cache it
-                let mut subshader = SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap());
+                let mut subshader = SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap())?;
 
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
@@ -134,7 +134,7 @@ impl Shader {
                 let extend_shader_source = included_lines.join("\n");
 
                 // Remove the version directive from the original subshader source
-                let og_shader_source = subshader.source.split(&version_directive).nth(1).unwrap();
+                let og_shader_source = subshader.source.split(&version_directive).nth(1)?;
                 subshader.source = format!("{}\n{}\n{}", version_directive, extend_shader_source, og_shader_source);
                 // Gotta filter out the include messages
                 subshader.source = subshader.source.lines().filter(|x| !x.starts_with("#include")).collect::<Vec<&str>>().join("\n");
@@ -143,7 +143,7 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
-                let rc_subshader = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap();
+                let rc_subshader = asset_manager.object_cacher.cache(subshader_path, subshader).ok()?;
                 let _subshader = rc_subshader.as_ref();
                 shader.link_subshader(_subshader);
                 // Unload the resource since we just cached the shader
@@ -154,7 +154,7 @@ impl Shader {
         shader.additional_shader = additional_shader.unwrap_or(AdditionalShader::None);
         // Finalize the shader and cache it
         shader.finalize_shader();
-        return shader;
+        return Some(shader);
     }
     // Cache this shader
     pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {

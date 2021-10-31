@@ -25,12 +25,12 @@ impl MultiMaterialRenderer {
         return Self::default();
     }
     // Load a model into this mm renderer, with a specific material binded to the model
-    pub fn load_model(mut self, model_path: &str, material: Option<Material>, asset_manager: &AssetManager) -> Self {
+    pub fn load_model(mut self, model_path: &str, material: Option<Material>, asset_manager: &AssetManager) -> Option<Self> {
         let md = asset_manager.asset_cacher.load_md(model_path).unwrap();
-        let model = Model::asset_load(md);
+        let model = Model::asset_load(md)?;
         self.sub_models.push((model, self.materials.len()));
         self.materials.push(material);
-        return self;
+        return Some(self);
     }
     // Add a specific model to the complex model as a submodel
     pub fn add_submodel(mut self, model: Model, material: Option<Material>) -> Self {

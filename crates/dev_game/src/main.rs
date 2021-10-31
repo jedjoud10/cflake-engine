@@ -11,6 +11,9 @@ fn main() {
     main::start("DevJed", "DevGame", world_initialized);
 }
 pub fn world_initialized(world: &mut World) {
+    // Pre load the resources
+    let cacher = &mut world.asset_manager.asset_cacher;
+    //cacher.pre_load("", bytes, load_type, asset_type)
     // ----Load the default systems----
     // Create the custom data
     let mut data: WorldData = WorldData {
@@ -66,14 +69,14 @@ pub fn world_initialized(world: &mut World) {
         data.asset_manager,
         Some(AdditionalShader::Compute(ComputeShader::default())),
         Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
-    );
+    ).unwrap();
 
     let color_compute = Shader::new(
         vec!["defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
         data.asset_manager,
         Some(AdditionalShader::Compute(ComputeShader::default())),
         Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
-    );
+    ).unwrap();
 
     // The terrain shader
     let terrain_shader = Shader::new(
@@ -84,7 +87,7 @@ pub fn world_initialized(world: &mut World) {
         data.asset_manager,
         None,
         None,
-    ).cache(&mut data.asset_manager);
+    ).unwrap().cache(&mut data.asset_manager);
     // Material
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
@@ -116,7 +119,7 @@ pub fn world_initialized(world: &mut World) {
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
         .unwrap();
-    let model = Model::asset_load_easy("user\\models\\tools2.mdl3d", &data.asset_manager.asset_cacher);
+    let model = Model::asset_load_easy("user\\models\\tools2.mdl3d", &data.asset_manager.asset_cacher).unwrap();
     let m = Material::new("M", &mut data.asset_manager)
         .load_diffuse(
             "user\\textures\\palette.png",
