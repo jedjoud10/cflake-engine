@@ -252,7 +252,7 @@ impl System {
         let filtered_entity_ids = match self.entity_filter {
             Some(x) => {
                 self.entities
-                    .par_iter()
+                    .iter()
                     .filter(|entity_id| {
                         // Filter the entities
                         let entity_clone = &entity_manager_immutable.get_entity(**entity_id).unwrap();

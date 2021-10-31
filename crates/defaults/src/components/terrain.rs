@@ -1,6 +1,6 @@
 use ecs::{Component, ComponentID, ComponentInternal};
 use math::octrees::*;
-use rendering::Material;
+use rendering::{Material, Shader};
 use terrain::{ChunkManager, VoxelGenerator, CHUNK_SIZE};
 
 // Terrain data that will be on the terrain entity
@@ -22,7 +22,7 @@ impl TerrainData {
         node.children_indices.is_none() && node.depth < max_depth && result
     }
     // New terrain data with specific parameters
-    pub fn new(compute_id: usize, color_compute_id: usize, octree_depth: u8, bound_materials: Vec<Option<Material>>) -> Self {
+    pub fn new(compute: Shader, color_compute: Shader, octree_depth: u8, bound_materials: Vec<Option<Material>>) -> Self {
         // Create a new octree
         let mut octree = AdvancedOctree {
             internal_octree: Octree {
@@ -37,8 +37,8 @@ impl TerrainData {
         Self {
             octree,
             voxel_generator: VoxelGenerator {
-                compute_id: compute_id,
-                color_compute_id: color_compute_id,
+                compute,
+                color_compute,
                 ..VoxelGenerator::default()
             },
             bound_materials: bound_materials,

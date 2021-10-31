@@ -1,6 +1,7 @@
 use crate::{AssetCacher, ObjectCacher};
 
 // Asset manager
+#[derive(Default)]
 pub struct AssetManager {
     // Asset cacher
     pub asset_cacher: AssetCacher,

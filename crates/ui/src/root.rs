@@ -5,8 +5,6 @@ use crate::CoordinateType;
 use crate::Element;
 use crate::ElementType;
 use others::SmartList;
-use resources::LoadableResource;
-use resources::Resource;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
 #[derive(Debug, Clone)]

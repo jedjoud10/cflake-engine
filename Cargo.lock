@@ -686,6 +686,7 @@ dependencies = [
 name = "terrain"
 version = "0.1.0"
 dependencies = [
+ "assets",
  "debug",
  "ecs",
  "errors",

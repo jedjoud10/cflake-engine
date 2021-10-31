@@ -3,7 +3,6 @@ use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
-use main::resources::LoadableResource;
 use main::world_data::*;
 use main::*;
 fn main() {
@@ -18,8 +17,7 @@ pub fn world_initialized(world: &mut World) {
         component_manager: &mut world.component_manager,
         ui_manager: &mut world.ui_manager,
         input_manager: &mut world.input_manager,
-        shader_cacher: &mut world.shader_cacher,
-        texture_cacher: &mut world.texture_cacher,
+        asset_manager: &mut world.asset_manager,
         asset_manager: &mut world.resource_manager,
         time_manager: &mut world.time_manager,
         debug: &mut world.debug,

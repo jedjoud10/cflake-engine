@@ -3,6 +3,7 @@ use std::{any::Any, collections::HashMap, rc::Rc};
 use crate::ObjectLoadError;
 
 // The object cacher
+#[derive(Default)]
 pub struct ObjectCacher {
     // Cached object
     pub cached_objects: HashMap<String, Rc<dyn Any>>

@@ -1,6 +1,6 @@
 use ascii::AsciiStr;
+use assets::{Asset, Object};
 use rendering::{Texture, TextureType};
-use resources::{LoadableResource, Resource};
 
 use crate::FontChar;
 
@@ -84,28 +84,12 @@ impl Font {
 }
 
 // The font is loadable
-impl LoadableResource for Font {
-    fn from_resource(self, resource: &resources::Resource) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        match resource {
-            Resource::Font(font, name) => {
-                // Load the chars
-                let chars = font.chars.iter().map(|x| FontChar { id: x.id, min: x.min, max: x.max }).collect::<Vec<FontChar>>();
-                let mut output = Self {
-                    name: name.clone(),
-                    atlas_dimensions: font.dimensions.into(),
-                    texture_pixels: font.texture_pixels.clone(),
-                    texture: None,
-                    chars: chars,
-                    font_options: FontOptions::default(),
-                };
-                // Create the OpenGL texture after the atlas was created
-                output.create_texture();
-                return Some(output);
-            }
-            _ => None,
-        }
+impl Asset for Font {
+    fn asset_load(data: &assets::AssetMetadata) -> Self where Self: Sized {
+        // Load this font from the metadata bytes
+        panic!()
     }
+}
+impl Object for Font {
+    
 }

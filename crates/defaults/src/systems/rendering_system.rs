@@ -1,4 +1,5 @@
 use super::super::components;
+use assets::{Asset, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
 use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
@@ -32,18 +33,15 @@ impl CustomData {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::new().from_path("defaults\\models\\screen_quad.mdl3d", data.asset_manager).unwrap();
+        quad_renderer_component.model = Model::asset_load_easy("defaults\\models\\screen_quad.mdl3d", &mut data.asset_manager.asset_cacher);
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
             Shader::new(
                 vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
                 &mut data.asset_manager,
-                &mut data.shader_cacher,
                 None,
                 None,
-            )
-            .1
-            .as_str(),
+            ).cache(data.asset_manager).name.as_str(),
         );
         let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
@@ -160,7 +158,7 @@ impl CustomData {
         };
 
         // Load the shader
-        let shader = data.shader_cacher.1.get_object(&shader_name).unwrap();
+        let shader = Shader::object_load_o(&shader_name, &data.asset_manager.object_cacher);
         // Use the shader, and update any uniforms
         shader.use_shader();
         // Calculate the mvp matrix
@@ -186,29 +184,14 @@ impl CustomData {
                 rendering::DefaultUniform::Vec3I32(x) => shader.set_vec3i32(name, x),
                 rendering::DefaultUniform::Vec4I32(x) => shader.set_vec4i32(name, x),
                 rendering::DefaultUniform::Mat44F32(x) => shader.set_mat44(name, x),
-                rendering::DefaultUniform::Texture2D(x, y) => shader.set_t2d(name, data.texture_cacher.id_get_object(*x).unwrap(), *y),
-                rendering::DefaultUniform::Texture3D(x, y) => shader.set_t2d(name, data.texture_cacher.id_get_object(*x).unwrap(), *y),
+                rendering::DefaultUniform::Texture2D(x, y) => panic!(),
+                rendering::DefaultUniform::Texture3D(x, y) => panic!(),
             }
         }
 
-        // Check if we already loaded the default textures or not
-        if material.diffuse_tex_id.is_none() || material.normal_tex_id.is_none() {
-            // Did not load all the default textures!
-            // TODO: Refactor
-            shader.set_t2d(
-                "diffuse_tex",
-                data.texture_cacher.id_get_object(self.default_material.diffuse_tex_id.unwrap()).unwrap(),
-                gl::TEXTURE0,
-            );
-            shader.set_t2d(
-                "normals_tex",
-                data.texture_cacher.id_get_object(self.default_material.normal_tex_id.unwrap()).unwrap(),
-                gl::TEXTURE1,
-            );
-        } else {
-            shader.set_t2d("diffuse_tex", data.texture_cacher.id_get_object(material.diffuse_tex_id.unwrap()).unwrap(), gl::TEXTURE0);
-            shader.set_t2d("normals_tex", data.texture_cacher.id_get_object(material.normal_tex_id.unwrap()).unwrap(), gl::TEXTURE1);
-        }
+        // Set the textures
+        shader.set_t2d("diffuse_tex", material.diffuse_tex.as_ref().unwrap(), gl::TEXTURE0);
+        shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), gl::TEXTURE1);        
 
         // Draw normally
         if gpu_data.initialized {

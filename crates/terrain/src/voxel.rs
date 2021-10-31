@@ -1,9 +1,7 @@
 use std::time::Instant;
-
 use crate::ISOLINE;
-
 use super::CHUNK_SIZE;
-use others::CacheManager;
+use assets::AssetManager;
 use rendering::{Shader, Texture, TextureFilter, TextureType};
 use veclib::Swizzable;
 
@@ -36,9 +34,9 @@ pub struct Voxel {
 #[derive(Default)]
 pub struct VoxelGenerator {
     // The compute shader's name used for voxel generation
-    pub compute_id: usize,
+    pub compute: Shader,
     // The seconday compute shader's name
-    pub color_compute_id: usize,
+    pub color_compute: Shader,
     // The 3D texture used for voxel generation, only stores the density in a 16 bit value
     pub voxel_texture: Texture,
     // The 3D texture used to store MaterialID, BiomeID, Hardness and Smoothness
@@ -72,10 +70,9 @@ impl VoxelGenerator {
             .unwrap();
     }
     // Update the last frame variable and dispatch the compute shader
-    pub fn generate_voxels_start(&self, shader_cacher: &mut CacheManager<Shader>, size: u64, depth: u8, position: veclib::Vector3<i64>) {
+    pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
         // First pass
-        // Set the compute shader variables and voxel texture
-        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
+        let shader = &mut self.compute;
         shader.use_shader();
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
@@ -94,8 +91,8 @@ impl VoxelGenerator {
             .unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&self, shader_cacher: &mut CacheManager<Shader>, size: u64, depth: u8, position: veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
-        let shader = shader_cacher.id_get_object_mut(self.compute_id).unwrap();
+    pub fn generate_voxels_end(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>, data: &mut Box<[Voxel]>) -> bool {
+        let shader = &mut self.compute;
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
             rendering::AdditionalShader::Compute(c) => c,
@@ -105,7 +102,7 @@ impl VoxelGenerator {
         // Read back the compute shader data
         compute.get_compute_state().unwrap();
         // Second pass
-        let color_shader = shader_cacher.id_get_object_mut(self.color_compute_id).unwrap();
+        let color_shader = &mut self.color_compute;
         color_shader.use_shader();
         color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);

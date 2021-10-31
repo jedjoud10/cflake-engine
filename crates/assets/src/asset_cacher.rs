@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::AssetMetadataLoadError;
 
 // Caches the embeded bytes into an array basically
+#[derive(Default)]
 pub struct AssetCacher {
     // The cached metadata
     pub cached_metadata: HashMap<String, AssetMetadata>
@@ -88,6 +89,11 @@ impl AssetMetadata {
 pub trait Asset {
     // Load this asset from metadata
     fn asset_load(data: &AssetMetadata) -> Self where Self: Sized; 
+    // Load this asset from metadata automatically loaded from the asset cacher
+    fn asset_load_easy(name: &str, asset_cacher: &AssetCacher) -> Self where Self: Sized {
+        let s = asset_cacher.load_md(name).unwrap();
+        Self::asset_load(s)
+    }
     // Load this asset, but only if we already have some data initalized in the struct
     fn asset_load_t(self, data: &AssetMetadata) -> Self where Self: Sized {
         panic!()
