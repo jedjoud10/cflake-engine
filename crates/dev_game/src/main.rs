@@ -20,10 +20,24 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\others\\wireframe.frsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\fonts\\default_font.font", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_elem.vrsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_panel.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.vrsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.frsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d", cacher);
+    preload_asset!(".\\resources\\defaults\\fonts\\default_font.font", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\noise.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\erosion.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\user\\models\\tools2.mdl3d", cacher);
+    preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
     // ----Load the default systems----
     // Create the custom data
@@ -59,6 +73,8 @@ pub fn world_initialized(world: &mut World) {
     let mut terrain_system = systems::terrain_system::system(&mut data);
     terrain_system.enable(&mut data);
     world.system_manager.add_system(terrain_system);
+
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // ----Load the entities----
     // Create a camera entity
 
@@ -143,9 +159,11 @@ pub fn world_initialized(world: &mut World) {
         }),
         &mut data.asset_manager,
     );
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);
-
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
+    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }

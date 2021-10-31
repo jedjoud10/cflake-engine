@@ -266,6 +266,7 @@ version = "0.1.0"
 dependencies = [
  "ascii",
  "assets",
+ "byteorder",
  "gl",
  "rendering",
  "veclib",

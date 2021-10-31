@@ -37,12 +37,13 @@ impl AssetCacher {
             name: name.clone().to_string(),
         };
         self.cached_metadata.insert(name.to_string(), data);
+        println!("Pre loaded asset: {}", name);
         Ok(())
     }
     // Load asset metadata
     pub fn load_md(&self, name: &str) -> Result<&AssetMetadata, AssetMetadataLoadError> {
         // Load
-        println!("Asset: {} was not preloaded!", name);
+        println!("Asset: {} was {}", name, if self.cached_metadata.contains_key(name) { "cached!" } else { "not cached!" });
         let data = self.cached_metadata.get(name).ok_or(AssetMetadataLoadError::new_str("Asset was not pre-loaded!"))?;
         return Ok(data);
     }
@@ -129,7 +130,7 @@ pub trait Asset {
     where
         Self: Sized,
     {
-        panic!()
+        None
     }
     // Combination of the two
     fn asset_load_easy_t(self, name: &str, asset_cacher: &AssetCacher) -> Option<Self>

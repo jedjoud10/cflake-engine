@@ -144,8 +144,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         custom_data.vertex_array = vertex_array;
     }
     // Load a default font that we can use for testing
-    let default_font = Font::new()
-        .asset_load_easy_t("defaults\\fonts\\default_font.font", &data.asset_manager.asset_cacher)
+    let default_font = Font::asset_load_easy("defaults\\fonts\\default_font.font", &data.asset_manager.asset_cacher)
         .unwrap();
     // Set the default font
     data.ui_manager.font_manager.add_font(default_font);

@@ -328,12 +328,12 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         .object_cache_load("defaults\\textures\\sky_gradient.png", &mut data.asset_manager.object_cacher);
     data.custom_data.sky_texture = Some(texture);
     // Load the default shader
-    let default_shader_name = Shader::new(
+    let default_shader = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
         data.asset_manager,
         None,
         None,
-    );
+    ).unwrap().cache(data.asset_manager);
 
     // Load the wireframe shader
     system.wireframe_shader = Shader::new(
@@ -341,8 +341,9 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.asset_manager,
         None,
         None,
-    )
-    .unwrap();
+    ).unwrap();
+    // Default material    
+    system.default_material = Material::new("Default Material", &mut data.asset_manager).set_shader(default_shader);
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();

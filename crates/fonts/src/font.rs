@@ -1,5 +1,6 @@
 use ascii::AsciiStr;
 use assets::{Asset, Object};
+use byteorder::{LittleEndian, ReadBytesExt};
 use rendering::{Texture, TextureType};
 
 use crate::FontChar;
@@ -90,7 +91,36 @@ impl Asset for Font {
         Self: Sized,
     {
         // Load this font from the metadata bytes
-        panic!()
+        let mut reader = std::io::Cursor::new(data.bytes.clone());
+        // Read the custom font
+        let mut output_font = Font::new();
+        output_font.name = data.name.clone();
+        // Get the width and height of the bitmap
+        let width = reader.read_u16::<LittleEndian>().unwrap();
+        let height = reader.read_u16::<LittleEndian>().unwrap();
+        output_font.atlas_dimensions = veclib::Vector2::new(width, height);
+        let pixel_num: u32 = width as u32 * height as u32;
+        // Read the pixels, one by one
+        for i in 0..pixel_num {
+            let pixel = reader.read_u8().unwrap();
+            output_font.texture_pixels.push(pixel);
+        }
+
+        // Get the number of ASCII characters we have
+        let font_char_num = reader.read_u8().unwrap();
+
+        // Read the chars
+        for i in 0..font_char_num {
+            // Get the data back
+            let loaded_char = FontChar {
+                id: reader.read_u8().unwrap(),
+                min: veclib::Vector2::new(reader.read_u16::<LittleEndian>().unwrap(), reader.read_u16::<LittleEndian>().unwrap()),
+                max: veclib::Vector2::new(reader.read_u16::<LittleEndian>().unwrap(), reader.read_u16::<LittleEndian>().unwrap()),
+            };
+            output_font.chars.push(loaded_char);
+        }
+        output_font.create_texture();
+        Some(output_font)
     }
 }
 impl Object for Font {}
