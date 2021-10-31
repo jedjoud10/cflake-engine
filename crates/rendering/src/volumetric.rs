@@ -25,7 +25,7 @@ pub struct Volumetric {
 
 impl Volumetric {
     // Load the necessary compute shaders
-    pub fn load_compute_shaders(&mut self, asset_manager: &AssetManager) {
+    pub fn load_compute_shaders(&mut self, asset_manager: &mut AssetManager) {
         // Load generator compute
         self.compute_generator = Shader::new(
             vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"],
@@ -117,7 +117,7 @@ impl Volumetric {
             return;
         }
         // Run the compute shader
-        let shader = self.compute;
+        let shader = &mut self.compute;
         errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create a custom View-Projection matrix that doesn't include the translation
         shader.use_shader();

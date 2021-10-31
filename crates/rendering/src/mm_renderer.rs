@@ -1,5 +1,5 @@
 use crate::{Material, Model, ModelDataGPU};
-use resources::{LoadableResource, ResourceManager};
+use assets::{Asset, AssetManager};
 
 // A Multi Material renderer, this renders a Complex Model
 pub struct MultiMaterialRenderer {
@@ -25,9 +25,9 @@ impl MultiMaterialRenderer {
         return Self::default();
     }
     // Load a model into this mm renderer, with a specific material binded to the model
-    pub fn load_model(mut self, model_path: &str, material: Option<Material>, resource_manager: &mut ResourceManager) -> Self {
-        let resource = resource_manager.load_packed_resource(model_path).unwrap();
-        let model = Model::new().from_resource(resource).unwrap();
+    pub fn load_model(mut self, model_path: &str, material: Option<Material>, asset_manager: &AssetManager) -> Self {
+        let md = asset_manager.asset_cacher.load_md(model_path).unwrap();
+        let model = Model::asset_load(md);
         self.sub_models.push((model, self.materials.len()));
         self.materials.push(material);
         return self;

@@ -26,7 +26,7 @@ impl Asset for SubShader {
         let text = String::from_utf8(data.bytes.clone()).unwrap();
         Self {
             program: 0,
-            name: data.name,
+            name: data.name.clone(),
             source: text,
             subshader_type: match &data.asset_type {
                 assets::AssetType::VertSubshader => { SubShaderType::Vertex },

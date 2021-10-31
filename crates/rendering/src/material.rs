@@ -46,15 +46,12 @@ impl Default for Material {
 impl Material {
     // Create a new material with a name
     pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
-        let texture = Self {
+        Self {
             material_name: material_name.to_string(),
+            diffuse_tex: Some(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
+            normal_tex: Some(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher)),
             ..Self::default()
-        };
-        // Load the default textures
-        texture.diffuse_tex = Some(Texture::object_load_o("white", &mut asset_manager.object_cacher));
-        texture.normal_tex = Some(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher));
-        
-        texture
+        }
     }
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {

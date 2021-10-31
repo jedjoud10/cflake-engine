@@ -37,7 +37,7 @@ impl Default for Shader {
 // A shader is an asset object, while a subshader is an asset
 impl Object for Shader {
     fn get_unique_object_name(&self, local_path: &str) -> String {
-        self.name
+        self.name.to_string()
     }
 }
 
@@ -80,7 +80,7 @@ impl Shader {
     // Creates a shader from multiple subshader files, no automatic caching though
     pub fn new<'a>(
         subshader_paths: Vec<&str>,
-        asset_manager: &'a AssetManager,
+        asset_manager: &'a mut AssetManager,
         additional_shader: Option<AdditionalShader>,
         additional_shader_paths: Option<Vec<&str>>,
     ) -> Self {
@@ -143,7 +143,8 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
-                let _subshader = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap().as_ref();
+                let rc_subshader = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap();
+                let _subshader = rc_subshader.as_ref();
                 shader.link_subshader(_subshader);
                 // Unload the resource since we just cached the shader
                 //resource_manager.unload_resouce(subshader_path);
@@ -156,7 +157,7 @@ impl Shader {
         return shader;
     }
     // Cache this shader
-    pub fn cache<'a>(self, asset_manager: &'a AssetManager) -> Rc<Self> {
+    pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {
         let name = self.name.clone();
         let shader = asset_manager.object_cacher.cache(&name, self).unwrap();
         return shader;
