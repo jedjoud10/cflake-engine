@@ -7,15 +7,15 @@
 		{
 			"type": "lldb",
 			"request": "launch",
-			"name": "Debug executable 'hypothermia'",
+			"name": "Debug executable 'clfake_engine'",
 			"cargo": {
 				"args": [
 					"build",
-					"--bin=hypothermia",
-					"--package=hypothermia"
+					"--bin=dev_game",
+					"--package=dev_game"
 				],
 				"filter": {
-					"name": "hypothermia",
+					"name": "dev_game",
 					"kind": "bin"
 				}
 			},
@@ -25,16 +25,16 @@
 		{
 			"type": "lldb",
 			"request": "launch",
-			"name": "Debug unit tests in executable 'hypothermia'",
+			"name": "Debug unit tests in executable 'dev_game'",
 			"cargo": {
 				"args": [
 					"test",
 					"--no-run",
-					"--bin=hypothermia",
-					"--package=hypothermia"
+					"--bin=dev_game",
+					"--package=dev_game"
 				],
 				"filter": {
-					"name": "hypothermia",
+					"name": "dev_game",
 					"kind": "bin"
 				}
 			},

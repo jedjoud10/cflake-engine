@@ -11,6 +11,8 @@ mod subshader;
 mod texture;
 mod volumetric;
 mod window;
+mod utils;
+pub use utils::*;
 pub use array_data::*;
 pub use compute_shader::*;
 pub use material::*;

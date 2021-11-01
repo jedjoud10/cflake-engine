@@ -274,19 +274,6 @@ impl CustomData {
         }
     }
 }
-extern "system" fn opengl_error_callback(source: u32, _type: u32, id: u32, severity: u32, length: i32, message: *const i8, userParam: *mut c_void) {
-    // Check if it was really an error
-    if _type == gl::DEBUG_TYPE_ERROR {
-        println!("We caught an OpenGL error!");
-        println!("Type: 0x{:x?}", _type);
-        let severity = gl::GetString(id);
-        println!("Severity: {}", g.to_string());
-        
-        let msg = unsafe { std::ffi::CStr::from_ptr(message) };
-        println!("Message: '{}'", msg.to_str().unwrap());
-        panic!();
-    }
-}
 // Events
 fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -306,10 +293,6 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         let mut minor: i32 = 0;
         gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);
         gl::GetIntegerv(gl::MINOR_VERSION, &mut minor);
-
-        gl::Enable(gl::DEBUG_OUTPUT);
-        gl::DebugMessageCallback(Some(opengl_error_callback), null());
-
         println!("OpenGL version; major: '{}', minor: '{}'", major, minor);
         // Error shit
     }
@@ -353,6 +336,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.default_material = Material::new("Default Material", &mut data.asset_manager).set_shader(default_shader);
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
+    println!("System enabled");
     let system = system_data.cast_mut::<CustomData>().unwrap();
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, system.framebuffer);
@@ -379,8 +363,10 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     if data.input_manager.map_pressed("toggle_wireframe") {
         system.wireframe = !system.wireframe;
     }
+    
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
+    println!("System postfire");
     let system = system_data.cast_mut::<CustomData>().unwrap();
     let dimensions = data.custom_data.window.dimensions;
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
@@ -421,15 +407,19 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
+    
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+    println!("Entity added");
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     // Make sure we create the OpenGL data for this entity's model
     rc.refresh_model();
     let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
     transform.update_matrix();
+    
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+    println!("Entity removed");
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     let i = Instant::now();
     // Dispose the model when the entity gets destroyed
@@ -442,8 +432,10 @@ fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut Wor
         }
         None => {}
     }
+    
 }
 fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+    println!("Entity update");
     let system = system_data.cast::<CustomData>().unwrap();
     // Get the camera stuff
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
@@ -478,6 +470,7 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
             }
         }
     }
+    
 }
 // Aa frustum culling
 fn entity_filter(components: &FilteredLinkedComponents, data: &WorldData) -> bool {
