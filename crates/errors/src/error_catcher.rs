@@ -11,7 +11,7 @@ impl ErrorCatcher {
                 // We caught an error!
                 println!("\x1b[31mWe caught an OpenGL error! Error code: '{:x?}'\x1b[0m", error);
                 //panic!();
-                return None;
+                return Some(());
             } else {
                 return Some(());
             }

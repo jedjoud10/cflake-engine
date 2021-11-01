@@ -159,8 +159,8 @@ pub fn world_initialized(world: &mut World) {
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
-    data.entity_manager.add_entity_s(cube);
+    //data.entity_manager.add_entity_s(cube);
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
-    data.entity_manager.add_entity_s(terrain_entity);
+    //data.entity_manager.add_entity_s(terrain_entity);
     errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }

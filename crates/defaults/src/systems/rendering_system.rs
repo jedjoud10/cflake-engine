@@ -3,7 +3,7 @@ use assets::{Asset, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
 use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
-use std::{ptr::null, time::Instant};
+use std::{ffi::{CString, c_void}, ptr::null, time::Instant};
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use veclib::Swizzable;
 use world_data::WorldData;
@@ -276,7 +276,17 @@ impl CustomData {
         }
     }
 }
-
+extern "system" fn opengl_error_callback(source: u32, _type: u32, id: u32, severity: u32, length: i32, message: *const i8, userParam: *mut c_void) {
+    // Check if it was really an error
+    if _type == gl::DEBUG_TYPE_ERROR {
+        println!("We caught an OpenGL error!");
+        println!("Type: 0x{:x?}", _type);
+        println!("Severity: 0x{:x?}", severity);
+        let msg = unsafe { std::ffi::CStr::from_ptr(message) };
+        println!("Message: '{}'", msg.to_str().unwrap());
+        panic!();
+    }
+}
 // Events
 fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -297,7 +307,11 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);
         gl::GetIntegerv(gl::MINOR_VERSION, &mut minor);
 
+        gl::Enable(gl::DEBUG_OUTPUT);
+        gl::DebugMessageCallback(Some(opengl_error_callback), null());
+
         println!("OpenGL version; major: '{}', minor: '{}'", major, minor);
+        // Error shit
     }
 
     // Then setup opengl and the render buffer
