@@ -516,4 +516,11 @@ impl Texture {
             TextureType::TextureArray(_, _, z) => z,
         }
     }
+    // Load a texture, and cache it if needed
+    pub fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Self {
+        // Load the asset first
+        self = self.asset_load_easy_t(local_path, &mut asset_manager.asset_cacher).unwrap();
+        // Then the object (cache it if neccessarry)
+        self
+    }
 }
