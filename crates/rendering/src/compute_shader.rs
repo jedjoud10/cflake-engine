@@ -22,7 +22,6 @@ impl ComputeShader {
             gl::DispatchCompute(num_groups.0, num_groups.1, num_groups.2);
             self.running = true;
         }
-        errors::ErrorCatcher::catch_opengl_errors()?;
         return Some(());
     }
     // Force the compute shader to finish running if it is still running
@@ -33,13 +32,11 @@ impl ComputeShader {
                 //gl::Finish();
                 gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
                 //gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
-                errors::ErrorCatcher::catch_opengl_errors()?;
                 self.running = false;
             } else {
                 return None;
             }
         }
-        errors::ErrorCatcher::catch_opengl_errors()?;
         return Some(());
     }
     // Create some array data with a specific max size and a specific binding

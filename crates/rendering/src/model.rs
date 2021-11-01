@@ -120,7 +120,6 @@ impl Model {
     // Create some GPU data from this specific model
     pub fn refresh_gpu_data(&self) -> ModelDataGPU {
         let mut gpu_data = ModelDataGPU::default();
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         unsafe {
             // Create the VAO
             gl::GenVertexArrays(1, &mut gpu_data.vertex_array_object);
@@ -214,7 +213,6 @@ impl Model {
             // Unbind
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-            errors::ErrorCatcher::catch_opengl_errors().unwrap();
         }
         gpu_data
     }
@@ -249,7 +247,6 @@ impl ModelDataGPU {
                 // Delete the vertex array
                 gl::DeleteVertexArrays(1, &mut self.vertex_array_object);
                 self.initialized = false;
-                errors::ErrorCatcher::catch_opengl_errors();
             }
         }
     }

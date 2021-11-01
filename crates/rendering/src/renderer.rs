@@ -73,7 +73,6 @@ impl Renderer {
 impl Renderer {
     // When we update the model and want to refresh it's OpenGL data
     pub fn refresh_model(&mut self) {
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         self.gpu_data = self.model.refresh_gpu_data();
     }
     // Dispose of our model

@@ -120,7 +120,6 @@ impl Volumetric {
         }
         // Run the compute shader
         let shader = &mut self.compute;
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Create a custom View-Projection matrix that doesn't include the translation
         shader.use_shader();
         let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
@@ -131,7 +130,6 @@ impl Volumetric {
         shader.set_mat44("custom_vp_matrix", &vp_m);
         shader.set_mat44("projection_matrix", &projection_matrix);
         shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         // Get the actual compute shader
         let compute = match &mut shader.additional_shader {
             crate::AdditionalShader::Compute(x) => x,
@@ -143,7 +141,6 @@ impl Volumetric {
             .run_compute((self.result_tex.get_width() as u32 / 16, self.result_tex.get_height() as u32 / 16, 1))
             .unwrap();
         compute.get_compute_state().unwrap();
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
     // Enable volumetric rendering
     pub fn enable(&mut self) {

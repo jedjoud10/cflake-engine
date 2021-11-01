@@ -365,7 +365,6 @@ impl Texture {
                         );
                     }
                 }
-                errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed texture creation!"))?;
                 // Set the texture parameters for a normal texture
                 match self.filter {
                     TextureFilter::Linear => {
@@ -379,7 +378,6 @@ impl Texture {
                         gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                     }
                 }
-                errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture filter!"))?;
             }
 
             // The texture is already bound to the TEXTURE_2D
@@ -400,7 +398,6 @@ impl Texture {
                             gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                         }
                     }
-                    errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture mipmap filter!"))?;
                 }
             }
         } else {
@@ -427,7 +424,6 @@ impl Texture {
             // Now set the actual wrapping mode in the opengl texture
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
-            errors::ErrorCatcher::catch_opengl_errors().ok_or(errors::RenderingError::new_str("Failed to set texture wrapping mode!"))?;
         }
         Ok(self)
     }

@@ -20,7 +20,6 @@ impl ArrayData {
             self.buf_id = ssbo;
             // Unbind
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
-            errors::ErrorCatcher::catch_opengl_errors().expect("Could not create ArrayData initial data!");
         }
     }
     // Create an array with preset data
@@ -34,7 +33,6 @@ impl ArrayData {
             gl::NamedBufferStorage(ssbo, size as isize, vec.as_ptr() as *const c_void, gl::MAP_WRITE_BIT | gl::MAP_READ_BIT);
             self.byte_size = vec.len();
             self.buf_id = ssbo;
-            errors::ErrorCatcher::catch_opengl_errors().expect("Could not create ArrayData initial data!");
         }
     }
     // Bind the array to the specific binding
@@ -60,7 +58,6 @@ impl ArrayData {
             } else {
                 // No corruption, we're good
             }
-            errors::ErrorCatcher::catch_opengl_errors().expect("Could not read back ArrayData array!");
             return vec;
         }
     }

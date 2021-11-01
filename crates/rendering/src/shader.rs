@@ -146,7 +146,6 @@ impl Shader {
                 let rc_subshader = asset_manager.object_cacher.cache(subshader_path, subshader).ok()?;
                 let _subshader = rc_subshader.as_ref();
                 shader.link_subshader(_subshader);
-                errors::ErrorCatcher::catch_opengl_errors().unwrap();
                 // Unload the resource since we just cached the shader
                 //resource_manager.unload_resouce(subshader_path);
             }
@@ -155,7 +154,6 @@ impl Shader {
         shader.additional_shader = additional_shader.unwrap_or(AdditionalShader::None);
         // Finalize the shader and cache it
         shader.finalize_shader();
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
         return Some(shader);
     }
     // Cache this shader
@@ -193,7 +191,6 @@ impl Shader {
                 gl::DetachShader(self.program, subshader_program.1);
             }
 
-            errors::ErrorCatcher::catch_opengl_errors().expect("Could not finalize shader properly!");
             self.finalized = true;
         }
     }

@@ -48,7 +48,6 @@ impl CustomData {
         let mut quad_renderer_component = quad_renderer_component.set_material(material);
         quad_renderer_component.refresh_model();
         self.quad_renderer = quad_renderer_component;
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
     // Bind a specific texture attachement to the frame buffer
     fn bind_attachement(attachement: u32, texture: &Texture) {
@@ -132,7 +131,6 @@ impl CustomData {
 
         // Setup the debug renderer
         data.debug.renderer.setup_debug_renderer(data.asset_manager);
-        errors::ErrorCatcher::catch_opengl_errors().unwrap();
     }
     // Draw an entity normally
     fn draw_normal(
@@ -281,7 +279,9 @@ extern "system" fn opengl_error_callback(source: u32, _type: u32, id: u32, sever
     if _type == gl::DEBUG_TYPE_ERROR {
         println!("We caught an OpenGL error!");
         println!("Type: 0x{:x?}", _type);
-        println!("Severity: 0x{:x?}", severity);
+        let severity = gl::GetString(id);
+        println!("Severity: {}", g.to_string());
+        
         let msg = unsafe { std::ffi::CStr::from_ptr(message) };
         println!("Message: '{}'", msg.to_str().unwrap());
         panic!();
@@ -318,20 +318,15 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.setup_opengl(data);
     let material = &system.quad_renderer.material;
     let shader = material.shader.as_ref().unwrap();
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
     // Set the default uniforms
     /*
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
-
     /*
     // Volumetric parameters
     shader.set_t2d("volumetric_texture", &system.volumetric.result_tex, gl::TEXTURE6);
     shader.set_t2d("volumetric_depth_texture", &system.volumetric.depth_tex, gl::TEXTURE7);
     shader.set_t3d("sdf_texture", &system.volumetric.sdf_tex, gl::TEXTURE8);
     */
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     */
 
     // Load sky gradient texture
@@ -356,7 +351,6 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     ).unwrap();
     // Default material    
     system.default_material = Material::new("Default Material", &mut data.asset_manager).set_shader(default_shader);
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -385,7 +379,6 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     if data.input_manager.map_pressed("toggle_wireframe") {
         system.wireframe = !system.wireframe;
     }
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -401,7 +394,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     system
         .volumetric
         .calculate_volumetric(camera.projection_matrix, camera_transform.rotation, camera_transform.position, camera.clip_planes);
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // Draw the normal primitives
     let shader = system.quad_renderer.material.shader.as_ref().unwrap();
     shader.use_shader();
@@ -421,7 +413,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
-    errors::ErrorCatcher::catch_opengl_errors().expect("Could not set Deferred rendering uniforms!");
     // Render the screen quad
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -430,11 +421,9 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // Make sure we create the OpenGL data for this entity's model
     rc.refresh_model();
     let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();

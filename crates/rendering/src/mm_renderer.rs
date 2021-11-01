@@ -56,7 +56,6 @@ impl MultiMaterialRenderer {
         // Loop through each sub model and consider it as a unique model
         self.sub_models_gpu_data = vec![ModelDataGPU::default(); self.sub_models.len()];
         for (i, (sub_model, material_id)) in self.sub_models.iter().enumerate() {
-            errors::ErrorCatcher::catch_opengl_errors().unwrap();
             let gpu_data = sub_model.refresh_gpu_data();
             self.sub_models_gpu_data[i] = gpu_data;
         }

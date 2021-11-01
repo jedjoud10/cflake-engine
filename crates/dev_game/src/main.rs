@@ -37,7 +37,6 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
     preload_asset!(".\\resources\\user\\models\\tools2.mdl3d", cacher);
     preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 
     // ----Load the default systems----
     // Create the custom data
@@ -74,7 +73,6 @@ pub fn world_initialized(world: &mut World) {
     terrain_system.enable(&mut data);
     world.system_manager.add_system(terrain_system);
 
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     // ----Load the entities----
     // Create a camera entity
 
@@ -156,11 +154,8 @@ pub fn world_initialized(world: &mut World) {
         }),
         &mut data.asset_manager,
     );
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     //data.entity_manager.add_entity_s(cube);
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
     //data.entity_manager.add_entity_s(terrain_entity);
-    errors::ErrorCatcher::catch_opengl_errors().unwrap();
 }
