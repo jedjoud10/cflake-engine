@@ -12,6 +12,8 @@ mod texture;
 mod utils;
 mod volumetric;
 mod window;
+mod procedural_model;
+pub use procedural_model::*;
 pub use array_data::*;
 pub use compute_shader::*;
 pub use material::*;

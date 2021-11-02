@@ -6,34 +6,22 @@
 // Generate the voxel data here
 void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_voxel) {
     // Actual function for voxels
-    // FBM Invertex billow noise with 8 octaves
-    float fd = 0;
-    for(int i = 0; i < 5; i++) {
-        fd -= (1-abs(snoise(pos * vec3(1, 2.4, 1) * 0.001 * pow(2.0, i) + snoise(pos * 0.004) * 0.3))) * 200 * pow(0.5, i);
-    }
-
-    // Add the noise
-    float density = (1-cellular(pos * 0.009).x) * 160.0 - 100.0;
-
-    // Make the terrain flatter
-    density = opSmoothUnion(density + pos.y, pos.y, 0.1);
-    //density = max(density, pos.y - 30);
-    
     int shader_id = 0;
     int texture_id = 0;
     int biome_id = 0;
-    int hardness = (snoise(pos * 0.001) > 0.5) ? 0 : 1;
-
+    int hardness = 0;
+    float sphere = sdSphere(pos, 5);
+    float box = sdBox(pos + vec3(60, 0, 0), vec3(10, 10, 10));
+    float rbox = sdRoundBox(pos - vec3(60, 0, 0), vec3(10, 10, 10), 3);
+    float p = pos.y;
+    float d = min(sphere, min(box, min(rbox, p)));
     // Write the result
-    voxel = Voxel(density * 20.0);
+    voxel = Voxel(d * 300);
     material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID
 void get_color_voxel(vec3 pos, vec3 local_uv, Voxel voxel, MaterialVoxel material_voxel, int depth, out ColorVoxel color_voxel) {
     vec3 color = vec3(1, 1, 1);  
-    if (pos.y > 60) {
-        color = vec3(1, 0, 0);
-    }
     color_voxel = ColorVoxel(color);
 }
 /*

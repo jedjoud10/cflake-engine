@@ -27,6 +27,9 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.vrsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.frsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d", cacher);
+    preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d", cacher);
+    preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d", cacher);
+    preload_asset!(".\\resources\\defaults\\models\\cube.mdl3d", cacher);
     preload_asset!(".\\resources\\defaults\\fonts\\default_font.font", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\noise.func.glsl", cacher);
@@ -35,10 +38,8 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
-    preload_asset!(".\\resources\\user\\models\\tools2.mdl3d", cacher);
-    preload_asset!(".\\resources\\user\\textures\\palette.png", cacher);
-    preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
 
     // ----Load the default systems----
     // Create the custom data
@@ -95,7 +96,7 @@ pub fn world_initialized(world: &mut World) {
         vec!["defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl"],
         data.asset_manager,
         Some(AdditionalShader::Compute(ComputeShader::default())),
-        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
+        Some(vec!["defaults\\shaders\\voxel_terrain\\voxel.func.glsl"]),
     )
     .unwrap();
 
@@ -103,7 +104,7 @@ pub fn world_initialized(world: &mut World) {
         vec!["defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
         data.asset_manager,
         Some(AdditionalShader::Compute(ComputeShader::default())),
-        Some(vec!["user\\shaders\\voxel_terrain\\voxel.func.glsl"]),
+        Some(vec!["defaults\\shaders\\voxel_terrain\\voxel.func.glsl"]),
     )
     .unwrap();
 
@@ -134,23 +135,15 @@ pub fn world_initialized(world: &mut World) {
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
         .unwrap();
+    data.entity_manager.add_entity_s(terrain_entity);
 
     // Template entity
     let mut cube = Entity::new("Cube");
-    cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
-        .unwrap();
-    let model = Model::asset_load_easy("user\\models\\tools2.mdl3d", &data.asset_manager.asset_cacher).unwrap();
-    let m = Material::new("M", &mut data.asset_manager).load_diffuse(
-        "user\\textures\\palette.png",
-        Some(TextureLoadOptions {
-            filter: TextureFilter::Nearest,
-            ..TextureLoadOptions::default()
-        }),
-        &mut data.asset_manager,
-    );
+    cube.link_default_component::<components::Transform>(data.component_manager).unwrap();
+    let model = Model::asset_load_easy("defaults\\models\\cube.mdl3d", &data.asset_manager.asset_cacher).unwrap();
+    let m = Material::new("Cube material", data.asset_manager);
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
-
     data.entity_manager.add_entity_s(cube);
-    data.entity_manager.add_entity_s(terrain_entity);
+
 }
