@@ -55,7 +55,8 @@ impl Intersection {
         let new_aabb = bounds::AABB::from_vertices(&projected_points);
         let intersect = Self::aabb_aabb(&bounds::AABB::ndc_forward(), &new_aabb);
         */
-        println!("{}", point);
+        let test = point.x > -1.0 && point.x < 1.0 && point.y > -1.0 && point.y < 1.0 && point.z < 1.0 && point.z > 0.0; 
+        println!("{}", test);
         // Intersect that AABB with the AABB of the NDC
         // point.z > 0.0   
         true     

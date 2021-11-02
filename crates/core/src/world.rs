@@ -429,7 +429,6 @@ impl World {
         let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(&mut self.component_manager).unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
         camera_component.update_projection_matrix(&self.custom_data.window);
-        camera_component.update_frustum_culling_matrix();
         // Update the original entity
         *self.entity_manager.get_entity_mut(entity_clone_id).unwrap() = camera_entity_clone;
     }
