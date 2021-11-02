@@ -36,4 +36,12 @@ impl Intersection {
     pub fn edge_aabb(_segment: &shapes::Line, _aabb: &bounds::AABB) -> bool {
         todo!();
     }
+    // Frustum and an aabb
+    pub fn frustum_aabb(frustum: &crate::Frustum, aabb: &bounds::AABB) -> bool {
+        // Project the corners of the AABB
+        let coordinates: Vec<veclib::Vector3<f32>> = (0..8).collect::<Vec<u8>>().into_iter().map(|x| aabb.get_corner(x)).collect();
+        let projected_coordinates = coordinates.into_iter().map(|x| frustum.matrix.inverse().mul_point(point));
+        // Create a new AABB based on that
+        // Intersect that AABB with the AABB of the NDC
+    }
 }

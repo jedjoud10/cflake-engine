@@ -19,7 +19,7 @@ pub struct Renderer {
 impl Default for Renderer {
     fn default() -> Self {
         Self {
-            visible: false,
+            visible: true,
             gpu_data: ModelDataGPU::default(),
             model: Model::default(),
             material: Material::default(),

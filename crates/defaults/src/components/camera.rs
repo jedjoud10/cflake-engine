@@ -33,10 +33,12 @@ impl Camera {
         self.view_matrix = Self::calculate_view_matrix(position, rotation);
     }
     // Update the frustum-culling matrix
-    pub fn update_frustum_culling_matrix(&mut self) {
+    pub fn update_frustum_culling_matrix(&self) -> math::Frustum {
         // Too ez m8
-        self.frustum.matrix = self.projection_matrix * self.view_matrix;
-        self.frustum.projection_matrix = self.projection_matrix;
+        let mut clone = self.frustum.clone();
+        clone.matrix = self.projection_matrix * self.view_matrix;
+        clone.projection_matrix = self.projection_matrix;
+        clone
     }
 }
 
