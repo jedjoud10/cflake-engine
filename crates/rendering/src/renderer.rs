@@ -5,7 +5,7 @@ use assets::{Asset, AssetManager};
 use ecs::{Component, ComponentID, ComponentInternal};
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
-    pub render_state: EntityRenderState,
+    pub visible: bool,
     pub gpu_data: ModelDataGPU,
     pub model: Model,
     // This renderer can only have one material for now (TODO: Make a multi material system)
@@ -19,7 +19,7 @@ pub struct Renderer {
 impl Default for Renderer {
     fn default() -> Self {
         Self {
-            render_state: EntityRenderState::Visible,
+            visible: false,
             gpu_data: ModelDataGPU::default(),
             model: Model::default(),
             material: Material::default(),
@@ -68,6 +68,11 @@ impl Renderer {
         self.multi_material = Some(multi_mat_renderer);
         return self;
     }
+    // Set visible
+    pub fn set_visible(mut self, visible: bool) -> Self {
+        self.visible = visible;
+        self
+    }
 }
 
 impl Renderer {
@@ -78,25 +83,5 @@ impl Renderer {
     // Dispose of our model
     pub fn dispose_model(&mut self) {
         self.gpu_data.dispose();
-    }
-}
-
-// The current render state of the entity
-#[derive(Debug)]
-pub enum EntityRenderState {
-    Visible,
-    Invisible,
-}
-
-// If the entity is culled or not
-#[derive(Debug)]
-pub enum EntityCullingState {
-    Culled,
-    Unculled,
-}
-
-impl Default for EntityRenderState {
-    fn default() -> Self {
-        Self::Visible
     }
 }

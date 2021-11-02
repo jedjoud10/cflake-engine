@@ -472,7 +472,16 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
 }
 // Aa frustum culling
 fn entity_filter(components: &FilteredLinkedComponents, data: &WorldData) -> bool {
-    true
+    let renderer = components.get_component::<Renderer>(data.component_manager).unwrap();
+    // Check if we even have an AABB
+    let visible_frustum_culling = match components.get_component::<components::AABB>(data.component_manager) {
+        Ok(x) => {
+            // We have an AABB, we can do the frustum culling
+            true
+        },
+        Err(_) => { true },
+    };
+    return true;
 }
 
 // Create the rendering system
@@ -481,6 +490,7 @@ pub fn system(data: &mut WorldData) -> System {
     // Link the components
     system.link_component::<components::Transform>(data.component_manager).unwrap();
     system.link_component::<rendering::Renderer>(data.component_manager).unwrap();
+    data.component_manager.register_component::<components::AABB>();
     // Some input events
     data.input_manager.bind_key(input::Keys::F, "toggle_wireframe", input::MapType::Button);
     data.input_manager.bind_key(input::Keys::F3, "change_debug_view", input::MapType::Button);

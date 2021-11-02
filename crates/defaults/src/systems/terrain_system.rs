@@ -50,8 +50,8 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     }
     if td.chunk_manager.octree_update_valid() && system.terrain_gen {
         match td.octree.generate_incremental_octree(&camera_location, &camera_velocity, system.lod_factor) {
-            Some((mut added, removed)) => {
-                system.nodes.clear();
+            Some((mut added, removed, total)) => {
+                system.nodes = total;
                 // Filter first
                 added.retain(|node| BoundChecker::bound_check(&node) && node.children_indices.is_none());
                 system.terrain_stats.max_chunks_generated = system.terrain_stats.max_chunks_generated.max(added.len());
@@ -118,6 +118,9 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         mm_renderer.refresh_sub_models();
         let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
         entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
+        // Create the AABB
+        let aabb = components::AABB::from_components(&entity, data.component_manager);        
+        entity.link_component::<components::AABB>(data.component_manager, aabb).unwrap();
         let entity_id = data.entity_manager.add_entity_s(entity);
         added_chunk_entities_ids.push((entity_id, coords.clone()));
     }

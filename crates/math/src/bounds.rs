@@ -44,7 +44,7 @@ impl AABB {
 // Generation functions
 impl AABB {
     // Generate the AABB from a model; just loop over all the vertices and keep track of the min and max ones
-    pub fn from_model(vertices: Vec<veclib::Vector3<f32>>) -> Self {
+    pub fn from_model(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
         let mut aabb: Self = AABB {
             min: veclib::Vector3::ONE,
             max: -veclib::Vector3::ONE,

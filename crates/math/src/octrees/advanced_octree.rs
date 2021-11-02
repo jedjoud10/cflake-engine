@@ -65,6 +65,7 @@ impl AdvancedOctree {
     ) -> Option<(
         Vec<OctreeNode>, // Added nodes
         Vec<OctreeNode>, // Removed nodes
+        Vec<OctreeNode>, // Total nodes
     )> {
         let root_node = self.internal_octree.get_root_node();
         // Do nothing if the target is out of bounds
@@ -81,7 +82,7 @@ impl AdvancedOctree {
             let added_nodes: Vec<OctreeNode> = self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
             self.combined_nodes = added_nodes.iter().map(|x| x.clone()).collect();
             self.generated_base_octree = true;
-            return Some((added_nodes.clone(), Vec::new()));
+            return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
         }
         // If we don't have a target node don't do anything
         if self.internal_octree.target_node.is_none() {
@@ -182,11 +183,12 @@ impl AdvancedOctree {
         let old_hashset = &self.combined_nodes;
 
         // Now actually detect the removed / added nodes
+        let total = new_hashset.clone().into_iter().map(|x| x).collect();
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
         let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
         self.last_pos = target.clone();
-        return Some((added_nodes, removed_nodes));
+        return Some((added_nodes, removed_nodes, total));
     }
     // Set the twin rule
     pub fn set_twin_generation_rule(&mut self, function: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool) {

@@ -7,7 +7,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 pub const MAX_LINE_COUNT: i32 = 8192;
 pub const MAX_DEBUG_PRIMITIVES: usize = 512;
 pub const MAX_PERMAMENT_DEBUG_PRIMITIVES: usize = 512;
-pub const DRAW_DEBUG: bool = false;
+pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {
@@ -139,15 +139,13 @@ impl DebugRenderer {
         let shader = &mut self.shader;
         // Since we don't have a model matrix you can set it directly
         shader.use_shader();
-        //shader.val("vp_matrix", rendering::Uniform::Mat44F32(vp_matrix));
+        shader.set_mat44("vp_matrix", &vp_matrix);
 
         // Draw each line
         unsafe {
             // Remove depth testing when rendering the debug primitives
-            gl::Disable(gl::DEPTH_TEST);
             gl::BindVertexArray(self.vao);
             gl::DrawArrays(gl::LINES, 0, self.vertices.len() as i32);
-            gl::Enable(gl::DEPTH_TEST);
         }
         // Clear the debug primitives we already rendered
         self.debug_primitives.clear();

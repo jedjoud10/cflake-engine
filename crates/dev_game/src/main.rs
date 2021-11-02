@@ -41,6 +41,8 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
     preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl", cacher);
 
     // ----Load the default systems----
     // Create the custom data
