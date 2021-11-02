@@ -15,7 +15,15 @@ pub struct Model {
 
 impl Display for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("Model: Verts: {}, Normals: {}, Tangents: {}, UVs: {}, Colors: {}, Tris: {}", self.vertices.len(), self.normals.len(), self.tangents.len(), self.uvs.len(), self.colors.len(), self.triangles.len()))        
+        f.write_fmt(format_args!(
+            "Model: Verts: {}, Normals: {}, Tangents: {}, UVs: {}, Colors: {}, Tris: {}",
+            self.vertices.len(),
+            self.normals.len(),
+            self.tangents.len(),
+            self.uvs.len(),
+            self.colors.len(),
+            self.triangles.len()
+        ))
     }
 }
 

@@ -23,7 +23,10 @@ impl AssetCacher {
             "func.glsl" => AssetType::Text,
             "png" => AssetType::Texture,
             "font" => AssetType::Font,
-            _ => { /* Nothing */ panic!() }
+            _ => {
+                /* Nothing */
+                panic!()
+            }
         }
     }
     // Pre-load some asset metadata

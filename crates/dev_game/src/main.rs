@@ -35,7 +35,7 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);    
+    preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
     preload_asset!(".\\resources\\user\\models\\tools2.mdl3d", cacher);
     preload_asset!(".\\resources\\user\\textures\\palette.png", cacher);
     preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
@@ -126,13 +126,15 @@ pub fn world_initialized(world: &mut World) {
         .0;
     let bound_materials = vec![
         material.instantiate(data.instance_manager),
-        material.instantiate(data.instance_manager)
-            .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02)).0,        
+        material
+            .instantiate(data.instance_manager)
+            .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
+            .0,
     ];
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
         .unwrap();
-    
+
     // Template entity
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
@@ -148,7 +150,7 @@ pub fn world_initialized(world: &mut World) {
     );
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
-    
+
     data.entity_manager.add_entity_s(cube);
     data.entity_manager.add_entity_s(terrain_entity);
 }

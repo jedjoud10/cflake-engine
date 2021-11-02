@@ -99,7 +99,7 @@ impl CustomData {
             shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
             shader.set_vec2f32("min_padding", &(min_padding / (font.atlas_dimensions.x as f32)));
             shader.set_vec2f32("max_padding", &(max_padding / (font.atlas_dimensions.y as f32)));
-            // Draw each character as panel            
+            // Draw each character as panel
             self.draw_panel_vertices();
             i += 1.0;
         }
@@ -146,8 +146,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         custom_data.vertex_array = vertex_array;
     }
     // Load a default font that we can use for testing
-    let default_font = Font::asset_load_easy("defaults\\fonts\\default_font.font", &data.asset_manager.asset_cacher)
-        .unwrap();
+    let default_font = Font::asset_load_easy("defaults\\fonts\\default_font.font", &data.asset_manager.asset_cacher).unwrap();
     // Set the default font
     data.ui_manager.font_manager.add_font(default_font);
     // Load the UI shader

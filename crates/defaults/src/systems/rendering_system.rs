@@ -3,7 +3,11 @@ use assets::{Asset, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
 use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
-use std::{ffi::{CString, c_void}, ptr::null, time::Instant};
+use std::{
+    ffi::{c_void, CString},
+    ptr::null,
+    time::Instant,
+};
 use systems::{InternalSystemData, System, SystemData, SystemEventType};
 use veclib::Swizzable;
 use world_data::WorldData;
@@ -316,7 +320,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let texture = Texture::new()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
         .cache_load("defaults\\textures\\sky_gradient.png", data.asset_manager);
-        
+
     data.custom_data.sky_texture = Some(texture);
     // Load the default shader
     let default_shader = Shader::new(
@@ -324,7 +328,9 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.asset_manager,
         None,
         None,
-    ).unwrap().cache(data.asset_manager);
+    )
+    .unwrap()
+    .cache(data.asset_manager);
 
     // Load the wireframe shader
     system.wireframe_shader = Shader::new(
@@ -332,8 +338,9 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         data.asset_manager,
         None,
         None,
-    ).unwrap();
-    // Default material    
+    )
+    .unwrap();
+    // Default material
     system.default_material = Material::new("Default Material", &mut data.asset_manager).set_shader(default_shader);
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
@@ -363,7 +370,6 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     if data.input_manager.map_pressed("toggle_wireframe") {
         system.wireframe = !system.wireframe;
     }
-    
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();
@@ -406,7 +412,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
         gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
     }
-    
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
@@ -414,7 +419,6 @@ fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut World
     rc.refresh_model();
     let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
     transform.update_matrix();
-    
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
@@ -429,7 +433,6 @@ fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut Wor
         }
         None => {}
     }
-    
 }
 fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     let system = system_data.cast::<CustomData>().unwrap();
@@ -466,7 +469,6 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
             }
         }
     }
-    
 }
 // Aa frustum culling
 fn entity_filter(components: &FilteredLinkedComponents, data: &WorldData) -> bool {

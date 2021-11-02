@@ -1,14 +1,13 @@
 use std::{ffi::c_void, ptr::null};
 
 // Some utils
-pub struct Utils {
-}
+pub struct Utils {}
 
 impl Utils {
     // Convert an OpenGL enum into a readable string
     pub fn convert_e(id: u32) -> String {
         /*
-        let str = unsafe { 
+        let str = unsafe {
             let ptr = gl::GetString(id);
             std::ffi::CStr::from_ptr(ptr as *const i8)
         }.to_str().unwrap();
@@ -30,7 +29,7 @@ extern "system" fn opengl_error_callback(source: u32, _type: u32, id: u32, sever
     // Check if it was really an error
     if _type == gl::DEBUG_TYPE_ERROR {
         println!("We caught an OpenGL error!");
-        println!("Severity: 0x{:x?}", severity);        
+        println!("Severity: 0x{:x?}", severity);
         let msg = unsafe { std::ffi::CStr::from_ptr(message) };
         println!("Message: '{}'", msg.to_str().unwrap());
         panic!();

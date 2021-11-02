@@ -79,7 +79,10 @@ pub trait Object {
         }
     }
     // Load this asset as a cached asset, but with preinitialized self
-    fn object_load_ot(self, local_path: &str, object_cacher: &ObjectCacher) -> Option<Rc<Self>> where Self: Sized + 'static {
+    fn object_load_ot(self, local_path: &str, object_cacher: &ObjectCacher) -> Option<Rc<Self>>
+    where
+        Self: Sized + 'static,
+    {
         let name = self.get_unique_object_name(local_path);
         // Check if it was cached or not
         if object_cacher.cached(&name) {
@@ -89,6 +92,8 @@ pub trait Object {
             // Put it back into an Rc
             let rc_object = Rc::clone(any);
             Some(rc_object)
-        } else { None }
+        } else {
+            None
+        }
     }
 }
