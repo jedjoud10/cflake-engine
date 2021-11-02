@@ -120,6 +120,9 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
         // Create the AABB
         let aabb = components::AABB::from_components(&entity, data.component_manager);        
+        let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::AABB(aabb.aabb.clone());
+        data.debug.renderer.debug_default(debug, veclib::Vector3::X, true);
+        
         entity.link_component::<components::AABB>(data.component_manager, aabb).unwrap();
         let entity_id = data.entity_manager.add_entity_s(entity);
         added_chunk_entities_ids.push((entity_id, coords.clone()));
@@ -131,12 +134,6 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         td.chunk_manager.add_chunk_entity(&coords, entity_id);
     }
 
-    for coords in td.chunk_manager.chunks_to_generate.iter() {
-        let size = veclib::Vector3::<f32>::from(veclib::Vector3::ONE * coords.size);
-        let debug = DefaultDebugRendererType::CUBE(coords.center.into(), size);
-        data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
-    }
-
     for entity_id in removed_chunks {
         // Removal the entity from the world
         data.entity_manager.remove_entity_s(entity_id).unwrap();
@@ -145,7 +142,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     for node in system.nodes.iter() {
         let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
         if node.children_indices.is_some() {
-            data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
+            //data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
         }
     }
 

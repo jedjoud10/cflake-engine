@@ -8,6 +8,7 @@ impl BoundChecker {
         let aabb = AABB {
             min: veclib::Vector3::new(-50000.0, 0.0, -50000.0),
             max: veclib::Vector3::new(50000.0, 10.0, 50000.0),
+            center: veclib::Vector3::ZERO
         };
         math::Intersection::aabb_aabb(&node.get_aabb(), &aabb)
         //true

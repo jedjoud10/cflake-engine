@@ -5,6 +5,7 @@ use super::shapes;
 pub struct AABB {
     pub min: veclib::Vector3<f32>,
     pub max: veclib::Vector3<f32>,
+    pub center: veclib::Vector3<f32>
 }
 
 // Default AABB, just a unit cube with a center at 0,0,0
@@ -13,6 +14,7 @@ impl Default for AABB {
         Self {
             min: (veclib::Vector3::ONE / 2.0) - 1.0,
             max: (veclib::Vector3::ONE / 2.0),
+            center: veclib::Vector3::ZERO
         }
     }
 }
@@ -22,13 +24,15 @@ impl AABB {
     pub fn ndc() -> Self {
         Self {
             min: -veclib::Vector3::ONE,
-            max: veclib::Vector3::ONE
+            max: veclib::Vector3::ONE,
+            center: veclib::Vector3::ZERO
         }
     }
     pub fn ndc_forward() -> Self {
         Self {
             min: veclib::Vector3::new(-1.0, -1.0, 0.0),
-            max: veclib::Vector3::ONE
+            max: veclib::Vector3::ONE,
+            center: veclib::Vector3::new(0.0, 0.0, 0.5)
         }
     }
 }
@@ -64,12 +68,14 @@ impl AABB {
         let mut aabb: Self = AABB {
             min: veclib::Vector3::ONE*9999.0,
             max: -veclib::Vector3::ONE*9999.0,
+            center: veclib::Vector3::ZERO
         };
         // Loop over the vertices
         for vertex in vertices.iter() {
             aabb.min = aabb.min.min(*vertex);
             aabb.max = aabb.max.max(*vertex);
         }
+        aabb.center = (aabb.max + aabb.min) / 2.0;
         aabb
     }
     // Transform the AABB by a transform
@@ -78,6 +84,7 @@ impl AABB {
         let matrix = transform_matrix;
         self.min = matrix.mul_point(&self.min);
         self.max = matrix.mul_point(&self.max);
+        self.center = (self.max + self.min) / 2.0;
     }
     // Get the closest point of the AABB from a specific point
     pub fn get_nearest_point(&self, point: &veclib::Vector3<f32>) -> veclib::Vector3<f32> {
@@ -88,5 +95,6 @@ impl AABB {
         // Expand the AABB
         self.min -= factor;
         self.max += factor;
+        self.center = (self.max + self.min) / 2.0;
     }
 }

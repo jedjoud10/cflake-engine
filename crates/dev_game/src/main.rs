@@ -139,7 +139,7 @@ pub fn world_initialized(world: &mut World) {
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
         .unwrap();
-    //data.entity_manager.add_entity_s(terrain_entity);
+    data.entity_manager.add_entity_s(terrain_entity);
 
     // Template entity
     let mut cube = Entity::new("Cube");

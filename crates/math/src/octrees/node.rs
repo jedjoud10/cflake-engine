@@ -35,6 +35,7 @@ impl OctreeNode {
         crate::bounds::AABB {
             min: veclib::Vector3::<f32>::from(self.position),
             max: veclib::Vector3::<f32>::from(self.position) + veclib::Vector3::<f32>::new(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
+            center: self.get_center().into(),
         }
     }
     // Get the center of this octree node

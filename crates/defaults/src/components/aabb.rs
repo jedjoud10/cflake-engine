@@ -37,6 +37,8 @@ impl AABB {
                     aabb.min = sub_aabb.min.min(aabb.min);
                     aabb.max = sub_aabb.max.max(aabb.max);
                 }
+                aabb.transform(&transform.get_matrix());
+                aabb.center = (aabb.max - aabb.min) / 2.0;
                 Self { aabb, ..Self::default() }
             },
             None => {
