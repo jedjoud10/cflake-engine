@@ -100,8 +100,12 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             normal2.x = voxels[index2 + DATA_OFFSET_TABLE[3]].density as f32 - density2;
                             normal2.y = voxels[index2 + DATA_OFFSET_TABLE[4]].density as f32 - density2;
                             normal2.z = voxels[index2 + DATA_OFFSET_TABLE[1]].density as f32 - density2;
-                            veclib::Vector3::<f32>::lerp(normal1, normal2, value)
+                            let n = veclib::Vector3::<f32>::lerp(normal1, normal2, value);
+                            if n == veclib::Vector3::ZERO {
+                                veclib::Vector3::<f32>::lerp(normal1, normal2, 0.5)
+                            } else { n }
                         };
+
                         // Sum up the average normal
                         average_normal += normal;
                         average_normal_count += 1;

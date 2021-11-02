@@ -95,7 +95,7 @@ impl World {
             .set_name("default_normals")
             .generate_texture(vec![127, 128, 255, 255])
             .unwrap()
-            .object_cache_load("default_normals", &mut self.asset_manager.object_cacher);
+            .object_cache_load("default_normals", &mut self.asset_manager.object_cacher);        
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
@@ -160,7 +160,7 @@ impl World {
         // Update entity manager
         self.update_entity_manager();
 
-        self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 1.0).normalized();
+        self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0,1.0, 2.0).normalized();
 
         // Callback
         callback(self);

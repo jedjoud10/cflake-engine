@@ -13,7 +13,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     float sphere = sdSphere(pos, 5);
     float box = sdBox(pos + vec3(60, 0, 0), vec3(10, 10, 10));
     float rbox = sdRoundBox(pos - vec3(60, 0, 0), vec3(10, 10, 10), 3);
-    float p = pos.y;
+    float p = pos.y - 0.5 + snoise(pos * 0.004) * 20;
     float d = min(sphere, min(box, min(rbox, p)));
     // Write the result
     voxel = Voxel(d * 300);
@@ -24,9 +24,3 @@ void get_color_voxel(vec3 pos, vec3 local_uv, Voxel voxel, MaterialVoxel materia
     vec3 color = vec3(1, 1, 1);  
     color_voxel = ColorVoxel(color);
 }
-/*
-// Get the detail data at a specific point3
-void get_detail(vec3 pos, Voxel voxel, vec3 voxel_normal, ColorVoxel color, out Detail detail) {
-    detail = Detail(ivec3(0, 0, 0), false, vec3(0, 0, 0), 1.0);
-} 
-*/

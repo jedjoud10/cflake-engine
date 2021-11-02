@@ -40,6 +40,7 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
+    preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png", cacher);
 
     // ----Load the default systems----
     // Create the custom data
@@ -123,6 +124,7 @@ pub fn world_initialized(world: &mut World) {
     // Material
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
+        .load_diffuse("defaults\\textures\\missing_texture.png", None, &mut data.asset_manager)
         .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.7))
         .0;
     let bound_materials = vec![
@@ -145,5 +147,4 @@ pub fn world_initialized(world: &mut World) {
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(cube);
-
 }

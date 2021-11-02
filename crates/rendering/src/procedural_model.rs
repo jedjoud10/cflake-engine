@@ -1,8 +1,7 @@
 use crate::Model;
 
 // Procedural model creation for spheres / boxes
-pub struct ProceduralModelGenerator {
-}
+pub struct ProceduralModelGenerator {}
 
 impl ProceduralModelGenerator {
     // Generate a sphere with procedural parameters
@@ -21,7 +20,10 @@ impl ProceduralModelGenerator {
             veclib::Vector3::<f32> { x: 0.0, y: 1.0, z: 1.0 },
             veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 1.0 },
             veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 0.0 },
-        ].iter().map(|x| (*x * size) - (size / 2.0)).collect::<Vec<veclib::Vector3<f32>>>();
+        ]
+        .iter()
+        .map(|x| (*x * size) - (size / 2.0))
+        .collect::<Vec<veclib::Vector3<f32>>>();
 
         return Model {
             vertices: vertices.iter().map(|x| *x - origin).collect(),
@@ -30,6 +32,6 @@ impl ProceduralModelGenerator {
             uvs: todo!(),
             colors: todo!(),
             triangles: todo!(),
-        }
+        };
     }
 }

@@ -400,8 +400,8 @@ impl Texture {
                         }
                         TextureFilter::Nearest => {
                             // 'Nearest' filter
-                            gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-                            gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                            //gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                            //gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                         }
                     }
                 }
@@ -525,6 +525,10 @@ impl Texture {
     }
     // Load a texture, and cache it if needed
     pub fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self> {
+        // Early
+        if asset_manager.object_cacher.cached(local_path) {
+            return self.object_load_ot(local_path, &asset_manager.object_cacher).unwrap();
+        }
         // Load the asset first
         let texture = self.asset_load_easy_t(local_path, &mut asset_manager.asset_cacher).unwrap();
         // Then the object (cache it if neccessarry)
