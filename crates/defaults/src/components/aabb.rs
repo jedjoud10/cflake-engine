@@ -33,14 +33,14 @@ impl AABB {
                 // Get the AABB of each sub model and take the biggest one
                 let mut aabb = math::bounds::AABB::default();
                 for (sub_model, _) in x.sub_models.iter() {
-                    let sub_aabb = math::bounds::AABB::from_model(&sub_model.vertices);
+                    let sub_aabb = math::bounds::AABB::from_vertices(&sub_model.vertices);
                     aabb.min = sub_aabb.min.min(aabb.min);
                     aabb.max = sub_aabb.max.max(aabb.max);
                 }
                 Self { aabb, ..Self::default() }
             },
             None => {
-                let mut aabb = math::bounds::AABB::from_model(&renderer.model.vertices);
+                let mut aabb = math::bounds::AABB::from_vertices(&renderer.model.vertices);
                 aabb.transform(&transform.get_matrix());
                 Self { aabb, ..Self::default() }
             },

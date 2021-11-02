@@ -68,7 +68,7 @@ pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components
     let camera = components.get_component_mut::<components::Camera>(data.component_manager).unwrap();
     camera.update_view_matrix(position, rotation);
     camera.update_projection_matrix(&data.custom_data.window);
-    camera.update_frustum_culling_matrix();
+    if data.time_manager.frame_count % 500 == 0 { camera.update_frustum_culling_matrix(); }
 }
 
 // Create the camera system

@@ -17,6 +17,16 @@ impl Default for AABB {
     }
 }
 
+// NDC
+impl AABB {
+    pub fn ndc() -> Self {
+        Self {
+            min: -veclib::Vector3::ONE,
+            max: veclib::Vector3::ONE
+        }
+    }
+}
+
 // Intersection functions
 impl AABB {
     // Get a specific corner from this AABB
@@ -43,8 +53,8 @@ impl AABB {
 
 // Generation functions
 impl AABB {
-    // Generate the AABB from a model; just loop over all the vertices and keep track of the min and max ones
-    pub fn from_model(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
+    // Generate the AABB from a set of points
+    pub fn from_vertices(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
         let mut aabb: Self = AABB {
             min: veclib::Vector3::ONE,
             max: -veclib::Vector3::ONE,

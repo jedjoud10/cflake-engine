@@ -468,8 +468,8 @@ fn entity_filter(components: &FilteredLinkedComponents, data: &WorldData) -> boo
         Ok(x) => {
             // We have an AABB, we can do the frustum culling
             let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
-            let frustum = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap().update_frustum_culling_matrix();
-            math::Intersection::frustum_aabb(&frustum, x)
+            let frustum = &camera_entity.get_component::<components::Camera>(data.component_manager).unwrap().frustum;
+            math::Intersection::frustum_aabb(&frustum, &x.aabb)
         },
         Err(_) => { false },
     };

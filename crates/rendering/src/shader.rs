@@ -287,7 +287,7 @@ impl Shader {
     pub fn set_mat44(&self, name: &str, matrix: &veclib::Matrix4x4<f32>) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            let ptr: *const f32 = &matrix[0][0];
+            let ptr: *const f32 = &matrix[0];
             gl::UniformMatrix4fv(u, 1, gl::FALSE, ptr);
         }
     }

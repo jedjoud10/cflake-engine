@@ -5,8 +5,8 @@ use rendering::Window;
 pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,
     pub projection_matrix: veclib::Matrix4x4<f32>,
-    pub frustum: math::Frustum,
     pub horizontal_fov: f32,
+    pub frustum: math::Frustum,
     pub aspect_ratio: f32,
     pub clip_planes: (f32, f32), // Near, far
 }
@@ -33,12 +33,14 @@ impl Camera {
         self.view_matrix = Self::calculate_view_matrix(position, rotation);
     }
     // Update the frustum-culling matrix
-    pub fn update_frustum_culling_matrix(&self) -> math::Frustum {
+    pub fn update_frustum_culling_matrix(&mut self) {
         // Too ez m8
-        let mut clone = self.frustum.clone();
-        clone.matrix = self.projection_matrix * self.view_matrix;
-        clone.projection_matrix = self.projection_matrix;
-        clone
+        let m = self.projection_matrix * self.view_matrix;
+        self.frustum = math::Frustum {
+            matrix: m,
+            projection_matrix: self.projection_matrix,
+            inverse_matrix: m.inversed(),
+        }
     }
 }
 
@@ -47,10 +49,10 @@ impl Default for Camera {
         Self {
             view_matrix: veclib::Matrix4x4::default_identity(),
             projection_matrix: veclib::Matrix4x4::default_identity(),
-            frustum: math::Frustum::default(),
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
             clip_planes: (0.3, 4000.0),
+            frustum: math::Frustum::default(),
         }
     }
 }
