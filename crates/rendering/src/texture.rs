@@ -114,6 +114,8 @@ impl Asset for Texture {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
+        // Flip
+        let image = image.flipv();
         // Return a texture with the default parameters
         let texture = Texture::new()
             .set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16))
@@ -130,6 +132,8 @@ impl Asset for Texture {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
+        // Flip
+        let image = image.flipv();
         let texture = self.set_name(&data.name).set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16));
         // Return a texture with the default parameters
         println!("{}", image.to_bytes().len());

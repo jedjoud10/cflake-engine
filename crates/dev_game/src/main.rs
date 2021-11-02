@@ -37,6 +37,7 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);    
     preload_asset!(".\\resources\\user\\models\\tools2.mdl3d", cacher);
+    preload_asset!(".\\resources\\user\\textures\\palette.png", cacher);
     preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
 
     // ----Load the default systems----
@@ -86,7 +87,6 @@ pub fn world_initialized(world: &mut World) {
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
 
     // Create the terrain entity
-    /*
     let mut terrain_entity = Entity::new("Default Terrain");
     const OCTREE_DEPTH: u8 = 7;
 
@@ -122,35 +122,33 @@ pub fn world_initialized(world: &mut World) {
     // Material
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
-        .load_diffuse("defaults\\textures\\rock_diffuse.png", None, &mut data.asset_manager)
-        .load_normal("defaults\\textures\\rock_normal.png", None, &mut data.asset_manager)
         .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.7))
         .0;
-    let a = TextureLoadOptions {
-        filter: TextureFilter::Nearest,
-        ..TextureLoadOptions::default()
-    };
     let bound_materials = vec![
         material.instantiate(data.instance_manager),
         material.instantiate(data.instance_manager)
-            .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
-            .0
-            .load_diffuse("user\\textures\\sandstone_cracks_diff_4k.png", Some(a), &mut data.asset_manager)
-            .load_normal("user\\textures\\sandstone_cracks_nor_gl_4k.png", Some(a), &mut data.asset_manager),        
+            .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02)).0,        
     ];
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
         .unwrap();
-    */
+    
     // Template entity
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
         .unwrap();
     let model = Model::asset_load_easy("user\\models\\tools2.mdl3d", &data.asset_manager.asset_cacher).unwrap();
-    let m = Material::new("M", &mut data.asset_manager);
+    let m = Material::new("M", &mut data.asset_manager).load_diffuse(
+        "user\\textures\\palette.png",
+        Some(TextureLoadOptions {
+            filter: TextureFilter::Nearest,
+            ..TextureLoadOptions::default()
+        }),
+        &mut data.asset_manager,
+    );
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
     
     data.entity_manager.add_entity_s(cube);
-    //data.entity_manager.add_entity_s(terrain_entity);
+    data.entity_manager.add_entity_s(terrain_entity);
 }
