@@ -43,6 +43,7 @@ impl CustomData {
     // Set the default shader arguments to draw a normal panel
     fn set_default_draw_arguments(&self, element_data: (veclib::Vector2<f32>, veclib::Vector2<f32>, veclib::Vector4<f32>, f32), shader: &Shader) {
         // Update the shader arguments
+        shader.use_shader();
         shader.set_f32("depth", &element_data.3);
         shader.set_vec2f32("size", &element_data.1);
         shader.set_vec2f32("offset_position", &element_data.0);
@@ -73,6 +74,7 @@ impl CustomData {
         // Draw each character in the string as a separate element
         let chars = font.convert_text_to_font_chars(text_content);
         let mut i: f32 = 0.0;
+        shader.use_shader();
         shader.set_vec4f32("font_color", &font.font_options.color);
         shader.set_f32("font_thickness", &(font.font_options.thickness));
         shader.set_f32("font_outline_thickness", &(font.font_options.outline_thickness));
@@ -97,7 +99,7 @@ impl CustomData {
             shader.set_vec2f32("max_padding", &(veclib::Vector2::ONE));
             shader.set_vec2f32("min_padding", &(min_padding / (font.atlas_dimensions.x as f32)));
             shader.set_vec2f32("max_padding", &(max_padding / (font.atlas_dimensions.y as f32)));
-            // Draw each character as panel
+            // Draw each character as panel            
             self.draw_panel_vertices();
             i += 1.0;
         }
@@ -157,7 +159,8 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
     )
     .unwrap();
     // Load the UI font shader
-    custom_data.ui_shader = Shader::new(
+    // I've spent the past 3 days wondering why this didn't work, just now, at 7:07 pm on a monday night did I realize that I assined this shader to the wrong variable
+    custom_data.font_ui_shader = Shader::new(
         vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
         data.asset_manager,
         None,
@@ -225,14 +228,10 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
             // Every type that isn't the text type
             match &element.element_type {
                 ElementType::Text(text_content, font_size) => {
-                    // Use the font shader
-                    custom_data.font_ui_shader.use_shader();
                     // Draw the text
                     custom_data.draw_text(tuple, &custom_data.font_ui_shader, text_content, *font_size, default_font);
                 }
                 _ => {
-                    // Use the normal panel shader
-                    custom_data.ui_shader.use_shader();
                     // Draw the panel
                     custom_data.draw_panel(tuple, &custom_data.ui_shader);
                 }

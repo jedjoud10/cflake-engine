@@ -35,7 +35,8 @@ pub fn world_initialized(world: &mut World) {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
-    //preload_asset!(".\\resources\\user\\models\\tools2.mdl3d", cacher);
+    preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);    
+    preload_asset!(".\\resources\\user\\models\\tools2.mdl3d", cacher);
     preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
 
     // ----Load the default systems----
@@ -53,21 +54,17 @@ pub fn world_initialized(world: &mut World) {
     };
 
     // Load the rendering system
-    /*
     let mut rendering_system = systems::rendering_system::system(&mut data);
     rendering_system.enable(&mut data);
     world.system_manager.add_system(rendering_system);
-    */
     // Load the camera system
     let mut camera_system = systems::camera_system::system(&mut data);
     camera_system.enable(&mut data);
     world.system_manager.add_system(camera_system);
     // Load the default UI system
-    /*
     let mut ui_system = systems::ui_system::system(&mut data);
     ui_system.enable(&mut data);
     world.system_manager.add_system(ui_system);
-    */
     // Load the default command system
     let mut command_system = systems::command_system::system(&mut data);
     command_system.enable(&mut data);
@@ -146,22 +143,14 @@ pub fn world_initialized(world: &mut World) {
         .unwrap();
     */
     // Template entity
-    /*
     let mut cube = Entity::new("Cube");
     cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, 0.0)))
         .unwrap();
     let model = Model::asset_load_easy("user\\models\\tools2.mdl3d", &data.asset_manager.asset_cacher).unwrap();
-    let m = Material::new("M", &mut data.asset_manager).load_diffuse(
-        "user\\textures\\palette.png",
-        Some(TextureLoadOptions {
-            filter: TextureFilter::Nearest,
-            ..TextureLoadOptions::default()
-        }),
-        &mut data.asset_manager,
-    );
+    let m = Material::new("M", &mut data.asset_manager);
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
-    */
-    //data.entity_manager.add_entity_s(cube);
+    
+    data.entity_manager.add_entity_s(cube);
     //data.entity_manager.add_entity_s(terrain_entity);
 }

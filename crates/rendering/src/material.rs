@@ -60,7 +60,7 @@ impl Material {
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .object_cache_load(diffuse_path, &mut asset_manager.object_cacher);
+            .cache_load(diffuse_path, asset_manager);
         self.diffuse_tex = Some(rc_texture);
         return self;
     }
@@ -71,7 +71,7 @@ impl Material {
             .enable_mipmaps()
             .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .apply_texture_load_options(opt)
-            .object_cache_load(normal_path, &mut asset_manager.object_cacher);
+            .cache_load(normal_path, asset_manager);
         self.normal_tex = Some(rc_texture);
         return self;
     }

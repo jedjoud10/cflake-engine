@@ -3,7 +3,7 @@ use bitflags::bitflags;
 use gl;
 use image::{DynamicImage, EncodableLayout, GenericImageView};
 
-use std::{ffi::c_void, ptr::null};
+use std::{ffi::c_void, ptr::null, rc::Rc};
 
 bitflags! {
     pub struct TextureFlags: u8 {
@@ -117,9 +117,7 @@ impl Asset for Texture {
         // Return a texture with the default parameters
         let texture = Texture::new()
             .set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16))
-            .set_filter(TextureFilter::Linear)
-            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
-            .enable_mipmaps()
+            .set_name(&data.name)
             .generate_texture(image.to_bytes())
             .unwrap();
         return Some(texture);
@@ -132,8 +130,10 @@ impl Asset for Texture {
         // Load this texture from the bytes
         let png_bytes = data.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
+        let texture = self.set_name(&data.name).set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16));
         // Return a texture with the default parameters
-        let texture = self.generate_texture(image.to_bytes()).unwrap();
+        println!("{}", image.to_bytes().len());
+        let texture = texture.generate_texture(image.to_bytes()).unwrap();
         return Some(texture);
     }
     // Load a texture from the bundled metadata
@@ -425,6 +425,7 @@ impl Texture {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
         }
+        println!("Succsesfully generated texture {}", self.name);
         Ok(self)
     }
     // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
@@ -517,10 +518,11 @@ impl Texture {
         }
     }
     // Load a texture, and cache it if needed
-    pub fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Self {
+    pub fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self> {
         // Load the asset first
-        self = self.asset_load_easy_t(local_path, &mut asset_manager.asset_cacher).unwrap();
+        let texture = self.asset_load_easy_t(local_path, &mut asset_manager.asset_cacher).unwrap();
         // Then the object (cache it if neccessarry)
-        self
+        let output = texture.object_cache_load(local_path, &mut asset_manager.object_cacher);
+        output
     }
 }

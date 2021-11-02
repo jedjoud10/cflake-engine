@@ -315,7 +315,8 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Load sky gradient texture
     let texture = Texture::new()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
-        .object_cache_load("defaults\\textures\\sky_gradient.png", &mut data.asset_manager.object_cacher);
+        .cache_load("defaults\\textures\\sky_gradient.png", data.asset_manager);
+        
     data.custom_data.sky_texture = Some(texture);
     // Load the default shader
     let default_shader = Shader::new(
@@ -336,7 +337,6 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.default_material = Material::new("Default Material", &mut data.asset_manager).set_shader(default_shader);
 }
 fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
-    println!("System enabled");
     let system = system_data.cast_mut::<CustomData>().unwrap();
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, system.framebuffer);
@@ -366,7 +366,6 @@ fn system_prefire(system_data: &mut SystemData, data: &mut WorldData) {
     
 }
 fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
-    println!("System postfire");
     let system = system_data.cast_mut::<CustomData>().unwrap();
     let dimensions = data.custom_data.window.dimensions;
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
@@ -410,7 +409,6 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
-    println!("Entity added");
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     // Make sure we create the OpenGL data for this entity's model
     rc.refresh_model();
@@ -419,7 +417,6 @@ fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut World
     
 }
 fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
-    println!("Entity removed");
     let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
     let i = Instant::now();
     // Dispose the model when the entity gets destroyed
@@ -435,7 +432,6 @@ fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut Wor
     
 }
 fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
-    println!("Entity update");
     let system = system_data.cast::<CustomData>().unwrap();
     // Get the camera stuff
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
