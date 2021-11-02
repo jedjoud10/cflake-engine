@@ -3,7 +3,6 @@ out vec3 color;
 uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D position_texture;
-uniform sampler2D emissive_texture;
 uniform sampler2D depth_texture;
 
 // Ambient sky gradient
@@ -29,7 +28,6 @@ void main() {
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
 	vec3 position = texture(position_texture, uvs).xyz;
-	vec3 emissive = texture(emissive_texture, uvs).xyz;
 	
 	// Calculate the diffuse lighting
 	const float directional_light_strength = 1.0;
@@ -64,12 +62,6 @@ void main() {
 	sky_color += max(pow(dot(pixel_dir, normalize(directional_light_dir)), 512), 0);
 
 	if (debug_view == 0) {
-		/*
-		if (any(notEqual(emissive, vec3(0, 0, 0)))) {
-			color = emissive;
-		} else {
-		}
-		*/
 		// Depth test the sky
 		if (old_depth > 0.999) {
 			color = sky_color;

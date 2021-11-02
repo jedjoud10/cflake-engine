@@ -420,7 +420,6 @@ impl World {
             render_system.depth_texture.update_size(dims);
             render_system.normals_texture.update_size(dims);
             render_system.position_texture.update_size(dims);
-            render_system.emissive_texture.update_size(dims);
 
             //TODO: This
             render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions);

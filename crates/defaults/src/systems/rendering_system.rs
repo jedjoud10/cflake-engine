@@ -19,7 +19,6 @@ pub struct CustomData {
     pub diffuse_texture: Texture,
     pub normals_texture: Texture,
     pub position_texture: Texture,
-    pub emissive_texture: Texture,
     pub depth_texture: Texture,
     pub debug_view: u16,
     pub wireframe: bool,
@@ -96,12 +95,6 @@ impl CustomData {
                 .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new())
                 .unwrap();
-            // Create the emissive render texture
-            self.emissive_texture = Texture::new()
-                .set_dimensions(dims)
-                .set_idf(gl::RGB16F, gl::RGB, gl::UNSIGNED_BYTE)
-                .generate_texture(Vec::new())
-                .unwrap();
             // Create the depth render texture
             self.depth_texture = Texture::new()
                 .set_dimensions(dims)
@@ -114,12 +107,10 @@ impl CustomData {
             Self::bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
             // Bind the position texture to the color attachement 2 of the frame buffer
             Self::bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
-            // Bind the emissive texture to the color attachement 3 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT3, &self.emissive_texture);
             // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
             Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture);
 
-            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
+            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2];
             // Set the frame buffer attachements
             gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
 
@@ -396,8 +387,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
     shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
     shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
-    shader.set_t2d("emissive_texture", &system.emissive_texture, gl::TEXTURE3);
-    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE4);
+    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE3);
     shader.set_t2d("default_sky_gradient", data.custom_data.sky_texture.as_ref().unwrap(), gl::TEXTURE5);
     let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
     shader.set_mat44("custom_vp_matrix", &vp_m);
