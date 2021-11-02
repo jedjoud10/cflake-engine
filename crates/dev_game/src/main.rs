@@ -139,7 +139,7 @@ pub fn world_initialized(world: &mut World) {
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
         .unwrap();
-    data.entity_manager.add_entity_s(terrain_entity);
+    //data.entity_manager.add_entity_s(terrain_entity);
 
     // Template entity
     let mut cube = Entity::new("Cube");
@@ -148,5 +148,6 @@ pub fn world_initialized(world: &mut World) {
     let m = Material::new("Cube material", data.asset_manager);
     let renderer = Renderer::new().set_model(model).set_material(m);
     cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
+    cube.link_component::<components::AABB>(data.component_manager, components::AABB::from_components(&cube, data.component_manager)).unwrap();
     data.entity_manager.add_entity_s(cube);
 }

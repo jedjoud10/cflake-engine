@@ -39,7 +39,6 @@ impl Camera {
         self.frustum = math::Frustum {
             matrix: m,
             projection_matrix: self.projection_matrix,
-            inverse_matrix: m.inversed(),
         }
     }
 }

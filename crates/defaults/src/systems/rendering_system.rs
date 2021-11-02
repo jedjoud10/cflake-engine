@@ -153,7 +153,6 @@ impl CustomData {
         shader.use_shader();
         // Calculate the mvp matrix
         let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
-
         // Pass the MVP and the model matrix to the shader
         shader.set_mat44("mvp_matrix", &mvp_matrix);
         shader.set_mat44("model_matrix", model_matrix);

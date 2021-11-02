@@ -25,6 +25,12 @@ impl AABB {
             max: veclib::Vector3::ONE
         }
     }
+    pub fn ndc_forward() -> Self {
+        Self {
+            min: veclib::Vector3::new(-1.0, -1.0, 0.0),
+            max: veclib::Vector3::ONE
+        }
+    }
 }
 
 // Intersection functions
@@ -56,8 +62,8 @@ impl AABB {
     // Generate the AABB from a set of points
     pub fn from_vertices(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
         let mut aabb: Self = AABB {
-            min: veclib::Vector3::ONE,
-            max: -veclib::Vector3::ONE,
+            min: veclib::Vector3::ONE*9999.0,
+            max: -veclib::Vector3::ONE*9999.0,
         };
         // Loop over the vertices
         for vertex in vertices.iter() {
