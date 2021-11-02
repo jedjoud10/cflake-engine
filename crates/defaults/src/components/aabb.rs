@@ -31,14 +31,12 @@ impl AABB {
         match &renderer.multi_material {
             Some(x) => {
                 // Get the AABB of each sub model and take the biggest one
-                let mut aabb = math::bounds::AABB::default();
-                for (sub_model, _) in x.sub_models.iter() {
-                    let sub_aabb = math::bounds::AABB::from_vertices(&sub_model.vertices);
-                    aabb.min = sub_aabb.min.min(aabb.min);
-                    aabb.max = sub_aabb.max.max(aabb.max);
-                }
-                aabb.transform(&transform.get_matrix());
-                aabb.center = (aabb.max - aabb.min) / 2.0;
+                let mut aabb = math::bounds::AABB::from_vertices(&x.sub_models.get(0).unwrap().0.vertices);
+                //aabb.transform(&transform.get_matrix());
+                //aabb.min *= transform.scale;
+                //aabb.max *= transform.scale;
+                aabb.min += transform.position;
+                aabb.max += transform.position;
                 Self { aabb, ..Self::default() }
             },
             None => {
