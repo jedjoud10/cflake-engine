@@ -23,6 +23,17 @@ impl Default for AABBGenerationType {
 
 // AABB component functions
 impl AABB {
+    // Offset a pre-existing AABB with a transform
+    pub fn offset(mut aabb: math::bounds::AABB, transform: &super::Transform) -> math::bounds::AABB {
+        // Offset the shit
+        aabb.min += transform.position;
+        aabb.max += transform.position;
+        // Scale it, the position is the center 
+        aabb.scale(transform.position, transform.scale);
+        // Recalculate the center
+        aabb.center = (aabb.min + aabb.max) / 2.0;
+        aabb
+    }
     // Generate the AABB from a renderer entity
     pub fn from_components(entity: &Entity, component_manager: &ComponentManager) -> Self {
         let renderer = &entity.get_component::<rendering::Renderer>(component_manager).unwrap();
@@ -32,17 +43,17 @@ impl AABB {
             Some(x) => {
                 // Get the AABB of each sub model and take the biggest one
                 let mut aabb = math::bounds::AABB::from_vertices(&x.sub_models.get(0).unwrap().0.vertices);
-                //aabb.transform(&transform.get_matrix());
-                //aabb.min *= transform.scale;
-                //aabb.max *= transform.scale;
-                aabb.min += transform.position;
-                aabb.max += transform.position;
-                Self { aabb, ..Self::default() }
+                for i in 1..(x.sub_models.len()) {
+                    let aabb2 = math::bounds::AABB::from_vertices(&x.sub_models.get(i).unwrap().0.vertices);     
+                    aabb.min = aabb.min.min(aabb2.min);
+                    aabb.max = aabb.max.max(aabb2.max);
+                }
+                aabb.center = (aabb.min + aabb.max) / 2.0;
+                Self { aabb: Self::offset(aabb, transform), ..Self::default() }
             },
             None => {
-                let mut aabb = math::bounds::AABB::from_vertices(&renderer.model.vertices);
-                aabb.transform(&transform.get_matrix());
-                Self { aabb, ..Self::default() }
+                let aabb = math::bounds::AABB::from_vertices(&renderer.model.vertices);
+                Self { aabb: Self::offset(aabb, transform), ..Self::default() }
             },
         }        
     }

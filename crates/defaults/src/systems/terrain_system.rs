@@ -120,11 +120,6 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
         // Create the AABB
         let aabb = components::AABB::from_components(&entity, data.component_manager);
-        let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::AABB(aabb.aabb.clone());
-        data.debug.renderer.debug_default(debug, veclib::Vector3::X, true);
-        let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(aabb.aabb.center.clone(), veclib::Vector3::ONE);
-        data.debug.renderer.debug_default(debug, veclib::Vector3::Y, true);
-        
         entity.link_component::<components::AABB>(data.component_manager, aabb).unwrap();
         let entity_id = data.entity_manager.add_entity_s(entity);
         added_chunk_entities_ids.push((entity_id, coords.clone()));

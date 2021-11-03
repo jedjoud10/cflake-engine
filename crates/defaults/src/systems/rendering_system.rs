@@ -462,16 +462,11 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
 // Aa frustum culling
 fn entity_filter(components: &FilteredLinkedComponents, data: &WorldData) -> bool {
     let renderer = components.get_component::<Renderer>(data.component_manager).unwrap();
-    // Check if we even have an AABB
-    let visible_frustum_culling = match components.get_component::<components::AABB>(data.component_manager) {
-        Ok(x) => {
-            // We have an AABB, we can do the frustum culling
-            let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
-            let frustum = &camera_entity.get_component::<components::Camera>(data.component_manager).unwrap().frustum;
-            math::Intersection::frustum_aabb(&frustum, &x.aabb)
-        },
-        Err(_) => { false },
-    };
+    let aabb = components.get_component::<components::AABB>(data.component_manager).unwrap().aabb;
+    // We have an AABB, we can do the frustum culling
+    let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
+    let frustum = &camera_entity.get_component::<components::Camera>(data.component_manager).unwrap().frustum;
+    let visible_frustum_culling = math::Intersection::frustum_aabb(&frustum, &aabb);
     return renderer.visible && visible_frustum_culling;
 }
 

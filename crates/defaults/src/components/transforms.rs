@@ -52,13 +52,6 @@ impl Transform {
             * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation)
             * veclib::Matrix4x4::<f32>::from_scale(self.scale);
     }
-    // Calculate the matrix and return it
-    pub fn get_matrix(&self) -> veclib::Matrix4x4<f32> {
-        return veclib::Matrix4x4::<f32>::from_translation(self.position);
-        
-        //return veclib::Matrix4x4::default_identity();
-        //return veclib::Matrix4x4::<f32>::from_translation(veclib::Vector3::ONE * 200.0);
-    }
 }
 
 ecs::impl_component!(Transform);

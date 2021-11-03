@@ -81,7 +81,7 @@ impl AABB {
     // Transform the AABB by a transform
     pub fn transform(&mut self, transform_matrix: &veclib::Matrix4x4<f32>) {
         // Transform the min and max by the transform's matrix
-        let matrix = transform_matrix.inversed();
+        let matrix = transform_matrix;
         self.min = matrix.mul_point(&self.min);
         self.max = matrix.mul_point(&self.max);
         self.center = (self.max + self.min) / 2.0;
@@ -96,5 +96,16 @@ impl AABB {
         self.min -= factor;
         self.max += factor;
         self.center = (self.max + self.min) / 2.0;
+    }
+    // Scale this AABB using a center point and a scaling vector
+    pub fn scale(&mut self, center: veclib::Vector3<f32>, scale: veclib::Vector3<f32>) {
+        self.min -= center;
+        self.max -= center;
+        // Scale
+        self.min *= scale;
+        self.max *= scale;
+        // Reset again
+        self.min += center;
+        self.max += center;
     }
 }
