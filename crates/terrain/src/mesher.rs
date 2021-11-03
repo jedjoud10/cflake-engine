@@ -10,9 +10,6 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::time::Instant;
 
-// If the average density value is below -AVERAGE_DENSITY_THRESHOLD, then we discard that skirt voxel, if it isn't we can still generate it
-const AVERAGE_DENSITY_THRESHOLD: u16 = 32767;
-
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
     (x - a) / (b - a)
@@ -24,8 +21,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     let mut sub_model_hashmap: HashMap<u8, (Model, Vec<SkirtVertex>)> = HashMap::new();
     let mut intersection_cases: Vec<TCase> = Vec::new();
     let instant = Instant::now();
-    // Calculate the density threshold for the skirts
-    let density_threshold = AVERAGE_DENSITY_THRESHOLD;
     // Loop over every voxel
     for x in 0..CHUNK_SIZE - 2 {
         for y in 0..CHUNK_SIZE - 2 {
@@ -50,7 +45,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
-                    continue;
+                    //continue;
                 }
                 // Get triangles
                 let edges: [i8; 16] = TRI_TABLE[case_index as usize];
@@ -171,7 +166,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             i,
                             &voxels,
                             &local_edges_x,
-                            density_threshold,
                             shared_vertices,
                             veclib::Vec3Axis::X,
                             0,
@@ -186,7 +180,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             super::flatten((x + 1, y, z)),
                             &voxels,
                             &local_edges_x,
-                            density_threshold,
                             shared_vertices,
                             veclib::Vec3Axis::X,
                             CHUNK_SIZE - 2,
@@ -202,7 +195,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             i,
                             &voxels,
                             &local_edges_y,
-                            density_threshold,
                             shared_vertices,
                             veclib::Vec3Axis::Y,
                             0,
@@ -217,7 +209,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             super::flatten((x, y + 1, z)),
                             &voxels,
                             &local_edges_y,
-                            density_threshold,
                             shared_vertices,
                             veclib::Vec3Axis::Y,
                             CHUNK_SIZE - 2,
@@ -234,7 +225,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             i,
                             &voxels,
                             &local_edges_z,
-                            density_threshold,
                             shared_vertices,
                             veclib::Vec3Axis::Z,
                             0,
@@ -249,7 +239,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             super::flatten((x, y, z + 1)),
                             &voxels,
                             &local_edges_z,
-                            density_threshold,
                             shared_vertices,
                             veclib::Vec3Axis::Z,
                             CHUNK_SIZE - 2,
@@ -321,7 +310,6 @@ pub fn solve_marching_squares(
     i: usize,
     data: &Box<[Voxel]>,
     local_edges: &[(u32, u32, u32); 4],
-    density_threshold: u16,
     shared_vertices: &mut Vec<SkirtVertex>,
     axis: veclib::Vec3Axis,
     slice: usize,
@@ -343,17 +331,13 @@ pub fn solve_marching_squares(
         // Update the case index
         case += ((voxel.density < ISOLINE) as u8) * 2_u8.pow(j as u32);
     }
-    // Get the average density
-    let average_density: u16 = (local_voxels.iter().map(|x| x.density as f32).sum::<f32>() / 4.0) as u16;
-
     // ----This is where the actual mesh generation starts----
-
     if case == 0 {
         return; /* Always skip if it's empty */
     }
     // Check if it's full and it's out of range of the threshold
-    if case == 15 && (average_density < density_threshold) {
-        return;
+    if case == 15 {
+        //return;
     }
     let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
     // The vertices to connect
@@ -396,9 +380,9 @@ pub fn solve_marching_squares(
                     let v3: f32 = local_voxels[3].density as f32;
                     // Get the vertex data of the skirt vertex
                     let normal: veclib::Vector3<f32> = match axis {
-                        veclib::Vec3Axis::X => veclib::Vector3::X,
-                        veclib::Vec3Axis::Y => veclib::Vector3::Y,
-                        veclib::Vec3Axis::Z => veclib::Vector3::Z,
+                        veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, v3 - v0, v1 - v0).normalized(),
+                        veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(v1 - v0, 0.0, v3 - v0).normalized(),
+                        veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(v3 - v0, v1 - v0, 0.0).normalized(),
                     };
                     // Get the vertex color
                     let color: veclib::Vector3<f32> = (local_voxels[0].color + local_voxels[1].color + local_voxels[2].color + local_voxels[3].color).into();

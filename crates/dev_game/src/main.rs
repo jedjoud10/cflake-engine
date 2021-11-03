@@ -107,19 +107,4 @@ pub fn world_initialized(world: &mut World) {
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
-
-    // Template entity
-    let mut cube = Entity::new("Cube");
-    cube.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::ONE).with_scale(veclib::Vector3::new(1.0, 2.0, 3.0))).unwrap();
-    let model = Model::asset_load_easy("defaults\\models\\cube.mdl3d", &data.asset_manager.asset_cacher).unwrap();
-    let m = Material::new("Cube material", data.asset_manager);
-    let renderer = Renderer::new().set_model(model).set_material(m);
-    cube.link_component::<Renderer>(data.component_manager, renderer).unwrap();
-    let aabb = components::AABB::from_components(&cube, data.component_manager);
-    let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::AABB(aabb.aabb.clone());
-    data.debug.renderer.debug_default(debug, veclib::Vector3::X, true);
-    let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(aabb.aabb.center.clone(), veclib::Vector3::ONE);
-    data.debug.renderer.debug_default(debug, veclib::Vector3::Y, true);
-    cube.link_component::<components::AABB>(data.component_manager, aabb).unwrap();
-    data.entity_manager.add_entity_s(cube);
 }
