@@ -41,8 +41,8 @@ impl Intersection {
     // Frustum and an aabb
     pub fn frustum_aabb(frustum: &crate::Frustum, aabb: &bounds::AABB) -> bool {
         // Project the corners of the AABB
-        let point = frustum.matrix.mul_vector(&veclib::Vector4::new(aabb.center.x, aabb.center.y, aabb.center.z, 1.0));
-        let point = point.get3([0, 1, 2]) / point.w;        
+        let center_point = frustum.matrix.mul_vector(&veclib::Vector4::new(aabb.center.x, aabb.center.y, aabb.center.z, 1.0));
+        let center_point = center_point.get3([0, 1, 2]) / center_point.w;        
         let coordinates: Vec<veclib::Vector3<f32>> = (0..8).collect::<Vec<u8>>().into_iter().map(|x| aabb.get_corner(x)).collect();
         let projected_points = coordinates.into_iter().map(|x| {
             let point = &veclib::Vector4::new(x.x, x.y, x.z, 1.0);
@@ -51,12 +51,8 @@ impl Intersection {
         }).collect::<Vec<veclib::Vector3<f32>>>();
         // Create a new AABB based on that
         let new_aabb = bounds::AABB::from_vertices(&projected_points);
-        let intersect = Self::aabb_aabb(&bounds::AABB::ndc_forward(), &new_aabb);
-        
-        let test = point.x > -1.0 && point.x < 1.0 && point.y > -1.0 && point.y < 1.0 && point.z < 1.0 && point.z > 0.0; 
-        //println!("{}", test);
-        // Intersect that AABB with the AABB of the NDC
-        // point.z > 0.0   
+        let intersect = Self::aabb_aabb(&bounds::AABB::ndc_forward(), &new_aabb);        
+        let test = center_point.x > -1.0 && center_point.x < 1.0 && center_point.y > -1.0 && center_point.y < 1.0 && center_point.z < 1.0 && center_point.z > 0.0; 
         intersect     
     }
 }

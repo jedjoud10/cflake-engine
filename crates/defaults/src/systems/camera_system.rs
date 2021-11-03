@@ -68,7 +68,7 @@ pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components
     let camera = components.get_component_mut::<components::Camera>(data.component_manager).unwrap();
     camera.update_view_matrix(position, rotation);
     camera.update_projection_matrix(&data.custom_data.window);
-    camera.update_frustum_culling_matrix();
+    if !data.input_manager.map_toggled("cull_update") { camera.update_frustum_culling_matrix(); }
 }
 
 // Create the camera system
@@ -85,6 +85,7 @@ pub fn system(data: &mut WorldData) -> System {
     data.input_manager.bind_key(Keys::A, "camera_left", MapType::Button);
     data.input_manager.bind_key(Keys::Space, "camera_up", MapType::Button);
     data.input_manager.bind_key(Keys::LeftShift, "camera_down", MapType::Button);
+    data.input_manager.bind_key(Keys::RightShift, "cull_update", MapType::Toggle);
     // Attach the events
     system.event(SystemEventType::EntityUpdate(entity_update));
     system

@@ -248,6 +248,7 @@ impl System {
             None => {}
         }
 
+        // Filter the entities
         let entity_manager_immutable = &*data.entity_manager;
         let filtered_entity_ids = match self.entity_filter {
             Some(x) => {
