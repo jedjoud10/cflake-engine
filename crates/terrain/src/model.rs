@@ -7,7 +7,6 @@ use crate::Voxel;
 // A finalized marching cube case
 pub struct TCase {
     pub cube_position: veclib::Vector3<f32>,
-    pub leading_normal: veclib::Vector3<f32>,
     pub leading_voxel: Voxel,
 }
 

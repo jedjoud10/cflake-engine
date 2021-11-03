@@ -1,5 +1,7 @@
 use math::octrees::OctreeNode;
 
+use crate::MAIN_CHUNK_SIZE;
+
 use super::Voxel;
 
 // Some chunk data
@@ -12,7 +14,7 @@ impl Default for ChunkData {
     fn default() -> Self {
         Self {
             coords: ChunkCoords::default(),
-            voxels: Box::new([Voxel::default()]),
+            voxels: Box::new([Voxel::default(); (MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)]),
         }
     }
 }
@@ -22,7 +24,7 @@ impl ChunkData {
     pub fn new(coords: ChunkCoords) -> Self {
         Self {
             coords,
-            voxels: Box::new([Voxel::default()]),
+            voxels: Box::new([Voxel::default(); (MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)]),
         }
     }
 }

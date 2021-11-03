@@ -10,7 +10,7 @@ use rendering::{Model, Shader, Texture};
 use world_data::WorldData;
 
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
-use crate::{TModel, CHUNK_SIZE};
+use crate::{MAIN_CHUNK_SIZE, TModel, Voxel};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -119,7 +119,6 @@ impl ChunkManager {
             Some(coord) => {
                 // Get the chunk coords
                 let chunk_coords = coord.clone();
-                let mut voxels: Box<[super::Voxel]> = Box::new([super::Voxel::default(); (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize]);
 
                 // Decide between generating the chunk or start the generation of the voxel data
                 if self.voxels_generating && (self.last_frame_voxels_generated + crate::FRAME_THRESHOLD) >= frame_count {
@@ -128,7 +127,7 @@ impl ChunkManager {
                     self.voxels_generating = false;
                     self.last_frame_voxels_generated = 0;
                     // Generate the data for this chunk
-                    let has_surface = voxel_generator.generate_voxels_end(chunk_coords.size, chunk_coords.depth, chunk_coords.position, &mut voxels);
+                    let (has_surface, voxels) = voxel_generator.generate_voxels_end(chunk_coords.size, chunk_coords.depth, chunk_coords.position);
                     // Since we just generated the chunk we can remove it from the generated chunks
                     self.chunks_to_generate.remove(0);
 

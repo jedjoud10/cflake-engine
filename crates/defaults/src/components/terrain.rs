@@ -1,7 +1,7 @@
 use ecs::{Component, ComponentID, ComponentInternal};
 use math::octrees::*;
 use rendering::{Material, Shader};
-use terrain::{ChunkManager, VoxelGenerator, CHUNK_SIZE};
+use terrain::{ChunkManager, MAIN_CHUNK_SIZE, VoxelGenerator};
 
 // Terrain data that will be on the terrain entity
 #[derive(Default)]
@@ -27,7 +27,7 @@ impl TerrainData {
         let mut octree = AdvancedOctree {
             internal_octree: Octree {
                 depth: octree_depth,
-                size: (CHUNK_SIZE - 2) as u64,
+                size: (MAIN_CHUNK_SIZE) as u64,
                 ..Octree::default()
             },
             ..AdvancedOctree::default()

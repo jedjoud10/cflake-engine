@@ -1,4 +1,6 @@
-use crate::CHUNK_SIZE;
+use crate::MAIN_CHUNK_SIZE;
+
+const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 1;
 // Triangulation table
 pub const TRI_TABLE: [[i8; 16]; 256] = [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],

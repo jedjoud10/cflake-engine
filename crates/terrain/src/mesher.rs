@@ -1,10 +1,10 @@
+use crate::MAIN_CHUNK_SIZE;
 use crate::TCase;
 use crate::TModel;
 use crate::ISOLINE;
 
 use super::tables::*;
 use super::Voxel;
-use super::CHUNK_SIZE;
 use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -20,11 +20,10 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
     let mut sub_model_hashmap: HashMap<u8, (Model, Vec<SkirtVertex>)> = HashMap::new();
     let mut intersection_cases: Vec<TCase> = Vec::new();
-    let instant = Instant::now();
     // Loop over every voxel
-    for x in 0..CHUNK_SIZE - 2 {
-        for y in 0..CHUNK_SIZE - 2 {
-            for z in 0..CHUNK_SIZE - 2 {
+    for x in 0..MAIN_CHUNK_SIZE {
+        for y in 0..MAIN_CHUNK_SIZE {
+            for z in 0..MAIN_CHUNK_SIZE {
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
@@ -34,32 +33,22 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 // Make sure we have the default submodel/material for this material ID
                 sub_model_hashmap.entry(lv.shader_id).or_insert((Model::default(), Vec::new()));
                 let (model, shared_vertices) = sub_model_hashmap.get_mut(&lv.shader_id).unwrap();
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[3]].density >= ISOLINE) as u8) * 8;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[4]].density >= ISOLINE) as u8) * 16;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[5]].density >= ISOLINE) as u8) * 32;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[6]].density >= ISOLINE) as u8) * 64;
-                case_index += ((voxels[i + DATA_OFFSET_TABLE[7]].density >= ISOLINE) as u8) * 128;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density >= ISOLINE) as u8) * 8;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density >= ISOLINE) as u8) * 16;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density >= ISOLINE) as u8) * 32;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density >= ISOLINE) as u8) * 64;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density >= ISOLINE) as u8) * 128;
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
-                    //continue;
+                    continue;
                 }
                 // Get triangles
                 let edges: [i8; 16] = TRI_TABLE[case_index as usize];
 
-                // Local edges for the X axis
-                let mut local_edges_x: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                // Local edges for the X axis
-                let mut local_edges_y: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-                // Local edges for the X axis
-                let mut local_edges_z: [(u32, u32, u32); 4] = [(0, 0, 0); 4];
-
-                // Average normal
-                let mut average_normal: veclib::Vector3<f32> = veclib::Vector3::ZERO;
-                let mut average_normal_count: u8 = 0;
                 // The vertex indices that are gonna be used for the skirts
                 for edge in edges {
                     // Make sure the triangle is valid
@@ -75,38 +64,25 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         let index2 = super::flatten(vert2_usize);
                         let voxel1 = voxels[index1];
                         let voxel2 = voxels[index2];
-                        let density1 = voxel1.density as f32;
-                        let density2 = voxel2.density as f32;
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = if interpolation { inverse_lerp(density1, density2, ISOLINE as f32) } else { 0.5 };
+                        let value: f32 = if interpolation { inverse_lerp(voxel1.density as f32, voxel2.density as f32, ISOLINE as f32) } else { 0.5 };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         // Get the normal
                         let normal: veclib::Vector3<f32> = {
-                            let mut normal1 = veclib::Vector3::<f32>::ZERO;
-                            let mut normal2 = veclib::Vector3::<f32>::ZERO;
-
-                            // Create the normal
-                            normal1.x = voxels[index1 + DATA_OFFSET_TABLE[3]].density as f32 - density1;
-                            normal1.y = voxels[index1 + DATA_OFFSET_TABLE[4]].density as f32 - density1;
-                            normal1.z = voxels[index1 + DATA_OFFSET_TABLE[1]].density as f32 - density1;
-                            normal2.x = voxels[index2 + DATA_OFFSET_TABLE[3]].density as f32 - density2;
-                            normal2.y = voxels[index2 + DATA_OFFSET_TABLE[4]].density as f32 - density2;
-                            normal2.z = voxels[index2 + DATA_OFFSET_TABLE[1]].density as f32 - density2;
-                            let n = veclib::Vector3::<f32>::lerp(normal1, normal2, value);
+                            // Do the lerping
+                            let n = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
                             if n == veclib::Vector3::ZERO {
-                                veclib::Vector3::<f32>::lerp(normal1, normal2, 0.5)
+                                veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, 0.5)
                             } else { n }
                         };
 
-                        // Sum up the average normal
-                        average_normal += normal;
-                        average_normal_count += 1;
                         // Get the color
                         let color: veclib::Vector3<f32> = { veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value) } / 255.0;
 
+                        // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32, u8) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
                             2 * y as u32 + vert1.y as u32 + vert2.y as u32,
@@ -129,131 +105,21 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
                         }
-
-                        // For the X axis
-                        let skirts_edge_tuple = (edge_tuple.0, edge_tuple.1, edge_tuple.2);
-                        if skirts {
-                            if vert1_usize.0 == 0 && vert2_usize.0 == 0 {
-                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = skirts_edge_tuple;
-                            }
-                            if vert1_usize.0 == CHUNK_SIZE - 2 && vert2_usize.0 == CHUNK_SIZE - 2 && x == CHUNK_SIZE - 3 {
-                                local_edges_x[MC_EDGES_TO_LOCAL_VERTS_X[edge as usize] as usize] = skirts_edge_tuple;
-                            }
-                            // For the Y axis
-                            if vert1_usize.1 == 0 && vert2_usize.1 == 0 {
-                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = skirts_edge_tuple;
-                            }
-                            if vert1_usize.1 == CHUNK_SIZE - 2 && vert2_usize.1 == CHUNK_SIZE - 2 && y == CHUNK_SIZE - 3 {
-                                local_edges_y[MC_EDGES_TO_LOCAL_VERTS_Y[edge as usize] as usize] = skirts_edge_tuple;
-                            }
-                            // For the Z axis
-                            if vert1_usize.2 == 0 && vert2_usize.2 == 0 {
-                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = skirts_edge_tuple;
-                            }
-                            if vert1_usize.2 == CHUNK_SIZE - 2 && vert2_usize.2 == CHUNK_SIZE - 2 && z == CHUNK_SIZE - 3 {
-                                local_edges_z[MC_EDGES_TO_LOCAL_VERTS_Z[edge as usize] as usize] = skirts_edge_tuple;
-                            }
-                        }
                     }
-                }
-                // Skirts
-                if skirts {
-                    // Skirts for the X axis
-                    if x == 0 {
-                        solve_marching_squares(
-                            y,
-                            z,
-                            i,
-                            &voxels,
-                            &local_edges_x,
-                            shared_vertices,
-                            veclib::Vec3Axis::X,
-                            0,
-                            DENSITY_OFFSET_X,
-                            false,
-                        );
-                    }
-                    if x == CHUNK_SIZE - 3 {
-                        solve_marching_squares(
-                            y,
-                            z,
-                            super::flatten((x + 1, y, z)),
-                            &voxels,
-                            &local_edges_x,
-                            shared_vertices,
-                            veclib::Vec3Axis::X,
-                            CHUNK_SIZE - 2,
-                            DENSITY_OFFSET_X,
-                            true,
-                        );
-                    }
-                    // Skirts for the Y axis
-                    if y == 0 {
-                        solve_marching_squares(
-                            x,
-                            z,
-                            i,
-                            &voxels,
-                            &local_edges_y,
-                            shared_vertices,
-                            veclib::Vec3Axis::Y,
-                            0,
-                            DENSITY_OFFSET_Y,
-                            false,
-                        );
-                    }
-                    if y == CHUNK_SIZE - 3 {
-                        solve_marching_squares(
-                            x,
-                            z,
-                            super::flatten((x, y + 1, z)),
-                            &voxels,
-                            &local_edges_y,
-                            shared_vertices,
-                            veclib::Vec3Axis::Y,
-                            CHUNK_SIZE - 2,
-                            DENSITY_OFFSET_Y,
-                            true,
-                        );
-                    }
-
-                    // Skirts for the Y axis
-                    if z == 0 {
-                        solve_marching_squares(
-                            y,
-                            x,
-                            i,
-                            &voxels,
-                            &local_edges_z,
-                            shared_vertices,
-                            veclib::Vec3Axis::Z,
-                            0,
-                            DENSITY_OFFSET_Z,
-                            false,
-                        );
-                    }
-                    if z == CHUNK_SIZE - 3 {
-                        solve_marching_squares(
-                            y,
-                            x,
-                            super::flatten((x, y, z + 1)),
-                            &voxels,
-                            &local_edges_z,
-                            shared_vertices,
-                            veclib::Vec3Axis::Z,
-                            CHUNK_SIZE - 2,
-                            DENSITY_OFFSET_Z,
-                            true,
-                        );
-                    }
-                }
+                }                
                 // Push this intersecting case
                 intersection_cases.push(TCase {
                     cube_position: veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32),
-                    leading_normal: average_normal / (average_normal_count as f32),
                     leading_voxel: lv,
                 });
             }
+        }
+    }
+    /*
+    // Create the skirts in a completely separate loop
+    for x in 0..MAIN_CHUNK_SIZE {
+        for y in 0..MAIN_CHUNK_SIZE {
+            
         }
     }
     // The skirts' models
@@ -284,6 +150,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
             }
         }
     }
+    */
     let new_model_hashmap = sub_model_hashmap
         .into_iter()
         .map(|(shader_id, (model, _))| (shader_id, model))
@@ -291,7 +158,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     // Return the model
     return TModel {
         shader_model_hashmap: new_model_hashmap,
-        skirt_models: skirt_models,
+        skirt_models: HashMap::new(),
         intersection_cases: Some(intersection_cases),
     };
 }
@@ -299,113 +166,16 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
 // The type of skirt vertex, normal or shared
 pub enum SkirtVertex {
     Vertex(veclib::Vector3<f32>, veclib::Vector3<f32>, veclib::Vector3<f32>),
-    SharedVertex((u32, u32, u32)),
 }
 
 // Solve a single marching squares case using a passed function for
 pub fn solve_marching_squares(
-    // TODO: Comment deez
-    a: usize,
-    b: usize,
-    i: usize,
     data: &Box<[Voxel]>,
-    local_edges: &[(u32, u32, u32); 4],
-    shared_vertices: &mut Vec<SkirtVertex>,
     axis: veclib::Vec3Axis,
     slice: usize,
     density_offset: [usize; 4],
     flip: bool,
-) {
-    let mut case = 0_u8;
-    // For axis X:
-    //  3---2
-    //  |   |
-    //  |   |
-    //  0---1
-    let mut local_voxels: [Voxel; 4] = [Voxel::default(); 4];
-
-    // Get the local densities
-    for j in 0..4 {
-        let voxel = data[i + density_offset[j]];
-        local_voxels[j] = voxel;
-        // Update the case index
-        case += ((voxel.density < ISOLINE) as u8) * 2_u8.pow(j as u32);
-    }
-    // ----This is where the actual mesh generation starts----
-    if case == 0 {
-        return; /* Always skip if it's empty */
-    }
-    // Check if it's full and it's out of range of the threshold
-    if case == 15 {
-        //return;
-    }
-    let offset = veclib::Vector2::<f32>::new(a as f32, b as f32);
-    // The vertices to connect
-    let tris = if flip {
-        SQUARES_FLIPPED_TRI_TABLE[case as usize]
-    } else {
-        SQUARES_TRI_TABLE[case as usize]
-    };
-    // Triangle group, basically just 3 indices
-    for tri_group in 0..3 {
-        // Each local triangle inside the triangle group
-        for tri_i in 0..3 {
-            let tri = tris[tri_i + tri_group * 3];
-            // Check if the value is negative first
-            if tri != -1 {
-                // The bertex
-                let vertex = SQUARES_VERTEX_TABLE[tri as usize];
-                // Interpolation
-                if vertex == -veclib::Vector2::ONE {
-                    match tri {
-                        // TODO: Turn this into a more generalized algorithm
-                        1 | 3 | 5 | 7 => {
-                            let index = (tri - 1) / 2;
-                            let edge_tuple = local_edges[index as usize];
-                            // Since I fixed the bug we don't have to worry about the tuple being (0, 0, 0)
-                            shared_vertices.push(SkirtVertex::SharedVertex(edge_tuple));
-                        }
-                        _ => {}
-                    }
-                } else {
-                    // This is a vertex that is not present in the main mesh
-                    let new_vertex: veclib::Vector3<f32> = match axis {
-                        veclib::Vec3Axis::X => transform_x_local(slice, &vertex, &offset),
-                        veclib::Vec3Axis::Y => transform_y_local(slice, &vertex, &offset),
-                        veclib::Vec3Axis::Z => transform_z_local(slice, &vertex, &offset),
-                    };
-                    // The 3 voxels that we will be using for derivatives
-                    let v0: f32 = local_voxels[0].density as f32;
-                    let v1: f32 = local_voxels[1].density as f32;
-                    let v3: f32 = local_voxels[3].density as f32;
-                    // Get the vertex data of the skirt vertex
-                    let normal: veclib::Vector3<f32> = match axis {
-                        veclib::Vec3Axis::X => veclib::Vector3::<f32>::new(0.0, v3 - v0, v1 - v0).normalized(),
-                        veclib::Vec3Axis::Y => veclib::Vector3::<f32>::new(v1 - v0, 0.0, v3 - v0).normalized(),
-                        veclib::Vec3Axis::Z => veclib::Vector3::<f32>::new(v3 - v0, v1 - v0, 0.0).normalized(),
-                    };
-                    // Get the vertex color
-                    let color: veclib::Vector3<f32> = (local_voxels[0].color + local_voxels[1].color + local_voxels[2].color + local_voxels[3].color).into();
-                    let color = color / 255.0 / 4.0;
-                    // Add it
-                    shared_vertices.push(SkirtVertex::Vertex(new_vertex, normal, (veclib::Vector3::<f32>::ONE).into()));
-                }
-            }
-        }
-    }
-}
-
-// Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
-fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(slice as f32, vertex.y + offset.x, vertex.x + offset.y)
-}
-
-// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis
-fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y)
-}
-
-// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
-fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(vertex.y + offset.y, vertex.x + offset.x, slice as f32)
+) -> Option<Vec<SkirtVertex>> {    
+    // Gotta reprogram this
+    return None;
 }
