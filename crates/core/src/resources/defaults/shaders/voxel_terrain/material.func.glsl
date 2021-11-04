@@ -1,6 +1,10 @@
 #include "defaults\shaders\others\triplanar.func.glsl"
 // Get the color at a specific fragment in the fragment shader of the terrain
 void get_frag(sampler2DArray diffuse_textures, sampler2DArray normals_textures, vec3 m_position, vec3 m_normal, vec2 uv_scale, float normals_strength, out vec3 frag_diffuse, out vec3 frag_normal) {
-    frag_diffuse = vec3(1, 1, 1);
+    vec3 color = texture(diffuse_textures, vec3(m_position.xz, 0)).rgb;
+    if (dot(m_normal, vec3(0, 1, 0)) <= 0.9) {
+        color = texture(diffuse_textures, vec3(m_position.xz, 1)).rgb;
+    }
+    frag_diffuse = color;
     frag_normal = m_normal;
 }

@@ -91,9 +91,9 @@ pub fn world_initialized(world: &mut World) {
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
         .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.7));
-    let texture = Texture::create_texturearray(None, vec!["defaults\\textures\\missing_texture.png", "defaults\\textures\\rock_diffuse.png"], data.asset_manager, 512, 512);
+    let texture = Texture::create_texturearray(None, vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"], data.asset_manager, 512, 512);
     let bound_materials = vec![
-        material.instantiate(data.instance_manager),
+        material.instantiate(data.instance_manager).set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0)),
         material
             .instantiate(data.instance_manager)
             .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.02)),

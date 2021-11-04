@@ -280,6 +280,7 @@ impl Texture {
         }
         // Create the array texture from THOSE NUTS AAAAA
         let main_texture: Texture = Texture::new()
+            .enable_mipmaps()
             .set_dimensions(TextureType::TextureArray(width, height, length as u16))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_name(name)
@@ -339,26 +340,24 @@ impl Texture {
                     }
                     // This is a texture array
                     TextureType::TextureArray(x, y, l) => {
-                        println!("{} {} {}", x, y, l);
-                        gl::TexStorage3D(tex_type, 10, self.internal_format, x as i32, y as i32, l as i32);
-                        /*
+                        gl::TexStorage3D(tex_type, 10, self.internal_format, x as i32, y as i32, l as i32);                        
                         // We might want to do mipmap
-                        for x in 0..l {
+                        for i in 0..l {
+                            let localized_bytes = bytes[(i as usize * y as usize * 4 * x as usize)..bytes.len()].as_ptr() as *const c_void;
                             gl::TexSubImage3D(
                                 gl::TEXTURE_2D_ARRAY,
                                 0,
                                 0,
                                 0,
-                                x as i32,
+                                i as i32,
                                 self.get_width() as i32,
                                 self.get_height() as i32,
                                 1,
                                 self.format,
                                 self.data_type,
-                                pointer,
+                                localized_bytes,
                             );
-                        }
-                        */
+                        }                        
                     }
                 }
                 // Set the texture parameters for a normal texture

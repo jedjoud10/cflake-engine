@@ -12,7 +12,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     int biome_id = 0;
     int hardness = 0;
     // Write the result
-    voxel = Voxel(pos.y + snoise(pos * 0.001) * 50.0);
+    voxel = Voxel(pos.y + -mountain(pos.xz * 0.008, 0.2).x * 800 + 400);
     material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID

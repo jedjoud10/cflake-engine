@@ -288,7 +288,6 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
         let mut minor: i32 = 0;
         gl::GetIntegerv(gl::MAJOR_VERSION, &mut major);
         gl::GetIntegerv(gl::MINOR_VERSION, &mut minor);
-        println!("OpenGL version; major: '{}', minor: '{}'", major, minor);
         // Error shit
     }
 

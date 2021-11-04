@@ -247,12 +247,6 @@ impl Shader {
     pub fn get_uniform_location(&self, name: &str) -> Result<i32, RenderingError> {
         unsafe {
             let x = gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
-            if x == -1 {
-                // Invalid uniform location
-                let error: Result<i32, RenderingError> = Err(RenderingError::new(format!("Could not fetch uniform location for '{}' on shader '{}'", name, self.name)));
-
-                return Ok(-1);
-            }
             return Ok(x);
         }
     }
@@ -304,18 +298,22 @@ impl Shader {
     pub fn set_t2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::ActiveTexture(active_texture_id + 33984);
-            gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            gl::Uniform1i(u, active_texture_id as i32);
+            if u != -1 {
+                gl::ActiveTexture(active_texture_id + 33984);
+                gl::BindTexture(gl::TEXTURE_2D, texture.id);
+                gl::Uniform1i(u, active_texture_id as i32);
+            }
         }
     }
     // Set a 3D texture
     pub fn set_t3d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::ActiveTexture(active_texture_id + 33984);
-            gl::BindTexture(gl::TEXTURE_3D, texture.id);
-            gl::Uniform1i(u, active_texture_id as i32);
+            if u != -1 {
+                gl::ActiveTexture(active_texture_id + 33984);
+                gl::BindTexture(gl::TEXTURE_3D, texture.id);
+                gl::Uniform1i(u, active_texture_id as i32);
+            }
         }
     }
     // Set a 2D image
@@ -382,9 +380,11 @@ impl Shader {
     pub fn set_t2da(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::ActiveTexture(active_texture_id);
-            gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.id);
-            gl::Uniform1i(u, active_texture_id as i32 - 33984);
+            if u != 1 {
+                gl::ActiveTexture(active_texture_id + 33984);
+                gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.id);
+                gl::Uniform1i(u, active_texture_id as i32);
+            }
         }
     }
 }

@@ -103,7 +103,6 @@ impl World {
         // Load default bindings
         preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png", cacher);
         self.input_manager.create_key_cache();
-        self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
         window.set_cursor_mode(glfw::CursorMode::Disabled);
@@ -280,16 +279,6 @@ impl World {
     }
     // Check for default key map events
     fn check_default_input_events(&mut self, _window: &mut glfw::Window, _glfw: &mut glfw::Glfw) {
-        // Debug world info (Component count, entity count, system count, fps, delta, and the rest)
-        if self.input_manager.map_pressed("debug_info") {
-            println!("Component count: '{}'", self.component_manager.smart_components_list.count_valid());
-            println!("Entity count: '{}'", self.entity_manager.entities.count_valid());
-            println!("System count: '{}'", self.system_manager.systems.len());
-            println!(
-                "Time: '{}', Delta Time: '{}', FPS: '{}', Frame Count: {}",
-                self.time_manager.seconds_since_game_start, self.time_manager.delta_time, self.time_manager.fps, self.time_manager.frame_count
-            );
-        }
     }
     // Update the console
     fn update_console(&mut self) {
@@ -361,7 +350,6 @@ impl World {
             // Disable VSync
             glfw.set_swap_interval(glfw::SwapInterval::None);
         }
-        println!("{}", self.config_file.vsync);
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {

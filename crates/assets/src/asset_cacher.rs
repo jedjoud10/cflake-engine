@@ -14,7 +14,6 @@ impl AssetCacher {
     fn guess_asset_type(name: &str) -> AssetType {
         let first_dot_index = name.split("").position(|c| c == ".").unwrap();
         let extension = name.split_at(first_dot_index).1;
-        println!("{}", extension);
         match extension {
             "vrsh.glsl" => AssetType::VertSubshader,
             "frsh.glsl" => AssetType::FragSubshader,
@@ -32,7 +31,6 @@ impl AssetCacher {
     // Pre-load some asset metadata
     pub fn pre_load(&mut self, name: &str, bytes: &[u8]) -> Result<(), AssetMetadataLoadError> {
         let name = name.split("resources\\").last().unwrap();
-        println!("{}", name);
         let data = AssetMetadata {
             bytes: bytes.to_vec(),
             load_type: AssetLoadType::Dynamic,
@@ -40,13 +38,11 @@ impl AssetCacher {
             name: name.clone().to_string(),
         };
         self.cached_metadata.insert(name.to_string(), data);
-        println!("Pre loaded asset: {}", name);
         Ok(())
     }
     // Load asset metadata
     pub fn load_md(&self, name: &str) -> Result<&AssetMetadata, AssetMetadataLoadError> {
         // Load
-        println!("Asset: {} was {}", name, if self.cached_metadata.contains_key(name) { "cached!" } else { "not cached!" });
         let data = self.cached_metadata.get(name).ok_or(AssetMetadataLoadError::new_str("Asset was not pre-loaded!"))?;
         return Ok(data);
     }
