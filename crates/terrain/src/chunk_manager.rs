@@ -81,13 +81,6 @@ impl ChunkManager {
     }
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &mut VoxelGenerator, frame_count: u64) -> Option<(Vec<(ChunkCoords, TModel)>, Vec<usize>)> {
-        // Check if we are currently generating the chunks
-        if self.chunks_to_generate.len() > 0 {
-            // We are generating
-        } else {
-            // We are idle
-        }
-
         // Sort the chunks to generate
         if !self.voxels_generating {
             // Sort the added nodes using a priority system

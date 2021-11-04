@@ -17,8 +17,6 @@ pub struct AdvancedOctree {
     pub combined_nodes: HashSet<OctreeNode>,
     // The twin rule, if this is none, don't generate twin nodes
     pub subdivide_twin_rule: Option<fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool>,
-    // The last position
-    pub last_pos: veclib::Vector3<f32>,
 }
 
 // Code
@@ -60,7 +58,6 @@ impl AdvancedOctree {
     pub fn generate_incremental_octree(
         &mut self,
         target: &veclib::Vector3<f32>,
-        target_velocity: &veclib::Vector3<f32>,
         lod_factor: f32,
     ) -> Option<(
         Vec<OctreeNode>, // Added nodes
@@ -68,13 +65,13 @@ impl AdvancedOctree {
         Vec<OctreeNode>, // Total nodes
     )> {
         let root_node = self.internal_octree.get_root_node();
+        let t = std::time::Instant::now();
         // Do nothing if the target is out of bounds
-        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) || (self.last_pos.distance(*target) < 3.0 && self.generated_base_octree) {
+        if !crate::intersection::Intersection::point_aabb(target, &root_node.get_aabb()) {
             return None;
         }
         // Check if we generated the base octree
         if !self.generated_base_octree {
-            let t = std::time::Instant::now();
             // Create the root node
             let root_node = self.internal_octree.get_root_node();
             self.internal_octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
@@ -198,7 +195,7 @@ impl AdvancedOctree {
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
         let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
-        self.last_pos = target.clone();
+        println!("{}", t.elapsed().as_micros());
         return Some((added_nodes, removed_nodes, total));
     }
     // Set the twin rule

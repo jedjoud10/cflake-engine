@@ -10,6 +10,7 @@ pub struct TerrainData {
     pub voxel_generator: VoxelGenerator,
     pub chunk_manager: ChunkManager,
     pub bound_materials: Vec<Material>,
+    pub camera_position: veclib::Vector3<f32>,
     pub bound_checker: Option<fn(&OctreeNode) -> bool>,
 }
 
@@ -18,7 +19,7 @@ impl TerrainData {
     // Check if a an already existing node could be subdivided even more
     fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
         let c: veclib::Vector3<f32> = node.get_center().into();
-        let max = (node.depth == 1);
+        let max = node.depth == 1 || node.depth == 2;
         let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
         node.children_indices.is_none() && node.depth < max_depth && result
     }
@@ -44,7 +45,8 @@ impl TerrainData {
             },
             bound_checker,
             bound_materials: bound_materials,
-            chunk_manager: ChunkManager::default(),
+            camera_position: veclib::Vector3::ONE * 10000.0,
+            ..TerrainData::default()
         }
     }
 }

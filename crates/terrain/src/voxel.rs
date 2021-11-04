@@ -119,7 +119,7 @@ impl VoxelGenerator {
         let voxel_pixels = self.voxel_texture.fill_array_elems::<f32>();
         let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
         let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
-        println!("{}", i.elapsed().as_millis());
+        //println!("{}", i.elapsed().as_millis());
         // Keep track of the min and max values
         let mut min = f32::MAX;
         let mut max = f32::MIN;

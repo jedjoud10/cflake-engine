@@ -255,7 +255,7 @@ impl CustomData {
         unsafe {
             // Set the wireframe rendering
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            gl::Disable(gl::CULL_FACE);
+            gl::Enable(gl::LINE_SMOOTH);
 
             gl::BindVertexArray(gpu_data.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
@@ -263,7 +263,7 @@ impl CustomData {
 
             // Reset the wireframe settings
             gl::BindTexture(gl::TEXTURE_2D, 0);
-            gl::Enable(gl::CULL_FACE);
+            gl::Disable(gl::LINE_SMOOTH);
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
         }
     }
