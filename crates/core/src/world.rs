@@ -84,7 +84,9 @@ impl World {
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\material.func.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
         preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png", cacher);

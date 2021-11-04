@@ -16,7 +16,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     float p = pos.y - 0.5 + snoise(pos * 0.004) * 20;
     float d = min(sphere, min(box, min(rbox, p)));
     // Write the result
-    voxel = Voxel(d * 300);
+    voxel = Voxel(-mountain(pos.xz * 0.01, 0.2).x * 600 + pos.y);
     material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID

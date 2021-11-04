@@ -11,7 +11,7 @@ layout(location = 5) uniform int chunk_size;
 layout(location = 6) uniform int depth;
 Voxel sample_voxel(ivec3 pixel_coords) {
     vec4 voxel_pixel = texture(voxel_sampler, vec3(pixel_coords+1) / vec3(chunk_size, chunk_size, chunk_size)).rgba; 
-    Voxel voxel = Voxel((voxel_pixel.x * 65535) - 32767);       
+    Voxel voxel = Voxel(voxel_pixel.x);       
     return voxel;
 }
 void main() {

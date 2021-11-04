@@ -10,7 +10,7 @@ impl BoundChecker {
             max: veclib::Vector3::new(50000.0, 10.0, 50000.0),
             center: veclib::Vector3::ZERO
         };
-        math::Intersection::aabb_aabb(&node.get_aabb(), &aabb)
-        //true
+        //math::Intersection::aabb_aabb(&node.get_aabb(), &aabb)
+        true
     }
 }

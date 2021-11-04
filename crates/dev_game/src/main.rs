@@ -82,7 +82,7 @@ pub fn world_initialized(world: &mut World) {
     let terrain_shader = Shader::new(
         vec![
             "defaults\\shaders\\rendering\\default.vrsh.glsl",
-            "defaults\\shaders\\voxel_terrain\\terrain_triplanar.frsh.glsl",
+            "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl",
         ],
         data.asset_manager,
         None,

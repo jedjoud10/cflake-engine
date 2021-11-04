@@ -7,7 +7,7 @@ use veclib::Swizzable;
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
-    pub density: u16,
+    pub density: f32,
     pub color: veclib::Vector3<u8>,
     pub normal: veclib::Vector3<f32>,
     pub shader_id: u8,
@@ -19,7 +19,7 @@ pub struct Voxel {
 // A skirt voxel
 #[derive(Default, Clone, Copy)]
 pub struct SkirtVoxel {
-    pub density: u16,
+    pub density: f32,
     pub color: veclib::Vector3<u8>,
     pub shader_id: u8,
     pub texture_id: u8,
@@ -45,7 +45,7 @@ impl VoxelGenerator {
         // Create the voxel texture
         self.voxel_texture = Texture::new()
             .set_dimensions(TextureType::Texture3D((MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16))
-            .set_idf(gl::R16, gl::RED, gl::UNSIGNED_SHORT)
+            .set_idf(gl::R32F, gl::RED, gl::FLOAT)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
@@ -115,12 +115,12 @@ impl VoxelGenerator {
             .unwrap();
         color_compute.get_compute_state().unwrap();
         // Read back the texture into the data buffer
-        let voxel_pixels = self.voxel_texture.fill_array_elems::<u16>();
+        let voxel_pixels = self.voxel_texture.fill_array_elems::<f32>();
         let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
         let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
         // Keep track of the min and max values
-        let mut min = u16::MAX;
-        let mut max = u16::MIN;
+        let mut min = f32::MAX;
+        let mut max = f32::MIN;
         // Turn the pixels into the data
         let mut local_data: Box<[Voxel]> = Box::new([Voxel::default(); (MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)]);
         let mut data: Box<[Voxel]> = Box::new([Voxel::default(); (MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)]);
@@ -149,15 +149,11 @@ impl VoxelGenerator {
             for y in 0..(MAIN_CHUNK_SIZE+1) {
                 for z in 0..(MAIN_CHUNK_SIZE+1) {
                     let i = custom_flatten(x, y, z);
-                    // Calculate the normal using the difference between neigboring voxels
-                    let i1 = custom_flatten(x+1, y, z);
-                    let i2 = custom_flatten(x, y+1, z);
-                    let i3 = custom_flatten(x, y, z+1);
-                    // Voxels
                     let v0 = local_data[i];
-                    let v1 = local_data[i1];
-                    let v2 = local_data[i2];
-                    let v3 = local_data[i3];
+                    // Calculate the normal using the difference between neigboring voxels
+                    let v1 = local_data[custom_flatten(x+1, y, z)];
+                    let v2 = local_data[custom_flatten(x, y+1, z)];
+                    let v3 = local_data[custom_flatten(x, y, z+1)];
                     // Normal
                     let normal = veclib::Vector3::new(
                         v1.density as f32 - v0.density as f32,

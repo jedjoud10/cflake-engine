@@ -23,7 +23,7 @@ void main() {
     MaterialVoxel material_voxel = MaterialVoxel(0, 0, 0, 0);
     get_voxel(pos, depth, voxel, material_voxel);    
     // Write the voxel pixel
-    vec4 pixel = vec4(clamp(voxel.density + 32767, 0.0, 65535.0) / 65535, 0.0, 0.0, 0.0);        
+    vec4 pixel = vec4(voxel.density, 0.0, 0.0, 0.0);        
     // Write the material pixel
     imageStore(voxel_image, pixel_coords, pixel);        
     vec4 material_pixel = vec4(material_voxel.shader_id / 255.0, material_voxel.texture_id / 255.0, material_voxel.biome_id / 255.0, material_voxel.hardness / 255.0);
