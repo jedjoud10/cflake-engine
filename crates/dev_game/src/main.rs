@@ -59,7 +59,7 @@ pub fn world_initialized(world: &mut World) {
 
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
-    const OCTREE_DEPTH: u8 = 7;
+    const OCTREE_DEPTH: u8 = 6;
 
     // Load the compute shaders
     let compute = Shader::new(

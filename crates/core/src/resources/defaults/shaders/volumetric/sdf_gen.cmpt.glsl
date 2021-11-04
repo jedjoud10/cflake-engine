@@ -33,7 +33,7 @@ void main() {
             for(int z = -1; z < 2; z++) {
                 // Check if the neighboring coordinates are at the min/max, and if they are, swap them
                 vec3 neighbor_coords = coords + vec3(x, y, z); 
-                // The see that will be used to get the random point
+                // The seed that will be used to get the random point
                 vec3 k = mod(neighbor_coords, (gl_NumWorkGroups.x * gl_WorkGroupSize.x) / CELL_SIZE);
                 // Get the neighboring points
                 SDFSphere neighbor_point = random_point(k, floor(neighbor_coords));
