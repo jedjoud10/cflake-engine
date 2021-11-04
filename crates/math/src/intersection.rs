@@ -9,7 +9,7 @@ pub struct Intersection {}
 impl Intersection {
     // Check if an AABB intersects another AABB
     pub fn aabb_aabb(aabb: &bounds::AABB, other: &bounds::AABB) -> bool {
-        return aabb.min.elem_lte(&other.max).all() && other.min.elem_lte(&aabb.max).all();
+        return aabb.min.elem_lt(&other.max).all() && other.min.elem_lt(&aabb.max).all();
     }
     // Check if a point is inside a sphere
     pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &shapes::Sphere) -> bool {
@@ -49,6 +49,7 @@ impl Intersection {
             let point = frustum.matrix.mul_vector(point);
             point.get3([0, 1, 2]) / point.w
         }).collect::<Vec<veclib::Vector3<f32>>>();
+        let test2 = projected_points.iter().any(|x| x.z > 0.0 && x.z < 1.0);
         // Create a new AABB based on that
         let new_aabb = bounds::AABB::from_vertices(&projected_points);
         let intersect = Self::aabb_aabb(&bounds::AABB::ndc_forward(), &new_aabb);        

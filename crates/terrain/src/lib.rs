@@ -1,5 +1,4 @@
 // Export
-mod bound_checker;
 mod chunk;
 mod chunk_data;
 mod chunk_manager;
@@ -12,7 +11,6 @@ mod voxel;
 mod utils;
 mod params;
 
-pub use bound_checker::*;
 pub use chunk::*;
 pub use chunk_data::*;
 pub use chunk_manager::*;

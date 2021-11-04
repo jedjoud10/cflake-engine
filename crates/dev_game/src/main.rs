@@ -104,7 +104,7 @@ pub fn world_initialized(world: &mut World) {
             .0,
     ];
     terrain_entity
-        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials))
+        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials, None))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
 }

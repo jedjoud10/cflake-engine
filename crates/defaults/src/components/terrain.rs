@@ -10,6 +10,7 @@ pub struct TerrainData {
     pub voxel_generator: VoxelGenerator,
     pub chunk_manager: ChunkManager,
     pub bound_materials: Vec<Material>,
+    pub bound_checker: Option<fn(&OctreeNode) -> bool>,
 }
 
 // Create a new terrain data
@@ -22,7 +23,7 @@ impl TerrainData {
         node.children_indices.is_none() && node.depth < max_depth && result
     }
     // New terrain data with specific parameters
-    pub fn new(compute: Shader, color_compute: Shader, octree_depth: u8, bound_materials: Vec<Material>) -> Self {
+    pub fn new(compute: Shader, color_compute: Shader, octree_depth: u8, bound_materials: Vec<Material>, bound_checker: Option<fn(&OctreeNode) -> bool>) -> Self {
         // Create a new octree
         let mut octree = AdvancedOctree {
             internal_octree: Octree {
@@ -41,6 +42,7 @@ impl TerrainData {
                 color_compute,
                 ..VoxelGenerator::default()
             },
+            bound_checker,
             bound_materials: bound_materials,
             chunk_manager: ChunkManager::default(),
         }

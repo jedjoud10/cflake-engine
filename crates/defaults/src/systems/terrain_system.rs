@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use debug::DefaultDebugRendererType;
-use terrain::{BoundChecker, ChunkCoords, TerrainStats};
+use terrain::{ChunkCoords, TerrainStats};
 
 use crate::components;
 use components::Chunk;
@@ -53,7 +53,11 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             Some((mut added, removed, total)) => {
                 system.nodes = total;
                 // Filter first
-                added.retain(|node| BoundChecker::bound_check(&node) && node.children_indices.is_none());
+                match td.bound_checker {
+                    Some(bound_checker) =>  added.retain(|node| bound_checker(&node) && node.children_indices.is_none()),
+                    None => added.retain(|node| node.children_indices.is_none()),
+                }               
+               
                 system.terrain_stats.max_chunks_generated = system.terrain_stats.max_chunks_generated.max(added.len());
                 // Turn all the newly added nodes into chunks and instantiate them into the world
                 for octree_node in added {

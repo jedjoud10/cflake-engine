@@ -1,6 +1,8 @@
 use others::SmartList;
 use std::hash::Hash;
 
+use crate::bounds::AABB;
+
 // Simple node in the octree
 #[derive(Clone, Debug)]
 pub struct OctreeNode {
@@ -121,5 +123,14 @@ impl OctreeNode {
         elm.children_indices = Some(children_indices);
 
         return output;
+    }
+    // Check for intersection 
+    pub fn intersect_bounds(&self, min: veclib::Vector3::<f32>, max: veclib::Vector3::<f32>) -> bool {
+        let aabb = AABB {
+            min,
+            max,
+            center: veclib::Vector3::ZERO,
+        };
+        crate::Intersection::aabb_aabb(&aabb, &self.get_aabb())
     }
 }

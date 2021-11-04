@@ -1,4 +1,5 @@
 #include "defaults\shaders\others\hashes.func.glsl"
+#include "defaults\shaders\voxel_terrain\custom_voronoi.func.glsl"
 #include "defaults\shaders\voxel_terrain\noise.func.glsl"
 #include "defaults\shaders\voxel_terrain\erosion.func.glsl"
 #include "defaults\shaders\voxel_terrain\data.func.glsl"
@@ -11,7 +12,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     int biome_id = 0;
     int hardness = 0;
     // Write the result
-    voxel = Voxel(pos.y);
+    voxel = Voxel(pos.y + (custom_cellular(pos * 0.001).x) * 200.0);
     material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID

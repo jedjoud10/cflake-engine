@@ -60,38 +60,46 @@ impl World {
         // Pre load the resources
         // Pre load the resources
         let cacher = &mut self.asset_manager.asset_cacher;
+        // Rendering
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl", cacher);
+        // Others
         preload_asset!(".\\resources\\defaults\\shaders\\others\\wireframe.frsh.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl", cacher);
+        // Volumetric
+        preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric.func.glsl", cacher);
+        // UI
         preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_elem.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_panel.frsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.frsh.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\fonts\\default_font.font", cacher);
+        // Models
         preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d", cacher);
         preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d", cacher);
         preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d", cacher);
         preload_asset!(".\\resources\\defaults\\models\\cube.mdl3d", cacher);
-        preload_asset!(".\\resources\\defaults\\fonts\\default_font.font", cacher);
+        // Voxel terrain
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\noise.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\erosion.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\custom_voronoi.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\material.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher); 
+        // Textures
         preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
         // Load default bindings
         self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
