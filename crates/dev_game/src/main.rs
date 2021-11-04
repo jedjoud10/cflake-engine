@@ -80,10 +80,7 @@ pub fn world_initialized(world: &mut World) {
 
     // The terrain shader
     let terrain_shader = Shader::new(
-        vec![
-            "defaults\\shaders\\rendering\\default.vrsh.glsl",
-            "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl",
-        ],
+        vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl"],
         data.asset_manager,
         None,
         None,
@@ -94,6 +91,7 @@ pub fn world_initialized(world: &mut World) {
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
         .load_diffuse("defaults\\textures\\missing_texture.png", None, &mut data.asset_manager)
+        .load_normal("defaults\\textures\\rock_normals.png", None, &mut data.asset_manager)
         .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.7))
         .0;
     let bound_materials = vec![
@@ -104,7 +102,10 @@ pub fn world_initialized(world: &mut World) {
             .0,
     ];
     terrain_entity
-        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials, None))
+        .link_component::<components::TerrainData>(
+            data.component_manager,
+            components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials, None),
+        )
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
 }

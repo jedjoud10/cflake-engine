@@ -85,11 +85,11 @@ impl AdvancedOctree {
                     added_nodes = y.clone().into_iter().collect();
                     self.combined_nodes = y;
                     return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
-                },
+                }
                 None => {
                     self.combined_nodes = added_nodes.iter().map(|x| x.clone()).collect();
                     return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
-                },
+                }
             }
         }
         // If we don't have a target node don't do anything

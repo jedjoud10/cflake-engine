@@ -33,9 +33,9 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 td.camera_position = camera_position;
                 // Filter first
                 match td.bound_checker {
-                    Some(bound_checker) =>  added.retain(|node| bound_checker(&node) && node.children_indices.is_none()),
+                    Some(bound_checker) => added.retain(|node| bound_checker(&node) && node.children_indices.is_none()),
                     None => added.retain(|node| node.children_indices.is_none()),
-                }               
+                }
                 // Turn all the newly added nodes into chunks and instantiate them into the world
                 for octree_node in added {
                     // Add the chunk in the chunk manager
@@ -69,7 +69,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 // Add the entity
                 let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
                 let mut entity = Entity::new(name.as_str());
-        
+
                 // Create the chunk component
                 let chunk = Chunk { coords: coords.clone() };
                 // Link the components
@@ -105,21 +105,20 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 let entity_id = data.entity_manager.add_entity_s(entity);
                 added_chunk_entities_ids.push((entity_id, coords.clone()));
             }
-        
+
             // Reassign
             let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
             for (entity_id, coords) in added_chunk_entities_ids {
                 td.chunk_manager.add_chunk_entity(&coords, entity_id);
             }
-        
+
             for entity_id in removed_chunks {
                 // Removal the entity from the world
                 data.entity_manager.remove_entity_s(entity_id).unwrap();
             }
-        
-        },
-        None => {},
-    }    
+        }
+        None => {}
+    }
 }
 fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     // Setup the voxel generator for this generator

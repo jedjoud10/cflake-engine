@@ -96,11 +96,12 @@ impl World {
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\custom_voronoi.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\material.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher); 
+        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
         // Textures
         preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png", cacher);
         preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
         // Load default bindings
+        preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png", cacher);
         self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F2, "debug_info", MapType::Button);
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
@@ -138,7 +139,7 @@ impl World {
             .set_name("default_normals")
             .generate_texture(vec![127, 128, 255, 255])
             .unwrap()
-            .object_cache_load("default_normals", &mut self.asset_manager.object_cacher);        
+            .object_cache_load("default_normals", &mut self.asset_manager.object_cacher);
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
@@ -203,7 +204,7 @@ impl World {
         // Update entity manager
         self.update_entity_manager();
 
-        self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0,1.0, 2.0).normalized();
+        self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 2.0).normalized();
 
         // Callback
         callback(self);

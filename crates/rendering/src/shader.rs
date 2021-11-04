@@ -59,7 +59,7 @@ impl Shader {
                     let text = asset_manager.asset_cacher.load_text(local_path).unwrap();
                     let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                     included_lines.extend(new_lines);
-                }                
+                }
             }
             // Custom path include statement
             match additional_shader_paths {
@@ -75,7 +75,7 @@ impl Shader {
                             let text = asset_manager.asset_cacher.load_text(path).unwrap();
                             let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                             included_lines.extend(new_lines);
-                        }                        
+                        }
                     }
                 }
                 None => {}

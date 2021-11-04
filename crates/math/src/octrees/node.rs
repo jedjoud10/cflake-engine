@@ -124,8 +124,8 @@ impl OctreeNode {
 
         return output;
     }
-    // Check for intersection 
-    pub fn intersect_bounds(&self, min: veclib::Vector3::<f32>, max: veclib::Vector3::<f32>) -> bool {
+    // Check for intersection
+    pub fn intersect_bounds(&self, min: veclib::Vector3<f32>, max: veclib::Vector3<f32>) -> bool {
         let aabb = AABB {
             min,
             max,

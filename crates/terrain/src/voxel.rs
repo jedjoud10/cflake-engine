@@ -1,4 +1,4 @@
-use crate::{ISOLINE, MAIN_CHUNK_SIZE, utils};
+use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
 use assets::AssetManager;
 use rendering::{Shader, Texture, TextureFilter, TextureType};
 use std::time::Instant;
@@ -44,20 +44,32 @@ impl VoxelGenerator {
     pub fn setup_voxel_generator(&mut self) {
         // Create the voxel texture
         self.voxel_texture = Texture::new()
-            .set_dimensions(TextureType::Texture3D((MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16))
+            .set_dimensions(TextureType::Texture3D(
+                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 2) as u16,
+            ))
             .set_idf(gl::R32F, gl::RED, gl::FLOAT)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
         self.material_texture = Texture::new()
-            .set_dimensions(TextureType::Texture3D((MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16))
+            .set_dimensions(TextureType::Texture3D(
+                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 2) as u16,
+            ))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
         self.color_texture = Texture::new()
-            .set_dimensions(TextureType::Texture3D((MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16, (MAIN_CHUNK_SIZE+2) as u16))
+            .set_dimensions(TextureType::Texture3D(
+                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 2) as u16,
+            ))
             .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
@@ -70,7 +82,7 @@ impl VoxelGenerator {
         shader.use_shader();
         shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
         shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
-        shader.set_i32("chunk_size", &(((MAIN_CHUNK_SIZE+2)) as i32));
+        shader.set_i32("chunk_size", &((MAIN_CHUNK_SIZE + 2) as i32));
         shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(position));
         shader.set_i32("node_size", &(size as i32));
         shader.set_i32("depth", &(depth as i32));
@@ -81,7 +93,11 @@ impl VoxelGenerator {
         };
         // Dispatch the compute shader, don't read back the data immediatly
         compute
-            .run_compute(((MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1))
+            .run_compute((
+                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
+                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
+                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
+            ))
             .unwrap();
     }
     // Read back the data from the compute shader
@@ -92,7 +108,7 @@ impl VoxelGenerator {
             rendering::AdditionalShader::Compute(c) => c,
             _ => panic!(),
         };
-        
+
         // Read back the compute shader data
         compute.get_compute_state().unwrap();
         // Second pass
@@ -101,7 +117,7 @@ impl VoxelGenerator {
         color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
         color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
         color_shader.set_t3d("material_sampler", &self.material_texture, gl::TEXTURE2);
-        color_shader.set_i32("chunk_size", &((MAIN_CHUNK_SIZE+2) as i32));
+        color_shader.set_i32("chunk_size", &((MAIN_CHUNK_SIZE + 2) as i32));
         color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(position));
         color_shader.set_i32("node_size", &(size as i32));
         color_shader.set_i32("depth", &(depth as i32));
@@ -112,8 +128,12 @@ impl VoxelGenerator {
         // Run the color compute shader
         let i = Instant::now();
         color_compute
-        .run_compute(((MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1))
-        .unwrap();
+            .run_compute((
+                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
+                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
+                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
+            ))
+            .unwrap();
         color_compute.get_compute_state().unwrap();
         // Read back the texture into the data buffer
         let voxel_pixels = self.voxel_texture.fill_array_elems::<f32>();
@@ -124,8 +144,8 @@ impl VoxelGenerator {
         let mut min = f32::MAX;
         let mut max = f32::MIN;
         // Turn the pixels into the data
-        let mut local_data: Box<[Voxel]> = Box::new([Voxel::default(); (MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)]);
-        let mut data: Box<[Voxel]> = Box::new([Voxel::default(); (MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)]);
+        let mut local_data: Box<[Voxel]> = Box::new([Voxel::default(); (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)]);
+        let mut data: Box<[Voxel]> = Box::new([Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)]);
         for (i, pixel) in voxel_pixels.iter().enumerate() {
             let density = *pixel;
             let material = material_pixels[i];
@@ -144,27 +164,28 @@ impl VoxelGenerator {
         }
         // Flatten using the custom size of MAIN_CHUNK_SIZE+2
         fn custom_flatten(x: usize, y: usize, z: usize) -> usize {
-            return x + (y * (MAIN_CHUNK_SIZE+2) * (MAIN_CHUNK_SIZE+2)) + (z * (MAIN_CHUNK_SIZE+2));
+            return x + (y * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)) + (z * (MAIN_CHUNK_SIZE + 2));
         }
         // Calculate the voxel normal
-        for x in 0..(MAIN_CHUNK_SIZE+1) {
-            for y in 0..(MAIN_CHUNK_SIZE+1) {
-                for z in 0..(MAIN_CHUNK_SIZE+1) {
+        for x in 0..(MAIN_CHUNK_SIZE + 1) {
+            for y in 0..(MAIN_CHUNK_SIZE + 1) {
+                for z in 0..(MAIN_CHUNK_SIZE + 1) {
                     let i = custom_flatten(x, y, z);
                     let v0 = local_data[i];
                     // Calculate the normal using the difference between neigboring voxels
-                    let v1 = local_data[custom_flatten(x+1, y, z)];
-                    let v2 = local_data[custom_flatten(x, y+1, z)];
-                    let v3 = local_data[custom_flatten(x, y, z+1)];
+                    let v1 = local_data[custom_flatten(x + 1, y, z)];
+                    let v2 = local_data[custom_flatten(x, y + 1, z)];
+                    let v3 = local_data[custom_flatten(x, y, z + 1)];
                     // Normal
                     let normal = veclib::Vector3::new(
                         v1.density as f32 - v0.density as f32,
                         v2.density as f32 - v0.density as f32,
-                        v3.density as f32 - v0.density as f32
-                    ).normalized();
+                        v3.density as f32 - v0.density as f32,
+                    )
+                    .normalized();
                     let mut voxel = local_data[i];
                     voxel.normal = normal;
-                    data[utils::flatten((x, y ,z))] = voxel; 
+                    data[utils::flatten((x, y, z))] = voxel;
                 }
             }
         }

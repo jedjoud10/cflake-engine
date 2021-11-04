@@ -5,7 +5,7 @@ use super::shapes;
 pub struct AABB {
     pub min: veclib::Vector3<f32>,
     pub max: veclib::Vector3<f32>,
-    pub center: veclib::Vector3<f32>
+    pub center: veclib::Vector3<f32>,
 }
 
 // Default AABB, just a unit cube with a center at 0,0,0
@@ -14,7 +14,7 @@ impl Default for AABB {
         Self {
             min: (veclib::Vector3::ONE / 2.0) - 1.0,
             max: (veclib::Vector3::ONE / 2.0),
-            center: veclib::Vector3::ZERO
+            center: veclib::Vector3::ZERO,
         }
     }
 }
@@ -25,14 +25,14 @@ impl AABB {
         Self {
             min: -veclib::Vector3::ONE,
             max: veclib::Vector3::ONE,
-            center: veclib::Vector3::ZERO
+            center: veclib::Vector3::ZERO,
         }
     }
     pub fn ndc_forward() -> Self {
         Self {
             min: veclib::Vector3::new(-1.0, -1.0, 0.0),
             max: veclib::Vector3::ONE,
-            center: veclib::Vector3::new(0.0, 0.0, 0.5)
+            center: veclib::Vector3::new(0.0, 0.0, 0.5),
         }
     }
 }
@@ -66,9 +66,9 @@ impl AABB {
     // Generate the AABB from a set of points
     pub fn from_vertices(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
         let mut aabb: Self = AABB {
-            min: veclib::Vector3::ONE*9999.0,
-            max: -veclib::Vector3::ONE*9999.0,
-            center: veclib::Vector3::ZERO
+            min: veclib::Vector3::ONE * 9999.0,
+            max: -veclib::Vector3::ONE * 9999.0,
+            center: veclib::Vector3::ZERO,
         };
         // Loop over the vertices
         for vertex in vertices.iter() {

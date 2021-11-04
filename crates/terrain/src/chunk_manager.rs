@@ -10,7 +10,7 @@ use rendering::{Model, Shader, Texture};
 use world_data::WorldData;
 
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
-use crate::{MAIN_CHUNK_SIZE, TModel, Voxel};
+use crate::{TModel, Voxel, MAIN_CHUNK_SIZE};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -28,7 +28,7 @@ pub struct ChunkManager {
     pub camera_location: veclib::Vector3<f32>,
     pub camera_forward_vector: veclib::Vector3<f32>,
     // The chunk entityies that are waiting for the chunks to finish generating until they can mass-add to the entity manager
-    pub pending_chunks: Vec<(ChunkCoords, TModel)>, 
+    pub pending_chunks: Vec<(ChunkCoords, TModel)>,
 }
 
 // Chunk manager. This is how each chunk entity is created

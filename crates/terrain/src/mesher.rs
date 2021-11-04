@@ -1,7 +1,7 @@
-use crate::MAIN_CHUNK_SIZE;
 use crate::TCase;
 use crate::TModel;
 use crate::ISOLINE;
+use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
 use super::Voxel;
@@ -65,7 +65,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                         let voxel1 = voxels[index1];
                         let voxel2 = voxels[index2];
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = if interpolation { inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32) } else { 0.5 };
+                        let value: f32 = if interpolation {
+                            inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
+                        } else {
+                            0.5
+                        };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
@@ -76,7 +80,9 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             let n = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
                             if n == veclib::Vector3::ZERO {
                                 veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, 0.5)
-                            } else { n }
+                            } else {
+                                n
+                            }
                         };
 
                         // Get the color
@@ -106,7 +112,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
                         }
                     }
-                }                
+                }
                 // Push this intersecting case
                 intersection_cases.push(TCase {
                     cube_position: veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32),
@@ -119,7 +125,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     // Create the skirts in a completely separate loop
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
-            
+
         }
     }
     // The skirts' models
@@ -169,13 +175,7 @@ pub enum SkirtVertex {
 }
 
 // Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(
-    data: &Box<[Voxel]>,
-    axis: veclib::Vec3Axis,
-    slice: usize,
-    density_offset: [usize; 4],
-    flip: bool,
-) -> Option<Vec<SkirtVertex>> {    
+pub fn solve_marching_squares(data: &Box<[Voxel]>, axis: veclib::Vec3Axis, slice: usize, density_offset: [usize; 4], flip: bool) -> Option<Vec<SkirtVertex>> {
     // Gotta reprogram this
     return None;
 }

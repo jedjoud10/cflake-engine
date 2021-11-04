@@ -28,7 +28,7 @@ impl AABB {
         // Offset the shit
         aabb.min += transform.position;
         aabb.max += transform.position;
-        // Scale it, the position is the center 
+        // Scale it, the position is the center
         aabb.scale(transform.position, transform.scale);
         // Recalculate the center
         aabb.center = (aabb.min + aabb.max) / 2.0;
@@ -44,18 +44,24 @@ impl AABB {
                 // Get the AABB of each sub model and take the biggest one
                 let mut aabb = math::bounds::AABB::from_vertices(&x.sub_models.get(0).unwrap().0.vertices);
                 for i in 1..(x.sub_models.len()) {
-                    let aabb2 = math::bounds::AABB::from_vertices(&x.sub_models.get(i).unwrap().0.vertices);     
+                    let aabb2 = math::bounds::AABB::from_vertices(&x.sub_models.get(i).unwrap().0.vertices);
                     aabb.min = aabb.min.min(aabb2.min);
                     aabb.max = aabb.max.max(aabb2.max);
                 }
                 aabb.center = (aabb.min + aabb.max) / 2.0;
-                Self { aabb: Self::offset(aabb, transform), ..Self::default() }
-            },
+                Self {
+                    aabb: Self::offset(aabb, transform),
+                    ..Self::default()
+                }
+            }
             None => {
                 let aabb = math::bounds::AABB::from_vertices(&renderer.model.vertices);
-                Self { aabb: Self::offset(aabb, transform), ..Self::default() }
-            },
-        }        
+                Self {
+                    aabb: Self::offset(aabb, transform),
+                    ..Self::default()
+                }
+            }
+        }
     }
 }
 

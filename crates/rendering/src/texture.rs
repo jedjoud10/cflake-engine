@@ -75,7 +75,7 @@ pub enum TextureShaderAccessType {
 }
 
 // A texture, could be 2D or 3D
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Texture {
     pub id: u32,
     pub name: String,
@@ -112,15 +112,12 @@ impl Asset for Texture {
         Self: Sized,
     {
         // Load this texture from the bytes
-        let png_bytes = data.bytes.as_bytes();
-        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
-        // Flip
-        let image = image.flipv();
+        let (bytes, width, height) = Self::read_bytes(data);
         // Return a texture with the default parameters
         let texture = Texture::new()
-            .set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16))
+            .set_dimensions(TextureType::Texture2D(width, height))
             .set_name(&data.name)
-            .generate_texture(image.to_bytes())
+            .generate_texture(bytes)
             .unwrap();
         return Some(texture);
     }
@@ -129,64 +126,29 @@ impl Asset for Texture {
     where
         Self: Sized,
     {
-        // Load this texture from the bytes
-        let png_bytes = data.bytes.as_bytes();
-        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).ok()?;
-        // Flip
-        let image = image.flipv();
-        let texture = self
-            .set_name(&data.name)
-            .set_dimensions(TextureType::Texture2D(image.width() as u16, image.height() as u16));
+        let (bytes, width, height) = Self::read_bytes(data);
+        let texture = self.set_name(&data.name).set_dimensions(TextureType::Texture2D(width, height));
         // Return a texture with the default parameters
-        println!("{}", image.to_bytes().len());
-        let texture = texture.generate_texture(image.to_bytes()).unwrap();
+        let texture = texture.generate_texture(bytes).unwrap();
         return Some(texture);
     }
-    // Load a texture from the bundled metadata
-    /*
-    fn from_resource(self, resource: &Resource) -> Option<Self> {
-        match resource {
-            Resource::Texture(texture, texture_name) => {
-                // Load either a 2D texture or a custom 3D texture
-                match self.ttype {
-                    TextureType::Texture2D(_, _) => {
-                        let width = texture.width;
-                        let height = texture.height;
-
-                        // Turn the compressed png bytes into their raw form
-                        let mut image = image::io::Reader::new(std::io::Cursor::new(&texture.compressed_bytes));
-                        image.set_format(image::ImageFormat::Png);
-                        let decoded = image.with_guessed_format().unwrap().decode().unwrap();
-                        // Well it seems like the images are flipped vertically so I have to manually flip them
-                        let decoded = decoded.flipv();
-                        // Read the image as a 32 bit image
-                        let rgba8_image = decoded.to_rgba8();
-
-                        // Set the proper dimensions and generate the texture from the resource's bytes
-                        let mut texture = self.set_dimensions(TextureType::Texture2D(width, height));
-                        // Set the texture name since the texture has an empty name
-                        texture.name = texture_name.clone();
-                        let new_texture = texture.generate_texture(rgba8_image.as_bytes().to_vec()).unwrap();
-                        texture = new_texture;
-                        Some(texture)
-                    }
-                    TextureType::Texture3D(_, _, _) => todo!(),
-                    TextureType::TextureArray(_, _, _) => todo!(),
-                }
-            }
-            _ => None,
-        }
-    }
-    */
 }
 
 impl Object for Texture {}
 
-// Loading / caching stuff
 impl Texture {
     // New
     pub fn new() -> Self {
         Self::default()
+    }
+    // Read the texture bytes from a specific AssetMetadata
+    fn read_bytes(metadata: &AssetMetadata) -> (Vec<u8>, u16, u16) {
+        // Load this texture from the bytes
+        let png_bytes = metadata.bytes.as_bytes();
+        let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+        // Flip
+        let image = image.flipv();
+        return (image.to_bytes(), image.width() as u16, image.height() as u16);
     }
 }
 
@@ -297,6 +259,24 @@ impl Texture {
         let texture = texture.set_wrapping_mode(opt.wrapping);
         return texture;
     }
+    // Create a texture array from multiple texture paths (They must have the same dimensions!)
+    pub fn create_texturearray(self, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Rc<Texture> {
+        // Load the textures
+        let mut bytes: Vec<u8> = Vec::new();
+        let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
+        let length = texture_paths.len();
+        for x in texture_paths {
+            let (bytesa, x, y) = Self::read_bytes(asset_manager.asset_cacher.load_md(x).unwrap());
+            // Check if the dimensions are valid
+            if x != width || y != height {
+                panic!()
+            }
+            bytes.extend(bytesa);
+        }
+        // Create the array texture from THOSE NUTS AAAAA
+        let main_texture: Texture = Texture::new().set_dimensions(TextureType::TextureArray(width, height, length as u16)).set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE).set_name(name).generate_texture(bytes).unwrap();
+        main_texture.object_cache_load(name, &mut asset_manager.object_cacher)
+    }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, errors::RenderingError> {
         let mut pointer: *const c_void = null();
@@ -347,28 +327,24 @@ impl Texture {
                         );
                     }
                     // This is a texture array
-                    TextureType::TextureArray(_, _, _) => {
-                        gl::TexStorage3D(
-                            tex_type,
-                            1,
-                            self.internal_format,
-                            self.get_width() as i32,
-                            self.get_height() as i32,
-                            self.get_depth() as i32,
-                        );
-                        gl::TexSubImage3D(
-                            tex_type,
-                            0,
-                            0,
-                            0,
-                            0,
-                            self.get_width() as i32,
-                            self.get_height() as i32,
-                            self.get_depth() as i32,
-                            self.format,
-                            self.data_type,
-                            pointer,
-                        );
+                    TextureType::TextureArray(x, y, l) => {
+                        gl::TexStorage3D(tex_type, 1, self.internal_format, x as i32, y as i32, l as i32);
+                        // We might want to do mipmap
+                        for x in 0..l {
+                            gl::TexSubImage3D(
+                                tex_type,
+                                0,
+                                0,
+                                0,
+                                x as i32,
+                                self.get_width() as i32,
+                                self.get_height() as i32,
+                                self.get_depth() as i32,
+                                self.format,
+                                self.data_type,
+                                pointer,
+                            );
+                        }
                     }
                 }
                 // Set the texture parameters for a normal texture
