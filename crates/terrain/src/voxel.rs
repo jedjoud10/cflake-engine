@@ -92,7 +92,7 @@ impl VoxelGenerator {
             rendering::AdditionalShader::Compute(c) => c,
             _ => panic!(),
         };
-        let i = Instant::now();
+        
         // Read back the compute shader data
         compute.get_compute_state().unwrap();
         // Second pass
@@ -110,14 +110,16 @@ impl VoxelGenerator {
             _ => todo!(),
         };
         // Run the color compute shader
+        let i = Instant::now();
         color_compute
-            .run_compute(((MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1))
-            .unwrap();
+        .run_compute(((MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1, (MAIN_CHUNK_SIZE+2) as u32 / 8 + 1))
+        .unwrap();
         color_compute.get_compute_state().unwrap();
         // Read back the texture into the data buffer
         let voxel_pixels = self.voxel_texture.fill_array_elems::<f32>();
         let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
         let color_pixels = self.color_texture.fill_array_veclib::<veclib::Vector4<u8>, u8>();
+        println!("{}", i.elapsed().as_millis());
         // Keep track of the min and max values
         let mut min = f32::MAX;
         let mut max = f32::MIN;

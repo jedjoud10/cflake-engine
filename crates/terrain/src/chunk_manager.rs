@@ -108,10 +108,6 @@ impl ChunkManager {
             );
         }
 
-        if frame_count % 2 != 0 {
-            //return (Vec::new(), Vec::new());
-        }
-
         // This chunk will always have a valid model and chunk data
         let mut final_chunk: Option<(ChunkData, TModel)> = None;
         let x = self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0);
