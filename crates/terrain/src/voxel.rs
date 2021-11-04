@@ -115,8 +115,8 @@ impl VoxelGenerator {
         let color_shader = &mut self.color_compute;
         color_shader.use_shader();
         color_shader.set_i3d("color_image", &self.color_texture, rendering::TextureShaderAccessType::WriteOnly);
-        color_shader.set_t3d("voxel_sampler", &self.voxel_texture, gl::TEXTURE1);
-        color_shader.set_t3d("material_sampler", &self.material_texture, gl::TEXTURE2);
+        color_shader.set_t3d("voxel_sampler", &self.voxel_texture, 1);
+        color_shader.set_t3d("material_sampler", &self.material_texture, 2);
         color_shader.set_i32("chunk_size", &((MAIN_CHUNK_SIZE + 2) as i32));
         color_shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(position));
         color_shader.set_i32("node_size", &(size as i32));

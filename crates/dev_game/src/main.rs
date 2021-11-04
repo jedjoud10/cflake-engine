@@ -90,16 +90,13 @@ pub fn world_initialized(world: &mut World) {
     // Material
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
-        .load_diffuse("defaults\\textures\\missing_texture.png", None, &mut data.asset_manager)
-        .load_normal("defaults\\textures\\rock_normals.png", None, &mut data.asset_manager)
-        .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.7))
-        .0;
+        .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.7));
+    let texture = Texture::create_texturearray(None, vec!["defaults\\textures\\missing_texture.png", "defaults\\textures\\rock_diffuse.png"], data.asset_manager, 512, 512);
     let bound_materials = vec![
         material.instantiate(data.instance_manager),
         material
             .instantiate(data.instance_manager)
-            .set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE * 0.02))
-            .0,
+            .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.02)),
     ];
     terrain_entity
         .link_component::<components::TerrainData>(

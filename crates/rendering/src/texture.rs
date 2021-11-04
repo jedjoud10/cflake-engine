@@ -93,7 +93,7 @@ impl Default for Texture {
         Self {
             id: 0,
             name: String::new(),
-            internal_format: gl::RGBA,
+            internal_format: gl::RGBA8,
             format: gl::RGBA,
             data_type: gl::UNSIGNED_BYTE,
             flags: TextureFlags::empty(),
@@ -116,6 +116,7 @@ impl Asset for Texture {
         // Return a texture with the default parameters
         let texture = Texture::new()
             .set_dimensions(TextureType::Texture2D(width, height))
+            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_name(&data.name)
             .generate_texture(bytes)
             .unwrap();
@@ -253,28 +254,38 @@ impl Texture {
         self
     }
     // Apply the texture load options on a texture
-    pub fn apply_texture_load_options(mut self, opt: Option<TextureLoadOptions>) -> Texture {
+    pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Texture {
         let opt = opt.unwrap_or_default();
         let texture = self.set_filter(opt.filter);
         let texture = texture.set_wrapping_mode(opt.wrapping);
         return texture;
     }
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    pub fn create_texturearray(self, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Rc<Texture> {
+    pub fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Rc<Texture> {
         // Load the textures
         let mut bytes: Vec<u8> = Vec::new();
         let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
         let length = texture_paths.len();
         for x in texture_paths {
-            let (bytesa, x, y) = Self::read_bytes(asset_manager.asset_cacher.load_md(x).unwrap());
-            // Check if the dimensions are valid
-            if x != width || y != height {
-                panic!()
-            }
+            // Load this texture from the bytes
+            let metadata = asset_manager.asset_cacher.load_md(x).unwrap();
+            let png_bytes = metadata.bytes.as_bytes();
+            let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+            // Resize the image so it fits the dimension criteria
+            let image = image.resize_exact(width as u32, height as u32, image::imageops::FilterType::Gaussian);
+            // Flip
+            let image = image.flipv();
+            let bytesa = image.to_bytes();
             bytes.extend(bytesa);
         }
         // Create the array texture from THOSE NUTS AAAAA
-        let main_texture: Texture = Texture::new().set_dimensions(TextureType::TextureArray(width, height, length as u16)).set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE).set_name(name).generate_texture(bytes).unwrap();
+        let main_texture: Texture = Texture::new()
+            .set_dimensions(TextureType::TextureArray(width, height, length as u16))
+            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
+            .set_name(name)
+            .apply_texture_load_options(load_options)
+            .generate_texture(bytes)
+            .unwrap();
         main_texture.object_cache_load(name, &mut asset_manager.object_cacher)
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
@@ -328,23 +339,26 @@ impl Texture {
                     }
                     // This is a texture array
                     TextureType::TextureArray(x, y, l) => {
-                        gl::TexStorage3D(tex_type, 1, self.internal_format, x as i32, y as i32, l as i32);
+                        println!("{} {} {}", x, y, l);
+                        gl::TexStorage3D(tex_type, 10, self.internal_format, x as i32, y as i32, l as i32);
+                        /*
                         // We might want to do mipmap
                         for x in 0..l {
                             gl::TexSubImage3D(
-                                tex_type,
+                                gl::TEXTURE_2D_ARRAY,
                                 0,
                                 0,
                                 0,
                                 x as i32,
                                 self.get_width() as i32,
                                 self.get_height() as i32,
-                                self.get_depth() as i32,
+                                1,
                                 self.format,
                                 self.data_type,
                                 pointer,
                             );
                         }
+                        */
                     }
                 }
                 // Set the texture parameters for a normal texture

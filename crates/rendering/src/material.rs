@@ -1,4 +1,4 @@
-use crate::{DefaultUniform, Shader, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
+use crate::{Uniform, Shader, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
 use assets::{Asset, AssetManager, Object};
 use bitflags::bitflags;
 use std::{collections::HashMap, rc::Rc};
@@ -16,7 +16,7 @@ pub struct Material {
     pub shader: Option<Rc<Shader>>,
     pub material_name: String,
     pub flags: MaterialFlags,
-    pub default_uniforms: Vec<(String, DefaultUniform)>,
+    pub default_uniforms: Vec<(String, Uniform)>,
     // The default texture ID
     pub diffuse_tex: Option<Rc<Texture>>,
     pub normal_tex: Option<Rc<Texture>>,
@@ -36,9 +36,9 @@ impl Default for Material {
             visible: true,
         };
         // Set the default shader args
-        let material = material.set_uniform("uv_scale", DefaultUniform::Vec2F32(veclib::Vector2::ONE)).0;
-        let material = material.set_uniform("tint", DefaultUniform::Vec3F32(veclib::Vector3::ONE)).0;
-        let material = material.set_uniform("normals_strength", DefaultUniform::F32(1.0)).0;
+        let material = material.set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE));
+        let material = material.set_uniform("tint", Uniform::Vec3F32(veclib::Vector3::ONE));
+        let material = material.set_uniform("normals_strength", Uniform::F32(1.0));
         return material;
     }
 }
@@ -94,13 +94,17 @@ impl Material {
         return self;
     }
     // Set a default uniform
-    pub fn set_uniform(mut self, uniform_name: &str, uniform: DefaultUniform) -> (Self, usize) {
-        let i = self.default_uniforms.len();
+    pub fn set_uniform(mut self, uniform_name: &str, uniform: Uniform) -> Self {
         self.default_uniforms.push((uniform_name.to_string(), uniform));
-        return (self, i);
+        return self;
+    }
+    // Set a default uniform but also it's inxed
+    pub fn set_uniform_i(mut self, uniform_name: &str, uniform: Uniform) -> (Self, usize) {
+        let i = self.default_uniforms.len();
+        return (self.set_uniform(uniform_name, uniform), i);
     }
     // Update a default uniform
-    pub fn update_uniform(&mut self, uniform_index: usize, new_uniform: DefaultUniform) {
+    pub fn update_uniform(&mut self, uniform_index: usize, new_uniform: Uniform) {
         let name = self.default_uniforms.get(uniform_index).unwrap().0.clone();
         self.default_uniforms[uniform_index] = (name, new_uniform);
     }

@@ -125,7 +125,7 @@ impl Volumetric {
         let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
         shader.set_i2d("result_tex", &self.result_tex, crate::TextureShaderAccessType::WriteOnly);
         shader.set_i2d("depth_tex", &self.depth_tex, crate::TextureShaderAccessType::WriteOnly);
-        shader.set_t3d("sdf_tex", &self.sdf_tex, gl::TEXTURE2);
+        shader.set_t3d("sdf_tex", &self.sdf_tex, 2);
         shader.set_vec3f32("camera_pos", &camera_position);
         shader.set_mat44("custom_vp_matrix", &vp_m);
         shader.set_mat44("projection_matrix", &projection_matrix);

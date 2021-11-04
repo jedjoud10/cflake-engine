@@ -164,23 +164,24 @@ impl CustomData {
         for uniform in material.default_uniforms.iter() {
             let name = uniform.0.as_str();
             match &uniform.1 {
-                rendering::DefaultUniform::F32(x) => shader.set_f32(name, x),
-                rendering::DefaultUniform::I32(x) => shader.set_i32(name, x),
-                rendering::DefaultUniform::Vec2F32(x) => shader.set_vec2f32(name, x),
-                rendering::DefaultUniform::Vec3F32(x) => shader.set_vec3f32(name, x),
-                rendering::DefaultUniform::Vec4F32(x) => shader.set_vec4f32(name, x),
-                rendering::DefaultUniform::Vec2I32(x) => shader.set_vec2i32(name, x),
-                rendering::DefaultUniform::Vec3I32(x) => shader.set_vec3i32(name, x),
-                rendering::DefaultUniform::Vec4I32(x) => shader.set_vec4i32(name, x),
-                rendering::DefaultUniform::Mat44F32(x) => shader.set_mat44(name, x),
-                rendering::DefaultUniform::Texture2D(x, y) => panic!(),
-                rendering::DefaultUniform::Texture3D(x, y) => panic!(),
+                rendering::Uniform::F32(x) => shader.set_f32(name, x),
+                rendering::Uniform::I32(x) => shader.set_i32(name, x),
+                rendering::Uniform::Vec2F32(x) => shader.set_vec2f32(name, x),
+                rendering::Uniform::Vec3F32(x) => shader.set_vec3f32(name, x),
+                rendering::Uniform::Vec4F32(x) => shader.set_vec4f32(name, x),
+                rendering::Uniform::Vec2I32(x) => shader.set_vec2i32(name, x),
+                rendering::Uniform::Vec3I32(x) => shader.set_vec3i32(name, x),
+                rendering::Uniform::Vec4I32(x) => shader.set_vec4i32(name, x),
+                rendering::Uniform::Mat44F32(x) => shader.set_mat44(name, x),
+                rendering::Uniform::Texture2D(x, y) => shader.set_t2d(name, x.as_ref(), *y),
+                rendering::Uniform::Texture3D(x, y) => shader.set_t3d(name, x.as_ref(), *y),
+                rendering::Uniform::Texture2DArray(x, y) => shader.set_t2da(name, x.as_ref(), *y),
             }
         }
 
         // Set the textures
-        shader.set_t2d("diffuse_tex", material.diffuse_tex.as_ref().unwrap(), gl::TEXTURE0);
-        shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), gl::TEXTURE1);
+        shader.set_t2d("diffuse_tex", material.diffuse_tex.as_ref().unwrap(), 0);
+        shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), 1);
 
         // Draw normally
         if gpu_data.initialized {
@@ -383,11 +384,11 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
     shader.set_vec3f32("directional_light_dir", &data.custom_data.light_dir);
     // Textures
-    shader.set_t2d("diffuse_texture", &system.diffuse_texture, gl::TEXTURE0);
-    shader.set_t2d("normals_texture", &system.normals_texture, gl::TEXTURE1);
-    shader.set_t2d("position_texture", &system.position_texture, gl::TEXTURE2);
-    shader.set_t2d("depth_texture", &system.depth_texture, gl::TEXTURE3);
-    shader.set_t2d("default_sky_gradient", data.custom_data.sky_texture.as_ref().unwrap(), gl::TEXTURE5);
+    shader.set_t2d("diffuse_texture", &system.diffuse_texture, 0);
+    shader.set_t2d("normals_texture", &system.normals_texture, 1);
+    shader.set_t2d("position_texture", &system.position_texture, 2);
+    shader.set_t2d("depth_texture", &system.depth_texture, 3);
+    shader.set_t2d("default_sky_gradient", data.custom_data.sky_texture.as_ref().unwrap(), 5);
     let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
     shader.set_mat44("custom_vp_matrix", &vp_m);
     // Other params

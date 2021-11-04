@@ -222,7 +222,7 @@ impl Shader {
 
 // Some default uniforms that we will set
 #[derive(Clone)]
-pub enum DefaultUniform {
+pub enum Uniform {
     // Singles
     F32(f32),
     I32(i32),
@@ -235,8 +235,9 @@ pub enum DefaultUniform {
     Vec4I32(veclib::Vector4<i32>),
     Mat44F32(veclib::Matrix4x4<f32>),
     // Others
-    Texture2D(usize, u32),
-    Texture3D(usize, u32),
+    Texture2D(Rc<Texture>, u32),
+    Texture3D(Rc<Texture>, u32),
+    Texture2DArray(Rc<Texture>, u32),
 }
 
 // Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh
@@ -303,18 +304,18 @@ impl Shader {
     pub fn set_t2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::ActiveTexture(active_texture_id);
+            gl::ActiveTexture(active_texture_id + 33984);
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            gl::Uniform1i(u, active_texture_id as i32 - 33984);
+            gl::Uniform1i(u, active_texture_id as i32);
         }
     }
     // Set a 3D texture
     pub fn set_t3d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::ActiveTexture(active_texture_id);
+            gl::ActiveTexture(active_texture_id + 33984);
             gl::BindTexture(gl::TEXTURE_3D, texture.id);
-            gl::Uniform1i(u, active_texture_id as i32 - 33984);
+            gl::Uniform1i(u, active_texture_id as i32);
         }
     }
     // Set a 2D image
@@ -375,6 +376,15 @@ impl Shader {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
             gl::Uniform4i(u, vec[0], vec[1], vec[2], vec[3]);
+        }
+    }
+    // Set a texture2d array
+    pub fn set_t2da(&self, name: &str, texture: &Texture, active_texture_id: u32) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::ActiveTexture(active_texture_id);
+            gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.id);
+            gl::Uniform1i(u, active_texture_id as i32 - 33984);
         }
     }
 }

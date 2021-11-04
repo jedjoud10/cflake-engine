@@ -83,7 +83,7 @@ impl CustomData {
             // Set the default panel arguments
             self.set_default_draw_arguments(element_data, shader);
             // Set the atlas texture and the character padding
-            shader.set_t2d("atlas_texture", font.texture.as_ref().unwrap(), gl::TEXTURE0);
+            shader.set_t2d("atlas_texture", font.texture.as_ref().unwrap(), 0);
             // Set the font char padding in the shader
             let min_padding: veclib::Vector2<f32> = char.min.into();
             let max_padding: veclib::Vector2<f32> = char.max.into();
