@@ -10,13 +10,8 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     int texture_id = 0;
     int biome_id = 0;
     int hardness = 0;
-    float sphere = sdSphere(pos, 5);
-    float box = sdBox(pos + vec3(60, 0, 0), vec3(10, 10, 10));
-    float rbox = sdRoundBox(pos - vec3(60, 0, 0), vec3(10, 10, 10), 3);
-    float p = pos.y - 0.5 + snoise(pos * 0.004) * 20;
-    float d = min(sphere, min(box, min(rbox, p)));
     // Write the result
-    voxel = Voxel(-mountain(pos.xz * 0.01, 0.2).x * 600 + pos.y);
+    voxel = Voxel(pos.y);
     material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
 }
 // Generate the Vertex Color, Smoothness, Metallic and Material ID

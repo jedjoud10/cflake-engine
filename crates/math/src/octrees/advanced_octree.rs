@@ -79,10 +79,21 @@ impl AdvancedOctree {
             let root_node = self.internal_octree.get_root_node();
             self.internal_octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
             println!("Took '{}' micros to generate base octree", t.elapsed().as_micros());
-            let added_nodes: Vec<OctreeNode> = self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
-            self.combined_nodes = added_nodes.iter().map(|x| x.clone()).collect();
+            let mut added_nodes: Vec<OctreeNode> = self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
             self.generated_base_octree = true;
-            return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
+            match self.subdivide_twin_rule {
+                Some(x) => {
+                    // Further subdivision
+                    let y = Self::calculate_combined_nodes(x, target, &self.internal_octree.nodes, lod_factor, self.internal_octree.depth);
+                    added_nodes = y.clone().into_iter().collect();
+                    self.combined_nodes = y;
+                    return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
+                },
+                None => {
+                    self.combined_nodes = added_nodes.iter().map(|x| x.clone()).collect();
+                    return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
+                },
+            }
         }
         // If we don't have a target node don't do anything
         if self.internal_octree.target_node.is_none() {
