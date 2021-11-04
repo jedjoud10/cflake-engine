@@ -27,6 +27,8 @@ pub struct ChunkManager {
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>,
     pub camera_forward_vector: veclib::Vector3<f32>,
+    // The chunk entityies that are waiting for the chunks to finish generating until they can mass-add to the entity manager
+    pub pending_chunks: Vec<(ChunkCoords, TModel)>, 
 }
 
 // Chunk manager. This is how each chunk entity is created
@@ -78,7 +80,7 @@ impl ChunkManager {
         self.camera_forward_vector = forward_vector;
     }
     // Update the chunk manager
-    pub fn update(&mut self, voxel_generator: &mut VoxelGenerator, frame_count: u64) -> (Vec<(ChunkCoords, TModel)>, Vec<usize>) {
+    pub fn update(&mut self, voxel_generator: &mut VoxelGenerator, frame_count: u64) -> Option<(Vec<(ChunkCoords, TModel)>, Vec<usize>)> {
         // Check if we are currently generating the chunks
         if self.chunks_to_generate.len() > 0 {
             // We are generating
@@ -105,8 +107,6 @@ impl ChunkManager {
                 veclib::Vector3::new(chunk_to_generate.size as f32, chunk_to_generate.size as f32, chunk_to_generate.size as f32),
             );
         }
-        // Generate the data for some chunks, then create their model
-        let mut new_chunks: Vec<(ChunkCoords, TModel)> = Vec::new();
 
         if frame_count % 2 != 0 {
             //return (Vec::new(), Vec::new());
@@ -149,22 +149,23 @@ impl ChunkManager {
             }
             None => {}
         }
-        let mut entities_to_remove: Vec<usize> = Vec::new();
 
         // The system was flawed...
         match final_chunk {
             Some((data, model)) => {
                 self.chunks.insert(data.coords.center.clone());
-                new_chunks.push((data.coords, model));
+                self.pending_chunks.push((data.coords, model));
             }
             None => {}
         }
 
         // Remove the entities after all the new ones got generated
         if self.chunks_to_generate.len() == 0 {
-            entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();
+            let entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();
             self.entities_to_remove.clear();
+            let yoinked = std::mem::replace(&mut self.pending_chunks, Vec::new());
+            return Some((yoinked, entities_to_remove));
         }
-        return (new_chunks, entities_to_remove);
+        return None;
     }
 }

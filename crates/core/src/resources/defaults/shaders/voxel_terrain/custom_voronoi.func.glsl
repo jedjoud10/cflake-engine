@@ -17,7 +17,7 @@ vec3 custom_cellular(vec3 pos) {
                 float d = distance(get_sphere_location(neighbor_coord), pos);
                 if (d < min_distance) {
                     min_distance = d;
-                    value = vec3(d, hash13(neighbor_coord), 0.0);
+                    value = vec3(d, hash13(neighbor_coord), mod(d, 0.2));
                 }
             }
         }

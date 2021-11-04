@@ -84,69 +84,66 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     }
 
     // Update the chunk manager
-    let (added_chunks, removed_chunks) = td.chunk_manager.update(&mut td.voxel_generator, data.time_manager.frame_count);
-    let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
+    match td.chunk_manager.update(&mut td.voxel_generator, data.time_manager.frame_count) {
+        Some((added_chunks, removed_chunks)) => {
+            let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
 
-    // Add the entities to the entity manager
-    for (coords, tmodel) in added_chunks {
-        // Add the entity
-        let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
-        let mut entity = Entity::new(name.as_str());
-
-        // Create the chunk component
-        let chunk = Chunk { coords: coords.clone() };
-        // Link the components
-        entity.link_component::<Chunk>(data.component_manager, chunk).unwrap();
-        // Transform
-        entity
-            .link_component::<components::Transform>(
-                data.component_manager,
-                components::Transform {
-                    position: veclib::Vector3::<f32>::from(coords.position),
-                    scale: veclib::Vector3::new((coords.size / octree_size) as f32, (coords.size / octree_size) as f32, (coords.size / octree_size) as f32),
-                    ..components::Transform::default()
-                },
-            )
-            .unwrap();
-        // Multi Material Renderer
-        let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bound_materials.clone());
-        // Add the sub models into the Multi Material renderer
-        for (material_id, sub_model) in tmodel.shader_model_hashmap {
-            mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);
-        }
-        for (material_id, skirt_model) in tmodel.skirt_models {
-            // Don't forget the skirts
-            mm_renderer = mm_renderer.add_submodel_m(skirt_model, material_id as usize);
-        }
-        // Refresh the data
-        mm_renderer.refresh_sub_models();
-        let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
-        entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
-        // Create the AABB
-        let aabb = components::AABB::from_components(&entity, data.component_manager);
-        entity.link_component::<components::AABB>(data.component_manager, aabb).unwrap();
-        let entity_id = data.entity_manager.add_entity_s(entity);
-        added_chunk_entities_ids.push((entity_id, coords.clone()));
-    }
-
-    // Reassign
-    let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
-    for (entity_id, coords) in added_chunk_entities_ids {
-        td.chunk_manager.add_chunk_entity(&coords, entity_id);
-    }
-
-    for entity_id in removed_chunks {
-        // Removal the entity from the world
-        data.entity_manager.remove_entity_s(entity_id).unwrap();
-    }
-
-    for node in system.nodes.iter() {
-        let debug: debug::DefaultDebugRendererType = debug::DefaultDebugRendererType::CUBE(node.get_center().into(), veclib::Vector3::<f32>::ONE * (node.half_extent as f32) * 2.0);
-        if node.children_indices.is_some() {
-            //data.debug.renderer.debug_default(debug, veclib::Vector3::ONE, false);
-        }
-    }
-
+            // Add the entities to the entity manager
+            for (coords, tmodel) in added_chunks {
+                // Add the entity
+                let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
+                let mut entity = Entity::new(name.as_str());
+        
+                // Create the chunk component
+                let chunk = Chunk { coords: coords.clone() };
+                // Link the components
+                entity.link_component::<Chunk>(data.component_manager, chunk).unwrap();
+                // Transform
+                entity
+                    .link_component::<components::Transform>(
+                        data.component_manager,
+                        components::Transform {
+                            position: veclib::Vector3::<f32>::from(coords.position),
+                            scale: veclib::Vector3::new((coords.size / octree_size) as f32, (coords.size / octree_size) as f32, (coords.size / octree_size) as f32),
+                            ..components::Transform::default()
+                        },
+                    )
+                    .unwrap();
+                // Multi Material Renderer
+                let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bound_materials.clone());
+                // Add the sub models into the Multi Material renderer
+                for (material_id, sub_model) in tmodel.shader_model_hashmap {
+                    mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);
+                }
+                for (material_id, skirt_model) in tmodel.skirt_models {
+                    // Don't forget the skirts
+                    mm_renderer = mm_renderer.add_submodel_m(skirt_model, material_id as usize);
+                }
+                // Refresh the data
+                mm_renderer.refresh_sub_models();
+                let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
+                entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
+                // Create the AABB
+                let aabb = components::AABB::from_components(&entity, data.component_manager);
+                entity.link_component::<components::AABB>(data.component_manager, aabb).unwrap();
+                let entity_id = data.entity_manager.add_entity_s(entity);
+                added_chunk_entities_ids.push((entity_id, coords.clone()));
+            }
+        
+            // Reassign
+            let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
+            for (entity_id, coords) in added_chunk_entities_ids {
+                td.chunk_manager.add_chunk_entity(&coords, entity_id);
+            }
+        
+            for entity_id in removed_chunks {
+                // Removal the entity from the world
+                data.entity_manager.remove_entity_s(entity_id).unwrap();
+            }
+        
+        },
+        None => {},
+    }    
     // Update stats
     system.terrain_stats.best_update_speed = system.terrain_stats.best_update_speed.min(t.elapsed().as_millis());
     system.terrain_stats.worst_update_speed = system.terrain_stats.worst_update_speed.max(t.elapsed().as_millis());
