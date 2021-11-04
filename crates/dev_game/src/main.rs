@@ -70,14 +70,6 @@ pub fn world_initialized(world: &mut World) {
     )
     .unwrap();
 
-    let color_compute = Shader::new(
-        vec!["defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl"],
-        data.asset_manager,
-        Some(AdditionalShader::Compute(ComputeShader::default())),
-        Some(vec!["defaults\\shaders\\voxel_terrain\\voxel.func.glsl"]),
-    )
-    .unwrap();
-
     // The terrain shader
     let terrain_shader = Shader::new(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl"],
@@ -90,18 +82,37 @@ pub fn world_initialized(world: &mut World) {
     // Material
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)
+        .set_uniform("normals_strength", Uniform::F32(2.0))
         .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.7));
-    let texture = Texture::create_texturearray(None, vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"], data.asset_manager, 512, 512);
+    let texture = Texture::create_texturearray(
+        None,
+        vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"],
+        data.asset_manager,
+        512,
+        512,
+    );
+    let texture2 = Texture::create_texturearray(
+        None,
+        vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"],
+        data.asset_manager,
+        512,
+        512,
+    );
     let bound_materials = vec![
-        material.instantiate(data.instance_manager).set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0)),
         material
             .instantiate(data.instance_manager)
-            .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.02)),
+            .set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0))
+            .set_uniform("normals_textures", Uniform::Texture2DArray(texture2, 1))
+            .set_uniform("material_id", Uniform::I32(0)),
+        material
+            .instantiate(data.instance_manager)
+            .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.02))
+            .set_uniform("material_id", Uniform::I32(1)),
     ];
     terrain_entity
         .link_component::<components::TerrainData>(
             data.component_manager,
-            components::TerrainData::new(compute, color_compute, OCTREE_DEPTH, bound_materials, None),
+            components::TerrainData::new(compute, OCTREE_DEPTH, bound_materials, None),
         )
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);

@@ -85,9 +85,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             }
                         };
 
-                        // Get the color
-                        let color: veclib::Vector3<f32> = { veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value) } / 255.0;
-
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32, u8) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -102,11 +99,10 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             e.insert(model.vertices.len() as u32);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
-                            model.uvs.push(veclib::Vector2::<f32>::ZERO);
-                            let c: veclib::Vector3<f32> = lv.color.into();
-                            model.colors.push(color);
                             model.normals.push(normal.normalized());
-                            model.tangents.push(veclib::Vector4::<f32>::ZERO);
+                            model.uvs.push(veclib::Vector2::ZERO);
+                            model.tangents.push(veclib::Vector4::ZERO);
+                            model.colors.push(veclib::Vector3::ZERO);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
@@ -121,13 +117,16 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
             }
         }
     }
+    // Create the base-X skirt
     /*
-    // Create the skirts in a completely separate loop
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
 
         }
     }
+    */
+    /*
+    // Create the skirts in a completely separate loop
     // The skirts' models
     let mut skirt_models: HashMap<u8, Model> = HashMap::new();
     for (shader_id, (model, shared_vertices)) in sub_model_hashmap.iter() {
@@ -175,7 +174,14 @@ pub enum SkirtVertex {
 }
 
 // Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(data: &Box<[Voxel]>, axis: veclib::Vec3Axis, slice: usize, density_offset: [usize; 4], flip: bool) -> Option<Vec<SkirtVertex>> {
-    // Gotta reprogram this
+pub fn solve_marching_squares(case: u8, local_skirt_voxels: &[Voxel], flip: bool) -> Option<Vec<SkirtVertex>> {
+    // Create the triangles from the local skirts
+    match case {
+        1 => {
+            
+        }
+        0 | 15 => { /* Empty cases */ }
+        _ => { /* Case number is unsuported */ }
+    }
     return None;
 }

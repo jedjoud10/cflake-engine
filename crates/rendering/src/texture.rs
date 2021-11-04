@@ -340,7 +340,7 @@ impl Texture {
                     }
                     // This is a texture array
                     TextureType::TextureArray(x, y, l) => {
-                        gl::TexStorage3D(tex_type, 10, self.internal_format, x as i32, y as i32, l as i32);                        
+                        gl::TexStorage3D(tex_type, 10, self.internal_format, x as i32, y as i32, l as i32);
                         // We might want to do mipmap
                         for i in 0..l {
                             let localized_bytes = bytes[(i as usize * y as usize * 4 * x as usize)..bytes.len()].as_ptr() as *const c_void;
@@ -357,7 +357,7 @@ impl Texture {
                                 self.data_type,
                                 localized_bytes,
                             );
-                        }                        
+                        }
                     }
                 }
                 // Set the texture parameters for a normal texture

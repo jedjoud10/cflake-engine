@@ -6,17 +6,8 @@
 #include "defaults\shaders\voxel_terrain\sdf.func.glsl"
 // Generate the voxel data here
 void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_voxel) {
-    // Actual function for voxels
-    int shader_id = 0;
-    int texture_id = 0;
-    int biome_id = 0;
-    int hardness = 0;
+    int material_id = 0;
     // Write the result
     voxel = Voxel(pos.y + -mountain(pos.xz * 0.008, 0.2).x * 800 + 400);
-    material_voxel = MaterialVoxel(shader_id, texture_id, biome_id, hardness);
-}
-// Generate the Vertex Color, Smoothness, Metallic and Material ID
-void get_color_voxel(vec3 pos, vec3 local_uv, Voxel voxel, MaterialVoxel material_voxel, int depth, out ColorVoxel color_voxel) {
-    vec3 color = vec3(1, 1, 1);  
-    color_voxel = ColorVoxel(color);
+    material_voxel = MaterialVoxel(material_id);
 }

@@ -1,4 +1,4 @@
-use crate::{Uniform, Shader, Texture, TextureFilter, TextureLoadOptions, TextureWrapping};
+use crate::{Shader, Texture, TextureFilter, TextureLoadOptions, TextureWrapping, Uniform};
 use assets::{Asset, AssetManager, Object};
 use bitflags::bitflags;
 use std::{collections::HashMap, rc::Rc};

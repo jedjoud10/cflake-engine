@@ -92,16 +92,16 @@ impl World {
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\erosion.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\color_voxel.cmpt.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\custom_voronoi.func.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\material.func.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_shader.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl", cacher);
         // Textures
         preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png", cacher);
         preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
-        // Load default bindings
         preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png", cacher);
+        preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png", cacher);
+        // Load default bindings
         self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
@@ -278,8 +278,7 @@ impl World {
         }
     }
     // Check for default key map events
-    fn check_default_input_events(&mut self, _window: &mut glfw::Window, _glfw: &mut glfw::Glfw) {
-    }
+    fn check_default_input_events(&mut self, _window: &mut glfw::Window, _glfw: &mut glfw::Glfw) {}
     // Update the console
     fn update_console(&mut self) {
         // Check if we should start key registering if the console is active

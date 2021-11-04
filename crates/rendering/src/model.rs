@@ -162,7 +162,7 @@ impl Model {
                 self.normals.as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
             );
-
+            
             // And it's brother, the tangent buffer
             gl::GenBuffers(1, &mut gpu_data.tangent_buf);
             gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
