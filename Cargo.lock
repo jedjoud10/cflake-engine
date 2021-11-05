@@ -704,7 +704,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "terrain_density"
+name = "terrain_interpreter"
 version = "0.1.0"
 
 [[package]]

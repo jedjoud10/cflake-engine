@@ -24,7 +24,7 @@ members = [
     "crates\\defaults",
     "crates\\others",
     "crates\\assets",
-    "crates\\terrain_density",
+    "crates\\terrain_interpreter",
     "crates\\terrain",
     "crates\\ui",
     "crates\\io",
