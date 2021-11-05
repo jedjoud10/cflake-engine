@@ -44,7 +44,7 @@ impl VoxelGenerator {
                 (MAIN_CHUNK_SIZE + 2) as u16,
                 (MAIN_CHUNK_SIZE + 2) as u16,
             ))
-            .set_idf(gl::R8, gl::RED, gl::UNSIGNED_BYTE)
+            .set_idf(gl::RG8, gl::RG, gl::UNSIGNED_BYTE)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
@@ -76,7 +76,7 @@ impl VoxelGenerator {
             .unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) -> (bool, Box<[Voxel]>) {
+    pub fn generate_voxels_end(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) -> (bool, Box<[Voxel]>) {        
         let shader = &mut self.compute;
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
@@ -88,13 +88,13 @@ impl VoxelGenerator {
         compute.get_compute_state().unwrap();        
         // Read back the texture into the data buffer
         let voxel_pixels = self.voxel_texture.fill_array_elems::<f32>();
-        let material_pixels = self.material_texture.fill_array_elems::<u8>();
+        let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector2<u8>, u8>();
         // Keep track of the min and max values
         let mut min = f32::MAX;
         let mut max = f32::MIN;
         // Turn the pixels into the data
-        let mut local_data: Box<[(f32, u8)]> = Box::new([(0.0, 0); (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)]);
-        let mut data: Box<[Voxel]> = Box::new([Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)]);
+        let mut local_data: Box<[(f32, u8, u8)]> = vec![(0.0, 0, 0); (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)].into_boxed_slice();
+        let mut data: Box<[Voxel]> = vec![Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)].into_boxed_slice();
         for (i, pixel) in voxel_pixels.iter().enumerate() {
             let density = *pixel;
             let material = material_pixels[i];
@@ -102,7 +102,7 @@ impl VoxelGenerator {
             min = min.min(density);
             max = max.max(density);
             // Create the simplified voxel
-            let simplified_voxel_tuple = (density, material);
+            let simplified_voxel_tuple = (density, material.x, material.y);
             local_data[i] = simplified_voxel_tuple;
         }
         // Flatten using the custom size of MAIN_CHUNK_SIZE+2
@@ -126,9 +126,8 @@ impl VoxelGenerator {
                         v3.0 as f32 - v0.0 as f32,
                     )
                     .normalized();
-                    let mut sv = local_data[i];
-                    let a = unpack_material_id(v0.1);
-                    let voxel = Voxel { density: sv.0, normal: normal, shader_id: a.0, localized_material_id: a.1 };
+                    let sv = local_data[i];
+                    let voxel = Voxel { density: sv.0, normal: normal, shader_id: sv.1, localized_material_id: sv.2 };
                     data[utils::flatten((x, y, z))] = voxel;
                 }
             }
@@ -136,18 +135,4 @@ impl VoxelGenerator {
         // Only generate the mesh if we have a surface
         ((min < ISOLINE) != (max < ISOLINE), data)
     }
-}
-
-// Turn the material ID into a shader ID and a localized material ID (local to the current shader)
-pub fn unpack_material_id(material_id: u8) -> (u8, u8) {
-    let mut localized_material: u8 = 0;
-    let mut shader_id: u8 = 0;
-    if material_id < 128 {
-        // The first shader uses 128 materials
-        localized_material = material_id;
-        shader_id = 0;
-    }     
-    // The next shaders use 15 materials each
-    // The last shader uses 4 materials
-    return (shader_id, localized_material);
 }

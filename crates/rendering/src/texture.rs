@@ -431,8 +431,8 @@ impl Texture {
     {
         // Get the length of the vector
         let length: usize = match self.ttype {
-            TextureType::Texture2D(x, y) => (x * y) as usize,
-            TextureType::Texture3D(x, y, z) => (x * y * z) as usize,
+            TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
             TextureType::TextureArray(_, _, _) => todo!(),
         };
         // Create the vector
@@ -463,8 +463,8 @@ impl Texture {
     {
         // Get the length of the vector
         let length: usize = match self.ttype {
-            TextureType::Texture2D(x, y) => (x * y) as usize,
-            TextureType::Texture3D(x, y, z) => (x * y * z) as usize,
+            TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
             TextureType::TextureArray(_, _, _) => todo!(),
         };
         // Create the vector

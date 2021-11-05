@@ -20,12 +20,12 @@ void main() {
     pos += node_pos;              
     // Create the pixel value    
     Voxel voxel = Voxel(0.0);
-    MaterialVoxel material_voxel = MaterialVoxel(0);
+    MaterialVoxel material_voxel = MaterialVoxel(0, 0);
     get_voxel(pos, depth, voxel, material_voxel);    
     // Write the voxel pixel
     vec4 pixel = vec4(voxel.density, 0.0, 0.0, 0.0);        
     // Write the material pixel
     imageStore(voxel_image, pixel_coords, pixel);        
-    vec4 material_pixel = vec4(material_voxel.material_id/255, 0, 0, 0);
+    vec4 material_pixel = vec4(material_voxel.shader_id/255.0, material_voxel.material_id/255.0, 0, 0);
     imageStore(material_image, pixel_coords, material_pixel);  
 }

@@ -18,7 +18,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 // Generate the Marching Cubes model
 pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
-    let mut sub_model_hashmap: HashMap<u8, (Model, Vec<SkirtVertex>)> = HashMap::new();
+    let mut sub_model_hashmap: HashMap<u8, Model> = HashMap::new();
     let mut intersection_cases: Vec<TCase> = Vec::new();
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
@@ -31,8 +31,8 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                 let lv = voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
-                sub_model_hashmap.entry(lv.shader_id).or_insert((Model::default(), Vec::new()));
-                let (model, shared_vertices) = sub_model_hashmap.get_mut(&lv.shader_id).unwrap();
+                sub_model_hashmap.entry(lv.shader_id).or_insert(Model::default());
+                let model = sub_model_hashmap.get_mut(&lv.shader_id).unwrap();
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
@@ -102,7 +102,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
                             model.normals.push(normal.normalized());
                             model.uvs.push(veclib::Vector2::ZERO);
                             model.tangents.push(veclib::Vector4::ZERO);
-                            model.colors.push(veclib::Vector3::ZERO);
+                            model.colors.push(veclib::Vector3::ONE);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
@@ -156,13 +156,9 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
         }
     }
     */
-    let new_model_hashmap = sub_model_hashmap
-        .into_iter()
-        .map(|(shader_id, (model, _))| (shader_id, model))
-        .collect::<HashMap<u8, Model>>();
     // Return the model
     return TModel {
-        shader_model_hashmap: new_model_hashmap,
+        shader_model_hashmap: sub_model_hashmap,
         skirt_models: HashMap::new(),
         intersection_cases: Some(intersection_cases),
     };

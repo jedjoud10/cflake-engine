@@ -32,11 +32,6 @@ pub struct ChunkManager {
 }
 
 // Chunk manager. This is how each chunk entity is created
-// 1. Add the ChunkCoords to the chunk_to_generate list
-// TODO: 1.5: Check if the chunk could exist in the first place (d = y - 5.0, and funny shit)
-// 2. Generate the data for that model using a compute shader
-// 2. Generate the model for that chunk in another frame
-// 3. Get the
 impl ChunkManager {
     // Are we allowed to update the octree?
     pub fn octree_update_valid(&self) -> bool {
