@@ -1,27 +1,29 @@
 use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
-use crate::{Node, var_hash::{VarHash, VarHashType}};
+use crate::{Node, nodes::base_position::BasePosition, var_hash::{VarHash, VarHashType}};
 
 // The main system that will be made from multiple densities and combiners
-pub struct System {
-    pub nodes: Vec<Box<dyn Node>>,
+pub struct Interpreter {
+    pub nodes: Vec<Node>,
     pub vars: Vec<VarHash>,
 }
 
-impl Default for System {
+impl Default for Interpreter {
     fn default() -> Self {
         // Create the default starter node
-        Self { 
+        let mut default = Self { 
             nodes: Vec::new(),
             vars: Vec::new()
-        }
+        };
+        default.add(Node::new_base::<BasePosition>());
+        default
     }
 }
 
 // Add nodes
-impl System {
+impl Interpreter {
     // Add a specific node to the system
-    pub fn add<T: Node>(&mut self, node: T) -> &VarHash {
+    pub fn add(&mut self, node: Node) -> &VarHash {
         let id = self.vars.len();
         // Get the hash
         let hash = {

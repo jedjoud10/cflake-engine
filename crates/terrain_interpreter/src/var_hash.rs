@@ -7,6 +7,11 @@ pub struct VarHash {
 }
 
 pub enum VarHashType {
+    // Density values are complitely different than normal values
     Density,
-    Position,
+    // Multiple values
+    Float,
+    Vec2,
+    Vec3,
+
 }
