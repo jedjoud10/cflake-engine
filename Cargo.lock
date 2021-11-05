@@ -704,6 +704,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "terrain_density"
+version = "0.1.0"
+
+[[package]]
 name = "tiff"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
