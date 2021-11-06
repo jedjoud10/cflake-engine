@@ -5,13 +5,13 @@ pub enum DensityOperationType {
 }
 
 impl NodeInterpreter for DensityOperationType {
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> String {
+    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
         // Check if we are using density inputs in the first place
         if inputs.iter().any(|x| match x._type {
             crate::var_hash::VarHashType::Density => false /* This is what we want */,
             _ => true
         }) { panic!() }
-        // Get the HLSL name of the operation and combine with the two inputs
+        // Get the GLSL name of the operation and combine with the two inputs
         match &self {
             DensityOperationType::Union => format!("min({}, {})", inputs[0].get_name(), inputs[1].get_name()),
             DensityOperationType::Intersection => format!("max({}, -{})", inputs[0].get_name(), inputs[1].get_name()),

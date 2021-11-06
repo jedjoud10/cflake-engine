@@ -6,8 +6,8 @@ pub struct FinalDensity {
 }
 
 impl NodeInterpreter for FinalDensity {
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> String {
-        // Create the HLSL string for this node, so we can make a variable out of it
+    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
+        // Create the GLSL string for this node, so we can make a variable out of it
         inputs[0].get_name()
     }
 

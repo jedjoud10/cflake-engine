@@ -16,8 +16,8 @@ impl Default for SNoise {
 }
 
 impl NodeInterpreter for SNoise {
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> String {
-        // Create the HLSL string for this node, so we can make a variable out of it
+    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
+        // Create the GLSL string for this node, so we can make a variable out of it
         format!("snoise({} * {}) * {}", inputs[0].get_name(), self.scale, self.strength)
     }
 
