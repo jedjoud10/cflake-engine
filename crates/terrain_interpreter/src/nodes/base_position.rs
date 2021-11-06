@@ -6,12 +6,12 @@ pub struct BasePosition {
 }
 
 impl NodeInterpreter for BasePosition {
-    fn get_node_string(&self, inputs: Vec<VarHash>) -> String {
+    fn get_node_string(&self, inputs: &Vec<VarHash>) -> String {
         // Create the HLSL string for this node, so we can make a variable out of it
         "pos".to_string()
     }
 
-    fn calculate_influence(&self) -> Influence {
+    fn calculate_influence(&self, inputs: &Vec<Influence>) -> Influence {
         // Default influence
         Influence::Default
     }

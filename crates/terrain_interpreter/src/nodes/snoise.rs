@@ -16,12 +16,12 @@ impl Default for SNoise {
 }
 
 impl NodeInterpreter for SNoise {
-    fn get_node_string(&self, inputs: Vec<VarHash>) -> String {
+    fn get_node_string(&self, inputs: &Vec<VarHash>) -> String {
         // Create the HLSL string for this node, so we can make a variable out of it
         format!("snoise({} * {}) * {}", inputs[0].get_name(), self.scale, self.strength)
     }
 
-    fn calculate_influence(&self) -> Influence {
+    fn calculate_influence(&self, inputs: &Vec<Influence>) -> Influence {
         // Modified influence
         // Normal range is between -1, 1
         Influence::Modified(-self.strength, self.strength)

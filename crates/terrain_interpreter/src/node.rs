@@ -8,9 +8,9 @@ pub trait NodeInterpreter {
         interpreter.add(self, inputs)
     }
     // Get the string that defines this node
-    fn get_node_string(&self, inputs: Vec<VarHash>) -> String;
+    fn get_node_string(&self, inputs: &Vec<VarHash>) -> String;
     // Calculate the influence of this node
-    fn calculate_influence(&self) -> Influence;
+    fn calculate_influence(&self, inputs: &Vec<Influence>) -> Influence;
     // Get the output varhash type
     fn get_output_type(&self) -> VarHashType {
         VarHashType::Density

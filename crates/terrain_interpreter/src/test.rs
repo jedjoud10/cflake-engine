@@ -1,7 +1,7 @@
 // Testing time
 #[cfg(test)]
 mod test {
-    use crate::{Interpreter, NodeInterpreter, nodes::{base_position::BasePosition, snoise::SNoise}};
+    use crate::{Interpreter, NodeInterpreter, nodes::{base_position::BasePosition, density_operations::DensityOperationType, snoise::SNoise, splitter::Splitter}};
 
     #[test]
     pub fn nodes() {
@@ -13,9 +13,11 @@ mod test {
         // Create an snoise node
         let snoise = SNoise::default().new(vec![p], &mut interpreter);
         let snoise2 = SNoise::default().new(vec![p], &mut interpreter);
+        let splitter = Splitter::X.new(vec![p], &mut interpreter);
+        let value = DensityOperationType::Union.new(vec![snoise, splitter], &mut interpreter);
 
         // Finalize this test interpreter with the density value of the snoise
-        interpreter.finalize(snoise);
+        interpreter.finalize(value);
         println!("{}", interpreter.read_hlsl().unwrap());
     }
 }
