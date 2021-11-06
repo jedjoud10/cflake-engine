@@ -706,6 +706,9 @@ dependencies = [
 [[package]]
 name = "terrain_interpreter"
 version = "0.1.0"
+dependencies = [
+ "math",
+]
 
 [[package]]
 name = "tiff"

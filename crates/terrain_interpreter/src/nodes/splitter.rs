@@ -1,4 +1,4 @@
-use crate::{Influence, NodeInterpreter, var_hash::{VarHash, VarHashType}};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}};
 
 // How we split the vectors
 pub enum Splitter {
@@ -9,7 +9,15 @@ pub enum Splitter {
 }
 
 impl NodeInterpreter for Splitter {
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> String {
+    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
+        // 
+        match self {
+            Splitter::X => {},
+            Splitter::Y => {},
+            Splitter::Z => {
+                let valid = inputs.iter().any();
+            },
+        }
         // Split the input
         match self {
             Splitter::X => format!("{}.x", inputs[0].get_name()),
@@ -22,6 +30,6 @@ impl NodeInterpreter for Splitter {
         todo!()
     }
     fn get_output_type(&self) -> VarHashType {
-        VarHashType::Density
+        VarHashType::Float
     }
 }

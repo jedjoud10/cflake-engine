@@ -1,5 +1,7 @@
 use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
+use math::bounds::AABB;
+
 use crate::{Influence, NodeInterpreter, nodes::{base_position::BasePosition, final_density::FinalDensity}, var_hash::{VarHash, VarHashType}};
 
 // The main system that will be made from multiple densities and combiners
@@ -35,7 +37,7 @@ impl Interpreter {
         let var_hash = VarHash { name: id, _type: boxed.get_output_type() };
         self.vars.push(var_hash.clone());
         // Create a variable for this node
-        let line = format!("{} {} = {};", var_hash._type.to_hlsl_type(), boxed.custom_name(var_hash.get_name()), boxed.get_node_string(&inputs));
+        let line = format!("{} {} = {};", var_hash._type.to_glsl_type(), boxed.custom_name(var_hash.get_name()), boxed.get_node_string(&inputs));
         self.lines.push(line);
         (*self.vars.get(id).unwrap()).clone()
     }
@@ -51,11 +53,15 @@ impl Interpreter {
             _ => { /* No good */ panic!() }
         }
     }
-    // Read back the HLSL data from this interpreter
-    pub fn read_hlsl(&self) -> Option<String> {
+    // Read back the GLSL data from this interpreter
+    pub fn read_glsl(&self) -> Option<String> {
         // Check if we finalized
         if !self.finalized { return None; }
         //lines.reverse();
         return Some(self.lines.join("\n"));
+    }
+    // Read back the bound intersection AABB for this interpreter
+    pub fn read_aabb(&self) -> Option<AABB> {
+        None
     }
 }

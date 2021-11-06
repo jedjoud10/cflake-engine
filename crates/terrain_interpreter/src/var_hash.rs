@@ -7,6 +7,8 @@ pub struct VarHash {
 
 #[derive(Clone, Copy)]
 pub enum VarHashType {
+    // Can be a boolean in case of a condition
+    Bool,
     // Density values are complitely different than normal values
     Density,
     // Multiple values
@@ -19,15 +21,17 @@ impl VarHashType {
     // Convert this var hash type to a string prefix
     pub fn to_string(&self) -> String {
         match &self {
+            VarHashType::Bool => "b",
             VarHashType::Density => "d",
             VarHashType::Float => "v1",
             VarHashType::Vec2 => "v2",
             VarHashType::Vec3 => "v3",
         }.to_string()
     }
-    // Get the HLSL type for this var hash type
-    pub fn to_hlsl_type(&self) -> String {
+    // Get the GLSL type for this var hash type
+    pub fn to_glsl_type(&self) -> String {
         match &self {
+            VarHashType::Bool => "bool",
             VarHashType::Density => "float",
             VarHashType::Float => "float",
             VarHashType::Vec2 => "vec2",
