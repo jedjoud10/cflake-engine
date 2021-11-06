@@ -94,7 +94,6 @@ impl Shader {
         let mut shader = Self::default();
         // Create the shader name
         shader.name = subshader_paths.join("__");
-        let name = shader.name.clone();
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
