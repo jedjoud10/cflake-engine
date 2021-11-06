@@ -56,11 +56,9 @@ impl DebugRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
         // Set the shader name
-        self.shader = Shader::new(
+        self.shader = Shader::new().load_shader(
             vec!["defaults\\shaders\\others\\debug.vrsh.glsl", "defaults\\shaders\\others\\debug.frsh.glsl"],
             asset_manager,
-            None,
-            None,
         )
         .unwrap();
     }

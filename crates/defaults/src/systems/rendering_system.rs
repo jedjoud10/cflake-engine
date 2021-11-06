@@ -39,11 +39,9 @@ impl CustomData {
         quad_renderer_component.model = Model::asset_load_easy("defaults\\models\\screen_quad.mdl3d", &mut data.asset_manager.asset_cacher).unwrap();
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
-            Shader::new(
+            Shader::new().load_shader(
                 vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
                 &mut data.asset_manager,
-                None,
-                None,
             )
             .unwrap()
             .cache(data.asset_manager),
@@ -313,21 +311,17 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
 
     data.custom_data.sky_texture = Some(texture);
     // Load the default shader
-    let default_shader = Shader::new(
+    let default_shader = Shader::new().load_shader(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"],
         data.asset_manager,
-        None,
-        None,
     )
     .unwrap()
     .cache(data.asset_manager);
 
     // Load the wireframe shader
-    system.wireframe_shader = Shader::new(
+    system.wireframe_shader = Shader::new().load_shader(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
         data.asset_manager,
-        None,
-        None,
     )
     .unwrap();
     // Default material

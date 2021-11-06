@@ -62,23 +62,16 @@ pub fn world_initialized(world: &mut World) {
     const OCTREE_DEPTH: u8 = 6;
 
     // Load the compute shaders
-    let compute = Shader::new(
+    let compute = Shader::new().set_additional_shader(AdditionalShader::Compute(ComputeShader::default())).load_shader(
         vec!["defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl"],
         data.asset_manager,
-        Some(AdditionalShader::Compute(ComputeShader::default())),
-        Some(vec!["defaults\\shaders\\voxel_terrain\\voxel.func.glsl"]),
-    )
-    .unwrap();
+    ).unwrap();
 
     // The terrain shader
-    let terrain_shader = Shader::new(
+    let terrain_shader = Shader::new().load_shader(
         vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl"],
         data.asset_manager,
-        None,
-        None,
-    )
-    .unwrap()
-    .cache(&mut data.asset_manager);
+    ).unwrap().cache(&mut data.asset_manager);
     // Material
     let material = Material::new("Terrain material", &mut data.asset_manager)
         .set_shader(terrain_shader)

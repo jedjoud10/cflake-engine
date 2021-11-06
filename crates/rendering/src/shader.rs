@@ -20,6 +20,7 @@ pub struct Shader {
     pub finalized: bool,
     pub linked_subshaders_programs: Vec<(SubShaderType, u32)>,
     pub additional_shader: AdditionalShader,
+    pub additional_shader_paths: Vec<String>
 }
 
 impl Default for Shader {
@@ -31,6 +32,7 @@ impl Default for Shader {
                 finalized: false,
                 linked_subshaders_programs: Vec::new(),
                 additional_shader: AdditionalShader::None,
+                additional_shader_paths: Vec::new(),
             }
         }
     }
@@ -45,7 +47,7 @@ impl Object for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(lines: Vec<String>, asset_manager: &'a AssetManager, included_paths: &mut HashSet<String>, additional_shader_paths: Option<&Vec<&str>>) -> Vec<String> {
+    fn load_includes<'a>(&self, lines: Vec<String>, asset_manager: &'a AssetManager, included_paths: &mut HashSet<String>) -> Vec<String> {
         let mut included_lines: Vec<String> = Vec::new();
         for line in lines.iter() {
             // Check if this is an include statement
@@ -62,38 +64,47 @@ impl Shader {
                 }
             }
             // Custom path include statement
-            match additional_shader_paths {
-                Some(paths) => {
-                    if line.starts_with("#includep") {
-                        // Get the local path ID
-                        let c = line.split("#includep ").collect::<Vec<&str>>()[1];
-                        let local_path_id = &c[2..(c.len() - 2)].parse::<usize>().unwrap();
-                        let path = paths[*local_path_id];
-                        if !included_paths.contains(&path.to_string()) {
-                            // Load the function shader text
-                            included_paths.insert(path.to_string());
-                            let text = asset_manager.asset_cacher.load_text(path).unwrap();
-                            let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                            included_lines.extend(new_lines);
-                        }
-                    }
-                }
-                None => {}
+            if self.additional_shader_paths.len() > 0 {
+                if line.starts_with("#includep") {
+                    // Get the local path ID
+                    let c = line.split("#includep ").collect::<Vec<&str>>()[1];
+                    let local_path_id = &c[2..(c.len() - 2)].parse::<usize>().unwrap();
+                    let path = self.additional_shader_paths.get(*local_path_id).unwrap();
+                    if !included_paths.contains(&path.to_string()) {
+                        // Load the function shader text
+                        included_paths.insert(path.to_string());
+                        let text = asset_manager.asset_cacher.load_text(&path).unwrap();
+                        let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+                        included_lines.extend(new_lines);
+                    } 
+                }                
             }
         }
         // Return the included lines and the original lines that are without the include statement
         return included_lines;
     }
-    // Creates a shader from multiple subshader files, no automatic caching though
-    pub fn new<'a>(
+    // Create a new empty shader
+    pub fn new() -> Self {
+        Self::default()
+    }
+    // Set an additional shader for this shader before we finalize it
+    pub fn set_additional_shader(mut self, additional_shader: AdditionalShader) -> Self {
+        self.additional_shader = additional_shader;
+        self
+    }
+    // Set the additional shader paths that we might need later
+    pub fn set_additional_shader_paths(mut self, additional_shader_paths: Vec<&str>) -> Self {
+        self.additional_shader_paths = additional_shader_paths.into_iter().map(|x| x.to_string()).collect();
+        self
+    }
+    // Creates a shader from multiple subshader files
+    pub fn load_shader<'a>(
+        mut self,
         subshader_paths: Vec<&str>,
         asset_manager: &'a mut AssetManager,
-        additional_shader: Option<AdditionalShader>,
-        additional_shader_paths: Option<Vec<&str>>,
     ) -> Option<Self> {
-        let mut shader = Self::default();
         // Create the shader name
-        shader.name = subshader_paths.join("__");
+        self.name = subshader_paths.join("__");
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
@@ -101,7 +112,7 @@ impl Shader {
             if asset_manager.object_cacher.cached(subshader_path) {
                 let rc_subshader = SubShader::object_load_o(subshader_path, &asset_manager.object_cacher);
                 let subshader = rc_subshader.as_ref();
-                shader.link_subshader(subshader);
+                self.link_subshader(subshader);
             } else {
                 // It was not cached, so we need to cache it
                 let mut subshader = SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap())?;
@@ -125,11 +136,11 @@ impl Shader {
                     // Get the lines
                     let lines = shader_sources_to_evalute[0].clone();
                     // Recursively load the includes
-                    let orignal_local_included_lines = Self::load_includes(lines.clone(), asset_manager, &mut included_paths, additional_shader_paths.as_ref());
+                    let orignal_local_included_lines = self.load_includes(lines.clone(), asset_manager, &mut included_paths);
                     // Extend from the start of the vector
-                    let mut local_indluded_lines = orignal_local_included_lines.clone();
-                    local_indluded_lines.extend(included_lines);
-                    included_lines = local_indluded_lines.clone();
+                    let mut local_included_lines = orignal_local_included_lines.clone();
+                    local_included_lines.extend(included_lines);
+                    included_lines = local_included_lines.clone();
 
                     shader_sources_to_evalute.remove(0);
                     // Check if the added included lines aren't empty
@@ -152,16 +163,14 @@ impl Shader {
                 // Cache it, and link it
                 let rc_subshader = asset_manager.object_cacher.cache(subshader_path, subshader).ok()?;
                 let _subshader = rc_subshader.as_ref();
-                shader.link_subshader(_subshader);
+                self.link_subshader(_subshader);
                 // Unload the resource since we just cached the shader
                 //resource_manager.unload_resouce(subshader_path);
             }
-        }
-        // Set the additional shader
-        shader.additional_shader = additional_shader.unwrap_or(AdditionalShader::None);
+        }        
         // Finalize the shader and cache it
-        shader.finalize_shader();
-        return Some(shader);
+        self.finalize_shader();
+        return Some(self);
     }
     // Cache this shader
     pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {
@@ -170,7 +179,7 @@ impl Shader {
         return shader;
     }
     // Finalizes a vert/frag shader by compiling it
-    pub fn finalize_shader(&mut self) {
+    fn finalize_shader(&mut self) {
         unsafe {
             // Finalize the shader and stuff
             gl::LinkProgram(self.program);
@@ -200,7 +209,7 @@ impl Shader {
 
             self.finalized = true;
         }
-    }
+    }    
     // Use this shader for rendering a specific entity
     pub fn use_shader(&self) {
         // Check if the program even was finalized and ready for use
