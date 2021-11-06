@@ -15,4 +15,8 @@ impl NodeInterpreter for BasePosition {
         // Default influence
         Influence::Default
     }
+
+    fn get_output_type(&self) -> crate::var_hash::VarHashType {
+        crate::var_hash::VarHashType::Vec3
+    }
 }

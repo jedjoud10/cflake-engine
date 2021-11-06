@@ -1,44 +1,23 @@
-use crate::{Influence, var_hash::VarHash};
+use crate::{Influence, Interpreter, var_hash::{VarHash, VarHashType}};
 
 // A singular node that consists of a position and an exit density
 pub trait NodeInterpreter {
+    // Creata a new node
+    fn new(self, inputs: Vec<VarHash>, interpreter: &mut Interpreter) -> VarHash where Self: Sized {
+        // Add
+        interpreter.add(self, inputs)
+    }
     // Get the string that defines this node
     fn get_node_string(&self, inputs: Vec<VarHash>) -> String;
     // Calculate the influence of this node
     fn calculate_influence(&self) -> Influence;
-}
-
-// A node
-pub struct Node {
-    // Node variables
-    pub strength: f32,
-    // Inputs
-    pub inputs: Vec<VarHash>,
-    // Outputs
-    pub output: Vec<VarHash>,
-    // Custom interpreter
-    pub node_interpreter: Box<dyn NodeInterpreter>
-}
-
-impl Node {
-    // Create a node from inputs and a node interpreter
-    pub fn new<T: NodeInterpreter + 'static>(strength: f32, inputs: Vec<VarHash>, node_interpreter: T) -> Self {
-        let boxed = Box::new(node_interpreter);
-        Self {
-            strength,
-            inputs,
-            output: Vec::new(),
-            node_interpreter: boxed,
-        }
+    // Get the output varhash type
+    fn get_output_type(&self) -> VarHashType {
+        VarHashType::Density
     }
-    // Create the base node for the interpreter
-    pub fn new_base<T: NodeInterpreter + Default + 'static>() -> Self {
-        let boxed = Box::new(T::default());
-        Self {
-            strength: 1.0,
-            inputs: Vec::new(),
-            output: Vec::new(),
-            node_interpreter: boxed,
-        }
+    // Custom name
+    fn custom_name(&self, name: String) -> String {
+        // Default is passthrough
+        name
     }
 }
