@@ -1,5 +1,10 @@
 #version 460 core
-#includep {"0"}
+#include "defaults\shaders\others\hashes.func.glsl"
+#include "defaults\shaders\voxel_terrain\custom_voronoi.func.glsl"
+#include "defaults\shaders\voxel_terrain\noise.func.glsl"
+#include "defaults\shaders\voxel_terrain\erosion.func.glsl"
+#include "defaults\shaders\voxel_terrain\data.func.glsl"
+#include "defaults\shaders\voxel_terrain\sdf.func.glsl"
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(binding = 0) writeonly uniform image3D material_image;
@@ -8,6 +13,17 @@ layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
 layout(location = 4) uniform int chunk_size;
 layout(location = 5) uniform int depth;
+
+// Generate the voxel data here
+void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_voxel) {
+    int shader_id = 0;
+    int material_id = 0;
+
+    #include_custom {"0"}
+    // Write the result
+    voxel = Voxel(final_density);
+    material_voxel = MaterialVoxel(shader_id, material_id);
+}
 
 void main() {
     // Get the pixel coord

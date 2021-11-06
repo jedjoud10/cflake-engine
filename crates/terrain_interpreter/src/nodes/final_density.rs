@@ -17,6 +17,6 @@ impl NodeInterpreter for FinalDensity {
     }
     // Custom name
     fn custom_name(&self, name: String) -> String {
-        format!("{}_{}", "final_density".to_string(), name)
+        format!("{}", "final_density".to_string())
     }
 }

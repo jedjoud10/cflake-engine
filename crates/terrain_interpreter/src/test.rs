@@ -18,6 +18,10 @@ mod test {
 
         // Finalize this test interpreter with the density value of the snoise
         interpreter.finalize(value);
-        println!("{}", interpreter.read_hlsl().unwrap());
+        let hlsl = interpreter.read_hlsl().unwrap();
+        let lines = hlsl.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+        println!("{}", hlsl);
+        assert_eq!("vec3 v3_0 = pos;", lines[0]);
+        assert_eq!("float d_1 = snoise(v3_0 * 0.001) * 1;", lines[1]);
     }
 }
