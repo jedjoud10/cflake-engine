@@ -202,7 +202,6 @@ impl AdvancedOctree {
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
         let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
-        println!("{}", t.elapsed().as_micros());
         return Some((added_nodes, removed_nodes, total));
     }
 }

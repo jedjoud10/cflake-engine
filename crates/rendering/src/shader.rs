@@ -79,6 +79,8 @@ impl Shader {
         // Add the newly included lines at their respective index
         let mut offset = 0; 
         for (i, included_lines) in vectors_to_insert.iter() {
+            // Remove the include 
+            //lines.remove(*i);
             for x in 0..included_lines.len() {
                 let new_index = x + offset + *i;
                 lines.insert(new_index, included_lines[x].clone());
@@ -124,9 +126,10 @@ impl Shader {
                 // Included lines
                 let mut included_lines: Vec<String> = lines;
                 // Include the sources until no sources can be included
-                while Self::load_includes(&self, &mut included_lines, asset_manager, &mut included_paths) {
+                Self::load_includes(&self, &mut included_lines, asset_manager, &mut included_paths);                
+                /*while Self::load_includes(&self, &mut included_lines, asset_manager, &mut included_paths) {
                     // We are still including paths
-                }
+                }*/
                 // Set the shader source for this shader
                 let extend_shader_source = included_lines.join("\n");
 
