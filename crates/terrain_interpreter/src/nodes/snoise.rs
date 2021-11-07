@@ -1,4 +1,4 @@
-use crate::{error::InterpreterError, var_hash::VarHash, Influence, NodeInterpreter};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // A Simplex-Noise node
 #[derive(Debug)]
@@ -14,17 +14,13 @@ impl Default for SNoise {
 }
 
 impl NodeInterpreter for SNoise {
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
+    fn get_node_string(&self, getter: &VarHashGetter) -> Result<String, InterpreterError> {
         // Check input real quick
-        let input = inputs.get(0).ok_or(InterpreterError::missing_input(0, self))?;
-        match input._type {
-            crate::var_hash::VarHashType::Vec3 => {}
-            _ => return Err(InterpreterError::input_err(input, 0, self, crate::var_hash::VarHashType::Vec3)),
-        }
+        let input = getter.get(0, VarHashType::Vec3)?;
         // Create the GLSL string for this node, so we can make a variable out of it
         Ok(format!("snoise({} * {}) * {}", input.get_name(), self.scale, self.strength))
     }
-    fn get_output_type(&self) -> crate::var_hash::VarHashType {
+    fn get_output_type(&self, inputs: &VarHashGetter) -> crate::var_hash::VarHashType {
         crate::var_hash::VarHashType::Density
     }
 }

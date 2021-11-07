@@ -5,3 +5,4 @@ pub mod density_operations;
 pub mod final_density;
 pub mod snoise;
 pub mod splitter;
+pub mod selector;

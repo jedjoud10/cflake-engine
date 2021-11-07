@@ -1,8 +1,4 @@
-use crate::{
-    error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    Influence, NodeInterpreter,
-};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // A comparator node (if)
 #[derive(Debug)]
@@ -15,20 +11,10 @@ pub enum Comparator {
 }
 
 impl NodeInterpreter for Comparator {
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
+    fn get_node_string(&self, getter: &VarHashGetter) -> Result<String, InterpreterError> {
         // Check if the two inputs are of type "Float"
-        let i0 = inputs.get(0).ok_or(InterpreterError::missing_input(0, self))?;
-        let i1 = inputs.get(1).ok_or(InterpreterError::missing_input(1, self))?;
-        match i0._type {
-            VarHashType::Bool => return Err(InterpreterError::input_err(i0, 0, self, VarHashType::Density)),
-            _ => {}
-        }
-        match i1._type {
-            VarHashType::Bool => return Err(InterpreterError::input_err(i1, 1, self, VarHashType::Density)),
-            _ => {}
-        }
-        let i0 = i0.get_name();
-        let i1 = i1.get_name();
+        let i0 = getter.get(0, VarHashType::Density)?.get_name();
+        let i1 = getter.get(1, VarHashType::Density)?.get_name();
         Ok(match self {
             Comparator::Equal => format!("{} == {}", i0, i1),
             Comparator::LessThan => format!("{} < {}", i0, i1),
@@ -37,7 +23,7 @@ impl NodeInterpreter for Comparator {
             Comparator::GreaterThanEqual => format!("{} >= {}", i0, i1),
         })
     }
-    fn get_output_type(&self) -> VarHashType {
+    fn get_output_type(&self, getter: &VarHashGetter) -> VarHashType {
         VarHashType::Bool
     }
 }

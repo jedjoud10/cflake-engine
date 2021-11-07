@@ -5,12 +5,7 @@ use std::{
 
 use math::bounds::AABB;
 
-use crate::{
-    error::InterpreterError,
-    nodes::{base_position::BasePosition, final_density::FinalDensity},
-    var_hash::{VarHash, VarHashType},
-    Influence, NodeInterpreter,
-};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::{base_position::BasePosition, final_density::FinalDensity}, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
@@ -38,13 +33,13 @@ impl Default for Interpreter {
 // Add nodes
 impl Interpreter {
     // Add a specific node to the system
-    pub fn add<T: NodeInterpreter>(&mut self, node_interpreter: T, inputs: Vec<VarHash>) -> Result<VarHash, InterpreterError> {
+    pub fn add<T: NodeInterpreter>(&mut self, node_interpreter: T, getter: VarHashGetter) -> Result<VarHash, InterpreterError> {
         let id = self.vars.len();
         // Create the var hash
         let boxed = Box::new(node_interpreter);
         let var_hash = VarHash {
             name: id,
-            _type: boxed.get_output_type(),
+            _type: boxed.get_output_type(&getter),
         };
         self.vars.push(var_hash.clone());
         // Create a variable for this node
@@ -52,7 +47,7 @@ impl Interpreter {
             "{} {} = {};",
             var_hash._type.to_glsl_type(),
             boxed.custom_name(var_hash.get_name()),
-            boxed.get_node_string(&inputs)?
+            boxed.get_node_string(&getter)?
         );
         self.lines.push(line);
         Ok((*self.vars.get(id).unwrap()).clone())
@@ -64,11 +59,11 @@ impl Interpreter {
             VarHashType::Density => {
                 // We can continue
                 self.finalized = true;
-                FinalDensity::default().new(vec![final_density_varhash], self);
+                FinalDensity::default().new(&[final_density_varhash], self);
             }
             _ => {
                 /* No good */
-                panic!()
+                panic!("Finalized node is not of type '{:?}'!", VarHashType::Density)
             }
         }
     }

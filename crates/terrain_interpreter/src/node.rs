@@ -1,28 +1,26 @@
-use crate::{
-    error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    Influence, Interpreter,
-};
+use crate::{Influence, Interpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // A singular node that consists of a position and an exit density
 pub trait NodeInterpreter {
-    // Creata a new node
-    fn new(self, inputs: Vec<VarHash>, interpreter: &mut Interpreter) -> Result<VarHash, InterpreterError>
-    where
-        Self: Sized,
-    {
-        // Add
-        interpreter.add(self, inputs)
-    }
-    // Get the string that defines this node
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError>;
-    // Get the output varhash type
-    fn get_output_type(&self) -> VarHashType {
-        VarHashType::Density
-    }
     // Custom name
     fn custom_name(&self, name: String) -> String {
         // Default is passthrough
         name
+    }
+    // Get the string that defines this node
+    fn get_node_string(&self, inputs: &VarHashGetter) -> Result<String, InterpreterError>;
+    // Get the output varhash type
+    fn get_output_type(&self, getter: &VarHashGetter) -> VarHashType;
+    // Creata a new node
+    fn new(self, inputs: &[VarHash], interpreter: &mut Interpreter) -> Result<VarHash, InterpreterError>
+    where
+        Self: Sized,
+    {
+        // Create the getter
+        let getter = VarHashGetter {
+            inputs: inputs.to_vec()
+        };
+        // Add
+        interpreter.add(self, getter)
     }
 }

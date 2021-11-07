@@ -1,27 +1,20 @@
-use crate::{
-    error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    Influence, NodeInterpreter,
-};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // Final density
 #[derive(Default, Debug)]
-pub struct FinalDensity {}
+pub struct FinalDensity();
 
 impl NodeInterpreter for FinalDensity {
-    fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
-        // Create the GLSL string for this node, so we can make a variable out of it
-        let input = inputs.get(0).ok_or(InterpreterError::missing_input(0, self))?;
-        match input._type {
-            VarHashType::Density => {}
-            _ => {
-                return Err(InterpreterError::input_err(input, 0, self, VarHashType::Density));
-            }
-        }
-        Ok(input.get_name())
-    }
     // Custom name
     fn custom_name(&self, name: String) -> String {
         format!("{}", "final_density".to_string())
+    }
+    fn get_node_string(&self, getter: &VarHashGetter) -> Result<String, InterpreterError> {
+        // Create the GLSL string for this node, so we can make a variable out of it
+        let input = getter.get(0, VarHashType::Density)?;
+        Ok(input.get_name())
+    }
+    fn get_output_type(&self, getter: &VarHashGetter) -> VarHashType {
+        VarHashType::Density
     }
 }

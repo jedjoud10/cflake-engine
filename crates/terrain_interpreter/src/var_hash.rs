@@ -5,7 +5,7 @@ pub struct VarHash {
     pub _type: VarHashType,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum VarHashType {
     // Can be a boolean in case of a condition
     Bool,
