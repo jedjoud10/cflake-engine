@@ -93,7 +93,7 @@ impl Entity {
         }
     }
     // Link a component to this entity and automatically set it to the default variable
-    pub fn link_default_component<T: Component + 'static>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
+    pub fn link_default_component<T: Component + Default + 'static>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
         // Simple wrapper around the default link component
         self.link_component(component_manager, T::default())
     }

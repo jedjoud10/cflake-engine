@@ -24,6 +24,10 @@ pub struct VoxelGenerator {
 }
 
 impl VoxelGenerator {
+    // New
+    pub fn new(compute: Shader) -> Self {
+        Self { compute, ..Self::default() }
+    }
     // Generate the voxel texture
     pub fn setup_voxel_generator(&mut self) {
         // Create the voxel texture

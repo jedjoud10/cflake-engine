@@ -2,7 +2,6 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use assets::AssetManager;
-use debug::DefaultDebugRendererType;
 use ecs::{ComponentManager, Entity};
 use math::octrees::OctreeNode;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -88,14 +87,6 @@ impl ChunkManager {
                 bd.partial_cmp(&ad).unwrap_or(Ordering::Equal)
             });
         }
-        // Debug draw the chunks to generate
-        for chunk_to_generate in self.chunks_to_generate.iter() {
-            let t = DefaultDebugRendererType::CUBE(
-                veclib::Vector3::from(chunk_to_generate.center),
-                veclib::Vector3::new(chunk_to_generate.size as f32, chunk_to_generate.size as f32, chunk_to_generate.size as f32),
-            );
-        }
-
         // This chunk will always have a valid model and chunk data
         let mut final_chunk: Option<(ChunkData, TModel)> = None;
         let x = self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0);

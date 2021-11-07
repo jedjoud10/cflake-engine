@@ -20,7 +20,6 @@ pub struct Shader {
     pub finalized: bool,
     pub linked_subshaders_programs: Vec<(SubShaderType, u32)>,
     pub additional_shader: AdditionalShader,
-    pub additional_shader_paths: Vec<String>,
     pub additional_shader_sources: Vec<String>,
 }
 
@@ -33,7 +32,6 @@ impl Default for Shader {
                 finalized: false,
                 linked_subshaders_programs: Vec::new(),
                 additional_shader: AdditionalShader::None,
-                additional_shader_paths: Vec::new(),
                 additional_shader_sources: Vec::new(),
             }
         }
@@ -65,22 +63,6 @@ impl Shader {
                     included_lines.extend(new_lines);
                 }
             }
-            // Custom path include statement
-            if self.additional_shader_paths.len() > 0 {
-                if line.starts_with("#includep") {
-                    // Get the local path ID
-                    let c = line.split("#includep ").collect::<Vec<&str>>()[1];
-                    let local_path_id = c[2..(c.len() - 2)].parse::<usize>().unwrap();
-                    let path = self.additional_shader_paths.get(local_path_id).unwrap();
-                    if !included_paths.contains(&path.to_string()) {
-                        // Load the function shader text
-                        included_paths.insert(path.to_string());
-                        let text = asset_manager.asset_cacher.load_text(&path).unwrap();
-                        let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                        included_lines.extend(new_lines);
-                    }
-                }
-            }
             // Custom shader sources
             if self.additional_shader_sources.len() > 0 {
                 if line.starts_with("#include_custom") {
@@ -103,11 +85,6 @@ impl Shader {
     // Set an additional shader for this shader before we finalize it
     pub fn set_additional_shader(mut self, additional_shader: AdditionalShader) -> Self {
         self.additional_shader = additional_shader;
-        self
-    }
-    // Set some additional shader paths that we might need later
-    pub fn set_additional_shader_paths(mut self, additional_shader_paths: Vec<&str>) -> Self {
-        self.additional_shader_paths = additional_shader_paths.into_iter().map(|x| x.to_string()).collect();
         self
     }
     // Set an additional shader source that can be loaded at runtime
@@ -169,7 +146,16 @@ impl Shader {
                 let og_shader_source = subshader.source.split(&version_directive).nth(1)?;
                 subshader.source = format!("{}\n{}\n{}", version_directive, extend_shader_source, og_shader_source);
                 // Gotta filter out the include messages
-                subshader.source = subshader.source.lines().filter(|x| !x.starts_with("#include")).collect::<Vec<&str>>().join("\n");
+                subshader.source = subshader
+                    .source
+                    .lines()
+                    .filter(|x| {
+                        let s = x.to_string();
+                        let s = s.trim();
+                        !s.starts_with("#include") && !s.starts_with("#include_custom")
+                    })
+                    .collect::<Vec<&str>>()
+                    .join("\n");
                 //println!("{}", subshader.source);
                 // Compile the subshader
                 subshader.compile_subshader();

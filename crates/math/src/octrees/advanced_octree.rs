@@ -22,7 +22,14 @@ pub struct AdvancedOctree {
 // Code
 // TODO: Multithread this
 impl AdvancedOctree {
-    // Calculate the nodes that are the twin nodes *and* normal nodes
+    // New
+    pub fn new(octree: Octree, subdivide_twin_rule: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool) -> Self {
+        Self {
+            internal_octree: octree,
+            subdivide_twin_rule: Some(subdivide_twin_rule),
+            ..AdvancedOctree::default()
+        }
+    }
     // Twin nodes are basically just normal nodes that get subdivided after the main octree generation
     fn calculate_combined_nodes(
         twin_rule: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool,
@@ -197,9 +204,5 @@ impl AdvancedOctree {
         self.combined_nodes = new_hashset;
         println!("{}", t.elapsed().as_micros());
         return Some((added_nodes, removed_nodes, total));
-    }
-    // Set the twin rule
-    pub fn set_twin_generation_rule(&mut self, function: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool) {
-        self.subdivide_twin_rule = Some(function);
     }
 }

@@ -23,32 +23,29 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
 
     // Get the terrain data
     let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
-    let bound_materials = td.bound_materials.clone();
-    let octree_size = td.octree.internal_octree.size;
+    let terrain = &mut td.terrain;
+    let bound_materials = terrain.settings.bound_materials.clone();
+    let octree_size = terrain.octree.internal_octree.size;
 
     // Generate the octree each frame and generate / delete the chunks
-    if td.chunk_manager.octree_update_valid() && td.camera_position.distance(camera_position) > 1.0 {
-        match td.octree.generate_incremental_octree(&camera_position, terrain::DEFAULT_LOD_FACTOR) {
+    if terrain.chunk_manager.octree_update_valid() {
+        match terrain.octree.generate_incremental_octree(&camera_position, terrain::DEFAULT_LOD_FACTOR) {
             Some((mut added, removed, total)) => {
-                td.camera_position = camera_position;
                 // Filter first
-                match td.bound_checker {
-                    Some(bound_checker) => added.retain(|node| bound_checker(&node) && node.children_indices.is_none()),
-                    None => added.retain(|node| node.children_indices.is_none()),
-                }
+                added.retain(|node| node.children_indices.is_none());                
                 // Turn all the newly added nodes into chunks and instantiate them into the world
                 for octree_node in added {
                     // Add the chunk in the chunk manager
-                    td.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));
+                    terrain.chunk_manager.add_chunk(ChunkCoords::new(&octree_node));
                 }
                 // Delete all the removed octree nodes from the world
                 for octree_node in removed {
                     let chunk_coords = ChunkCoords::new(&octree_node);
                     // Remove the chunk from the chunk manager
-                    match td.chunk_manager.remove_chunk(&chunk_coords) {
+                    match terrain.chunk_manager.remove_chunk(&chunk_coords) {
                         Some(_) => {
                             // Get the entity id
-                            td.chunk_manager.remove_chunk_entity(&chunk_coords);
+                            terrain.chunk_manager.remove_chunk_entity(&chunk_coords);
                         }
                         None => {}
                     }
@@ -56,11 +53,11 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
             }
             None => { /* Nothing happened */ }
         }
-        td.chunk_manager.update_camera_view(camera_position, camera_forward_vector);
+        terrain.chunk_manager.update_camera_view(camera_position, camera_forward_vector);
     }
 
     // Update the chunk manager
-    match td.chunk_manager.update(&mut td.voxel_generator, data.time_manager.frame_count) {
+    match terrain.chunk_manager.update(&mut terrain.voxel_generator, data.time_manager.frame_count) {
         Some((added_chunks, removed_chunks)) => {
             let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
 
@@ -108,8 +105,9 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
 
             // Reassign
             let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
+            let terrain = &mut td.terrain;
             for (entity_id, coords) in added_chunk_entities_ids {
-                td.chunk_manager.add_chunk_entity(&coords, entity_id);
+                terrain.chunk_manager.add_chunk_entity(&coords, entity_id);
             }
 
             for entity_id in removed_chunks {
@@ -124,7 +122,7 @@ fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut World
     // Setup the voxel generator for this generator
     let td = entity.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
     // Generate the voxel texture
-    td.voxel_generator.setup_voxel_generator();
+    td.terrain.voxel_generator.setup_voxel_generator();
 }
 
 // Create the terrain system

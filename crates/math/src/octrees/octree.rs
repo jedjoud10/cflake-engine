@@ -17,7 +17,7 @@ pub struct Octree {
 
 impl Octree {
     // Create a new octree with a specific depth
-    pub fn create_octree(depth: u8, size: u64) -> Self {
+    pub fn new(depth: u8, size: u64) -> Self {
         Self {
             target_node: None,
             nodes: SmartList::default(),

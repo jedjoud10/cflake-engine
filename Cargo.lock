@@ -698,6 +698,7 @@ dependencies = [
  "rayon",
  "rendering",
  "systems",
+ "terrain_interpreter",
  "ui",
  "veclib",
  "world_data",
