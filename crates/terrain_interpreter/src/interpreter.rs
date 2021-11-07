@@ -1,13 +1,10 @@
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-};
+
 
 use math::bounds::AABB;
 
 use crate::{
     error::InterpreterError,
-    nodes::{base_position::BasePosition, final_density::FinalDensity},
+    nodes::{final_density::FinalDensity},
     var_hash::{VarHash, VarHashType},
     var_hash_getter::VarHashGetter,
     Influence, NodeInterpreter,
@@ -25,14 +22,14 @@ pub struct Interpreter {
 impl Default for Interpreter {
     fn default() -> Self {
         // Create the default starter node
-        let default = Self {
+        
+        Self {
             nodes: Vec::new(),
             vars: Vec::new(),
             lines: Vec::new(),
             finalized: false,
             max_influence: Influence::Modified(-1.0, 1.0),
-        };
-        default
+        }
     }
 }
 
@@ -47,7 +44,7 @@ impl Interpreter {
             name: id,
             _type: boxed.get_output_type(&getter),
         };
-        self.vars.push(var_hash.clone());
+        self.vars.push(var_hash);
         // Create a variable for this node
         let line = format!(
             "{} {} = {};",
@@ -56,7 +53,7 @@ impl Interpreter {
             boxed.get_node_string(&getter)?
         );
         self.lines.push(line);
-        Ok((*self.vars.get(id).unwrap()).clone())
+        Ok(*self.vars.get(id).unwrap())
     }
     // Finalize the tree with a specific var hash
     pub fn finalize(&mut self, final_density_varhash: VarHash) {
@@ -80,7 +77,7 @@ impl Interpreter {
             return None;
         }
         //lines.reverse();
-        return Some(self.lines.join("\n"));
+        Some(self.lines.join("\n"))
     }
     // Read back the bound intersection AABB for this interpreter
     pub fn read_aabb(&self) -> Option<AABB> {

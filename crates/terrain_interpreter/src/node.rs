@@ -1,8 +1,7 @@
 use crate::{
     error::InterpreterError,
     var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Influence, Interpreter,
+    var_hash_getter::VarHashGetter, Interpreter,
 };
 
 // A singular node that consists of a position and an exit density

@@ -1,8 +1,7 @@
 use crate::{
     error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Influence, NodeInterpreter,
+    var_hash::{VarHashType},
+    var_hash_getter::VarHashGetter, NodeInterpreter,
 };
 
 // A comparator node (if)
@@ -28,7 +27,7 @@ impl NodeInterpreter for Comparator {
             Comparator::GreaterThanEqual => format!("{} >= {}", i0, i1),
         })
     }
-    fn get_output_type(&self, getter: &VarHashGetter) -> VarHashType {
+    fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Bool
     }
 }

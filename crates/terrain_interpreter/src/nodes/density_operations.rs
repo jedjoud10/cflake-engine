@@ -1,8 +1,7 @@
 use crate::{
     error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Influence, NodeInterpreter,
+    var_hash::{VarHashType},
+    var_hash_getter::VarHashGetter, NodeInterpreter,
 };
 #[derive(Debug)]
 pub enum DensityOperationType {
@@ -21,7 +20,7 @@ impl NodeInterpreter for DensityOperationType {
             DensityOperationType::Intersection => format!("max({}, -{})", i0, i1),
         })
     }
-    fn get_output_type(&self, getter: &VarHashGetter) -> crate::var_hash::VarHashType {
+    fn get_output_type(&self, _getter: &VarHashGetter) -> crate::var_hash::VarHashType {
         crate::var_hash::VarHashType::Density
     }
 }

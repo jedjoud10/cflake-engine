@@ -1,8 +1,7 @@
 use crate::{
     error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Influence, NodeInterpreter,
+    var_hash::{VarHashType},
+    var_hash_getter::VarHashGetter, NodeInterpreter,
 };
 
 // A selector node
@@ -17,7 +16,7 @@ impl NodeInterpreter for Selector {
         let i2 = getter.get(2, VarHashType::Density)?.get_name();
         Ok(format!("{} ? {} : {}", i0, i1, i2))
     }
-    fn get_output_type(&self, getter: &VarHashGetter) -> VarHashType {
+    fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Density
     }
 }

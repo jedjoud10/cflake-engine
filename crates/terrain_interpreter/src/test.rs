@@ -2,7 +2,6 @@
 #[cfg(test)]
 mod test {
     use crate::{
-        error::InterpreterError,
         nodes::{base_position::BasePosition, comparator::Comparator, density_operations::DensityOperationType, selector::Selector, snoise::SNoise, splitter::Splitter},
         Interpreter, NodeInterpreter,
     };
@@ -15,7 +14,7 @@ mod test {
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
         // Create an snoise node
         let snoise = SNoise::default().new(&[p], &mut interpreter).unwrap();
-        let snoise2 = SNoise::default().new(&[p], &mut interpreter).unwrap();
+        let _snoise2 = SNoise::default().new(&[p], &mut interpreter).unwrap();
         let splitter = Splitter::X.new(&[p], &mut interpreter).unwrap();
         let value = DensityOperationType::Union.new(&[snoise, splitter], &mut interpreter).unwrap();
         let compare = Comparator::Equal.new(&[snoise, splitter], &mut interpreter).unwrap();

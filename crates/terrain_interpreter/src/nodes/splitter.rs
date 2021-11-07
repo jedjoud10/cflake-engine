@@ -1,8 +1,7 @@
 use crate::{
     error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Influence, NodeInterpreter,
+    var_hash::{VarHashType},
+    var_hash_getter::VarHashGetter, NodeInterpreter,
 };
 
 // How we split the vectors
@@ -38,7 +37,7 @@ impl NodeInterpreter for Splitter {
             Splitter::Z => format!("{}.z", name),
         })
     }
-    fn get_output_type(&self, getter: &VarHashGetter) -> VarHashType {
+    fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Density
     }
 }
