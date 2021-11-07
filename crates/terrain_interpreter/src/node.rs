@@ -1,16 +1,21 @@
-use crate::{Influence, Interpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    Influence, Interpreter,
+};
 
 // A singular node that consists of a position and an exit density
 pub trait NodeInterpreter {
     // Creata a new node
-    fn new(self, inputs: Vec<VarHash>, interpreter: &mut Interpreter) -> Result<VarHash, InterpreterError> where Self: Sized {
+    fn new(self, inputs: Vec<VarHash>, interpreter: &mut Interpreter) -> Result<VarHash, InterpreterError>
+    where
+        Self: Sized,
+    {
         // Add
         interpreter.add(self, inputs)
     }
     // Get the string that defines this node
     fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError>;
-    // Calculate the influence of this node
-    fn calculate_influence(&self, inputs: &Vec<Influence>) -> Influence;
     // Get the output varhash type
     fn get_output_type(&self) -> VarHashType {
         VarHashType::Density

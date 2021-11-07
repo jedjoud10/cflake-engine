@@ -1,16 +1,22 @@
+use crate::{
+    var_hash::{VarHash, VarHashType},
+    NodeInterpreter,
+};
 use std::fmt;
-use crate::{NodeInterpreter, var_hash::{VarHash, VarHashType}};
 
 // A simple interpreter error
 #[derive(Debug)]
 pub struct InterpreterError {
     details: String,
-    node_error: String, 
+    node_error: String,
 }
 
 impl InterpreterError {
     pub fn new<T: NodeInterpreter + std::fmt::Debug>(msg: &str, node: T) -> Self {
-        Self { details: msg.to_string(), node_error: format!("{:?}", node) }
+        Self {
+            details: msg.to_string(),
+            node_error: format!("{:?}", node),
+        }
     }
     // Create an input error
     pub fn input_err<T: NodeInterpreter + std::fmt::Debug>(input: &VarHash, index: usize, node: &T, expected: VarHashType) -> Self {

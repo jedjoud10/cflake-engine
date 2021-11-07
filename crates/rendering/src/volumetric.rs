@@ -27,15 +27,15 @@ impl Volumetric {
     // Load the necessary compute shaders
     pub fn load_compute_shaders(&mut self, asset_manager: &mut AssetManager) {
         // Load generator compute
-        self.compute_generator = Shader::new().set_additional_shader(AdditionalShader::Compute(ComputeShader::default())).load_shader(
-            vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"],
-            asset_manager,
-        ).unwrap();
+        self.compute_generator = Shader::new()
+            .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
+            .load_shader(vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"], asset_manager)
+            .unwrap();
         // Load the volumetric compute
-        self.compute = Shader::new().set_additional_shader(AdditionalShader::Compute(ComputeShader::default())).load_shader(
-            vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"],
-            asset_manager,
-        ).unwrap();
+        self.compute = Shader::new()
+            .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
+            .load_shader(vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"], asset_manager)
+            .unwrap();
     }
     // Create the SDF texture from a simple texture, loaded into a compute shader
     // Create the textures

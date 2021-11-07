@@ -1,12 +1,17 @@
-use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    Influence, NodeInterpreter,
+};
 
 // How we split the vectors
 #[derive(Debug)]
 pub enum Splitter {
     // Split values
-    X, Y,
+    X,
+    Y,
     // This is only valid for the Vec3s
-    Z
+    Z,
 }
 
 impl NodeInterpreter for Splitter {
@@ -16,9 +21,9 @@ impl NodeInterpreter for Splitter {
         match input._type {
             VarHashType::Vec2 => match self {
                 Splitter::Z => return Err(InterpreterError::input_err(input, 0, self, VarHashType::Vec3)),
-                _ => {},
+                _ => {}
             },
-            VarHashType::Vec3 => {},
+            VarHashType::Vec3 => {}
             _ => return Err(InterpreterError::input_err(input, 0, self, VarHashType::Vec2)),
         };
         // Split the input
@@ -28,11 +33,7 @@ impl NodeInterpreter for Splitter {
             Splitter::Z => format!("{}.z", input.get_name()),
         })
     }
-    fn calculate_influence(&self, inputs: &Vec<Influence>) -> Influence {
-        // TODO: This
-        todo!()
-    }
     fn get_output_type(&self) -> VarHashType {
-        VarHashType::Float
+        VarHashType::Density
     }
 }

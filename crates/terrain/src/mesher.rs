@@ -173,9 +173,7 @@ pub enum SkirtVertex {
 pub fn solve_marching_squares(case: u8, local_skirt_voxels: &[Voxel], flip: bool) -> Option<Vec<SkirtVertex>> {
     // Create the triangles from the local skirts
     match case {
-        1 => {
-            
-        }
+        1 => {}
         0 | 15 => { /* Empty cases */ }
         _ => { /* Case number is unsuported */ }
     }

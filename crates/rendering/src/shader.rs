@@ -21,7 +21,7 @@ pub struct Shader {
     pub linked_subshaders_programs: Vec<(SubShaderType, u32)>,
     pub additional_shader: AdditionalShader,
     pub additional_shader_paths: Vec<String>,
-    pub additional_shader_sources: Vec<String>
+    pub additional_shader_sources: Vec<String>,
 }
 
 impl Default for Shader {
@@ -78,13 +78,13 @@ impl Shader {
                         let text = asset_manager.asset_cacher.load_text(&path).unwrap();
                         let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                         included_lines.extend(new_lines);
-                    } 
-                }                
+                    }
+                }
             }
             // Custom shader sources
             if self.additional_shader_sources.len() > 0 {
                 if line.starts_with("#include_custom") {
-                    // Get the source 
+                    // Get the source
                     let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
                     let source_id = c[2..(c.len() - 2)].parse::<usize>().unwrap();
                     let source = self.additional_shader_sources.get(source_id).unwrap();
@@ -116,11 +116,7 @@ impl Shader {
         self
     }
     // Creates a shader from multiple subshader files
-    pub fn load_shader<'a>(
-        mut self,
-        subshader_paths: Vec<&str>,
-        asset_manager: &'a mut AssetManager,
-    ) -> Option<Self> {
+    pub fn load_shader<'a>(mut self, subshader_paths: Vec<&str>, asset_manager: &'a mut AssetManager) -> Option<Self> {
         // Create the shader name
         self.name = subshader_paths.join("__");
         let mut included_paths: HashSet<String> = HashSet::new();
@@ -185,7 +181,7 @@ impl Shader {
                 // Unload the resource since we just cached the shader
                 //resource_manager.unload_resouce(subshader_path);
             }
-        }        
+        }
         // Finalize the shader and cache it
         self.finalize_shader();
         return Some(self);
@@ -227,7 +223,7 @@ impl Shader {
 
             self.finalized = true;
         }
-    }    
+    }
     // Use this shader for rendering a specific entity
     pub fn use_shader(&self) {
         // Check if the program even was finalized and ready for use

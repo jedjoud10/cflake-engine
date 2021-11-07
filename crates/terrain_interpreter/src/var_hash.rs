@@ -2,7 +2,7 @@
 #[derive(Clone, Copy, Debug)]
 pub struct VarHash {
     pub name: usize,
-    pub _type: VarHashType
+    pub _type: VarHashType,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -11,8 +11,6 @@ pub enum VarHashType {
     Bool,
     // Density values are complitely different than normal values
     Density,
-    // Multiple values
-    Float,
     Vec2,
     Vec3,
 }
@@ -23,20 +21,20 @@ impl VarHashType {
         match &self {
             VarHashType::Bool => "b",
             VarHashType::Density => "d",
-            VarHashType::Float => "v1",
             VarHashType::Vec2 => "v2",
             VarHashType::Vec3 => "v3",
-        }.to_string()
+        }
+        .to_string()
     }
     // Get the GLSL type for this var hash type
     pub fn to_glsl_type(&self) -> String {
         match &self {
             VarHashType::Bool => "bool",
             VarHashType::Density => "float",
-            VarHashType::Float => "float",
             VarHashType::Vec2 => "vec2",
             VarHashType::Vec3 => "vec3",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 

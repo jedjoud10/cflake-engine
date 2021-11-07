@@ -1,4 +1,8 @@
-use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    Influence, NodeInterpreter,
+};
 
 // A comparator node (if)
 #[derive(Debug)]
@@ -16,11 +20,11 @@ impl NodeInterpreter for Comparator {
         let i0 = inputs.get(0).ok_or(InterpreterError::missing_input(0, self))?;
         let i1 = inputs.get(1).ok_or(InterpreterError::missing_input(1, self))?;
         match i0._type {
-            VarHashType::Bool => return Err(InterpreterError::input_err(i0, 0, self, VarHashType::Float)),
+            VarHashType::Bool => return Err(InterpreterError::input_err(i0, 0, self, VarHashType::Density)),
             _ => {}
         }
         match i1._type {
-            VarHashType::Bool => return Err(InterpreterError::input_err(i1, 1, self, VarHashType::Float)),
+            VarHashType::Bool => return Err(InterpreterError::input_err(i1, 1, self, VarHashType::Density)),
             _ => {}
         }
         let i0 = i0.get_name();
@@ -33,12 +37,6 @@ impl NodeInterpreter for Comparator {
             Comparator::GreaterThanEqual => format!("{} >= {}", i0, i1),
         })
     }
-
-    fn calculate_influence(&self, inputs: &Vec<Influence>) -> Influence {
-        // Max possible influence
-        Influence::None
-    }
-
     fn get_output_type(&self) -> VarHashType {
         VarHashType::Bool
     }

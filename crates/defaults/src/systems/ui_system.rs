@@ -150,18 +150,20 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Set the default font
     data.ui_manager.font_manager.add_font(default_font);
     // Load the UI shader
-    custom_data.ui_shader = Shader::new().load_shader(
-        vec!["defaults\\shaders\\ui\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui\\ui_panel.frsh.glsl"],
-        data.asset_manager,
-    )
-    .unwrap();
+    custom_data.ui_shader = Shader::new()
+        .load_shader(
+            vec!["defaults\\shaders\\ui\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui\\ui_panel.frsh.glsl"],
+            data.asset_manager,
+        )
+        .unwrap();
     // Load the UI font shader
     // I've spent the past 3 days wondering why this didn't work, just now, at 7:07 pm on a monday night did I realize that I assined this shader to the wrong variable
-    custom_data.font_ui_shader = Shader::new().load_shader(
-        vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
-        data.asset_manager,
-    )
-    .unwrap();
+    custom_data.font_ui_shader = Shader::new()
+        .load_shader(
+            vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
+            data.asset_manager,
+        )
+        .unwrap();
 }
 
 // Post fire event

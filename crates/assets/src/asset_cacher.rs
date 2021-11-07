@@ -43,7 +43,10 @@ impl AssetCacher {
     // Load asset metadata
     pub fn load_md(&self, name: &str) -> Result<&AssetMetadata, AssetMetadataLoadError> {
         // Load
-        let data = self.cached_metadata.get(name).ok_or(AssetMetadataLoadError::new(format!("Asset '{}' was not pre-loaded!", name)))?;
+        let data = self
+            .cached_metadata
+            .get(name)
+            .ok_or(AssetMetadataLoadError::new(format!("Asset '{}' was not pre-loaded!", name)))?;
         return Ok(data);
     }
     // Load a text file from the asset cacher

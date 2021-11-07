@@ -1,7 +1,11 @@
 // Testing time
 #[cfg(test)]
 mod test {
-    use crate::{Interpreter, NodeInterpreter, error::InterpreterError, nodes::{base_position::BasePosition, comparator::Comparator, density_operations::DensityOperationType, snoise::SNoise, splitter::Splitter}};
+    use crate::{
+        error::InterpreterError,
+        nodes::{base_position::BasePosition, comparator::Comparator, density_operations::DensityOperationType, snoise::SNoise, splitter::Splitter},
+        Interpreter, NodeInterpreter,
+    };
 
     #[test]
     pub fn nodes() {
