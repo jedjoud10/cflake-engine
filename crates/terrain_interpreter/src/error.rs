@@ -12,9 +12,7 @@ pub struct InterpreterError {
 
 impl InterpreterError {
     pub fn new(msg: &str) -> Self {
-        Self {
-            details: msg.to_string(),
-        }
+        Self { details: msg.to_string() }
     }
     // Create an input error
     pub fn input_err(input: &VarHash, index: usize, expected: VarHashType) -> Self {

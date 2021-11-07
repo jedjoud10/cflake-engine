@@ -1,4 +1,9 @@
-use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Influence, NodeInterpreter,
+};
 
 // A Simplex-Noise node
 #[derive(Debug)]

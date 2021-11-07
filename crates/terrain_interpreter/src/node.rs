@@ -1,4 +1,9 @@
-use crate::{Influence, Interpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Influence, Interpreter,
+};
 
 // A singular node that consists of a position and an exit density
 pub trait NodeInterpreter {
@@ -17,9 +22,7 @@ pub trait NodeInterpreter {
         Self: Sized,
     {
         // Create the getter
-        let getter = VarHashGetter {
-            inputs: inputs.to_vec()
-        };
+        let getter = VarHashGetter { inputs: inputs.to_vec() };
         // Add
         interpreter.add(self, getter)
     }

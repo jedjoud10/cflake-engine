@@ -1,4 +1,9 @@
-use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Influence, NodeInterpreter,
+};
 
 // How we split the vectors
 #[derive(Debug)]
@@ -15,13 +20,14 @@ impl NodeInterpreter for Splitter {
         // Check if we can even split this varhash input
         let t = getter.get(0, VarHashType::Vec2).or(getter.get(0, VarHashType::Vec3))?;
         match t._type {
-            VarHashType::Vec2 => { /* We must do additional checks, if they fail that means that we tried to read the Z value of a Vec2 */
+            VarHashType::Vec2 => {
+                /* We must do additional checks, if they fail that means that we tried to read the Z value of a Vec2 */
                 match self {
                     Splitter::Z => return Err(InterpreterError::new("Tried to read the Z value of a Vec2!")),
-                    _ => { /* Dis fine */ }    
+                    _ => { /* Dis fine */ }
                 }
-            },
-            VarHashType::Vec3 => { /* We are fine here because even if we want the Z axis of this value we can safely return it */ },
+            }
+            VarHashType::Vec3 => { /* We are fine here because even if we want the Z axis of this value we can safely return it */ }
             _ => { /* This should never happen */ }
         }
         let name = t.get_name();

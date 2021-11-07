@@ -1,8 +1,12 @@
-use crate::{NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    NodeInterpreter,
+};
 
 // Easier and cleaner way to get var hashes
 pub struct VarHashGetter {
-    pub inputs: Vec<VarHash>
+    pub inputs: Vec<VarHash>,
 }
 
 impl VarHashGetter {
@@ -17,6 +21,8 @@ impl VarHashGetter {
     fn check_type(var: VarHash, _type: VarHashType) -> Option<VarHash> {
         if var._type == _type {
             return Some(var);
-        } else { return None; }
+        } else {
+            return None;
+        }
     }
 }

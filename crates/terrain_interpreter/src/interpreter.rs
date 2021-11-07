@@ -5,7 +5,13 @@ use std::{
 
 use math::bounds::AABB;
 
-use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::{base_position::BasePosition, final_density::FinalDensity}, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    nodes::{base_position::BasePosition, final_density::FinalDensity},
+    var_hash::{VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Influence, NodeInterpreter,
+};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
