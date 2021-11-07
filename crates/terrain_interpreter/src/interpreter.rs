@@ -1,6 +1,6 @@
 use math::bounds::AABB;
 
-use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::{base_position::BasePosition, final_density::FinalDensity, splitter::Splitter}, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {

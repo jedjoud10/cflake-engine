@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod test {
     use crate::{
-        nodes::{base_position::BasePosition, comparator::Comparator, density_operations::DensityOperationType, selector::Selector, snoise::SNoise, splitter::Splitter},
+        nodes::*,
         Interpreter, NodeInterpreter,
     };
 

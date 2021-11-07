@@ -59,13 +59,6 @@ pub fn world_initialized(world: &mut World) {
 
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
-    const OCTREE_DEPTH: u8 = 6;
-
-    // Load the compute shaders
-    let compute = Shader::new()
-        .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
-        .load_shader(vec!["defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl"], data.asset_manager)
-        .unwrap();
 
     // The terrain shader
     let terrain_shader = Shader::new()
@@ -105,8 +98,13 @@ pub fn world_initialized(world: &mut World) {
             .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.02))
             .set_uniform("material_id", Uniform::I32(1)),
     ];
+    let settings = terrain::TerrainSettings {
+        octree_depth: 7,
+        bound_materials,
+        voxel_generator_interpreter: terrain::interpreter::Interpreter::default(),
+    };
     terrain_entity
-        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(compute, OCTREE_DEPTH, bound_materials, None))
+        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings, &mut data.asset_manager))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
 }
