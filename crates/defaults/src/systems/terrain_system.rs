@@ -32,7 +32,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
         match terrain.octree.generate_incremental_octree(&camera_position, terrain::DEFAULT_LOD_FACTOR) {
             Some((mut added, removed, total)) => {
                 // Filter first
-                added.retain(|node| node.children_indices.is_none());                
+                added.retain(|node| node.children_indices.is_none());
                 // Turn all the newly added nodes into chunks and instantiate them into the world
                 for octree_node in added {
                     // Add the chunk in the chunk manager

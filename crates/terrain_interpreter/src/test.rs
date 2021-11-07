@@ -1,10 +1,7 @@
 // Testing time
 #[cfg(test)]
 mod test {
-    use crate::{
-        nodes::*,
-        Interpreter, NodeInterpreter,
-    };
+    use crate::{nodes::*, Interpreter, NodeInterpreter};
 
     #[test]
     pub fn nodes() {
@@ -13,10 +10,10 @@ mod test {
         // Add the default node
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
         // Create an snoise node
-        let snoise = SNoise::default().new(&[p], &mut interpreter).unwrap();
-        let _snoise2 = SNoise::default().new(&[p], &mut interpreter).unwrap();
+        let snoise = Noise::default().new(&[p], &mut interpreter).unwrap();
+        let _snoise2 = Noise::default().new(&[p], &mut interpreter).unwrap();
         let splitter = Splitter::X.new(&[p], &mut interpreter).unwrap();
-        let value = DensityOperationType::Union.new(&[snoise, splitter], &mut interpreter).unwrap();
+        let value = DensityOperation::Union.new(&[snoise, splitter], &mut interpreter).unwrap();
         let compare = Comparator::Equal.new(&[snoise, splitter], &mut interpreter).unwrap();
         let select = Selector().new(&[compare, snoise, value], &mut interpreter).unwrap();
         // Finalize this test interpreter with the density value of the snoise

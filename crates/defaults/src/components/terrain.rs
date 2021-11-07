@@ -10,7 +10,7 @@ pub struct TerrainData {
 impl TerrainData {
     pub fn new(settings: TerrainSettings, asset_manager: &mut AssetManager) -> Self {
         Self {
-            terrain: Terrain::new(settings, asset_manager)
+            terrain: Terrain::new(settings, asset_manager),
         }
     }
 }

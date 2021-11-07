@@ -1,19 +1,33 @@
 use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
 
-// A Simplex-Noise node
+// A some noise node
 #[derive(Debug)]
-pub struct SNoise {
+pub struct Noise {
     pub strength: f32,
     pub scale: f32,
+    pub _type: NoiseType,
+}
+// Some noise type
+#[derive(Debug)]
+pub enum NoiseType {
+    Simplex,
+    VoronoiSimplex,
+    VoronoiDistance,
+    VoronoiDistance2,
+    VoronoiCell,
 }
 
-impl Default for SNoise {
+impl Default for Noise {
     fn default() -> Self {
-        Self { strength: 1.0, scale: 0.001 }
+        Self {
+            strength: 40.0,
+            scale: 0.001,
+            _type: NoiseType::Simplex,
+        }
     }
 }
 
-impl NodeInterpreter for SNoise {
+impl NodeInterpreter for Noise {
     fn get_node_string(&self, getter: &VarHashGetter) -> Result<String, InterpreterError> {
         // Check input real quick
         let input = getter.get(0, VarHashType::Vec3)?;

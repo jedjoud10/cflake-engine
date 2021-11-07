@@ -2,7 +2,7 @@ use assets::AssetManager;
 use math::octrees::{AdvancedOctree, Octree, OctreeNode};
 use rendering::{AdditionalShader, ComputeShader, Material, Shader};
 
-use crate::{ChunkManager, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE, TerrainSettings, VoxelGenerator};
+use crate::{ChunkManager, TerrainSettings, VoxelGenerator, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
 // A terrain piece
 #[derive(Default)]
 pub struct Terrain {

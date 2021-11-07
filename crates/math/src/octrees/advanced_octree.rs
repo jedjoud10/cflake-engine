@@ -15,6 +15,8 @@ pub struct AdvancedOctree {
     pub generated_base_octree: bool,
     // The combined twin and normal nodes
     pub combined_nodes: HashSet<OctreeNode>,
+    // The last position
+    pub position: veclib::Vector3<f32>,
     // The twin rule, if this is none, don't generate twin nodes
     pub subdivide_twin_rule: Option<fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool>,
 }
@@ -103,7 +105,10 @@ impl AdvancedOctree {
         if self.internal_octree.target_node.is_none() {
             return None;
         }
-
+        // If the target has not moved, we don't need to incrementally update the octree
+        if self.position.distance(*target) < 1.0 {
+            return None;
+        }
         // What we do for incremental generation
         // We go up the tree from the target node, then we check the highest depth node that still has a collision with the target point
         // From there, we go down the tree and generate a sub-octree, then we just append it to our normal octree
@@ -202,6 +207,7 @@ impl AdvancedOctree {
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
         let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
+        self.position = *target;
         return Some((added_nodes, removed_nodes, total));
     }
 }

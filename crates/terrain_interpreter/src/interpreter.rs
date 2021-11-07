@@ -1,6 +1,12 @@
 use math::bounds::AABB;
 
-use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    nodes::*,
+    var_hash::{VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Influence, NodeInterpreter,
+};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
@@ -33,7 +39,9 @@ impl Interpreter {
         // Add the default pos.y nodes
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
         let y = Splitter::Y.new(&[p], &mut interpreter).unwrap();
-        interpreter.finalize(y);
+        let snoise = Noise::default().new(&[p], &mut interpreter).unwrap();
+        let final_node = DensityOperation::Addition.new(&[y, snoise], &mut interpreter).unwrap();
+        interpreter.finalize(final_node);
         interpreter
     }
     // Add a specific node to the system
