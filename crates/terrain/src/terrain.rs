@@ -29,9 +29,9 @@ impl Terrain {
         let octree = AdvancedOctree::new(internal_octree, Self::can_node_subdivide_twin);
 
         // Load the compute shader
-        let additional_shader_source = "";
+        let additional_shader_source = settings.voxel_generator_interpreter.read_glsl().unwrap();
         let compute = Shader::new()
-            .set_additional_shader_sources(vec![additional_shader_source])
+            .set_additional_shader_sources(vec![&additional_shader_source])
             .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
             .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER], asset_manager)
             .unwrap();

@@ -12,7 +12,7 @@ impl Default for TerrainSettings {
         Self {
             octree_depth: 8,
             bound_materials: vec![Material::default()],
-            voxel_generator_interpreter: terrain_interpreter::Interpreter::default(),
+            voxel_generator_interpreter: terrain_interpreter::Interpreter::new(),
         }
     }
 }

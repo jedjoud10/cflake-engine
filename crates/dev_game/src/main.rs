@@ -101,7 +101,7 @@ pub fn world_initialized(world: &mut World) {
     let settings = terrain::TerrainSettings {
         octree_depth: 7,
         bound_materials,
-        voxel_generator_interpreter: terrain::interpreter::Interpreter::default(),
+        voxel_generator_interpreter: terrain::interpreter::Interpreter::new(),
     };
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings, &mut data.asset_manager))

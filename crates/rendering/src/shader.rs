@@ -47,9 +47,9 @@ impl Object for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(&self, lines: Vec<String>, asset_manager: &'a AssetManager, included_paths: &mut HashSet<String>) -> Vec<String> {
-        let mut included_lines: Vec<String> = Vec::new();
-        for line in lines.iter() {
+    fn load_includes<'a>(&self, lines: &mut Vec<String>, asset_manager: &'a AssetManager, included_paths: &mut HashSet<String>) -> bool {
+        let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new(); 
+        for (i, line) in lines.iter().enumerate() {
             // Check if this is an include statement
             if line.starts_with("#include ") {
                 // Get the local path of the include file
@@ -60,23 +60,33 @@ impl Shader {
                     included_paths.insert(local_path.to_string());
                     let text = asset_manager.asset_cacher.load_text(local_path).unwrap();
                     let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                    included_lines.extend(new_lines);
+                    vectors_to_insert.push((i, new_lines));
                 }
             }
             // Custom shader sources
             if self.additional_shader_sources.len() > 0 {
-                if line.starts_with("#include_custom") {
+                if line.trim().starts_with("#include_custom") {
                     // Get the source
                     let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
                     let source_id = c[2..(c.len() - 2)].parse::<usize>().unwrap();
                     let source = self.additional_shader_sources.get(source_id).unwrap();
                     let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                    included_lines.extend(lines);
+                    println!("EXTEND {}", lines.join("\n"));
+                    vectors_to_insert.push((i, lines));
                 }
             }
         }
-        // Return the included lines and the original lines that are without the include statement
-        return included_lines;
+        // Add the newly included lines at their respective index
+        let mut offset = 0; 
+        for (i, included_lines) in vectors_to_insert.iter() {
+            for x in 0..included_lines.len() {
+                let new_index = x + offset + *i;
+                lines.insert(new_index, included_lines[x].clone());
+            }
+            // Add the offset so the next lines will be at their correct positions
+            offset += included_lines.len();
+        }
+        return vectors_to_insert.len() > 0;
     }
     // Create a new empty shader
     pub fn new() -> Self {
@@ -111,40 +121,17 @@ impl Shader {
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
                 let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
-                let mut version_directive: String = String::new();
-                // Save the version directive
-                for (_, line) in lines.iter().enumerate() {
-                    if line.starts_with("#version") {
-                        version_directive = line.clone();
-                        break;
-                    }
-                }
-                // The list of the shaders that need to be evaluated
-                let mut shader_sources_to_evalute: Vec<Vec<String>> = vec![lines];
-                // The final included lines
-                let mut included_lines: Vec<String> = Vec::new();
-                while shader_sources_to_evalute.len() > 0 {
-                    // Get the lines
-                    let lines = shader_sources_to_evalute[0].clone();
-                    // Recursively load the includes
-                    let orignal_local_included_lines = self.load_includes(lines.clone(), asset_manager, &mut included_paths);
-                    // Extend from the start of the vector
-                    let mut local_included_lines = orignal_local_included_lines.clone();
-                    local_included_lines.extend(included_lines);
-                    included_lines = local_included_lines.clone();
-
-                    shader_sources_to_evalute.remove(0);
-                    // Check if the added included lines aren't empty
-                    if !orignal_local_included_lines.is_empty() {
-                        shader_sources_to_evalute.push(orignal_local_included_lines);
-                    }
+                // Included lines
+                let mut included_lines: Vec<String> = lines;
+                // Include the sources until no sources can be included
+                while Self::load_includes(&self, &mut included_lines, asset_manager, &mut included_paths) {
+                    // We are still including paths
                 }
                 // Set the shader source for this shader
                 let extend_shader_source = included_lines.join("\n");
 
                 // Remove the version directive from the original subshader source
-                let og_shader_source = subshader.source.split(&version_directive).nth(1)?;
-                subshader.source = format!("{}\n{}\n{}", version_directive, extend_shader_source, og_shader_source);
+                subshader.source = extend_shader_source;
                 // Gotta filter out the include messages
                 subshader.source = subshader
                     .source
@@ -156,7 +143,7 @@ impl Shader {
                     })
                     .collect::<Vec<&str>>()
                     .join("\n");
-                //println!("{}", subshader.source);
+                println!("{}", subshader.source);
                 // Compile the subshader
                 subshader.compile_subshader();
 
