@@ -57,7 +57,7 @@ impl AABB {
     }
     // Get a specific edge from this AABB
     pub fn get_edge(&self, edge_index: u8) -> shapes::Line {
-        return shapes::CUBE_EDGES[edge_index as usize];
+        shapes::CUBE_EDGES[edge_index as usize]
     }
 }
 
@@ -88,7 +88,7 @@ impl AABB {
     }
     // Get the closest point of the AABB from a specific point
     pub fn get_nearest_point(&self, point: &veclib::Vector3<f32>) -> veclib::Vector3<f32> {
-        return point.clamp(self.min, self.max);
+        point.clamp(self.min, self.max)
     }
     // Expand the AABB by a number
     pub fn expand(&mut self, factor: f32) {

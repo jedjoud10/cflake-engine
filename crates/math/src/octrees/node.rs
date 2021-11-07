@@ -18,7 +18,7 @@ pub struct OctreeNode {
 impl PartialEq for OctreeNode {
     fn eq(&self, other: &Self) -> bool {
         // Check coordinates, then check if we have the same child count
-        return self.get_center() == other.get_center() && self.children_indices.is_none() == other.children_indices.is_none() && self.depth == other.depth;
+        self.get_center() == other.get_center() && self.children_indices.is_none() == other.children_indices.is_none() && self.depth == other.depth
     }
 }
 
@@ -42,20 +42,20 @@ impl OctreeNode {
     }
     // Get the center of this octree node
     pub fn get_center(&self) -> veclib::Vector3<i64> {
-        return self.position + self.half_extent as i64;
+        self.position + self.half_extent as i64
     }
     // Check if we can subdivide this node
     pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
         // AABB intersection, return true if point in on the min edge though
         let aabb = (self.get_aabb().min.elem_lte(target) & self.get_aabb().max.elem_gt(target)).all();
-        return aabb && self.depth < (max_depth - 1);
+        aabb && self.depth < (max_depth - 1)
     }
     // Recursively find the children for this node
     pub fn find_children_recursive(&self, nodes: &SmartList<OctreeNode>) -> Vec<OctreeNode> {
         let mut list: Vec<OctreeNode> = Vec::new();
         let mut pending: Vec<OctreeNode> = vec![self.clone()];
 
-        while pending.len() > 0 {
+        while !pending.is_empty() {
             // Get the current node to evaluate
             let current = pending.get(0).unwrap().clone();
             // Add children
@@ -73,7 +73,7 @@ impl OctreeNode {
                 list.push(current.clone());
             }
         }
-        return list;
+        list
     }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide(&mut self, nodes: &mut SmartList<OctreeNode>) -> Vec<OctreeNode> {
@@ -122,7 +122,7 @@ impl OctreeNode {
         let elm = nodes.get_element_mut(self.index).unwrap().unwrap();
         elm.children_indices = Some(children_indices);
 
-        return output;
+        output
     }
     // Check for intersection
     pub fn intersect_bounds(&self, min: veclib::Vector3<f32>, max: veclib::Vector3<f32>) -> bool {

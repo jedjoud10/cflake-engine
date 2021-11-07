@@ -14,7 +14,7 @@ impl ObjectCacher {
     pub fn cache<T: 'static + Object>(&mut self, object_name: &str, obj: T) -> Result<Rc<T>, ObjectLoadError> {
         if !self.cached(object_name) {
             // Cached asset
-            let string_name = object_name.clone().to_string();
+            let string_name = object_name.to_string();
             let rc = Rc::new(obj);
             // Only cache when the object isn't cached yet
             self.cached_objects.insert(string_name, rc.clone());

@@ -35,7 +35,7 @@ impl AssetCacher {
             bytes: bytes.to_vec(),
             load_type: AssetLoadType::Dynamic,
             asset_type: Self::guess_asset_type(name),
-            name: name.clone().to_string(),
+            name: name.to_string(),
         };
         self.cached_metadata.insert(name.to_string(), data);
         Ok(())

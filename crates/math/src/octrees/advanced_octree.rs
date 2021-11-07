@@ -3,7 +3,6 @@ use others::SmartList;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::{
     collections::{HashMap, HashSet},
-    time::Instant,
 };
 
 // An advanced octree with incremental generation and twin nodes
@@ -44,7 +43,7 @@ impl AdvancedOctree {
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = nodes.elements.par_iter().filter_map(|x| x.as_ref().cloned()).collect();
         // Evaluate each node
-        while pending_nodes.len() > 0 {
+        while !pending_nodes.is_empty() {
             // Get the current pending node
             let mut octree_node = pending_nodes[0].clone();
 
@@ -83,7 +82,7 @@ impl AdvancedOctree {
         if !self.generated_base_octree {
             // Create the root node
             let root_node = self.internal_octree.get_root_node();
-            self.internal_octree.generate_octree(&veclib::Vector3::ONE, root_node.clone());
+            self.internal_octree.generate_octree(&veclib::Vector3::ONE, root_node);
             println!("Took '{}' micros to generate base octree", t.elapsed().as_micros());
             let mut added_nodes: Vec<OctreeNode> = self.internal_octree.nodes.elements.iter().filter_map(|x| x.as_ref().cloned()).collect();
             self.generated_base_octree = true;
@@ -93,18 +92,16 @@ impl AdvancedOctree {
                     let y = Self::calculate_combined_nodes(x, target, &self.internal_octree.nodes, lod_factor, self.internal_octree.depth);
                     added_nodes = y.clone().into_iter().collect();
                     self.combined_nodes = y;
-                    return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
+                    return Some((added_nodes.clone(), Vec::new(), added_nodes));
                 }
                 None => {
-                    self.combined_nodes = added_nodes.iter().map(|x| x.clone()).collect();
-                    return Some((added_nodes.clone(), Vec::new(), added_nodes.clone()));
+                    self.combined_nodes = added_nodes.iter().cloned().collect();
+                    return Some((added_nodes.clone(), Vec::new(), added_nodes));
                 }
             }
         }
         // If we don't have a target node don't do anything
-        if self.internal_octree.target_node.is_none() {
-            return None;
-        }
+        self.internal_octree.target_node.as_ref()?;
         // If the target has not moved, we don't need to incrementally update the octree
         if self.position.distance(*target) < 1.0 {
             return None;
@@ -123,7 +120,7 @@ impl AdvancedOctree {
             // Go up the tree
             let parent = self.internal_octree.nodes.get_element(current_node.parent_index).unwrap().unwrap();
             // Check for collisions
-            if parent.can_subdivide(&target, self.internal_octree.depth) || parent.depth == 0 {
+            if parent.can_subdivide(target, self.internal_octree.depth) || parent.depth == 0 {
                 // This node the common target node
                 common_target_node = parent.clone();
                 break;
@@ -153,17 +150,17 @@ impl AdvancedOctree {
             let mut target_node: Option<OctreeNode> = None;
             pending_nodes.push(common_target_node);
             // Evaluate each node
-            while pending_nodes.len() > 0 {
+            while !pending_nodes.is_empty() {
                 // Get the current pending node
                 let mut octree_node = pending_nodes[0].clone();
 
                 // Update target node
-                if octree_node.depth == self.internal_octree.depth - 1 && octree_node.can_subdivide(&target, self.internal_octree.depth + 1) {
+                if octree_node.depth == self.internal_octree.depth - 1 && octree_node.can_subdivide(target, self.internal_octree.depth + 1) {
                     target_node = Some(octree_node.clone());
                 }
 
                 // If the node contains the position, subdivide it
-                if octree_node.can_subdivide(&target, self.internal_octree.depth) {
+                if octree_node.can_subdivide(target, self.internal_octree.depth) {
                     // Add each child node, but also update the parent's child link id
                     let child_nodes = octree_node.subdivide(&mut nodes);
                     pending_nodes.extend(child_nodes.clone());
@@ -203,11 +200,11 @@ impl AdvancedOctree {
         let old_hashset = &self.combined_nodes;
 
         // Now actually detect the removed / added nodes
-        let total = new_hashset.clone().into_iter().map(|x| x).collect();
+        let total = new_hashset.clone().into_iter().collect();
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
-        let added_nodes = new_hashset.difference(&old_hashset).cloned().collect();
+        let added_nodes = new_hashset.difference(old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
         self.position = *target;
-        return Some((added_nodes, removed_nodes, total));
+        Some((added_nodes, removed_nodes, total))
     }
 }

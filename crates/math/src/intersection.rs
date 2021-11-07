@@ -9,24 +9,24 @@ pub struct Intersection {}
 impl Intersection {
     // Check if an AABB intersects another AABB
     pub fn aabb_aabb(aabb: &bounds::AABB, other: &bounds::AABB) -> bool {
-        return aabb.min.elem_lt(&other.max).all() && other.min.elem_lt(&aabb.max).all();
+        aabb.min.elem_lt(&other.max).all() && other.min.elem_lt(&aabb.max).all()
     }
     // Check if a point is inside a sphere
     pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &shapes::Sphere) -> bool {
-        return point.distance(sphere.center) < sphere.radius;
+        point.distance(sphere.center) < sphere.radius
     }
     // Check if a point is inside an AABB
     pub fn point_aabb(point: &veclib::Vector3<f32>, aabb: &bounds::AABB) -> bool {
-        return aabb.min.elem_lt(point).all() && aabb.max.elem_gt(point).all();
+        aabb.min.elem_lt(point).all() && aabb.max.elem_gt(point).all()
     }
     // Check if an AABB is intersecting a sphere
     pub fn aabb_sphere(aabb: &bounds::AABB, sphere: &shapes::Sphere) -> bool {
         let closest_point = aabb.get_nearest_point(&sphere.center);
-        return Self::point_sphere(&closest_point, sphere);
+        Self::point_sphere(&closest_point, sphere)
     }
     // Check if a square intersects another square
     pub fn square_square(square: &shapes::Square, other: &shapes::Square) -> bool {
-        return square.min.elem_lte(&other.max).all() && other.min.elem_lte(&square.max).all();
+        square.min.elem_lte(&other.max).all() && other.min.elem_lte(&square.max).all()
     }
     // Check if a screen space point is inside the NDC
     pub fn ss_point_limits(point: &veclib::Vector2<f32>) -> bool {
@@ -52,11 +52,11 @@ impl Intersection {
                 point.get3([0, 1, 2]) / point.w
             })
             .collect::<Vec<veclib::Vector3<f32>>>();
-        let test2 = projected_points.iter().any(|x| x.z > 0.0 && x.z < 1.0);
+        let _test2 = projected_points.iter().any(|x| x.z > 0.0 && x.z < 1.0);
         // Create a new AABB based on that
         let new_aabb = bounds::AABB::from_vertices(&projected_points);
         let intersect = Self::aabb_aabb(&bounds::AABB::ndc_forward(), &new_aabb);
-        let test = center_point.x > -1.0 && center_point.x < 1.0 && center_point.y > -1.0 && center_point.y < 1.0 && center_point.z < 1.0 && center_point.z > 0.0;
+        let _test = center_point.x > -1.0 && center_point.x < 1.0 && center_point.y > -1.0 && center_point.y < 1.0 && center_point.z < 1.0 && center_point.z > 0.0;
         intersect
     }
 }

@@ -18,7 +18,7 @@ impl Spring {
         self.velocity += -self.velocity * self.dampen;
 
         // Update the current value
-        self.current = self.velocity + self.current;
-        return self.current;
+        self.current += self.velocity;
+        self.current
     }
 }
