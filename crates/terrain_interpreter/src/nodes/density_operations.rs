@@ -1,4 +1,5 @@
-use crate::{Influence, NodeInterpreter, var_hash::VarHash};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}};
+#[derive(Debug)]
 pub enum DensityOperationType {
     Union,
     Intersection,
@@ -6,16 +7,22 @@ pub enum DensityOperationType {
 
 impl NodeInterpreter for DensityOperationType {
     fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
+        // Check if we have the right amount of inputs
+        if inputs.len() != 2 { return Err(InterpreterError::missing_input(1, self)); }
         // Check if we are using density inputs in the first place
-        if inputs.iter().any(|x| match x._type {
-            crate::var_hash::VarHashType::Density => false /* This is what we want */,
-            _ => true
-        }) { panic!() }
+        for (i, x) in inputs.iter().enumerate() {
+            match x._type {
+                crate::var_hash::VarHashType::Density => { } /* This is what we want */,
+                _ => {
+                    return Err(InterpreterError::input_err(x, i, self, VarHashType::Density));
+                },
+            }
+        };
         // Get the GLSL name of the operation and combine with the two inputs
-        match &self {
+        Ok(match self {
             DensityOperationType::Union => format!("min({}, {})", inputs[0].get_name(), inputs[1].get_name()),
             DensityOperationType::Intersection => format!("max({}, -{})", inputs[0].get_name(), inputs[1].get_name()),
-        }
+        })
     }
 
     fn calculate_influence(&self, influence_inputs: &Vec<Influence>) -> Influence {

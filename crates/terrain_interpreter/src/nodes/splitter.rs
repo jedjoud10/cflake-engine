@@ -1,6 +1,7 @@
 use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}};
 
 // How we split the vectors
+#[derive(Debug)]
 pub enum Splitter {
     // Split values
     X, Y,
@@ -10,20 +11,22 @@ pub enum Splitter {
 
 impl NodeInterpreter for Splitter {
     fn get_node_string(&self, inputs: &Vec<VarHash>) -> Result<String, InterpreterError> {
-        // 
-        match self {
-            Splitter::X => {},
-            Splitter::Y => {},
-            Splitter::Z => {
-                let valid = inputs.iter().any();
+        // Check if we can even split this varhash input
+        let input = inputs.get(0).ok_or(InterpreterError::missing_input(0, self))?;
+        match input._type {
+            VarHashType::Vec2 => match self {
+                Splitter::Z => return Err(InterpreterError::input_err(input, 0, self, VarHashType::Vec3)),
+                _ => {},
             },
-        }
+            VarHashType::Vec3 => {},
+            _ => return Err(InterpreterError::input_err(input, 0, self, VarHashType::Vec2)),
+        };
         // Split the input
-        match self {
-            Splitter::X => format!("{}.x", inputs[0].get_name()),
-            Splitter::Y => format!("{}.y", inputs[1].get_name()),
-            Splitter::Z => format!("{}.z", inputs[2].get_name()),
-        }
+        Ok(match self {
+            Splitter::X => format!("{}.x", input.get_name()),
+            Splitter::Y => format!("{}.y", input.get_name()),
+            Splitter::Z => format!("{}.z", input.get_name()),
+        })
     }
     fn calculate_influence(&self, inputs: &Vec<Influence>) -> Influence {
         // TODO: This

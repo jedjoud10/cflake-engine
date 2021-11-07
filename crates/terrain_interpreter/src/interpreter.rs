@@ -2,7 +2,7 @@ use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
 use math::bounds::AABB;
 
-use crate::{Influence, NodeInterpreter, nodes::{base_position::BasePosition, final_density::FinalDensity}, var_hash::{VarHash, VarHashType}};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::{base_position::BasePosition, final_density::FinalDensity}, var_hash::{VarHash, VarHashType}};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
@@ -30,16 +30,16 @@ impl Default for Interpreter {
 // Add nodes
 impl Interpreter {
     // Add a specific node to the system
-    pub fn add<T: NodeInterpreter>(&mut self, node_interpreter: T, inputs: Vec<VarHash>) -> VarHash {
+    pub fn add<T: NodeInterpreter>(&mut self, node_interpreter: T, inputs: Vec<VarHash>) -> Result<VarHash, InterpreterError> {
         let id = self.vars.len();
         // Create the var hash
         let boxed = Box::new(node_interpreter);
         let var_hash = VarHash { name: id, _type: boxed.get_output_type() };
         self.vars.push(var_hash.clone());
         // Create a variable for this node
-        let line = format!("{} {} = {};", var_hash._type.to_glsl_type(), boxed.custom_name(var_hash.get_name()), boxed.get_node_string(&inputs));
+        let line = format!("{} {} = {};", var_hash._type.to_glsl_type(), boxed.custom_name(var_hash.get_name()), boxed.get_node_string(&inputs)?);
         self.lines.push(line);
-        (*self.vars.get(id).unwrap()).clone()
+        Ok((*self.vars.get(id).unwrap()).clone())
     }
     // Finalize the tree with a specific var hash
     pub fn finalize(&mut self, final_density_varhash: VarHash) {

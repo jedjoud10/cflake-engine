@@ -3,7 +3,7 @@ use crate::{Influence, Interpreter, error::InterpreterError, var_hash::{VarHash,
 // A singular node that consists of a position and an exit density
 pub trait NodeInterpreter {
     // Creata a new node
-    fn new(self, inputs: Vec<VarHash>, interpreter: &mut Interpreter) -> VarHash where Self: Sized {
+    fn new(self, inputs: Vec<VarHash>, interpreter: &mut Interpreter) -> Result<VarHash, InterpreterError> where Self: Sized {
         // Add
         interpreter.add(self, inputs)
     }

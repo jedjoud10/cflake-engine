@@ -1,11 +1,11 @@
 // A variable hash
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct VarHash {
     pub name: usize,
     pub _type: VarHashType
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum VarHashType {
     // Can be a boolean in case of a condition
     Bool,
