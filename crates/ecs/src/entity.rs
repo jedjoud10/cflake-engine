@@ -1,10 +1,9 @@
-use crate::{load_state, LoadState};
+use crate::{LoadState};
 
 use super::{Component, ComponentID, ComponentManager};
 use errors::ECSError;
 use others::{Instance, SmartList};
 use std::{
-    any::Any,
     collections::{HashMap, HashSet},
 };
 

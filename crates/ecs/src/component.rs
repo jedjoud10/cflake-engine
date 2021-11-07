@@ -55,16 +55,14 @@ impl ComponentManager {
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a Box<dyn ComponentInternal>) -> Result<&'a T, ECSError> {
+    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a dyn ComponentInternal) -> Result<&'a T, ECSError> {
         let component_any: &dyn Any = boxed_component.as_any();
-        let final_component = component_any.downcast_ref::<T>().ok_or(ECSError::new_str("Could not cast component"))?;
-        Ok(final_component)
+        component_any.downcast_ref::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut Box<dyn ComponentInternal>) -> Result<&'a mut T, ECSError> {
+    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal) -> Result<&'a mut T, ECSError> {
         let component_any: &mut dyn Any = boxed_component.as_any_mut();
-        let final_component = component_any.downcast_mut::<T>().ok_or(ECSError::new_str("Could not cast component"))?;
-        Ok(final_component)
+        component_any.downcast_mut::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))
     }
     // Get a reference to a specific linked component
     pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: usize) -> Result<&T, ECSError> {
@@ -74,8 +72,8 @@ impl ComponentManager {
             .smart_components_list
             .get_element(global_id)
             .unwrap()
-            .ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component(linked_component)?;
+            .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
+        let component = Self::cast_component(linked_component.as_ref())?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
@@ -84,8 +82,8 @@ impl ComponentManager {
             .smart_components_list
             .get_element_mut(global_id)
             .unwrap()
-            .ok_or(ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component_mut(linked_component)?;
+            .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
+        let component = Self::cast_component_mut(linked_component.as_mut())?;
         Ok(component)
     }
     // Remove a specified component from the list
