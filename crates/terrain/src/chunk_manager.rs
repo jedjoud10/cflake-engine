@@ -1,15 +1,15 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-use assets::AssetManager;
-use ecs::{ComponentManager, Entity};
-use math::octrees::OctreeNode;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rendering::{Model, Shader, Texture};
-use world_data::WorldData;
+
+
+
+use rayon::iter::{ParallelIterator};
+
+
 
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
-use crate::{TModel, Voxel, MAIN_CHUNK_SIZE};
+use crate::{TModel};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -37,7 +37,7 @@ impl ChunkManager {
         // Only update the octree if we don't have entities to remove and we don't have chunks to generate
         let entities_to_remove = self.entities_to_remove.len();
         let chunks_to_generate = self.chunks_to_generate.len();
-        return entities_to_remove == 0 && chunks_to_generate == 0;
+        entities_to_remove == 0 && chunks_to_generate == 0
     }
     // Add a chunk
     pub fn add_chunk(&mut self, coords: ChunkCoords) {
@@ -48,9 +48,9 @@ impl ChunkManager {
         if self.chunks.contains(&coords.center) {
             // Only remove the chunk if it exists in the first place
             self.chunks.remove(&coords.center);
-            return Some(());
+            Some(())
         } else {
-            return None;
+            None
         }
     }
     // Add a chunk entity
@@ -65,8 +65,8 @@ impl ChunkManager {
     }
     // The priority function
     pub fn priority_function(a: &ChunkCoords, camera_forward_vector: &veclib::Vector3<f32>, camera_position: &veclib::Vector3<f32>) -> f32 {
-        let priority = camera_forward_vector.dot((*camera_position - veclib::Vector3::<f32>::from(a.center)).normalized());
-        priority
+        
+        camera_forward_vector.dot((*camera_position - veclib::Vector3::<f32>::from(a.center)).normalized())
     }
     // Update the location and forward vector of the camera entity
     pub fn update_camera_view(&mut self, position: veclib::Vector3<f32>, forward_vector: veclib::Vector3<f32>) {
@@ -82,8 +82,8 @@ impl ChunkManager {
             let camera_forward_vector = self.camera_forward_vector;
             self.chunks_to_generate.sort_by(|a, b| {
                 // Get the dot product
-                let ad = Self::priority_function(&a, &camera_forward_vector, &camera_position);
-                let bd = Self::priority_function(&b, &camera_forward_vector, &camera_position);
+                let ad = Self::priority_function(a, &camera_forward_vector, &camera_position);
+                let bd = Self::priority_function(b, &camera_forward_vector, &camera_position);
                 bd.partial_cmp(&ad).unwrap_or(Ordering::Equal)
             });
         }
@@ -111,7 +111,7 @@ impl ChunkManager {
                         // We have a surface, create the model
                         let coords = chunk_coords.clone();
                         let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true, true);
-                        let chunk_data = ChunkData { coords: coords, voxels: voxels };
+                        let chunk_data = ChunkData { coords, voxels };
                         final_chunk = Some((chunk_data, model));
                     }
                 } else {
@@ -128,19 +128,19 @@ impl ChunkManager {
         // The system was flawed...
         match final_chunk {
             Some((data, model)) => {
-                self.chunks.insert(data.coords.center.clone());
+                self.chunks.insert(data.coords.center);
                 self.pending_chunks.push((data.coords, model));
             }
             None => {}
         }
 
         // Remove the entities after all the new ones got generated
-        if self.chunks_to_generate.len() == 0 {
-            let entities_to_remove = self.entities_to_remove.iter().map(|x| x.1.clone()).collect();
+        if self.chunks_to_generate.is_empty() {
+            let entities_to_remove = self.entities_to_remove.iter().map(|x| *x.1).collect();
             self.entities_to_remove.clear();
-            let yoinked = std::mem::replace(&mut self.pending_chunks, Vec::new());
+            let yoinked = std::mem::take(&mut self.pending_chunks);
             return Some((yoinked, entities_to_remove));
         }
-        return None;
+        None
     }
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ecs::EntityManager;
-use others::SmartList;
+
 use rendering::ComputeShader;
 
 use crate::ChunkCoords;
@@ -22,7 +22,7 @@ pub struct DetailManager {
 
 impl DetailManager {
     // Read back the details from the compute shader for a specific chunk
-    pub fn load_details(&mut self, chunk_entity_id: usize, compute_shader: &mut ComputeShader, entity_manager: &mut EntityManager) {
+    pub fn load_details(&mut self, _chunk_entity_id: usize, _compute_shader: &mut ComputeShader, _entity_manager: &mut EntityManager) {
         // Load back the detail
         // Append the generated detail to it's corresponding detail group
     }

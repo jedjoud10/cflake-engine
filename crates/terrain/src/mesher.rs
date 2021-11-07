@@ -8,7 +8,7 @@ use super::Voxel;
 use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::time::Instant;
+
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -16,7 +16,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, skirts: bool) -> TModel {
+pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, _skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
     let mut sub_model_hashmap: HashMap<u8, Model> = HashMap::new();
     let mut intersection_cases: Vec<TCase> = Vec::new();
@@ -157,11 +157,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, size: usize, interpolation: bool, s
     }
     */
     // Return the model
-    return TModel {
+    TModel {
         shader_model_hashmap: sub_model_hashmap,
         skirt_models: HashMap::new(),
         intersection_cases: Some(intersection_cases),
-    };
+    }
 }
 
 // The type of skirt vertex, normal or shared
@@ -170,12 +170,12 @@ pub enum SkirtVertex {
 }
 
 // Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(case: u8, local_skirt_voxels: &[Voxel], flip: bool) -> Option<Vec<SkirtVertex>> {
+pub fn solve_marching_squares(case: u8, _local_skirt_voxels: &[Voxel], _flip: bool) -> Option<Vec<SkirtVertex>> {
     // Create the triangles from the local skirts
     match case {
         1 => {}
         0 | 15 => { /* Empty cases */ }
         _ => { /* Case number is unsuported */ }
     }
-    return None;
+    None
 }

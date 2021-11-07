@@ -1,8 +1,8 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
-use assets::AssetManager;
+
 use rendering::{Shader, Texture, TextureFilter, TextureType};
-use std::time::Instant;
-use veclib::Swizzable;
+
+
 
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
@@ -80,7 +80,7 @@ impl VoxelGenerator {
             .unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) -> (bool, Box<[Voxel]>) {
+    pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> (bool, Box<[Voxel]>) {
         let shader = &mut self.compute;
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
@@ -111,7 +111,7 @@ impl VoxelGenerator {
         }
         // Flatten using the custom size of MAIN_CHUNK_SIZE+2
         fn custom_flatten(x: usize, y: usize, z: usize) -> usize {
-            return x + (y * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)) + (z * (MAIN_CHUNK_SIZE + 2));
+            x + (y * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)) + (z * (MAIN_CHUNK_SIZE + 2))
         }
         // Calculate the voxel normal
         for x in 0..(MAIN_CHUNK_SIZE + 1) {
@@ -128,7 +128,7 @@ impl VoxelGenerator {
                     let sv = local_data[i];
                     let voxel = Voxel {
                         density: sv.0,
-                        normal: normal,
+                        normal,
                         shader_id: sv.1,
                         localized_material_id: sv.2,
                     };
