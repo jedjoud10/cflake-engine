@@ -5,6 +5,7 @@ pub enum DensityOperation {
     Intersection,
     // We can only do this if we know the influence of the inputs
     Addition,
+    Subtraction,
 }
 
 impl NodeInterpreter for DensityOperation {
@@ -17,6 +18,7 @@ impl NodeInterpreter for DensityOperation {
             DensityOperation::Union => format!("min({}, {})", i0, i1),
             DensityOperation::Intersection => format!("max({}, -{})", i0, i1),
             DensityOperation::Addition => format!("{} + {}", i0, i1),
+            DensityOperation::Subtraction => format!("{} - {}", i0, i1),
         })
     }
     fn get_output_type(&self, _getter: &VarHashGetter) -> crate::var_hash::VarHashType {

@@ -20,8 +20,8 @@ pub enum NoiseType {
 impl Default for Noise {
     fn default() -> Self {
         Self {
-            strength: 40.0,
-            scale: 0.001,
+            strength: 80.0,
+            scale: 0.005,
             _type: NoiseType::Simplex,
         }
     }

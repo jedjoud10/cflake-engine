@@ -38,9 +38,12 @@ impl Interpreter {
         let mut interpreter = Interpreter::default();
         // Add the default pos.y nodes
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
+        let length = VectorOperations::Length.new(&[p], &mut interpreter).unwrap();
+        let constant = Constants::Float(200.0).new(&[], &mut interpreter).unwrap();
+        let length2 = DensityOperation::Subtraction.new(&[length, constant], &mut interpreter).unwrap();
         let y = Splitter::Y.new(&[p], &mut interpreter).unwrap();
         let snoise = Noise::default().new(&[p], &mut interpreter).unwrap();
-        let final_node = DensityOperation::Addition.new(&[y, snoise], &mut interpreter).unwrap();
+        let final_node = DensityOperation::Addition.new(&[length2, snoise], &mut interpreter).unwrap();
         interpreter.finalize(final_node);
         interpreter
     }
