@@ -21,4 +21,3 @@ debug = { path = "../debug" }
 input = { path = "../input" }
 others = { path = "../others" }
 assets = { path = "../assets" }
-errors = { path = "../errors" }

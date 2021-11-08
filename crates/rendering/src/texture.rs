@@ -1,5 +1,6 @@
 use assets::*;
 use bitflags::bitflags;
+use crate::RenderingError;
 use gl;
 use image::{DynamicImage, EncodableLayout, GenericImageView};
 
@@ -290,7 +291,7 @@ impl Texture {
         main_texture.object_cache_load(name, &mut asset_manager.object_cacher)
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
-    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, errors::RenderingError> {
+    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;

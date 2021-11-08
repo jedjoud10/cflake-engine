@@ -15,7 +15,6 @@ systems = { path = "../systems" }
 others = { path = "../others" }
 ecs = { path = "../ecs" }
 ui = { path = "../ui" }
-errors = { path = "../errors" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 debug = { path = "../debug" }

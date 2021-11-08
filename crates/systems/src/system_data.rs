@@ -1,7 +1,6 @@
 use std::any::Any;
 
 use ecs::*;
-use errors::ECSError;
 
 // Some system data
 #[derive(Default)]

@@ -1,5 +1,6 @@
+use crate::ECSError;
+
 use super::entity::Entity;
-use errors::ECSError;
 use others::SmartList;
 use std::{any::Any, collections::HashMap};
 

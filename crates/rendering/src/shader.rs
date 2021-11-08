@@ -6,7 +6,7 @@ use crate::TextureShaderAccessType;
 use assets::Asset;
 use assets::AssetManager;
 use assets::Object;
-use errors::RenderingError;
+use crate::RenderingError;
 use gl;
 use std::collections::HashMap;
 use std::collections::HashSet;

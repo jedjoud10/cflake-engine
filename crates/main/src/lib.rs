@@ -11,7 +11,6 @@ pub use assets;
 pub use debug;
 pub use defaults;
 pub use ecs;
-pub use errors;
 use glfw::Context;
 pub use input;
 pub use math;

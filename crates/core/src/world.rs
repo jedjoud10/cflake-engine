@@ -3,7 +3,6 @@ use assets::*;
 use debug::*;
 use defaults::{components, systems};
 use ecs::*;
-use errors::*;
 use gl;
 use glfw::{self, Context};
 use input::*;

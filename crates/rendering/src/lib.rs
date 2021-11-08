@@ -13,6 +13,8 @@ mod texture;
 mod utils;
 mod volumetric;
 mod window;
+mod error;
+pub use error::*;
 pub use array_data::*;
 pub use compute_shader::*;
 pub use material::*;

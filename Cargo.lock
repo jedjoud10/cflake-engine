@@ -90,7 +90,6 @@ dependencies = [
  "debug",
  "defaults",
  "ecs",
- "errors",
  "fonts",
  "gl",
  "glfw",
@@ -176,7 +175,6 @@ dependencies = [
  "assets",
  "debug",
  "ecs",
- "errors",
  "fonts",
  "gl",
  "input",
@@ -233,7 +231,6 @@ dependencies = [
 name = "ecs"
 version = "0.1.0"
 dependencies = [
- "errors",
  "others",
 ]
 
@@ -242,13 +239,6 @@ name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
-
-[[package]]
-name = "errors"
-version = "0.1.0"
-dependencies = [
- "gl",
-]
 
 [[package]]
 name = "font_generator"
@@ -377,7 +367,6 @@ name = "io"
 version = "0.1.0"
 dependencies = [
  "byteorder",
- "errors",
  "platform-dirs",
 ]
 
@@ -426,7 +415,6 @@ dependencies = [
  "debug",
  "defaults",
  "ecs",
- "errors",
  "gl",
  "glfw",
  "input",
@@ -638,7 +626,6 @@ dependencies = [
  "assets",
  "bitflags",
  "ecs",
- "errors",
  "gl",
  "image",
  "others",
@@ -677,7 +664,6 @@ name = "systems"
 version = "0.1.0"
 dependencies = [
  "ecs",
- "errors",
  "others",
  "rayon",
  "world_data",
@@ -690,7 +676,6 @@ dependencies = [
  "assets",
  "debug",
  "ecs",
- "errors",
  "gl",
  "input",
  "math",
@@ -778,7 +763,6 @@ dependencies = [
  "assets",
  "debug",
  "ecs",
- "errors",
  "input",
  "others",
  "rendering",

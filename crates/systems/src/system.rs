@@ -1,5 +1,4 @@
 use ecs::*;
-use errors::ECSError;
 use others::Time;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use world_data::*;

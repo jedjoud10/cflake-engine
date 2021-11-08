@@ -10,7 +10,6 @@ ui = { path = "../ui" }
 input = { path = "../input" }
 others = { path = "../others" }
 ecs = { path = "../ecs" }
-errors = { path = "../errors" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 debug = { path = "../debug" }

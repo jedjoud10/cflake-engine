@@ -12,7 +12,6 @@ members = [
     "crates\\dev_game",
     "crates\\main",
     "crates\\world_data",
-    "crates\\errors",
     "crates\\debug",
     "crates\\core",
     "crates\\systems",
