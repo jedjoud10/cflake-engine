@@ -71,7 +71,6 @@ impl Shader {
                     let source_id = c[2..(c.len() - 2)].parse::<usize>().unwrap();
                     let source = self.additional_shader_sources.get(source_id).unwrap();
                     let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                    println!("EXTEND {}", lines.join("\n"));
                     vectors_to_insert.push((i, lines));
                 }
             }
@@ -148,7 +147,6 @@ impl Shader {
                     })
                     .collect::<Vec<&str>>()
                     .join("\n");
-                println!("{}", subshader.source);
                 // Compile the subshader
                 subshader.compile_subshader();
 
@@ -156,8 +154,6 @@ impl Shader {
                 let rc_subshader = asset_manager.object_cacher.cache(subshader_path, subshader).ok()?;
                 let _subshader = rc_subshader.as_ref();
                 self.link_subshader(_subshader);
-                // Unload the resource since we just cached the shader
-                //resource_manager.unload_resouce(subshader_path);
             }
         }
         // Finalize the shader and cache it

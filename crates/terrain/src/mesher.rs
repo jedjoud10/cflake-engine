@@ -125,37 +125,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
         }
     }
     */
-    /*
-    // Create the skirts in a completely separate loop
-    // The skirts' models
-    let mut skirt_models: HashMap<u8, Model> = HashMap::new();
-    for (shader_id, (model, shared_vertices)) in sub_model_hashmap.iter() {
-        // Make sure the skirts model exists
-        skirt_models.entry(*shader_id).or_default();
-        let skirt_model = skirt_models.get_mut(shader_id).unwrap();
-        // Turn the shared vertices into triangle indices
-        for shared_vertex in shared_vertices {
-            match shared_vertex {
-                SkirtVertex::Vertex(vertex, normal, color) => {
-                    // This vertex isn't a shared vertex
-                    skirt_model.triangles.push(skirt_model.vertices.len() as u32);
-                    skirt_model.vertices.push(vertex.clone());
-                    skirt_model.normals.push(normal.clone());
-                    skirt_model.colors.push(color.clone());
-                }
-                SkirtVertex::SharedVertex(coord_tuple) => {
-                    let tri = *duplicate_vertices.get(&(coord_tuple.0, coord_tuple.1, coord_tuple.2, *shader_id)).unwrap();
-                    // Get the vertex, and duplicate it, since the skirts are in their own sub model
-                    let vert_data = (model.vertices[tri as usize], model.normals[tri as usize], model.colors[tri as usize]);
-                    skirt_model.triangles.push(skirt_model.vertices.len() as u32);
-                    skirt_model.vertices.push(vert_data.0);
-                    skirt_model.normals.push(vert_data.1);
-                    skirt_model.colors.push(vert_data.2);
-                }
-            }
-        }
-    }
-    */
+    
     // Return the model
     TModel {
         shader_model_hashmap: sub_model_hashmap,

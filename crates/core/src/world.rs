@@ -179,13 +179,11 @@ impl World {
         self.load_defaults(window);
 
         // Load the config file for this world
-        self.saver_loader.create_default("config\\game_config.che", &GameConfig::default());
-        let mut config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.che");
-        //config_file_values.vsync = true;
+        self.saver_loader.create_default("config\\game_config.json", &GameConfig::default());
+        let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.json");
         self.config_file = config_file_values;
 
         // Enable disable vsync
-
         if self.config_file.vsync {
             // Enable VSync
             glfw.set_swap_interval(glfw::SwapInterval::Sync(1));

@@ -1,28 +1,20 @@
-use crate::{LoadedValue, ValueGetter};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use platform_dirs::AppDirs;
-use std::{
-    fs::{File, OpenOptions},
-    io::{BufReader, BufWriter},
-    path::PathBuf,
-};
-
-// A trait that will be implemented on structs that can be turned into .hsf files
-pub trait LoadableData {
-    fn load_from_file(vg: &mut ValueGetter) -> Self;
-    fn save_to_file(&self) -> Vec<LoadedValue>;
-}
+use std::{fs::{File, OpenOptions}, io::{BufReader, BufWriter, Read, Write}, path::PathBuf};
+use serde_json;
 
 // Lets us save / load a file from the saved folder
 pub struct SaverLoader {
     // The path where all the local data will be stored into
     // %appdata%\\{game_name}\\data\\
     pub local_path: PathBuf,
+    // Paths
+    loaded_strings: Vec<String>
 }
 
 impl SaverLoader {
     // Make sure a default copy of the data exists
-    pub fn create_default<T: LoadableData>(&self, file_path: &str, default_data: &T) {
+    pub fn create_default<T: serde::Serialize + serde::Deserialize<'static>>(&self, file_path: &str, default_data: &T) {
         // If default_create is true, we should create the file if it does not exist yet
         let global_path = self.local_path.join(file_path);
         if !global_path.exists() {
@@ -37,89 +29,29 @@ impl SaverLoader {
         let old_path = format!("{}\\{}\\", author_name, app_name);
         let path = AppDirs::new(Some(&old_path), false).unwrap();
         println!("{:?}", path.config_dir);
-        SaverLoader { local_path: path.config_dir }
+        SaverLoader { local_path: path.config_dir, loaded_strings: Vec::new() }
     }
     // Load a struct from a file
-    pub fn load<T: LoadableData>(&self, file_path: &str) -> T {
+    pub fn load<'a, T: serde::Serialize + serde::Deserialize<'a>>(&'a mut self, file_path: &'a str) -> T {
         // Load the file
         let global_path = self.local_path.join(file_path);
-        println!("{:?}", global_path);
         let mut reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
-        let mut values: Vec<LoadedValue> = Vec::new();
-        // Get the values from this reader
-        loop {
-            // Get the value type
-            let _type = match reader.read_u8() {
-                Ok(x) => x as i32,
-                Err(_) => {
-                    // Quit from the loop
-                    break;
-                }
-            };
-            let value_to_add = match _type {
-                0 => {
-                    // bool
-                    LoadedValue::BOOL(match reader.read_u8().unwrap() {
-                        0 => false,
-                        255 => true,
-                        _ => panic!(),
-                    })
-                }
-                1 => {
-                    // f32
-                    LoadedValue::F32(reader.read_f32::<LittleEndian>().unwrap())
-                }
-                2 => {
-                    // i32
-                    LoadedValue::I32(reader.read_i32::<LittleEndian>().unwrap())
-                }
-                _ => panic!(),
-            };
-            values.push(value_to_add);
-        }
-        // Create the value getter
-        let mut value_getter: ValueGetter = ValueGetter {
-            values: values,
-            current_cursor_index: 0,
-            valid: true,
-        };
-        let v = T::load_from_file(&mut value_getter);
-        // Save the file again if it had missing parameters
-        if !value_getter.valid {
-            self.save(file_path, &v);
-        }
-        return v;
+        // Save the string because it can't handle the real shrigma-ness
+        let mut string = String::new();
+        reader.read_to_string(&mut string).unwrap();
+        self.loaded_strings.push(string);
+        let string = self.loaded_strings.last().unwrap();
+
+        let x: T = serde_json::from_str(string).unwrap();
+        return x;
     }
     // Save a struct to a file
-    pub fn save<T: LoadableData>(&self, file_path: &str, struct_to_save: &T) {
+    pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(&self, file_path: &str, struct_to_save: &T) {
         // Save the file
         let global_path = self.local_path.join(file_path);
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());
-        let values = struct_to_save.save_to_file();
-        // Actually save the file
-        for value in values.iter() {
-            match value {
-                LoadedValue::None => todo!(),
-                LoadedValue::BOOL(b) => {
-                    // Write the type of value
-                    writer.write_u8(0).unwrap();
-                    // Write the value
-                    writer.write_u8(if *b { 255 } else { 0 }).unwrap();
-                }
-                LoadedValue::F32(f) => {
-                    // Write the type of value
-                    writer.write_i8(1).unwrap();
-                    // Write the value
-                    writer.write_f32::<LittleEndian>(*f).unwrap();
-                }
-                LoadedValue::I32(f) => {
-                    // Write the type of value
-                    writer.write_i8(2).unwrap();
-                    // Write the value
-                    writer.write_i32::<LittleEndian>(*f).unwrap();
-                }
-            }
-        }
+        let string = serde_json::to_string_pretty(struct_to_save).unwrap();
+        writer.write(string.as_bytes()).unwrap();
     }
     // Save a string to a specific log file in the local user data
     pub fn save_string(&self, file_path: &str, string: String) {}
