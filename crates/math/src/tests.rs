@@ -19,4 +19,9 @@ mod tests {
         assert_eq!(Intersection::aabb_aabb(&aabb1, &AABB::ndc_forward()), true);
         assert_eq!(Intersection::aabb_aabb(&aabb2, &AABB::ndc_forward()), false);
     }
+    // CSG shapes tests
+    #[test]
+    pub fn csg_tests() {
+        
+    }
 }

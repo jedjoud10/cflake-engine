@@ -37,7 +37,6 @@ impl AABB {
     }
 }
 
-// Intersection functions
 impl AABB {
     // Get a specific corner from this AABB
     pub fn get_corner(&self, corner_index: u8) -> veclib::Vector3<f32> {
@@ -64,7 +63,7 @@ impl AABB {
 // Generation functions
 impl AABB {
     // Generate the AABB from a set of points
-    pub fn from_vertices(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
+    pub fn new_vertices(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
         let mut aabb: Self = AABB {
             min: veclib::Vector3::ONE * 9999.0,
             max: -veclib::Vector3::ONE * 9999.0,
@@ -77,7 +76,19 @@ impl AABB {
         }
         aabb.center = (aabb.max + aabb.min) / 2.0;
         aabb
-    }
+    }   
+    // Generate the AABB from a center and some half extents
+    pub fn new_center_halfextent(center: veclib::Vector3<f32>, half_extent: veclib::Vector3<f32>) -> Self {
+        Self {
+            min: center - half_extent,
+            max: center + half_extent,
+            center,
+        }
+    } 
+}
+
+// Transform functions
+impl AABB {
     // Transform the AABB by a transform
     pub fn transform(&mut self, transform_matrix: &veclib::Matrix4x4<f32>) {
         // Transform the min and max by the transform's matrix
