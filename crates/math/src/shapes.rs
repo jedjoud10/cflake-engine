@@ -89,21 +89,30 @@ impl Line {
         Self { point: start, point2: end }
     }
 }
-// A simple cube
-#[derive(Default, Clone, Copy)]
-pub struct Cube {
-    pub center: veclib::Vector3<f32>,
-    pub size: veclib::Vector3<f32>,
+// Shape type
+pub enum ShapeType {
+    Cube(veclib::Vector3<f32>),
+    Sphere(f32),
 }
-// A simple sphere
-#[derive(Default, Clone, Copy)]
-pub struct Sphere {
+// A main shape struct
+pub struct Shape {
+    // The center of the shape
     pub center: veclib::Vector3<f32>,
-    pub radius: f32,
+    pub internal_shape: ShapeType
 }
-// A simple square
-#[derive(Default, Clone, Copy, Debug)]
-pub struct Square {
-    pub min: veclib::Vector2<f32>,
-    pub max: veclib::Vector2<f32>,
+impl Shape {
+    // New cube
+    pub fn new_cube(center: veclib::Vector3<f32>, half_extent: veclib::Vector3<f32>) -> Self {
+        Self {
+            center,
+            internal_shape: ShapeType::Cube(half_extent),
+        }
+    }
+    // New sphere
+    pub fn new_sphere(center: veclib::Vector3<f32>, radius: f32) -> Self {
+        Self {
+            center,
+            internal_shape: ShapeType::Sphere(radius),
+        }
+    }
 }

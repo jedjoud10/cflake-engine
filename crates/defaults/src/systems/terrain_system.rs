@@ -1,6 +1,4 @@
 use std::time::Instant;
-
-use debug::DefaultDebugRendererType;
 use terrain::{ChunkCoords, TerrainStats};
 
 use crate::components;

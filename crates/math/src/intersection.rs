@@ -16,9 +16,14 @@ impl Intersection {
         aabb.min.elem_lt(point).all() && aabb.max.elem_gt(point).all()
     }
     // Check if an AABB is intersecting a sphere
-    pub fn aabb_sphere(aabb: &bounds::AABB, sphere: &shapes::Sphere) -> bool {
-        let closest_point = aabb.get_nearest_point(&sphere.center);
-        Self::point_sphere(&closest_point, sphere)
+    pub fn aabb_sphere(aabb: &bounds::AABB, sphere: &crate::shapes::Shape) -> bool {
+        match sphere.internal_shape {
+            shapes::ShapeType::Cube(_) => todo!() /* This is not a fucking sphere you dumbass*/,
+            shapes::ShapeType::Sphere(_) => {
+                let closest_point = aabb.get_nearest_point(&sphere.center);
+                Self::point_sphere(&closest_point, sphere)
+            },
+        }
     }
     // Frustum and an aabb
     pub fn frustum_aabb(frustum: &crate::Frustum, aabb: &bounds::AABB) -> bool {
@@ -43,20 +48,16 @@ impl Intersection {
     }
     // CSG shape and an abb
     pub fn csgshape_aabb(csgshape: &crate::csg::CSGShape, aabb: &bounds::AABB) -> bool {
-        let center = csgshape.center;
-        let intersection = match csgshape.internal_shape {
-            crate::constructive_solid_geometry::ShapeType::Cube(half_extent) => {
+        let center = csgshape.internal_shape.center;
+        let intersection = match csgshape.internal_shape.internal_shape {
+            crate::shapes::ShapeType::Cube(half_extent) => {
                 // Lol let's use the function that I already made kek
                 let csg_aabb = crate::bounds::AABB::new_center_halfextent(center, half_extent);
                 Self::aabb_aabb(aabb, &csg_aabb)
             },
-            crate::constructive_solid_geometry::ShapeType::Sphere(radius) => {
+            crate::shapes::ShapeType::Sphere(radius) => {
                 // Same stuff here
-                let sphere = crate::shapes::Sphere {
-                    center,
-                    radius,
-                };
-                Self::aabb_sphere(aabb, &sphere)
+                Self::aabb_sphere(aabb, &csgshape.internal_shape)
             },
         };
         intersection
@@ -79,18 +80,11 @@ impl Intersection {
     /* #endregion */ 
     /* #region Others */
     // Check if a point is inside a sphere
-    pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &shapes::Sphere) -> bool {
-        point.distance(sphere.center) < sphere.radius
-    }
-    // Check if a square intersects another square
-    pub fn square_square(square: &shapes::Square, other: &shapes::Square) -> bool {
-        square.min.elem_lte(&other.max).all() && other.min.elem_lte(&square.max).all()
-    }
-    // Check if a screen space point is inside the NDC
-    pub fn ss_point_limits(point: &veclib::Vector2<f32>) -> bool {
-        let min = (point).elem_lt(&veclib::Vector2::ONE).all();
-        let max = (point).elem_gt(&-veclib::Vector2::ONE).all();
-        min && max
+    pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &shapes::Shape) -> bool {
+        match sphere.internal_shape {
+            shapes::ShapeType::Cube(_) => todo!() /* Not a sphere */,
+            shapes::ShapeType::Sphere(radius) => point.distance(sphere.center) < radius,
+        }        
     }
     /* #endregion */    
 }
