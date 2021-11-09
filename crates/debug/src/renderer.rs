@@ -1,51 +1,58 @@
-use assets::AssetManager;
+use assets::{Asset, AssetManager};
 use math;
-use rendering::{Model, Renderer, Shader, SubShader};
-use std::{ffi::c_void, mem::size_of, ptr::null};
+use others::Instance;
+use rendering::{Material, Model, Renderer, Shader, SubShader, Uniform};
+use std::{ffi::c_void, mem::size_of, ptr::null, rc::Rc};
 
-// Constants
-pub const MAX_LINE_COUNT: i32 = 8192;
-pub const MAX_DEBUG_PRIMITIVES: usize = 512;
-pub const MAX_PERMAMENT_DEBUG_PRIMITIVES: usize = 512;
 pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality
 #[derive(Default)]
 pub struct DebugRenderer {
     pub primitives: Vec<DebugPrimitive>,
+    // The template models
+    pub template_models: Vec<Model>,
     // The model renderers 
-    pub renderer: Vec<Renderer>,
-    pub shader: Shader,
+    pub renderers: Vec<(Renderer, veclib::Matrix4x4<f32>)>,
+    pub template_material: Material,
 }
 
 impl DebugRenderer {
     // Generate the vao and load the shader
     pub fn setup_debug_renderer(&mut self, asset_manager: &mut AssetManager) {
         // Set the shader name
-        self.shader = Shader::new()
+        let shader = Shader::new()
             .load_shader(
                 vec!["defaults\\shaders\\others\\debug.vrsh.glsl", "defaults\\shaders\\others\\debug.frsh.glsl"],
                 asset_manager,
             )
             .unwrap();
-    }
-    // Draw the debug renderers
-    pub fn draw_debug(&mut self, vp_matrix: &veclib::Matrix4x4<f32>) {
-        if !DRAW_DEBUG {
-            return;
-        }
-        
-        // Set the shader
-        let shader = &mut self.shader;
-        // Since we don't have a model matrix you can set it directly
-        shader.use_shader();
-        shader.set_mat44("vp_matrix", &vp_matrix);
+        // Create the material
+        self.template_material = Material::new("Debug material", asset_manager).set_shader(Rc::new(shader)).set_double_sided(true);
+        // Load the template models
+        self.template_models.push(Model::asset_load_easy("defaults\\models\\cube.mdl3d", &mut asset_manager.asset_cacher).unwrap());
+        self.template_models.push(Model::asset_load_easy("defaults\\models\\sphere.mdl3d", &mut asset_manager.asset_cacher).unwrap());
+        self.debug(DebugPrimitive::new().set_shape(math::shapes::Shape::new_sphere(veclib::Vector3::ZERO, 1.0)).set_tint(veclib::Vector3::ONE));
     }
     // Add a debug primitive to the queue and then render it
     pub fn debug(&mut self, debug_primitive: DebugPrimitive) {
         if !DRAW_DEBUG {
             return;
         }
+        // Add the Renderer first
+        let template_model = match debug_primitive.shape.internal_shape {
+            math::shapes::ShapeType::Cube(_) => self.template_models.get(0),
+            math::shapes::ShapeType::Sphere(_) => self.template_models.get(1),
+        }.unwrap().clone();
+        let mut renderer = Renderer::new().set_model(template_model).set_wireframe(false).set_material(self.template_material.clone().set_uniform("tint", Uniform::Vec3F32(debug_primitive.tint)));
+        renderer.refresh_model();
+        // Calculate the model matrix from the position of the primitive and it's size
+        let pos_matrix = veclib::Matrix4x4::from_translation(debug_primitive.shape.center);
+        let model_matrix = match debug_primitive.shape.internal_shape {
+            math::shapes::ShapeType::Cube(x) => pos_matrix * veclib::Matrix4x4::from_scale(x),
+            math::shapes::ShapeType::Sphere(x) => pos_matrix,
+        };
         self.primitives.push(debug_primitive);
+        self.renderers.push((renderer, model_matrix));
     }    
 }
 

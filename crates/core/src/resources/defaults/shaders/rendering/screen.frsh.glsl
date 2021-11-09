@@ -45,6 +45,10 @@ void main() {
 	vec3 ambient_lighting = diffuse * ambient_lighting_color * ambient_lighting_strength;
 	vec3 final_color = ambient_lighting;
 	final_color += diffuse * light_val;
+	// If the diffuse color is above 1, that means that it is an emissive color instead
+	if (all(greaterThan(diffuse, vec3(1, 1, 1)))) {
+		final_color = diffuse;
+	}
 
 	// Sample the volumetric result texture
 	vec3 volumetric_color = texture(volumetric_texture, uvs).rgb;

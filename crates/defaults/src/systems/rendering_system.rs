@@ -79,7 +79,7 @@ impl CustomData {
             // Create the diffuse render texture
             self.diffuse_texture = Texture::new()
                 .set_dimensions(dims)
-                .set_idf(gl::RGB, gl::RGB, gl::UNSIGNED_BYTE)
+                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
                 .generate_texture(Vec::new())
                 .unwrap();
             // Create the normals render texture
@@ -363,10 +363,17 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     let dimensions = data.custom_data.window.dimensions;
     let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
     let camera_transform = camera_entity.get_component::<components::Transform>(data.component_manager).unwrap().clone();
+    let camera_position = camera_transform.position;
     let camera = camera_entity.get_component::<components::Camera>(data.component_manager).unwrap();
     let vp_m = camera.projection_matrix * camera.view_matrix;
     // Draw the debug primitives
-    data.debug.renderer.draw_debug(&vp_m);
+    for (i, primitive) in data.debug.renderer.primitives.iter().enumerate() {
+        let (renderer, model_matrix) = data.debug.renderer.renderers.get(i).unwrap();
+        let material = &renderer.material;
+        let gpu_data = &renderer.gpu_data;
+        let indices_count = renderer.model.triangles.len() as i32;        
+        system.draw_normal(material, gpu_data, indices_count, data, camera_position, &camera.projection_matrix, &camera.view_matrix, model_matrix);
+    }
 
     // Draw the volumetric stuff
     system
