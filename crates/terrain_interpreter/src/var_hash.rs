@@ -1,7 +1,9 @@
+use crate::Influence;
+
 // A variable hash
 #[derive(Clone, Copy, Debug)]
 pub struct VarHash {
-    pub name: usize,
+    pub index: usize,
     pub _type: VarHashType,
 }
 
@@ -41,6 +43,6 @@ impl VarHashType {
 impl VarHash {
     // Get variable name using a prefix from the varhashtype
     pub fn get_name(&self) -> String {
-        format!("{}_{}", self._type.to_string(), self.name)
+        format!("{}_{}", self._type.to_string(), self.index)
     }
 }

@@ -1,20 +1,14 @@
-use math::bounds::AABB;
+use math::{bounds::AABB, constructive_solid_geometry::CSGTree};
 
-use crate::{
-    error::InterpreterError,
-    nodes::*,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Influence, NodeInterpreter,
-};
+use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
     pub nodes: Vec<Box<dyn NodeInterpreter>>,
+    pub used_nodes: Vec<usize>,
     pub vars: Vec<VarHash>,
     pub lines: Vec<String>,
     pub finalized: bool,
-    pub max_influence: Influence,
 }
 
 impl Default for Interpreter {
@@ -22,10 +16,10 @@ impl Default for Interpreter {
         // Create the default starter node
         Self {
             nodes: Vec::new(),
+            used_nodes: Vec::new(),
             vars: Vec::new(),
             lines: Vec::new(),
             finalized: false,
-            max_influence: Influence::Modified(-1.0, 1.0),
         }
     }
 }
@@ -53,7 +47,7 @@ impl Interpreter {
         // Create the var hash
         let boxed = Box::new(node_interpreter);
         let var_hash = VarHash {
-            name: id,
+            index: id,
             _type: boxed.get_output_type(&getter),
         };
         self.vars.push(var_hash);
@@ -65,6 +59,10 @@ impl Interpreter {
             boxed.get_node_string(&getter)?
         );
         self.lines.push(line);
+        // Make the inputs of this node considered as used nodes
+        for x in getter.inputs.iter() {
+            self.used_nodes.push(x.index);
+        }
         Ok(*self.vars.get(id).unwrap())
     }
     // Finalize the tree with a specific var hash
@@ -74,7 +72,7 @@ impl Interpreter {
             VarHashType::Density => {
                 // We can continue
                 self.finalized = true;
-                FinalDensity::default().new(&[final_density_varhash], self);
+                FinalDensity::default().new(&[final_density_varhash], self).unwrap();
             }
             _ => {
                 /* No good */
@@ -91,8 +89,14 @@ impl Interpreter {
         //lines.reverse();
         Some(self.lines.join("\n"))
     }
-    // Read back the bound intersection AABB for this interpreter
-    pub fn read_aabb(&self) -> Option<AABB> {
+    // Read back the CSG tree
+    pub fn read_csgtree(&self) -> Option<CSGTree> {
+        // We will start from the finalized density node and go down the tree, and keep track of the nodes with non-null influence
+        let mut base_csgtree: CSGTree = CSGTree::default();
+        for x in self.used_nodes.iter() {
+            let node = self.nodes.get(*x).unwrap().as_ref();
+            
+        }
         None
     }
 }

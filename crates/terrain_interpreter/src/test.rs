@@ -21,7 +21,6 @@ mod test {
         let string = interpreter.read_glsl().unwrap();
         let lines = string.lines().map(|x| x.to_string()).collect::<Vec<String>>();
         println!("{}", string);
-        assert_eq!("vec3 v3_0 = pos;", lines[0]);
-        assert_eq!("float d_1 = snoise(v3_0 * 0.001) * 1;", lines[1]);
+        assert!(interpreter.used_nodes.contains(&select.index));
     }
 }

@@ -1,9 +1,4 @@
-use crate::{
-    error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Interpreter,
-};
+use crate::{Influence, Interpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // A singular node that consists of a position and an exit density
 pub trait NodeInterpreter {
@@ -22,8 +17,10 @@ pub trait NodeInterpreter {
         Self: Sized,
     {
         // Create the getter
-        let getter = VarHashGetter { inputs: inputs.to_vec() };
+        let getter = VarHashGetter { inputs: inputs.to_vec(), inputs_nodes_indices: inputs.iter().map(|x| x.index).collect() };
         // Add
         interpreter.add(self, getter)
     }
+    // Get the influence of a specific node using it's inputs
+    fn calculate_influence(&self, getter: &VarHashGetter) -> Option<Influence> { None }
 }

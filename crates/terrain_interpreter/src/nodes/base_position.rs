@@ -1,4 +1,4 @@
-use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
+use crate::{NodeInterpreter, error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter};
 
 // The base position interpreter
 #[derive(Default)]

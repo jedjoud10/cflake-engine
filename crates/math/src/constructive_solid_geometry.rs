@@ -1,6 +1,7 @@
 use crate::shapes::{Shape, ShapeType};
 
 /* #region Some starter data types */
+#[derive(Clone)]
 // CSG type
 pub enum CSGType {
     Union,
@@ -8,6 +9,7 @@ pub enum CSGType {
     Intersection
 }
 // A main CSG shape struct
+#[derive(Clone)]
 pub struct CSGShape {
     pub internal_shape: Shape,
     pub csg_type: CSGType,
@@ -53,6 +55,7 @@ pub enum ExpandMethod {
 }
 /* #endregion */
 /* #region A simple CSG tree for easier usage */
+#[derive(Default, Clone)]
 pub struct CSGTree {
     // Nodes
     pub nodes: Vec<CSGShape>,
@@ -63,5 +66,14 @@ impl CSGTree {
     pub fn add(&mut self, node: CSGShape) {
         self.nodes.push(node);
     }
+    // Get a specific node
+    pub fn get(&self, node_index: usize) -> &CSGShape {
+        self.nodes.get(node_index).unwrap()
+    } 
+    // Get a specific node mutably
+    pub fn get_mut(&mut self, node_index: usize) -> &mut CSGShape {
+        self.nodes.get_mut(node_index).unwrap()
+    } 
 }
+
 /* #endregion */
