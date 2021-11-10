@@ -13,6 +13,7 @@ impl NodeInterpreter for Shape {
         Ok(match self.internal_shape.internal_shape {
             math::shapes::ShapeType::Cube(half_extent) => format!("sdCube(({}+{}), {})", pos.get_name(), center_string, half_extent),
             math::shapes::ShapeType::Sphere(radius) => format!("sdSphere(({}+{}), {})", pos.get_name(), center_string, radius),
+            math::shapes::ShapeType::AxisPlane(_) => todo!(),
         }.to_string())
     }
     fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {

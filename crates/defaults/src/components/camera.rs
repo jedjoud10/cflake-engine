@@ -45,8 +45,8 @@ impl Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            view_matrix: veclib::Matrix4x4::default_identity(),
-            projection_matrix: veclib::Matrix4x4::default_identity(),
+            view_matrix: veclib::Matrix4x4::IDENTITY,
+            projection_matrix: veclib::Matrix4x4::IDENTITY,
             horizontal_fov: 90.0,
             aspect_ratio: 16.0 / 9.0,
             clip_planes: (0.3, 4000.0),

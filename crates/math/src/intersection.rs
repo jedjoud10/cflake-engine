@@ -23,6 +23,7 @@ impl Intersection {
                 let closest_point = aabb.get_nearest_point(&sphere.center);
                 Self::point_sphere(&closest_point, sphere)
             },
+            shapes::ShapeType::AxisPlane(axis) => todo!(),
         }
     }
     // Frustum and an aabb
@@ -88,6 +89,7 @@ impl Intersection {
         match sphere.internal_shape {
             shapes::ShapeType::Cube(_) => todo!() /* Not a sphere */,
             shapes::ShapeType::Sphere(radius) => point.distance(sphere.center) < radius,
+            shapes::ShapeType::AxisPlane(_) => todo!(),
         }        
     }
     /* #endregion */    
