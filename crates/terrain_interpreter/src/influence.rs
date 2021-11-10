@@ -1,7 +1,6 @@
 use math::constructive_solid_geometry::{CSGShape, CSGTree};
 use crate::var_hash_getter::VarHashGetter;
 // An influence struct that will be passed upon node generations
-#[derive(Clone, Debug)]
 pub struct Influence {
     pub csgtree: CSGTree
 }
@@ -16,5 +15,11 @@ impl Influence {
     // Add a specific node
     pub fn add(&mut self, node: CSGShape) {
         self.csgtree.add(node);
+    }
+    // Create a new base influence
+    pub fn new_base() -> Self {
+        Self {
+            csgtree: CSGTree::default(),
+        }
     }
 }

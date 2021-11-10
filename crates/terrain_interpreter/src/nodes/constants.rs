@@ -1,5 +1,4 @@
 use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
-#[derive(Debug)]
 pub enum Constants {
     Float(f32),
     Vec2(veclib::Vector2<f32>),

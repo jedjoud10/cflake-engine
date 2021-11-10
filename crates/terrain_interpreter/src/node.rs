@@ -1,5 +1,11 @@
 use crate::{Influence, Interpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
+pub struct Node {
+    // Le bruh
+    pub getter: VarHashGetter,
+    pub node_interpreter: Box<dyn NodeInterpreter>,
+}
+
 // A singular node that consists of a position and an exit density
 pub trait NodeInterpreter {
     // Custom name
@@ -14,13 +20,13 @@ pub trait NodeInterpreter {
     // Creata a new node
     fn new(self, inputs: &[VarHash], interpreter: &mut Interpreter) -> Result<VarHash, InterpreterError>
     where
-        Self: Sized,
+        Self: Sized + 'static,
     {
         // Create the getter
-        let getter = VarHashGetter { inputs: inputs.to_vec(), inputs_nodes_indices: inputs.iter().map(|x| x.index).collect() };
+        let getter = VarHashGetter { inputs: inputs.to_vec(), inputs_indices: inputs.iter().map(|x| x.index).collect() };
         // Add
         interpreter.add(self, getter)
     }
     // Get the influence of a specific node using it's inputs
-    fn calculate_influence(&self, getter: &VarHashGetter) -> Option<Influence> { None }
+    fn calculate_influence(&self, getter: &VarHashGetter, influences: &Vec<Influence>) -> Option<Influence> { None }
 }

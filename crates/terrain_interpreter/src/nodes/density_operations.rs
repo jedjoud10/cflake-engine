@@ -1,5 +1,4 @@
 use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
-#[derive(Debug)]
 pub enum DensityOperation {
     Union,
     Intersection,

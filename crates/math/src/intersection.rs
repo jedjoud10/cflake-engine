@@ -50,15 +50,19 @@ impl Intersection {
     pub fn csgshape_aabb(csgshape: &crate::csg::CSGShape, aabb: &bounds::AABB) -> bool {
         let center = csgshape.internal_shape.center;
         let intersection = match csgshape.internal_shape.internal_shape {
-            crate::shapes::ShapeType::Cube(half_extent) => {
+            shapes::ShapeType::Cube(half_extent) => {
                 // Lol let's use the function that I already made kek
                 let csg_aabb = crate::bounds::AABB::new_center_halfextent(center, half_extent);
                 Self::aabb_aabb(aabb, &csg_aabb)
             },
-            crate::shapes::ShapeType::Sphere(radius) => {
+            shapes::ShapeType::Sphere(radius) => {
                 // Same stuff here
                 Self::aabb_sphere(aabb, &csgshape.internal_shape)
             },
+            shapes::ShapeType::AxisPlane(axis) => {
+                // Sometimes you just want to kill yourlse
+                todo!()
+            }
         };
         intersection
     }

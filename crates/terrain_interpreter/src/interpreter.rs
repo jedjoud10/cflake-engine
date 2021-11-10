@@ -1,11 +1,12 @@
 use math::{bounds::AABB, constructive_solid_geometry::CSGTree};
 
-use crate::{Influence, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{Influence, Node, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
-    pub nodes: Vec<Box<dyn NodeInterpreter>>,
+    pub nodes: Vec<Node>,
     pub used_nodes: Vec<usize>,
+    pub influences: Vec<Influence>,
     pub vars: Vec<VarHash>,
     pub lines: Vec<String>,
     pub finalized: bool,
@@ -17,6 +18,7 @@ impl Default for Interpreter {
         Self {
             nodes: Vec::new(),
             used_nodes: Vec::new(),
+            influences: Vec::new(),
             vars: Vec::new(),
             lines: Vec::new(),
             finalized: false,
@@ -42,15 +44,14 @@ impl Interpreter {
         interpreter
     }
     // Add a specific node to the system
-    pub fn add<T: NodeInterpreter>(&mut self, node_interpreter: T, getter: VarHashGetter) -> Result<VarHash, InterpreterError> {
+    pub fn add<T: NodeInterpreter + 'static>(&mut self, node_interpreter: T, getter: VarHashGetter) -> Result<VarHash, InterpreterError> {
         let id = self.vars.len();
         // Create the var hash
         let boxed = Box::new(node_interpreter);
         let var_hash = VarHash {
             index: id,
             _type: boxed.get_output_type(&getter),
-        };
-        self.vars.push(var_hash);
+        };        
         // Create a variable for this node
         let line = format!(
             "{} {} = {};",
@@ -58,11 +59,22 @@ impl Interpreter {
             boxed.custom_name(var_hash.get_name()),
             boxed.get_node_string(&getter)?
         );
+        // Add the line for this specific node (might get removed later on if this node was not used)
         self.lines.push(line);
+        // Add the var hash for this specific node
+        self.vars.push(var_hash);
         // Make the inputs of this node considered as used nodes
-        for x in getter.inputs.iter() {
-            self.used_nodes.push(x.index);
+        for x in getter.inputs_indices.iter() {
+            self.used_nodes.push(*x);
         }
+
+        // Create a node
+        let node = Node {
+            getter,
+            node_interpreter: boxed,
+        };
+        // Add the node
+        self.nodes.push(node);
         Ok(*self.vars.get(id).unwrap())
     }
     // Finalize the tree with a specific var hash
@@ -93,9 +105,21 @@ impl Interpreter {
     pub fn read_csgtree(&self) -> Option<CSGTree> {
         // We will start from the finalized density node and go down the tree, and keep track of the nodes with non-null influence
         let mut base_csgtree: CSGTree = CSGTree::default();
+        let mut base_influence: Influence = Influence::new_base();
         for x in self.used_nodes.iter() {
-            let node = self.nodes.get(*x).unwrap().as_ref();
-            
+            let node = self.nodes.get(*x).unwrap();
+            // Get the variables from the node
+            let getter = &node.getter;
+            let output_var = self.vars.get(*x).unwrap();
+            // Calculate the influence now 
+            /*
+            match node.node_interpreter.calculate_influence(&node.getter, ) {
+                Some(x) => {
+                    // Some cool shit happens here idk what yet though
+                },
+                None => { /* No influence calculated for this node */ },
+            }
+            */
         }
         None
     }

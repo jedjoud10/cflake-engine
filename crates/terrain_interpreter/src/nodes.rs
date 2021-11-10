@@ -8,6 +8,8 @@ mod selector;
 mod splitter;
 mod vector_operations;
 mod constants;
+mod shapes;
+pub use shapes::*;
 pub use constants::*;
 pub use vector_operations::*;
 pub use base_position::*;

@@ -1,7 +1,6 @@
 use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
 
 // A selector node
-#[derive(Debug)]
 pub struct Selector();
 
 impl NodeInterpreter for Selector {

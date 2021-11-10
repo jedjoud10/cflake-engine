@@ -1,7 +1,6 @@
 use crate::{Influence, NodeInterpreter, error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter};
 
 // A comparator node (if)
-#[derive(Debug)]
 pub enum Comparator {
     Equal,
     LessThan,
@@ -26,7 +25,7 @@ impl NodeInterpreter for Comparator {
     fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Bool
     }
-    fn calculate_influence(&self, getter: &VarHashGetter) -> Option<Influence> {
+    fn calculate_influence(&self, getter: &VarHashGetter, influences: &Vec<Influence>) -> Option<Influence> {
         None
     }
 }
