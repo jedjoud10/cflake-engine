@@ -1,5 +1,3 @@
-use crate::Influence;
-
 // A variable hash
 #[derive(Clone, Copy, Debug)]
 pub struct VarHash {

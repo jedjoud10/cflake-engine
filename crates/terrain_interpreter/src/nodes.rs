@@ -9,6 +9,8 @@ mod splitter;
 mod vector_operations;
 mod constants;
 mod shapes;
+mod base_density;
+pub use base_density::*;
 pub use shapes::*;
 pub use constants::*;
 pub use vector_operations::*;

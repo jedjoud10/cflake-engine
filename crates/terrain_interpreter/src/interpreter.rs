@@ -1,12 +1,11 @@
-use math::{bounds::AABB, constructive_solid_geometry::CSGTree};
+use math::{constructive_solid_geometry::CSGTree};
 
-use crate::{Influence, Node, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{Node, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
     pub nodes: Vec<Node>,
     pub used_nodes: Vec<usize>,
-    pub influences: Vec<Influence>,
     pub vars: Vec<VarHash>,
     pub lines: Vec<String>,
     pub finalized: bool,
@@ -18,7 +17,6 @@ impl Default for Interpreter {
         Self {
             nodes: Vec::new(),
             used_nodes: Vec::new(),
-            influences: Vec::new(),
             vars: Vec::new(),
             lines: Vec::new(),
             finalized: false,
@@ -103,24 +101,33 @@ impl Interpreter {
     }
     // Read back the CSG tree
     pub fn read_csgtree(&self) -> Option<CSGTree> {
-        // We will start from the finalized density node and go down the tree, and keep track of the nodes with non-null influence
-        let mut base_csgtree: CSGTree = CSGTree::default();
-        let mut base_influence: Influence = Influence::new_base();
+        // Default CSGTree is based around our first "base_density" node, since it is a shape node undercover 
+        let mut csgtree: CSGTree = CSGTree::default();
+        let (_, node, bsn) = self.get_base_shape_node();
+        // Calculate the base influence
+        bsn.update_csgtree(&node.getter, &mut csgtree);
+        // Start from the oldest nodes
         for x in self.used_nodes.iter() {
             let node = self.nodes.get(*x).unwrap();
             // Get the variables from the node
             let getter = &node.getter;
             let output_var = self.vars.get(*x).unwrap();
-            // Calculate the influence now 
-            /*
-            match node.node_interpreter.calculate_influence(&node.getter, ) {
-                Some(x) => {
-                    // Some cool shit happens here idk what yet though
-                },
-                None => { /* No influence calculated for this node */ },
-            }
-            */
+            // Update the csg tree
+            node.node_interpreter.update_csgtree(getter, &mut csgtree);
         }
         None
+    }
+}
+// Custom gets
+impl Interpreter {
+    // Get base density node
+    // Get base shape node
+    pub fn get_base_shape_node(&self) -> (VarHash, &Node, &Box<dyn NodeInterpreter>) {
+        // Check if we are even valid in the first place
+        if !self.finalized { panic!() }
+        // The index for this node is "0"
+        let var_hash = self.vars.get(0).unwrap();
+        let node = self.nodes.get(0).unwrap();
+        (*var_hash, &node, &node.node_interpreter)
     }
 }

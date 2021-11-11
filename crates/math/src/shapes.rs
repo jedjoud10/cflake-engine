@@ -90,12 +90,14 @@ impl Line {
     }
 }
 // Shape type
+#[derive(Clone, Copy)]
 pub enum ShapeType {
     Cube(veclib::Vector3<f32>),
     Sphere(f32),
     AxisPlane(veclib::Vec3Axis)
 }
 // A main shape struct
+#[derive(Clone)]
 pub struct Shape {
     // The center of the shape
     pub center: veclib::Vector3<f32>,

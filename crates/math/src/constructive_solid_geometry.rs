@@ -2,12 +2,14 @@ use crate::shapes::{Shape, ShapeType};
 
 /* #region Some starter data types */
 // CSG type
+#[derive(Clone, Copy)]
 pub enum CSGType {
     Union,
     Difference,
     Intersection
 }
 // A main CSG shape struct
+#[derive(Clone)]
 pub struct CSGShape {
     pub internal_shape: Shape,
     pub csg_type: CSGType,

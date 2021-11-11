@@ -1,7 +1,7 @@
 use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
 
 // Final density
-type Shape = math::csg::CSGShape;
+pub type Shape = math::csg::CSGShape;
 
 impl NodeInterpreter for Shape {
     fn get_node_string(&self, getter: &VarHashGetter) -> Result<String, InterpreterError> {
@@ -18,5 +18,12 @@ impl NodeInterpreter for Shape {
     }
     fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Density
+    }
+    // Update the csg tree
+    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree) {
+        // Since we are a CSG shape ourselves, add it to the csgtree with "Union" csg type
+        let mut shape = self.clone();
+        shape.csg_type = math::csg::CSGType::Union;
+        csgtree.add(shape); 
     }
 }
