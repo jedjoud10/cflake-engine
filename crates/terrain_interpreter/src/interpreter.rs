@@ -115,14 +115,20 @@ impl Interpreter {
         for i in 1..self.used_nodes.len() {
             let x = self.used_nodes[i];
             let node = self.nodes.get(x).unwrap();
-            // Get the variables from the node
+            // Get the variables from the node 
             let getter = &node.getter;
             let output_var = self.vars.get(x).unwrap();
+            for x in getter.inputs_indices.iter() {
+                println!("Test: {}", x);
+            }
             let new_input_ranges = getter.inputs_indices.iter().map(|x| input_ranges.get(*x).unwrap().clone()).collect::<Vec<(f32, f32)>>();
             // Gotta calculate the range first
+            for x in new_input_ranges.iter() {
+                println!("Input: [{}, {}]", x.0, x.1);
+            }
             let range = node.node_interpreter.calculate_range(getter, new_input_ranges);
-            println!("{} {}", range.0, range.1);
-            input_ranges.push(range);
+            println!("Add input range: [{}, {}] at index {}, instead of index {}", range.0, range.1, input_ranges.len(), output_var.index);
+            input_ranges.insert(output_var.index, range);
             // Update the csg tree
             node.node_interpreter.update_csgtree(getter, &mut csgtree);
         }
