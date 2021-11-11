@@ -39,4 +39,6 @@ pub trait NodeInterpreter {
     }
     // Get the influence of a specific node using it's inputs
     fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut CSGTree) {}
+    // Calculate the possible range for this node
+    fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) { (0.0, 0.0) }
 }

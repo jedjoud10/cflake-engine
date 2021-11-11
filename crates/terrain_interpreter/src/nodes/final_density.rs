@@ -14,6 +14,10 @@ impl NodeInterpreter for FinalDensity {
         let input = getter.get(0, VarHashType::Density)?;
         Ok(input.get_name())
     }
+    fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) {
+        // Pass through
+        input_ranges.get(0).unwrap().clone()
+    }
     fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Density
     }

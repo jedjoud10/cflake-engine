@@ -37,4 +37,7 @@ impl NodeInterpreter for Noise {
     fn get_output_type(&self, _inputs: &VarHashGetter) -> crate::var_hash::VarHashType {
         crate::var_hash::VarHashType::Density
     }
+    fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) {
+        (-self.strength, self.strength)
+    }
 }

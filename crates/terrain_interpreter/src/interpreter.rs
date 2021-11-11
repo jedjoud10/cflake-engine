@@ -42,7 +42,9 @@ impl Interpreter {
             .new(&[p], &mut interpreter)
             .unwrap();
         let d = BaseDensity::default().new(&[shape], &mut interpreter).unwrap();
-        interpreter.finalize(d);
+        let s = Noise::default().new(&[p], &mut interpreter).unwrap();
+        let c = DensityOperation::Addition.new(&[d, s], &mut interpreter).unwrap();
+        interpreter.finalize(c);
         interpreter
     }
     // Add a specific node to the system
@@ -107,6 +109,8 @@ impl Interpreter {
         let (_, node, bsn) = self.get_base_shape_node();
         // Calculate the base influence
         bsn.update_csgtree(&node.getter, &mut csgtree);
+        let mut input_ranges: Vec<(f32, f32)> = Vec::new();
+        input_ranges.push((0.0, 0.0));
         // Start from the oldest nodes
         for i in 1..self.used_nodes.len() {
             let x = self.used_nodes[i];
@@ -114,6 +118,11 @@ impl Interpreter {
             // Get the variables from the node
             let getter = &node.getter;
             let output_var = self.vars.get(x).unwrap();
+            let new_input_ranges = getter.inputs_indices.iter().map(|x| input_ranges.get(*x).unwrap().clone()).collect::<Vec<(f32, f32)>>();
+            // Gotta calculate the range first
+            let range = node.node_interpreter.calculate_range(getter, new_input_ranges);
+            println!("{} {}", range.0, range.1);
+            input_ranges.push(range);
             // Update the csg tree
             node.node_interpreter.update_csgtree(getter, &mut csgtree);
         }
