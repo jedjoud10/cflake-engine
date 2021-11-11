@@ -1,5 +1,5 @@
 use assets::AssetManager;
-use math::octrees::{AdvancedOctree, Octree, OctreeNode};
+use math::{constructive_solid_geometry::CSGTree, octrees::{AdvancedOctree, Octree, OctreeNode}};
 use rendering::{AdditionalShader, ComputeShader, Shader};
 
 use crate::{ChunkManager, TerrainSettings, VoxelGenerator, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
@@ -12,6 +12,8 @@ pub struct Terrain {
     pub chunk_manager: ChunkManager,
     // Terrain settings
     pub settings: TerrainSettings,
+    // CSG Tree
+    pub csgtree: CSGTree,
 }
 
 impl Terrain {
@@ -41,6 +43,7 @@ impl Terrain {
             octree,
             voxel_generator: VoxelGenerator::new(compute),
             chunk_manager: ChunkManager::default(),
+            csgtree: settings.voxel_generator_interpreter.read_csgtree().unwrap(),
             settings,
         }
     }

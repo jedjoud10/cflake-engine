@@ -12,7 +12,7 @@ void main() {
 	// Create a checkerboard pattern
 	float value = mod(floor(screen_position.x) + floor(screen_position.y), 2.0) == 0 ? 1.0 : 0.0;
 	float d = abs(dot(m_normal, normalize(view_pos - m_position)));
-	if (d < (0.3 + hash12(screen_position)*0.2)) { discard; }
+	if (d < (0.1 + hash12(screen_position)*0.1)) { discard; }
 	frag_diffuse = tint*2*value;
 	// Some cool blending effect
 	frag_normal = vec3(1, 1, 1);

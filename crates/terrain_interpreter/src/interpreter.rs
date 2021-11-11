@@ -108,15 +108,16 @@ impl Interpreter {
         // Calculate the base influence
         bsn.update_csgtree(&node.getter, &mut csgtree);
         // Start from the oldest nodes
-        for x in self.used_nodes.iter() {
-            let node = self.nodes.get(*x).unwrap();
+        for i in 1..self.used_nodes.len() {
+            let x = self.used_nodes[i];
+            let node = self.nodes.get(x).unwrap();
             // Get the variables from the node
             let getter = &node.getter;
-            let output_var = self.vars.get(*x).unwrap();
+            let output_var = self.vars.get(x).unwrap();
             // Update the csg tree
             node.node_interpreter.update_csgtree(getter, &mut csgtree);
         }
-        None
+        Some(csgtree)
     }
 }
 // Custom gets

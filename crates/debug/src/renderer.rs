@@ -27,7 +27,7 @@ impl DebugRenderer {
             )
             .unwrap();
         // Create the material
-        self.template_material = Material::new("Debug material", asset_manager).set_shader(Rc::new(shader)).set_double_sided(true);
+        self.template_material = Material::new("Debug material", asset_manager).set_shader(Rc::new(shader));
         // Load the template models
         self.template_models
             .push(Model::asset_load_easy("defaults\\models\\cube.mdl3d", &mut asset_manager.asset_cacher).unwrap());
