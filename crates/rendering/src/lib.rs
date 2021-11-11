@@ -1,6 +1,7 @@
 // Export
 mod array_data;
 mod compute_shader;
+mod error;
 mod material;
 mod mm_renderer;
 mod model;
@@ -13,10 +14,9 @@ mod texture;
 mod utils;
 mod volumetric;
 mod window;
-mod error;
-pub use error::*;
 pub use array_data::*;
 pub use compute_shader::*;
+pub use error::*;
 pub use material::*;
 pub use mm_renderer::*;
 pub use model::*;

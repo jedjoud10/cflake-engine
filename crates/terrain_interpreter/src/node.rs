@@ -1,6 +1,11 @@
 use math::constructive_solid_geometry::CSGTree;
 
-use crate::{Interpreter, error::InterpreterError, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Interpreter,
+};
 
 pub struct Node {
     // Le bruh
@@ -25,10 +30,13 @@ pub trait NodeInterpreter {
         Self: Sized + 'static,
     {
         // Create the getter
-        let getter = VarHashGetter { inputs: inputs.to_vec(), inputs_indices: inputs.iter().map(|x| x.index).collect() };
+        let getter = VarHashGetter {
+            inputs: inputs.to_vec(),
+            inputs_indices: inputs.iter().map(|x| x.index).collect(),
+        };
         // Add
         interpreter.add(self, getter)
     }
     // Get the influence of a specific node using it's inputs
-    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut CSGTree) { }
+    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut CSGTree) {}
 }

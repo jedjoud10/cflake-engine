@@ -2,7 +2,7 @@ use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::Var
 pub enum Constants {
     Float(f32),
     Vec2(veclib::Vector2<f32>),
-    Vec3(veclib::Vector3<f32>)
+    Vec3(veclib::Vector3<f32>),
 }
 
 impl NodeInterpreter for Constants {

@@ -1,6 +1,12 @@
-use math::{constructive_solid_geometry::CSGTree};
+use math::constructive_solid_geometry::CSGTree;
 
-use crate::{Node, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    nodes::*,
+    var_hash::{VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Node, NodeInterpreter,
+};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
@@ -32,13 +38,11 @@ impl Interpreter {
         let mut interpreter = Interpreter::default();
         // Add the default pos.y nodes
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
-        let length = VectorOperations::Length.new(&[p], &mut interpreter).unwrap();
-        let constant = Constants::Float(200.0).new(&[], &mut interpreter).unwrap();
-        let length2 = DensityOperation::Subtraction.new(&[length, constant], &mut interpreter).unwrap();
-        let y = Splitter::Y.new(&[p], &mut interpreter).unwrap();
-        let snoise = Noise::default().new(&[p], &mut interpreter).unwrap();
-        let final_node = DensityOperation::Addition.new(&[length2, snoise], &mut interpreter).unwrap();
-        interpreter.finalize(final_node);
+        let shape = Shape::new_cube(veclib::Vector3::Y*10.0, veclib::Vector3::ONE*10.0, math::csg::CSGType::Union)
+            .new(&[p], &mut interpreter)
+            .unwrap();
+        let d = BaseDensity::default().new(&[shape], &mut interpreter).unwrap();
+        interpreter.finalize(d);
         interpreter
     }
     // Add a specific node to the system
@@ -49,7 +53,7 @@ impl Interpreter {
         let var_hash = VarHash {
             index: id,
             _type: boxed.get_output_type(&getter),
-        };        
+        };
         // Create a variable for this node
         let line = format!(
             "{} {} = {};",
@@ -67,10 +71,7 @@ impl Interpreter {
         }
 
         // Create a node
-        let node = Node {
-            getter,
-            node_interpreter: boxed,
-        };
+        let node = Node { getter, node_interpreter: boxed };
         // Add the node
         self.nodes.push(node);
         Ok(*self.vars.get(id).unwrap())
@@ -101,7 +102,7 @@ impl Interpreter {
     }
     // Read back the CSG tree
     pub fn read_csgtree(&self) -> Option<CSGTree> {
-        // Default CSGTree is based around our first "base_density" node, since it is a shape node undercover 
+        // Default CSGTree is based around our first "base_density" node, since it is a shape node undercover
         let mut csgtree: CSGTree = CSGTree::default();
         let (_, node, bsn) = self.get_base_shape_node();
         // Calculate the base influence
@@ -124,7 +125,9 @@ impl Interpreter {
     // Get base shape node
     pub fn get_base_shape_node(&self) -> (VarHash, &Node, &Box<dyn NodeInterpreter>) {
         // Check if we are even valid in the first place
-        if !self.finalized { panic!() }
+        if !self.finalized {
+            panic!()
+        }
         // The index for this node is "0"
         let var_hash = self.vars.get(0).unwrap();
         let node = self.nodes.get(0).unwrap();

@@ -1,4 +1,7 @@
-use crate::{error::InterpreterError, var_hash::{VarHash, VarHashType}};
+use crate::{
+    error::InterpreterError,
+    var_hash::{VarHash, VarHashType},
+};
 
 // Easier and cleaner way to get var hashes
 pub struct VarHashGetter {

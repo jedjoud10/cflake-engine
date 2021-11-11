@@ -1,15 +1,10 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
+use rayon::iter::ParallelIterator;
 
-
-
-use rayon::iter::{ParallelIterator};
-
-
-
+use crate::TModel;
 use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
-use crate::{TModel};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -65,7 +60,6 @@ impl ChunkManager {
     }
     // The priority function
     pub fn priority_function(a: &ChunkCoords, camera_forward_vector: &veclib::Vector3<f32>, camera_position: &veclib::Vector3<f32>) -> f32 {
-        
         camera_forward_vector.dot((*camera_position - veclib::Vector3::<f32>::from(a.center)).normalized())
     }
     // Update the location and forward vector of the camera entity

@@ -371,8 +371,17 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         let (renderer, model_matrix) = data.debug.renderer.renderers.get(i).unwrap();
         let material = &renderer.material;
         let gpu_data = &renderer.gpu_data;
-        let indices_count = renderer.model.triangles.len() as i32;        
-        system.draw_normal(material, gpu_data, indices_count, data, camera_position, &camera.projection_matrix, &camera.view_matrix, model_matrix);
+        let indices_count = renderer.model.triangles.len() as i32;
+        system.draw_normal(
+            material,
+            gpu_data,
+            indices_count,
+            data,
+            camera_position,
+            &camera.projection_matrix,
+            &camera.view_matrix,
+            model_matrix,
+        );
     }
 
     // Draw the volumetric stuff

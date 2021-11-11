@@ -1,4 +1,4 @@
-use io::{Deserialize, Serialize, serde};
+use io::{serde, Deserialize, Serialize};
 // The config file of the world
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "self::serde")]

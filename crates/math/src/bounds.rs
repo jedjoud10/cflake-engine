@@ -76,7 +76,7 @@ impl AABB {
         }
         aabb.center = (aabb.max + aabb.min) / 2.0;
         aabb
-    }   
+    }
     // Generate the AABB from a center and some half extents
     pub fn new_center_halfextent(center: veclib::Vector3<f32>, half_extent: veclib::Vector3<f32>) -> Self {
         Self {
@@ -84,7 +84,7 @@ impl AABB {
             max: center + half_extent,
             center,
         }
-    } 
+    }
 }
 
 // Transform functions

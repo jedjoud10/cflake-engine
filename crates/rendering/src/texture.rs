@@ -1,6 +1,6 @@
+use crate::RenderingError;
 use assets::*;
 use bitflags::bitflags;
-use crate::RenderingError;
 use gl;
 use image::{DynamicImage, EncodableLayout, GenericImageView};
 

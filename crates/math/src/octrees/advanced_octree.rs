@@ -1,9 +1,7 @@
 use super::{node::OctreeNode, octree::Octree};
 use others::SmartList;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use std::{
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 // An advanced octree with incremental generation and twin nodes
 #[derive(Default)]

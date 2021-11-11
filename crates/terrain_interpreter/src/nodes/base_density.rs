@@ -1,4 +1,4 @@
-use crate::{NodeInterpreter, error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter};
+use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
 
 // Base density, the starting point of the actual mesh.
 // Must be inputted with a "shape" density first

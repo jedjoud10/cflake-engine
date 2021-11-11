@@ -1,4 +1,4 @@
-use crate::{NodeInterpreter, error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter};
+use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
 
 // A comparator node (if)
 pub enum Comparator {

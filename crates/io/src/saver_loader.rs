@@ -1,7 +1,11 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use platform_dirs::AppDirs;
-use std::{fs::{File, OpenOptions}, io::{BufReader, BufWriter, Read, Write}, path::PathBuf};
 use serde_json;
+use std::{
+    fs::{File, OpenOptions},
+    io::{BufReader, BufWriter, Read, Write},
+    path::PathBuf,
+};
 
 // Lets us save / load a file from the saved folder
 pub struct SaverLoader {
@@ -9,7 +13,7 @@ pub struct SaverLoader {
     // %appdata%\\{game_name}\\data\\
     pub local_path: PathBuf,
     // Paths
-    loaded_strings: Vec<String>
+    loaded_strings: Vec<String>,
 }
 
 impl SaverLoader {
@@ -29,7 +33,10 @@ impl SaverLoader {
         let old_path = format!("{}\\{}\\", author_name, app_name);
         let path = AppDirs::new(Some(&old_path), false).unwrap();
         println!("{:?}", path.config_dir);
-        SaverLoader { local_path: path.config_dir, loaded_strings: Vec::new() }
+        SaverLoader {
+            local_path: path.config_dir,
+            loaded_strings: Vec::new(),
+        }
     }
     // Load a struct from a file
     pub fn load<'a, T: serde::Serialize + serde::Deserialize<'a>>(&'a mut self, file_path: &'a str) -> T {

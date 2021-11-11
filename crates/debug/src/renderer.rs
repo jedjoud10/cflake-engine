@@ -11,7 +11,7 @@ pub struct DebugRenderer {
     pub primitives: Vec<DebugPrimitive>,
     // The template models
     pub template_models: Vec<Model>,
-    // The model renderers 
+    // The model renderers
     pub renderers: Vec<(Renderer, veclib::Matrix4x4<f32>)>,
     pub template_material: Material,
 }
@@ -29,8 +29,10 @@ impl DebugRenderer {
         // Create the material
         self.template_material = Material::new("Debug material", asset_manager).set_shader(Rc::new(shader)).set_double_sided(true);
         // Load the template models
-        self.template_models.push(Model::asset_load_easy("defaults\\models\\cube.mdl3d", &mut asset_manager.asset_cacher).unwrap());
-        self.template_models.push(Model::asset_load_easy("defaults\\models\\sphere.mdl3d", &mut asset_manager.asset_cacher).unwrap());
+        self.template_models
+            .push(Model::asset_load_easy("defaults\\models\\cube.mdl3d", &mut asset_manager.asset_cacher).unwrap());
+        self.template_models
+            .push(Model::asset_load_easy("defaults\\models\\sphere.mdl3d", &mut asset_manager.asset_cacher).unwrap());
     }
     // Add a debug primitive to the queue and then render it
     pub fn debug(&mut self, debug_primitive: DebugPrimitive) {
@@ -42,26 +44,31 @@ impl DebugRenderer {
             math::shapes::ShapeType::Cube(_) => self.template_models.get(0),
             math::shapes::ShapeType::Sphere(_) => self.template_models.get(1),
             math::shapes::ShapeType::AxisPlane(_) => todo!(),
-        }.unwrap().clone();
-        let mut renderer = Renderer::new().set_model(template_model).set_wireframe(false).set_material(self.template_material.clone().set_uniform("tint", Uniform::Vec3F32(debug_primitive.tint)));
+        }
+        .unwrap()
+        .clone();
+        let mut renderer = Renderer::new()
+            .set_model(template_model)
+            .set_wireframe(false)
+            .set_material(self.template_material.clone().set_uniform("tint", Uniform::Vec3F32(debug_primitive.tint)));
         renderer.refresh_model();
         // Calculate the model matrix from the position of the primitive and it's size
         let pos_matrix = veclib::Matrix4x4::from_translation(debug_primitive.shape.center);
         let model_matrix = match debug_primitive.shape.internal_shape {
             math::shapes::ShapeType::Cube(x) => pos_matrix * veclib::Matrix4x4::from_scale(x),
-            math::shapes::ShapeType::Sphere(x) => pos_matrix* veclib::Matrix4x4::from_scale(veclib::Vector3::ONE * x),
+            math::shapes::ShapeType::Sphere(x) => pos_matrix * veclib::Matrix4x4::from_scale(veclib::Vector3::ONE * x),
             math::shapes::ShapeType::AxisPlane(_) => todo!(),
         };
         self.primitives.push(debug_primitive);
         self.renderers.push((renderer, model_matrix));
-    }    
+    }
 }
 
 // A simple debug primitives
-pub struct DebugPrimitive { 
+pub struct DebugPrimitive {
     shape: math::shapes::Shape,
     tint: veclib::Vector3<f32>,
-    permament: bool
+    permament: bool,
 }
 
 impl DebugPrimitive {

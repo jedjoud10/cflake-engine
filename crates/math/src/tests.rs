@@ -21,7 +21,5 @@ mod tests {
     }
     // CSG shapes tests
     #[test]
-    pub fn csg_tests() {
-        
-    }
+    pub fn csg_tests() {}
 }

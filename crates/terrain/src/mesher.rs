@@ -9,7 +9,6 @@ use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
     (x - a) / (b - a)
@@ -125,7 +124,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
         }
     }
     */
-    
+
     // Return the model
     TModel {
         shader_model_hashmap: sub_model_hashmap,

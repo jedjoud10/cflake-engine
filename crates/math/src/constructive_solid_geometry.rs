@@ -6,7 +6,7 @@ use crate::shapes::{Shape, ShapeType};
 pub enum CSGType {
     Union,
     Difference,
-    Intersection
+    Intersection,
 }
 // A main CSG shape struct
 #[derive(Clone)]
@@ -33,28 +33,24 @@ impl CSGShape {
     pub fn expand(&mut self, expand_method: ExpandMethod) {
         // Check the internal shape type first, some internal shape and expand method combinations might not work. Ex (ShapeTpe: Sphere and ExpandMethod: Vector)
         match &mut self.internal_shape.internal_shape {
-            ShapeType::Cube(half_extents) => {
-                match expand_method {
-                    ExpandMethod::Factor(x) => *half_extents += veclib::Vector3::ONE * x,
-                    ExpandMethod::Vector(x) => *half_extents += x,
-                }
+            ShapeType::Cube(half_extents) => match expand_method {
+                ExpandMethod::Factor(x) => *half_extents += veclib::Vector3::ONE * x,
+                ExpandMethod::Vector(x) => *half_extents += x,
             },
-            ShapeType::Sphere(radius) => {
-                match expand_method {
-                    ExpandMethod::Factor(x) => *radius += x,
-                    ExpandMethod::Vector(x) => todo!(),
-                }
+            ShapeType::Sphere(radius) => match expand_method {
+                ExpandMethod::Factor(x) => *radius += x,
+                ExpandMethod::Vector(x) => todo!(),
             },
             ShapeType::AxisPlane(axis) => {
                 todo!()
-            },
+            }
         }
     }
 }
 // Expand method
 pub enum ExpandMethod {
     Factor(f32),
-    Vector(veclib::Vector3<f32>)
+    Vector(veclib::Vector3<f32>),
 }
 /* #endregion */
 /* #region A simple CSG tree for easier usage */
@@ -72,11 +68,11 @@ impl CSGTree {
     // Get a specific node
     pub fn get(&self, node_index: usize) -> &CSGShape {
         self.nodes.get(node_index).unwrap()
-    } 
+    }
     // Get a specific node mutably
     pub fn get_mut(&mut self, node_index: usize) -> &mut CSGShape {
         self.nodes.get_mut(node_index).unwrap()
-    } 
+    }
 }
 
 /* #endregion */

@@ -9,12 +9,18 @@ impl NodeInterpreter for Shape {
         let pos = getter.get(0, VarHashType::Vec3)?;
         let center = self.internal_shape.center;
         let center_string = format!("vec3({}, {}, {})", center.x, center.y, center.z);
+        let position_string = format!("({} - {})", pos.get_name(), center_string);
         // Depends on the shape
         Ok(match self.internal_shape.internal_shape {
-            math::shapes::ShapeType::Cube(half_extent) => format!("sdCube(({}+{}), {})", pos.get_name(), center_string, half_extent),
-            math::shapes::ShapeType::Sphere(radius) => format!("sdSphere(({}+{}), {})", pos.get_name(), center_string, radius),
+            math::shapes::ShapeType::Cube(half_extent) => format!(
+                "sdBox({}, {})",
+                position_string,
+                format!("vec3({}, {}, {})", half_extent.x, half_extent.y, half_extent.z)
+            ),
+            math::shapes::ShapeType::Sphere(radius) => format!("sdSphere({}, {})", position_string, radius),
             math::shapes::ShapeType::AxisPlane(_) => todo!(),
-        }.to_string())
+        }
+        .to_string())
     }
     fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Density
@@ -24,6 +30,6 @@ impl NodeInterpreter for Shape {
         // Since we are a CSG shape ourselves, add it to the csgtree with "Union" csg type
         let mut shape = self.clone();
         shape.csg_type = math::csg::CSGType::Union;
-        csgtree.add(shape); 
+        csgtree.add(shape);
     }
 }

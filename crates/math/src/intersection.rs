@@ -1,5 +1,5 @@
-use veclib::Swizzable;
 use super::{bounds, shapes};
+use veclib::Swizzable;
 
 // Intersection tests
 pub struct Intersection;
@@ -18,11 +18,11 @@ impl Intersection {
     // Check if an AABB is intersecting a sphere
     pub fn aabb_sphere(aabb: &bounds::AABB, sphere: &crate::shapes::Shape) -> bool {
         match sphere.internal_shape {
-            shapes::ShapeType::Cube(_) => todo!() /* This is not a fucking sphere you dumbass*/,
+            shapes::ShapeType::Cube(_) => todo!(), /* This is not a fucking sphere you dumbass*/
             shapes::ShapeType::Sphere(_) => {
                 let closest_point = aabb.get_nearest_point(&sphere.center);
                 Self::point_sphere(&closest_point, sphere)
-            },
+            }
             shapes::ShapeType::AxisPlane(axis) => todo!(),
         }
     }
@@ -55,11 +55,11 @@ impl Intersection {
                 // Lol let's use the function that I already made kek
                 let csg_aabb = crate::bounds::AABB::new_center_halfextent(center, half_extent);
                 Self::aabb_aabb(aabb, &csg_aabb)
-            },
+            }
             shapes::ShapeType::Sphere(radius) => {
                 // Same stuff here
                 Self::aabb_sphere(aabb, &csgshape.internal_shape)
-            },
+            }
             shapes::ShapeType::AxisPlane(axis) => {
                 // Sometimes you just want to kill yourlse
                 todo!()
@@ -76,21 +76,21 @@ impl Intersection {
             let new_intersection = Self::csgshape_aabb(node, aabb);
             match node.csg_type {
                 crate::constructive_solid_geometry::CSGType::Union => base_intersection |= new_intersection,
-                crate::constructive_solid_geometry::CSGType::Difference => {},
-                crate::constructive_solid_geometry::CSGType::Intersection => {},
+                crate::constructive_solid_geometry::CSGType::Difference => {}
+                crate::constructive_solid_geometry::CSGType::Intersection => {}
             }
         }
         base_intersection
     }
-    /* #endregion */ 
+    /* #endregion */
     /* #region Others */
     // Check if a point is inside a sphere
     pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &shapes::Shape) -> bool {
         match sphere.internal_shape {
-            shapes::ShapeType::Cube(_) => todo!() /* Not a sphere */,
+            shapes::ShapeType::Cube(_) => todo!(), /* Not a sphere */
             shapes::ShapeType::Sphere(radius) => point.distance(sphere.center) < radius,
             shapes::ShapeType::AxisPlane(_) => todo!(),
-        }        
+        }
     }
-    /* #endregion */    
+    /* #endregion */
 }

@@ -77,6 +77,7 @@ impl SubShader {
 
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
+                println!("{}", self.source);
                 panic!();
             }
 

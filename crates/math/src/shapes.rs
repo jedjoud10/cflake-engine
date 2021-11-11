@@ -94,14 +94,14 @@ impl Line {
 pub enum ShapeType {
     Cube(veclib::Vector3<f32>),
     Sphere(f32),
-    AxisPlane(veclib::Vec3Axis)
+    AxisPlane(veclib::Vec3Axis),
 }
 // A main shape struct
 #[derive(Clone)]
 pub struct Shape {
     // The center of the shape
     pub center: veclib::Vector3<f32>,
-    pub internal_shape: ShapeType
+    pub internal_shape: ShapeType,
 }
 impl Shape {
     // New cube

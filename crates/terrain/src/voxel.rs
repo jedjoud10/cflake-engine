@@ -2,8 +2,6 @@ use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
 
 use rendering::{Shader, Texture, TextureFilter, TextureType};
 
-
-
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {

@@ -2,9 +2,7 @@ use crate::{ECSError, LoadState};
 
 use super::{Component, ComponentID, ComponentManager};
 use others::{Instance, SmartList};
-use std::{
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 // An entity manager that handles entities
 #[derive(Default)]

@@ -1,4 +1,5 @@
 use crate::ComputeShader;
+use crate::RenderingError;
 use crate::SubShader;
 use crate::SubShaderType;
 use crate::Texture;
@@ -6,7 +7,6 @@ use crate::TextureShaderAccessType;
 use assets::Asset;
 use assets::AssetManager;
 use assets::Object;
-use crate::RenderingError;
 use gl;
 use std::collections::HashMap;
 use std::collections::HashSet;
