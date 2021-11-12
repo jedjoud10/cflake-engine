@@ -47,9 +47,8 @@ impl NodeInterpreter for DensityOperation {
                 // Update the CSG tree
                 let i0 = getter.get(0, VarHashType::Density).unwrap();
                 let i1 = getter.get(1, VarHashType::Density).unwrap();
-                let i0 = crate::var_hash::convert_csg_custom_identifier(&i0);
-                let i1 = crate::var_hash::convert_csg_custom_identifier(&i1);
-                let custom_shape = csgtree.get_custom_mut(i0).unwrap();
+                let id0 = i0.passed_data.cunstom_shape_identifier.unwrap();
+                let custom_shape = csgtree.get_custom_mut(id0).unwrap();
                 custom_shape.expand(math::csg::ExpandMethod::Factor(self_range.1));
             },
             DensityOperation::Subtraction => todo!(),

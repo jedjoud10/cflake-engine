@@ -1,13 +1,21 @@
 use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
+// Some passed data
+#[derive(Clone, Copy, Default, Debug)]
+pub struct PassedData {
+    // Custom shape identifier
+    pub cunstom_shape_identifier: Option<math::csg::CSGCustomIdentifier>
+}
+
 // A variable hash
 #[derive(Clone, Copy, Debug)]
 pub struct VarHash {
     pub index: usize,
+    pub passed_data: PassedData,
     pub _type: VarHashType,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum VarHashType {
     // Can be a boolean in case of a condition
     Bool,
@@ -44,17 +52,5 @@ impl VarHash {
     // Get variable name using a prefix from the varhashtype
     pub fn get_name(&self) -> String {
         format!("{}_{}", self._type.to_string(), self.index)
-    }
-}
-
-// Convert a VarHash into a CSGCustomIdentifier (if possible)
-pub fn convert_csg_custom_identifier(var_hash: &VarHash) -> math::csg::CSGCustomIdentifier {
-    // Create a CSGCustomIdentifier for this var hash
-    {
-        let mut hash = DefaultHasher::new();
-        var_hash.index.hash(&mut hash);
-        math::csg::CSGCustomIdentifier {
-            hash: hash.finish(),
-        }
     }
 }

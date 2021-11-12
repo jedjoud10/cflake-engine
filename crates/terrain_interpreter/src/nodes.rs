@@ -1,5 +1,4 @@
 // Nodes
-mod base_density;
 mod base_position;
 mod comparator;
 mod constants;
@@ -10,7 +9,6 @@ mod selector;
 mod shapes;
 mod splitter;
 mod vector_operations;
-pub use base_density::*;
 pub use base_position::*;
 pub use comparator::*;
 pub use constants::*;

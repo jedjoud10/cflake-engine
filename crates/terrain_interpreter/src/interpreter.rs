@@ -41,7 +41,6 @@ impl Interpreter {
         let shape = Shape::new_cube(veclib::Vector3::Y*10.0, veclib::Vector3::ONE*10.0, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
-        let d = BaseDensity::default().new(&[shape], &mut interpreter).unwrap();
         let s = Noise::default().new(&[p], &mut interpreter).unwrap();
         let c = DensityOperation::Addition.new(&[d, s], &mut interpreter).unwrap();
         interpreter.finalize(c);
@@ -55,6 +54,7 @@ impl Interpreter {
         let var_hash = VarHash {
             index: id,
             _type: boxed.get_output_type(&getter),
+            passed_data: crate::var_hash::PassedData::default()
         };
         // Create a variable for this node
         let line = format!(
@@ -90,7 +90,7 @@ impl Interpreter {
             }
             _ => {
                 /* No good */
-                panic!("Finalized node is not of type '{:?}'!", VarHashType::Density)
+                panic!();
             }
         }
     }

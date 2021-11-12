@@ -17,7 +17,7 @@ pub struct CSGShape {
     pub csg_type: CSGType,
 }
 // A custom identifier so we can get CSG shapes without the need to get their index
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct CSGCustomIdentifier {
     pub hash: u64,
 }

@@ -30,7 +30,7 @@ impl NodeInterpreter for Shape {
         // Since we are a CSG shape ourselves, add it to the csgtree with "Union" csg type
         let mut shape = self.clone();
         shape.csg_type = math::csg::CSGType::Union;
-        let identifier = crate::var_hash::convert_csg_custom_identifier(&getter.self_varhash.unwrap());
+        let passed_data = getter.self_varhash.unwrap().passed_data;
         csgtree.add_custom_identifier(identifier, shape);
     }
 }
