@@ -7,6 +7,7 @@ use crate::{
 pub struct VarHashGetter {
     pub inputs: Vec<VarHash>,
     pub inputs_indices: Vec<usize>,
+    pub self_varhash: Option<VarHash>,
 }
 
 impl VarHashGetter {

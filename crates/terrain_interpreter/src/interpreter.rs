@@ -48,7 +48,7 @@ impl Interpreter {
         interpreter
     }
     // Add a specific node to the system
-    pub fn add<T: NodeInterpreter + 'static>(&mut self, node_interpreter: T, getter: VarHashGetter) -> Result<VarHash, InterpreterError> {
+    pub fn add<T: NodeInterpreter + 'static>(&mut self, node_interpreter: T, mut getter: VarHashGetter) -> Result<VarHash, InterpreterError> {
         let id = self.vars.len();
         // Create the var hash
         let boxed = Box::new(node_interpreter);
@@ -71,7 +71,8 @@ impl Interpreter {
         for x in getter.inputs_indices.iter() {
             self.used_nodes.push(*x);
         }
-
+        // Le self var hash
+        getter.self_varhash = Some(var_hash);
         // Create a node
         let node = Node { getter, node_interpreter: boxed };
         // Add the node
@@ -108,7 +109,7 @@ impl Interpreter {
         let mut csgtree: CSGTree = CSGTree::default();
         let (_, node, bsn) = self.get_base_shape_node();
         // Calculate the base influence
-        bsn.update_csgtree(&node.getter, &mut csgtree);
+        bsn.update_csgtree(&node.getter, &mut csgtree, (0.0, 0.0));
         let mut input_ranges: Vec<(f32, f32)> = Vec::new();
         input_ranges.push((0.0, 0.0));
         // Start from the oldest nodes
@@ -130,7 +131,7 @@ impl Interpreter {
             println!("Add input range: [{}, {}] at index {}, instead of index {}", range.0, range.1, input_ranges.len(), output_var.index);
             input_ranges.insert(output_var.index, range);
             // Update the csg tree
-            node.node_interpreter.update_csgtree(getter, &mut csgtree);
+            node.node_interpreter.update_csgtree(getter, &mut csgtree, range);
         }
         Some(csgtree)
     }

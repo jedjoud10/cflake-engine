@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::shapes::{Shape, ShapeType};
 
 /* #region Some starter data types */
@@ -13,6 +15,11 @@ pub enum CSGType {
 pub struct CSGShape {
     pub internal_shape: Shape,
     pub csg_type: CSGType,
+}
+// A custom identifier so we can get CSG shapes without the need to get their index
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct CSGCustomIdentifier {
+    pub hash: u64,
 }
 impl CSGShape {
     // New cube
@@ -58,6 +65,7 @@ pub enum ExpandMethod {
 pub struct CSGTree {
     // Nodes
     pub nodes: Vec<CSGShape>,
+    pub identifier_hashmap: HashMap<CSGCustomIdentifier, usize>,
 }
 
 impl CSGTree {
@@ -65,13 +73,29 @@ impl CSGTree {
     pub fn add(&mut self, node: CSGShape) {
         self.nodes.push(node);
     }
+    // Add a node with a custom identifier to the tree
+    pub fn add_custom_identifier(&mut self, identifier: CSGCustomIdentifier, node: CSGShape) {
+        let id = self.nodes.len();
+        self.add(node);
+        self.identifier_hashmap.insert(identifier, id);
+    }
+    // Get a specific node using a custom identifier
+    pub fn get_custom(&self, identifier: CSGCustomIdentifier) -> Option<&CSGShape> {
+        let index = *self.identifier_hashmap.get(&identifier)?;
+        return self.get(index);
+    }
+    // Get a specific node mutably, using a custom identifier
+    pub fn get_custom_mut(&mut self, identifier: CSGCustomIdentifier) -> Option<&mut CSGShape> {
+        let index = *self.identifier_hashmap.get(&identifier)?;
+        return self.get_mut(index);
+    }
     // Get a specific node
-    pub fn get(&self, node_index: usize) -> &CSGShape {
-        self.nodes.get(node_index).unwrap()
+    pub fn get(&self, node_index: usize) -> Option<&CSGShape> {
+        self.nodes.get(node_index)
     }
     // Get a specific node mutably
-    pub fn get_mut(&mut self, node_index: usize) -> &mut CSGShape {
-        self.nodes.get_mut(node_index).unwrap()
+    pub fn get_mut(&mut self, node_index: usize) -> Option<&mut CSGShape> {
+        self.nodes.get_mut(node_index)
     }
 }
 

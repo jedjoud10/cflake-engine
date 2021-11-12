@@ -1,3 +1,5 @@
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+
 // A variable hash
 #[derive(Clone, Copy, Debug)]
 pub struct VarHash {
@@ -42,5 +44,17 @@ impl VarHash {
     // Get variable name using a prefix from the varhashtype
     pub fn get_name(&self) -> String {
         format!("{}_{}", self._type.to_string(), self.index)
+    }
+}
+
+// Convert a VarHash into a CSGCustomIdentifier (if possible)
+pub fn convert_csg_custom_identifier(var_hash: &VarHash) -> math::csg::CSGCustomIdentifier {
+    // Create a CSGCustomIdentifier for this var hash
+    {
+        let mut hash = DefaultHasher::new();
+        var_hash.index.hash(&mut hash);
+        math::csg::CSGCustomIdentifier {
+            hash: hash.finish(),
+        }
     }
 }

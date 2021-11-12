@@ -26,10 +26,11 @@ impl NodeInterpreter for Shape {
         VarHashType::Density
     }
     // Update the csg tree
-    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree) {
+    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
         // Since we are a CSG shape ourselves, add it to the csgtree with "Union" csg type
         let mut shape = self.clone();
         shape.csg_type = math::csg::CSGType::Union;
-        csgtree.add(shape);
+        let identifier = crate::var_hash::convert_csg_custom_identifier(&getter.self_varhash.unwrap());
+        csgtree.add_custom_identifier(identifier, shape);
     }
 }

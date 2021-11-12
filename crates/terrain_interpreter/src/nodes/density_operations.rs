@@ -38,4 +38,21 @@ impl NodeInterpreter for DensityOperation {
             DensityOperation::Subtraction => todo!(),
         }
     }
+    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
+        // Depends on the density operation
+        match self {
+            DensityOperation::Union => todo!(),
+            DensityOperation::Intersection => todo!(),
+            DensityOperation::Addition => {
+                // Update the CSG tree
+                let i0 = getter.get(0, VarHashType::Density).unwrap();
+                let i1 = getter.get(1, VarHashType::Density).unwrap();
+                let i0 = crate::var_hash::convert_csg_custom_identifier(&i0);
+                let i1 = crate::var_hash::convert_csg_custom_identifier(&i1);
+                let custom_shape = csgtree.get_custom_mut(i0).unwrap();
+                custom_shape.expand(math::csg::ExpandMethod::Factor(self_range.1));
+            },
+            DensityOperation::Subtraction => todo!(),
+        }
+    }
 }

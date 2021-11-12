@@ -33,12 +33,13 @@ pub trait NodeInterpreter {
         let getter = VarHashGetter {
             inputs: inputs.to_vec(),
             inputs_indices: inputs.iter().map(|x| x.index).collect(),
+            self_varhash: None,
         };
         // Add
         interpreter.add(self, getter)
     }
     // Get the influence of a specific node using it's inputs
-    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut CSGTree) {}
+    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut CSGTree, self_range: (f32, f32)) {}
     // Calculate the possible range for this node
     fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) { (0.0, 0.0) }
 }
