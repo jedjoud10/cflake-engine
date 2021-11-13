@@ -55,8 +55,8 @@ impl DebugRenderer {
         // Calculate the model matrix from the position of the primitive and it's size
         let pos_matrix = veclib::Matrix4x4::from_translation(debug_primitive.shape.center);
         let model_matrix = match debug_primitive.shape.internal_shape {
-            math::shapes::ShapeType::Cube(x) => pos_matrix * veclib::Matrix4x4::from_scale(x),
-            math::shapes::ShapeType::Sphere(x) => pos_matrix * veclib::Matrix4x4::from_scale(veclib::Vector3::ONE * x),
+            math::shapes::ShapeType::Cube(x) => pos_matrix * veclib::Matrix4x4::from_scale(x + 1.0),
+            math::shapes::ShapeType::Sphere(x) => pos_matrix * veclib::Matrix4x4::from_scale(veclib::Vector3::ONE * x + 1.0),
             math::shapes::ShapeType::AxisPlane(_) => todo!(),
         };
         self.primitives.push(debug_primitive);

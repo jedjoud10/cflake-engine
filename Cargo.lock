@@ -713,9 +713,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.69"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e466864e431129c7e0d3476b92f20458e5879919a0596c6472738d9fa2d342f8"
+checksum = "e277c495ac6cd1a01a58d0a0c574568b4d1ddf14f59965c6a58b8d96400b54f3"
 dependencies = [
  "itoa",
  "ryu",
@@ -800,8 +800,8 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "veclib"
-version = "0.1.6"
-source = "git+https://github.com/jedjoud10/veclib#60511ab117f2f89c3fa56ff094a70898b2756362"
+version = "0.1.7"
+source = "git+https://github.com/jedjoud10/veclib#908bdd571b0d819da3fa8bbe43e78aad36e90c2e"
 
 [[package]]
 name = "wasi"

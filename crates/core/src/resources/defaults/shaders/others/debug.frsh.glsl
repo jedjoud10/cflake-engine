@@ -10,10 +10,10 @@ uniform vec3 tint;
 uniform vec3 view_pos;
 void main() {
 	// Create a checkerboard pattern
-	float value = mod(floor(screen_position.x) + floor(screen_position.y), 2.0) == 0 ? 1.0 : 0.0;
+	float value = mod(floor(m_position.x*0.2) + floor(m_position.y*0.2) + floor(m_position.z*0.2), 2.0) == 0 ? 1.0 : 0.0;
 	float d = abs(dot(m_normal, normalize(view_pos - m_position)));
-	if (d < (0.1 + hash12(screen_position)*0.1)) { discard; }
-	frag_diffuse = tint*2*value;
+	if (d > 0.2) { discard; }
+	frag_diffuse = tint*2;
 	// Some cool blending effect
 	frag_normal = vec3(1, 1, 1);
 	frag_pos = m_position;

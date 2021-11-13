@@ -10,7 +10,15 @@ pub struct PassedData {
 impl PassedData {
     // Combine two passed datas into a singular one
     pub fn combine(first: Self, second: Self) -> Self {
-        first
+        // Combine the two passed data's
+        match first.custom_shape_identifier.or_else(|| second.custom_shape_identifier) {
+            Some(x) => {
+                let mut clone = first;
+                clone.custom_shape_identifier = Some(x);
+                return clone;
+            },
+            None => return first,
+        }
     }
 }
 

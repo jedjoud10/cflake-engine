@@ -32,11 +32,9 @@ impl Interpreter {
         let mut interpreter = Interpreter::default();
         // Add the default pos.y nodes
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
-        let shape = Shape::new_cube(veclib::Vector3::Y*10.0, veclib::Vector3::ONE*10.0, math::csg::CSGType::Union)
+        let shape = Shape::new_sphere(veclib::Vector3::Y*10.0, 200.0, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
-        let s = Noise::default().new(&[p], &mut interpreter).unwrap();
-        let c = DensityOperation::Addition.new(&[shape, s], &mut interpreter).unwrap();
         interpreter
     }
     // Add a specific node to the system
@@ -114,11 +112,7 @@ impl Interpreter {
             let output_var = self.vars.get_mut(x).unwrap();
             let new_input_ranges = getter.inputs_indices.iter().map(|x| input_ranges.get(*x).unwrap().clone()).collect::<Vec<(f32, f32)>>();
             // Gotta calculate the range first
-            for x in new_input_ranges.iter() {
-                println!("Input: [{}, {}]", x.0, x.1);
-            }
             let range = node.node_interpreter.calculate_range(&getter, new_input_ranges);
-            println!("Add input range: [{}, {}] at index {}, instead of index {}", range.0, range.1, input_ranges.len(), output_var.index);
             input_ranges.insert(output_var.index, range);
             // Update the csg tree
             node.node_interpreter.update_csgtree(&mut output_var.passed_data, &getter, &mut csgtree, range);

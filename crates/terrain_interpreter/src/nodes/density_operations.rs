@@ -48,11 +48,10 @@ impl NodeInterpreter for DensityOperation {
                 let i0 = getter.get(0, VarHashType::Density).unwrap();
                 let i1 = getter.get(1, VarHashType::Density).unwrap();
                 let x: PassedData = PassedData::combine(i0.passed_data, i1.passed_data);
-                println!("{:?}", i0);
-                println!("{:?}", i1);
                 *passed_data = x;
                 let custom_shape = csgtree.get_custom_mut(x.custom_shape_identifier.unwrap()).unwrap();
                 custom_shape.expand(math::csg::ExpandMethod::Factor(self_range.1));
+                println!("{:?}", custom_shape.internal_shape);
             },
             DensityOperation::Subtraction => todo!(),
         }

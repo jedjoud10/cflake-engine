@@ -7,6 +7,22 @@ pub struct Noise {
     pub scale: f32,
     pub _type: NoiseType,
 }
+impl Noise {
+    // New
+    pub fn new() -> Self {
+        Self::default()
+    }
+    // Set strength
+    pub fn set_strength(mut self, strength: f32) -> Self {
+        self.strength = strength;
+        return self;
+    }
+    // Set scale
+    pub fn set_scale(mut self, scale: f32) -> Self {
+        self.scale = scale;
+        return self;
+    }
+}
 // Some noise type
 #[derive(Debug)]
 pub enum NoiseType {
