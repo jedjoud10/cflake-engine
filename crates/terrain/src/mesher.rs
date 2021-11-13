@@ -27,7 +27,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
                 // Leading Voxel
-                let lv = voxels[i + DATA_OFFSET_TABLE[0]];
+                let lv = &voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
                 sub_model_hashmap.entry(lv.shader_id).or_insert(Model::default());
@@ -61,8 +61,8 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
                         let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
                         let index1 = super::flatten(vert1_usize);
                         let index2 = super::flatten(vert2_usize);
-                        let voxel1 = voxels[index1];
-                        let voxel2 = voxels[index2];
+                        let voxel1 = &voxels[index1];
+                        let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation {
                             inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
@@ -111,19 +111,21 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
                 // Push this intersecting case
                 intersection_cases.push(TCase {
                     cube_position: veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32),
-                    leading_voxel: lv,
+                    leading_voxel: lv.clone(),
                 });
             }
         }
     }
-    // Create the base-X skirt
-    /*
+    // Create the base-X skirt    
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
+            // Get the position
+            let p = veclib::Vector3::new(x as f32, y as f32, 0.0);
+            // Get the marching cube case
 
         }
     }
-    */
+    
 
     // Return the model
     TModel {
@@ -138,13 +140,91 @@ pub enum SkirtVertex {
     Vertex(veclib::Vector3<f32>, veclib::Vector3<f32>, veclib::Vector3<f32>),
 }
 
+// Funny skirt moment
+// 2---3---4
+// |       |
+// 1       5
+// |       |
+// 0---7---6
+
 // Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(case: u8, _local_skirt_voxels: &[Voxel], _flip: bool) -> Option<Vec<SkirtVertex>> {
+pub fn solve_marching_squares(case: u8, ls: &[Voxel; 4], lp: &[veclib::Vector3<f32>; 4], model: &mut Model, _flip: bool) -> Option<Vec<SkirtVertex>> {
     // Create the triangles from the local skirts
     match case {
-        1 => {}
+        1 => create_triangle(ls, lp, &[0, 1, 7], model),
+        2 => create_triangle(ls, lp, &[7, 5, 6], model),
+        3 => { 
+            create_triangle(ls, lp, &[0, 1, 6], model);
+            create_triangle(ls, lp, &[6, 1, 5], model);
+        },
+        4 => create_triangle(ls, lp, &[3, 4, 5], model),
+        5 => {
+            // Two triangles at the corners 
+            create_triangle(ls, lp, &[0, 1, 7], model);
+            create_triangle(ls, lp, &[3, 4, 5], model);
+            // Middle quad
+            create_triangle(ls, lp, &[7, 1, 3], model);
+            create_triangle(ls, lp, &[3, 5, 7], model);
+        },
+        6 => { 
+            create_triangle(ls, lp, &[7, 3, 6], model);
+            create_triangle(ls, lp, &[6, 3, 4], model);
+        },
+        7 => { 
+            create_triangle(ls, lp, &[0, 1, 6], model);
+            create_triangle(ls, lp, &[6, 3, 4], model);
+            create_triangle(ls, lp, &[6, 1, 3], model);
+        },
+        8 => create_triangle(ls, lp, &[1, 2, 3], model),
+        9 => {
+            create_triangle(ls, lp, &[0, 2, 7], model);
+            create_triangle(ls, lp, &[7, 2, 3], model);
+        },
+        10 => {
+            // Two triangles at the corners
+            create_triangle(ls, lp, &[1, 2, 3], model);
+            create_triangle(ls, lp, &[7, 5, 6], model);
+            // Middle quad
+            create_triangle(ls, lp, &[7, 1, 3], model);
+            create_triangle(ls, lp, &[3, 5, 7], model);
+        },
+        11 => {
+            create_triangle(ls, lp, &[0, 2, 3], model);
+            create_triangle(ls, lp, &[0, 5, 6], model);
+            create_triangle(ls, lp, &[0, 3, 5], model);
+        }
+        12 => {
+            create_triangle(ls, lp, &[1, 2, 4], model);
+            create_triangle(ls, lp, &[4, 5, 1], model);
+        }
+        13 => {
+            create_triangle(ls, lp, &[2, 4, 5], model);
+            create_triangle(ls, lp, &[7, 0, 2], model);
+            create_triangle(ls, lp, &[2, 5, 7], model);
+        }
+        14 => {
+            create_triangle(ls, lp, &[1, 2, 4], model);
+            create_triangle(ls, lp, &[7, 4, 6], model);
+            create_triangle(ls, lp, &[1, 4, 7], model);
+        }
         0 | 15 => { /* Empty cases */ }
         _ => { /* Case number is unsuported */ }
     }
     None
+}
+
+// Create a marching squares triangle between 3 skirt voxels
+pub fn create_triangle(ls: &[Voxel; 4], lp: &[veclib::Vector3<f32>; 4], li: &[usize; 3], model: &mut Model) {
+    // Check if the local index is one of the interpolated ones
+    for i in li {
+        match *i {
+            1 | 3 | 5 | 7 => {
+                // Interpolated
+            }
+            0 | 2 | 4 | 6 => {
+                // Not interpolated
+            }
+            _ => { /* The bruh funny */ panic!() }
+        }
+    }
 }
