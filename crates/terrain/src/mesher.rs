@@ -74,15 +74,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         // Get the normal
-                        let normal: veclib::Vector3<f32> = {
-                            // Do the lerping
-                            let n = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
-                            if n == veclib::Vector3::ZERO {
-                                veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, 0.5)
-                            } else {
-                                n
-                            }
-                        };
+                        let normal: veclib::Vector3<f32> = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value.clamp(0.0, 1.0));
 
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32, u8) = (
@@ -99,9 +91,9 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
                             model.normals.push(normal.normalized());
-                            model.uvs.push(veclib::Vector2::ZERO);
-                            model.tangents.push(veclib::Vector4::ZERO);
                             model.colors.push(veclib::Vector3::ONE);
+                            //model.uvs.push(veclib::Vector2::ZERO);
+                            //model.tangents.push(veclib::Vector4::ZERO);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
@@ -121,26 +113,50 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
     // Create the base-X skirt
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
+            let i = super::flatten((0, y, x));
             // Get the position
             let p = veclib::Vector2::new(x as f32, y as f32);
             // Get the marching cube case
             let mut case = 0_u8;
             // Get the local voxels
 
-            let local_voxels: Vec<(Voxel, veclib::Vector3<f32>)> = (0..4)
+            let local_voxels: Vec<Voxel> = (0..4)
                 .into_iter()
                 .map(|x| {
-                    let local_voxel = voxels[DENSITY_OFFSET_X[x]];
+                    let local_voxel = voxels[i + DENSITY_OFFSET_X[x]];
                     // Increase the case index if we have some voxels that are below the isoline
                     if local_voxel.density >= ISOLINE {
                         case |= 2_u8.pow(x as u32);
                     }
-                    (local_voxel, POSITION_OFFSET_X[x])
-                })
-                .collect::<Vec<(Voxel, veclib::Vector3<f32>)>>();
-            let local_voxels: &[(Voxel, veclib::Vector3<f32>)] = &local_voxels[0..4];
+                    local_voxel
+                }).collect::<Vec<Voxel>>();
+            let local_voxels: &[Voxel] = &local_voxels[0..4];
+            // Get the interpolated voxels
+            let local_interpolated_voxels: Vec<(veclib::Vector3<f32>, veclib::Vector2<f32>)> = (0..4)
+                .into_iter()
+                .map(|x| {
+                    // This is for every edge
+                    let two_voxels = MS_EDGE_TO_VERTICES[x];
+                    let voxel1_corner_index = two_voxels[0] as usize;
+                    let voxel2_corner_index = two_voxels[1] as usize;
+                    let voxel1 =  voxels[i + DENSITY_OFFSET_X[voxel1_corner_index]];
+                    let voxel2 =  voxels[i + DENSITY_OFFSET_X[voxel2_corner_index]];
+                    let value: f32 = if interpolation {
+                        inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
+                    } else {
+                        0.5
+                    };
+                    // Interpolate between the two voxels
+                    let normal = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
+                    // We must get the local offset of these two voxels
+                    let voxel1_local_offset = p + SQUARES_VERTEX_TABLE[voxel1_corner_index * 2]; 
+                    let voxel2_local_offset = p + SQUARES_VERTEX_TABLE[voxel2_corner_index * 2];
+                    let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
+                    (normal, offset)
+                }).collect::<Vec<(veclib::Vector3<f32>, veclib::Vector2<f32>)>>();
+            let local_interpolated_voxels: &[(veclib::Vector3<f32>, veclib::Vector2<f32>)] = &local_interpolated_voxels[0..4];
             // Solve the case
-            solve_marching_squares(case, p, local_voxels, &mut skirts_model, false);
+            solve_marching_squares(case, p, local_voxels, local_interpolated_voxels, &mut skirts_model, false);
         }
     }
 
@@ -154,11 +170,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
     }
 }
 
-// The type of skirt vertex, normal or shared
-pub enum SkirtVertex {
-    Vertex(veclib::Vector3<f32>, veclib::Vector3<f32>, veclib::Vector3<f32>),
-}
-
 // Funny skirt moment
 // 2---3---4
 // |       |
@@ -167,73 +178,72 @@ pub enum SkirtVertex {
 // 0---7---6
 
 // Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(case: u8, offset: veclib::Vector2<f32>, lv: &[(Voxel, veclib::Vector3<f32>)], model: &mut Model, _flip: bool) -> Option<Vec<SkirtVertex>> {
+pub fn solve_marching_squares(case: u8, offset: veclib::Vector2<f32>, lv: &[Voxel], ilv: &[(veclib::Vector3<f32>, veclib::Vector2<f32>)], model: &mut Model, _flip: bool) {
     // Create the triangles from the local skirts
     match case {
-        1 => create_triangle(offset, lv, &[0, 1, 7], model),
-        2 => create_triangle(offset, lv, &[7, 5, 6], model),
+        1 => create_triangle(offset, lv, ilv, &[0, 1, 7], model),
+        2 => create_triangle(offset, lv, ilv, &[7, 5, 6], model),
         3 => {
-            create_triangle(offset, lv, &[0, 1, 6], model);
-            create_triangle(offset, lv, &[6, 1, 5], model);
+            create_triangle(offset, lv, ilv, &[0, 1, 6], model);
+            create_triangle(offset, lv, ilv, &[6, 1, 5], model);
         }
-        4 => create_triangle(offset, lv, &[3, 4, 5], model),
+        4 => create_triangle(offset, lv, ilv, &[3, 4, 5], model),
         5 => {
             // Two triangles at the corners
-            create_triangle(offset, lv, &[0, 1, 7], model);
-            create_triangle(offset, lv, &[3, 4, 5], model);
+            create_triangle(offset, lv, ilv, &[0, 1, 7], model);
+            create_triangle(offset, lv, ilv, &[3, 4, 5], model);
             // Middle quad
-            create_triangle(offset, lv, &[7, 1, 3], model);
-            create_triangle(offset, lv, &[3, 5, 7], model);
+            create_triangle(offset, lv, ilv, &[7, 1, 3], model);
+            create_triangle(offset, lv, ilv, &[3, 5, 7], model);
         }
         6 => {
-            create_triangle(offset, lv, &[7, 3, 6], model);
-            create_triangle(offset, lv, &[6, 3, 4], model);
+            create_triangle(offset, lv, ilv, &[7, 3, 6], model);
+            create_triangle(offset, lv, ilv, &[6, 3, 4], model);
         }
         7 => {
-            create_triangle(offset, lv, &[0, 1, 6], model);
-            create_triangle(offset, lv, &[6, 3, 4], model);
-            create_triangle(offset, lv, &[6, 1, 3], model);
+            create_triangle(offset, lv, ilv, &[0, 1, 6], model);
+            create_triangle(offset, lv, ilv, &[6, 3, 4], model);
+            create_triangle(offset, lv, ilv, &[6, 1, 3], model);
         }
-        8 => create_triangle(offset, lv, &[1, 2, 3], model),
+        8 => create_triangle(offset, lv, ilv, &[1, 2, 3], model),
         9 => {
-            create_triangle(offset, lv, &[0, 2, 7], model);
-            create_triangle(offset, lv, &[7, 2, 3], model);
+            create_triangle(offset, lv, ilv, &[0, 2, 7], model);
+            create_triangle(offset, lv, ilv, &[7, 2, 3], model);
         }
         10 => {
             // Two triangles at the corners
-            create_triangle(offset, lv, &[1, 2, 3], model);
-            create_triangle(offset, lv, &[7, 5, 6], model);
+            create_triangle(offset, lv, ilv, &[1, 2, 3], model);
+            create_triangle(offset, lv, ilv, &[7, 5, 6], model);
             // Middle quad
-            create_triangle(offset, lv, &[7, 1, 3], model);
-            create_triangle(offset, lv, &[3, 5, 7], model);
+            create_triangle(offset, lv, ilv, &[7, 1, 3], model);
+            create_triangle(offset, lv, ilv, &[3, 5, 7], model);
         }
         11 => {
-            create_triangle(offset, lv, &[0, 2, 3], model);
-            create_triangle(offset, lv, &[0, 5, 6], model);
-            create_triangle(offset, lv, &[0, 3, 5], model);
+            create_triangle(offset, lv, ilv, &[0, 2, 3], model);
+            create_triangle(offset, lv, ilv, &[0, 5, 6], model);
+            create_triangle(offset, lv, ilv, &[0, 3, 5], model);
         }
         12 => {
-            create_triangle(offset, lv, &[1, 2, 4], model);
-            create_triangle(offset, lv, &[4, 5, 1], model);
+            create_triangle(offset, lv, ilv, &[1, 2, 4], model);
+            create_triangle(offset, lv, ilv, &[4, 5, 1], model);
         }
         13 => {
-            create_triangle(offset, lv, &[2, 4, 5], model);
-            create_triangle(offset, lv, &[7, 0, 2], model);
-            create_triangle(offset, lv, &[2, 5, 7], model);
+            create_triangle(offset, lv, ilv, &[2, 4, 5], model);
+            create_triangle(offset, lv, ilv, &[7, 0, 2], model);
+            create_triangle(offset, lv, ilv, &[2, 5, 7], model);
         }
         14 => {
-            create_triangle(offset, lv, &[1, 2, 4], model);
-            create_triangle(offset, lv, &[7, 4, 6], model);
-            create_triangle(offset, lv, &[1, 4, 7], model);
+            create_triangle(offset, lv, ilv, &[1, 2, 4], model);
+            create_triangle(offset, lv, ilv, &[7, 4, 6], model);
+            create_triangle(offset, lv, ilv, &[1, 4, 7], model);
         }
         0 | 15 => { /* Empty cases */ }
         _ => { /* Case number is unsuported */ }
     }
-    None
 }
 
 // Create a marching squares triangle between 3 skirt voxels
-pub fn create_triangle(offset: veclib::Vector2<f32>, lv: &[(Voxel, veclib::Vector3<f32>)], li: &[usize; 3], model: &mut Model) {
+pub fn create_triangle(offset: veclib::Vector2<f32>, lv: &[Voxel], ilv: &[(veclib::Vector3<f32>, veclib::Vector2<f32>)], li: &[usize; 3], model: &mut Model) {
     // Check if the local index is one of the interpolated ones
     for i in li {
         match *i {
@@ -263,7 +273,7 @@ pub fn create_triangle(offset: veclib::Vector2<f32>, lv: &[(Voxel, veclib::Vecto
 }
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
 fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(slice as f32, vertex.y + offset.x, vertex.x + offset.y)
+    veclib::Vector3::<f32>::new(slice as f32, vertex.y + offset.y, vertex.x + offset.x)
 }
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis

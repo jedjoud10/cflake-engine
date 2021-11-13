@@ -162,36 +162,42 @@ impl Model {
                 self.normals.as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
             );
+            
+            if !self.tangents.is_empty() {
+                // And it's brother, the tangent buffer
+                gl::GenBuffers(1, &mut gpu_data.tangent_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (self.tangents.len() * size_of::<f32>() * 4) as isize,
+                    self.tangents.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
 
-            // And it's brother, the tangent buffer
-            gl::GenBuffers(1, &mut gpu_data.tangent_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.tangents.len() * size_of::<f32>() * 4) as isize,
-                self.tangents.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            // The texture coordinates buffer
-            gl::GenBuffers(1, &mut gpu_data.uv_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.uvs.len() * size_of::<f32>() * 2) as isize,
+            if !self.uvs.is_empty() {
+                // The texture coordinates buffer
+                gl::GenBuffers(1, &mut gpu_data.uv_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (self.uvs.len() * size_of::<f32>() * 2) as isize,
                 self.uvs.as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
-            );
-            // Finally, the vertex colors buffer
-            gl::GenBuffers(1, &mut gpu_data.color_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.colors.len() * size_of::<f32>() * 3) as isize,
-                self.colors.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
+                );
+            }
 
+            if !self.colors.is_empty() {
+                // Finally, the vertex colors buffer
+                gl::GenBuffers(1, &mut gpu_data.color_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (self.colors.len() * size_of::<f32>() * 3) as isize,
+                    self.colors.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
             // Create the vertex attrib arrays
             gl::EnableVertexAttribArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.vertex_buf);
@@ -202,21 +208,24 @@ impl Model {
             gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.normal_buf);
             gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
 
-            // Tangent attribute
-            gl::EnableVertexAttribArray(2);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
-            gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
-
-            // UV attribute
-            gl::EnableVertexAttribArray(3);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
-            gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
-
-            // Vertex color attribute
-            gl::EnableVertexAttribArray(4);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
+            if !self.tangents.is_empty() {
+                // Tangent attribute
+                gl::EnableVertexAttribArray(2);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
+                gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
+            }
+            if !self.uvs.is_empty() {
+                // UV attribute
+                gl::EnableVertexAttribArray(3);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
+                gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
+            }           
+            if !self.colors.is_empty() {
+                // Vertex color attribute
+                gl::EnableVertexAttribArray(4);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
+            }
             gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
-
             gpu_data.initialized = true;
             // Unbind
             gl::BindVertexArray(0);
