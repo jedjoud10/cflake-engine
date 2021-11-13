@@ -1,4 +1,4 @@
-use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
+use crate::{NodeInterpreter, error::InterpreterError, var_hash::{PassedData, VarHashType}, var_hash_getter::VarHashGetter};
 
 // Final density
 pub type Shape = math::csg::CSGShape;
@@ -26,11 +26,15 @@ impl NodeInterpreter for Shape {
         VarHashType::Density
     }
     // Update the csg tree
-    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
+    fn update_csgtree(&self, passed_data: &mut PassedData, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
         // Since we are a CSG shape ourselves, add it to the csgtree with "Union" csg type
         let mut shape = self.clone();
         shape.csg_type = math::csg::CSGType::Union;
-        let passed_data = getter.self_varhash.unwrap().passed_data;
-        csgtree.add_custom_identifier(identifier, shape);
+        // Create a custom shape indentifier
+        passed_data.custom_shape_identifier = Some(math::csg::CSGCustomIdentifier {
+            hash: getter.self_varhash.unwrap().index as u64,
+        });
+        println!("Set custom shape identifier");
+        csgtree.add_custom_identifier(passed_data.custom_shape_identifier.unwrap(), shape);
     }
 }

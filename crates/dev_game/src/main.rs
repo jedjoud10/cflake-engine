@@ -103,7 +103,7 @@ pub fn world_initialized(world: &mut World) {
         bound_materials,
         voxel_generator_interpreter: terrain::interpreter::Interpreter::new(),
     };
-    let csg_tree = terrain::interpreter::Interpreter::new().read_csgtree().unwrap();
+    let (_, csg_tree) = terrain::interpreter::Interpreter::new().finalize().unwrap();
     for x in csg_tree.nodes.into_iter() {
         let debug_primitive = debug::DebugPrimitive::new().set_shape(x.internal_shape);
         data.debug.renderer.debug(debug_primitive);

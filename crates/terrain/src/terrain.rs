@@ -25,15 +25,15 @@ impl Terrain {
         node.children_indices.is_none() && node.depth < max_depth && result
     }
     // New terrain data with specific parameters
-    pub fn new(settings: TerrainSettings, asset_manager: &mut AssetManager) -> Self {
+    pub fn new(mut settings: TerrainSettings, asset_manager: &mut AssetManager) -> Self {
         // Create a new octree
         let internal_octree = Octree::new(settings.octree_depth, (MAIN_CHUNK_SIZE) as u64);
         let octree = AdvancedOctree::new(internal_octree, Self::can_node_subdivide_twin);
 
         // Load the compute shader
-        let additional_shader_source = settings.voxel_generator_interpreter.read_glsl().unwrap();
+        let (string, csgtree) = settings.voxel_generator_interpreter.finalize().unwrap();
         let compute = Shader::new()
-            .set_additional_shader_sources(vec![&additional_shader_source])
+            .set_additional_shader_sources(vec![&string])
             .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
             .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER], asset_manager)
             .unwrap();
@@ -43,7 +43,7 @@ impl Terrain {
             octree,
             voxel_generator: VoxelGenerator::new(compute),
             chunk_manager: ChunkManager::default(),
-            csgtree: settings.voxel_generator_interpreter.read_csgtree().unwrap(),
+            csgtree: csgtree,
             settings,
         }
     }

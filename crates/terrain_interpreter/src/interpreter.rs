@@ -1,12 +1,6 @@
 use math::constructive_solid_geometry::CSGTree;
 
-use crate::{
-    error::InterpreterError,
-    nodes::*,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Node, NodeInterpreter,
-};
+use crate::{Node, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{PassedData, VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
@@ -42,8 +36,7 @@ impl Interpreter {
             .new(&[p], &mut interpreter)
             .unwrap();
         let s = Noise::default().new(&[p], &mut interpreter).unwrap();
-        let c = DensityOperation::Addition.new(&[d, s], &mut interpreter).unwrap();
-        interpreter.finalize(c);
+        let c = DensityOperation::Addition.new(&[shape, s], &mut interpreter).unwrap();
         interpreter
     }
     // Add a specific node to the system
@@ -54,7 +47,7 @@ impl Interpreter {
         let var_hash = VarHash {
             index: id,
             _type: boxed.get_output_type(&getter),
-            passed_data: crate::var_hash::PassedData::default()
+            passed_data: PassedData::default()
         };
         // Create a variable for this node
         let line = format!(
@@ -77,10 +70,15 @@ impl Interpreter {
         let node = Node { getter, node_interpreter: boxed };
         // Add the node
         self.nodes.push(node);
+        println!("Add node");
         Ok(*self.vars.get(id).unwrap())
     }
     // Finalize the tree with a specific var hash
-    pub fn finalize(&mut self, final_density_varhash: VarHash) {
+    pub fn finalize(&mut self) -> Option<(String, CSGTree)> {
+        // We cannot finalize this node if it was already finalized
+        if self.finalized { return None; }
+        // We are going to use the last node as the final node
+        let final_density_varhash = self.vars.last().unwrap().clone();
         // Check if the supplied varhash is a of type "density"
         match &final_density_varhash._type {
             VarHashType::Density => {
@@ -93,23 +91,14 @@ impl Interpreter {
                 panic!();
             }
         }
-    }
-    // Read back the GLSL data from this interpreter
-    pub fn read_glsl(&self) -> Option<String> {
-        // Check if we finalized
-        if !self.finalized {
-            return None;
-        }
-        //lines.reverse();
-        Some(self.lines.join("\n"))
-    }
-    // Read back the CSG tree
-    pub fn read_csgtree(&self) -> Option<CSGTree> {
+        // Getting the GLSL code here
+        let string = self.lines.join("\n");
+
+        // Getting the CSGTree now 
         // Default CSGTree is based around our first "base_density" node, since it is a shape node undercover
         let mut csgtree: CSGTree = CSGTree::default();
+        // Calculate the base influence        
         let (_, node, bsn) = self.get_base_shape_node();
-        // Calculate the base influence
-        bsn.update_csgtree(&node.getter, &mut csgtree, (0.0, 0.0));
         let mut input_ranges: Vec<(f32, f32)> = Vec::new();
         input_ranges.push((0.0, 0.0));
         // Start from the oldest nodes
@@ -117,23 +106,24 @@ impl Interpreter {
             let x = self.used_nodes[i];
             let node = self.nodes.get(x).unwrap();
             // Get the variables from the node 
-            let getter = &node.getter;
-            let output_var = self.vars.get(x).unwrap();
-            for x in getter.inputs_indices.iter() {
-                println!("Test: {}", x);
+            let mut getter = node.getter.clone();
+            // Make sure the getter has updated values
+            for (local_index, global_index) in getter.inputs_indices.iter().enumerate() {
+                getter.inputs[local_index] = *self.vars.get(*global_index).unwrap();
             }
+            let output_var = self.vars.get_mut(x).unwrap();
             let new_input_ranges = getter.inputs_indices.iter().map(|x| input_ranges.get(*x).unwrap().clone()).collect::<Vec<(f32, f32)>>();
             // Gotta calculate the range first
             for x in new_input_ranges.iter() {
                 println!("Input: [{}, {}]", x.0, x.1);
             }
-            let range = node.node_interpreter.calculate_range(getter, new_input_ranges);
+            let range = node.node_interpreter.calculate_range(&getter, new_input_ranges);
             println!("Add input range: [{}, {}] at index {}, instead of index {}", range.0, range.1, input_ranges.len(), output_var.index);
             input_ranges.insert(output_var.index, range);
             // Update the csg tree
-            node.node_interpreter.update_csgtree(getter, &mut csgtree, range);
+            node.node_interpreter.update_csgtree(&mut output_var.passed_data, &getter, &mut csgtree, range);
         }
-        Some(csgtree)
+        Some((string, csgtree))
     }
 }
 // Custom gets
@@ -146,8 +136,8 @@ impl Interpreter {
             panic!()
         }
         // The index for this node is "0"
-        let var_hash = self.vars.get(0).unwrap();
-        let node = self.nodes.get(0).unwrap();
+        let var_hash = self.vars.get(1).unwrap();
+        let node = self.nodes.get(1).unwrap();
         (*var_hash, &node, &node.node_interpreter)
     }
 }

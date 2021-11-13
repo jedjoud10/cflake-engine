@@ -4,7 +4,14 @@ use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 #[derive(Clone, Copy, Default, Debug)]
 pub struct PassedData {
     // Custom shape identifier
-    pub cunstom_shape_identifier: Option<math::csg::CSGCustomIdentifier>
+    pub custom_shape_identifier: Option<math::csg::CSGCustomIdentifier>
+}
+
+impl PassedData {
+    // Combine two passed datas into a singular one
+    pub fn combine(first: Self, second: Self) -> Self {
+        first
+    }
 }
 
 // A variable hash

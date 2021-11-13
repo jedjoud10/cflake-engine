@@ -1,4 +1,4 @@
-use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
+use crate::{NodeInterpreter, error::InterpreterError, var_hash::{PassedData, VarHashType}, var_hash_getter::VarHashGetter};
 pub enum DensityOperation {
     Union,
     Intersection,
@@ -38,7 +38,7 @@ impl NodeInterpreter for DensityOperation {
             DensityOperation::Subtraction => todo!(),
         }
     }
-    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
+    fn update_csgtree(&self, passed_data: &mut PassedData, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
         // Depends on the density operation
         match self {
             DensityOperation::Union => todo!(),
@@ -47,8 +47,11 @@ impl NodeInterpreter for DensityOperation {
                 // Update the CSG tree
                 let i0 = getter.get(0, VarHashType::Density).unwrap();
                 let i1 = getter.get(1, VarHashType::Density).unwrap();
-                let id0 = i0.passed_data.cunstom_shape_identifier.unwrap();
-                let custom_shape = csgtree.get_custom_mut(id0).unwrap();
+                let x: PassedData = PassedData::combine(i0.passed_data, i1.passed_data);
+                println!("{:?}", i0);
+                println!("{:?}", i1);
+                *passed_data = x;
+                let custom_shape = csgtree.get_custom_mut(x.custom_shape_identifier.unwrap()).unwrap();
                 custom_shape.expand(math::csg::ExpandMethod::Factor(self_range.1));
             },
             DensityOperation::Subtraction => todo!(),

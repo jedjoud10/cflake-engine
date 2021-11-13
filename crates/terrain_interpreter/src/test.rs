@@ -7,8 +7,7 @@ mod test {
     pub fn nodes() {
         // Create the interpreter system
         let mut interpreter = Interpreter::new();
-        let string = interpreter.read_glsl().unwrap();
-        let csg_tree = interpreter.read_csgtree().unwrap();
+        let (string, csg_tree) = interpreter.finalize().unwrap();
         let lines = string.lines().map(|x| x.to_string()).collect::<Vec<String>>();
         println!("{}", string);
     }

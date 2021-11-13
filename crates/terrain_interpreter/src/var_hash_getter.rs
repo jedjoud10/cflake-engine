@@ -4,6 +4,7 @@ use crate::{
 };
 
 // Easier and cleaner way to get var hashes
+#[derive(Clone)]
 pub struct VarHashGetter {
     pub inputs: Vec<VarHash>,
     pub inputs_indices: Vec<usize>,

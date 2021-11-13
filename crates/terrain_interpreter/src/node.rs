@@ -1,11 +1,6 @@
 use math::constructive_solid_geometry::CSGTree;
 
-use crate::{
-    error::InterpreterError,
-    var_hash::{VarHash, VarHashType},
-    var_hash_getter::VarHashGetter,
-    Interpreter,
-};
+use crate::{Interpreter, error::InterpreterError, var_hash::{PassedData, VarHash, VarHashType}, var_hash_getter::VarHashGetter};
 
 pub struct Node {
     // Le bruh
@@ -39,7 +34,7 @@ pub trait NodeInterpreter {
         interpreter.add(self, getter)
     }
     // Get the influence of a specific node using it's inputs
-    fn update_csgtree(&self, getter: &VarHashGetter, csgtree: &mut CSGTree, self_range: (f32, f32)) {}
+    fn update_csgtree(&self, passed_data: &mut PassedData, getter: &VarHashGetter, csgtree: &mut CSGTree, self_range: (f32, f32)) {}
     // Calculate the possible range for this node
     fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) { (0.0, 0.0) }
 }
