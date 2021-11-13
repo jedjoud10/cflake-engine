@@ -15,15 +15,29 @@ impl Intersection {
     pub fn point_aabb(point: &veclib::Vector3<f32>, aabb: &bounds::AABB) -> bool {
         aabb.min.elem_lt(point).all() && aabb.max.elem_gt(point).all()
     }
+    // Check if an AABB is intersecting an AxisPlane
+    pub fn aabb_axis_plane(aabb: &bounds::AABB, plane: &crate::shapes::Shape) -> bool {
+        match plane.internal_shape {
+            shapes::ShapeType::AxisPlane(axis, (min_offset, max_offset)) => {
+                let (v1, v2) = match axis {
+                    veclib::Vec3Axis::X => (aabb.min.x - max_offset, aabb.max.x - min_offset),
+                    veclib::Vec3Axis::Y => (aabb.min.y - max_offset, aabb.max.y - min_offset),
+                    veclib::Vec3Axis::Z => (aabb.min.z - max_offset, aabb.max.z - min_offset),
+                };
+                // If it intersects, the signs would not be the same
+                v1.signum() != v2.signum()
+            }
+            _ => todo!(), /* This is not a fucking axis plane you dumbass*/
+        }
+    }
     // Check if an AABB is intersecting a sphere
     pub fn aabb_sphere(aabb: &bounds::AABB, sphere: &crate::shapes::Shape) -> bool {
         match sphere.internal_shape {
-            shapes::ShapeType::Cube(_) => todo!(), /* This is not a fucking sphere you dumbass*/
             shapes::ShapeType::Sphere(_) => {
                 let closest_point = aabb.get_nearest_point(&sphere.center);
                 Self::point_sphere(&closest_point, sphere)
             }
-            shapes::ShapeType::AxisPlane(axis, offset) => todo!(),
+            _ => todo!(), /* This is not a fucking sphere you dumbass*/
         }
     }
     // Frustum and an aabb
@@ -56,13 +70,13 @@ impl Intersection {
                 let csg_aabb = crate::bounds::AABB::new_center_halfextent(center, half_extent);
                 Self::aabb_aabb(aabb, &csg_aabb)
             }
-            shapes::ShapeType::Sphere(radius) => {
+            shapes::ShapeType::Sphere(_) => {
                 // Same stuff here
                 Self::aabb_sphere(aabb, &csgshape.internal_shape)
             }
-            shapes::ShapeType::AxisPlane(axis, offset) => {
-                // Sometimes you just want to kill yourself
-                todo!()
+            shapes::ShapeType::AxisPlane(_, _) => {
+                // Axis-plane and AABB
+                Self::aabb_axis_plane(aabb, &csgshape.internal_shape)
             }
         };
         intersection

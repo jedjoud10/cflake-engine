@@ -1,10 +1,13 @@
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
 // Some passed data
 #[derive(Clone, Copy, Default, Debug)]
 pub struct PassedData {
     // Custom shape identifier
-    pub custom_shape_identifier: Option<math::csg::CSGCustomIdentifier>
+    pub custom_shape_identifier: Option<math::csg::CSGCustomIdentifier>,
 }
 
 impl PassedData {
@@ -16,7 +19,7 @@ impl PassedData {
                 let mut clone = first;
                 clone.custom_shape_identifier = Some(x);
                 return clone;
-            },
+            }
             None => return first,
         }
     }

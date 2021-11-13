@@ -800,8 +800,8 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "veclib"
-version = "0.1.7"
-source = "git+https://github.com/jedjoud10/veclib#908bdd571b0d819da3fa8bbe43e78aad36e90c2e"
+version = "0.1.8"
+source = "git+https://github.com/jedjoud10/veclib#b91cf6ea76b4a34fe02e43e1b589c47e86067fb9"
 
 [[package]]
 name = "wasi"

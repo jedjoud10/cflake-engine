@@ -35,7 +35,7 @@ impl CSGShape {
             csg_type,
             internal_shape: Shape::new_sphere(center, radius),
         }
-    }    
+    }
     // New axis plane
     pub fn new_axis_plane(offset: f32, axis: veclib::Vec3Axis, csg_type: CSGType) -> Self {
         Self {
@@ -57,8 +57,9 @@ impl CSGShape {
                 ExpandMethod::Factor(x) => *radius += x,
                 ExpandMethod::Vector(x) => todo!(),
             },
-            ShapeType::AxisPlane(axis, offset) => {
-                todo!()
+            ShapeType::AxisPlane(axis, (min_offset, max_offset)) => match expand_method {
+                ExpandMethod::Factor(x) => *max_offset += x,
+                ExpandMethod::Vector(x) => *max_offset += x.get_axis(*axis),
             }
         }
     }

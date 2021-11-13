@@ -1,4 +1,9 @@
-use crate::{NodeInterpreter, error::InterpreterError, var_hash::{PassedData, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    var_hash::{PassedData, VarHashType},
+    var_hash_getter::VarHashGetter,
+    NodeInterpreter,
+};
 
 // Final density
 pub type Shape = math::csg::CSGShape;
@@ -12,16 +17,12 @@ impl NodeInterpreter for Shape {
         let position_string = format!("({} - {})", pos.get_name(), center_string);
         // Depends on the shape
         Ok(match self.internal_shape.internal_shape {
-            math::shapes::ShapeType::Cube(half_extent) => format!(
-                "sdBox({}, {})",
-                position_string,
-                format!("vec3({}, {}, {})", half_extent.x, half_extent.y, half_extent.z)
-            ),
+            math::shapes::ShapeType::Cube(half_extent) => format!("sdBox({}, {})", position_string, format!("vec3({}, {}, {})", half_extent.x, half_extent.y, half_extent.z)),
             math::shapes::ShapeType::Sphere(radius) => format!("sdSphere({}, {})", position_string, radius),
-            math::shapes::ShapeType::AxisPlane(axis, offset) => match axis {
-                veclib::Vec3Axis::X => format!("pos.x + {}", offset),
-                veclib::Vec3Axis::Y => format!("pos.y + {}", offset),
-                veclib::Vec3Axis::Z => format!("pos.z + {}", offset),
+            math::shapes::ShapeType::AxisPlane(axis, (offset_min, offset_max)) => match axis {
+                veclib::Vec3Axis::X => format!("pos.x + {}", offset_max),
+                veclib::Vec3Axis::Y => format!("pos.y + {}", offset_max),
+                veclib::Vec3Axis::Z => format!("pos.z + {}", offset_max),
             },
         }
         .to_string())

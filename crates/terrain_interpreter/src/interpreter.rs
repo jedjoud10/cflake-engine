@@ -1,6 +1,12 @@
 use math::constructive_solid_geometry::CSGTree;
 
-use crate::{Node, NodeInterpreter, error::InterpreterError, nodes::*, var_hash::{PassedData, VarHash, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    nodes::*,
+    var_hash::{PassedData, VarHash, VarHashType},
+    var_hash_getter::VarHashGetter,
+    Node, NodeInterpreter,
+};
 
 // The main system that will be made from multiple densities and combiners
 pub struct Interpreter {
@@ -35,6 +41,8 @@ impl Interpreter {
         let shape = Shape::new_axis_plane(0.0, veclib::Vec3Axis::Y, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
+        let d = Noise::new().set_strength(20.0).set_scale(0.002).new(&[p], &mut interpreter).unwrap();
+        let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
         interpreter
     }
     // Add a specific node to the system
@@ -45,7 +53,7 @@ impl Interpreter {
         let var_hash = VarHash {
             index: id,
             _type: boxed.get_output_type(&getter),
-            passed_data: PassedData::default()
+            passed_data: PassedData::default(),
         };
         // Create a variable for this node
         let line = format!(
@@ -74,7 +82,9 @@ impl Interpreter {
     // Finalize the tree with a specific var hash
     pub fn finalize(&mut self) -> Option<(String, CSGTree)> {
         // We cannot finalize this node if it was already finalized
-        if self.finalized { return None; }
+        if self.finalized {
+            return None;
+        }
         // We are going to use the last node as the final node
         let final_density_varhash = self.vars.last().unwrap().clone();
         // Check if the supplied varhash is a of type "density"
@@ -92,10 +102,10 @@ impl Interpreter {
         // Getting the GLSL code here
         let string = self.lines.join("\n");
 
-        // Getting the CSGTree now 
+        // Getting the CSGTree now
         // Default CSGTree is based around our first "base_density" node, since it is a shape node undercover
         let mut csgtree: CSGTree = CSGTree::default();
-        // Calculate the base influence        
+        // Calculate the base influence
         let (_, node, bsn) = self.get_base_shape_node();
         let mut input_ranges: Vec<(f32, f32)> = Vec::new();
         input_ranges.push((0.0, 0.0));
@@ -103,7 +113,7 @@ impl Interpreter {
         for i in 1..self.used_nodes.len() {
             let x = self.used_nodes[i];
             let node = self.nodes.get(x).unwrap();
-            // Get the variables from the node 
+            // Get the variables from the node
             let mut getter = node.getter.clone();
             // Make sure the getter has updated values
             for (local_index, global_index) in getter.inputs_indices.iter().enumerate() {

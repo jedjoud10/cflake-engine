@@ -1,4 +1,9 @@
-use crate::{NodeInterpreter, error::InterpreterError, var_hash::{PassedData, VarHashType}, var_hash_getter::VarHashGetter};
+use crate::{
+    error::InterpreterError,
+    var_hash::{PassedData, VarHashType},
+    var_hash_getter::VarHashGetter,
+    NodeInterpreter,
+};
 pub enum DensityOperation {
     Union,
     Intersection,
@@ -34,7 +39,7 @@ impl NodeInterpreter for DensityOperation {
                 let (x2, y2) = input_ranges[1];
                 let new_range = (f32::min(x1, x2), f32::max(y1, y2));
                 new_range
-            },
+            }
             DensityOperation::Subtraction => todo!(),
         }
     }
@@ -52,7 +57,7 @@ impl NodeInterpreter for DensityOperation {
                 let custom_shape = csgtree.get_custom_mut(x.custom_shape_identifier.unwrap()).unwrap();
                 custom_shape.expand(math::csg::ExpandMethod::Factor(self_range.1));
                 println!("{:?}", custom_shape.internal_shape);
-            },
+            }
             DensityOperation::Subtraction => todo!(),
         }
     }
