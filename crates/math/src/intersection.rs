@@ -23,7 +23,7 @@ impl Intersection {
                 let closest_point = aabb.get_nearest_point(&sphere.center);
                 Self::point_sphere(&closest_point, sphere)
             }
-            shapes::ShapeType::AxisPlane(axis) => todo!(),
+            shapes::ShapeType::AxisPlane(axis, offset) => todo!(),
         }
     }
     // Frustum and an aabb
@@ -60,8 +60,8 @@ impl Intersection {
                 // Same stuff here
                 Self::aabb_sphere(aabb, &csgshape.internal_shape)
             }
-            shapes::ShapeType::AxisPlane(axis) => {
-                // Sometimes you just want to kill yourlse
+            shapes::ShapeType::AxisPlane(axis, offset) => {
+                // Sometimes you just want to kill yourself
                 todo!()
             }
         };
@@ -89,7 +89,7 @@ impl Intersection {
         match sphere.internal_shape {
             shapes::ShapeType::Cube(_) => todo!(), /* Not a sphere */
             shapes::ShapeType::Sphere(radius) => point.distance(sphere.center) < radius,
-            shapes::ShapeType::AxisPlane(_) => todo!(),
+            shapes::ShapeType::AxisPlane(_, _) => todo!(),
         }
     }
     /* #endregion */

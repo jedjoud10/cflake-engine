@@ -32,7 +32,7 @@ impl Interpreter {
         let mut interpreter = Interpreter::default();
         // Add the default pos.y nodes
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
-        let shape = Shape::new_sphere(veclib::Vector3::Y*10.0, 200.0, math::csg::CSGType::Union)
+        let shape = Shape::new_axis_plane(0.0, veclib::Vec3Axis::Y, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
         interpreter

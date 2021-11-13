@@ -35,7 +35,16 @@ impl CSGShape {
             csg_type,
             internal_shape: Shape::new_sphere(center, radius),
         }
+    }    
+    // New axis plane
+    pub fn new_axis_plane(offset: f32, axis: veclib::Vec3Axis, csg_type: CSGType) -> Self {
+        Self {
+            csg_type,
+            internal_shape: Shape::new_axis_plane(offset, axis),
+        }
     }
+
+    //
     // Expand this CSG shape using the specified method
     pub fn expand(&mut self, expand_method: ExpandMethod) {
         // Check the internal shape type first, some internal shape and expand method combinations might not work. Ex (ShapeTpe: Sphere and ExpandMethod: Vector)
@@ -48,7 +57,7 @@ impl CSGShape {
                 ExpandMethod::Factor(x) => *radius += x,
                 ExpandMethod::Vector(x) => todo!(),
             },
-            ShapeType::AxisPlane(axis) => {
+            ShapeType::AxisPlane(axis, offset) => {
                 todo!()
             }
         }

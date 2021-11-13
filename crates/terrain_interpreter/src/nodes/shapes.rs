@@ -18,7 +18,11 @@ impl NodeInterpreter for Shape {
                 format!("vec3({}, {}, {})", half_extent.x, half_extent.y, half_extent.z)
             ),
             math::shapes::ShapeType::Sphere(radius) => format!("sdSphere({}, {})", position_string, radius),
-            math::shapes::ShapeType::AxisPlane(_) => todo!(),
+            math::shapes::ShapeType::AxisPlane(axis, offset) => match axis {
+                veclib::Vec3Axis::X => format!("pos.x + {}", offset),
+                veclib::Vec3Axis::Y => format!("pos.y + {}", offset),
+                veclib::Vec3Axis::Z => format!("pos.z + {}", offset),
+            },
         }
         .to_string())
     }

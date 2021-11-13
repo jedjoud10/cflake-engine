@@ -43,7 +43,7 @@ impl DebugRenderer {
         let template_model = match debug_primitive.shape.internal_shape {
             math::shapes::ShapeType::Cube(_) => self.template_models.get(0),
             math::shapes::ShapeType::Sphere(_) => self.template_models.get(1),
-            math::shapes::ShapeType::AxisPlane(_) => todo!(),
+            math::shapes::ShapeType::AxisPlane(_, _) => todo!(),
         }
         .unwrap()
         .clone();
@@ -57,7 +57,7 @@ impl DebugRenderer {
         let model_matrix = match debug_primitive.shape.internal_shape {
             math::shapes::ShapeType::Cube(x) => pos_matrix * veclib::Matrix4x4::from_scale(x + 1.0),
             math::shapes::ShapeType::Sphere(x) => pos_matrix * veclib::Matrix4x4::from_scale(veclib::Vector3::ONE * x + 1.0),
-            math::shapes::ShapeType::AxisPlane(_) => todo!(),
+            math::shapes::ShapeType::AxisPlane(_, _) => todo!(),
         };
         self.primitives.push(debug_primitive);
         self.renderers.push((renderer, model_matrix));

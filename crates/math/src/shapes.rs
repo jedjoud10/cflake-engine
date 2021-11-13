@@ -94,7 +94,7 @@ impl Line {
 pub enum ShapeType {
     Cube(veclib::Vector3<f32>),
     Sphere(f32),
-    AxisPlane(veclib::Vec3Axis),
+    AxisPlane(veclib::Vec3Axis, f32),
 }
 // A main shape struct
 #[derive(Clone, Debug)]
@@ -116,6 +116,13 @@ impl Shape {
         Self {
             center,
             internal_shape: ShapeType::Sphere(radius),
+        }
+    }
+    // New axis plane
+    pub fn new_axis_plane(offset: f32, axis: veclib::Vec3Axis) -> Self {
+        Self {
+            center: veclib::Vector3::get_default_axis(&axis) * offset,
+            internal_shape: ShapeType::AxisPlane(axis, offset),
         }
     }
 }

@@ -122,7 +122,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
             // Get the position
-            let p = veclib::Vector3::new(x as f32, y as f32, 0.0);
+            let p = veclib::Vector2::new(x as f32, y as f32);
             // Get the marching cube case
             let mut case = 0_u8;
             // Get the local voxels
@@ -137,15 +137,17 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
             }).collect::<Vec<(Voxel, veclib::Vector3<f32>)>>();
             let local_voxels: &[(Voxel, veclib::Vector3<f32>)] = &local_voxels[0..4];
             // Solve the case
-            solve_marching_squares(case, local_voxels, &mut skirts_model, false);
+            solve_marching_squares(case, p, local_voxels, &mut skirts_model, false);
         }
     }
     
 
     // Return the model
+    let mut test_hashmap = HashMap::new();
+    test_hashmap.insert(0, skirts_model);
     TModel {
         shader_model_hashmap: sub_model_hashmap,
-        skirt_models: HashMap::new(),
+        skirt_models: test_hashmap,
         intersection_cases: Some(intersection_cases),
     }
 }
@@ -163,64 +165,64 @@ pub enum SkirtVertex {
 // 0---7---6
 
 // Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(case: u8, lv: &[(Voxel, veclib::Vector3<f32>)], model: &mut Model, _flip: bool) -> Option<Vec<SkirtVertex>> {
+pub fn solve_marching_squares(case: u8, offset: veclib::Vector2<f32>, lv: &[(Voxel, veclib::Vector3<f32>)], model: &mut Model, _flip: bool) -> Option<Vec<SkirtVertex>> {
     // Create the triangles from the local skirts
     match case {
-        1 => create_triangle(lv, &[0, 1, 7], model),
-        2 => create_triangle(lv, &[7, 5, 6], model),
+        1 => create_triangle(offset, lv, &[0, 1, 7], model),
+        2 => create_triangle(offset, lv, &[7, 5, 6], model),
         3 => { 
-            create_triangle(lv, &[0, 1, 6], model);
-            create_triangle(lv, &[6, 1, 5], model);
+            create_triangle(offset, lv, &[0, 1, 6], model);
+            create_triangle(offset, lv, &[6, 1, 5], model);
         },
-        4 => create_triangle(lv, &[3, 4, 5], model),
+        4 => create_triangle(offset, lv, &[3, 4, 5], model),
         5 => {
             // Two triangles at the corners 
-            create_triangle(lv, &[0, 1, 7], model);
-            create_triangle(lv, &[3, 4, 5], model);
+            create_triangle(offset, lv, &[0, 1, 7], model);
+            create_triangle(offset, lv, &[3, 4, 5], model);
             // Middle quad
-            create_triangle(lv, &[7, 1, 3], model);
-            create_triangle(lv, &[3, 5, 7], model);
+            create_triangle(offset, lv, &[7, 1, 3], model);
+            create_triangle(offset, lv, &[3, 5, 7], model);
         },
         6 => { 
-            create_triangle(lv, &[7, 3, 6], model);
-            create_triangle(lv, &[6, 3, 4], model);
+            create_triangle(offset, lv, &[7, 3, 6], model);
+            create_triangle(offset, lv, &[6, 3, 4], model);
         },
         7 => { 
-            create_triangle(lv, &[0, 1, 6], model);
-            create_triangle(lv, &[6, 3, 4], model);
-            create_triangle(lv, &[6, 1, 3], model);
+            create_triangle(offset, lv, &[0, 1, 6], model);
+            create_triangle(offset, lv, &[6, 3, 4], model);
+            create_triangle(offset, lv, &[6, 1, 3], model);
         },
-        8 => create_triangle(lv, &[1, 2, 3], model),
+        8 => create_triangle(offset, lv, &[1, 2, 3], model),
         9 => {
-            create_triangle(lv, &[0, 2, 7], model);
-            create_triangle(lv, &[7, 2, 3], model);
+            create_triangle(offset, lv, &[0, 2, 7], model);
+            create_triangle(offset, lv, &[7, 2, 3], model);
         },
         10 => {
             // Two triangles at the corners
-            create_triangle(lv, &[1, 2, 3], model);
-            create_triangle(lv, &[7, 5, 6], model);
+            create_triangle(offset, lv, &[1, 2, 3], model);
+            create_triangle(offset, lv, &[7, 5, 6], model);
             // Middle quad
-            create_triangle(lv, &[7, 1, 3], model);
-            create_triangle(lv, &[3, 5, 7], model);
+            create_triangle(offset, lv, &[7, 1, 3], model);
+            create_triangle(offset, lv, &[3, 5, 7], model);
         },
         11 => {
-            create_triangle(lv, &[0, 2, 3], model);
-            create_triangle(lv, &[0, 5, 6], model);
-            create_triangle(lv, &[0, 3, 5], model);
+            create_triangle(offset, lv, &[0, 2, 3], model);
+            create_triangle(offset, lv, &[0, 5, 6], model);
+            create_triangle(offset, lv, &[0, 3, 5], model);
         }
         12 => {
-            create_triangle(lv, &[1, 2, 4], model);
-            create_triangle(lv, &[4, 5, 1], model);
+            create_triangle(offset, lv, &[1, 2, 4], model);
+            create_triangle(offset, lv, &[4, 5, 1], model);
         }
         13 => {
-            create_triangle(lv, &[2, 4, 5], model);
-            create_triangle(lv, &[7, 0, 2], model);
-            create_triangle(lv, &[2, 5, 7], model);
+            create_triangle(offset, lv, &[2, 4, 5], model);
+            create_triangle(offset, lv, &[7, 0, 2], model);
+            create_triangle(offset, lv, &[2, 5, 7], model);
         }
         14 => {
-            create_triangle(lv, &[1, 2, 4], model);
-            create_triangle(lv, &[7, 4, 6], model);
-            create_triangle(lv, &[1, 4, 7], model);
+            create_triangle(offset, lv, &[1, 2, 4], model);
+            create_triangle(offset, lv, &[7, 4, 6], model);
+            create_triangle(offset, lv, &[1, 4, 7], model);
         }
         0 | 15 => { /* Empty cases */ }
         _ => { /* Case number is unsuported */ }
@@ -229,17 +231,43 @@ pub fn solve_marching_squares(case: u8, lv: &[(Voxel, veclib::Vector3<f32>)], mo
 }
 
 // Create a marching squares triangle between 3 skirt voxels
-pub fn create_triangle(lv: &[(Voxel, veclib::Vector3<f32>)], li: &[usize; 3], model: &mut Model) {
+pub fn create_triangle(offset: veclib::Vector2<f32>, lv: &[(Voxel, veclib::Vector3<f32>)], li: &[usize; 3], model: &mut Model) {
     // Check if the local index is one of the interpolated ones
     for i in li {
         match *i {
+            /*
             1 | 3 | 5 | 7 => {
                 // Interpolated
             }
             0 | 2 | 4 | 6 => {
                 // Not interpolated
             }
+            */
+            0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => {
+            }
             _ => { /* The bruh funny */ panic!() }
         }
+        // Add the vertex
+        let vertex = transform_x_local(0, &SQUARES_VERTEX_TABLE[*i], &offset);
+        model.triangles.push(model.vertices.len() as u32);
+        model.vertices.push(vertex);
+        model.normals.push(-veclib::Vector3::X);
+        model.uvs.push(veclib::Vector2::ZERO);
+        model.tangents.push(veclib::Vector4::ZERO);
+        model.colors.push(veclib::Vector3::ONE);
     }
+}
+// Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
+fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
+    veclib::Vector3::<f32>::new(slice as f32, vertex.y + offset.x, vertex.x + offset.y)
+}
+
+// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis
+fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
+    veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y)
+}
+
+// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
+fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
+    veclib::Vector3::<f32>::new(vertex.y + offset.y, vertex.x + offset.x, slice as f32)
 }

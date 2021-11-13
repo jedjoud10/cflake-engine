@@ -389,7 +389,7 @@ pub const DENSITY_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABL
 
 // Density offset for the Z axis
 pub const DENSITY_OFFSET_Z: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[7], DATA_OFFSET_TABLE[3]];
-
+/*
 // Marching squares vertex table
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
     veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
@@ -401,15 +401,14 @@ pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
     veclib::Vector2::<f32> { x: 1.0, y: 0.0 },
     veclib::Vector2::<f32> { x: -1.0, y: -1.0 },
 ];
-/*
-pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
-    veclib::Vector2::<f32> { data: [0.0, 0.0] },
-    veclib::Vector2::<f32> { data: [0.0, 0.5] },
-    veclib::Vector2::<f32> { data: [0.0, 1.0] },
-    veclib::Vector2::<f32> { data: [0.5, 1.0] },
-    veclib::Vector2::<f32> { data: [1.0, 1.0] },
-    veclib::Vector2::<f32> { data: [1.0, 0.5] },
-    veclib::Vector2::<f32> { data: [1.0, 0.0] },
-    veclib::Vector2::<f32> { data: [0.5, 0.0] },
-    ];
 */
+pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
+    veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
+    veclib::Vector2::<f32> { x: 0.0, y: 0.5 },
+    veclib::Vector2::<f32> { x: 0.0, y: 1.0 },
+    veclib::Vector2::<f32> { x: 0.5, y: 1.0 },
+    veclib::Vector2::<f32> { x: 1.0, y: 1.0 },
+    veclib::Vector2::<f32> { x: 1.0, y: 0.5 },
+    veclib::Vector2::<f32> { x: 1.0, y: 0.0 },
+    veclib::Vector2::<f32> { x: 0.5, y: 0.0 },
+];
