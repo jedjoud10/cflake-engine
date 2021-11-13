@@ -378,6 +378,11 @@ pub const MC_EDGES_TO_LOCAL_VERTS_Z: [i32; 12] = [
 
 // Density offset for the X axis
 pub const DENSITY_OFFSET_X: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[1], DATA_OFFSET_TABLE[5], DATA_OFFSET_TABLE[4]];
+pub const POSITION_OFFSET_X: [veclib::Vector3<f32>; 4] = [
+    veclib::Vector3 { x: 0.0, y: 0.0, z: 0.0 },
+    veclib::Vector3 { x: 0.0, y: 1.0, z: 0.0 },
+    veclib::Vector3 { x: 1.0, y: 1.0, z: 0.0 },
+    veclib::Vector3 { x: 1.0, y: 0.0, z: 0.0 }];
 
 // Density offset for the Y axis
 pub const DENSITY_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[3], DATA_OFFSET_TABLE[2], DATA_OFFSET_TABLE[1]];
