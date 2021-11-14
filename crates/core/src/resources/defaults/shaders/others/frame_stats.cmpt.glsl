@@ -3,6 +3,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(rgba8, binding = 0) uniform image2D image_stats;
 layout(location = 1) uniform float time;
 layout(location = 2) uniform float fps;
+layout(location = 3) uniform sampler2D, 
 
 void main() {
     // Get the pixel coord
@@ -22,6 +23,8 @@ void main() {
     }
     float valid = v < 0.0 ? 0.0 : 1.0;
     vec4 pixel = vec4(vec3(valid, valid, valid) * color, 1.0);    
+    bool test = entities[pixel_coords.x / 4];
+    pixel = test ? vec4(1, 1, 1, 1) : vec4(0, 0, 0, 1);
     
     // Write the pixel
     float c_time = (mod((time*0.1), 1.0));
