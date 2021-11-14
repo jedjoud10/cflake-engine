@@ -8,6 +8,7 @@ uniform sampler2D depth_texture;
 // Ambient sky gradient
 uniform sampler2D default_sky_gradient;
 
+uniform sampler2D frame_stats;
 uniform sampler2D volumetric_texture;
 uniform sampler2D volumetric_depth_texture;
 uniform sampler3D sdf_texture;
@@ -71,6 +72,12 @@ void main() {
 			color = sky_color;
 		} else {
 			color = final_color;
+		}
+		// Show the frame stats at the top left corner of the screen
+		if ((uvs.x * resolution.x < 400) && (uvs.y * resolution.y > resolution.y - 200)) {
+			float x = (uvs.x * resolution.x) / 400;
+			float y = (resolution.y - (uvs.y * resolution.y)) / 200;
+			color = texture(frame_stats, vec2(x, y)).rgb;
 		}
 	} else if (debug_view == 1) {
 		color = normal;

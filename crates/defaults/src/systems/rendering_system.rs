@@ -2,7 +2,7 @@ use super::super::components;
 use assets::{Asset, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
+use rendering::{FrameStats, Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
 use std::{
     ffi::{c_void, CString},
     ptr::null,
@@ -26,6 +26,7 @@ pub struct CustomData {
     default_material: Material,
     // Volumetric renderer stuff
     pub volumetric: Volumetric,
+    frame_stats: FrameStats,
     // The renderer for the screen quad
     quad_renderer: Renderer,
 }
@@ -305,6 +306,9 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     */
     */
 
+    // Load the compute shader for the frame stats
+    system.frame_stats.load_compute_shader(data.asset_manager);
+
     // Load sky gradient texture
     let texture = Texture::new()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
@@ -388,6 +392,8 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     system
         .volumetric
         .calculate_volumetric(camera.projection_matrix, camera_transform.rotation, camera_transform.position, camera.clip_planes);
+    // Update the frame stats texture
+    system.frame_stats.update_texture(data.time_manager);
     // Draw the normal primitives
     let shader = system.quad_renderer.material.shader.as_ref().unwrap();
     shader.use_shader();
@@ -406,6 +412,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
     // Other params
     shader.set_vec3f32("camera_pos", &camera_transform.position);
     shader.set_i32("debug_view", &(system.debug_view as i32));
+    shader.set_t2d("frame_stats", &system.frame_stats.texture, 6);
     // Render the screen quad
     unsafe {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);

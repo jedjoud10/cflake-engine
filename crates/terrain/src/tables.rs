@@ -293,12 +293,7 @@ pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
 ];
 
 // The marching squares table that indiquates what vertices are part of which edges
-pub const MS_EDGE_TO_VERTICES: [[usize; 2]; 4] = [
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 0]
-];
+pub const MS_EDGE_TO_VERTICES: [[usize; 2]; 4] = [[0, 1], [1, 2], [2, 3], [3, 0]];
 
 // Density offset for the X axis
 pub const DENSITY_OFFSET_X: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[5], DATA_OFFSET_TABLE[1]];

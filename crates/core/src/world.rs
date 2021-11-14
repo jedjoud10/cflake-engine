@@ -70,6 +70,7 @@ impl World {
         preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl", cacher);
         // Volumetric
         preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl", cacher);
@@ -172,7 +173,6 @@ impl World {
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
-        // A
         rendering::Utils::start_error_check_loop();
 
         // Load the default stuff
@@ -191,7 +191,6 @@ impl World {
             // Disable VSync
             glfw.set_swap_interval(glfw::SwapInterval::None);
         }
-        //glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
 
         // Set the window mode
         self.set_fullscreen(self.config_file.fullscreen, glfw, window);

@@ -162,7 +162,7 @@ impl Model {
                 self.normals.as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
             );
-            
+
             if !self.tangents.is_empty() {
                 // And it's brother, the tangent buffer
                 gl::GenBuffers(1, &mut gpu_data.tangent_buf);
@@ -182,8 +182,8 @@ impl Model {
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
                     (self.uvs.len() * size_of::<f32>() * 2) as isize,
-                self.uvs.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
+                    self.uvs.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
                 );
             }
 
@@ -219,7 +219,7 @@ impl Model {
                 gl::EnableVertexAttribArray(3);
                 gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
                 gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
-            }           
+            }
             if !self.colors.is_empty() {
                 // Vertex color attribute
                 gl::EnableVertexAttribArray(4);

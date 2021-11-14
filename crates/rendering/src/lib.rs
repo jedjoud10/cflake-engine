@@ -2,6 +2,7 @@
 mod array_data;
 mod compute_shader;
 mod error;
+mod frame_stats;
 mod material;
 mod mm_renderer;
 mod model;
@@ -17,6 +18,7 @@ mod window;
 pub use array_data::*;
 pub use compute_shader::*;
 pub use error::*;
+pub use frame_stats::*;
 pub use material::*;
 pub use mm_renderer::*;
 pub use model::*;
