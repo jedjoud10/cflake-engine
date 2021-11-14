@@ -180,7 +180,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
     // Return the model
     let mut test_hashmap = HashMap::new();
     test_hashmap.insert(0, skirts_model);
-    println!("Elapsed: {}", i.elapsed().as_millis());
+    //println!("Elapsed: {}", i.elapsed().as_millis());
     TModel {
         shader_model_hashmap: sub_model_hashmap,
         skirt_models: test_hashmap,

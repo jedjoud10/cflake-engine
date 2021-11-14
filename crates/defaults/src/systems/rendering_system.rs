@@ -393,7 +393,7 @@ fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
         .volumetric
         .calculate_volumetric(camera.projection_matrix, camera_transform.rotation, camera_transform.position, camera.clip_planes);
     // Update the frame stats texture
-    system.frame_stats.update_texture(data.time_manager);
+    system.frame_stats.update_texture(data.time_manager, &data.entity_manager.entities);
     // Draw the normal primitives
     let shader = system.quad_renderer.material.shader.as_ref().unwrap();
     shader.use_shader();

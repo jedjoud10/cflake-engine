@@ -1,4 +1,5 @@
-use std::time::Instant;
+use std::{rc::Rc, time::Instant};
+use others::Instance;
 use terrain::{ChunkCoords, TerrainStats};
 
 use crate::components;
@@ -24,6 +25,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     let terrain = &mut td.terrain;
     let bound_materials = terrain.settings.bound_materials.clone();
     let octree_size = terrain.octree.internal_octree.size;
+    let octree_depth = terrain.settings.octree_depth;
 
     // Generate the octree each frame and generate / delete the chunks
     if terrain.chunk_manager.octree_update_valid() {
@@ -81,7 +83,14 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                     )
                     .unwrap();
                 // Multi Material Renderer
-                let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bound_materials.clone());
+                let mut bm = Vec::new();
+                for x in bound_materials.iter() { 
+                    let mut m = x.instantiate(data.instance_manager);
+                    let d = coords.depth as f32 / octree_depth as f32;
+                    m.update_uniform("node_depth", Uniform::F32(d));
+                    bm.push(m);
+                };
+                let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bm);
                 // Add the sub models into the Multi Material renderer
                 for (material_id, sub_model) in tmodel.shader_model_hashmap {
                     mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);

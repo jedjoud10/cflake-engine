@@ -16,7 +16,7 @@ pub struct Material {
     pub shader: Option<Rc<Shader>>,
     pub material_name: String,
     pub flags: MaterialFlags,
-    pub default_uniforms: Vec<(String, Uniform)>,
+    pub default_uniforms: HashMap<String, Uniform>,
     // The default texture ID
     pub diffuse_tex: Option<Rc<Texture>>,
     pub normal_tex: Option<Rc<Texture>>,
@@ -30,7 +30,7 @@ impl Default for Material {
             shader: None,
             material_name: String::new(),
             flags: MaterialFlags::empty(),
-            default_uniforms: Vec::new(),
+            default_uniforms: HashMap::new(),
             diffuse_tex: None,
             normal_tex: None,
             visible: true,
@@ -95,7 +95,7 @@ impl Material {
     }
     // Set a default uniform
     pub fn set_uniform(mut self, uniform_name: &str, uniform: Uniform) -> Self {
-        self.default_uniforms.push((uniform_name.to_string(), uniform));
+        self.default_uniforms.insert(uniform_name.to_string(), uniform);
         return self;
     }
     // Set a default uniform but also it's inxed
@@ -104,9 +104,8 @@ impl Material {
         return (self.set_uniform(uniform_name, uniform), i);
     }
     // Update a default uniform
-    pub fn update_uniform(&mut self, uniform_index: usize, new_uniform: Uniform) {
-        let name = self.default_uniforms.get(uniform_index).unwrap().0.clone();
-        self.default_uniforms[uniform_index] = (name, new_uniform);
+    pub fn update_uniform(&mut self, uniform_name: &str, new_uniform: Uniform) {
+        self.default_uniforms.insert(uniform_name.to_string(), new_uniform);
     }
 }
 

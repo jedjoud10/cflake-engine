@@ -246,70 +246,26 @@ impl Shader {
             return Ok(x);
         }
     }
+    // Set a bool uniform
+    pub fn set_bool(&self, name: &str, b: bool) { 
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform1i(u, if b { 1 } else { 0 });
+        }
+    }
+    // Set an array of bool uniforms
+    pub fn set_bool_array(&self, name: &str, b: Vec<bool>) { 
+        let u = self.get_uniform_location(name).unwrap();
+        let ptr = b.as_ptr() as *const i32;
+        unsafe {
+            gl::Uniform1iv(u, b.len() as i32, ptr);
+        }
+    }
     // Set a f32 uniform
     pub fn set_f32(&self, name: &str, value: &f32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
             gl::Uniform1f(u, *value);
-        }
-    }
-    // Set a vec2 f32 uniform
-    pub fn set_vec2f32(&self, name: &str, vec: &veclib::Vector2<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform2f(u, vec[0], vec[1]);
-        }
-    }
-    // Set a vec3 f32 uniform
-    pub fn set_vec3f32(&self, name: &str, vec: &veclib::Vector3<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform3f(u, vec[0], vec[1], vec[2]);
-        }
-    }
-    // Set a vec3 f32 array uniform
-    pub fn set_vec3f32_array(&self, name: &str, vec: &[veclib::Vector3<f32>]) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            let ptr: *const f32 = &vec[0].x;
-            gl::Uniform3fv(u, vec.len() as i32, ptr);
-        }
-    }
-    // Set a vec4 f32 uniform
-    pub fn set_vec4f32(&self, name: &str, vec: &veclib::Vector4<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform4f(u, vec[0], vec[1], vec[2], vec[3]);
-        }
-    }
-    // Set a matrix 4x4 f32
-    pub fn set_mat44(&self, name: &str, matrix: &veclib::Matrix4x4<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            let ptr: *const f32 = &matrix[0];
-            gl::UniformMatrix4fv(u, 1, gl::FALSE, ptr);
-        }
-    }
-    // Set a 2D texture
-    pub fn set_t2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            if u != -1 {
-                gl::ActiveTexture(active_texture_id + 33984);
-                gl::BindTexture(gl::TEXTURE_2D, texture.id);
-                gl::Uniform1i(u, active_texture_id as i32);
-            }
-        }
-    }
-    // Set a 3D texture
-    pub fn set_t3d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            if u != -1 {
-                gl::ActiveTexture(active_texture_id + 33984);
-                gl::BindTexture(gl::TEXTURE_3D, texture.id);
-                gl::Uniform1i(u, active_texture_id as i32);
-            }
         }
     }
     // Set a 2D image
@@ -328,6 +284,13 @@ impl Shader {
             gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
         }
     }
+    // Set a i32
+    pub fn set_i32(&self, name: &str, value: &i32) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform1i(u, *value);
+        }
+    }
     // Set a 3D image
     pub fn set_i3d(&self, name: &str, texture: &Texture, access_type: TextureShaderAccessType) {
         let u = self.get_uniform_location(name).unwrap();
@@ -344,32 +307,34 @@ impl Shader {
             gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
         }
     }
-    // Set a i32
-    pub fn set_i32(&self, name: &str, value: &i32) {
+    // Set a matrix 4x4 f32
+    pub fn set_mat44(&self, name: &str, matrix: &veclib::Matrix4x4<f32>) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::Uniform1i(u, *value);
+            let ptr: *const f32 = &matrix[0];
+            gl::UniformMatrix4fv(u, 1, gl::FALSE, ptr);
         }
     }
-    // Set a vec2 i32 uniform
-    pub fn set_vec2i32(&self, name: &str, vec: &veclib::Vector2<i32>) {
+    // Set a 1D texture
+    pub fn set_t1d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::Uniform2i(u, vec[0], vec[1]);
+            if u != -1 {
+                gl::ActiveTexture(active_texture_id + 33984);
+                gl::BindTexture(gl::TEXTURE_1D, texture.id);
+                //gl::Uniform1i(u, active_texture_id as i32);
+            }
         }
     }
-    // Set a vec3 i32 uniform
-    pub fn set_vec3i32(&self, name: &str, vec: &veclib::Vector3<i32>) {
+    // Set a 2D texture
+    pub fn set_t2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
-            gl::Uniform3i(u, vec[0], vec[1], vec[2]);
-        }
-    }
-    // Set a vec4 i32 uniform
-    pub fn set_vec4i32(&self, name: &str, vec: &veclib::Vector4<i32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform4i(u, vec[0], vec[1], vec[2], vec[3]);
+            if u != -1 {
+                gl::ActiveTexture(active_texture_id + 33984);
+                gl::BindTexture(gl::TEXTURE_2D, texture.id);
+                gl::Uniform1i(u, active_texture_id as i32);
+            }
         }
     }
     // Set a texture2d array
@@ -381,6 +346,59 @@ impl Shader {
                 gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.id);
                 gl::Uniform1i(u, active_texture_id as i32);
             }
+        }
+    }
+    // Set a 3D texture
+    pub fn set_t3d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            if u != -1 {
+                gl::ActiveTexture(active_texture_id + 33984);
+                gl::BindTexture(gl::TEXTURE_3D, texture.id);
+                gl::Uniform1i(u, active_texture_id as i32);
+            }
+        }
+    }
+    // Set a vec2 f32 uniform
+    pub fn set_vec2f32(&self, name: &str, vec: &veclib::Vector2<f32>) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform2f(u, vec[0], vec[1]);
+        }
+    }
+    // Set a vec2 i32 uniform
+    pub fn set_vec2i32(&self, name: &str, vec: &veclib::Vector2<i32>) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform2i(u, vec[0], vec[1]);
+        }
+    }
+    // Set a vec3 f32 uniform
+    pub fn set_vec3f32(&self, name: &str, vec: &veclib::Vector3<f32>) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform3f(u, vec[0], vec[1], vec[2]);
+        }
+    }
+    // Set a vec3 i32 uniform
+    pub fn set_vec3i32(&self, name: &str, vec: &veclib::Vector3<i32>) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform3i(u, vec[0], vec[1], vec[2]);
+        }
+    }
+    // Set a vec4 f32 uniform
+    pub fn set_vec4f32(&self, name: &str, vec: &veclib::Vector4<f32>) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform4f(u, vec[0], vec[1], vec[2], vec[3]);
+        }
+    }
+    // Set a vec4 i32 uniform
+    pub fn set_vec4i32(&self, name: &str, vec: &veclib::Vector4<i32>) {
+        let u = self.get_uniform_location(name).unwrap();
+        unsafe {
+            gl::Uniform4i(u, vec[0], vec[1], vec[2], vec[3]);
         }
     }
 }
