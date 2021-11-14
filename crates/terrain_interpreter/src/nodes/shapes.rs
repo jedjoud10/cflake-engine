@@ -20,9 +20,9 @@ impl NodeInterpreter for Shape {
             math::shapes::ShapeType::Cube(half_extent) => format!("sdBox({}, {})", position_string, format!("vec3({}, {}, {})", half_extent.x, half_extent.y, half_extent.z)),
             math::shapes::ShapeType::Sphere(radius) => format!("sdSphere({}, {})", position_string, radius),
             math::shapes::ShapeType::AxisPlane(axis, (offset_min, offset_max)) => match axis {
-                veclib::Vec3Axis::X => format!("pos.x + {}", offset_max),
-                veclib::Vec3Axis::Y => format!("pos.y + {}", offset_max),
-                veclib::Vec3Axis::Z => format!("pos.z + {}", offset_max),
+                veclib::Vec3Axis::X => format!("pos.x - {}", offset_min),
+                veclib::Vec3Axis::Y => format!("pos.y - {}", offset_min),
+                veclib::Vec3Axis::Z => format!("pos.z - {}", offset_min),
             },
         }
         .to_string())

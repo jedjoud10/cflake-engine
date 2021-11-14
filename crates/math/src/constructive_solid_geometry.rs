@@ -58,8 +58,14 @@ impl CSGShape {
                 ExpandMethod::Vector(x) => todo!(),
             },
             ShapeType::AxisPlane(axis, (min_offset, max_offset)) => match expand_method {
-                ExpandMethod::Factor(x) => *max_offset += x,
-                ExpandMethod::Vector(x) => *max_offset += x.get_axis(*axis),
+                ExpandMethod::Factor(x) => { 
+                    *max_offset += x;
+                    *min_offset -= x;
+                },
+                ExpandMethod::Vector(x) => { 
+                    *max_offset += x.get_axis(*axis);
+                    *min_offset -= x.get_axis(*axis);
+                },
             }
         }
     }

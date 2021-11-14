@@ -19,14 +19,12 @@ impl Intersection {
     pub fn aabb_axis_plane(aabb: &bounds::AABB, plane: &crate::shapes::Shape) -> bool {
         match plane.internal_shape {
             shapes::ShapeType::AxisPlane(axis, (min_offset, max_offset)) => {
-                let (v1, v2) = match axis {
-                    veclib::Vec3Axis::X => (aabb.min.x - max_offset, aabb.max.x - min_offset),
-                    veclib::Vec3Axis::Y => (aabb.min.y - max_offset, aabb.max.y - min_offset),
-                    veclib::Vec3Axis::Z => (aabb.min.z - max_offset, aabb.max.z - min_offset),
+                let b = match axis {
+                    veclib::Vec3Axis::X => (aabb.min.x < max_offset && min_offset < aabb.max.x),
+                    veclib::Vec3Axis::Y => (aabb.min.y < max_offset && min_offset < aabb.max.y),
+                    veclib::Vec3Axis::Z => (aabb.min.z < max_offset && min_offset < aabb.max.z),
                 };
-                // If it intersects, the signs would not be the same
-                //v1.signum() != v2.signum()
-                true
+                b
             }
             _ => todo!(), /* This is not a fucking axis plane you dumbass*/
         }
