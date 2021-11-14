@@ -47,7 +47,7 @@ impl Object for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(&self, lines: &mut Vec<String>, asset_manager: &'a AssetManager, included_paths: &mut HashSet<String>) -> bool {
+    fn load_includes<'a>(&self, subshader_name: &str, lines: &mut Vec<String>, asset_manager: &'a AssetManager, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
         let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new();
         for (i, line) in lines.iter().enumerate() {
             // Check if this is an include statement
@@ -58,7 +58,7 @@ impl Shader {
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = asset_manager.asset_cacher.load_text(local_path).unwrap();
+                    let text = asset_manager.asset_cacher.load_text(local_path).map_err(|x| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'", local_path, subshader_name)))?;
                     let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                     vectors_to_insert.push((i, new_lines));
                 }
@@ -90,7 +90,7 @@ impl Shader {
             // Add the offset so the next lines will be at their correct positions
             offset += included_lines.len();
         }
-        return vectors_to_insert.len() > 0;
+        return Ok(vectors_to_insert.len() > 0);
     }
     // Create a new empty shader
     pub fn new() -> Self {
@@ -107,7 +107,7 @@ impl Shader {
         self
     }
     // Creates a shader from multiple subshader files
-    pub fn load_shader<'a>(mut self, subshader_paths: Vec<&str>, asset_manager: &'a mut AssetManager) -> Option<Self> {
+    pub fn load_shader<'a>(mut self, subshader_paths: Vec<&str>, asset_manager: &'a mut AssetManager) -> Result<Self, RenderingError> {
         // Create the shader name
         self.name = subshader_paths.join("__");
         let mut included_paths: HashSet<String> = HashSet::new();
@@ -120,7 +120,7 @@ impl Shader {
                 self.link_subshader(subshader);
             } else {
                 // It was not cached, so we need to cache it
-                let mut subshader = SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap())?;
+                let mut subshader = SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap()).ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
 
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
@@ -128,7 +128,7 @@ impl Shader {
                 // Included lines
                 let mut included_lines: Vec<String> = lines;
                 // Include the sources until no sources can be included
-                while Self::load_includes(&self, &mut included_lines, asset_manager, &mut included_paths) {
+                while Self::load_includes(&self, subshader_path, &mut included_lines, asset_manager, &mut included_paths)? {
                     // We are still including paths
                 }
                 // Set the shader source for this shader
@@ -151,14 +151,13 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
-                let rc_subshader = asset_manager.object_cacher.cache(subshader_path, subshader).ok()?;
-                let _subshader = rc_subshader.as_ref();
-                self.link_subshader(_subshader);
+                let rc_subshader: Rc<SubShader> = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap();
+                self.link_subshader(rc_subshader.as_ref());
             }
         }
         // Finalize the shader and cache it
         self.finalize_shader();
-        return Some(self);
+        return Ok(self);
     }
     // Cache this shader
     pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {

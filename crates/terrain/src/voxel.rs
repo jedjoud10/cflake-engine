@@ -78,7 +78,7 @@ impl VoxelGenerator {
             .unwrap();
     }
     // Read back the data from the compute shader
-    pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> (bool, Box<[Voxel]>) {
+    pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
         let shader = &mut self.compute;
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
@@ -135,6 +135,8 @@ impl VoxelGenerator {
             }
         }
         // Only generate the mesh if we have a surface
-        ((min < ISOLINE) != (max < ISOLINE), data)
+        if (min < ISOLINE) != (max < ISOLINE) {
+            Some(data)
+        } else { None }
     }
 }

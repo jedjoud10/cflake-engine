@@ -71,6 +71,7 @@ impl World {
         preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl", cacher);
         // Volumetric
         preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl", cacher);
@@ -86,13 +87,12 @@ impl World {
         preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d", cacher);
         preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d", cacher);
         preload_asset!(".\\resources\\defaults\\models\\cube.mdl3d", cacher);
+        // Noise
+        preload_asset!(".\\resources\\defaults\\shaders\\noises\\simplex.func.glsl", cacher);
+        preload_asset!(".\\resources\\defaults\\shaders\\noises\\voronoi.func.glsl", cacher);
         // Voxel terrain
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\noise.func.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\erosion.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\sdf.func.glsl", cacher);
-        preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\custom_voronoi.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_shader.func.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl", cacher);
         // Textures

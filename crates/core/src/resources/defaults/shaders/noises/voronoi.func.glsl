@@ -1,3 +1,4 @@
+// My custom implementation of Worley (Voronoi noise)
 #include "defaults\shaders\others\hashes.func.glsl"
 // Get a random sphere location using a cell coordinate
 vec3 get_sphere_location(ivec3 cell_coord) {
@@ -5,7 +6,12 @@ vec3 get_sphere_location(ivec3 cell_coord) {
     return location + cell_coord;
 }
 // My own implementation of cellular noise
-vec3 custom_cellular(vec3 pos) {
+// X: F1 distance
+// Y: F2 distance
+// Z: cellular value
+vec3 voronoi(vec3 pos) {
+    // Gotta remap this since it differs from normal simplex noise too much
+    pos *= 7.0;
     ivec3 cell_coord = ivec3(floor(pos)); 
     float min_distance = 99999;
     vec3 value = vec3(1, 1, 1);
@@ -17,7 +23,7 @@ vec3 custom_cellular(vec3 pos) {
                 float d = distance(get_sphere_location(neighbor_coord), pos);
                 if (d < min_distance) {
                     min_distance = d;
-                    value = vec3(d, hash13(neighbor_coord), mod(d, 0.2));
+                    value = vec3((d/2.23) * 2.0 - 1.0, 0.0, hash13(neighbor_coord));
                 }
             }
         }

@@ -41,7 +41,7 @@ impl Interpreter {
         let shape = Shape::new_axis_plane(2.5, veclib::Vec3Axis::Y, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
-        let d = Noise::new().set_strength(30.0).set_scale(0.002).new(&[p], &mut interpreter).unwrap();
+        let d = Noise::new().set_type(NoiseType::VoronoiDistance).set_inverted(true).set_strength(30.0).set_scale(0.002).new(&[p], &mut interpreter).unwrap();
         let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
         interpreter
     }
@@ -105,8 +105,6 @@ impl Interpreter {
         // Getting the CSGTree now
         // Default CSGTree is based around our first "base_density" node, since it is a shape node undercover
         let mut csgtree: CSGTree = CSGTree::default();
-        // Calculate the base influence
-        let (_, node, bsn) = self.get_base_shape_node();
         let mut input_ranges: Vec<(f32, f32)> = Vec::new();
         input_ranges.push((0.0, 0.0));
         // Start from the oldest nodes

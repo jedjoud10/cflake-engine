@@ -1,10 +1,9 @@
 #version 460 core
 #include "defaults\shaders\others\hashes.func.glsl"
-#include "defaults\shaders\voxel_terrain\custom_voronoi.func.glsl"
-#include "defaults\shaders\voxel_terrain\noise.func.glsl"
-#include "defaults\shaders\voxel_terrain\erosion.func.glsl"
+#include "defaults\shaders\noises\simplex.func.glsl"
+#include "defaults\shaders\noises\voronoi.func.glsl"
+#include "defaults\shaders\others\sdf.func.glsl"
 #include "defaults\shaders\voxel_terrain\data.func.glsl"
-#include "defaults\shaders\voxel_terrain\sdf.func.glsl"
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(binding = 0) writeonly uniform image3D material_image;
