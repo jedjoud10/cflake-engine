@@ -23,12 +23,14 @@ void main() {
     }
     float valid = v < 0.0 ? 0.0 : 1.0;
     vec4 pixel = vec4(vec3(valid, valid, valid) * color, 1.0);    
-    float test = texture(entities_texture, uvs.x).r;
-    pixel = vec4(test, test, test, 1.0);
-    imageStore(image_stats, pixel_coords, pixel);
     // Write the pixel
-    float c_time = (mod((time*0.1), 1.0));
-    if (c_time > uvs.x && c_time < uvs.x + offset) {
-        //imageStore(image_stats, pixel_coords, pixel);
+    if (pixel_coords.y < (gl_NumWorkGroups.y * gl_WorkGroupSize.y)-64) {
+        float t = mod(time*10.0, gl_NumWorkGroups.x * gl_WorkGroupSize.x);
+        imageStore(image_stats, ivec2(t, pixel_coords.y), pixel);
+    } else {
+        // Write the entity pixel
+        float valid_entity = texture(entities_texture, uvs.x).r;
+        pixel = vec4(valid_entity, valid_entity, valid_entity, 1.0);
+        imageStore(image_stats, pixel_coords, pixel);
     }
 }
