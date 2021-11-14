@@ -38,11 +38,11 @@ impl Interpreter {
         let mut interpreter = Interpreter::default();
         // Add the default pos.y nodes
         let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
-        let shape = Shape::new_axis_plane(0.0, veclib::Vec3Axis::Y, math::csg::CSGType::Union)
+        let shape = Shape::new_axis_plane(2.5, veclib::Vec3Axis::Y, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
-        let d = Noise::new().set_strength(20.0).set_scale(0.002).new(&[p], &mut interpreter).unwrap();
-        let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
+        //let d = Noise::new().set_strength(20.0).set_scale(0.002).new(&[p], &mut interpreter).unwrap();
+        //let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
         interpreter
     }
     // Add a specific node to the system

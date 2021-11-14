@@ -292,26 +292,6 @@ pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
     veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 0.0 },
 ];
 
-// Marching squares table that converts the case index to the used edges
-pub const MS_CASE_TO_EDGES: [[isize; 4]; 16] = [
-    [-1, -1, -1, -1],
-    [0, 3, -1, -1],
-    [2, 3, -1, -1],
-    [0, 2, -1, -1],
-    [1, 2, -1, -1],
-    [0, 1, 2, 3],
-    [1, 3, -1, -1],
-    [0, 1, -1, -1],
-    [0, 1, -1, -1],
-    [1, 3, -1, -1],
-    [0, 1, 2, 3],
-    [1, 2, -1, -1],
-    [0, 1, -1, -1],
-    [2, 3, -1, -1],
-    [0, 3, -1, -1],
-    [-1, -1, -1, -1]
-];
-
 // The marching squares table that indiquates what vertices are part of which edges
 pub const MS_EDGE_TO_VERTICES: [[usize; 2]; 4] = [
     [0, 1],
@@ -321,7 +301,7 @@ pub const MS_EDGE_TO_VERTICES: [[usize; 2]; 4] = [
 ];
 
 // Density offset for the X axis
-pub const DENSITY_OFFSET_X: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[1], DATA_OFFSET_TABLE[5], DATA_OFFSET_TABLE[4]];
+pub const DENSITY_OFFSET_X: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[5], DATA_OFFSET_TABLE[1]];
 
 // Density offset for the Y axis
 pub const DENSITY_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[3], DATA_OFFSET_TABLE[2], DATA_OFFSET_TABLE[1]];
@@ -341,13 +321,9 @@ pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
     veclib::Vector2::<f32> { x: -1.0, y: -1.0 },
 ];
 */
-pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
+pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 4] = [
     veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
-    veclib::Vector2::<f32> { x: 0.0, y: 0.5 },
-    veclib::Vector2::<f32> { x: 0.0, y: 1.0 },
-    veclib::Vector2::<f32> { x: 0.5, y: 1.0 },
-    veclib::Vector2::<f32> { x: 1.0, y: 1.0 },
-    veclib::Vector2::<f32> { x: 1.0, y: 0.5 },
     veclib::Vector2::<f32> { x: 1.0, y: 0.0 },
-    veclib::Vector2::<f32> { x: 0.5, y: 0.0 },
+    veclib::Vector2::<f32> { x: 1.0, y: 1.0 },
+    veclib::Vector2::<f32> { x: 0.0, y: 1.0 },
 ];

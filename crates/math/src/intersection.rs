@@ -25,7 +25,8 @@ impl Intersection {
                     veclib::Vec3Axis::Z => (aabb.min.z - max_offset, aabb.max.z - min_offset),
                 };
                 // If it intersects, the signs would not be the same
-                v1.signum() != v2.signum()
+                //v1.signum() != v2.signum()
+                true
             }
             _ => todo!(), /* This is not a fucking axis plane you dumbass*/
         }

@@ -119,12 +119,13 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
             // Get the marching cube case
             let mut case = 0_u8;
             // Get the local voxels
-
+            println!("START");
             let local_voxels: Vec<Voxel> = (0..4)
                 .into_iter()
                 .map(|x| {
                     let local_voxel = voxels[i + DENSITY_OFFSET_X[x]];
                     // Increase the case index if we have some voxels that are below the isoline
+                    println!("Le bruh index: {} {}", x, local_voxel.density);
                     if local_voxel.density <= ISOLINE {
                         case |= 2_u8.pow(x as u32);
                     }
@@ -133,21 +134,19 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
             // Exit if this case is invalid
             if case == 0 || case == 15 { continue; }
             let local_voxels: &[Voxel] = &local_voxels[0..4];
-            //println!("Case {}", case);
+            println!("Case {}", case);
             // Get the interpolated voxels
-            let local_interpolated_voxels: Vec<(veclib::Vector3<f32>, veclib::Vector2<f32>)> = MS_CASE_TO_EDGES[case as usize]
-                .iter()
-                .map(|x| {
-                    if *x == -1 {
-                        (veclib::Vector3::ZERO, veclib::Vector2::ZERO)
-                    } else {
-                        // This is for every edge
-                        let two_voxels = MS_EDGE_TO_VERTICES[*x as usize];
-                        let voxel1_corner_index = two_voxels[0] as usize;
-                        let voxel2_corner_index = two_voxels[1] as usize;
-                        let voxel1 =  voxels[i + DENSITY_OFFSET_X_TEST[voxel1_corner_index]];
-                        let voxel2 =  voxels[i + DENSITY_OFFSET_X_TEST[voxel2_corner_index]];
-                        //println!("{} {}", voxel1.density, voxel2.density);
+            let local_interpolated_voxels: Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>> = (0..4)
+                .into_iter()
+                .map(|x| {                    
+                    // This is for every edge
+                    let two_voxels = MS_EDGE_TO_VERTICES[x as usize];
+                    let voxel1 = voxels[i + DENSITY_OFFSET_X[two_voxels[0] as usize]];
+                    let voxel2 = voxels[i + DENSITY_OFFSET_X[two_voxels[1] as usize]];
+                    // Check if the edge is intersecting the surface
+                    if (voxel1.density <= ISOLINE) ^ (voxel2.density <= ISOLINE) {                        
+                        println!("{} {}", two_voxels[0], two_voxels[1]);
+                        println!("{} {}", voxel1.density, voxel2.density);
                         let value: f32 = if interpolation {
                             inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
                         } else {
@@ -156,13 +155,15 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
                         // Interpolate between the two voxels
                         let normal = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
                         // We must get the local offset of these two voxels
-                        let voxel1_local_offset = SQUARES_VERTEX_TABLE[voxel1_corner_index * 2]; 
-                        let voxel2_local_offset = SQUARES_VERTEX_TABLE[voxel2_corner_index * 2];
-                        let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, 0.5);
-                        (normal, offset)
-                    }
-                }).collect::<Vec<(veclib::Vector3<f32>, veclib::Vector2<f32>)>>();
-                let local_interpolated_voxels: &[(veclib::Vector3<f32>, veclib::Vector2<f32>)] = &local_interpolated_voxels[0..4];
+                        let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize]; 
+                        let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
+                        let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
+                        //println!("{}", offset);
+                        Some((normal, offset))                    
+                    } else { None }
+                }).collect::<Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>>>();
+            let local_interpolated_voxels: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>] = &local_interpolated_voxels[0..4];
+            println!("{:?}", local_interpolated_voxels);
             // Solve the case
             solve_marching_squares(case, p, local_voxels, local_interpolated_voxels, &mut skirts_model, false);
         }
@@ -186,7 +187,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
 // 0---7---6
 
 // Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(case: u8, offset: veclib::Vector2<f32>, lv: &[Voxel], ilv: &[(veclib::Vector3<f32>, veclib::Vector2<f32>)], model: &mut Model, _flip: bool) {
+pub fn solve_marching_squares(case: u8, offset: veclib::Vector2<f32>, lv: &[Voxel], ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>], model: &mut Model, _flip: bool) {
     // Create the triangles from the local skirts
     match case {
         1 => create_triangle(offset, lv, ilv, &[0, 1, 7], model),
@@ -251,13 +252,15 @@ pub fn solve_marching_squares(case: u8, offset: veclib::Vector2<f32>, lv: &[Voxe
 }
 
 // Create a marching squares triangle between 3 skirt voxels
-pub fn create_triangle(offset: veclib::Vector2<f32>, lv: &[Voxel], ilv: &[(veclib::Vector3<f32>, veclib::Vector2<f32>)], li: &[usize; 3], model: &mut Model) {
+pub fn create_triangle(offset: veclib::Vector2<f32>, lv: &[Voxel], ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>], li: &[usize; 3], model: &mut Model) {
     // Check if the local index is one of the interpolated ones
     for i in li {
         let vertex = match *i {            
             1 | 3 | 5 | 7 => {
                 // Interpolated
-                transform_x_local(0, &ilv[(*i-1)/2].1, &offset)
+                let transformed_index = (*i-1)/2;
+                println!("Transformed idx: {}", transformed_index);
+                transform_x_local(0, &ilv[transformed_index].unwrap().1, &offset)
             }
             0 | 2 | 4 | 6 => {
                 // Not interpolated
