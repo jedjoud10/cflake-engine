@@ -111,9 +111,11 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
     // Create the X skirt
-    calculate_skirt(voxels, interpolation, DENSITY_OFFSET_X, &mut skirts_model,  |slice, x, y|super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)), transform_x_local);
+    calculate_skirt(voxels, interpolation, false, DENSITY_OFFSET_X, &mut skirts_model,  |slice, x, y|super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)), transform_x_local);
     // Create the Z skirt
-    calculate_skirt(voxels, interpolation, DENSITY_OFFSET_Z, &mut skirts_model,  |slice, x, y|super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))), transform_z_local);
+    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Z, &mut skirts_model,  |slice, x, y|super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))), transform_z_local);
+    // Create the Y skirt
+    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Y, &mut skirts_model,  |slice, x, y|super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)), transform_y_local);
     // Return the model
     let mut test_hashmap = HashMap::new();
     test_hashmap.insert(0, skirts_model);
@@ -139,7 +141,7 @@ pub struct SkirtVertex {
 // 0---1---2
 
 // Generate a whole skirt using a specific
-pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, density_offset: [usize; 4], skirts_model: &mut Model, indexf: fn(usize, usize, usize) -> usize, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
+pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, flip: bool, density_offset: [usize; 4], skirts_model: &mut Model, indexf: fn(usize, usize, usize) -> usize, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
     for slice in 0..2 {
         for x in 0..MAIN_CHUNK_SIZE {
             for y in 0..MAIN_CHUNK_SIZE {
@@ -154,7 +156,7 @@ pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, density_offse
                             &lv,
                             &ilv,
                             skirts_model,
-                            slice == 1,
+                            (slice == 1) ^ flip,
                             tf),
                     None => { /* Empty */ }
                 }

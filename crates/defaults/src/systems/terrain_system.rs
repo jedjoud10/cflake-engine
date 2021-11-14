@@ -28,7 +28,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     let octree_depth = terrain.settings.octree_depth;
 
     // Generate the octree each frame and generate / delete the chunks
-    if terrain.chunk_manager.octree_update_valid() {
+    if terrain.chunk_manager.octree_update_valid() && data.input_manager.map_toggled("toggle-terrain-gen") {
         match terrain.octree.generate_incremental_octree(&camera_position, terrain::DEFAULT_LOD_FACTOR) {
             Some((mut added, removed, total)) => {
                 // Filter first
@@ -138,6 +138,8 @@ pub fn system(data: &mut WorldData) -> System {
     // Link the components
     system.link_component::<components::TerrainData>(data.component_manager).unwrap();
     data.component_manager.register_component::<Chunk>();
+
+    data.input_manager.bind_key(input::Keys::B, "toggle-terrain-gen", input::MapType::Toggle);
     // Attach the events
     system.event(SystemEventType::EntityAdded(entity_added));
     system.event(SystemEventType::EntityUpdate(entity_update));
