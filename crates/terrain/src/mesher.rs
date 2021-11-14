@@ -111,12 +111,13 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
     // Create the X skirt
-    calculate_skirt(voxels, interpolation, DENSITY_OFFSET_X, &mut skirts_model, transform_x_local);
-
+    calculate_skirt(voxels, interpolation, DENSITY_OFFSET_X, &mut skirts_model,  |slice, x, y|super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)), transform_x_local);
+    // Create the Z skirt
+    calculate_skirt(voxels, interpolation, DENSITY_OFFSET_Z, &mut skirts_model,  |slice, x, y|super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))), transform_z_local);
     // Return the model
     let mut test_hashmap = HashMap::new();
     test_hashmap.insert(0, skirts_model);
-    //println!("Elapsed: {}", i.elapsed().as_millis());
+    println!("Elapsed: {}", i.elapsed().as_millis());
     TModel {
         shader_model_hashmap: sub_model_hashmap,
         skirt_models: test_hashmap,
@@ -138,11 +139,11 @@ pub struct SkirtVertex {
 // 0---1---2
 
 // Generate a whole skirt using a specific
-pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, density_offset: [usize; 4], skirts_model: &mut Model, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
+pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, density_offset: [usize; 4], skirts_model: &mut Model, indexf: fn(usize, usize, usize) -> usize, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
     for slice in 0..2 {
         for x in 0..MAIN_CHUNK_SIZE {
             for y in 0..MAIN_CHUNK_SIZE {
-                let i = super::flatten((slice * (MAIN_CHUNK_SIZE), y, x));
+                let i = indexf(slice, x, y);
                 match calculate_marching_square_case(i, x, y, voxels, interpolation, density_offset) {
                     Some((case, p, lv, ilv)) => 
                         // We intersected the surface
@@ -290,7 +291,7 @@ pub fn solve_marching_squares(
         }
         11 => {
             let mut x = create_triangle(slice, offset, lv, ilv, &[0, 6, 5], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 2, 3], tf));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 3, 2], tf));
             x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 5, 3], tf));
             x
         }
@@ -387,5 +388,5 @@ fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &vecli
 
 // Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
 fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-    veclib::Vector3::<f32>::new(vertex.y + offset.y, vertex.x + offset.x, slice as f32)
+    veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32)
 }
