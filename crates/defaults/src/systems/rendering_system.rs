@@ -2,7 +2,9 @@ use super::super::components;
 use assets::{Asset, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{FrameStats, Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric};
+use rendering::{
+    FrameStats, Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric,
+};
 use std::{
     ffi::{c_void, CString},
     ptr::null,

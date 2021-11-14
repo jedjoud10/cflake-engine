@@ -144,7 +144,7 @@ impl World {
         // ----Add the elements here----
 
         // Create a text element
-        for x in 0..8 {
+        for x in 0..2 {
             let text_element_1 = ui::Element::new()
                 .set_coordinate_system(ui::CoordinateType::Pixel)
                 .set_position(veclib::Vector2::Y * 40.0 * x as f32)
@@ -238,17 +238,6 @@ impl World {
         root.get_element_mut(1).update_text(fps_text, 40.0);
         let entity_text = &format!("#Entities: {}", self.entity_manager.entities.count_valid());
         root.get_element_mut(2).update_text(entity_text, 40.0);
-        let entity_text = &format!("#Invalid Entities: {}", self.entity_manager.entities.count_invalid());
-        root.get_element_mut(3).update_text(entity_text, 40.0);
-        let x: &[Option<Entity>] = &self.entity_manager.entities.elements;
-        let entity_text = &format!("#Valid Entities Byte Size: {}", std::mem::size_of_val(x));
-        root.get_element_mut(4).update_text(entity_text, 40.0);
-        let component_text = &format!("#Components: {}", self.component_manager.smart_components_list.count_valid());
-        root.get_element_mut(5).update_text(component_text, 40.0);
-        let component_text = &format!("#Invalid Components: {}", self.component_manager.smart_components_list.count_invalid());
-        root.get_element_mut(6).update_text(component_text, 40.0);
-        let component_text = &format!("#Valid Components Byte Size: {}", self.component_manager.smart_components_list.size_in_bytes);
-        root.get_element_mut(7).update_text(component_text, 40.0);
 
         // Update the time
         self.time_manager.delta_time = delta;

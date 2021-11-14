@@ -111,71 +111,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool, 
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
     // Create the X skirt
-    for slice in 0..2 {
-        for x in 0..MAIN_CHUNK_SIZE {
-            for y in 0..MAIN_CHUNK_SIZE {
-                let i = super::flatten((slice * (MAIN_CHUNK_SIZE), y, x));
-                // Get the position
-                let p = veclib::Vector2::new(x as f32, y as f32);
-                // Get the marching cube case
-                let mut case = 0_u8;
-                // Get the local voxels
-                //println!("START");
-                let local_voxels: Vec<Voxel> = (0..4)
-                    .into_iter()
-                    .map(|x| {
-                        let local_voxel = voxels[i + DENSITY_OFFSET_X[x]];
-                        // Increase the case index if we have some voxels that are below the isoline
-                        //println!("Le bruh index: {} {}", x, local_voxel.density);
-                        if local_voxel.density <= ISOLINE {
-                            case |= 2_u8.pow(x as u32);
-                        }
-                        local_voxel
-                    })
-                    .collect::<Vec<Voxel>>();
-                // Exit if this case is invalid
-                if case == 0 || case == 15 {
-                    continue;
-                }
-                let local_voxels: &[Voxel] = &local_voxels[0..4];
-                //println!("Case {}", case);
-                // Get the interpolated voxels
-                let local_interpolated_voxels: Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>> = (0..4)
-                    .into_iter()
-                    .map(|x| {
-                        // This is for every edge
-                        let two_voxels = MS_EDGE_TO_VERTICES[x as usize];
-                        let voxel1 = voxels[i + DENSITY_OFFSET_X[two_voxels[0] as usize]];
-                        let voxel2 = voxels[i + DENSITY_OFFSET_X[two_voxels[1] as usize]];
-                        // Check if the edge is intersecting the surface
-                        if (voxel1.density <= ISOLINE) ^ (voxel2.density <= ISOLINE) {
-                            //println!("{} {}", two_voxels[0], two_voxels[1]);
-                            //println!("{} {}", voxel1.density, voxel2.density);
-                            let value: f32 = if interpolation {
-                                inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
-                            } else {
-                                0.5
-                            };
-                            // Interpolate between the two voxels
-                            let normal = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
-                            // We must get the local offset of these two voxels
-                            let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
-                            let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
-                            let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
-                            //println!("{}", offset);
-                            Some((normal, offset))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>>>();
-                let local_interpolated_voxels: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>] = &local_interpolated_voxels[0..4];
-                //println!("{:?}", local_interpolated_voxels);
-                // Solve the case
-                solve_marching_squares(slice * (MAIN_CHUNK_SIZE), case, p, local_voxels, local_interpolated_voxels, &mut skirts_model, slice == 1);
-            }
-        }
-    }
+    calculate_skirt(voxels, interpolation, DENSITY_OFFSET_X, &mut skirts_model, transform_x_local);
 
     // Return the model
     let mut test_hashmap = HashMap::new();
@@ -201,6 +137,101 @@ pub struct SkirtVertex {
 // |       |
 // 0---1---2
 
+// Generate a whole skirt using a specific
+pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, density_offset: [usize; 4], skirts_model: &mut Model, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
+    for slice in 0..2 {
+        for x in 0..MAIN_CHUNK_SIZE {
+            for y in 0..MAIN_CHUNK_SIZE {
+                let i = super::flatten((slice * (MAIN_CHUNK_SIZE), y, x));
+                match calculate_marching_square_case(i, x, y, voxels, interpolation, density_offset) {
+                    Some((case, p, lv, ilv)) => 
+                        // We intersected the surface
+                        solve_marching_squares(
+                            slice * MAIN_CHUNK_SIZE,
+                            case,
+                            p,
+                            &lv,
+                            &ilv,
+                            skirts_model,
+                            slice == 1,
+                            tf),
+                    None => { /* Empty */ }
+                }
+            }
+        }
+    }
+}
+// Calculate a marching square case and it's local voxels
+pub fn calculate_marching_square_case(
+    i: usize,
+    x: usize,
+    y: usize,
+    voxels: &Box<[Voxel]>,
+    interpolation: bool,
+    density_offset: [usize; 4],
+) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4])> {
+    // Get the position
+    let p = veclib::Vector2::new(x as f32, y as f32);
+    // Get the marching cube case
+    let mut case = 0_u8;
+    // Get the local voxels
+    //println!("START");
+    let local_voxels1: Vec<Voxel> = (0..4)
+        .into_iter()
+        .map(|x| {
+            let local_voxel = voxels[i + density_offset[x]];
+            // Increase the case index if we have some voxels that are below the isoline
+            //println!("Le bruh index: {} {}", x, local_voxel.density);
+            if local_voxel.density <= ISOLINE {
+                case |= 2_u8.pow(x as u32);
+            }
+            local_voxel
+        })
+        .collect::<Vec<Voxel>>();
+    // Exit if this case is invalid
+    if case == 0 || case == 15 {
+        return None;
+    }
+    // Slice to sized array
+    let mut local_voxels: [Voxel; 4] = [Voxel::default(); 4];
+    local_voxels.copy_from_slice(&local_voxels1[0..4]);
+    //println!("Case {}", case);
+    // Get the interpolated voxels
+    let local_interpolated_voxels1: Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>> = (0..4)
+        .into_iter()
+        .map(|x| {
+            // This is for every edge
+            let two_voxels = MS_EDGE_TO_VERTICES[x as usize];
+            let voxel1 = voxels[i + density_offset[two_voxels[0] as usize]];
+            let voxel2 = voxels[i + density_offset[two_voxels[1] as usize]];
+            // Check if the edge is intersecting the surface
+            if (voxel1.density <= ISOLINE) ^ (voxel2.density <= ISOLINE) {
+                //println!("{} {}", two_voxels[0], two_voxels[1]);
+                //println!("{} {}", voxel1.density, voxel2.density);
+                let value: f32 = if interpolation {
+                    inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
+                } else {
+                    0.5
+                };
+                // Interpolate between the two voxels
+                let normal = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
+                // We must get the local offset of these two voxels
+                let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
+                let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
+                let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
+                //println!("{}", offset);
+                Some((normal, offset))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>>>();
+    let mut local_interpolated_voxels: [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4] = [None; 4];
+    local_interpolated_voxels.copy_from_slice(&local_interpolated_voxels1[0..4]);
+    Some((case, p, local_voxels, local_interpolated_voxels))
+    //println!("{:?}", local_interpolated_voxels);
+    // Solve the case
+}
 // Solve a single marching squares case using a passed function for
 pub fn solve_marching_squares(
     slice: usize,
@@ -210,73 +241,74 @@ pub fn solve_marching_squares(
     ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
     model: &mut Model,
     flip: bool,
+    tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
     // Create the triangles from the local skirts
     let mut skirt_vertices = match case {
-        1 => create_triangle(slice, offset, lv, ilv, &[0, 7, 1]),
-        2 => create_triangle(slice, offset, lv, ilv, &[1, 3, 2]),
+        1 => create_triangle(slice, offset, lv, ilv, &[0, 7, 1], tf),
+        2 => create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf),
         3 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[0, 7, 2]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 7, 3]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[0, 7, 2], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 7, 3], tf));
             x
         }
-        4 => create_triangle(slice, offset, lv, ilv, &[3, 5, 4]),
+        4 => create_triangle(slice, offset, lv, ilv, &[3, 5, 4], tf),
         5 => {
             // Two triangles at the corners
-            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 5]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 3, 2]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf));
             // Middle quad
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 7, 3]));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 7, 5]));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf));
             x
         }
         6 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[2, 1, 5]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 5, 4]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[2, 1, 5], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf));
             x
         }
         7 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[2, 0, 7]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 5, 4]));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 7, 5]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[2, 0, 7], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 7, 5], tf));
             x
         }
-        8 => create_triangle(slice, offset, lv, ilv, &[7, 6, 5]),
+        8 => create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf),
         9 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[1, 0, 6]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 5, 1]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[1, 0, 6], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 5, 1], tf));
             x
         }
         10 => {
             // Two triangles at the corners
-            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 5]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 1, 3]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 1, 3], tf));
             // Middle quad
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 7, 3]));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 7, 5]));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf));
             x
         }
         11 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[0, 6, 5]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 2, 3]));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 5, 3]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[0, 6, 5], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 2, 3], tf));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 5, 3], tf));
             x
         }
         12 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 3]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 6, 4]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 3], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 6, 4], tf));
             x
         }
         13 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[6, 4, 3]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 1, 0]));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 3, 1]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[6, 4, 3], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 1, 0], tf));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 3, 1], tf));
             x
         }
         14 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[4, 7, 6]);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[4, 2, 1]));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[4, 1, 7]));
+            let mut x = create_triangle(slice, offset, lv, ilv, &[4, 7, 6], tf);
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[4, 2, 1], tf));
+            x.append(&mut create_triangle(slice, offset, lv, ilv, &[4, 1, 7], tf));
             x
         }
         0 | 15 => {
@@ -304,7 +336,6 @@ pub fn solve_marching_squares(
         model.colors.push(veclib::Vector3::ONE);
     }
 }
-
 // Create a marching squares triangle between 3 skirt voxels
 pub fn create_triangle(
     slice: usize,
@@ -312,6 +343,7 @@ pub fn create_triangle(
     lv: &[Voxel],
     ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
     li: &[usize; 3],
+    tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) -> Vec<SkirtVertex> {
     // Check if the local index is one of the interpolated ones
     let skirt_vertices = li
@@ -322,14 +354,14 @@ pub fn create_triangle(
                 1 | 3 | 5 | 7 => {
                     // Interpolated
                     let transformed_index = (*i - 1) / 2;
-                    let v = transform_x_local(slice, &ilv[transformed_index].unwrap().1, &offset);
+                    let v = (tf)(slice, &ilv[transformed_index].unwrap().1, &offset);
                     let n = &ilv[transformed_index].as_ref().unwrap().0;
                     (v, n)
                 }
                 0 | 2 | 4 | 6 => {
                     // Not interpolated
                     let transformed_index = (*i) / 2;
-                    let v = transform_x_local(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
+                    let v = (tf)(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
                     (v, &lv[transformed_index].normal)
                 }
                 _ => {

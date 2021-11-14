@@ -11,14 +11,14 @@ void main() {
     vec2 uvs = pixel_coords / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
     float offset = 1.0 / float(gl_NumWorkGroups.x * gl_WorkGroupSize.x);
     // Create the pixel value
-    float v = ((fps/300.0) - (1-uvs.y));
+    float v = ((fps/400.0) - (1-uvs.y));
     vec3 color = vec3(1.0, 1.0, 1.0);
     // Color tuning
-    if (fps <= 30) {
+    if (fps <= 120) {
         color = vec3(1, 0, 0);
-    } else if (fps <= 40) {
+    } else if (fps <= 160) {
         color = vec3(1.0, 0.85, 0);
-    } else if (fps >= 40) {
+    } else if (fps >= 160) {
         color = vec3(0, 1, 0);
     }
     float valid = v < 0.0 ? 0.0 : 1.0;

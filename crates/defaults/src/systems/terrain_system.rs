@@ -1,5 +1,5 @@
-use std::{rc::Rc, time::Instant};
 use others::Instance;
+use std::{rc::Rc, time::Instant};
 use terrain::{ChunkCoords, TerrainStats};
 
 use crate::components;
@@ -84,12 +84,12 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                     .unwrap();
                 // Multi Material Renderer
                 let mut bm = Vec::new();
-                for x in bound_materials.iter() { 
+                for x in bound_materials.iter() {
                     let mut m = x.instantiate(data.instance_manager);
                     let d = coords.depth as f32 / octree_depth as f32;
                     m.update_uniform("node_depth", Uniform::F32(d));
                     bm.push(m);
-                };
+                }
                 let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bm);
                 // Add the sub models into the Multi Material renderer
                 for (material_id, sub_model) in tmodel.shader_model_hashmap {

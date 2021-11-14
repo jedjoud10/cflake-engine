@@ -247,14 +247,14 @@ impl Shader {
         }
     }
     // Set a bool uniform
-    pub fn set_bool(&self, name: &str, b: bool) { 
+    pub fn set_bool(&self, name: &str, b: bool) {
         let u = self.get_uniform_location(name).unwrap();
         unsafe {
             gl::Uniform1i(u, if b { 1 } else { 0 });
         }
     }
     // Set an array of bool uniforms
-    pub fn set_bool_array(&self, name: &str, b: Vec<bool>) { 
+    pub fn set_bool_array(&self, name: &str, b: Vec<bool>) {
         let u = self.get_uniform_location(name).unwrap();
         let ptr = b.as_ptr() as *const i32;
         unsafe {

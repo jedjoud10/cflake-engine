@@ -188,16 +188,7 @@ impl Texture {
             match self.ttype {
                 TextureType::Texture1D(width) => {
                     gl::BindTexture(gl::TEXTURE_1D, self.id);
-                    gl::TexImage1D(
-                        gl::TEXTURE_2D,
-                        0,
-                        self.internal_format as i32,
-                        width as i32,
-                        0,
-                        self.format,
-                        self.data_type,
-                        null(),
-                    );
+                    gl::TexImage1D(gl::TEXTURE_2D, 0, self.internal_format as i32, width as i32, 0, self.format, self.data_type, null());
                 }
                 TextureType::Texture2D(width, height) => {
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
@@ -326,16 +317,7 @@ impl Texture {
                 gl::BindTexture(tex_type, self.id);
                 match self.ttype {
                     TextureType::Texture1D(_) => {
-                        gl::TexImage1D(
-                            tex_type,
-                            0,
-                            self.internal_format as i32,
-                            self.get_width() as i32,
-                            0,
-                            self.format,
-                            self.data_type,
-                            pointer,
-                        );
+                        gl::TexImage1D(tex_type, 0, self.internal_format as i32, self.get_width() as i32, 0, self.format, self.data_type, pointer);
                     }
                     // This is a 2D texture
                     TextureType::Texture2D(_, _) => {
@@ -467,18 +449,7 @@ impl Texture {
             };
             gl::BindTexture(tex_type, self.id);
             match self.ttype {
-                TextureType::Texture1D(_) => {
-                    gl::TexImage1D(
-                        tex_type,
-                        0,
-                        self.internal_format as i32,
-                        self.get_width() as i32,
-                        0,
-                        self.format,
-                        self.data_type,
-                        pointer,
-                    )
-                }
+                TextureType::Texture1D(_) => gl::TexImage1D(tex_type, 0, self.internal_format as i32, self.get_width() as i32, 0, self.format, self.data_type, pointer),
                 // This is a 2D texture
                 TextureType::Texture2D(_, _) => {
                     gl::TexImage2D(
@@ -544,7 +515,7 @@ impl Texture {
                 }
             }
         }
-    } 
+    }
     // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
     pub fn fill_array_veclib<V, U>(&self) -> Vec<V>
     where
@@ -573,7 +544,7 @@ impl Texture {
             // Bind the buffer before reading
             gl::BindTexture(tex_type, self.id);
             gl::GetTexImage(tex_type, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
-        }        
+        }
         return pixels;
     }
     // Get the image from this texture and fill an array of single elements with it
