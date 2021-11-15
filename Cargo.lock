@@ -662,6 +662,11 @@ dependencies = [
 [[package]]
 name = "rendering_base"
 version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "gl",
+ "image",
+]
 
 [[package]]
 name = "ryu"
