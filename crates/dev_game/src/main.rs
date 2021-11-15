@@ -74,18 +74,24 @@ pub fn world_initialized(world: &mut World) {
         .set_uniform("normals_strength", Uniform::F32(2.0))
         .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.7));
     let texture = Texture::create_texturearray(
-        None,
+        Some(TextureLoadOptions {
+            filter: TextureFilter::Nearest,
+            ..TextureLoadOptions::default()
+        }),
         vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"],
         data.asset_manager,
-        512,
-        512,
+        256,
+        256,
     );
     let texture2 = Texture::create_texturearray(
-        None,
+        Some(TextureLoadOptions {
+            filter: TextureFilter::Nearest,
+            ..TextureLoadOptions::default()
+        }),
         vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"],
         data.asset_manager,
-        512,
-        512,
+        256,
+        256,
     );
     let bound_materials = vec![
         material

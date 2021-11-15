@@ -60,23 +60,15 @@ impl NodeInterpreter for Noise {
         // Check input real quick
         let input = getter.get(0, VarHashType::Vec3)?;
         // Create the GLSL string for this node, so we can make a variable out of it
+        let strength = if self.inverted { -self.strength } else { self.strength };
         let main = match self._type {
-            NoiseType::Simplex => format!("snoise({} * {})", input.get_name(), self.scale),
+            NoiseType::Simplex => format!("snoise({} * {}) * {}", input.get_name(), self.scale, strength),
             NoiseType::VoronoiSimplex => todo!(),
-            NoiseType::VoronoiDistance => format!("voronoi({} * {}).x", input.get_name(), self.scale),
+            NoiseType::VoronoiDistance => format!("voronoi({} * {}).x * {}", input.get_name(), self.scale, strength),
             NoiseType::VoronoiDistance2 => todo!(),
-            NoiseType::VoronoiCell => format!("voronoi({} * {}).z", input.get_name(), self.scale),
-        }
-        .to_string();
-        // Check if we have to invert if
-        let string: String;
-        if self.inverted {
-            string = format!("-{} * {}", main, self.strength);
-        } else {
-            // Not inverted, we just have to multiply by the strength
-            string = format!("{} * {}", main, self.strength);
-        }
-        Ok(string)
+            NoiseType::VoronoiCell => format!("voronoi({} * {}).z * {}", input.get_name(), self.scale, strength),
+        }.to_string();
+        Ok(main)
     }
     fn get_output_type(&self, _inputs: &VarHashGetter) -> crate::var_hash::VarHashType {
         crate::var_hash::VarHashType::Density

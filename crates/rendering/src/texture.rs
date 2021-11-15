@@ -19,13 +19,6 @@ pub struct TextureLoadOptions {
     pub filter: TextureFilter,
     pub wrapping: TextureWrapping,
 }
-/*
-impl TextureLoadOptions {
-    pub fn get_hashed_state(&self) -> u64 {
-
-    }
-}
-*/
 
 // Texture filters
 #[derive(Debug, Clone, Copy)]
@@ -234,6 +227,17 @@ impl Texture {
         */
         self
     }
+    // Guess how many mipmap levels a texture with a specific maximum coordinate can have
+    pub fn guess_mipmap_levels(i: usize) -> usize {
+        let mut x: f32 = i as f32;
+        let mut num: usize = 0;
+        while x > 1.0 {
+            // Repeatedly divide by 2
+            x = x / 2.0;
+            num += 1;
+        }
+        num
+    } 
     // Set the generation of mipmaps
     pub fn enable_mipmaps(mut self) -> Self {
         self.flags |= TextureFlags::MIPMAPS;
@@ -350,7 +354,7 @@ impl Texture {
                     }
                     // This is a texture array
                     TextureType::TextureArray(x, y, l) => {
-                        gl::TexStorage3D(tex_type, 10, self.internal_format, x as i32, y as i32, l as i32);
+                        gl::TexStorage3D(tex_type, Self::guess_mipmap_levels(x.max(y) as usize) as i32, self.internal_format, x as i32, y as i32, l as i32);
                         // We might want to do mipmap
                         for i in 0..l {
                             let localized_bytes = bytes[(i as usize * y as usize * 4 * x as usize)..bytes.len()].as_ptr() as *const c_void;
@@ -399,8 +403,8 @@ impl Texture {
                         }
                         TextureFilter::Nearest => {
                             // 'Nearest' filter
-                            //gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-                            //gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                            gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                            gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                         }
                     }
                 }

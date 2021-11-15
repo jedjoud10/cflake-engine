@@ -9,6 +9,8 @@ mod selector;
 mod shapes;
 mod splitter;
 mod vector_operations;
+//mod fractal;
+//pub use fractal::*;
 pub use base_position::*;
 pub use comparator::*;
 pub use constants::*;
