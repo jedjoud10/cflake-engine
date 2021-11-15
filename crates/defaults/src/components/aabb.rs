@@ -42,17 +42,33 @@ impl AABB {
         match &renderer.multi_material {
             Some(x) => {
                 // Get the AABB of each sub model and take the biggest one
-                let mut aabb = math::bounds::AABB::new_vertices(&x.sub_models.get(0).unwrap().0.vertices);
-                for i in 1..(x.sub_models.len()) {
+                let mut aabb: Option<math::bounds::AABB> = None;
+                for i in 0..(x.sub_models.len()) {
                     let aabb2 = math::bounds::AABB::new_vertices(&x.sub_models.get(i).unwrap().0.vertices);
-                    aabb.min = aabb.min.min(aabb2.min);
-                    aabb.max = aabb.max.max(aabb2.max);
+                    match &mut aabb {
+                        Some(aabb_valid) => {
+                            aabb_valid.min = aabb_valid.min.min(aabb2.min);
+                            aabb_valid.max = aabb_valid.max.max(aabb2.max);
+                        },
+                        None => { /* Set the default one */ aabb = Some(aabb2) },
+                    }
+                    
                 }
-                aabb.center = (aabb.min + aabb.max) / 2.0;
-                Self {
-                    aabb: Self::offset(aabb, transform),
-                    ..Self::default()
+                // Check if we have a valid AABB
+                match aabb {
+                    Some(mut aabb) => {
+                        aabb.center = (aabb.min + aabb.max) / 2.0;
+                        Self {
+                            aabb: Self::offset(aabb, transform),
+                            ..Self::default()
+                        }
+                    },
+                    None => Self {
+                        aabb: math::bounds::AABB::default(),
+                        ..Self::default()
+                    },
                 }
+                
             }
             None => {
                 let aabb = math::bounds::AABB::new_vertices(&renderer.model.vertices);

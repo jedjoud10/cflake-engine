@@ -8,7 +8,8 @@ pub struct Voxel {
     pub density: f32,
     pub normal: veclib::Vector3<f32>,
     pub shader_id: u8,
-    pub localized_material_id: u8,
+    // Voxel material (Not actual renderer material)
+    pub material_id: u8,
 }
 // Handles the generation of voxel data
 #[derive(Default)]
@@ -128,7 +129,7 @@ impl VoxelGenerator {
                         density: sv.0,
                         normal,
                         shader_id: sv.1,
-                        localized_material_id: sv.2,
+                        material_id: sv.2,
                     };
                     data[utils::flatten((x, y, z))] = voxel;
                 }

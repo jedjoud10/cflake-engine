@@ -102,8 +102,8 @@ impl ChunkManager {
                     match voxel_generator.generate_voxels_end(chunk_coords.size, chunk_coords.depth, chunk_coords.position) {
                         Some(voxels) => {
                             // We have a surface, create the model
-                            let coords = chunk_coords.clone();
                             let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true);
+                            let coords = chunk_coords.clone();
                             let chunk_data = ChunkData { coords, voxels };
                             final_chunk = Some((chunk_data, model));
                         },

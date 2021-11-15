@@ -92,10 +92,10 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 }
                 let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bm);
                 // Add the sub models into the Multi Material renderer
-                for (material_id, sub_model) in tmodel.shader_model_hashmap {
+                for (material_id, sub_model) in tmodel.models {
                     mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);
                 }
-                for (material_id, skirt_model) in tmodel.skirt_models {
+                for (material_id, skirt_model) in tmodel.skirts_models {
                     // Don't forget the skirts
                     mm_renderer = mm_renderer.add_submodel_m(skirt_model, material_id as usize);
                 }

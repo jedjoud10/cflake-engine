@@ -1,4 +1,3 @@
-use crate::TCase;
 use crate::TModel;
 use crate::ISOLINE;
 use crate::MAIN_CHUNK_SIZE;
@@ -19,7 +18,6 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
     let mut sub_model_hashmap: HashMap<u8, Model> = HashMap::new();
-    let mut intersection_cases: Vec<TCase> = Vec::new();
     let i = Instant::now();
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
@@ -32,7 +30,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool) 
                 let lv = &voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
-                sub_model_hashmap.entry(lv.shader_id).or_insert(Model::default());
+                sub_model_hashmap.entry(lv.shader_id).or_default();
                 let model = sub_model_hashmap.get_mut(&lv.shader_id).unwrap();
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
@@ -100,30 +98,21 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool) 
                         }
                     }
                 }
-                // Push this intersecting case
-                intersection_cases.push(TCase {
-                    cube_position: veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32),
-                    leading_voxel: lv.clone(),
-                });
             }
         }
     }
     // Create a completely separate model for skirts
-    let mut skirts_model: Model = Model::default();
+    let mut skirts_models: HashMap<u8, Model> = HashMap::new();
     // Create the X skirt
-    calculate_skirt(voxels, interpolation, false, DENSITY_OFFSET_X, &mut skirts_model,  |slice, x, y|super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)), transform_x_local);
+    calculate_skirt(voxels, interpolation, false, DENSITY_OFFSET_X, &mut skirts_models,  |slice, x, y|super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)), transform_x_local);
     // Create the Z skirt
-    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Z, &mut skirts_model,  |slice, x, y|super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))), transform_z_local);
+    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Z, &mut skirts_models,  |slice, x, y|super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))), transform_z_local);
     // Create the Y skirt
-    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Y, &mut skirts_model,  |slice, x, y|super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)), transform_y_local);
-    // Return the model
-    let mut test_hashmap = HashMap::new();
-    test_hashmap.insert(0, skirts_model);
+    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Y, &mut skirts_models,  |slice, x, y|super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)), transform_y_local);
     println!("Elapsed: {}", i.elapsed().as_millis());
     TModel {
-        shader_model_hashmap: sub_model_hashmap,
-        skirt_models: test_hashmap,
-        intersection_cases: Some(intersection_cases),
+        models: sub_model_hashmap,
+        skirts_models: skirts_models,
     }
 }
 
@@ -133,15 +122,8 @@ pub struct SkirtVertex {
     pub normal: veclib::Vector3<f32>,
 }
 
-// Funny skirt moment
-// 6---5---4
-// |       |
-// 7       3
-// |       |
-// 0---1---2
-
 // Generate a whole skirt using a specific
-pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, flip: bool, density_offset: [usize; 4], skirts_model: &mut Model, indexf: fn(usize, usize, usize) -> usize, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
+pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, flip: bool, density_offset: [usize; 4], skirts_models: &mut HashMap<u8, Model>, indexf: fn(usize, usize, usize) -> usize, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
     for slice in 0..2 {
         for x in 0..MAIN_CHUNK_SIZE {
             for y in 0..MAIN_CHUNK_SIZE {
@@ -155,7 +137,7 @@ pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, flip: bool, d
                             p,
                             &lv,
                             &ilv,
-                            skirts_model,
+                            skirts_models,
                             (slice == 1) ^ flip,
                             tf),
                     None => { /* Empty */ }
@@ -242,7 +224,7 @@ pub fn solve_marching_squares(
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
     ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
-    model: &mut Model,
+    skirts_models: &mut HashMap<u8, Model>,
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
@@ -331,13 +313,16 @@ pub fn solve_marching_squares(
             skirt_vertices.swap(swap_index0, swap_index1);
         }
     }
+    // The first vertex is the leading vertex
+    let material_id = lv[0].shader_id;
     // Actually add the skirt vertices
+    let model = skirts_models.entry(material_id).or_default();
     for x in skirt_vertices {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(x.position);
         model.normals.push(x.normal.normalized());
         model.colors.push(veclib::Vector3::ONE);
-    }
+    }    
 }
 // Create a marching squares triangle between 3 skirt voxels
 pub fn create_triangle(
@@ -378,17 +363,13 @@ pub fn create_triangle(
         .collect::<Vec<SkirtVertex>>();
     skirt_vertices
 }
-// Transform the local 2D vertex into a 3D vertex with a slice depth based on the X axis
+// Tansform the 2D points into their 3D counterpart
 fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
     veclib::Vector3::<f32>::new(slice as f32, vertex.x + offset.y, vertex.y + offset.x)
 }
-
-// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Y axis
 fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
     veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y)
 }
-
-// Transform the local 2D vertex into a 3D vertex with a slice depth based on the Z axis
 fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
     veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32)
 }
