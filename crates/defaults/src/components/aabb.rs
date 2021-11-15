@@ -49,10 +49,12 @@ impl AABB {
                         Some(aabb_valid) => {
                             aabb_valid.min = aabb_valid.min.min(aabb2.min);
                             aabb_valid.max = aabb_valid.max.max(aabb2.max);
-                        },
-                        None => { /* Set the default one */ aabb = Some(aabb2) },
+                        }
+                        None => {
+                            /* Set the default one */
+                            aabb = Some(aabb2)
+                        }
                     }
-                    
                 }
                 // Check if we have a valid AABB
                 match aabb {
@@ -62,13 +64,12 @@ impl AABB {
                             aabb: Self::offset(aabb, transform),
                             ..Self::default()
                         }
-                    },
+                    }
                     None => Self {
                         aabb: math::bounds::AABB::default(),
                         ..Self::default()
                     },
                 }
-                
             }
             None => {
                 let aabb = math::bounds::AABB::new_vertices(&renderer.model.vertices);

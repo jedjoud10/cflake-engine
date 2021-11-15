@@ -1,3 +1,4 @@
+use crate::ChunkCoords;
 use crate::TModel;
 use crate::ISOLINE;
 use crate::MAIN_CHUNK_SIZE;
@@ -15,7 +16,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool) -> TModel {
+pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
     let mut sub_model_hashmap: HashMap<u8, Model> = HashMap::new();
     let i = Instant::now();
@@ -104,15 +105,40 @@ pub fn generate_model(voxels: &Box<[Voxel]>, _size: usize, interpolation: bool) 
     // Create a completely separate model for skirts
     let mut skirts_models: HashMap<u8, Model> = HashMap::new();
     // Create the X skirt
-    calculate_skirt(voxels, interpolation, false, DENSITY_OFFSET_X, &mut skirts_models,  |slice, x, y|super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)), transform_x_local);
+    calculate_skirt(
+        voxels,
+        interpolation,
+        false,
+        DENSITY_OFFSET_X,
+        &mut skirts_models,
+        |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
+        transform_x_local,
+    );
     // Create the Z skirt
-    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Z, &mut skirts_models,  |slice, x, y|super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))), transform_z_local);
+    calculate_skirt(
+        voxels,
+        interpolation,
+        true,
+        DENSITY_OFFSET_Z,
+        &mut skirts_models,
+        |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
+        transform_z_local,
+    );
     // Create the Y skirt
-    calculate_skirt(voxels, interpolation, true, DENSITY_OFFSET_Y, &mut skirts_models,  |slice, x, y|super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)), transform_y_local);
+    calculate_skirt(
+        voxels,
+        interpolation,
+        true,
+        DENSITY_OFFSET_Y,
+        &mut skirts_models,
+        |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
+        transform_y_local,
+    );
     println!("Elapsed: {}", i.elapsed().as_millis());
     TModel {
         models: sub_model_hashmap,
         skirts_models: skirts_models,
+        coords: coords,
     }
 }
 
@@ -123,23 +149,25 @@ pub struct SkirtVertex {
 }
 
 // Generate a whole skirt using a specific
-pub fn calculate_skirt(voxels: &Box<[Voxel]>, interpolation: bool, flip: bool, density_offset: [usize; 4], skirts_models: &mut HashMap<u8, Model>, indexf: fn(usize, usize, usize) -> usize, tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>) {
+pub fn calculate_skirt(
+    voxels: &Box<[Voxel]>,
+    interpolation: bool,
+    flip: bool,
+    density_offset: [usize; 4],
+    skirts_models: &mut HashMap<u8, Model>,
+    indexf: fn(usize, usize, usize) -> usize,
+    tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
+) {
     for slice in 0..2 {
         for x in 0..MAIN_CHUNK_SIZE {
             for y in 0..MAIN_CHUNK_SIZE {
                 let i = indexf(slice, x, y);
                 match calculate_marching_square_case(i, x, y, voxels, interpolation, density_offset) {
-                    Some((case, p, lv, ilv)) => 
-                        // We intersected the surface
-                        solve_marching_squares(
-                            slice * MAIN_CHUNK_SIZE,
-                            case,
-                            p,
-                            &lv,
-                            &ilv,
-                            skirts_models,
-                            (slice == 1) ^ flip,
-                            tf),
+                    Some((case, p, lv, ilv)) =>
+                    // We intersected the surface
+                    {
+                        solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &lv, &ilv, skirts_models, (slice == 1) ^ flip, tf)
+                    }
                     None => { /* Empty */ }
                 }
             }
@@ -322,7 +350,7 @@ pub fn solve_marching_squares(
         model.vertices.push(x.position);
         model.normals.push(x.normal.normalized());
         model.colors.push(veclib::Vector3::ONE);
-    }    
+    }
 }
 // Create a marching squares triangle between 3 skirt voxels
 pub fn create_triangle(

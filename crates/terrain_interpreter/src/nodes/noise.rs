@@ -66,7 +66,8 @@ impl NodeInterpreter for Noise {
             NoiseType::VoronoiDistance => format!("voronoi({} * {}).x", input.get_name(), self.scale),
             NoiseType::VoronoiDistance2 => todo!(),
             NoiseType::VoronoiCell => format!("voronoi({} * {}).z", input.get_name(), self.scale),
-        }.to_string();
+        }
+        .to_string();
         // Check if we have to invert if
         let string: String;
         if self.inverted {

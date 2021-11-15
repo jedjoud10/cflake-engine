@@ -1,10 +1,12 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
+use std::sync::mpsc;
+use std::thread;
 
 use rayon::iter::ParallelIterator;
 
 use crate::TModel;
-use crate::{chunk_data::ChunkCoords, mesher, ChunkData, VoxelGenerator};
+use crate::{chunk_data::ChunkCoords, mesher, VoxelGenerator};
 
 // Manages the chunks, makes it easier to do multithreading / compute shader stuff
 #[derive(Default)]
@@ -16,8 +18,10 @@ pub struct ChunkManager {
     pub entities_to_remove: HashMap<veclib::Vector3<i64>, usize>,
     // The last frame chunk voxels where generated
     pub last_frame_voxels_generated: u64,
-    // Are we currently waiting for the voxels to finish generating?
     pub voxels_generating: bool,
+    pub model_generating: bool,
+    // Channel for communication between the mesher thread and the main thread
+    pub channel: Option<(mpsc::Sender<TModel>, mpsc::Receiver<TModel>)>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>,
     pub camera_forward_vector: veclib::Vector3<f32>,
@@ -82,7 +86,7 @@ impl ChunkManager {
             });
         }
         // This chunk will always have a valid model and chunk data
-        let mut final_chunk: Option<(ChunkData, TModel)> = None;
+        let mut final_chunk: Option<TModel> = None;
         let x = self.chunks_to_generate[0..(1.min(self.chunks_to_generate.len()))].get(0);
         match x {
             Some(coord) => {
@@ -90,7 +94,7 @@ impl ChunkManager {
                 let chunk_coords = coord.clone();
 
                 // Decide between generating the chunk or start the generation of the voxel data
-                if self.voxels_generating && (self.last_frame_voxels_generated + crate::FRAME_THRESHOLD) < frame_count {
+                if self.voxels_generating && (self.last_frame_voxels_generated + crate::FRAME_THRESHOLD) < frame_count && !self.model_generating {
                     // The voxels are generating, so wait until we reached a satisfactory frame count
                     // We reached the limit, read the compute buffer
                     self.voxels_generating = false;
@@ -102,20 +106,40 @@ impl ChunkManager {
                     match voxel_generator.generate_voxels_end(chunk_coords.size, chunk_coords.depth, chunk_coords.position) {
                         Some(voxels) => {
                             // We have a surface, create the model
-                            let model = mesher::generate_model(&voxels, chunk_coords.size as usize, true);
-                            let coords = chunk_coords.clone();
-                            let chunk_data = ChunkData { coords, voxels };
-                            final_chunk = Some((chunk_data, model));
+                            self.model_generating = true;
+                            // Set the channel
+                            self.channel = Some(mpsc::channel());
+                            let tx = self.channel.as_ref().unwrap().0.clone();
+                            thread::spawn(move || {
+                                let model = mesher::generate_model(&voxels, chunk_coords, true);
+                                tx.send(model).unwrap();
+                            });
                         },
                         None => { /* We don't have a surface */ },
                     }
                 } else {
                     // Uh oh
-                    if !self.voxels_generating {
+                    if !self.voxels_generating && !self.model_generating {
                         // The voxels didn't start generation yet, so start it
                         voxel_generator.generate_voxels_start(chunk_coords.size, chunk_coords.depth, chunk_coords.position);
                         self.voxels_generating = true;
                         self.last_frame_voxels_generated = frame_count;
+                    } else if self.model_generating {
+                        // We are currently generating the model in another thread, so we must try to read it back
+                        match self.channel.as_ref() {
+                            Some((tx, rx)) => {
+                                // Try reading
+                                match rx.try_recv() {
+                                    Ok(tmodel) => {
+                                        // Valid TModel
+                                        final_chunk = Some(tmodel);
+                                        self.model_generating = false;
+                                    },
+                                    Err(_) => {  },
+                                }
+                            },
+                            None => { /* Uh oh */ },
+                        }
                     }
                 }
             }
@@ -124,9 +148,9 @@ impl ChunkManager {
 
         // The system was flawed...
         match final_chunk {
-            Some((data, model)) => {
-                self.chunks.insert(data.coords.center);
-                self.pending_chunks.push((data.coords, model));
+            Some(tmodel) => {
+                self.chunks.insert(tmodel.coords.center);
+                self.pending_chunks.push((tmodel.coords, tmodel));
             }
             None => {}
         }

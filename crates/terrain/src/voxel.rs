@@ -138,6 +138,8 @@ impl VoxelGenerator {
         // Only generate the mesh if we have a surface
         if (min < ISOLINE) != (max < ISOLINE) {
             Some(data)
-        } else { None }
+        } else {
+            None
+        }
     }
 }

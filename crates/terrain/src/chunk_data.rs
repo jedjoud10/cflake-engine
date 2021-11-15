@@ -1,36 +1,6 @@
 use math::octrees::OctreeNode;
-
-use crate::MAIN_CHUNK_SIZE;
-
-use super::Voxel;
-
-// Some chunk data
-pub struct ChunkData {
-    pub coords: ChunkCoords,
-    pub voxels: Box<[Voxel]>,
-}
-
-impl Default for ChunkData {
-    fn default() -> Self {
-        Self {
-            coords: ChunkCoords::default(),
-            voxels: Box::new([Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)]),
-        }
-    }
-}
-
-impl ChunkData {
-    // Create new chunk data from a coord struct
-    pub fn new(coords: ChunkCoords) -> Self {
-        Self {
-            coords,
-            voxels: Box::new([Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)]),
-        }
-    }
-}
-
 // The data that will be used to store the position/scale of the chunk
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct ChunkCoords {
     pub position: veclib::Vector3<i64>,
     pub center: veclib::Vector3<i64>,

@@ -47,7 +47,13 @@ impl Object for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(&self, subshader_name: &str, lines: &mut Vec<String>, asset_manager: &'a AssetManager, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
+    fn load_includes<'a>(
+        &self,
+        subshader_name: &str,
+        lines: &mut Vec<String>,
+        asset_manager: &'a AssetManager,
+        included_paths: &mut HashSet<String>,
+    ) -> Result<bool, RenderingError> {
         let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new();
         for (i, line) in lines.iter().enumerate() {
             // Check if this is an include statement
@@ -58,7 +64,12 @@ impl Shader {
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = asset_manager.asset_cacher.load_text(local_path).map_err(|x| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'", local_path, subshader_name)))?;
+                    let text = asset_manager.asset_cacher.load_text(local_path).map_err(|x| {
+                        RenderingError::new(format!(
+                            "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
+                            local_path, subshader_name
+                        ))
+                    })?;
                     let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                     vectors_to_insert.push((i, new_lines));
                 }
@@ -120,7 +131,8 @@ impl Shader {
                 self.link_subshader(subshader);
             } else {
                 // It was not cached, so we need to cache it
-                let mut subshader = SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap()).ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
+                let mut subshader =
+                    SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap()).ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
 
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
