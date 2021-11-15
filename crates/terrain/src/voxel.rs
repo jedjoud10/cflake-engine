@@ -55,6 +55,7 @@ impl VoxelGenerator {
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
+        //println!("Start voxel generation");
         // First pass
         let shader = &mut self.compute;
         shader.use_shader();
@@ -80,6 +81,7 @@ impl VoxelGenerator {
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
+        //println!("End voxel generation");
         let shader = &mut self.compute;
         shader.use_shader();
         let compute = match &mut shader.additional_shader {

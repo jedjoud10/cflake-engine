@@ -1,7 +1,7 @@
 use rendering::Model;
 use std::collections::HashMap;
 
-use crate::{ChunkCoords};
+use crate::ChunkCoords;
 // A custom terrain model
 #[derive(Default)]
 pub struct TModel {

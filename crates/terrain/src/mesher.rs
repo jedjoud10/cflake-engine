@@ -8,6 +8,8 @@ use super::Voxel;
 use rendering::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::thread;
+use std::time::Duration;
 use std::time::Instant;
 
 // Inverse of lerp
@@ -134,7 +136,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation:
         |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
         transform_y_local,
     );
-    println!("Elapsed: {}", i.elapsed().as_millis());
     TModel {
         models: sub_model_hashmap,
         skirts_models: skirts_models,
