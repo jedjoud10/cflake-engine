@@ -4,6 +4,7 @@ use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
+use main::terrain::interpreter::NodeInterpreter;
 use main::world_data::*;
 use main::*;
 fn main() {
@@ -52,7 +53,7 @@ pub fn world_initialized(world: &mut World) {
     let mut camera = Entity::new("Default Camera");
     camera.link_default_component::<components::Transform>(data.component_manager).unwrap();
     camera.link_default_component::<components::Physics>(data.component_manager).unwrap();
-    camera.link_default_component::<components::Camera>(data.component_manager).unwrap();
+    camera.link_component::<components::Camera>(data.component_manager, components::Camera::new(90.0, 3.0, 200000.0)).unwrap();
 
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
@@ -99,21 +100,12 @@ pub fn world_initialized(world: &mut World) {
             .set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0))
             .set_uniform("normals_textures", Uniform::Texture2DArray(texture2, 1))
             .set_uniform("material_id", Uniform::I32(0)),
-        material
-            .instantiate(data.instance_manager)
-            .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.02))
-            .set_uniform("material_id", Uniform::I32(1)),
     ];
     let settings = terrain::TerrainSettings {
-        octree_depth: 7,
+        octree_depth: 10,
         bound_materials,
         voxel_generator_interpreter: terrain::interpreter::Interpreter::new(),
     };
-    let (_, csg_tree) = terrain::interpreter::Interpreter::new().finalize().unwrap();
-    for x in csg_tree.nodes.into_iter() {
-        let debug_primitive = debug::DebugPrimitive::new().set_shape(x.internal_shape);
-        //data.debug.renderer.debug(debug_primitive);
-    }
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings, &mut data.asset_manager))
         .unwrap();

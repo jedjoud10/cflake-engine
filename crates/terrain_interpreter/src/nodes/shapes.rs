@@ -39,7 +39,6 @@ impl NodeInterpreter for Shape {
         passed_data.custom_shape_identifier = Some(math::csg::CSGCustomIdentifier {
             hash: getter.self_varhash.unwrap().index as u64,
         });
-        println!("Set custom shape identifier");
         csgtree.add_custom_identifier(passed_data.custom_shape_identifier.unwrap(), shape);
     }
 }

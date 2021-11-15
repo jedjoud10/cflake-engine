@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use math::constructive_solid_geometry::CSGTree;
 
 use crate::{
@@ -42,10 +44,10 @@ impl Interpreter {
             .new(&[p], &mut interpreter)
             .unwrap();
         let d = Noise::new()
-            .set_type(NoiseType::VoronoiDistance)
+            .set_type(NoiseType::Simplex)
             .set_inverted(true)
-            .set_strength(30.0)
-            .set_scale(0.002)
+            .set_strength(120.0)
+            .set_scale(0.003)
             .new(&[p], &mut interpreter)
             .unwrap();
         let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
@@ -74,7 +76,9 @@ impl Interpreter {
         self.vars.push(var_hash);
         // Make the inputs of this node considered as used nodes
         for x in getter.inputs_indices.iter() {
-            self.used_nodes.push(*x);
+            if !self.used_nodes.contains(x) {
+                self.used_nodes.push(*x);
+            }
         }
         // Le self var hash
         getter.self_varhash = Some(var_hash);
@@ -82,7 +86,6 @@ impl Interpreter {
         let node = Node { getter, node_interpreter: boxed };
         // Add the node
         self.nodes.push(node);
-        println!("Add node");
         Ok(*self.vars.get(id).unwrap())
     }
     // Finalize the tree with a specific var hash
@@ -111,8 +114,8 @@ impl Interpreter {
         // Getting the CSGTree now
         // Default CSGTree is based around our first "base_density" node, since it is a shape node undercover
         let mut csgtree: CSGTree = CSGTree::default();
-        let mut input_ranges: Vec<(f32, f32)> = Vec::new();
-        input_ranges.push((0.0, 0.0));
+        let mut input_ranges: HashMap<usize, (f32, f32)> = HashMap::new();
+        input_ranges.insert(0, (0.0, 0.0));
         // Start from the oldest nodes
         for i in 1..self.used_nodes.len() {
             let x = self.used_nodes[i];
@@ -124,7 +127,7 @@ impl Interpreter {
                 getter.inputs[local_index] = *self.vars.get(*global_index).unwrap();
             }
             let output_var = self.vars.get_mut(x).unwrap();
-            let new_input_ranges = getter.inputs_indices.iter().map(|x| input_ranges.get(*x).unwrap().clone()).collect::<Vec<(f32, f32)>>();
+            let new_input_ranges = getter.inputs_indices.iter().map(|x| input_ranges.get(x).unwrap().clone()).collect::<Vec<(f32, f32)>>();
             // Gotta calculate the range first
             let range = node.node_interpreter.calculate_range(&getter, new_input_ranges);
             input_ranges.insert(output_var.index, range);

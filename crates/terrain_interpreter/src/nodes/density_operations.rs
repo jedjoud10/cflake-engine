@@ -31,7 +31,10 @@ impl NodeInterpreter for DensityOperation {
     fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) {
         // Depends on the density operation
         match self {
-            DensityOperation::Union => todo!(),
+            DensityOperation::Union => {
+                // You don't have range in this
+                (0.0, 0.0)
+            },
             DensityOperation::Intersection => todo!(),
             DensityOperation::Addition => {
                 // Take the maximum and minimum
@@ -46,7 +49,8 @@ impl NodeInterpreter for DensityOperation {
     fn update_csgtree(&self, passed_data: &mut PassedData, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
         // Depends on the density operation
         match self {
-            DensityOperation::Union => todo!(),
+            DensityOperation::Union => {
+            },
             DensityOperation::Intersection => todo!(),
             DensityOperation::Addition => {
                 // Update the CSG tree
@@ -56,7 +60,6 @@ impl NodeInterpreter for DensityOperation {
                 *passed_data = x;
                 let custom_shape = csgtree.get_custom_mut(x.custom_shape_identifier.unwrap()).unwrap();
                 custom_shape.expand(math::csg::ExpandMethod::Factor(self_range.1));
-                println!("{:?}", custom_shape.internal_shape);
             }
             DensityOperation::Subtraction => todo!(),
         }

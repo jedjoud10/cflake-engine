@@ -13,6 +13,14 @@ pub struct Camera {
 
 // Impl block for Camera component
 impl Camera {
+    // Create a new camera with a specified FOV and clip planes
+    pub fn new(fov: f32, clipn: f32, clipf: f32) -> Self {
+        Self {
+            horizontal_fov: fov,
+            clip_planes: (clipn, clipf),
+            ..Self::default()
+        }
+    }
     // Update the projection matrix of this camera
     pub fn update_projection_matrix(&mut self, window: &Window) {
         // Turn the horizontal fov into a vertical one
