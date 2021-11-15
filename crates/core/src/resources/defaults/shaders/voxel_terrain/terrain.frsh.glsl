@@ -20,7 +20,7 @@ void main() {
 	vec3 normal;
 	vec3 diffuse;
 	get_frag(material_id, diffuse_textures, normals_textures, m_position, m_normal, uv_scale, normals_strength, diffuse, normal);
-	frag_diffuse = diffuse * m_color * tint * node_depth;
+	frag_diffuse = diffuse * m_color * tint;
 	frag_normal = normal;
 	frag_pos = m_position;
 }
