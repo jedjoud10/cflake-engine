@@ -96,7 +96,7 @@ impl ChunkManager {
                     // The voxels are generating, so wait until we reached a satisfactory frame count
                     // We reached the limit, read the compute buffer
                     self.voxels_generating = false;
-                    self.last_frame_voxels_generated = 0;                   
+                    self.last_frame_voxels_generated = 0;
 
                     // If we don't have a surface, no need to create a model for this chunk
                     match voxel_generator.generate_voxels_end(chunk_coords.size, chunk_coords.depth, chunk_coords.position) {
@@ -111,7 +111,10 @@ impl ChunkManager {
                                 tx.send(model).unwrap();
                             });
                         }
-                        None => { /* We don't have a surface */ self.chunks_to_generate.remove(0); }
+                        None => {
+                            /* We don't have a surface */
+                            self.chunks_to_generate.remove(0);
+                        }
                     }
                 } else {
                     // Uh oh
@@ -125,7 +128,7 @@ impl ChunkManager {
             }
             None => {}
         }
- 
+
         // We are currently generating the model in another thread, so we must try to read it back
         if self.model_generating {
             match self.rx.as_ref() {

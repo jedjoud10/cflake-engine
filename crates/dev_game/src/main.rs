@@ -53,7 +53,9 @@ pub fn world_initialized(world: &mut World) {
     let mut camera = Entity::new("Default Camera");
     camera.link_default_component::<components::Transform>(data.component_manager).unwrap();
     camera.link_default_component::<components::Physics>(data.component_manager).unwrap();
-    camera.link_component::<components::Camera>(data.component_manager, components::Camera::new(90.0, 3.0, 200000.0)).unwrap();
+    camera
+        .link_component::<components::Camera>(data.component_manager, components::Camera::new(90.0, 3.0, 200000.0))
+        .unwrap();
 
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
@@ -94,13 +96,11 @@ pub fn world_initialized(world: &mut World) {
         256,
         256,
     );
-    let bound_materials = vec![
-        material
-            .instantiate(data.instance_manager)
-            .set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0))
-            .set_uniform("normals_textures", Uniform::Texture2DArray(texture2, 1))
-            .set_uniform("material_id", Uniform::I32(0)),
-    ];
+    let bound_materials = vec![material
+        .instantiate(data.instance_manager)
+        .set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0))
+        .set_uniform("normals_textures", Uniform::Texture2DArray(texture2, 1))
+        .set_uniform("material_id", Uniform::I32(0))];
     let settings = terrain::TerrainSettings {
         octree_depth: 10,
         bound_materials,

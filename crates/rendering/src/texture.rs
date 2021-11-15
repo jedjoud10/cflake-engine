@@ -237,7 +237,7 @@ impl Texture {
             num += 1;
         }
         num
-    } 
+    }
     // Set the generation of mipmaps
     pub fn enable_mipmaps(mut self) -> Self {
         self.flags |= TextureFlags::MIPMAPS;
@@ -354,7 +354,14 @@ impl Texture {
                     }
                     // This is a texture array
                     TextureType::TextureArray(x, y, l) => {
-                        gl::TexStorage3D(tex_type, Self::guess_mipmap_levels(x.max(y) as usize) as i32, self.internal_format, x as i32, y as i32, l as i32);
+                        gl::TexStorage3D(
+                            tex_type,
+                            Self::guess_mipmap_levels(x.max(y) as usize) as i32,
+                            self.internal_format,
+                            x as i32,
+                            y as i32,
+                            l as i32,
+                        );
                         // We might want to do mipmap
                         for i in 0..l {
                             let localized_bytes = bytes[(i as usize * y as usize * 4 * x as usize)..bytes.len()].as_ptr() as *const c_void;
