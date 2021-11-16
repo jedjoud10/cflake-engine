@@ -2,7 +2,7 @@ use crate::{error::RenderingError, main_types::DataType};
 
 use bitflags::bitflags;
 // The texture format
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum TextureFormat {
     // Red
     R8R,
