@@ -18,7 +18,6 @@ members = [
     "crates\\ecs",
     "crates\\math",
     "crates\\physics",
-    "crates\\rendering_base",
     "crates\\rendering",
     "crates\\input",
     "crates\\defaults",

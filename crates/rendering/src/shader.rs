@@ -132,8 +132,7 @@ impl Shader {
             } else {
                 // It was not cached, so we need to cache it
                 let mut subshader =
-                    SubShader::asset_load(asset_manager.asset_cacher.load_md(subshader_path).unwrap()).ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
-
+                    SubShader::default().load_asset(subshader_path, &asset_manager.asset_cacher).ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
                 let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
@@ -292,7 +291,7 @@ impl Shader {
             };
             let unit = u as u32;
             gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
+            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.ifd.0 as u32);
         }
     }
     // Set a i32
@@ -315,7 +314,7 @@ impl Shader {
             };
             let unit = u as u32;
             gl::BindTexture(gl::TEXTURE_3D, texture.id);
-            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.internal_format);
+            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.ifd.0 as u32);
         }
     }
     // Set a matrix 4x4 f32

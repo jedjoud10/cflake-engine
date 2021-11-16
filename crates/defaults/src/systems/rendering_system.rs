@@ -1,10 +1,8 @@
 use super::super::components;
-use assets::{Asset, Object};
+use assets::{Asset, AssetObject, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{
-    FrameStats, Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureType, TextureWrapping, Volumetric,
-};
+use rendering::{DataType, FrameStats, Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureFormat, TextureType, TextureWrapping, Volumetric};
 use std::{
     ffi::{c_void, CString},
     ptr::null,
@@ -39,7 +37,7 @@ impl CustomData {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::asset_load_easy("defaults\\models\\screen_quad.mdl3d", &mut data.asset_manager.asset_cacher).unwrap();
+        quad_renderer_component.model = Model::default().load_asset("defaults\\models\\screen_quad.mdl3d", &data.asset_manager.asset_cacher).unwrap();
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
             Shader::new()
@@ -80,27 +78,28 @@ impl CustomData {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(dimensions.x, dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = Texture::new()
+            self.diffuse_texture = Texture::default()
                 .set_dimensions(dims)
-                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
+                .set_format(TextureFormat::RGB32F)
                 .generate_texture(Vec::new())
                 .unwrap();
             // Create the normals render texture
-            self.normals_texture = Texture::new()
+            self.normals_texture = Texture::default()
                 .set_dimensions(dims)
-                .set_idf(gl::RGB8_SNORM, gl::RGB, gl::UNSIGNED_BYTE)
+                .set_format(TextureFormat::RGB8RS)
                 .generate_texture(Vec::new())
                 .unwrap();
             // Create the position render texture
-            self.position_texture = Texture::new()
+            self.position_texture = Texture::default()
                 .set_dimensions(dims)
-                .set_idf(gl::RGB32F, gl::RGB, gl::UNSIGNED_BYTE)
+                .set_format(TextureFormat::RGB32F)
                 .generate_texture(Vec::new())
                 .unwrap();
             // Create the depth render texture
-            self.depth_texture = Texture::new()
+            self.depth_texture = Texture::default()
                 .set_dimensions(dims)
-                .set_idf(gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::FLOAT)
+                .set_format(TextureFormat::DepthComponent32)
+                .set_data_type(DataType::Float32)
                 .generate_texture(Vec::new())
                 .unwrap();
             // Bind the color texture to the color attachement 0 of the frame buffer
@@ -312,7 +311,7 @@ fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     system.frame_stats.load_compute_shader(data.asset_manager);
 
     // Load sky gradient texture
-    let texture = Texture::new()
+    let texture = Texture::default()
         .set_wrapping_mode(TextureWrapping::ClampToEdge)
         .cache_load("defaults\\textures\\sky_gradient.png", data.asset_manager);
 

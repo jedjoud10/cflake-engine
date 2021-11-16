@@ -1,5 +1,5 @@
-use crate::{Shader, Texture, TextureFilter, TextureLoadOptions, TextureWrapping, Uniform};
-use assets::{Asset, AssetManager, Object};
+use crate::{Shader, Texture, TextureFilter, TextureFormat, TextureLoadOptions, TextureWrapping, Uniform};
+use assets::{Asset, AssetManager, AssetObject, Object};
 use bitflags::bitflags;
 use std::{collections::HashMap, rc::Rc};
 
@@ -56,9 +56,9 @@ impl Material {
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let rc_texture = Texture::new()
+        let rc_texture = Texture::default()
             .enable_mipmaps()
-            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
             .cache_load(diffuse_path, asset_manager);
         self.diffuse_tex = Some(rc_texture);
@@ -67,9 +67,9 @@ impl Material {
     // Load the normal texture
     pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let rc_texture = Texture::new()
+        let rc_texture = Texture::default()
             .enable_mipmaps()
-            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
+            .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
             .cache_load(normal_path, asset_manager);
         self.normal_tex = Some(rc_texture);

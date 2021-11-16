@@ -1,6 +1,6 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
 
-use rendering::{Shader, Texture, TextureFilter, TextureType};
+use rendering::{DataType, Shader, Texture, TextureFilter, TextureFormat, TextureType};
 
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
@@ -30,24 +30,25 @@ impl VoxelGenerator {
     // Generate the voxel texture
     pub fn setup_voxel_generator(&mut self) {
         // Create the voxel texture
-        self.voxel_texture = Texture::new()
+        self.voxel_texture = Texture::default()
             .set_dimensions(TextureType::Texture3D(
                 (MAIN_CHUNK_SIZE + 2) as u16,
                 (MAIN_CHUNK_SIZE + 2) as u16,
                 (MAIN_CHUNK_SIZE + 2) as u16,
             ))
-            .set_idf(gl::R32F, gl::RED, gl::FLOAT)
+            .set_format(TextureFormat::R16F)
+            .set_data_type(DataType::Float32)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
-        self.material_texture = Texture::new()
+        self.material_texture = Texture::default()
             .set_dimensions(TextureType::Texture3D(
                 (MAIN_CHUNK_SIZE + 2) as u16,
                 (MAIN_CHUNK_SIZE + 2) as u16,
                 (MAIN_CHUNK_SIZE + 2) as u16,
             ))
-            .set_idf(gl::RG8, gl::RG, gl::UNSIGNED_BYTE)
+            .set_format(TextureFormat::RG8R)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())

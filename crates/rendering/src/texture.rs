@@ -2,73 +2,318 @@ use assets::*;
 use gl;
 use image::{DynamicImage, EncodableLayout, GenericImageView};
 use std::{ffi::c_void, ptr::null, rc::Rc};
-use rendering_base::{error::RenderingError, main_types::DataType};
-use rendering_base::texture::*;
-use crate::{RenderAssetObject, TextureT};
 
-// Create the type alias
-pub type Texture = rendering_base::texture::Texture;
+// The texture format
+#[derive(Clone, Copy, Debug)]
+pub enum TextureFormat {
+    // Red
+    R8R,
+    R16R,
+    R8RS,
+    R8I,
+    R16I,
+    R32I,
+    // FP
+    R16F,
+    R32F,
+    // Red Green
+    RG8R,
+    RG8RS,
+    RG16R,
+    RG8I,
+    RG16I,
+    RG32I,
+    // FP
+    RG16F,
+    RG32F,
+    // Red Green Blue
+    RGB8R,
+    RGB8RS,
+    RGB16R,
+    RGB8I,
+    RGB16I,
+    RGB32I,
+    // FP
+    RGB16F,
+    RGB32F,
+    // Red Green Blue Alpha
+    RGBA8R,
+    RGBA8RS,
+    RGBA16R,
+    RGBA8I,
+    RGBA16I,
+    RGBA32I,
+    // FP
+    RGBA16F,
+    RGBA32F,
 
-
-// Loadable asset
-impl RenderAssetObject for Texture {
-    // Load a texture from scratch
-    fn load_medadata(self, data: &AssetMetadata) -> Option<Self>
-    where
-            Self: Sized {
-        // Load this texture from the bytes
-        let (bytes, width, height) = Self::read_bytes(data);
-        // Return a texture with the default parameters
-        let texture = self
-            .set_dimensions(TextureType::Texture2D(width, height))
-            .set_format(TextureFormat::RGBA8R)
-            .set_data_type(DataType::UByte)
-            .set_name(&data.name)
-            .generate_texture(bytes)
-            .unwrap();
-        return Some(texture);
-    }    
+    // Custom
+    DepthComponent16,
+    DepthComponent24,
+    DepthComponent32,
 }
+
+use bitflags::bitflags;
+
+use crate::{DataType, RenderingError};
+bitflags! {
+    pub struct TextureFlags: u8 {
+        const MUTABLE = 0b00000001;
+        const MIPMAPS = 0b00000010;
+    }
+}
+
+// How we load texture
+#[derive( Clone, Copy)]
+pub struct TextureLoadOptions {
+    pub filter: TextureFilter,
+    pub wrapping: TextureWrapping,
+}
+
+impl Default for TextureLoadOptions {
+    fn default() -> Self {
+        Self { 
+            filter: TextureFilter::Linear,
+            wrapping: TextureWrapping::Repeat
+        }
+    }
+}
+
+// Texture filters
+#[derive(Debug, Clone, Copy)]
+pub enum TextureFilter {
+    Linear,
+    Nearest,
+}
+
+// Texture wrapping filters
+#[derive(Debug, Clone, Copy)]
+pub enum TextureWrapping {
+    ClampToEdge,
+    ClampToBorder,
+    Repeat,
+    MirroredRepeat,
+}
+
+// Texture type
+#[derive(Debug, Clone, Copy)]
+pub enum TextureType {
+    Texture1D(u16),
+    Texture2D(u16, u16),
+    Texture3D(u16, u16, u16),
+    TextureArray(u16, u16, u16),
+}
+
+// Access type when binding an image to a compute shader per say
+#[derive(Clone, Copy)]
+pub enum TextureShaderAccessType {
+    ReadOnly,
+    WriteOnly,
+    ReadWrite,
+}
+
+// A texture
+#[derive(Clone)]
+pub struct Texture {
+    pub name: String,
+    pub id: u32,
+    pub _format: TextureFormat, 
+    pub _type: DataType,
+    pub flags: TextureFlags,
+    pub filter: TextureFilter,
+    pub wrap_mode: TextureWrapping,
+    pub ttype: TextureType,
+    // Internal GPU shit
+    pub ifd: (i32, u32, u32),
+}
+
+impl Default for Texture {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            name: String::new(),
+            _format: TextureFormat::RGBA8R,
+            _type: DataType::UByte,
+            flags: TextureFlags::empty(),
+            filter: TextureFilter::Linear,
+            wrap_mode: TextureWrapping::Repeat,
+            ttype: TextureType::Texture2D(0, 0),
+            ifd: (0, 0, 0)
+        }
+    }
+}
+
+// Load
+
+// Some texture-only things, not related to OpenGL
+impl Texture {
+    // Set name
+    pub fn set_name(mut self, name: &str) -> Self {
+        self.name = name.to_string();
+        self
+    }
+    // The internal format and data type of the soon to be generated texture
+    pub fn set_format(mut self, _format: TextureFormat) -> Self {
+        self._format = _format;
+        self.ifd = get_idf(self._format, self._type);
+        self
+    }
+    // Set the data type for this texture
+    pub fn set_data_type(mut self, _type: DataType) -> Self {
+        self._type = _type;
+        self.ifd = get_idf(self._format, self._type);
+        self
+    }
+    // Set the height and width of the soon to be generated texture
+    pub fn set_dimensions(mut self, ttype: TextureType) -> Self {
+        self.ttype = ttype;
+        self
+    }
+    // Set the texture type
+    pub fn set_type(mut self, ttype: TextureType) -> Self {
+        self.ttype = ttype;
+        self
+    }
+    // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
+    pub fn set_mutable(mut self, mutable: bool) -> Self {
+        /*
+        todo!();
+        match mutable {
+            true => self.flags |= TextureFlags::MUTABLE,
+            false => self.flags &= !TextureFlags::MUTABLE,
+        }
+        */
+        self
+    }
+    // Apply the texture load options on a texture
+    pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Texture {
+        let opt = opt.unwrap_or_default();
+        let texture = self.set_filter(opt.filter);
+        let texture = texture.set_wrapping_mode(opt.wrapping);
+        return texture;
+    }
+    // Cr
+    // Guess how many mipmap levels a texture with a specific maximum coordinate can have
+    pub fn guess_mipmap_levels(i: usize) -> usize {
+        let mut x: f32 = i as f32;
+        let mut num: usize = 0;
+        while x > 1.0 {
+            // Repeatedly divide by 2
+            x = x / 2.0;
+            num += 1;
+        }
+        num
+    }
+    // Set the generation of mipmaps
+    pub fn enable_mipmaps(mut self) -> Self {
+        self.flags |= TextureFlags::MIPMAPS;
+        self
+    }
+    // Disable mipmaps
+    pub fn disable_mipmaps(mut self) -> Self {
+        self.flags &= !TextureFlags::MIPMAPS;
+        self
+    }
+    // Set the mag and min filters
+    pub fn set_filter(mut self, filter: TextureFilter) -> Self {
+        self.filter = filter;
+        self
+    }
+    // Set the wrapping mode
+    pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
+        self.wrap_mode = wrapping_mode;
+        self
+    }
+    // Set the flags
+    pub fn set_flags(mut self, flags: TextureFlags) -> Self {
+        self.flags = flags;
+        self
+    }
+    // Get the width of this texture
+    pub fn get_width(&self) -> u16 {
+        match self.ttype {
+            TextureType::Texture1D(x) => x,
+            TextureType::Texture2D(x, _) => x,
+            TextureType::Texture3D(x, _, _) => x,
+            TextureType::TextureArray(x, _, _) => x,
+        }
+    }
+    // Get the height of this texture
+    pub fn get_height(&self) -> u16 {
+        match self.ttype {
+            TextureType::Texture1D(y) => panic!(),
+            TextureType::Texture2D(_, y) => y,
+            TextureType::Texture3D(_, y, _) => y,
+            TextureType::TextureArray(_, y, _) => y,
+        }
+    }
+    // Get the depth of this texture, if it is a 3D texture
+    pub fn get_depth(&self) -> u16 {
+        match self.ttype {
+            TextureType::Texture1D(_) => panic!(),
+            TextureType::Texture2D(_, _) => panic!(),
+            TextureType::Texture3D(_, _, z) => z,
+            TextureType::TextureArray(_, _, z) => z,
+        }
+    }
+}
+
 
 // Get the IDF from a simple TextureFormat and DataType
 fn get_idf(tf: TextureFormat, dt: DataType) -> (i32, u32, u32) {
     let internal_format = match tf {
+        // Red
         TextureFormat::R8R => gl::R8,
+        TextureFormat::R8RS => gl::R8_SNORM,
+        TextureFormat::R16R => gl::R16,
         TextureFormat::R8I => gl::R8I,
         TextureFormat::R16I => gl::R16I,
         TextureFormat::R32I => gl::R32I,
         TextureFormat::R16F => gl::R16F,
         TextureFormat::R32F => gl::R32F,
+        // Red Green
         TextureFormat::RG8R => gl::RG8,
+        TextureFormat::RG8RS => gl::RG8_SNORM,
+        TextureFormat::RG16R => gl::RG16,
         TextureFormat::RG8I => gl::RG8I,
         TextureFormat::RG16I => gl::RG16I,
         TextureFormat::RG32I => gl::RG32I,
         TextureFormat::RG16F => gl::RG16F,
         TextureFormat::RG32F => gl::RG32F,
+        // Red Green Blue
         TextureFormat::RGB8R => gl::RGB8,
+        TextureFormat::RGB8RS => gl::RGB8_SNORM,
+        TextureFormat::RGB16R => gl::RGB16,
         TextureFormat::RGB8I => gl::RGB8I,
         TextureFormat::RGB16I => gl::RGB16I,
         TextureFormat::RGB32I => gl::RGB32I,
         TextureFormat::RGB16F => gl::RGB16F,
         TextureFormat::RGB32F => gl::RGB32F,
+        // Red Green Blue Alpha
         TextureFormat::RGBA8R => gl::RGBA8,
+        TextureFormat::RGBA8RS => gl::RGBA8_SNORM,
+        TextureFormat::RGBA16R => gl::RGBA16,
         TextureFormat::RGBA8I => gl::RGBA8I,
         TextureFormat::RGBA16I => gl::RGBA16I,
         TextureFormat::RGBA32I => gl::RGBA32I,
         TextureFormat::RGBA16F => gl::RGBA16F,
         TextureFormat::RGBA32F => gl::RGBA32F,
+        // Custom
+        TextureFormat::DepthComponent16 => gl::DEPTH_COMPONENT16,
+        TextureFormat::DepthComponent24 => gl::DEPTH_COMPONENT24,
+        TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT32,
     };
     // Get the format of this texture using it's name
     let name = format!("{:?}", tf);
     panic!(name);
     let format = 0;
     let data_type = 0;
-    (internal_format as i32, format, data_type)
+    (internal_format as i32, format as u32, data_type as u32)
 }
 
-impl TextureT for Texture {    
+impl Texture {    
     // Read bytes
-    fn read_bytes(metadata: &AssetMetadata) -> (Vec<u8>, u16, u16) {
+    pub fn read_bytes(metadata: &AssetMetadata) -> (Vec<u8>, u16, u16) {
         // Load this texture from the bytes
         let png_bytes = metadata.bytes.as_bytes();
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
@@ -77,28 +322,27 @@ impl TextureT for Texture {
         return (image.to_bytes(), image.width() as u16, image.height() as u16);
     }
     // Update the size of the current texture
-    fn update_size(&mut self, ttype: TextureType) {
+    pub fn update_size(&mut self, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one
         self.ttype = ttype;
-        let (internal_format, format, data_type) = get_idf(self._format, self._type);
         // This is a normal texture getting resized
         unsafe {
             match self.ttype {
                 TextureType::Texture1D(width) => {
                     gl::BindTexture(gl::TEXTURE_1D, self.id);
-                    gl::TexImage1D(gl::TEXTURE_2D, 0, internal_format, width as i32, 0, format, data_type, null());
+                    gl::TexImage1D(gl::TEXTURE_2D, 0, self.ifd.0, width as i32, 0, self.ifd.1, self.ifd.2, null());
                 }
                 TextureType::Texture2D(width, height) => {
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
                     gl::TexImage2D(
                         gl::TEXTURE_2D,
                         0,
-                        internal_format,
+                        self.ifd.0,
                         width as i32,
                         height as i32,
                         0,
-                        format,
-                        data_type,
+                        self.ifd.1,
+                        self.ifd.2,
                         null(),
                     );
                 }
@@ -107,13 +351,13 @@ impl TextureT for Texture {
                     gl::TexImage3D(
                         gl::TEXTURE_3D,
                         0,
-                        internal_format,
+                        self.ifd.0,
                         width as i32,
                         height as i32,
                         depth as i32,
                         0,
-                        format,
-                        data_type,
+                        self.ifd.1,
+                        self.ifd.2,
                         null(),
                     );
                 }
@@ -122,7 +366,7 @@ impl TextureT for Texture {
         }
     }  
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Texture {
+    pub fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Texture {
         // Load the textures
         let mut bytes: Vec<u8> = Vec::new();
         let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
@@ -151,15 +395,13 @@ impl TextureT for Texture {
         main_texture
     }    
     // Generate an empty texture, could either be a mutable one or an immutable one
-    fn generate_texture(self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
-        let mut texture = self; 
+    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
         }
 
-        // Get the tex_type based on the TextureDimensionType
-        let (internal_format, format, data_type) = get_idf(self._format, self._type);
+        // Get the tex_type based on the TextureDimensionType        
         let tex_type = match self.ttype {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
@@ -173,19 +415,19 @@ impl TextureT for Texture {
             gl::BindTexture(tex_type, self.id);
             match self.ttype {
                 TextureType::Texture1D(_) => {
-                    gl::TexImage1D(tex_type, 0, internal_format, self.get_width() as i32, 0, format, data_type, pointer);
+                    gl::TexImage1D(tex_type, 0, self.ifd.0, self.get_width() as i32, 0, self.ifd.1, self.ifd.2, pointer);
                 }
                 // This is a 2D texture
                 TextureType::Texture2D(_, _) => {
                     gl::TexImage2D(
                         tex_type,
                         0,
-                        internal_format,
+                        self.ifd.0,
                         self.get_width() as i32,
                         self.get_height() as i32,
                         0,
-                        format,
-                        data_type,
+                        self.ifd.1,
+                        self.ifd.2,
                         pointer,
                     );
                 }
@@ -194,13 +436,13 @@ impl TextureT for Texture {
                     gl::TexImage3D(
                         tex_type,
                         0,
-                        internal_format,
+                        self.ifd.0,
                         self.get_width() as i32,
                         self.get_height() as i32,
                         self.get_depth() as i32,
                         0,
-                        format,
-                        data_type,
+                        self.ifd.1,
+                        self.ifd.2,
                         pointer,
                     );
                 }
@@ -209,7 +451,7 @@ impl TextureT for Texture {
                     gl::TexStorage3D(
                         tex_type,
                         Self::guess_mipmap_levels(x.max(y) as usize) as i32,
-                        internal_format as u32,
+                        self.ifd.0 as u32,
                         x as i32,
                         y as i32,
                         l as i32,
@@ -226,8 +468,8 @@ impl TextureT for Texture {
                             self.get_width() as i32,
                             self.get_height() as i32,
                             1,
-                            format,
-                            data_type,
+                            self.ifd.1,
+                            self.ifd.2,
                             localized_bytes,
                         );
                     }
@@ -287,7 +529,7 @@ impl TextureT for Texture {
         Ok(self)
     }
     // Update a valid texture's data
-    fn update_data(&mut self, bytes: Vec<u8>) {
+    pub fn update_data(&mut self, bytes: Vec<u8>) {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
@@ -371,7 +613,6 @@ impl TextureT for Texture {
             }
         }
     }
-    /*
     // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
     pub fn fill_array_veclib<V, U>(&self) -> Vec<V>
     where
@@ -399,7 +640,8 @@ impl TextureT for Texture {
         unsafe {
             // Bind the buffer before reading
             gl::BindTexture(tex_type, self.id);
-            gl::GetTexImage(tex_type, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
+            let (internal_format, format, data_type) = get_idf(self._format, self._type);
+            gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         return pixels;
     }
@@ -429,9 +671,9 @@ impl TextureT for Texture {
         unsafe {
             // Bind the buffer before reading
             gl::BindTexture(tex_type, self.id);
-            gl::GetTexImage(tex_type, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
+            let (internal_format, format, data_type) = get_idf(self._format, self._type);
+            gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         return pixels;
     }
-    */
 }

@@ -1,7 +1,6 @@
 use assets::AssetManager;
-use rendering_base::texture::{TextureFilter, TextureFormat, TextureShaderAccessType, TextureType, TextureWrapping};
-
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureT};
+use crate::texture::*;
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture};
 
 // Some volumetric shit
 #[derive(Default)]

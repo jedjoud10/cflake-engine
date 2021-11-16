@@ -1,4 +1,4 @@
-use crate::{AdditionalShader, ComputeShader, Shader, Texture, TextureFilter, TextureType};
+use crate::{AdditionalShader, ComputeShader, Shader, Texture, TextureFilter, TextureFormat, TextureType};
 use assets::AssetManager;
 use ecs::Entity;
 use others::SmartList;
@@ -20,13 +20,13 @@ impl FrameStats {
             .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
             .load_shader(vec!["defaults\\shaders\\others\\frame_stats.cmpt.glsl"], asset_manager)
             .unwrap();
-        self.texture = Texture::new()
+        self.texture = Texture::default()
             .set_dimensions(TextureType::Texture2D(256, 512))
             .set_filter(TextureFilter::Nearest)
             .generate_texture(Vec::new())
             .unwrap();
-        self.entities_texture = Texture::new()
-            .set_idf(gl::R8, gl::RED, gl::UNSIGNED_BYTE)
+        self.entities_texture = Texture::default()
+            .set_format(TextureFormat::R16F)
             .set_dimensions(TextureType::Texture1D(512))
             .set_filter(TextureFilter::Nearest)
             .generate_texture(Vec::new())

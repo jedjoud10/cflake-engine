@@ -109,31 +109,28 @@ impl World {
 
         // Load the default objects for the CacheManagers
         // Create the black texture
-        Texture::new()
+        Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
-            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_name("black")
             .generate_texture(vec![0, 0, 0, 255])
             .unwrap()
             .object_cache_load("black", &mut self.asset_manager.object_cacher);
         // Create the white texture
-        Texture::new()
+        Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
-            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_name("white")
             .generate_texture(vec![255, 255, 255, 255])
             .unwrap()
             .object_cache_load("white", &mut self.asset_manager.object_cacher);
         // Create the default normals texture
-        Texture::new()
+        Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
-            .set_idf(gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE)
             .set_name("default_normals")
             .generate_texture(vec![127, 128, 255, 255])
             .unwrap()

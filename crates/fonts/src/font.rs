@@ -1,11 +1,12 @@
 use ascii::AsciiStr;
-use assets::{Asset, Object};
+use assets::{Asset, AssetObject, Object};
 use byteorder::{LittleEndian, ReadBytesExt};
 use rendering::{Texture, TextureType};
 
 use crate::FontChar;
 
 // A simple font containing the characters
+#[derive(Default)]
 pub struct Font {
     pub name: String,
     pub atlas_dimensions: veclib::Vector2<u16>,
@@ -51,10 +52,10 @@ impl Font {
         match self.texture {
             None => {
                 // Create the texture and set it's parameters
-                let texture = Texture::new()
+                let texture = Texture::default()
                     .set_dimensions(TextureType::Texture2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
                     .set_filter(rendering::TextureFilter::Linear)
-                    .set_idf(gl::R16, gl::RED, gl::UNSIGNED_BYTE);
+                    .set_format(rendering::TextureFormat::R16R);
                 // Create the texture data from the bitmap pixels
                 let texture = texture.generate_texture(self.texture_pixels.clone()).unwrap();
                 self.texture = Some(texture);
@@ -86,10 +87,9 @@ impl Font {
 
 // The font is loadable
 impl Asset for Font {
-    fn asset_load(data: &assets::AssetMetadata) -> Option<Self>
+    fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
     where
-        Self: Sized,
-    {
+        Self: Sized {
         // Load this font from the metadata bytes
         let mut reader = std::io::Cursor::new(data.bytes.clone());
         // Read the custom font
@@ -124,3 +124,4 @@ impl Asset for Font {
     }
 }
 impl Object for Font {}
+impl AssetObject for Font {}

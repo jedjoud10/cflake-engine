@@ -1,4 +1,5 @@
 // Export
+mod main_types;
 mod array_data;
 mod compute_shader;
 mod error;
@@ -15,11 +16,12 @@ mod texture;
 mod utils;
 mod volumetric;
 mod window;
-mod traits;
-pub use traits::*;
+mod assets_impls;
+pub use assets_impls::*;
+pub use main_types::*;
+pub use error::*;
 pub use array_data::*;
 pub use compute_shader::*;
-pub use error::*;
 pub use frame_stats::*;
 pub use material::*;
 pub use mm_renderer::*;

@@ -27,56 +27,6 @@ impl Display for Model {
     }
 }
 
-impl Asset for Model {
-    // Load a model from an asset
-    fn asset_load(data: &assets::AssetMetadata) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        let string = String::from_utf8(data.bytes.clone()).unwrap();
-        let lines = string.lines();
-        let mut model = Model::default();
-        for line in lines {
-            let start = line.split_once(" ").unwrap().0;
-            let other = line.split_once(" ").unwrap().1;
-            match start {
-                // Vertices
-                "v" => {
-                    let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                    model.vertices.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
-                }
-                // Normals
-                "n" => {
-                    let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                    model.normals.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
-                }
-                // UVs
-                "u" => {
-                    let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                    model.uvs.push(veclib::Vector2::new(coords[0], coords[1]));
-                }
-                // Tangents
-                "t" => {
-                    let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                    model.tangents.push(veclib::Vector4::new(coords[0], coords[1], coords[2], coords[3]));
-                }
-                // Triangle indices
-                "i" => {
-                    // Split the triangle into 3 indices
-                    let mut indices = other.split('/').map(|x| x.to_string().parse::<u32>().unwrap()).collect();
-                    model.triangles.append(&mut indices);
-                }
-                _ => {}
-            }
-        }
-        // ISTFG If this fixes the issue I will be so angry
-        model.colors = vec![veclib::Vector3::ONE; model.vertices.len()];
-        println!("Model: {}", model);
-        // Return
-        return Some(model);
-    }
-}
-
 impl Model {
     // Create a new empty model
     pub fn new() -> Self {

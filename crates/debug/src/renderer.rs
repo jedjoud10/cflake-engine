@@ -30,9 +30,9 @@ impl DebugRenderer {
         self.template_material = Material::new("Debug material", asset_manager).set_shader(Rc::new(shader));
         // Load the template models
         self.template_models
-            .push(Model::asset_load_easy("defaults\\models\\cube.mdl3d", &mut asset_manager.asset_cacher).unwrap());
+            .push(Model::default().load_asset("defaults\\models\\cube.mdl3d", &asset_manager.asset_cacher).unwrap());
         self.template_models
-            .push(Model::asset_load_easy("defaults\\models\\sphere.mdl3d", &mut asset_manager.asset_cacher).unwrap());
+            .push(Model::default().load_asset("defaults\\models\\sphere.mdl3d", &asset_manager.asset_cacher).unwrap());
     }
     // Add a debug primitive to the queue and then render it
     pub fn debug(&mut self, debug_primitive: DebugPrimitive) {

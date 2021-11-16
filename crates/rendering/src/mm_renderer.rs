@@ -26,8 +26,7 @@ impl MultiMaterialRenderer {
     }
     // Load a model into this mm renderer, with a specific material binded to the model
     pub fn load_model(mut self, model_path: &str, material: Material, asset_manager: &AssetManager) -> Option<Self> {
-        let md = asset_manager.asset_cacher.load_md(model_path).unwrap();
-        let model = Model::asset_load(md)?;
+        let model = Model::default().load_asset(model_path, &asset_manager.asset_cacher)?;
         self.sub_models.push((model, self.materials.len()));
         self.materials.push(material);
         return Some(self);
