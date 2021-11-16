@@ -655,7 +655,17 @@ dependencies = [
  "gl",
  "image",
  "others",
+ "rendering_base",
  "veclib",
+]
+
+[[package]]
+name = "rendering_base"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "gl",
+ "image",
 ]
 
 [[package]]
@@ -750,7 +760,6 @@ dependencies = [
  "assets",
  "debug",
  "ecs",
- "gl",
  "input",
  "math",
  "others",
