@@ -1,8 +1,7 @@
 use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
 
 // The base position interpreter
-#[derive(Default)]
-pub struct BasePosition();
+pub struct BasePosition;
 
 impl NodeInterpreter for BasePosition {
     fn get_node_string(&self, _getter: &VarHashGetter) -> Result<String, InterpreterError> {

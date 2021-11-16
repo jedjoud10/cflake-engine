@@ -9,10 +9,6 @@ pub struct Noise {
     pub _type: NoiseType,
 }
 impl Noise {
-    // New
-    pub fn new() -> Self {
-        Self::default()
-    }
     // Set type
     pub fn set_type(mut self, _type: NoiseType) -> Self {
         self._type = _type;

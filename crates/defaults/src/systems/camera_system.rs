@@ -75,7 +75,7 @@ pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components
 
 // Create the camera system
 pub fn system(data: &mut WorldData) -> System {
-    let mut system = System::new();
+    let mut system = System::default();
     // Link the components
     system.link_component::<components::Camera>(data.component_manager).unwrap();
     system.link_component::<components::Physics>(data.component_manager).unwrap();

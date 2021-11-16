@@ -20,7 +20,7 @@ impl DebugRenderer {
     // Generate the vao and load the shader
     pub fn setup_debug_renderer(&mut self, asset_manager: &mut AssetManager) {
         // Set the shader name
-        let shader = Shader::new()
+        let shader = Shader::default()
             .load_shader(
                 vec!["defaults\\shaders\\others\\debug.vrsh.glsl", "defaults\\shaders\\others\\debug.frsh.glsl"],
                 asset_manager,
@@ -47,7 +47,7 @@ impl DebugRenderer {
         }
         .unwrap()
         .clone();
-        let mut renderer = Renderer::new()
+        let mut renderer = Renderer::default()
             .set_model(template_model)
             .set_wireframe(false)
             .set_material(self.template_material.clone().set_uniform("tint", Uniform::Vec3F32(debug_primitive.tint)));

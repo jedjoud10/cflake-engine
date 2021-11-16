@@ -150,7 +150,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
     // Set the default font
     data.ui_manager.font_manager.add_font(default_font);
     // Load the UI shader
-    custom_data.ui_shader = Shader::new()
+    custom_data.ui_shader = Shader::default()
         .load_shader(
             vec!["defaults\\shaders\\ui\\ui_elem.vrsh.glsl", "defaults\\shaders\\ui\\ui_panel.frsh.glsl"],
             data.asset_manager,
@@ -158,7 +158,7 @@ fn enabled(system_data: &mut SystemData, data: &mut WorldData) {
         .unwrap();
     // Load the UI font shader
     // I've spent the past 3 days wondering why this didn't work, just now, at 7:07 pm on a monday night did I realize that I assined this shader to the wrong variable
-    custom_data.font_ui_shader = Shader::new()
+    custom_data.font_ui_shader = Shader::default()
         .load_shader(
             vec!["defaults\\shaders\\ui\\ui_font.vrsh.glsl", "defaults\\shaders\\ui\\ui_font.frsh.glsl"],
             data.asset_manager,
@@ -243,7 +243,7 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
 
 // Create the UI system
 pub fn system(_data: &mut WorldData) -> System {
-    let mut system = System::new();
+    let mut system = System::default();
     // Attach the custom system data
     system.custom_data(CustomData::default());
     // Attach the events

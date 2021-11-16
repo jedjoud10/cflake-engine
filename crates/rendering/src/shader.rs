@@ -103,10 +103,6 @@ impl Shader {
         }
         return Ok(vectors_to_insert.len() > 0);
     }
-    // Create a new empty shader
-    pub fn new() -> Self {
-        Self::default()
-    }
     // Set an additional shader for this shader before we finalize it
     pub fn set_additional_shader(mut self, additional_shader: AdditionalShader) -> Self {
         self.additional_shader = additional_shader;

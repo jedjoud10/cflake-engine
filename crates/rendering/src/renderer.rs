@@ -34,10 +34,6 @@ ecs::impl_component!(Renderer);
 
 // Everything related to the creation of a renderer
 impl Renderer {
-    // Create a renderer
-    pub fn new() -> Self {
-        return Self::default();
-    }
     // Load a model
     pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Option<Self> {
         self.model = Model::default().load_asset(model_path, &asset_manager.asset_cacher)?;

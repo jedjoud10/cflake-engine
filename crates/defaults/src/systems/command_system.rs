@@ -12,7 +12,7 @@ fn system_postfire(_system_data: &mut SystemData, data: &mut WorldData) {
 }
 
 pub fn system(data: &mut WorldData) -> System {
-    let mut system = System::new();
+    let mut system = System::default();
     // Create some default template commands
     let fullscreen_command = debug::Command::new("toggle-fullscreen", Vec::new());
     data.debug.console.register_template_command(fullscreen_command);

@@ -1,8 +1,7 @@
 use crate::{error::InterpreterError, var_hash::VarHashType, var_hash_getter::VarHashGetter, NodeInterpreter};
 
 // Final density
-#[derive(Default)]
-pub struct FinalDensity();
+pub struct FinalDensity;
 
 impl NodeInterpreter for FinalDensity {
     // Custom name

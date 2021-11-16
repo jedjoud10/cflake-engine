@@ -64,7 +64,7 @@ pub fn world_initialized(world: &mut World) {
     let mut terrain_entity = Entity::new("Default Terrain");
 
     // The terrain shader
-    let terrain_shader = Shader::new()
+    let terrain_shader = Shader::default()
         .load_shader(
             vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl"],
             data.asset_manager,
@@ -104,7 +104,7 @@ pub fn world_initialized(world: &mut World) {
     let settings = terrain::TerrainSettings {
         octree_depth: 10,
         bound_materials,
-        voxel_generator_interpreter: terrain::interpreter::Interpreter::new(),
+        voxel_generator_interpreter: terrain::interpreter::Interpreter::new_pregenerated(),
     };
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings, &mut data.asset_manager))

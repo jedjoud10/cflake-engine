@@ -19,7 +19,7 @@ pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components
 
 // Create a physics system
 pub fn system(_world_data: &mut WorldData) -> System {
-    let mut system = System::new();
+    let mut system = System::default();
     // Attach the events
     system.event(SystemEventType::EntityUpdate(entity_update));
     system

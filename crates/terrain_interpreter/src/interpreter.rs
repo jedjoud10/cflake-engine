@@ -34,16 +34,16 @@ impl Default for Interpreter {
 
 // Add nodes
 impl Interpreter {
-    // New
-    pub fn new() -> Self {
+    // Default pre-generated
+    pub fn new_pregenerated() -> Self {
         // Create the interpreter system
         let mut interpreter = Interpreter::default();
         // Add the default pos.y nodes
-        let p = BasePosition::default().new(&[], &mut interpreter).unwrap();
+        let p = BasePosition.new(&[], &mut interpreter).unwrap();
         let shape = Shape::new_axis_plane(2.5, veclib::Vec3Axis::Y, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
-        let d = Noise::new()
+        let d = Noise::default()
             .set_type(NoiseType::Simplex)
             .set_inverted(true)
             .set_strength(120.0)
@@ -101,7 +101,7 @@ impl Interpreter {
             VarHashType::Density => {
                 // We can continue
                 self.finalized = true;
-                FinalDensity::default().new(&[final_density_varhash], self).unwrap();
+                FinalDensity.new(&[final_density_varhash], self).unwrap();
             }
             _ => {
                 /* No good */

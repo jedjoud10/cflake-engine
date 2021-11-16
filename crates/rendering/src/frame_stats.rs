@@ -16,7 +16,7 @@ pub struct FrameStats {
 impl FrameStats {
     // Load the compute shaders and generate the default texture
     pub fn load_compute_shader(&mut self, asset_manager: &mut AssetManager) {
-        self.compute = Shader::new()
+        self.compute = Shader::default()
             .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
             .load_shader(vec!["defaults\\shaders\\others\\frame_stats.cmpt.glsl"], asset_manager)
             .unwrap();

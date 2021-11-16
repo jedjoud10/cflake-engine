@@ -63,17 +63,6 @@ impl Font {
             _ => { /* The texture already exists */ }
         }
     }
-    // Create a font with empty paramaters and without any texture or chars
-    pub fn new() -> Self {
-        Self {
-            name: String::new(),
-            atlas_dimensions: veclib::Vector2::ZERO,
-            texture_pixels: Vec::new(),
-            texture: None,
-            chars: Vec::new(),
-            font_options: FontOptions::default(),
-        }
-    }
     // Turn some text into an array of font chars
     pub fn convert_text_to_font_chars(&self, text: &str) -> Vec<&FontChar> {
         let ascii_str = AsciiStr::from_ascii(text).unwrap();
@@ -93,7 +82,7 @@ impl Asset for Font {
         // Load this font from the metadata bytes
         let mut reader = std::io::Cursor::new(data.bytes.clone());
         // Read the custom font
-        let mut output_font = Font::new();
+        let mut output_font = Font::default();
         output_font.name = data.name.clone();
         // Get the width and height of the bitmap
         let width = reader.read_u16::<LittleEndian>().unwrap();

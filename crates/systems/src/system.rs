@@ -122,10 +122,6 @@ pub struct System {
 
 // System code
 impl System {
-    // Create a simple system
-    pub fn new() -> Self {
-        Self { ..Self::default() }
-    }
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(&self, entity: &Entity) -> bool {
         // Check if the system matches the component ID of the entity

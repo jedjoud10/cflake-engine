@@ -35,7 +35,7 @@ impl Terrain {
 
         // Load the compute shader
         let (string, csgtree) = settings.voxel_generator_interpreter.finalize().unwrap();
-        let compute = Shader::new()
+        let compute = Shader::default()
             .set_additional_shader_sources(vec![&string])
             .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
             .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER], asset_manager)

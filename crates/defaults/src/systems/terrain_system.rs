@@ -101,7 +101,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 }
                 // Refresh the data
                 mm_renderer.refresh_sub_models();
-                let renderer = Renderer::new().set_wireframe(true).set_multimat(mm_renderer);
+                let renderer = Renderer::default().set_wireframe(true).set_multimat(mm_renderer);
                 entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
                 // Create the AABB
                 let aabb = components::AABB::from_components(&entity, data.component_manager);
@@ -134,7 +134,7 @@ fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut World
 
 // Create the terrain system
 pub fn system(data: &mut WorldData) -> System {
-    let mut system = System::new();
+    let mut system = System::default();
     // Link the components
     system.link_component::<components::TerrainData>(data.component_manager).unwrap();
     data.component_manager.register_component::<Chunk>();
