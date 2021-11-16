@@ -4,22 +4,22 @@ use image::{DynamicImage, EncodableLayout, GenericImageView};
 use std::{ffi::c_void, ptr::null, rc::Rc};
 use rendering_base::{error::RenderingError, main_types::DataType};
 use rendering_base::texture::*;
-use crate::{RenderAsset, RenderObject, TextureT};
+use crate::{RenderAssetObject, TextureT};
 
 // Create the type alias
 pub type Texture = rendering_base::texture::Texture;
 
+
 // Loadable asset
-impl RenderAsset for Texture {
+impl RenderAssetObject for Texture {
     // Load a texture from scratch
-    fn asset_load(data: &AssetMetadata) -> Option<Self>
+    fn load_medadata(self, data: &AssetMetadata) -> Option<Self>
     where
-        Self: Sized,
-    {
+            Self: Sized {
         // Load this texture from the bytes
         let (bytes, width, height) = Self::read_bytes(data);
         // Return a texture with the default parameters
-        let texture = Texture::new()
+        let texture = self
             .set_dimensions(TextureType::Texture2D(width, height))
             .set_format(TextureFormat::RGBA8R)
             .set_data_type(DataType::UByte)
@@ -27,40 +27,7 @@ impl RenderAsset for Texture {
             .generate_texture(bytes)
             .unwrap();
         return Some(texture);
-    }
-    // Load a texture that already has it's parameters set
-    fn asset_load_t(self, data: &AssetMetadata) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        let (bytes, width, height) = Self::read_bytes(data);
-        let texture = self.set_name(&data.name).set_dimensions(TextureType::Texture2D(width, height));
-        // Return a texture with the default parameters
-        let texture = texture.generate_texture(bytes).unwrap();
-        return Some(texture);
-    }
-    // Load a texture, and cache it if needed
-    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self> {
-        // Early
-        if asset_manager.object_cacher.cached(local_path) {
-            return self.object_load_ot(local_path, &asset_manager.object_cacher).unwrap();
-        }
-        // Load the asset first
-        let texture = self.asset_load_easy_t(local_path, &mut asset_manager.asset_cacher).unwrap();
-        // Then the object (cache it if neccessarry)
-        let output = texture.object_cache_load(local_path, &mut asset_manager.object_cacher);
-        output
-    }
-}
-// Render object
-impl RenderObject for Texture {
-    fn new() -> Self {
-        Self::default()
-    }
-    fn finalize(self) -> Self where Self: Sized {
-        self
     }    
-    
 }
 
 // Get the IDF from a simple TextureFormat and DataType
@@ -71,7 +38,7 @@ fn get_idf(tf: TextureFormat, dt: DataType) -> (i32, u32, u32) {
         TextureFormat::R16I => gl::R16I,
         TextureFormat::R32I => gl::R32I,
         TextureFormat::R16F => gl::R16F,
-        TextureFormat::R32f => gl::R32F,
+        TextureFormat::R32F => gl::R32F,
         TextureFormat::RG8R => gl::RG8,
         TextureFormat::RG8I => gl::RG8I,
         TextureFormat::RG16I => gl::RG16I,
@@ -155,7 +122,7 @@ impl TextureT for Texture {
         }
     }  
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Rc<Texture> {
+    fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Texture {
         // Load the textures
         let mut bytes: Vec<u8> = Vec::new();
         let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
@@ -173,7 +140,7 @@ impl TextureT for Texture {
             bytes.extend(bytesa);
         }
         // Create the array texture from THOSE NUTS AAAAA
-        let main_texture: Texture = Texture::new()
+        let main_texture: Texture = Texture::default()
             .enable_mipmaps()
             .set_dimensions(TextureType::TextureArray(width, height, length as u16))
             .set_format(TextureFormat::RGBA8R)
@@ -181,7 +148,7 @@ impl TextureT for Texture {
             .apply_texture_load_options(load_options)
             .generate_texture(bytes)
             .unwrap();
-        main_texture.object_cache_load(name, &mut asset_manager.object_cacher)
+        main_texture
     }    
     // Generate an empty texture, could either be a mutable one or an immutable one
     fn generate_texture(self, bytes: Vec<u8>) -> Result<Self, RenderingError> {

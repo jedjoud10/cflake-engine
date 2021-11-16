@@ -1,6 +1,7 @@
 use assets::AssetManager;
+use rendering_base::texture::{TextureFilter, TextureFormat, TextureShaderAccessType, TextureType, TextureWrapping};
 
-use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureType, TextureWrapping};
+use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture, TextureT};
 
 // Some volumetric shit
 #[derive(Default)]
@@ -42,32 +43,32 @@ impl Volumetric {
     pub fn create_textures(&mut self, resolution: veclib::Vector2<u16>, sdf_dimensions: u16, scale_down_factor_result: u16) {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
-        self.sdf_tex = Texture::new()
+        self.sdf_tex = Texture::default()
             .set_dimensions(TextureType::Texture3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
             .set_wrapping_mode(TextureWrapping::Repeat)
-            .set_idf(gl::R16F, gl::RED, gl::UNSIGNED_BYTE)
+            .set_format(TextureFormat::R16F)
             .generate_texture(Vec::new())
             .unwrap();
         // This texture is going to be rescaled if the window resolution changes
-        self.result_tex = Texture::new()
+        self.result_tex = Texture::default()
             .set_dimensions(TextureType::Texture2D(
                 resolution.x / self.scale_down_factor_result,
                 resolution.y / self.scale_down_factor_result,
             ))
-            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
-            .set_filter(crate::TextureFilter::Linear)
-            .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
+            .set_format(TextureFormat::RGBA8R)
+            .set_filter(TextureFilter::Linear)
+            .set_wrapping_mode(TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
         // Depth texture
-        self.depth_tex = Texture::new()
+        self.depth_tex = Texture::default()
             .set_dimensions(TextureType::Texture2D(
                 resolution.x / self.scale_down_factor_result,
                 resolution.y / self.scale_down_factor_result,
             ))
-            .set_idf(gl::R32F, gl::RED, gl::UNSIGNED_BYTE)
-            .set_filter(crate::TextureFilter::Nearest)
-            .set_wrapping_mode(crate::TextureWrapping::ClampToBorder)
+            .set_format(TextureFormat::R32F)
+            .set_filter(TextureFilter::Nearest)
+            .set_wrapping_mode(TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
     }
@@ -85,7 +86,7 @@ impl Volumetric {
     // Create the SDF texture from a compute shader complitely
     pub fn generate_sdf(&mut self, asset_manager: &AssetManager) {
         self.compute_generator.use_shader();
-        self.compute_generator.set_i3d("sdf_tex", &self.sdf_tex, crate::TextureShaderAccessType::WriteOnly);
+        self.compute_generator.set_i3d("sdf_tex", &self.sdf_tex, TextureShaderAccessType::WriteOnly);
         // Actually generate the SDF
         let compute = match &mut self.compute_generator.additional_shader {
             crate::AdditionalShader::None => panic!(),
@@ -117,8 +118,8 @@ impl Volumetric {
         // Create a custom View-Projection matrix that doesn't include the translation
         shader.use_shader();
         let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
-        shader.set_i2d("result_tex", &self.result_tex, crate::TextureShaderAccessType::WriteOnly);
-        shader.set_i2d("depth_tex", &self.depth_tex, crate::TextureShaderAccessType::WriteOnly);
+        shader.set_i2d("result_tex", &self.result_tex, TextureShaderAccessType::WriteOnly);
+        shader.set_i2d("depth_tex", &self.depth_tex, TextureShaderAccessType::WriteOnly);
         shader.set_t3d("sdf_tex", &self.sdf_tex, 2);
         shader.set_vec3f32("camera_pos", &camera_position);
         shader.set_mat44("custom_vp_matrix", &vp_m);

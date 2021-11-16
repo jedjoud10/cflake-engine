@@ -11,7 +11,7 @@ pub enum TextureFormat {
     R32I,
     // FP
     R16F,
-    R32f,
+    R32F,
     // Red Green
     RG8R,
     RG8I,
@@ -122,6 +122,8 @@ impl Default for Texture {
         }
     }
 }
+
+// Load
 
 // Some texture-only things, not related to OpenGL
 impl Texture {
