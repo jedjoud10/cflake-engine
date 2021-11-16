@@ -2,60 +2,8 @@ use assets::*;
 use gl;
 use image::{DynamicImage, EncodableLayout, GenericImageView};
 use std::{ffi::c_void, ptr::null, rc::Rc};
-
-// The texture format
-#[derive(Clone, Copy, Debug)]
-pub enum TextureFormat {
-    // Red
-    R8R,
-    R16R,
-    R8RS,
-    R8I,
-    R16I,
-    R32I,
-    // FP
-    R16F,
-    R32F,
-    // Red Green
-    RG8R,
-    RG8RS,
-    RG16R,
-    RG8I,
-    RG16I,
-    RG32I,
-    // FP
-    RG16F,
-    RG32F,
-    // Red Green Blue
-    RGB8R,
-    RGB8RS,
-    RGB16R,
-    RGB8I,
-    RGB16I,
-    RGB32I,
-    // FP
-    RGB16F,
-    RGB32F,
-    // Red Green Blue Alpha
-    RGBA8R,
-    RGBA8RS,
-    RGBA16R,
-    RGBA8I,
-    RGBA16I,
-    RGBA32I,
-    // FP
-    RGBA16F,
-    RGBA32F,
-
-    // Custom
-    DepthComponent16,
-    DepthComponent24,
-    DepthComponent32,
-}
-
 use bitflags::bitflags;
-
-use crate::{DataType, RenderingError};
+use crate::{DataType, RenderingError, TextureFormat, get_ifd};
 bitflags! {
     pub struct TextureFlags: u8 {
         const MUTABLE = 0b00000001;
@@ -138,7 +86,7 @@ impl Default for Texture {
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
             ttype: TextureType::Texture2D(0, 0),
-            ifd: (0, 0, 0)
+            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte)
         }
     }
 }
@@ -155,13 +103,13 @@ impl Texture {
     // The internal format and data type of the soon to be generated texture
     pub fn set_format(mut self, _format: TextureFormat) -> Self {
         self._format = _format;
-        self.ifd = get_idf(self._format, self._type);
+        self.ifd = get_ifd(self._format, self._type);
         self
     }
     // Set the data type for this texture
     pub fn set_data_type(mut self, _type: DataType) -> Self {
         self._type = _type;
-        self.ifd = get_idf(self._format, self._type);
+        self.ifd = get_ifd(self._format, self._type);
         self
     }
     // Set the height and width of the soon to be generated texture
@@ -258,58 +206,6 @@ impl Texture {
     }
 }
 
-
-// Get the IDF from a simple TextureFormat and DataType
-fn get_idf(tf: TextureFormat, dt: DataType) -> (i32, u32, u32) {
-    let internal_format = match tf {
-        // Red
-        TextureFormat::R8R => gl::R8,
-        TextureFormat::R8RS => gl::R8_SNORM,
-        TextureFormat::R16R => gl::R16,
-        TextureFormat::R8I => gl::R8I,
-        TextureFormat::R16I => gl::R16I,
-        TextureFormat::R32I => gl::R32I,
-        TextureFormat::R16F => gl::R16F,
-        TextureFormat::R32F => gl::R32F,
-        // Red Green
-        TextureFormat::RG8R => gl::RG8,
-        TextureFormat::RG8RS => gl::RG8_SNORM,
-        TextureFormat::RG16R => gl::RG16,
-        TextureFormat::RG8I => gl::RG8I,
-        TextureFormat::RG16I => gl::RG16I,
-        TextureFormat::RG32I => gl::RG32I,
-        TextureFormat::RG16F => gl::RG16F,
-        TextureFormat::RG32F => gl::RG32F,
-        // Red Green Blue
-        TextureFormat::RGB8R => gl::RGB8,
-        TextureFormat::RGB8RS => gl::RGB8_SNORM,
-        TextureFormat::RGB16R => gl::RGB16,
-        TextureFormat::RGB8I => gl::RGB8I,
-        TextureFormat::RGB16I => gl::RGB16I,
-        TextureFormat::RGB32I => gl::RGB32I,
-        TextureFormat::RGB16F => gl::RGB16F,
-        TextureFormat::RGB32F => gl::RGB32F,
-        // Red Green Blue Alpha
-        TextureFormat::RGBA8R => gl::RGBA8,
-        TextureFormat::RGBA8RS => gl::RGBA8_SNORM,
-        TextureFormat::RGBA16R => gl::RGBA16,
-        TextureFormat::RGBA8I => gl::RGBA8I,
-        TextureFormat::RGBA16I => gl::RGBA16I,
-        TextureFormat::RGBA32I => gl::RGBA32I,
-        TextureFormat::RGBA16F => gl::RGBA16F,
-        TextureFormat::RGBA32F => gl::RGBA32F,
-        // Custom
-        TextureFormat::DepthComponent16 => gl::DEPTH_COMPONENT16,
-        TextureFormat::DepthComponent24 => gl::DEPTH_COMPONENT24,
-        TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT32,
-    };
-    // Get the format of this texture using it's name
-    let name = format!("{:?}", tf);
-    panic!(name);
-    let format = 0;
-    let data_type = 0;
-    (internal_format as i32, format as u32, data_type as u32)
-}
 
 impl Texture {    
     // Read bytes
@@ -535,7 +431,7 @@ impl Texture {
             pointer = bytes.as_ptr() as *const c_void;
         }
 
-        let (internal_format, format, data_type) = get_idf(self._format, self._type);
+        let (internal_format, format, data_type) = get_ifd(self._format, self._type);
         let tex_type = match self.ttype {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
@@ -640,7 +536,7 @@ impl Texture {
         unsafe {
             // Bind the buffer before reading
             gl::BindTexture(tex_type, self.id);
-            let (internal_format, format, data_type) = get_idf(self._format, self._type);
+            let (internal_format, format, data_type) = get_ifd(self._format, self._type);
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         return pixels;
@@ -671,7 +567,7 @@ impl Texture {
         unsafe {
             // Bind the buffer before reading
             gl::BindTexture(tex_type, self.id);
-            let (internal_format, format, data_type) = get_idf(self._format, self._type);
+            let (internal_format, format, data_type) = get_ifd(self._format, self._type);
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         return pixels;

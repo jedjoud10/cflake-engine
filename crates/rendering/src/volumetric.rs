@@ -1,5 +1,5 @@
 use assets::AssetManager;
-use crate::texture::*;
+use crate::{TextureFormat, texture::*};
 use crate::{AdditionalShader, ComputeShader, Shader, SubShader, Texture};
 
 // Some volumetric shit
