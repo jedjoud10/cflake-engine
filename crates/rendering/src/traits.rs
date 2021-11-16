@@ -9,6 +9,8 @@ pub trait RenderAsset {
     fn asset_load(data: &AssetMetadata) -> Option<Self> where Self: Sized;
     // Load a texture that already has it's parameters set
     fn asset_load_t(self, data: &AssetMetadata) -> Option<Self> where Self: Sized;
+    // Object cache load
+    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self> where Self: Sized;
 }
 
 // A render object. Any struct that is related to rendering really

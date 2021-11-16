@@ -39,6 +39,18 @@ impl RenderAsset for Texture {
         let texture = texture.generate_texture(bytes).unwrap();
         return Some(texture);
     }
+    // Load a texture, and cache it if needed
+    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self> {
+        // Early
+        if asset_manager.object_cacher.cached(local_path) {
+            return self.object_load_ot(local_path, &asset_manager.object_cacher).unwrap();
+        }
+        // Load the asset first
+        let texture = self.asset_load_easy_t(local_path, &mut asset_manager.asset_cacher).unwrap();
+        // Then the object (cache it if neccessarry)
+        let output = texture.object_cache_load(local_path, &mut asset_manager.object_cacher);
+        output
+    }
 }
 // Render object
 impl RenderObject for Texture {
@@ -170,7 +182,7 @@ impl TextureT for Texture {
             .generate_texture(bytes)
             .unwrap();
         main_texture.object_cache_load(name, &mut asset_manager.object_cacher)
-    }
+    }    
     // Generate an empty texture, could either be a mutable one or an immutable one
     fn generate_texture(self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
         let mut texture = self; 
