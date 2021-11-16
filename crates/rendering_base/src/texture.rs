@@ -5,30 +5,34 @@ use bitflags::bitflags;
 #[derive(Clone, Copy)]
 pub enum TextureFormat {
     // Red
-    R8,
-    R16,
-    R32,
+    R8R,
+    R8I,
+    R16I,
+    R32I,
     // FP
     R16F,
     R32f,
     // Red Green
-    RG8,
-    RG16,
-    RG32,
+    RG8R,
+    RG8I,
+    RG16I,
+    RG32I,
     // FP
     RG16F,
     RG32F,
     // Red Green Blue
-    RGB8,
-    RGB16,
-    RGB32,
+    RGB8R,
+    RGB8I,
+    RGB16I,
+    RGB32I,
     // FP
     RGB16F,
     RGB32F,
     // Red Green Blue Alpha
-    RGBA8,
-    RGBA16,
-    RGBA32,
+    RGBA8R,
+    RGBA8I,
+    RGBA16I,
+    RGBA32I,
     // FP
     RGBA16F,
     RGBA32F
@@ -109,7 +113,7 @@ impl Default for Texture {
         Self {
             id: 0,
             name: String::new(),
-            _format: TextureFormat::RGBA8,
+            _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
@@ -131,6 +135,11 @@ impl Texture {
         self._format = _format;
         self
     }
+    // Set the data type for this texture
+    pub fn set_data_type(mut self, _type: DataType) -> Self {
+        self._type = _type;
+        self
+    }
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, ttype: TextureType) -> Self {
         self.ttype = ttype;
@@ -141,6 +150,25 @@ impl Texture {
         self.ttype = ttype;
         self
     }
+    // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
+    pub fn set_mutable(mut self, mutable: bool) -> Self {
+        /*
+        todo!();
+        match mutable {
+            true => self.flags |= TextureFlags::MUTABLE,
+            false => self.flags &= !TextureFlags::MUTABLE,
+        }
+        */
+        self
+    }
+    // Apply the texture load options on a texture
+    pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Texture {
+        let opt = opt.unwrap_or_default();
+        let texture = self.set_filter(opt.filter);
+        let texture = texture.set_wrapping_mode(opt.wrapping);
+        return texture;
+    }
+    // Cr
     // Guess how many mipmap levels a texture with a specific maximum coordinate can have
     pub fn guess_mipmap_levels(i: usize) -> usize {
         let mut x: f32 = i as f32;

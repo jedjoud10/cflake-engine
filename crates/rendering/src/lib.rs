@@ -15,6 +15,8 @@ mod texture;
 mod utils;
 mod volumetric;
 mod window;
+mod traits;
+pub use traits::*;
 pub use array_data::*;
 pub use compute_shader::*;
 pub use error::*;

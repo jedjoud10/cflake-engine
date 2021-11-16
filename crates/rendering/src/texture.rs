@@ -1,20 +1,16 @@
 use assets::*;
-use bitflags::bitflags;
 use gl;
 use image::{DynamicImage, EncodableLayout, GenericImageView};
 use std::{ffi::c_void, ptr::null, rc::Rc};
-use rendering_base::error::RenderingError;
+use rendering_base::{error::RenderingError, main_types::DataType};
 use rendering_base::texture::*;
+use crate::{RenderAsset, RenderObject, TextureT};
 
 // Create the type alias
 pub type Texture = rendering_base::texture::Texture;
 
-pub trait Test: Asset {
-
-}
-
 // Loadable asset
-impl Test for Texture {
+impl RenderAsset for Texture {
     // Load a texture from scratch
     fn asset_load(data: &AssetMetadata) -> Option<Self>
     where
@@ -25,7 +21,8 @@ impl Test for Texture {
         // Return a texture with the default parameters
         let texture = Texture::new()
             .set_dimensions(TextureType::Texture2D(width, height))
-            .set_idf(gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE)
+            .set_format(TextureFormat::RGBA8)
+            .set_data_type(DataType::UByte)
             .set_name(&data.name)
             .generate_texture(bytes)
             .unwrap();
@@ -43,15 +40,52 @@ impl Test for Texture {
         return Some(texture);
     }
 }
-
-impl Object for Texture {}
-
-impl Texture {
-    // New
-    pub fn new() -> Self {
+// Render object
+impl RenderObject for Texture {
+    fn new() -> Self {
         Self::default()
     }
-    // Read the texture bytes from a specific AssetMetadata
+    fn finalize(self) -> Self where Self: Sized {
+        self
+    }    
+    
+}
+
+// Get the IDF from a simple TextureFormat and DataType
+fn get_idf(tf: TextureFormat, dt: DataType) -> (i32, i32, i32) {
+    let internal_format = match tf {
+        TextureFormat::R8R => gl::R8,
+        TextureFormat::R8I => gl::R8I,
+        TextureFormat::R16I => gl::R16I,
+        TextureFormat::R32I => gl::R32I,
+        TextureFormat::R16F => gl::R16F,
+        TextureFormat::R32f => gl::R32F,
+        TextureFormat::RG8R => gl::RG8,
+        TextureFormat::RG8I => gl::RG8I,
+        TextureFormat::RG16I => gl::RG16I,
+        TextureFormat::RG32I => gl::RG32I,
+        TextureFormat::RG16F => gl::RG16F,
+        TextureFormat::RG32F => gl::RG32F,
+        TextureFormat::RGB8R => gl::RGB8,
+        TextureFormat::RGB8I => gl::RGB8I,
+        TextureFormat::RGB16I => gl::RGB16I,
+        TextureFormat::RGB32I => gl::RGB32I,
+        TextureFormat::RGB16F => gl::RGB16F,
+        TextureFormat::RGB32F => gl::RGB32F,
+        TextureFormat::RGBA8R => gl::RGBA8,
+        TextureFormat::RGBA8I => gl::RGBA8I,
+        TextureFormat::RGBA16I => gl::RGBA16I,
+        TextureFormat::RGBA32I => gl::RGBA32I,
+        TextureFormat::RGBA16F => gl::RGBA16F,
+        TextureFormat::RGBA32F => gl::RGBA32F,
+    };
+    let format = 0;
+    let data_type = 0;
+    (internal_format, format, data_type)
+}
+
+impl TextureT for Texture {    
+    // Read bytes
     fn read_bytes(metadata: &AssetMetadata) -> (Vec<u8>, u16, u16) {
         // Load this texture from the bytes
         let png_bytes = metadata.bytes.as_bytes();
@@ -60,14 +94,9 @@ impl Texture {
         let image = image.flipv();
         return (image.to_bytes(), image.width() as u16, image.height() as u16);
     }
-}
-
-impl Texture {
-    
     // Update the size of the current texture
-    pub fn update_size(&mut self, ttype: TextureType) {
+    fn update_size(&mut self, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one
-        if false { /* Oopsie woopsie, we did a little fucky wuckie, a little fucko boingo. The code monkey (Me) is working VEWWY hard to fix this >.<!! */ }
         self.ttype = ttype;
         // This is a normal texture getting resized
         unsafe {
@@ -108,28 +137,9 @@ impl Texture {
                 TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
-    }
-    // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
-    pub fn set_mutable(mut self, mutable: bool) -> Self {
-        /*
-        todo!();
-        match mutable {
-            true => self.flags |= TextureFlags::MUTABLE,
-            false => self.flags &= !TextureFlags::MUTABLE,
-        }
-        */
-        self
-    }
-    
-    // Apply the texture load options on a texture
-    pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Texture {
-        let opt = opt.unwrap_or_default();
-        let texture = self.set_filter(opt.filter);
-        let texture = texture.set_wrapping_mode(opt.wrapping);
-        return texture;
-    }
+    }  
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    pub fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Rc<Texture> {
+    fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Rc<Texture> {
         // Load the textures
         let mut bytes: Vec<u8> = Vec::new();
         let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
@@ -158,7 +168,8 @@ impl Texture {
         main_texture.object_cache_load(name, &mut asset_manager.object_cacher)
     }
     // Generate an empty texture, could either be a mutable one or an immutable one
-    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
+    fn generate_texture(self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
+        let mut texture = self; 
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
@@ -385,6 +396,7 @@ impl Texture {
             }
         }
     }
+    /*
     // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
     pub fn fill_array_veclib<V, U>(&self) -> Vec<V>
     where
@@ -445,17 +457,6 @@ impl Texture {
             gl::GetTexImage(tex_type, 0, self.format, self.data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         return pixels;
-    }    
-    // Load a texture, and cache it if needed
-    pub fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self> {
-        // Early
-        if asset_manager.object_cacher.cached(local_path) {
-            return self.object_load_ot(local_path, &asset_manager.object_cacher).unwrap();
-        }
-        // Load the asset first
-        let texture = self.asset_load_easy_t(local_path, &mut asset_manager.asset_cacher).unwrap();
-        // Then the object (cache it if neccessarry)
-        let output = texture.object_cache_load(local_path, &mut asset_manager.object_cacher);
-        output
     }
+    */
 }
