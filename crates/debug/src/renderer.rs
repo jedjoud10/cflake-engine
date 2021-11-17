@@ -2,7 +2,7 @@ use assets::{Asset, AssetManager};
 use math;
 use rendering::basics::*;
 use rendering::utils::Uniform;
-use std::{rc::Rc};
+use std::rc::Rc;
 
 pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality

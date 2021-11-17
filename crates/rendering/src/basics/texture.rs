@@ -1,9 +1,9 @@
+use crate::utils::*;
 use assets::*;
+use bitflags::bitflags;
 use gl;
 use image::{EncodableLayout, GenericImageView};
 use std::{ffi::c_void, ptr::null};
-use bitflags::bitflags;
-use crate::utils::*;
 bitflags! {
     pub struct TextureFlags: u8 {
         const MUTABLE = 0b00000001;
@@ -12,7 +12,7 @@ bitflags! {
 }
 
 // How we load texture
-#[derive( Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct TextureLoadOptions {
     pub filter: TextureFilter,
     pub wrapping: TextureWrapping,
@@ -20,9 +20,9 @@ pub struct TextureLoadOptions {
 
 impl Default for TextureLoadOptions {
     fn default() -> Self {
-        Self { 
+        Self {
             filter: TextureFilter::Linear,
-            wrapping: TextureWrapping::Repeat
+            wrapping: TextureWrapping::Repeat,
         }
     }
 }
@@ -65,7 +65,7 @@ pub enum TextureShaderAccessType {
 pub struct Texture {
     pub name: String,
     pub id: u32,
-    pub _format: TextureFormat, 
+    pub _format: TextureFormat,
     pub _type: DataType,
     pub flags: TextureFlags,
     pub filter: TextureFilter,
@@ -86,7 +86,7 @@ impl Default for Texture {
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
             ttype: TextureType::Texture2D(0, 0),
-            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte)
+            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte),
         }
     }
 }
@@ -206,8 +206,7 @@ impl Texture {
     }
 }
 
-
-impl Texture {    
+impl Texture {
     // Read bytes
     pub fn read_bytes(metadata: &AssetMetadata) -> (Vec<u8>, u16, u16) {
         // Load this texture from the bytes
@@ -230,37 +229,16 @@ impl Texture {
                 }
                 TextureType::Texture2D(width, height) => {
                     gl::BindTexture(gl::TEXTURE_2D, self.id);
-                    gl::TexImage2D(
-                        gl::TEXTURE_2D,
-                        0,
-                        self.ifd.0,
-                        width as i32,
-                        height as i32,
-                        0,
-                        self.ifd.1,
-                        self.ifd.2,
-                        null(),
-                    );
+                    gl::TexImage2D(gl::TEXTURE_2D, 0, self.ifd.0, width as i32, height as i32, 0, self.ifd.1, self.ifd.2, null());
                 }
                 TextureType::Texture3D(width, height, depth) => {
                     gl::BindTexture(gl::TEXTURE_3D, self.id);
-                    gl::TexImage3D(
-                        gl::TEXTURE_3D,
-                        0,
-                        self.ifd.0,
-                        width as i32,
-                        height as i32,
-                        depth as i32,
-                        0,
-                        self.ifd.1,
-                        self.ifd.2,
-                        null(),
-                    );
+                    gl::TexImage3D(gl::TEXTURE_3D, 0, self.ifd.0, width as i32, height as i32, depth as i32, 0, self.ifd.1, self.ifd.2, null());
                 }
                 TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
-    }  
+    }
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
     pub fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Texture {
         // Load the textures
@@ -289,7 +267,7 @@ impl Texture {
             .generate_texture(bytes)
             .unwrap();
         main_texture
-    }    
+    }
     // Generate an empty texture, could either be a mutable one or an immutable one
     pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
         let mut pointer: *const c_void = null();
@@ -297,7 +275,7 @@ impl Texture {
             pointer = bytes.as_ptr() as *const c_void;
         }
 
-        // Get the tex_type based on the TextureDimensionType        
+        // Get the tex_type based on the TextureDimensionType
         let tex_type = match self.ttype {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
@@ -406,7 +384,6 @@ impl Texture {
                 }
             }
         }
-        
 
         // Set the wrap mode for the texture (Mipmapped or not)
         let wrapping_mode: i32;
@@ -439,7 +416,7 @@ impl Texture {
             TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
 
-        unsafe {            
+        unsafe {
             gl::BindTexture(tex_type, self.id);
             match self.ttype {
                 TextureType::Texture1D(_) => gl::TexImage1D(tex_type, 0, internal_format, self.get_width() as i32, 0, format, data_type, pointer),

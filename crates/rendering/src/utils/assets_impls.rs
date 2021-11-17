@@ -1,13 +1,14 @@
-use assets::{Asset, AssetObject, Object};
 use crate::basics::*;
 use crate::utils::*;
+use assets::{Asset, AssetObject, Object};
 
 // All the Asset trait implementations are here
 // One for the textures
 impl Asset for Texture {
     fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         // Load this texture from the bytes
         let (bytes, width, height) = Self::read_bytes(data);
         // Return a texture with the default parameters
@@ -24,13 +25,15 @@ impl Asset for Texture {
 
 impl Object for Texture {}
 
-impl AssetObject for Texture {
-}
+impl AssetObject for Texture {}
 
 // One for the models
 impl Asset for Model {
     // Load a model from an asset
-    fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self> where Self: Sized {
+    fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
+    where
+        Self: Sized,
+    {
         let string = String::from_utf8(data.bytes.clone()).unwrap();
         let lines = string.lines();
         let mut model = Model::default();
@@ -79,7 +82,8 @@ impl Asset for Model {
 impl Asset for SubShader {
     fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         // Load a subshader from this metadata
         let text = String::from_utf8(data.bytes.clone()).ok()?;
         Some(Self {

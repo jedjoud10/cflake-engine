@@ -1,9 +1,9 @@
+use crate::FontChar;
 use ascii::AsciiStr;
 use assets::{Asset, AssetObject, Object};
 use byteorder::{LittleEndian, ReadBytesExt};
 use rendering::basics::*;
 use rendering::utils::*;
-use crate::FontChar;
 
 // A simple font containing the characters
 #[derive(Default)]
@@ -78,7 +78,8 @@ impl Font {
 impl Asset for Font {
     fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         // Load this font from the metadata bytes
         let mut reader = std::io::Cursor::new(data.bytes.clone());
         // Read the custom font

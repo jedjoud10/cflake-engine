@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use crate::ChunkCoords;
 use ecs::EntityManager;
 use rendering::advanced::ComputeShader;
-use crate::ChunkCoords;
+use std::collections::HashMap;
 
 // Some detail that has a specific entity instance ID related to it that will be spawned in the wolrd
 pub struct TDetail {

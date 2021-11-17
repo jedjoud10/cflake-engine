@@ -1,8 +1,8 @@
+use crate::advanced::ComputeShader;
+use crate::basics::AdditionalShader;
+use crate::basics::Shader;
 use crate::basics::*;
 use crate::utils::*;
-use crate::basics::Shader;
-use crate::basics::AdditionalShader;
-use crate::advanced::ComputeShader;
 use assets::AssetManager;
 use ecs::Entity;
 use others::SmartList;

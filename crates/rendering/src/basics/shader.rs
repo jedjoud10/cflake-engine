@@ -128,8 +128,9 @@ impl Shader {
                 self.link_subshader(subshader);
             } else {
                 // It was not cached, so we need to cache it
-                let mut subshader =
-                    SubShader::default().load_asset(subshader_path, &asset_manager.asset_cacher).ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
+                let mut subshader = SubShader::default()
+                    .load_asset(subshader_path, &asset_manager.asset_cacher)
+                    .ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
                 let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();

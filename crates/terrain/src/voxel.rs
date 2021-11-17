@@ -1,6 +1,6 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
-use rendering::basics::*;
 use rendering::advanced::*;
+use rendering::basics::*;
 use rendering::utils::*;
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]

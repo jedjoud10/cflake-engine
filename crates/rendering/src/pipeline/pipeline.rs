@@ -1,5 +1,5 @@
-use std::sync::mpsc::{Receiver, Sender};
 use crate::basics::*;
+use std::sync::mpsc::{Receiver, Sender};
 
 // A render command
 pub struct RenderCommand {
@@ -11,7 +11,6 @@ pub struct RenderCommand {
 // The output of a specific render command
 pub struct RenderCommandReturn {
     pub message_id: usize,
-
 }
 
 // A render task (A specific message passed to the render thread)
@@ -24,11 +23,10 @@ pub enum RenderTask {
     // Textures
     GenerateTexture(Texture),
     // Models
-    RefreshModel(Model),    
+    RefreshModel(Model),
     // Compute shaders
     RunCompute(),
 }
-
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct RenderPipeline {

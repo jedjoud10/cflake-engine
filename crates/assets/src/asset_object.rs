@@ -3,9 +3,12 @@ use std::rc::Rc;
 use crate::{Asset, AssetManager, Object};
 
 // Asset object
-pub trait AssetObject: Asset + Object  {
+pub trait AssetObject: Asset + Object {
     // Cache and load. Load if the object was not cached it. We load it from it's asset metadata
-    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self> where Self: Sized + 'static {
+    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self>
+    where
+        Self: Sized + 'static,
+    {
         // Check if it was cached
         if asset_manager.object_cacher.cached(local_path) {
             return self.object_load_ot(local_path, &asset_manager.object_cacher).unwrap();

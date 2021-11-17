@@ -3,7 +3,7 @@ use math::{
     constructive_solid_geometry::CSGTree,
     octrees::{AdvancedOctree, Octree, OctreeNode},
 };
-use rendering::{basics::AdditionalShader, advanced::ComputeShader, basics::Shader};
+use rendering::{advanced::ComputeShader, basics::AdditionalShader, basics::Shader};
 
 use crate::{ChunkManager, TerrainSettings, VoxelGenerator, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
 // A terrain piece

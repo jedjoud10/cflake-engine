@@ -2,8 +2,8 @@ use super::super::components;
 use assets::{Asset, AssetObject, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::basics::*;
 use rendering::advanced::*;
+use rendering::basics::*;
 use rendering::utils::*;
 
 use std::{
@@ -40,7 +40,9 @@ impl CustomData {
     // Create the quad that will render the render buffer
     fn create_screen_quad(&mut self, data: &mut WorldData) {
         let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::default().load_asset("defaults\\models\\screen_quad.mdl3d", &data.asset_manager.asset_cacher).unwrap();
+        quad_renderer_component.model = Model::default()
+            .load_asset("defaults\\models\\screen_quad.mdl3d", &data.asset_manager.asset_cacher)
+            .unwrap();
         // Create the screen quad material
         let material: Material = Material::default().set_shader(
             Shader::default()

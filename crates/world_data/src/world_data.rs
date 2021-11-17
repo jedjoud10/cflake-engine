@@ -1,6 +1,6 @@
-use std::rc::Rc;
 use rendering::basics::Texture;
 use rendering::utils::Window;
+use std::rc::Rc;
 
 // Data that will be passed to the fire events in systems
 pub struct WorldData<'a> {

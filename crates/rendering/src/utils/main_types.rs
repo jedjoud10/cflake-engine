@@ -133,11 +133,39 @@ pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (i32, u32, u32) {
         TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT32,
     };
     let format = match tf {
-        TextureFormat::R8R | TextureFormat::R16R | TextureFormat::R8RS | TextureFormat::R8I | TextureFormat::R16I | TextureFormat::R32I | TextureFormat::R16F | TextureFormat::R32F => gl::RED,
-        TextureFormat::RG8R | TextureFormat::RG16R | TextureFormat::RG8RS | TextureFormat::RG8I | TextureFormat::RG16I | TextureFormat::RG32I | TextureFormat::RG16F | TextureFormat::RG32F => gl::RG,
-        TextureFormat::RGB8R | TextureFormat::RGB16R | TextureFormat::RGB8RS | TextureFormat::RGB8I | TextureFormat::RGB16I | TextureFormat::RGB32I | TextureFormat::RGB16F | TextureFormat::RGB32F => gl::RGB,
-        TextureFormat::RGBA8R | TextureFormat::RGBA16R | TextureFormat::RGBA8RS | TextureFormat::RGBA8I | TextureFormat::RGBA16I | TextureFormat::RGBA32I | TextureFormat::RGBA16F | TextureFormat::RGBA32F => gl::RGBA,
-        TextureFormat::DepthComponent16 | TextureFormat::DepthComponent24 | TextureFormat::DepthComponent32=> gl::DEPTH_COMPONENT,
+        TextureFormat::R8R
+        | TextureFormat::R16R
+        | TextureFormat::R8RS
+        | TextureFormat::R8I
+        | TextureFormat::R16I
+        | TextureFormat::R32I
+        | TextureFormat::R16F
+        | TextureFormat::R32F => gl::RED,
+        TextureFormat::RG8R
+        | TextureFormat::RG16R
+        | TextureFormat::RG8RS
+        | TextureFormat::RG8I
+        | TextureFormat::RG16I
+        | TextureFormat::RG32I
+        | TextureFormat::RG16F
+        | TextureFormat::RG32F => gl::RG,
+        TextureFormat::RGB8R
+        | TextureFormat::RGB16R
+        | TextureFormat::RGB8RS
+        | TextureFormat::RGB8I
+        | TextureFormat::RGB16I
+        | TextureFormat::RGB32I
+        | TextureFormat::RGB16F
+        | TextureFormat::RGB32F => gl::RGB,
+        TextureFormat::RGBA8R
+        | TextureFormat::RGBA16R
+        | TextureFormat::RGBA8RS
+        | TextureFormat::RGBA8I
+        | TextureFormat::RGBA16I
+        | TextureFormat::RGBA32I
+        | TextureFormat::RGBA16F
+        | TextureFormat::RGBA32F => gl::RGBA,
+        TextureFormat::DepthComponent16 | TextureFormat::DepthComponent24 | TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT,
     };
     let data_type = match dt {
         DataType::UByte => gl::UNSIGNED_BYTE,

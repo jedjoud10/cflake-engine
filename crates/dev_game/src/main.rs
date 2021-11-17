@@ -84,7 +84,8 @@ pub fn world_initialized(world: &mut World) {
         data.asset_manager,
         256,
         256,
-    ).object_cache_load("fart", &mut data.asset_manager.object_cacher);
+    )
+    .object_cache_load("fart", &mut data.asset_manager.object_cacher);
     let texture2 = Texture::create_texturearray(
         Some(TextureLoadOptions {
             filter: TextureFilter::Nearest,
@@ -94,7 +95,8 @@ pub fn world_initialized(world: &mut World) {
         data.asset_manager,
         256,
         256,
-    ).object_cache_load("fasdfart", &mut data.asset_manager.object_cacher);
+    )
+    .object_cache_load("fasdfart", &mut data.asset_manager.object_cacher);
     let bound_materials = vec![material
         .instantiate(data.instance_manager)
         .set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0))
