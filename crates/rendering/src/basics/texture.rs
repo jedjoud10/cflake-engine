@@ -123,7 +123,7 @@ impl Texture {
         self
     }
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
-    pub fn set_mutable(mut self, mutable: bool) -> Self {
+    pub fn set_mutable(self, _mutable: bool) -> Self {
         /*
         todo!();
         match mutable {
@@ -137,8 +137,8 @@ impl Texture {
     pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Texture {
         let opt = opt.unwrap_or_default();
         let texture = self.set_filter(opt.filter);
-        let texture = texture.set_wrapping_mode(opt.wrapping);
-        return texture;
+        
+        texture.set_wrapping_mode(opt.wrapping)
     }
     // Cr
     // Guess how many mipmap levels a texture with a specific maximum coordinate can have
@@ -147,7 +147,7 @@ impl Texture {
         let mut num: usize = 0;
         while x > 1.0 {
             // Repeatedly divide by 2
-            x = x / 2.0;
+            x /= 2.0;
             num += 1;
         }
         num
@@ -189,7 +189,7 @@ impl Texture {
     // Get the height of this texture
     pub fn get_height(&self) -> u16 {
         match self.ttype {
-            TextureType::Texture1D(y) => panic!(),
+            TextureType::Texture1D(_y) => panic!(),
             TextureType::Texture2D(_, y) => y,
             TextureType::Texture3D(_, y, _) => y,
             TextureType::TextureArray(_, y, _) => y,
@@ -214,7 +214,7 @@ impl Texture {
         let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
         // Flip
         let image = image.flipv();
-        return (image.to_bytes(), image.width() as u16, image.height() as u16);
+        (image.to_bytes(), image.width() as u16, image.height() as u16)
     }
     // Update the size of the current texture
     pub fn update_size(&mut self, ttype: TextureType) {
@@ -513,10 +513,10 @@ impl Texture {
         unsafe {
             // Bind the buffer before reading
             gl::BindTexture(tex_type, self.id);
-            let (internal_format, format, data_type) = get_ifd(self._format, self._type);
+            let (_internal_format, format, data_type) = get_ifd(self._format, self._type);
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
-        return pixels;
+        pixels
     }
     // Get the image from this texture and fill an array of single elements with it
     pub fn fill_array_elems<U>(&self) -> Vec<U>
@@ -544,9 +544,9 @@ impl Texture {
         unsafe {
             // Bind the buffer before reading
             gl::BindTexture(tex_type, self.id);
-            let (internal_format, format, data_type) = get_ifd(self._format, self._type);
+            let (_internal_format, format, data_type) = get_ifd(self._format, self._type);
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
-        return pixels;
+        pixels
     }
 }

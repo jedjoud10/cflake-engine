@@ -1,6 +1,6 @@
 use crate::basics::*;
 use crate::utils::*;
-use assets::{Asset, AssetManager, AssetObject, Object};
+use assets::{AssetManager, AssetObject, Object};
 use bitflags::bitflags;
 use std::{collections::HashMap, rc::Rc};
 
@@ -39,8 +39,8 @@ impl Default for Material {
         // Set the default shader args
         let material = material.set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE));
         let material = material.set_uniform("tint", Uniform::Vec3F32(veclib::Vector3::ONE));
-        let material = material.set_uniform("normals_strength", Uniform::F32(1.0));
-        return material;
+        
+        material.set_uniform("normals_strength", Uniform::F32(1.0))
     }
 }
 
@@ -63,7 +63,7 @@ impl Material {
             .apply_texture_load_options(opt)
             .cache_load(diffuse_path, asset_manager);
         self.diffuse_tex = Some(rc_texture);
-        return self;
+        self
     }
     // Load the normal texture
     pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
@@ -74,12 +74,12 @@ impl Material {
             .apply_texture_load_options(opt)
             .cache_load(normal_path, asset_manager);
         self.normal_tex = Some(rc_texture);
-        return self;
+        self
     }
     // Set the main shader
     pub fn set_shader(mut self, shader: Rc<Shader>) -> Self {
         self.shader = Some(shader);
-        return self;
+        self
     }
     // Toggle the double sided flag for this material
     pub fn set_double_sided(mut self, double_sided: bool) -> Self {
@@ -87,22 +87,22 @@ impl Material {
             true => self.flags.insert(MaterialFlags::DOUBLE_SIDED),
             false => self.flags.remove(MaterialFlags::DOUBLE_SIDED),
         }
-        return self;
+        self
     }
     // Toggle the visibility of this material
     pub fn set_visible(mut self, visible: bool) -> Self {
         self.visible = visible;
-        return self;
+        self
     }
     // Set a default uniform
     pub fn set_uniform(mut self, uniform_name: &str, uniform: Uniform) -> Self {
         self.default_uniforms.insert(uniform_name.to_string(), uniform);
-        return self;
+        self
     }
     // Set a default uniform but also it's inxed
-    pub fn set_uniform_i(mut self, uniform_name: &str, uniform: Uniform) -> (Self, usize) {
+    pub fn set_uniform_i(self, uniform_name: &str, uniform: Uniform) -> (Self, usize) {
         let i = self.default_uniforms.len();
-        return (self.set_uniform(uniform_name, uniform), i);
+        (self.set_uniform(uniform_name, uniform), i)
     }
     // Update a default uniform
     pub fn update_uniform(&mut self, uniform_name: &str, new_uniform: Uniform) {

@@ -1,4 +1,4 @@
-use std::{ffi::c_void, mem::size_of, os::raw::c_float, ptr::null};
+use std::{ffi::c_void, ptr::null};
 
 // A shader storage buffer object struct
 #[derive(Default)]
@@ -58,7 +58,7 @@ impl ArrayData {
             } else {
                 // No corruption, we're good
             }
-            return vec;
+            vec
         }
     }
 }

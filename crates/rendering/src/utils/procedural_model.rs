@@ -5,7 +5,7 @@ pub struct ProceduralModelGenerator {}
 
 impl ProceduralModelGenerator {
     // Generate a sphere with procedural parameters
-    pub fn sphere(origin: veclib::Vector3<f32>, radius: f32, vs: i32, hs: i32) -> Model {
+    pub fn sphere(_origin: veclib::Vector3<f32>, _radius: f32, _vs: i32, _hs: i32) -> Model {
         todo!()
     }
     // Generate a cube with procedural parameters

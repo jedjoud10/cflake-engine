@@ -46,12 +46,12 @@ impl Renderer {
     // Load a model
     pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Option<Self> {
         self.model = Model::default().load_asset(model_path, &asset_manager.asset_cacher)?;
-        return Some(self);
+        Some(self)
     }
     // Set a model
     pub fn set_model(mut self, model: Model) -> Self {
         self.model = model;
-        return self;
+        self
     }
     // Enable / disable the wireframe rendering for this entity
     pub fn set_wireframe(mut self, enabled: bool) -> Self {
@@ -60,17 +60,17 @@ impl Renderer {
         } else {
             self.flags.remove(RendererFlags::WIREFRAME);
         }
-        return self;
+        self
     }
     // With a specific material
     pub fn set_material(mut self, material: Material) -> Self {
         self.material = material;
-        return self;
+        self
     }
     // Set Multi Material Renderer
     pub fn set_multimat(mut self, multi_mat_renderer: MultiMaterialRenderer) -> Self {
         self.multi_material = Some(multi_mat_renderer);
-        return self;
+        self
     }
     // Set visible
     pub fn set_visible(mut self, visible: bool) -> Self {

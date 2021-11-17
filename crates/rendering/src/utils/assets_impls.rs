@@ -74,7 +74,7 @@ impl Asset for Model {
         model.colors = vec![veclib::Vector3::ONE; model.vertices.len()];
         println!("Model: {}", model);
         // Return
-        return Some(model);
+        Some(model)
     }
 }
 

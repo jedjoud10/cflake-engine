@@ -84,7 +84,7 @@ impl Volumetric {
         ));
     }
     // Create the SDF texture from a compute shader complitely
-    pub fn generate_sdf(&mut self, asset_manager: &AssetManager) {
+    pub fn generate_sdf(&mut self, _asset_manager: &AssetManager) {
         self.compute_generator.use_shader();
         self.compute_generator.set_i3d("sdf_tex", &self.sdf_tex, TextureShaderAccessType::WriteOnly);
         // Actually generate the SDF

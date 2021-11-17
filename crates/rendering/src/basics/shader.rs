@@ -9,7 +9,7 @@ use assets::Asset;
 use assets::AssetManager;
 use assets::Object;
 use gl;
-use std::collections::HashMap;
+
 use std::collections::HashSet;
 use std::ffi::CString;
 use std::rc::Rc;
@@ -41,7 +41,7 @@ impl Default for Shader {
 
 // A shader is an asset object, while a subshader is an asset
 impl Object for Shader {
-    fn get_unique_object_name(&self, local_path: &str) -> String {
+    fn get_unique_object_name(&self, _local_path: &str) -> String {
         self.name.to_string()
     }
 }
@@ -65,7 +65,7 @@ impl Shader {
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = asset_manager.asset_cacher.load_text(local_path).map_err(|x| {
+                    let text = asset_manager.asset_cacher.load_text(local_path).map_err(|_x| {
                         RenderingError::new(format!(
                             "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
                             local_path, subshader_name
@@ -76,15 +76,13 @@ impl Shader {
                 }
             }
             // Custom shader sources
-            if self.additional_shader_sources.len() > 0 {
-                if line.trim().starts_with("#include_custom") {
-                    // Get the source
-                    let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-                    let source_id = c[2..(c.len() - 2)].parse::<usize>().unwrap();
-                    let source = self.additional_shader_sources.get(source_id).unwrap();
-                    let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                    vectors_to_insert.push((i, lines));
-                }
+            if !self.additional_shader_sources.is_empty() && line.trim().starts_with("#include_custom") {
+                // Get the source
+                let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
+                let source_id = c[2..(c.len() - 2)].parse::<usize>().unwrap();
+                let source = self.additional_shader_sources.get(source_id).unwrap();
+                let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+                vectors_to_insert.push((i, lines));
             }
         }
         // Add the newly included lines at their respective index
@@ -102,7 +100,7 @@ impl Shader {
             // Add the offset so the next lines will be at their correct positions
             offset += included_lines.len();
         }
-        return Ok(vectors_to_insert.len() > 0);
+        Ok(!vectors_to_insert.is_empty())
     }
     // Set an additional shader for this shader before we finalize it
     pub fn set_additional_shader(mut self, additional_shader: AdditionalShader) -> Self {
@@ -166,13 +164,13 @@ impl Shader {
         }
         // Finalize the shader and cache it
         self.finalize_shader();
-        return Ok(self);
+        Ok(self)
     }
     // Cache this shader
     pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {
         let name = self.name.clone();
-        let shader = asset_manager.object_cacher.cache(&name, self).unwrap();
-        return shader;
+        
+        asset_manager.object_cacher.cache(&name, self).unwrap()
     }
     // Finalizes a vert/frag shader by compiling it
     fn finalize_shader(&mut self) {
@@ -231,7 +229,7 @@ impl Shader {
     pub fn get_uniform_location(&self, name: &str) -> Result<i32, RenderingError> {
         unsafe {
             let x = gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
-            return Ok(x);
+            Ok(x)
         }
     }
     // Set a bool uniform

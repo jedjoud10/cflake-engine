@@ -4,17 +4,6 @@ use std::{ffi::c_void, ptr::null};
 pub struct Utils {}
 
 impl Utils {
-    // Convert an OpenGL enum into a readable string
-    pub fn convert_e(id: u32) -> String {
-        /*
-        let str = unsafe {
-            let ptr = gl::GetString(id);
-            std::ffi::CStr::from_ptr(ptr as *const i8)
-        }.to_str().unwrap();
-        return str.to_string();
-        */
-        "".to_string()
-    }
     // Constantly check for errors
     pub fn start_error_check_loop() {
         unsafe {
@@ -25,7 +14,7 @@ impl Utils {
     }
 }
 
-extern "system" fn opengl_error_callback(source: u32, _type: u32, id: u32, severity: u32, length: i32, message: *const i8, userParam: *mut c_void) {
+extern "system" fn opengl_error_callback(_source: u32, _type: u32, _id: u32, severity: u32, _length: i32, message: *const i8, _userParam: *mut c_void) {
     // Check if it was really an error
     if _type == gl::DEBUG_TYPE_ERROR {
         println!("We caught an OpenGL error!");

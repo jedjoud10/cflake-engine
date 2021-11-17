@@ -22,7 +22,7 @@ impl ComputeShader {
             gl::DispatchCompute(num_groups.0, num_groups.1, num_groups.2);
             self.running = true;
         }
-        return Some(());
+        Some(())
     }
     // Force the compute shader to finish running if it is still running
     pub fn get_compute_state(&mut self) -> Option<()> {
@@ -37,7 +37,7 @@ impl ComputeShader {
                 return None;
             }
         }
-        return Some(());
+        Some(())
     }
     // Create some array data with a specific max size and a specific binding
     pub fn create_array_data<T>(&mut self, max_size: usize) {
@@ -56,6 +56,6 @@ impl ComputeShader {
             None => todo!(),
         }
         // Were we sucsessful?
-        return None;
+        None
     }
 }

@@ -1,6 +1,6 @@
 use std::{ffi::c_void, fmt::Display, mem::size_of, ptr::null};
 
-use assets::Asset;
+
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Clone)]
@@ -61,7 +61,7 @@ impl Model {
         output_model.uvs.extend(other.uvs.clone());
         output_model.colors.extend(other.colors.clone());
         output_model.tangents.extend(other.tangents.clone());
-        return output_model;
+        output_model
     }
     // Comebine a model with this one
     // NOTE: This assumes that the second model uses vertices from the first model
@@ -73,7 +73,7 @@ impl Model {
         output_model.uvs.extend(other.uvs.clone());
         output_model.colors.extend(other.colors.clone());
         output_model.tangents.extend(other.tangents.clone());
-        return output_model;
+        output_model
     }
     // Create some GPU data from this specific model
     pub fn refresh_gpu_data(&self) -> ModelDataGPU {

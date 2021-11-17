@@ -38,6 +38,6 @@ pub struct RenderPipeline {
 impl RenderPipeline {
     // Create the new render thread
     pub fn initialize_render_thread(&mut self) {
-        let (tx, rx): (Sender<Model>, Receiver<Model>) = std::sync::mpsc::channel();
+        let (_tx, _rx): (Sender<Model>, Receiver<Model>) = std::sync::mpsc::channel();
     }
 }
