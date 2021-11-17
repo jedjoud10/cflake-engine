@@ -1,6 +1,6 @@
 use ecs::*;
 use math;
-use rendering::Window;
+use rendering::utils::Window;
 // A simple camera component
 pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,

@@ -1,4 +1,4 @@
-use crate::{Material, Model, ModelDataGPU};
+use crate::basics::{Material, Model, ModelDataGPU};
 use assets::{Asset, AssetManager};
 
 // A Multi Material renderer, this renders a Complex Model

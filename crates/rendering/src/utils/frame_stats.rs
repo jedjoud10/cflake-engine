@@ -1,4 +1,8 @@
-use crate::{AdditionalShader, ComputeShader, Shader, Texture, TextureFilter, TextureFormat, TextureType};
+use crate::basics::*;
+use crate::utils::*;
+use crate::basics::Shader;
+use crate::basics::AdditionalShader;
+use crate::advanced::ComputeShader;
 use assets::AssetManager;
 use ecs::Entity;
 use others::SmartList;
@@ -36,7 +40,7 @@ impl FrameStats {
     pub fn update_texture(&mut self, time: &others::Time, entities: &SmartList<Entity>) {
         // Don't forget to use it
         self.compute.use_shader();
-        self.compute.set_i2d("image_stats", &self.texture, crate::TextureShaderAccessType::ReadWrite);
+        self.compute.set_i2d("image_stats", &self.texture, TextureShaderAccessType::ReadWrite);
         self.compute.set_f32("time", &(time.seconds_since_game_start as f32));
         self.compute.set_f32("fps", &(time.fps as f32));
         // Limit the number of entities to 131072

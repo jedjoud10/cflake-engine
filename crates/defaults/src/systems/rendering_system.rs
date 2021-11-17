@@ -2,7 +2,10 @@ use super::super::components;
 use assets::{Asset, AssetObject, Object};
 use ecs::{Entity, FilteredLinkedComponents};
 use gl;
-use rendering::{DataType, FrameStats, Material, MaterialFlags, Model, ModelDataGPU, MultiMaterialRenderer, Renderer, RendererFlags, Shader, Texture, TextureFormat, TextureType, TextureWrapping, Volumetric};
+use rendering::basics::*;
+use rendering::advanced::*;
+use rendering::utils::*;
+
 use std::{
     ffi::{c_void, CString},
     ptr::null,
@@ -165,18 +168,18 @@ impl CustomData {
         for uniform in material.default_uniforms.iter() {
             let name = uniform.0.as_str();
             match &uniform.1 {
-                rendering::Uniform::F32(x) => shader.set_f32(name, x),
-                rendering::Uniform::I32(x) => shader.set_i32(name, x),
-                rendering::Uniform::Vec2F32(x) => shader.set_vec2f32(name, x),
-                rendering::Uniform::Vec3F32(x) => shader.set_vec3f32(name, x),
-                rendering::Uniform::Vec4F32(x) => shader.set_vec4f32(name, x),
-                rendering::Uniform::Vec2I32(x) => shader.set_vec2i32(name, x),
-                rendering::Uniform::Vec3I32(x) => shader.set_vec3i32(name, x),
-                rendering::Uniform::Vec4I32(x) => shader.set_vec4i32(name, x),
-                rendering::Uniform::Mat44F32(x) => shader.set_mat44(name, x),
-                rendering::Uniform::Texture2D(x, y) => shader.set_t2d(name, x.as_ref(), *y),
-                rendering::Uniform::Texture3D(x, y) => shader.set_t3d(name, x.as_ref(), *y),
-                rendering::Uniform::Texture2DArray(x, y) => shader.set_t2da(name, x.as_ref(), *y),
+                Uniform::F32(x) => shader.set_f32(name, x),
+                Uniform::I32(x) => shader.set_i32(name, x),
+                Uniform::Vec2F32(x) => shader.set_vec2f32(name, x),
+                Uniform::Vec3F32(x) => shader.set_vec3f32(name, x),
+                Uniform::Vec4F32(x) => shader.set_vec4f32(name, x),
+                Uniform::Vec2I32(x) => shader.set_vec2i32(name, x),
+                Uniform::Vec3I32(x) => shader.set_vec3i32(name, x),
+                Uniform::Vec4I32(x) => shader.set_vec4i32(name, x),
+                Uniform::Mat44F32(x) => shader.set_mat44(name, x),
+                Uniform::Texture2D(x, y) => shader.set_t2d(name, x.as_ref(), *y),
+                Uniform::Texture3D(x, y) => shader.set_t3d(name, x.as_ref(), *y),
+                Uniform::Texture2DArray(x, y) => shader.set_t2da(name, x.as_ref(), *y),
             }
         }
 
@@ -496,7 +499,7 @@ pub fn system(data: &mut WorldData) -> System {
     let mut system = System::default();
     // Link the components
     system.link_component::<components::Transform>(data.component_manager).unwrap();
-    system.link_component::<rendering::Renderer>(data.component_manager).unwrap();
+    system.link_component::<rendering::basics::Renderer>(data.component_manager).unwrap();
     system.link_component::<components::AABB>(data.component_manager).unwrap();
     // Some input events
     data.input_manager.bind_key(input::Keys::F, "toggle_wireframe", input::MapType::Button);

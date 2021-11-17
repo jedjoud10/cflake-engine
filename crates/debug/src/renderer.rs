@@ -1,8 +1,8 @@
 use assets::{Asset, AssetManager};
 use math;
-use others::Instance;
-use rendering::{Material, Model, Renderer, Shader, SubShader, Uniform};
-use std::{ffi::c_void, mem::size_of, ptr::null, rc::Rc};
+use rendering::basics::*;
+use rendering::utils::Uniform;
+use std::{rc::Rc};
 
 pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality

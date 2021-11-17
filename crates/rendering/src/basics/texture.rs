@@ -1,9 +1,9 @@
 use assets::*;
 use gl;
-use image::{DynamicImage, EncodableLayout, GenericImageView};
-use std::{ffi::c_void, ptr::null, rc::Rc};
+use image::{EncodableLayout, GenericImageView};
+use std::{ffi::c_void, ptr::null};
 use bitflags::bitflags;
-use crate::{DataType, RenderingError, TextureFormat, get_ifd};
+use crate::utils::*;
 bitflags! {
     pub struct TextureFlags: u8 {
         const MUTABLE = 0b00000001;

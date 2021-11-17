@@ -1,5 +1,6 @@
 use assets::{Asset, AssetObject, Object};
-use crate::{DataType, Model, SubShader, SubShaderType, Texture, TextureFormat, TextureType};
+use crate::basics::*;
+use crate::utils::*;
 
 // All the Asset trait implementations are here
 // One for the textures

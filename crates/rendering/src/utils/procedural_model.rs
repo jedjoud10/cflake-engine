@@ -1,4 +1,4 @@
-use crate::Model;
+use crate::basics::Model;
 
 // Procedural model creation for spheres / boxes
 pub struct ProceduralModelGenerator {}

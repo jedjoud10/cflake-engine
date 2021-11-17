@@ -1,4 +1,4 @@
-use crate::ArrayData;
+use super::ArrayData;
 
 // Compute shader containing the compute shader code
 #[derive(Default)]

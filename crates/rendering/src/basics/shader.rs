@@ -1,9 +1,10 @@
-use crate::ComputeShader;
-use crate::RenderingError;
-use crate::SubShader;
-use crate::SubShaderType;
-use crate::Texture;
-use crate::TextureShaderAccessType;
+use crate::advanced::ComputeShader;
+use crate::utils::RenderingError;
+
+use super::SubShader;
+use super::SubShaderType;
+use super::Texture;
+use super::TextureShaderAccessType;
 use assets::Asset;
 use assets::AssetManager;
 use assets::Object;
@@ -220,26 +221,6 @@ impl Shader {
             gl::AttachShader(self.program, subshader.program);
         }
     }
-}
-
-// Some default uniforms that we will set
-#[derive(Clone)]
-pub enum Uniform {
-    // Singles
-    F32(f32),
-    I32(i32),
-    // Vectors
-    Vec2F32(veclib::Vector2<f32>),
-    Vec3F32(veclib::Vector3<f32>),
-    Vec4F32(veclib::Vector4<f32>),
-    Vec2I32(veclib::Vector2<i32>),
-    Vec3I32(veclib::Vector3<i32>),
-    Vec4I32(veclib::Vector4<i32>),
-    Mat44F32(veclib::Matrix4x4<f32>),
-    // Others
-    Texture2D(Rc<Texture>, u32),
-    Texture3D(Rc<Texture>, u32),
-    Texture2DArray(Rc<Texture>, u32),
 }
 
 // Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh

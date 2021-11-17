@@ -5,7 +5,7 @@ use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
 use super::Voxel;
-use rendering::Model;
+use rendering::basics::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::thread;

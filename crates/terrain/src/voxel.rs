@@ -1,7 +1,7 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
-
-use rendering::{DataType, Shader, Texture, TextureFilter, TextureFormat, TextureType};
-
+use rendering::basics::*;
+use rendering::advanced::*;
+use rendering::utils::*;
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
@@ -39,7 +39,7 @@ impl VoxelGenerator {
             .set_format(TextureFormat::R16F)
             .set_data_type(DataType::Float32)
             .set_filter(TextureFilter::Nearest)
-            .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
+            .set_wrapping_mode(TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
         self.material_texture = Texture::default()
@@ -50,7 +50,7 @@ impl VoxelGenerator {
             ))
             .set_format(TextureFormat::RG8R)
             .set_filter(TextureFilter::Nearest)
-            .set_wrapping_mode(rendering::TextureWrapping::ClampToBorder)
+            .set_wrapping_mode(TextureWrapping::ClampToBorder)
             .generate_texture(Vec::new())
             .unwrap();
     }
@@ -60,15 +60,15 @@ impl VoxelGenerator {
         // First pass
         let shader = &mut self.compute;
         shader.use_shader();
-        shader.set_i3d("voxel_image", &self.voxel_texture, rendering::TextureShaderAccessType::WriteOnly);
-        shader.set_i3d("material_image", &self.material_texture, rendering::TextureShaderAccessType::WriteOnly);
+        shader.set_i3d("voxel_image", &self.voxel_texture, TextureShaderAccessType::WriteOnly);
+        shader.set_i3d("material_image", &self.material_texture, TextureShaderAccessType::WriteOnly);
         shader.set_i32("chunk_size", &((MAIN_CHUNK_SIZE + 2) as i32));
         shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(position));
         shader.set_i32("node_size", &(size as i32));
         shader.set_i32("depth", &(depth as i32));
         // Run the compute shader
         let compute = match &mut shader.additional_shader {
-            rendering::AdditionalShader::Compute(c) => c,
+            AdditionalShader::Compute(c) => c,
             _ => todo!(),
         };
         // Dispatch the compute shader, don't read back the data immediatly
@@ -86,7 +86,7 @@ impl VoxelGenerator {
         let shader = &mut self.compute;
         shader.use_shader();
         let compute = match &mut shader.additional_shader {
-            rendering::AdditionalShader::Compute(c) => c,
+            AdditionalShader::Compute(c) => c,
             _ => panic!(),
         };
 

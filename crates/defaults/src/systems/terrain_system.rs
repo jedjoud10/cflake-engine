@@ -87,10 +87,10 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 for x in bound_materials.iter() {
                     let mut m = x.instantiate(data.instance_manager);
                     let d = coords.depth as f32 / octree_depth as f32;
-                    m.update_uniform("node_depth", Uniform::F32(d));
+                    m.update_uniform("node_depth", rendering::utils::Uniform::F32(d));
                     bm.push(m);
                 }
-                let mut mm_renderer = MultiMaterialRenderer::default().set_materials(bm);
+                let mut mm_renderer = rendering::advanced::MultiMaterialRenderer::default().set_materials(bm);
                 // Add the sub models into the Multi Material renderer
                 for (material_id, sub_model) in tmodel.models {
                     mm_renderer = mm_renderer.add_submodel_m(sub_model, material_id as usize);
@@ -101,8 +101,8 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 }
                 // Refresh the data
                 mm_renderer.refresh_sub_models();
-                let renderer = Renderer::default().set_wireframe(true).set_multimat(mm_renderer);
-                entity.link_component::<Renderer>(data.component_manager, renderer).unwrap();
+                let renderer = rendering::basics::Renderer::default().set_wireframe(true).set_multimat(mm_renderer);
+                entity.link_component::<rendering::basics::Renderer>(data.component_manager, renderer).unwrap();
                 // Create the AABB
                 let aabb = components::AABB::from_components(&entity, data.component_manager);
                 entity.link_component::<components::AABB>(data.component_manager, aabb).unwrap();

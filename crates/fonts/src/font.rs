@@ -1,8 +1,8 @@
 use ascii::AsciiStr;
 use assets::{Asset, AssetObject, Object};
 use byteorder::{LittleEndian, ReadBytesExt};
-use rendering::{Texture, TextureType};
-
+use rendering::basics::*;
+use rendering::utils::*;
 use crate::FontChar;
 
 // A simple font containing the characters
@@ -54,8 +54,8 @@ impl Font {
                 // Create the texture and set it's parameters
                 let texture = Texture::default()
                     .set_dimensions(TextureType::Texture2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
-                    .set_filter(rendering::TextureFilter::Linear)
-                    .set_format(rendering::TextureFormat::R16R);
+                    .set_filter(TextureFilter::Linear)
+                    .set_format(TextureFormat::R16R);
                 // Create the texture data from the bitmap pixels
                 let texture = texture.generate_texture(self.texture_pixels.clone()).unwrap();
                 self.texture = Some(texture);

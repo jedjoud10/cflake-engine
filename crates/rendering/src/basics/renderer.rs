@@ -1,8 +1,17 @@
-use crate::MultiMaterialRenderer;
-
-use super::{model::Model, model::ModelDataGPU, Material, RendererFlags};
+use super::{model::Model, model::ModelDataGPU, Material};
+use crate::advanced::MultiMaterialRenderer;
 use assets::{Asset, AssetManager};
 use ecs::{Component, ComponentID, ComponentInternal};
+
+use bitflags::bitflags;
+// Yup
+bitflags! {
+    pub struct RendererFlags: u8 {
+        const WIREFRAME = 0b00000010;
+        const DEFAULT = Self::WIREFRAME.bits;
+    }
+}
+
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub visible: bool,

@@ -1,6 +1,6 @@
 use std::rc::Rc;
-
-use rendering::Texture;
+use rendering::basics::Texture;
+use rendering::utils::Window;
 
 // Data that will be passed to the fire events in systems
 pub struct WorldData<'a> {
@@ -20,6 +20,6 @@ pub struct CustomWorldData {
     pub main_camera_entity_id: usize,
     pub sky_texture: Option<Rc<Texture>>,
     pub render_system_id: u8,
-    pub window: rendering::Window,
+    pub window: Window,
     pub light_dir: veclib::Vector3<f32>,
 }

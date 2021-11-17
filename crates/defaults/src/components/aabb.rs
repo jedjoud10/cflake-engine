@@ -36,7 +36,7 @@ impl AABB {
     }
     // Generate the AABB from a renderer entity
     pub fn from_components(entity: &Entity, component_manager: &ComponentManager) -> Self {
-        let renderer = &entity.get_component::<rendering::Renderer>(component_manager).unwrap();
+        let renderer = &entity.get_component::<rendering::basics::Renderer>(component_manager).unwrap();
         let transform = entity.get_component::<super::Transform>(component_manager).unwrap();
         // Check if we are using a multi material renderer
         match &renderer.multi_material {

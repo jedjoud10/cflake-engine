@@ -170,7 +170,7 @@ impl World {
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
-        rendering::Utils::start_error_check_loop();
+        Utils::start_error_check_loop();
 
         // Load the default stuff
         self.load_defaults(window);

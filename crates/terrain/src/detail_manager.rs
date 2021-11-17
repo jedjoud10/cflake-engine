@@ -1,9 +1,6 @@
 use std::collections::HashMap;
-
 use ecs::EntityManager;
-
-use rendering::ComputeShader;
-
+use rendering::advanced::ComputeShader;
 use crate::ChunkCoords;
 
 // Some detail that has a specific entity instance ID related to it that will be spawned in the wolrd

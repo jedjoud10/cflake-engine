@@ -4,7 +4,6 @@ use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
-use main::terrain::interpreter::NodeInterpreter;
 use main::world_data::*;
 use main::*;
 fn main() {

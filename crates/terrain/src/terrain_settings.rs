@@ -1,5 +1,4 @@
-use math::constructive_solid_geometry::CSGTree;
-use rendering::Material;
+use rendering::basics::Material;
 
 // Terrain settings
 pub struct TerrainSettings {
