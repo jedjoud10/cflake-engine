@@ -1,8 +1,6 @@
 use crate::{RenderCommand, RenderTask, RenderTaskStatus, basics::*};
 use std::sync::mpsc::{Receiver, Sender};
 
-
-
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
 pub struct RenderPipeline {

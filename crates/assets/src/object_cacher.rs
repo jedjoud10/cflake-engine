@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, rc::Rc, sync::{Arc, Mutex}};
+use std::{any::Any, collections::HashMap, rc::Rc};
 
 use crate::ObjectLoadError;
 
@@ -6,26 +6,26 @@ use crate::ObjectLoadError;
 #[derive(Default)]
 pub struct ObjectCacher {
     // Cached object
-    pub cached_objects: HashMap<String, Arc<(dyn Any + Send + Sync + 'static)>>,
+    pub cached_objects: HashMap<String, Rc<dyn Any>>,
 }
 
 impl ObjectCacher {
     // Cache a specific struct that implements the Asset trait
-    pub fn cache<T: 'static + Object + Send + Sync + 'static>(&mut self, object_name: &str, obj: T) -> Result<Arc<T>, ObjectLoadError> {
+    pub fn cache<T: 'static + Object>(&mut self, object_name: &str, obj: T) -> Result<Rc<T>, ObjectLoadError> {
         if !self.cached(object_name) {
             // Cached asset
             let string_name = object_name.to_string();
-            let arc = Arc::new(obj);
+            let rc = Rc::new(obj);
             // Only cache when the object isn't cached yet
-            self.cached_objects.insert(string_name, arc.clone());
-            Ok(arc)
+            self.cached_objects.insert(string_name, rc.clone());
+            Ok(rc)
         } else {
             // Asset was already cached
             Err(ObjectLoadError::new_str("Asset was already cached!"))
         }
     }
     // Load a cached object
-    pub fn load_cached(&self, cache_name: &str) -> Result<&Arc<dyn Any + Send + Sync + 'static>, ObjectLoadError> {
+    pub fn load_cached(&self, cache_name: &str) -> Result<&Rc<dyn Any>, ObjectLoadError> {
         let obj = self.cached_objects.get(cache_name).ok_or(ObjectLoadError::new_str("Could not load cached asset!"))?;
         return Ok(obj);
     }
@@ -36,28 +36,30 @@ impl ObjectCacher {
 }
 
 // An object that will be cached inside the object cacher
-pub trait Object: Send + Sync {
+pub trait Object {
     // Get unique object
     fn get_unique_object_name(&self, local_path: &str) -> String {
         local_path.to_string()
     }
     // Only load this object knowing that it was already cached
-    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> Arc<Self>
+    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> Rc<Self>
     where
         Self: Sized + 'static,
     {
         if object_cacher.cached(local_path) {
             // This object is cached
             let object = object_cacher.load_cached(local_path).unwrap();
-            let arc_object = Arc::downcast::<Self>(object.clone()).unwrap();
-            arc_object
+            let any = &object.clone().downcast::<Self>().unwrap();
+            // Put it back into an Rc
+            let rc_object = Rc::clone(any);
+            rc_object
         } else {
             // This object was not cached, not good
             panic!()
         }
     }
     // Load this asset as a cached asset, but also cache it if it was never loaded
-    fn object_cache_load(self, local_path: &str, object_cacher: &mut ObjectCacher) -> Arc<Self>
+    fn object_cache_load(self, local_path: &str, object_cacher: &mut ObjectCacher) -> Rc<Self>
     where
         Self: Sized + 'static,
     {
@@ -66,8 +68,10 @@ pub trait Object: Send + Sync {
         if object_cacher.cached(&name) {
             // This object is cached
             let object = object_cacher.load_cached(&name).unwrap();
-            let object = Arc::downcast::<Self>(object.clone()).unwrap();
-            object
+            let any = &object.clone().downcast::<Self>().unwrap();
+            // Put it back into an Rc
+            let rc_object = Rc::clone(any);
+            rc_object
         } else {
             // This object was not cached, cache it
             let rc_object = object_cacher.cache(&name, self).unwrap();
@@ -75,7 +79,7 @@ pub trait Object: Send + Sync {
         }
     }
     // Load this asset as a cached asset, but with preinitialized self
-    fn object_load_ot(self, local_path: &str, object_cacher: &ObjectCacher) -> Option<Arc<Self>>
+    fn object_load_ot(self, local_path: &str, object_cacher: &ObjectCacher) -> Option<Rc<Self>>
     where
         Self: Sized + 'static,
     {
@@ -84,8 +88,10 @@ pub trait Object: Send + Sync {
         if object_cacher.cached(&name) {
             // This object is cached
             let object = object_cacher.load_cached(&name).unwrap();
-            let arc_object = object.clone().downcast::<Self>().unwrap();
-            Some(arc_object)
+            let any = &object.clone().downcast::<Self>().unwrap();
+            // Put it back into an Rc
+            let rc_object = Rc::clone(any);
+            Some(rc_object)
         } else {
             None
         }

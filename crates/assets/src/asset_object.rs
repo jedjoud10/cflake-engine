@@ -1,11 +1,11 @@
-use std::{rc::Rc, sync::Arc};
+use std::rc::Rc;
 
 use crate::{Asset, AssetManager, Object};
 
 // Asset object
 pub trait AssetObject: Asset + Object {
     // Cache and load. Load if the object was not cached it. We load it from it's asset metadata
-    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Arc<Self>
+    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self>
     where
         Self: Sized + 'static,
     {

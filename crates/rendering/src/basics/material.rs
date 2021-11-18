@@ -20,7 +20,7 @@ pub struct Material {
     pub material_name: String,
     pub flags: MaterialFlags,
     pub default_uniforms: HashMap<String, Uniform>,
-    // The default texture ID
+    // The default textures
     pub diffuse_tex: GPUObject,
     pub normal_tex: GPUObject,
     // Is this material even visible?
@@ -51,31 +51,31 @@ impl Material {
     pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
         Self {
             material_name: material_name.to_string(),
-            diffuse_tex: crate::pipeline_commands::gen_texture(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
-            normal_tex: crate::pipeline_commands::gen_texture(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
+            diffuse_tex: Texture::object_load_o("white", &mut asset_manager.object_cacher).id,
+            normal_tex: Texture::object_load_o("default_normals", &mut asset_manager.object_cacher).id,
             ..Self::default()
         }
     }
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let rc_texture = Texture::default()
+        let texture = Texture::default()
             .enable_mipmaps()
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
-            .cache_load(diffuse_path, asset_manager);
-        self.diffuse_tex = Some(rc_texture);
+            .cache_load(diffuse_path, asset_manager).id;
+        self.diffuse_tex = texture;
         self
     }
     // Load the normal texture
     pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let rc_texture = Texture::default()
+        let texture = Texture::default()
             .enable_mipmaps()
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
-            .cache_load(normal_path, asset_manager);
-        self.normal_tex = Some(rc_texture);
+            .cache_load(normal_path, asset_manager).id;
+        self.normal_tex = texture;
         self
     }
     // Set the main shader

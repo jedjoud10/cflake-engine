@@ -1,4 +1,4 @@
-use crate::utils::*;
+use crate::{GPUObject, utils::*};
 use assets::*;
 use bitflags::bitflags;
 use gl;
@@ -63,19 +63,21 @@ pub enum TextureShaderAccessType {
 // A texture
 #[derive(Clone)]
 pub struct Texture {
+    // The internal GPU Object for this texture
+    pub id: GPUObject,
     pub name: String,
-    pub _format: TextureFormat,
-    pub _type: DataType,
-    pub flags: TextureFlags,
-    pub filter: TextureFilter,
+    pub _format: TextureFormat, // The internal format of the texture 
+    pub _type: DataType, // The data type that this texture uses for storage
+    pub flags: TextureFlags, 
+    pub filter: TextureFilter, // Texture mag and min filters, either Nearest or Linear
     pub wrap_mode: TextureWrapping,
-    pub ttype: TextureType,
+    pub ttype: TextureType, // The dimensions of the texture and it's texture type
 }
 
 impl Default for Texture {
     fn default() -> Self {
         Self {
-            id: 0,
+            id: GPUObject::None,
             name: String::new(),
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,
@@ -83,7 +85,6 @@ impl Default for Texture {
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
             ttype: TextureType::Texture2D(0, 0),
-            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte),
         }
     }
 }
@@ -100,13 +101,11 @@ impl Texture {
     // The internal format and data type of the soon to be generated texture
     pub fn set_format(mut self, _format: TextureFormat) -> Self {
         self._format = _format;
-        self.ifd = get_ifd(self._format, self._type);
         self
     }
     // Set the data type for this texture
     pub fn set_data_type(mut self, _type: DataType) -> Self {
         self._type = _type;
-        self.ifd = get_ifd(self._format, self._type);
         self
     }
     // Set the height and width of the soon to be generated texture
