@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use crate::{GPUObject, Model, Renderer, Shader, SubShader, Texture};
 
-
 // Render task status
 pub enum RenderTaskStatus {
     PendingStartup,
@@ -26,9 +25,8 @@ pub enum RenderTask {
     CreateShader(Shader),
     GenerateTexture(Texture),
 
-
     RefreshModel(Model),
     RunCompute(),
     // Destroy the render thread, since we are exiting from the application
-    DestroyRenderPipeline()
+    DestroyRenderPipeline(),
 }

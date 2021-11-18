@@ -1,5 +1,5 @@
 use super::{model::Model, model::ModelDataGPU, Material};
-use crate::{GPUObject, advanced::MultiMaterialRenderer};
+use crate::{advanced::MultiMaterialRenderer, GPUObject};
 use assets::{Asset, AssetManager};
 use ecs::{Component, ComponentID, ComponentInternal};
 

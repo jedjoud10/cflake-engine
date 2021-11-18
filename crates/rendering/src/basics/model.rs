@@ -1,7 +1,5 @@
 use std::{ffi::c_void, fmt::Display, mem::size_of, ptr::null};
 
-
-
 // A simple model that holds vertex, normal, and color data
 #[derive(Default, Clone)]
 pub struct Model {

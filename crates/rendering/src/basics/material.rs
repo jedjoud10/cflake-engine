@@ -1,5 +1,5 @@
-use crate::pipeline::*;
 use crate::basics::*;
+use crate::pipeline::*;
 use crate::utils::*;
 use assets::{AssetManager, AssetObject, Object};
 use bitflags::bitflags;
@@ -41,7 +41,7 @@ impl Default for Material {
         // Set the default shader args
         let material = material.set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE));
         let material = material.set_uniform("tint", Uniform::Vec3F32(veclib::Vector3::ONE));
-        
+
         material.set_uniform("normals_strength", Uniform::F32(1.0))
     }
 }
@@ -63,7 +63,8 @@ impl Material {
             .enable_mipmaps()
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
-            .cache_load(diffuse_path, asset_manager).id;
+            .cache_load(diffuse_path, asset_manager)
+            .id;
         self.diffuse_tex = texture;
         self
     }
@@ -74,7 +75,8 @@ impl Material {
             .enable_mipmaps()
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
-            .cache_load(normal_path, asset_manager).id;
+            .cache_load(normal_path, asset_manager)
+            .id;
         self.normal_tex = texture;
         self
     }

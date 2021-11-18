@@ -1,10 +1,10 @@
+mod identifiers;
 mod material;
 mod model;
 mod renderer;
 mod shader;
 mod subshader;
 mod texture;
-mod identifiers;
 pub use identifiers::*;
 pub use material::*;
 pub use model::*;

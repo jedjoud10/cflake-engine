@@ -3,8 +3,8 @@ use crate::RenderPipeline;
 pub static mut render_pipeline: RenderPipeline = RenderPipeline::default();
 
 pub mod pipeline_commands {
-    use std::{rc::Rc};
-    use crate::{GPUObject, RenderTask, SubShader, Texture, render_pipeline};    
+    use crate::{render_pipeline, GPUObject, RenderTask, SubShader, Texture};
+    use std::rc::Rc;
     // Wrapped functions so we can affect this static mut variable
     pub fn gen_texture(texture: Texture) -> GPUObject {
         unsafe {
@@ -18,5 +18,5 @@ pub mod pipeline_commands {
             let x = render_pipeline.task_immediate(RenderTask::CreateSubShader(subshader));
             x
         }
-    }   
+    }
 }

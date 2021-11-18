@@ -1,4 +1,4 @@
-use crate::{GPUObject, utils::*};
+use crate::{utils::*, GPUObject};
 use assets::*;
 use bitflags::bitflags;
 use gl;
@@ -66,9 +66,9 @@ pub struct Texture {
     // The internal GPU Object for this texture
     pub id: GPUObject,
     pub name: String,
-    pub _format: TextureFormat, // The internal format of the texture 
-    pub _type: DataType, // The data type that this texture uses for storage
-    pub flags: TextureFlags, 
+    pub _format: TextureFormat, // The internal format of the texture
+    pub _type: DataType,        // The data type that this texture uses for storage
+    pub flags: TextureFlags,
     pub filter: TextureFilter, // Texture mag and min filters, either Nearest or Linear
     pub wrap_mode: TextureWrapping,
     pub ttype: TextureType, // The dimensions of the texture and it's texture type
@@ -133,7 +133,7 @@ impl Texture {
     pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Texture {
         let opt = opt.unwrap_or_default();
         let texture = self.set_filter(opt.filter);
-        
+
         texture.set_wrapping_mode(opt.wrapping)
     }
     // Cr

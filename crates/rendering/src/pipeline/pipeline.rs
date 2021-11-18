@@ -1,4 +1,4 @@
-use crate::{RenderCommand, RenderTask, RenderTaskStatus, basics::*};
+use crate::{basics::*, RenderCommand, RenderTask, RenderTaskStatus};
 use std::sync::mpsc::{Receiver, Sender};
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
@@ -16,9 +16,7 @@ pub struct RenderPipeline {
 
 impl RenderPipeline {
     // The render thread that is continuously being ran
-    fn frame(render_to_main: Sender<RenderTaskStatus>, main_to_render: Receiver<RenderCommand>) {
-
-    }
+    fn frame(render_to_main: Sender<RenderTaskStatus>, main_to_render: Receiver<RenderCommand>) {}
     // Create the new render thread
     pub fn initialize_render_thread(&mut self) {
         // Create the two channels
@@ -52,11 +50,14 @@ impl RenderPipeline {
         // Wait for the result
         let recv = rx.recv().unwrap();
         let output = GPUObject::None;
-        return output;     
+        return output;
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
-    pub fn task<F>(&mut self, task: RenderTask, mut callback: F) where F: FnMut(GPUObject) + 'static {
-        let boxed_fn_mut: Box<dyn FnMut(GPUObject)> = Box::new(callback); 
+    pub fn task<F>(&mut self, task: RenderTask, mut callback: F)
+    where
+        F: FnMut(GPUObject) + 'static,
+    {
+        let boxed_fn_mut: Box<dyn FnMut(GPUObject)> = Box::new(callback);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             message_id: self.command_id,
@@ -71,9 +72,6 @@ impl RenderPipeline {
         // Send the command
         tx.send(render_command);
         // This time, we must add this to the wait list
-        self.pending_wait_list.push((
-            render_command,
-            boxed_fn_mut
-        ));        
+        self.pending_wait_list.push((render_command, boxed_fn_mut));
     }
 }
