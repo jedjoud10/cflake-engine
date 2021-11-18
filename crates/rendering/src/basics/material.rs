@@ -47,23 +47,14 @@ impl Default for Material {
 }
 
 impl Material {
-    // Set our textures
-    fn set_textures(mut self, render_pipeline: &mut RenderPipeline, t1: Arc<Texture>, t2: Arc<Texture>) {
-        let x = render_pipeline.task_immediate(RenderTask::GenerateTexture(t1)).unwrap();
-        let x2 = render_pipeline.task_immediate(RenderTask::GenerateTexture(t2)).unwrap();
-        self.diffuse_tex = x;
-        self.normal_tex = x2;
-    }
     // Create a new material with a name
-    pub fn new(material_name: &str, render_pipeline: &mut RenderPipeline, asset_manager: &mut AssetManager) -> Self {
-        let texture1 = Texture::object_load_o("white", &mut asset_manager.object_cacher);
-        let texture2 = Texture::object_load_o("default_normals", &mut asset_manager.object_cacher);
+    pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
         Self {
             material_name: material_name.to_string(),
-            diffuse_tex: GPUObject::None,
-            normal_tex: GPUObject::None,
+            diffuse_tex: crate::pipeline_commands::gen_texture(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
+            normal_tex: crate::pipeline_commands::gen_texture(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
             ..Self::default()
-        }.set_textures(render_pipeline, texture1, texture2);
+        }
     }
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {

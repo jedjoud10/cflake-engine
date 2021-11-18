@@ -1,5 +1,7 @@
-use crate::{RenderCommand, RenderTask, RenderTaskReturn, RenderTaskStatus, basics::*};
+use crate::{RenderCommand, RenderTask, RenderTaskStatus, basics::*};
 use std::sync::mpsc::{Receiver, Sender};
+
+
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
@@ -7,7 +9,7 @@ pub struct RenderPipeline {
     // Command ID
     pub command_id: u128,
     // The tasks that are asynchronous and are pending their return values
-    pub pending_wait_list: Vec<(RenderCommand, Box<dyn FnMut(RenderTaskReturn)>)>,
+    pub pending_wait_list: Vec<(RenderCommand, Box<dyn FnMut(GPUObject)>)>,
     // TX and RX
     pub channel: Option<(Sender<RenderCommand>, Receiver<RenderCommand>)>,
 }
@@ -31,7 +33,7 @@ impl RenderPipeline {
     }
 
     // Complete a task immediatly
-    pub fn task_immediate(&mut self, task: RenderTask) -> RenderTaskReturn {
+    pub fn task_immediate(&mut self, task: RenderTask) -> GPUObject {
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             message_id: self.command_id,
@@ -46,15 +48,15 @@ impl RenderPipeline {
                 tx.send(render_command);
                 // Wait for the result
                 let recv = rx.recv().unwrap();
-                let output = RenderTaskReturn::Object(GPUObject::None);
+                let output = GPUObject::None;
                 return output;
             },
             None => todo!(),
         }        
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
-    pub fn task<F>(&mut self, task: RenderTask, mut callback: F) where F: FnMut(RenderTaskReturn) + 'static {
-        let boxed_fn_mut: Box<dyn FnMut(RenderTaskReturn)> = Box::new(callback); 
+    pub fn task<F>(&mut self, task: RenderTask, mut callback: F) where F: FnMut(GPUObject) + 'static {
+        let boxed_fn_mut: Box<dyn FnMut(GPUObject)> = Box::new(callback); 
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             message_id: self.command_id,

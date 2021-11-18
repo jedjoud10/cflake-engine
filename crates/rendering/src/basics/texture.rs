@@ -64,15 +64,12 @@ pub enum TextureShaderAccessType {
 #[derive(Clone)]
 pub struct Texture {
     pub name: String,
-    pub id: u32,
     pub _format: TextureFormat,
     pub _type: DataType,
     pub flags: TextureFlags,
     pub filter: TextureFilter,
     pub wrap_mode: TextureWrapping,
     pub ttype: TextureType,
-    // Internal GPU shit
-    pub ifd: (i32, u32, u32),
 }
 
 impl Default for Texture {
