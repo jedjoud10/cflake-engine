@@ -1,5 +1,5 @@
 use super::{model::Model, model::ModelDataGPU, Material};
-use crate::advanced::MultiMaterialRenderer;
+use crate::{GPUObject, advanced::MultiMaterialRenderer};
 use assets::{Asset, AssetManager};
 use ecs::{Component, ComponentID, ComponentInternal};
 
@@ -15,9 +15,7 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub visible: bool,
-    pub gpu_data: ModelDataGPU,
-    pub model: Model,
-    // This renderer can only have one material for now (TODO: Make a multi material system)
+    pub model_id: GPUObject,
     pub material: Material,
     // Flags
     pub flags: RendererFlags,

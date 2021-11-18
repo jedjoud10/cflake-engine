@@ -1,3 +1,4 @@
+use crate::RenderPipeline;
 use crate::basics::*;
 use crate::utils::*;
 use assets::{AssetManager, AssetObject, Object};
@@ -14,13 +15,13 @@ bitflags! {
 #[derive(Clone)]
 pub struct Material {
     // Rendering stuff
-    pub shader: Option<Rc<Shader>>,
+    pub shader: GPUObject,
     pub material_name: String,
     pub flags: MaterialFlags,
     pub default_uniforms: HashMap<String, Uniform>,
     // The default texture ID
-    pub diffuse_tex: Option<Rc<Texture>>,
-    pub normal_tex: Option<Rc<Texture>>,
+    pub diffuse_tex: GPUObject,
+    pub normal_tex: GPUObject,
     // Is this material even visible?
     pub visible: bool,
 }
@@ -28,12 +29,12 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         let material: Self = Material {
-            shader: None,
+            shader: GPUObject::None,
             material_name: String::new(),
             flags: MaterialFlags::empty(),
             default_uniforms: HashMap::new(),
-            diffuse_tex: None,
-            normal_tex: None,
+            diffuse_tex: GPUObject::None,
+            normal_tex: GPUObject::None,
             visible: true,
         };
         // Set the default shader args
@@ -46,7 +47,7 @@ impl Default for Material {
 
 impl Material {
     // Create a new material with a name
-    pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
+    pub fn new(material_name: &str, render_pipeline: &mut RenderPipeline, asset_manager: &mut AssetManager) -> Self {
         Self {
             material_name: material_name.to_string(),
             diffuse_tex: Some(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
