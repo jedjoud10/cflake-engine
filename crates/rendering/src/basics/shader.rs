@@ -1,3 +1,4 @@
+use crate::GPUObject;
 use crate::advanced::ComputeShader;
 use crate::utils::RenderingError;
 
@@ -17,7 +18,7 @@ use std::rc::Rc;
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
     pub name: String,
-    pub program: u32,
+    pub id: GPUObject,
     pub finalized: bool,
     pub linked_subshaders_programs: Vec<(SubShaderType, u32)>,
     pub additional_shader: AdditionalShader,
@@ -29,7 +30,7 @@ impl Default for Shader {
         unsafe {
             Self {
                 name: String::from("Undefined"),
-                program: gl::CreateProgram(),
+                id: GPUObject::None,
                 finalized: false,
                 linked_subshaders_programs: Vec::new(),
                 additional_shader: AdditionalShader::None,

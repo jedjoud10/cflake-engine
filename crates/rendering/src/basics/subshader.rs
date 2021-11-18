@@ -1,5 +1,7 @@
 use std::{ffi::CString, ptr::null};
 
+use crate::GPUObject;
+
 
 
 // Sub shader type
@@ -19,7 +21,7 @@ impl Default for SubShaderType {
 // A sub shader, could be a geometry, vertex, or fragment shader
 #[derive(Clone, Default)]
 pub struct SubShader {
-    pub program: u32,
+    pub id: GPUObject,
     pub name: String,
     pub source: String,
     pub subshader_type: SubShaderType,

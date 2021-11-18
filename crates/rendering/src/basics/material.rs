@@ -80,7 +80,7 @@ impl Material {
     }
     // Set the main shader
     pub fn set_shader(mut self, shader: Rc<Shader>) -> Self {
-        self.shader = Some(shader);
+        self.shader = shader.id;
         self
     }
     // Toggle the double sided flag for this material

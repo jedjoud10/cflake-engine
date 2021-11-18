@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{GPUObject, Model, Renderer, Shader, Texture};
+use crate::{GPUObject, Model, Renderer, Shader, SubShader, Texture};
 
 
 // Render task status
@@ -15,16 +15,19 @@ pub struct RenderCommand {
     // Message stuff
     pub message_id: u128,
     pub input_task: RenderTask,
-    pub status: RenderTaskStatus,
 }
 // A render task (A specific message passed to the render thread)
 pub enum RenderTask {
-    // Basic render stuff like rendering entities
+    // Renderers
     AddRenderer(usize, Arc<Renderer>),
     DisposeRenderer(usize),
-    CreateShader(Arc<Shader>), // Give it the shader source
-    GenerateTexture(Arc<Texture>),
-    RefreshModel(Arc<Model>),
+    // Shader stuff
+    CreateSubShader(SubShader),
+    CreateShader(Shader),
+    GenerateTexture(Texture),
+
+
+    RefreshModel(Model),
     RunCompute(),
     // Destroy the render thread, since we are exiting from the application
     DestroyRenderPipeline()
