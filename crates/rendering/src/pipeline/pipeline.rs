@@ -13,16 +13,22 @@ pub struct RenderPipeline {
     // TX (MainThread) and RX (RenderThread)
     pub main_to_render: Option<(Sender<RenderCommand>, Receiver<RenderCommand>)>,
 }
-
 impl RenderPipeline {
     // The render thread that is continuously being ran
     fn frame(render_to_main: Sender<RenderTaskStatus>, main_to_render: Receiver<RenderCommand>) {}
     // Create the new render thread
-    pub fn initialize_render_thread(&mut self) {
+    pub fn init_pipeline(&mut self, window: &glfw::Window) {
         // Create the two channels
         let (tx, rx): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main
         let (tx2, rx2): (Sender<RenderCommand>, Receiver<RenderCommand>) = std::sync::mpsc::channel(); // Main to render
+        // Get the window pointer
+        let window_pointer: *mut 
         let x = std::thread::spawn(move || {
+            // Start OpenGL
+            unsafe {
+                gl::load_with(|s| window.get_proc_address(s) as *const _);
+                glfw::ffi::glfwMakeContextCurrent(Some(window));
+            }
             // We must render every frame
             loop {
                 Self::frame(tx, rx2)

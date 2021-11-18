@@ -18,7 +18,7 @@ pub struct RenderCommand {
 // A render task (A specific message passed to the render thread)
 pub enum RenderTask {
     // Renderers
-    AddRenderer(usize, Arc<Renderer>),
+    AddRenderer(usize, SimplifiedRenderer),
     DisposeRenderer(usize),
     // Shader stuff
     CreateSubShader(SubShader),
