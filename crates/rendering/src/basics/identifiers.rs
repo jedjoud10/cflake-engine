@@ -6,3 +6,9 @@ pub enum GPUObject {
     Shader(usize),
     Texture(usize),
 }
+
+impl Default for GPUObject {
+    fn default() -> Self {
+        Self::None
+    }
+}

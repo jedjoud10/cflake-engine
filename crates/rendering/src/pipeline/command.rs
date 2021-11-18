@@ -1,23 +1,19 @@
 use std::sync::Arc;
 
-use crate::{Model, RenderID, Renderer, Shader, Texture};
+use crate::{GPUObject, Model, Renderer, Shader, Texture};
 
-// The return value of the render task
-pub enum RenderTaskReturn {
-    RenderID(RenderID) // We get a new render ID
-}
 
 // Render task status
 pub enum RenderTaskStatus {
     PendingStartup,
-    Succsessful(RenderTaskReturn),
+    Succsessful(Option<GPUObject>),
     Failed,
 }
 
 // A render command
 pub struct RenderCommand {
     // Message stuff
-    pub message_id: usize,
+    pub message_id: u128,
     pub input_task: RenderTask,
     pub status: RenderTaskStatus,
 }

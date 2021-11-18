@@ -15,7 +15,7 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub visible: bool,
-    pub model_id: GPUObject,
+    pub model: GPUObject,
     pub material: Material,
     // Flags
     pub flags: RendererFlags,
@@ -27,8 +27,7 @@ impl Default for Renderer {
     fn default() -> Self {
         Self {
             visible: true,
-            gpu_data: ModelDataGPU::default(),
-            model: Model::default(),
+            model: GPUObject::None,
             material: Material::default(),
             flags: RendererFlags::DEFAULT,
             multi_material: None,
@@ -41,13 +40,8 @@ ecs::impl_component!(Renderer);
 
 // Everything related to the creation of a renderer
 impl Renderer {
-    // Load a model
-    pub fn load_model(mut self, model_path: &str, asset_manager: &AssetManager) -> Option<Self> {
-        self.model = Model::default().load_asset(model_path, &asset_manager.asset_cacher)?;
-        Some(self)
-    }
     // Set a model
-    pub fn set_model(mut self, model: Model) -> Self {
+    pub fn set_model(mut self, model: GPUObject) -> Self {
         self.model = model;
         self
     }
@@ -74,16 +68,5 @@ impl Renderer {
     pub fn set_visible(mut self, visible: bool) -> Self {
         self.visible = visible;
         self
-    }
-}
-
-impl Renderer {
-    // When we update the model and want to refresh it's OpenGL data
-    pub fn refresh_model(&mut self) {
-        self.gpu_data = self.model.refresh_gpu_data();
-    }
-    // Dispose of our model
-    pub fn dispose_model(&mut self) {
-        self.gpu_data.dispose();
     }
 }
