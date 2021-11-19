@@ -4,7 +4,12 @@ pub static mut render_pipeline: RenderPipeline = RenderPipeline::default();
 
 pub mod pipeline_commands {
     use crate::{render_pipeline, GPUObject, RenderTask, SubShader, Texture};
-    use std::rc::Rc;
+    // Start the render pipeline by initializing OpenGL on the new render thread
+    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+        unsafe {
+            render_pipeline.init_pipeline(glfw, window);
+        }
+    }
     // Wrapped functions so we can affect this static mut variable
     pub fn gen_texture(texture: Texture) -> GPUObject {
         unsafe {

@@ -653,6 +653,7 @@ dependencies = [
  "bitflags",
  "ecs",
  "gl",
+ "glfw",
  "image",
  "others",
  "veclib",

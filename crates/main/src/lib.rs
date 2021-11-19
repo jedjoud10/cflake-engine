@@ -29,7 +29,8 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
     let (mut window, events) = glfw
         .create_window(default_size.0 as u32, default_size.1 as u32, app_name, glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
-    gl::load_with(|s| window.get_proc_address(s) as *const _);
+    // Hehe multithreaded renering goes BRRRRRRRR
+    rendering::pipeline_commands::init_pipeline(&mut glfw, &mut window);
     // Set the type of events that we want to listen to
     window.set_key_polling(true);
     window.set_cursor_pos_polling(true);

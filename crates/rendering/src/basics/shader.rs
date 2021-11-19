@@ -170,7 +170,6 @@ impl Shader {
     // Cache this shader
     pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {
         let name = self.name.clone();
-
         asset_manager.object_cacher.cache(&name, self).unwrap()
     }
     // Finalizes a vert/frag shader by compiling it

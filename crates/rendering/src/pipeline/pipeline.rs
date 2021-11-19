@@ -1,5 +1,7 @@
+use glfw::Context;
+
 use crate::{basics::*, RenderCommand, RenderTask, RenderTaskStatus};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{Arc, Mutex, mpsc::{Receiver, Sender}};
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
@@ -17,23 +19,29 @@ impl RenderPipeline {
     // The render thread that is continuously being ran
     fn frame(render_to_main: Sender<RenderTaskStatus>, main_to_render: Receiver<RenderCommand>) {}
     // Create the new render thread
-    pub fn init_pipeline(&mut self, window: &glfw::Window) {
+    pub fn init_pipeline(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         // Create the two channels
         let (tx, rx): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main
         let (tx2, rx2): (Sender<RenderCommand>, Receiver<RenderCommand>) = std::sync::mpsc::channel(); // Main to render
-        // Get the window pointer
-        let window_pointer: *mut 
-        let x = std::thread::spawn(move || {
-            // Start OpenGL
-            unsafe {
+        let render_thread = unsafe {
+            // Window and GLFW wrapper
+            struct RenderWrapper(*mut glfw::Glfw, *mut glfw::Window);
+            unsafe impl Send for RenderWrapper {}
+            unsafe impl Sync for RenderWrapper {}
+            // Create the render wrapper
+            let render_wrapper = RenderWrapper(glfw as *mut glfw::Glfw, window as *mut glfw::Window);
+            std::thread::spawn(move || {
+                // Start OpenGL
+                let glfw = &mut *render_wrapper.0;
+                let window = &mut *render_wrapper.1;
                 gl::load_with(|s| window.get_proc_address(s) as *const _);
-                glfw::ffi::glfwMakeContextCurrent(Some(window));
-            }
-            // We must render every frame
-            loop {
-                Self::frame(tx, rx2)
-            }
-        });
+                glfw::ffi::glfwMakeContextCurrent(window.window_ptr() as *mut glfw::ffi::GLFWwindow);
+                // We must render every frame
+                loop {
+                    Self::frame(tx, rx2)
+                }
+            })
+        };
         // Vars
         self.render_to_main = Some((tx, rx));
     }

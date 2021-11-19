@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use crate::{GPUObject, Model, Renderer, Shader, SubShader, Texture};
 
+// Group task, a task that has multiple consecutive tasks that lead up to it, like auto-gen a model then create it's renderer
+
 // Render task status
 pub enum RenderTaskStatus {
     PendingStartup,
@@ -20,6 +22,8 @@ pub enum RenderTask {
     // Renderers
     AddRenderer(usize, SimplifiedRenderer),
     DisposeRenderer(usize),
+    // Update the transform of a specific renderer
+    UpdateRendererTransform(),
     // Shader stuff
     CreateSubShader(SubShader),
     CreateShader(Shader),
