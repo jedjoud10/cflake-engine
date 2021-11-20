@@ -1,5 +1,3 @@
-use crate::advanced::ComputeShader;
-use crate::basics::AdditionalShader;
 use crate::basics::Shader;
 use crate::basics::*;
 use crate::pipec;
@@ -15,15 +13,14 @@ pub struct FrameStats {
     pub texture: TextureGPUObject,
     pub entities_texture: TextureGPUObject,
     // The used compute shader
-    pub compute: ShaderGPUObject,
+    pub compute: ComputeShaderGPUObject,
 }
 
 impl FrameStats {
     // Load the compute shaders and generate the default texture
     pub fn load_compute_shader(&mut self, asset_manager: &mut AssetManager) {
-        self.compute = pipec::create_shader(
+        self.compute = pipec::create_compute_shader(
             Shader::default()
-                .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
                 .load_shader(vec!["defaults\\shaders\\others\\frame_stats.cmpt.glsl"], asset_manager)
                 .unwrap(),
         );
@@ -38,24 +35,21 @@ impl FrameStats {
     // Run the compute shader and update the texture
     pub fn update_texture(&mut self, time: &others::Time, entities: &SmartList<Entity>) {
         // Don't forget to use it
-        self.compute.use_shader();
-        self.compute.set_i2d("image_stats", &self.texture, TextureShaderAccessType::ReadWrite);
-        self.compute.set_f32("time", &(time.seconds_since_game_start as f32));
-        self.compute.set_f32("fps", &(time.fps as f32));
+        let group = self.compute.new_excecution_group();
+        group.set_i2d("image_stats", self.texture, TextureShaderAccessType::ReadWrite);
+        group.set_f32("time", time.seconds_since_game_start as f32);
+        group.set_f32("fps", time.fps as f32);
         // Limit the number of entities to 131072
         let mut vec = entities.elements.iter().map(|x| x.is_some()).collect::<Vec<bool>>();
         vec.resize(512, false);
         let vec = vec.iter().map(|x| if *x { 255 } else { 0 }).collect::<Vec<u8>>();
         self.entities_texture.update_data(vec);
-        self.compute.set_t1d("entities_texture", &self.entities_texture, 1);
+        group.set_t1d("entities_texture", self.entities_texture, 1);
 
-        // Set the uniforms
-        let compute = match &mut self.compute.additional_shader {
-            AdditionalShader::None => todo!(),
-            AdditionalShader::Compute(x) => x,
-        };
         // Run the compute shader
-        compute.run_compute((self.texture.get_width() as u32 / 8, self.texture.get_height() as u32 / 8, 1)).unwrap();
-        compute.get_compute_state().unwrap();
+        let x = self.texture.1.get_width();
+        let y = self.texture.1.get_height();
+        self.compute.run(x / 8, y / 8, 1);
+        self.compute.lock_state();
     }
 }

@@ -1,11 +1,11 @@
 use std::rc::Rc;
-
-use crate::basics::Texture;
+use crate::{TextureShaderAccessType, basics::Texture};
+use crate::pipeline::object::*;
 
 // Some default uniforms that we will set
-#[derive(Clone)]
 pub enum Uniform {
     // Singles
+    Bool(bool),
     F32(f32),
     I32(i32),
     // Vectors
@@ -17,9 +17,13 @@ pub enum Uniform {
     Vec4I32(veclib::Vector4<i32>),
     Mat44F32(veclib::Matrix4x4<f32>),
     // Others
-    Texture2D(Rc<Texture>, u32),
-    Texture3D(Rc<Texture>, u32),
-    Texture2DArray(Rc<Texture>, u32),
+    Texture1D(TextureGPUObject, u32),
+    Texture2D(TextureGPUObject, u32),
+    Texture3D(TextureGPUObject, u32),
+    Texture2DArray(TextureGPUObject, u32),
+    // Compute sheit
+    Image2D(TextureGPUObject, TextureShaderAccessType),
+    Image3D(TextureGPUObject, TextureShaderAccessType)
 }
 
 // Simple main OpenGL types

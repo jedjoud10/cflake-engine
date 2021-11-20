@@ -37,4 +37,12 @@ pub mod pipec {
             }
         }
     }
+    pub fn create_compute_shader(shader: Shader) -> ComputeShaderGPUObject {
+        unsafe { 
+            match render_pipeline.task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
+                GPUObject::ComputeShader(x) => x, 
+                _ => panic!()
+            }
+        }
+    }
 }

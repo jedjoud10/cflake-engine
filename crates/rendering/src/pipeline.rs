@@ -1,5 +1,5 @@
 mod command;
-mod object;
+pub mod object;
 mod pipeline;
 mod pipeline_main;
 pub use command::*;

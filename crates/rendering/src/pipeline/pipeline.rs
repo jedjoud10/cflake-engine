@@ -208,7 +208,14 @@ impl RenderPipeline {
                 println!("\x1b[0m");
                 panic!();
             }
-
+            // Check if this a compute shader
+            let mut compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap() {
+                GPUObject::SubShader(x) => match x.0 {
+                    SubShaderType::Compute => true,
+                    _ => false
+                },
+                _ => false,
+            };
             // Detach shaders
             for subshader_program in shader.linked_subshaders_programs.iter() {
                 match subshader_program {
@@ -216,7 +223,13 @@ impl RenderPipeline {
                     _ => {}
                 }
             }
-            GPUObject::Shader(ShaderGPUObject(program))
+            if !compute_shader {
+                // Normal shader
+                GPUObject::Shader(ShaderGPUObject(program))
+            } else {
+                // Compute shader
+                GPUObject::ComputeShader(ComputeShaderGPUObject(program))
+            }
         }
     }
     pub fn create_model(model: SharedData<Model>) -> GPUObject {
@@ -440,7 +453,7 @@ impl RenderPipeline {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
         }
         println!("Succsesfully generated texture {}", texture.name);
-        GPUObject::Texture(TextureGPUObject(id))
+        GPUObject::Texture(TextureGPUObject(id, texture.ttype))
     }
     pub fn update_texture_size(texture: &mut SharedData<Texture>, id: u32, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one

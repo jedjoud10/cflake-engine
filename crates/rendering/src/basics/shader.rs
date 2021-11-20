@@ -1,4 +1,3 @@
-use crate::advanced::ComputeShader;
 use crate::utils::RenderingError;
 use crate::GPUObject;
 
@@ -20,7 +19,6 @@ pub struct Shader {
     pub name: String,
     pub source: String,
     pub linked_subshaders_programs: Vec<GPUObject>,
-    pub additional_shader: AdditionalShader,
 }
 
 impl Default for Shader {
@@ -30,7 +28,6 @@ impl Default for Shader {
                 name: "".to_string(),
                 source: "".to_string(),
                 linked_subshaders_programs: Vec::new(),
-                additional_shader: AdditionalShader::None,
             }
         }
     }
@@ -89,11 +86,6 @@ impl Shader {
             offset += included_lines.len();
         }
         Ok(!vectors_to_insert.is_empty())
-    }
-    // Set an additional shader for this shader before we finalize it
-    pub fn set_additional_shader(mut self, additional_shader: AdditionalShader) -> Self {
-        self.additional_shader = additional_shader;
-        self
     }
     // Creates a shader from multiple subshader files
     pub fn load_shader<'a>(mut self, subshader_paths: Vec<&str>, asset_manager: &'a mut AssetManager) -> Result<Self, RenderingError> {
@@ -156,173 +148,6 @@ impl Shader {
     }
 }
 
-// Impl block for interfacing with the OpenGL shader, like setting uniforms and scuh
-impl Shader {
-    // Get the location of a specific uniform, using it's name
-    #[allow(temporary_cstring_as_ptr)]
-    pub fn get_uniform_location(&self, name: &str) -> Result<i32, RenderingError> {
-        unsafe {
-            let x = gl::GetUniformLocation(self.program, CString::new(name).unwrap().as_ptr());
-            Ok(x)
-        }
-    }
-    // Set a bool uniform
-    pub fn set_bool(&self, name: &str, b: bool) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform1i(u, if b { 1 } else { 0 });
-        }
-    }
-    // Set an array of bool uniforms
-    pub fn set_bool_array(&self, name: &str, b: Vec<bool>) {
-        let u = self.get_uniform_location(name).unwrap();
-        let ptr = b.as_ptr() as *const i32;
-        unsafe {
-            gl::Uniform1iv(u, b.len() as i32, ptr);
-        }
-    }
-    // Set a f32 uniform
-    pub fn set_f32(&self, name: &str, value: &f32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform1f(u, *value);
-        }
-    }
-    // Set a 2D image
-    pub fn set_i2d(&self, name: &str, texture: &Texture, access_type: TextureShaderAccessType) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            // Converstion from wrapper to actual opengl values
-            let new_access_type: u32;
-            match access_type {
-                TextureShaderAccessType::ReadOnly => new_access_type = gl::READ_ONLY,
-                TextureShaderAccessType::WriteOnly => new_access_type = gl::WRITE_ONLY,
-                TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
-            };
-            let unit = u as u32;
-            gl::BindTexture(gl::TEXTURE_2D, texture.id);
-            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.ifd.0 as u32);
-        }
-    }
-    // Set a i32
-    pub fn set_i32(&self, name: &str, value: &i32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform1i(u, *value);
-        }
-    }
-    // Set a 3D image
-    pub fn set_i3d(&self, name: &str, texture: &Texture, access_type: TextureShaderAccessType) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            // Converstion from wrapper to actual opengl values
-            let new_access_type: u32;
-            match access_type {
-                TextureShaderAccessType::ReadOnly => new_access_type = gl::READ_ONLY,
-                TextureShaderAccessType::WriteOnly => new_access_type = gl::WRITE_ONLY,
-                TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
-            };
-            let unit = u as u32;
-            gl::BindTexture(gl::TEXTURE_3D, texture.id);
-            gl::BindImageTexture(unit, texture.id, 0, gl::FALSE, 0, new_access_type, texture.ifd.0 as u32);
-        }
-    }
-    // Set a matrix 4x4 f32
-    pub fn set_mat44(&self, name: &str, matrix: &veclib::Matrix4x4<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            let ptr: *const f32 = &matrix[0];
-            gl::UniformMatrix4fv(u, 1, gl::FALSE, ptr);
-        }
-    }
-    // Set a 1D texture
-    pub fn set_t1d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            if u != -1 {
-                gl::ActiveTexture(active_texture_id + 33984);
-                gl::BindTexture(gl::TEXTURE_1D, texture.id);
-                //gl::Uniform1i(u, active_texture_id as i32);
-            }
-        }
-    }
-    // Set a 2D texture
-    pub fn set_t2d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            if u != -1 {
-                gl::ActiveTexture(active_texture_id + 33984);
-                gl::BindTexture(gl::TEXTURE_2D, texture.id);
-                gl::Uniform1i(u, active_texture_id as i32);
-            }
-        }
-    }
-    // Set a texture2d array
-    pub fn set_t2da(&self, name: &str, texture: &Texture, active_texture_id: u32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            if u != 1 {
-                gl::ActiveTexture(active_texture_id + 33984);
-                gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.id);
-                gl::Uniform1i(u, active_texture_id as i32);
-            }
-        }
-    }
-    // Set a 3D texture
-    pub fn set_t3d(&self, name: &str, texture: &Texture, active_texture_id: u32) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            if u != -1 {
-                gl::ActiveTexture(active_texture_id + 33984);
-                gl::BindTexture(gl::TEXTURE_3D, texture.id);
-                gl::Uniform1i(u, active_texture_id as i32);
-            }
-        }
-    }
-    // Set a vec2 f32 uniform
-    pub fn set_vec2f32(&self, name: &str, vec: &veclib::Vector2<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform2f(u, vec[0], vec[1]);
-        }
-    }
-    // Set a vec2 i32 uniform
-    pub fn set_vec2i32(&self, name: &str, vec: &veclib::Vector2<i32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform2i(u, vec[0], vec[1]);
-        }
-    }
-    // Set a vec3 f32 uniform
-    pub fn set_vec3f32(&self, name: &str, vec: &veclib::Vector3<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform3f(u, vec[0], vec[1], vec[2]);
-        }
-    }
-    // Set a vec3 i32 uniform
-    pub fn set_vec3i32(&self, name: &str, vec: &veclib::Vector3<i32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform3i(u, vec[0], vec[1], vec[2]);
-        }
-    }
-    // Set a vec4 f32 uniform
-    pub fn set_vec4f32(&self, name: &str, vec: &veclib::Vector4<f32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform4f(u, vec[0], vec[1], vec[2], vec[3]);
-        }
-    }
-    // Set a vec4 i32 uniform
-    pub fn set_vec4i32(&self, name: &str, vec: &veclib::Vector4<i32>) {
-        let u = self.get_uniform_location(name).unwrap();
-        unsafe {
-            gl::Uniform4i(u, vec[0], vec[1], vec[2], vec[3]);
-        }
-    }
-}
-
 // Each shader can be instanced
 impl others::Instance for Shader {
     fn set_name(&mut self, string: String) {
@@ -331,10 +156,4 @@ impl others::Instance for Shader {
     fn get_name(&self) -> String {
         self.name.clone()
     }
-}
-
-// Additional shaders
-pub enum AdditionalShader {
-    None,
-    Compute(ComputeShader),
 }
