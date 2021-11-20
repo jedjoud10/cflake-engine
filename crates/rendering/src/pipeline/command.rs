@@ -46,7 +46,7 @@ pub enum RenderTask {
     TextureFillArrayVeclib(TextureGPUObject),
     TextureFillArray(TextureGPUObject),
     // Model
-    ModelCreate(Model),
+    ModelCreate(SharedData<Model>),
     // Compute
     ComputeRun(),
     ComputeLock(),

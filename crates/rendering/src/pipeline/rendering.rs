@@ -1,5 +1,6 @@
 use crate::{FrameStats, Material, Renderer, pipeline::object::*};
 // The main renderer
+#[derive(Default)]
 pub struct PipelineRenderer {
     pub framebuffer: u32,
     // The frame buffer textures
@@ -14,6 +15,7 @@ pub struct PipelineRenderer {
     quad_renderer: Renderer,
 }
 
+// All of this is ran on the Render Thread, so we have a valid OpenGl context
 impl PipelineRenderer {
     // Bind a specific texture attachement to the frame buffer
     fn bind_attachement(attachement: u32, texture: &Texture) {

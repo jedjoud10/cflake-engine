@@ -1,18 +1,18 @@
 use std::{collections::HashMap, iter::FromIterator};
-use crate::{GPUObject, RenderPipeline};
+use crate::{GPUObject, Pipeline};
 
 // Static mut RenderPipeline
-pub static mut render_pipeline: Option<RenderPipeline> = None;
+pub static mut render_pipeline: Option<Pipeline> = None;
 
 pub mod pipec {
     use assets::{AssetManager, CachedObject};
 
     use crate::pipeline::object::*;
-    use crate::{RenderPipeline, RenderTask, Shader, SharedData, SubShader, Texture, render_pipeline};
+    use crate::{Model, Pipeline, RenderTask, Shader, SharedData, SubShader, Texture, render_pipeline};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
-            render_pipeline = Some(RenderPipeline::default());
+            render_pipeline = Some(Pipeline::default());
             render_pipeline.unwrap().init_pipeline(glfw, window);
         }
     }
@@ -61,6 +61,14 @@ pub mod pipec {
             }
         }
     }
+    fn create_model(model: Model) -> ModelGPUObject {
+        unsafe {
+            match render_pipeline.unwrap().task_immediate(RenderTask::ModelCreate(SharedData::new(model))) {
+                GPUObject::Model(x) => x,
+                _ => panic!(),
+            }
+        }
+    }
     fn get_gpu_object(name: &str) -> GPUObject {
         unsafe {
             render_pipeline.unwrap().get_gpu_object(name).clone()
@@ -102,6 +110,10 @@ pub mod pipec {
     pub fn texture(texture: Texture) -> TextureGPUObject {
         if gpu_object_valid(&texture.name) { get_texture_object(&texture.name) }
         else { create_texture(texture.clone()) }
+    }
+    pub fn model(model: Model) -> ModelGPUObject {
+        // (TODO: Implement model caching)
+        create_model(model)
     }
     // Load or create functions, cached type
     pub fn texturec(texturec: CachedObject<Texture>) -> TextureGPUObject {

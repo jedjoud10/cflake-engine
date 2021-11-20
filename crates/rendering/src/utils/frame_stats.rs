@@ -8,6 +8,7 @@ use ecs::Entity;
 use others::SmartList;
 
 // Debugs some data about the current frame in a 64x256 texture. Could be used to graph the FPS or memory usage
+#[derive(Default)]
 pub struct FrameStats {
     // The used texture
     pub texture: TextureGPUObject,

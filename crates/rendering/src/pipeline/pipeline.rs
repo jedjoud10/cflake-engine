@@ -2,7 +2,7 @@ use assets::AssetManager;
 use glfw::Context;
 
 use super::object::*;
-use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedData, basics::*, pipec};
+use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedData, basics::*, pipec, rendering::PipelineRenderer};
 use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null, sync::{
         mpsc::{Receiver, Sender},
         Arc, Mutex,
@@ -10,15 +10,16 @@ use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null,
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
-pub struct RenderPipeline {
+pub struct Pipeline {
     pub command_id: u128, // Next Command ID 
     pub pending_wait_list: Vec<(u128, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
     pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects
     pub render_to_main: Option<Receiver<RenderTaskStatus>>, // RX (MainThread)    
     pub main_to_render: Option<Sender<RenderCommand>>, // TX (MainThread)
+    pub renderer: PipelineRenderer,
     pub default_material: Material,
 }
-impl RenderPipeline {
+impl Pipeline {
     // Run a command
     fn command(command: RenderCommand, render_to_main: &Sender<RenderTaskStatus>) {
         let object = match command.input_task {
@@ -86,6 +87,7 @@ impl RenderPipeline {
                 let window = &mut *render_wrapper.1;
                 gl::load_with(|s| window.get_proc_address(s) as *const _);
                 glfw::ffi::glfwMakeContextCurrent(window.window_ptr() as *mut glfw::ffi::GLFWwindow);
+                // Initialize the deferred renderer
                 // We must render every frame
                 let tx = tx.clone();
                 loop {
@@ -111,17 +113,9 @@ impl RenderPipeline {
             .set_shader(ds);
         self.default_material = dm;
 
-        let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::default()
-            .load_asset("defaults\\models\\screen_quad.mdl3d", &data.asset_manager.asset_cacher)
-            .unwrap();
-        // Create the screen quad material
-        let material: Material = Material::default().set_shader(
-            ,
-        );
-        let mut quad_renderer_component = quad_renderer_component.set_material(material);
-        quad_renderer_component.refresh_model();
-        self.quad_renderer = quad_renderer_component;
+        // Create the quad model
+        let quad = crate::static_models::QUAD;
+        let quad_model = pipec::model(quad);
     } 
     // Complete a task immediatly
     pub fn task_immediate(&mut self, task: RenderTask) -> GPUObject {
@@ -175,7 +169,7 @@ impl RenderPipeline {
     }
 }
 // The actual OpenGL tasks that are run on the render thread
-impl RenderPipeline {
+impl Pipeline {
     pub fn create_compile_subshader(subshader: SharedData<SubShader>) -> GPUObject {
         let shader_type: u32;
         let subshader = subshader.object.as_ref();
