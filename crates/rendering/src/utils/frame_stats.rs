@@ -35,7 +35,7 @@ impl FrameStats {
     // Run the compute shader and update the texture
     pub fn update_texture(&mut self, time: &others::Time, entities: &SmartList<Entity>) {
         // Don't forget to use it
-        let group = self.compute.new_excecution_group();
+        let group = self.compute.new_uniform_group();
         group.set_i2d("image_stats", self.texture, TextureShaderAccessType::ReadWrite);
         group.set_f32("time", time.seconds_since_game_start as f32);
         group.set_f32("fps", time.fps as f32);

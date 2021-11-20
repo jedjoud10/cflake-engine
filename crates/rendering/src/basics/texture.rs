@@ -52,6 +52,12 @@ pub enum TextureType {
     TextureArray(u16, u16, u16),
 }
 
+impl Default for TextureType {
+    fn default() -> Self {
+        Self::Texture2D(0, 0)
+    }
+}
+
 impl TextureType {
     // Get the width of this texture
     pub fn get_width(&self) -> u16 {

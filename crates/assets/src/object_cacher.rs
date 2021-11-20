@@ -1,6 +1,6 @@
 use std::{any::Any, collections::HashMap, rc::Rc};
 
-use crate::ObjectLoadError;
+use crate::{CachedObject, ObjectLoadError};
 
 // The object cacher
 #[derive(Default)]
@@ -42,7 +42,7 @@ pub trait Object {
         local_path.to_string()
     }
     // Only load this object knowing that it was already cached
-    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> Rc<Self>
+    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> CachedObject<Self>
     where
         Self: Sized + 'static,
     {
@@ -52,14 +52,16 @@ pub trait Object {
             let any = &object.clone().downcast::<Self>().unwrap();
             // Put it back into an Rc
             let rc_object = Rc::clone(any);
-            rc_object
+            CachedObject {
+                rc: rc_object
+            }
         } else {
             // This object was not cached, not good
             panic!()
         }
     }
     // Load this asset as a cached asset, but also cache it if it was never loaded
-    fn object_cache_load(self, local_path: &str, object_cacher: &mut ObjectCacher) -> Rc<Self>
+    fn object_cache_load(self, local_path: &str, object_cacher: &mut ObjectCacher) -> CachedObject<Self>
     where
         Self: Sized + 'static,
     {
@@ -71,15 +73,19 @@ pub trait Object {
             let any = &object.clone().downcast::<Self>().unwrap();
             // Put it back into an Rc
             let rc_object = Rc::clone(any);
-            rc_object
+            CachedObject {
+                rc: rc_object
+            }
         } else {
             // This object was not cached, cache it
             let rc_object = object_cacher.cache(&name, self).unwrap();
-            rc_object
+            CachedObject {
+                rc: rc_object
+            }
         }
     }
     // Load this asset as a cached asset, but with preinitialized self
-    fn object_load_ot(self, local_path: &str, object_cacher: &ObjectCacher) -> Option<Rc<Self>>
+    fn object_load_ot(self, local_path: &str, object_cacher: &ObjectCacher) -> Option<CachedObject<Self>>
     where
         Self: Sized + 'static,
     {
@@ -91,7 +97,9 @@ pub trait Object {
             let any = &object.clone().downcast::<Self>().unwrap();
             // Put it back into an Rc
             let rc_object = Rc::clone(any);
-            Some(rc_object)
+            Some(CachedObject {
+                rc: rc_object
+            })
         } else {
             None
         }

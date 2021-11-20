@@ -15,13 +15,13 @@ pub struct ComputeShaderGPUObject(pub u32);
 pub struct TextureGPUObject(pub u32, pub TextureType);
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
-pub struct ShaderExcecutionGroup {
+pub struct ShaderUniformsGroup {
     // Uniforms
     uniforms: HashMap<String, Uniform>,
 }
 
 // Gotta change the place where this shit is in
-impl ShaderExcecutionGroup {
+impl ShaderUniformsGroup {
     // Create a new empty shader excecution group (Used for initial states)
     pub fn new_null() -> Self {
         Self {
@@ -96,15 +96,15 @@ impl ShaderExcecutionGroup {
 
 impl ShaderGPUObject {
     // Get the excecution group
-    pub fn new_excecution_group(&self) -> ShaderExcecutionGroup {
-        ShaderExcecutionGroup { uniforms: HashMap::new() }
+    pub fn new_excecution_group(&self) -> ShaderUniformsGroup {
+        ShaderUniformsGroup { uniforms: HashMap::new() }
     }
 }
 
 impl ComputeShaderGPUObject {
     // Get the excecution group
-    pub fn new_excecution_group(&self) -> ShaderExcecutionGroup {
-        ShaderExcecutionGroup { uniforms: HashMap::new() }
+    pub fn new_uniform_group(&self) -> ShaderUniformsGroup {
+        ShaderUniformsGroup { uniforms: HashMap::new() }
     }
 }
 

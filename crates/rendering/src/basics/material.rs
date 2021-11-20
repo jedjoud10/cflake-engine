@@ -18,7 +18,7 @@ pub struct Material {
     pub shader: ShaderGPUObject,
     pub material_name: String,
     pub flags: MaterialFlags,
-    pub uniforms: ShaderExcecutionGroup,
+    pub uniforms: ShaderUniformsGroup,
     // The default textures
     pub diffuse_tex: TextureGPUObject,
     pub normal_tex: TextureGPUObject,
@@ -28,20 +28,20 @@ pub struct Material {
 
 impl Default for Material {
     fn default() -> Self {
-        let material: Self = Material {
+        let mut material: Self = Material {
             shader: ShaderGPUObject::default(),
             material_name: String::new(),
             flags: MaterialFlags::empty(),
-            uniforms: ShaderExcecutionGroup::new_null(),
+            uniforms: ShaderUniformsGroup::new_null(),
             diffuse_tex: TextureGPUObject::default(),
             normal_tex: TextureGPUObject::default(),
             visible: true,
         };
         // Set the default shader args
-        let material = material.set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE));
-        let material = material.set_uniform("tint", Uniform::Vec3F32(veclib::Vector3::ONE));
-
-        material.set_uniform("normals_strength", Uniform::F32(1.0))
+        material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
+        material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
+        material.uniforms.set_f32("normals_strength", 1.0);
+        material
     }
 }
 
@@ -50,15 +50,15 @@ impl Material {
     pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
         Self {
             material_name: material_name.to_string(),
-            diffuse_tex: Texture::object_load_o("white", &mut asset_manager.object_cacher).id,
-            normal_tex: Texture::object_load_o("default_normals", &mut asset_manager.object_cacher).id,
+            diffuse_tex: pipec::texturec(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
+            normal_tex: pipec::texturec(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher)),
             ..Self::default()
         }
     }
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let texture = pipec::texture(Texture::default()
+        let texture = pipec::texturec(Texture::default()
             .enable_mipmaps()
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
@@ -69,18 +69,17 @@ impl Material {
     // Load the normal texture
     pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let texture = Texture::default()
+        let texture = pipec::texturec(Texture::default()
             .enable_mipmaps()
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
-            .cache_load(normal_path, asset_manager)
-            .id;
+            .cache_load(normal_path, asset_manager));
         self.normal_tex = texture;
         self
     }
     // Set the main shader
-    pub fn set_shader(mut self, shader: Rc<Shader>) -> Self {
-        self.shader = shader.id;
+    pub fn set_shader(mut self, shader: ShaderGPUObject) -> Self {
+        self.shader = shader;
         self
     }
     // Toggle the double sided flag for this material
@@ -95,20 +94,6 @@ impl Material {
     pub fn set_visible(mut self, visible: bool) -> Self {
         self.visible = visible;
         self
-    }
-    // Set a default uniform
-    pub fn set_uniform(mut self, uniform_name: &str, uniform: Uniform) -> Self {
-        self.default_uniforms.insert(uniform_name.to_string(), uniform);
-        self
-    }
-    // Set a default uniform but also it's inxed
-    pub fn set_uniform_i(self, uniform_name: &str, uniform: Uniform) -> (Self, usize) {
-        let i = self.default_uniforms.len();
-        (self.set_uniform(uniform_name, uniform), i)
-    }
-    // Update a default uniform
-    pub fn update_uniform(&mut self, uniform_name: &str, new_uniform: Uniform) {
-        self.default_uniforms.insert(uniform_name.to_string(), new_uniform);
     }
 }
 

@@ -3,12 +3,20 @@ use crate::RenderPipeline;
 pub static mut render_pipeline: RenderPipeline = RenderPipeline::default();
 
 pub mod pipec {
+    use assets::CachedObject;
+
     use crate::pipeline::object::*;
     use crate::{render_pipeline, RenderTask, Shader, SharedData, SubShader, Texture};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
             render_pipeline.init_pipeline(glfw, window);
+        }
+    }
+    // Task
+    pub fn task_immediate(task: RenderTask) -> GPUObject {
+        unsafe {
+            render_pipeline.task_immediate(task)
         }
     }
 
@@ -86,5 +94,13 @@ pub mod pipec {
     pub fn texture(texture: Texture) -> TextureGPUObject {
         if gpu_object_valid(&texture.name) { get_texture_object(&texture.name) }
         else { create_texture(texture.clone()) }
+    }
+    // Load or create functions, cached type
+    pub fn texturec(texturec: CachedObject<Texture>) -> TextureGPUObject {
+        if gpu_object_valid(&texturec.rc.name) { get_texture_object(&texturec.rc.name) }
+        else { 
+            let texture = texturec.rc.as_ref().clone();
+            create_texture(texture)
+        }
     }
 }

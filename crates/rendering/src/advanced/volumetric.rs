@@ -1,4 +1,6 @@
-use crate::advanced::ComputeShader;
+use crate::RenderTask;
+use crate::pipec;
+use crate::pipeline::object::*;
 use crate::basics::*;
 use crate::utils::*;
 use assets::AssetManager;
@@ -7,15 +9,15 @@ use assets::AssetManager;
 #[derive(Default)]
 pub struct Volumetric {
     // The main SDF texture used for the volumetric sampling
-    pub sdf_tex: Texture,
+    pub sdf_tex: TextureGPUObject,
     // The output, screen texture that will be rendered (PS: This texture might be downscaled from the original screen size)
-    pub result_tex: Texture,
+    pub result_tex: TextureGPUObject,
     // The depth texture
-    pub depth_tex: Texture,
+    pub depth_tex: TextureGPUObject,
     // The compute shader ID for the SDF generator compute
-    pub compute_generator: Shader,
+    pub compute_generator: ComputeShaderGPUObject,
     // The compute shader ID
-    pub compute: Shader,
+    pub compute: ComputeShaderGPUObject,
     // Check if the volumetric rendering is enabled
     pub enabled: bool,
 
@@ -28,70 +30,58 @@ impl Volumetric {
     // Load the necessary compute shaders
     pub fn load_compute_shaders(&mut self, asset_manager: &mut AssetManager) {
         // Load generator compute
-        self.compute_generator = Shader::default()
-            .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
+        self.compute_generator = pipec::compute_shader(Shader::default()
             .load_shader(vec!["defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl"], asset_manager)
-            .unwrap();
+            .unwrap());
         // Load the volumetric compute
-        self.compute = Shader::default()
-            .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
+        self.compute = pipec::compute_shader(Shader::default()
             .load_shader(vec!["defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl"], asset_manager)
-            .unwrap();
+            .unwrap());
     }
     // Create the SDF texture from a simple texture, loaded into a compute shader
     // Create the textures
     pub fn create_textures(&mut self, resolution: veclib::Vector2<u16>, sdf_dimensions: u16, scale_down_factor_result: u16) {
         self.sdf_dimension = sdf_dimensions;
         self.scale_down_factor_result = scale_down_factor_result;
-        self.sdf_tex = Texture::default()
+        self.sdf_tex = pipec::texture(Texture::default()
             .set_dimensions(TextureType::Texture3D(self.sdf_dimension, self.sdf_dimension, self.sdf_dimension))
             .set_wrapping_mode(TextureWrapping::Repeat)
-            .set_format(TextureFormat::R16F)
-            .generate_texture(Vec::new())
-            .unwrap();
+            .set_format(TextureFormat::R16F));
         // This texture is going to be rescaled if the window resolution changes
-        self.result_tex = Texture::default()
+        self.result_tex = pipec::texture(Texture::default()
             .set_dimensions(TextureType::Texture2D(
                 resolution.x / self.scale_down_factor_result,
                 resolution.y / self.scale_down_factor_result,
             ))
             .set_format(TextureFormat::RGBA8R)
             .set_filter(TextureFilter::Linear)
-            .set_wrapping_mode(TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new())
-            .unwrap();
+            .set_wrapping_mode(TextureWrapping::ClampToBorder));
         // Depth texture
-        self.depth_tex = Texture::default()
+        self.depth_tex = pipec::texture(Texture::default()
             .set_dimensions(TextureType::Texture2D(
                 resolution.x / self.scale_down_factor_result,
                 resolution.y / self.scale_down_factor_result,
             ))
             .set_format(TextureFormat::R32F)
             .set_filter(TextureFilter::Nearest)
-            .set_wrapping_mode(TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new())
-            .unwrap();
+            .set_wrapping_mode(TextureWrapping::ClampToBorder));
     }
     // When the screen resolution changes
     pub fn update_texture_resolution(&mut self, resolution: veclib::Vector2<u16>) {
-        self.result_tex.update_size(TextureType::Texture2D(
+        pipec::task_immediate(RenderTask::TextureUpdateSize(self.result_tex, TextureType::Texture2D(
             resolution.x / self.scale_down_factor_result,
             resolution.y / self.scale_down_factor_result,
-        ));
-        self.depth_tex.update_size(TextureType::Texture2D(
+        )));
+        pipec::task_immediate(RenderTask::TextureUpdateSize(self.depth_tex, TextureType::Texture2D(
             resolution.x / self.scale_down_factor_result,
             resolution.y / self.scale_down_factor_result,
-        ));
+        )));
     }
     // Create the SDF texture from a compute shader complitely
     pub fn generate_sdf(&mut self, _asset_manager: &AssetManager) {
-        self.compute_generator.use_shader();
+        let group = self.compute_generator.new_uniform_group();
         self.compute_generator.set_i3d("sdf_tex", &self.sdf_tex, TextureShaderAccessType::WriteOnly);
         // Actually generate the SDF
-        let compute = match &mut self.compute_generator.additional_shader {
-            AdditionalShader::None => panic!(),
-            AdditionalShader::Compute(x) => x,
-        };
         // Run the compute
         compute
             .run_compute((

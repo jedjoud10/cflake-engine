@@ -5,7 +5,7 @@ use crate::{Asset, AssetManager, Object};
 // Asset object
 pub trait AssetObject: Asset + Object {
     // Cache and load. Load if the object was not cached it. We load it from it's asset metadata
-    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> Rc<Self>
+    fn cache_load(self, local_path: &str, asset_manager: &mut AssetManager) -> CachedObject<Self>
     where
         Self: Sized + 'static,
     {
@@ -21,3 +21,9 @@ pub trait AssetObject: Asset + Object {
         }
     }
 }
+
+
+// Cached asset object
+pub struct CachedObject<T> {
+    pub rc: Rc<T>
+} 

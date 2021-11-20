@@ -23,7 +23,7 @@ members = [
     #"crates\\input",
     #"crates\\defaults",
     #"crates\\others",
-    #"crates\\assets",
+    "crates\\assets",
     #"crates\\terrain_interpreter",
     #"crates\\terrain",
     #"crates\\ui",

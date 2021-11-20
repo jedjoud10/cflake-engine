@@ -53,17 +53,21 @@ impl MultiMaterialRenderer {
     // When we update the complex model and want to refresh it's OpenGL data
     pub fn refresh_sub_models(&mut self) {
         // Loop through each sub model and consider it as a unique model
+        /*
         self.sub_models_gpu_data = vec![ModelDataGPU::default(); self.sub_models.len()];
         for (i, (sub_model, _material_id)) in self.sub_models.iter().enumerate() {
             let gpu_data = sub_model.refresh_gpu_data();
             self.sub_models_gpu_data[i] = gpu_data;
         }
+        */
     }
 
     // Dispose of our complex model data
     pub fn dispose_models(&mut self) {
+        /*
         for sub_model_gpu_data in self.sub_models_gpu_data.iter_mut() {
             sub_model_gpu_data.dispose();
         }
+        */
     }
 }
