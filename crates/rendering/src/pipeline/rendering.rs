@@ -1,39 +1,7 @@
-use super::super::components;
-use assets::{Asset, AssetObject, Object};
-use ecs::{Entity, FilteredLinkedComponents};
-use gl;
-use rendering::advanced::*;
-use rendering::basics::*;
-use rendering::utils::*;
+// The main renderer
+pub struct PipelineRenderer {
 
-use std::{
-    ffi::{c_void, CString},
-    ptr::null,
-    time::Instant,
-};
-use systems::{InternalSystemData, System, SystemData, SystemEventType};
-use veclib::Swizzable;
-use world_data::WorldData;
-
-#[derive(Default)]
-pub struct CustomData {
-    pub framebuffer: u32,
-    // The frame buffer textures
-    pub diffuse_texture: Texture,
-    pub normals_texture: Texture,
-    pub position_texture: Texture,
-    pub depth_texture: Texture,
-    pub debug_view: u16,
-    pub wireframe: bool,
-    wireframe_shader: Shader,
-    default_material: Material,
-    // Volumetric renderer stuff
-    pub volumetric: Volumetric,
-    frame_stats: FrameStats,
-    // The renderer for the screen quad
-    quad_renderer: Renderer,
 }
-crate::impl_custom_system_data!(CustomData);
 
 // Draw functions
 impl CustomData {
