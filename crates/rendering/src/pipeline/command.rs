@@ -50,6 +50,8 @@ pub enum RenderTask {
     // Compute
     ComputeRun(),
     ComputeLock(),
+    // Window settings
+    WindowSizeUpdate(u16, u16, f32),
     // Destroy the render thread, since we are exiting from the application
     DestroyRenderPipeline(),
 }

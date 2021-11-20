@@ -1,5 +1,5 @@
 use crate::{FrameStats, Material, Renderer, pipeline::object::*};
-// The main renderer
+// The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
     pub framebuffer: u32,

@@ -16,7 +16,6 @@ pub struct Pipeline {
     pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects
     pub render_to_main: Option<Receiver<RenderTaskStatus>>, // RX (MainThread)    
     pub main_to_render: Option<Sender<RenderCommand>>, // TX (MainThread)
-    pub renderer: PipelineRenderer,
     pub default_material: Material,
 }
 impl Pipeline {
@@ -37,6 +36,7 @@ impl Pipeline {
             RenderTask::ComputeRun() => todo!(),
             RenderTask::ComputeLock() => todo!(),
             RenderTask::DestroyRenderPipeline() => todo!(),
+            RenderTask::WindowSizeUpdate(_, _, _) => todo!(),
         };
         // Send back a possible new GPU object
         let object = match object {
@@ -48,7 +48,7 @@ impl Pipeline {
         render_to_main.send(status).unwrap();
     }
     // The render thread that is continuously being ran
-    fn frame(render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>) {
+    fn frame(render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer) {
         // We must loop through every command that we receive from the main thread
         loop {
             match main_to_render.try_recv() {
@@ -88,10 +88,12 @@ impl Pipeline {
                 gl::load_with(|s| window.get_proc_address(s) as *const _);
                 glfw::ffi::glfwMakeContextCurrent(window.window_ptr() as *mut glfw::ffi::GLFWwindow);
                 // Initialize the deferred renderer
+                let mut pipeline_renderer = PipelineRenderer::default();
+
                 // We must render every frame
                 let tx = tx.clone();
                 loop {
-                    Self::frame(&tx, &rx2)
+                    Self::frame(&tx, &rx2, &mut pipeline_renderer);
                 }
             })
         };
