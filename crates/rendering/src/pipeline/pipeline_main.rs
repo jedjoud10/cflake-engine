@@ -45,4 +45,9 @@ pub mod pipec {
             }
         }
     }
+    fn get_gpu_object(name: &str) -> GPUObject {
+        unsafe {
+            render_pipeline.get_gpu_object(name)
+        }
+    }
 }

@@ -56,19 +56,19 @@ impl TextureType {
     // Get the width of this texture
     pub fn get_width(&self) -> u16 {
         match self {
-            TextureType::Texture1D(x) => x,
-            TextureType::Texture2D(x, _) => x,
-            TextureType::Texture3D(x, _, _) => x,
-            TextureType::TextureArray(x, _, _) => x,
+            TextureType::Texture1D(x) => *x,
+            TextureType::Texture2D(x, _) => *x,
+            TextureType::Texture3D(x, _, _) => *x,
+            TextureType::TextureArray(x, _, _) => *x,
         }
     }
     // Get the height of this texture
     pub fn get_height(&self) -> u16 {
         match self {
             TextureType::Texture1D(y) => panic!(),
-            TextureType::Texture2D(_, y) => y,
-            TextureType::Texture3D(_, y, _) => y,
-            TextureType::TextureArray(_, y, _) => y,
+            TextureType::Texture2D(_, y) => *y,
+            TextureType::Texture3D(_, y, _) => *y,
+            TextureType::TextureArray(_, y, _) => *y,
         }
     }
     // Get the depth of this texture, if it is a 3D texture
@@ -76,8 +76,8 @@ impl TextureType {
         match self {
             TextureType::Texture1D(_) => panic!(),
             TextureType::Texture2D(_, _) => panic!(),
-            TextureType::Texture3D(_, _, z) => z,
-            TextureType::TextureArray(_, _, z) => z,
+            TextureType::Texture3D(_, _, z) => *z,
+            TextureType::TextureArray(_, _, z) => *z,
         }
     }
 }

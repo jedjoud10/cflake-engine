@@ -2,27 +2,19 @@ use glfw::Context;
 
 use super::object::*;
 use crate::{basics::*, RenderCommand, RenderTask, RenderTaskStatus, SharedData};
-use std::{
-    ffi::{c_void, CString},
-    mem::size_of,
-    ptr::null,
-    sync::{
+use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null, sync::{
         mpsc::{Receiver, Sender},
         Arc, Mutex,
-    },
-};
+    }};
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
 pub struct RenderPipeline {
-    // Command ID
-    pub command_id: u128,
-    // The tasks that are asynchronous and are pending their return values
-    pub pending_wait_list: Vec<(RenderCommand, Box<dyn FnMut(GPUObject)>)>,
-    // TX (RenderThread) and RX (MainThread)
-    pub render_to_main: Option<(Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>)>,
-    // TX (MainThread) and RX (RenderThread)
-    pub main_to_render: Option<(Sender<RenderCommand>, Receiver<RenderCommand>)>,
+    pub command_id: u128, // Next Command ID 
+    pub pending_wait_list: Vec<(RenderCommand, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
+    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects
+    pub render_to_main: Option<(Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>)>, // TX (RenderThread) and RX (MainThread)    
+    pub main_to_render: Option<(Sender<RenderCommand>, Receiver<RenderCommand>)>, // TX (MainThread) and RX (RenderThread)
 }
 impl RenderPipeline {
     // Run a command
@@ -142,6 +134,10 @@ impl RenderPipeline {
         tx.send(render_command);
         // This time, we must add this to the wait list
         self.pending_wait_list.push((render_command, boxed_fn_mut));
+    }
+    // Get GPU object using it's specified name
+    pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
+        self.gpu_objects.get(name).unwrap()
     }
 }
 // The actual OpenGL tasks that are run on the render thread

@@ -43,7 +43,7 @@ impl FrameStats {
         let mut vec = entities.elements.iter().map(|x| x.is_some()).collect::<Vec<bool>>();
         vec.resize(512, false);
         let vec = vec.iter().map(|x| if *x { 255 } else { 0 }).collect::<Vec<u8>>();
-        self.entities_texture.update_data(vec);
+        //self.entities_texture.update_data(vec);
         group.set_t1d("entities_texture", self.entities_texture, 1);
 
         // Run the compute shader
