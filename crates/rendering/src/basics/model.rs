@@ -11,20 +11,6 @@ pub struct Model {
     pub triangles: Vec<u32>,
 }
 
-impl Display for Model {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "Model: Verts: {}, Normals: {}, Tangents: {}, UVs: {}, Colors: {}, Tris: {}",
-            self.vertices.len(),
-            self.normals.len(),
-            self.tangents.len(),
-            self.uvs.len(),
-            self.colors.len(),
-            self.triangles.len()
-        ))
-    }
-}
-
 impl Model {
     // Create a new empty model
     pub fn new() -> Self {
@@ -73,114 +59,7 @@ impl Model {
         output_model.tangents.extend(other.tangents.clone());
         output_model
     }
-    // Create some GPU data from this specific model
-    pub fn refresh_gpu_data(&self) -> ModelDataGPU {
-        let mut gpu_data = ModelDataGPU::default();
-        unsafe {
-            // Create the VAO
-            gl::GenVertexArrays(1, &mut gpu_data.vertex_array_object);
-            gl::BindVertexArray(gpu_data.vertex_array_object);
-
-            // Create the EBO
-            gl::GenBuffers(1, &mut gpu_data.element_buffer_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
-            gl::BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (self.triangles.len() * size_of::<u32>()) as isize,
-                self.triangles.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            // Create the vertex buffer and populate it
-            gl::GenBuffers(1, &mut gpu_data.vertex_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.vertex_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.vertices.len() * size_of::<f32>() * 3) as isize,
-                self.vertices.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            // Create the normals buffer
-            gl::GenBuffers(1, &mut gpu_data.normal_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.normal_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.normals.len() * size_of::<f32>() * 3) as isize,
-                self.normals.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            if !self.tangents.is_empty() {
-                // And it's brother, the tangent buffer
-                gl::GenBuffers(1, &mut gpu_data.tangent_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.tangents.len() * size_of::<f32>() * 4) as isize,
-                    self.tangents.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-            }
-
-            if !self.uvs.is_empty() {
-                // The texture coordinates buffer
-                gl::GenBuffers(1, &mut gpu_data.uv_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.uvs.len() * size_of::<f32>() * 2) as isize,
-                    self.uvs.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-            }
-
-            if !self.colors.is_empty() {
-                // Finally, the vertex colors buffer
-                gl::GenBuffers(1, &mut gpu_data.color_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.colors.len() * size_of::<f32>() * 3) as isize,
-                    self.colors.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-            }
-            // Create the vertex attrib arrays
-            gl::EnableVertexAttribArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.vertex_buf);
-            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
-
-            // Normal attribute
-            gl::EnableVertexAttribArray(1);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.normal_buf);
-            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
-
-            if !self.tangents.is_empty() {
-                // Tangent attribute
-                gl::EnableVertexAttribArray(2);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
-                gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if !self.uvs.is_empty() {
-                // UV attribute
-                gl::EnableVertexAttribArray(3);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
-                gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if !self.colors.is_empty() {
-                // Vertex color attribute
-                gl::EnableVertexAttribArray(4);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
-            }
-            gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
-            gpu_data.initialized = true;
-            // Unbind
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-        }
-        gpu_data
-    }
+    
 }
 
 // Struct that hold the model's information from OpenGL
@@ -193,26 +72,4 @@ pub struct ModelDataGPU {
     pub color_buf: u32,
     pub vertex_array_object: u32,
     pub element_buffer_object: u32,
-    pub initialized: bool,
-}
-
-impl ModelDataGPU {
-    // Dipose
-    pub fn dispose(&mut self) {
-        unsafe {
-            if self.initialized {
-                // Delete the VBOs
-                gl::DeleteBuffers(1, &mut self.vertex_buf);
-                gl::DeleteBuffers(1, &mut self.normal_buf);
-                gl::DeleteBuffers(1, &mut self.uv_buf);
-                gl::DeleteBuffers(1, &mut self.tangent_buf);
-                gl::DeleteBuffers(1, &mut self.color_buf);
-                gl::DeleteBuffers(1, &mut self.element_buffer_object);
-
-                // Delete the vertex array
-                gl::DeleteVertexArrays(1, &mut self.vertex_array_object);
-                self.initialized = false;
-            }
-        }
-    }
 }

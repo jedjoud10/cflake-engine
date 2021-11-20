@@ -19,7 +19,6 @@ use std::rc::Rc;
 pub struct Shader {
     pub name: String,
     pub source: String,
-    pub id: GPUObject,
     pub linked_subshaders_programs: Vec<GPUObject>,
     pub additional_shader: AdditionalShader,
 }
@@ -30,7 +29,6 @@ impl Default for Shader {
             Self {
                 name: "".to_string(),
                 source: "".to_string(),
-                id: GPUObject::None,
                 linked_subshaders_programs: Vec::new(),
                 additional_shader: AdditionalShader::None,
             }

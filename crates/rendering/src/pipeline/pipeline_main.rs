@@ -2,28 +2,29 @@ use crate::RenderPipeline;
 // Static mut RenderPipeline
 pub static mut render_pipeline: RenderPipeline = RenderPipeline::default();
 
-pub mod pipeline_commands {
-    use crate::{GPUObject, RenderTask, SharedGPUObject, SubShader, Texture, render_pipeline};
+pub mod pipec {
+    use crate::{GPUObject, RenderTask, Shader, SharedData, SubShader, Texture, render_pipeline};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
             render_pipeline.init_pipeline(glfw, window);
         }
     }
-    // Wrapped functions so we can affect this static mut variable
-    pub fn gen_texture(texture: Texture) -> GPUObject {
+    
+    // Actual commands start here
+    pub fn create_texture(texture: Texture) -> GPUObject {
         unsafe {
-            let x = render_pipeline.task_immediate(RenderTask::GenerateTexture(SharedGPUObject::new(texture)));
-            texture.id = x;
-            x
+            render_pipeline.task_immediate(RenderTask::GenerateTexture(SharedData::new(texture)))
         }
     }
-    // Compile a subshader
     pub fn create_subshader(subshader: SubShader) -> GPUObject {
         unsafe {
-            let x = render_pipeline.task_immediate(RenderTask::CreateSubShader(SharedGPUObject::new(subshader)));
-            subshader.id = x;
-            x
+            render_pipeline.task_immediate(RenderTask::CreateSubShader(SharedData::new(subshader)))
+        }
+    }
+    pub fn create_shader(shader: Shader) -> GPUObject {
+        unsafe {
+            render_pipeline.task_immediate(RenderTask::CreateShader(SharedData::new(shader)))
         }
     }
 }

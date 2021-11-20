@@ -72,7 +72,6 @@ impl Asset for Model {
         }
         // ISTFG If this fixes the issue I will be so angry
         model.colors = vec![veclib::Vector3::ONE; model.vertices.len()];
-        println!("Model: {}", model);
         // Return
         Some(model)
     }
@@ -87,7 +86,6 @@ impl Asset for SubShader {
         // Load a subshader from this metadata
         let text = String::from_utf8(data.bytes.clone()).ok()?;
         Some(Self {
-            program: 0,
             name: data.name.clone(),
             source: text,
             subshader_type: match &data.asset_type {

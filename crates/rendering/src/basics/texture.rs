@@ -64,8 +64,8 @@ pub enum TextureShaderAccessType {
 #[derive(Clone)]
 pub struct Texture {
     // The internal GPU Object for this texture
-    pub id: GPUObject,
     pub name: String,
+    pub bytes: Vec<u8>,
     pub _format: TextureFormat, // The internal format of the texture
     pub _type: DataType,        // The data type that this texture uses for storage
     pub flags: TextureFlags,
@@ -77,8 +77,8 @@ pub struct Texture {
 impl Default for Texture {
     fn default() -> Self {
         Self {
-            id: GPUObject::None,
             name: String::new(),
+            bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,
             flags: TextureFlags::empty(),
@@ -212,33 +212,10 @@ impl Texture {
         let image = image.flipv();
         (image.to_bytes(), image.width() as u16, image.height() as u16)
     }
-    // Update the size of the current texture
-    pub fn update_size(&mut self, ttype: TextureType) {
-        // Check if the current dimension type matches up with the new one
-        self.ttype = ttype;
-        // This is a normal texture getting resized
-        unsafe {
-            match self.ttype {
-                TextureType::Texture1D(width) => {
-                    gl::BindTexture(gl::TEXTURE_1D, self.id);
-                    gl::TexImage1D(gl::TEXTURE_2D, 0, self.ifd.0, width as i32, 0, self.ifd.1, self.ifd.2, null());
-                }
-                TextureType::Texture2D(width, height) => {
-                    gl::BindTexture(gl::TEXTURE_2D, self.id);
-                    gl::TexImage2D(gl::TEXTURE_2D, 0, self.ifd.0, width as i32, height as i32, 0, self.ifd.1, self.ifd.2, null());
-                }
-                TextureType::Texture3D(width, height, depth) => {
-                    gl::BindTexture(gl::TEXTURE_3D, self.id);
-                    gl::TexImage3D(gl::TEXTURE_3D, 0, self.ifd.0, width as i32, height as i32, depth as i32, 0, self.ifd.1, self.ifd.2, null());
-                }
-                TextureType::TextureArray(_, _, _) => todo!(),
-            }
-        }
-    }
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    pub fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> Texture {
+    pub fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> (Vec<Vec<u8>>, TextureType) {
         // Load the textures
-        let mut bytes: Vec<u8> = Vec::new();
+        let mut bytes: Vec<Vec<u8>> = Vec::new();
         let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
         let length = texture_paths.len();
         for x in texture_paths {
@@ -251,236 +228,9 @@ impl Texture {
             // Flip
             let image = image.flipv();
             let bytesa = image.to_bytes();
-            bytes.extend(bytesa);
+            bytes.push(bytesa);
         }
-        // Create the array texture from THOSE NUTS AAAAA
-        let main_texture: Texture = Texture::default()
-            .enable_mipmaps()
-            .set_dimensions(TextureType::TextureArray(width, height, length as u16))
-            .set_format(TextureFormat::RGBA8R)
-            .set_name(name)
-            .apply_texture_load_options(load_options)
-            .generate_texture(bytes)
-            .unwrap();
-        main_texture
-    }
-    // Generate an empty texture, could either be a mutable one or an immutable one
-    pub fn generate_texture(mut self, bytes: Vec<u8>) -> Result<Self, RenderingError> {
-        let mut pointer: *const c_void = null();
-        if !bytes.is_empty() {
-            pointer = bytes.as_ptr() as *const c_void;
-        }
-
-        // Get the tex_type based on the TextureDimensionType
-        let tex_type = match self.ttype {
-            TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-
-        // It's a normal mutable texture
-        unsafe {
-            gl::GenTextures(1, &mut self.id as *mut u32);
-            gl::BindTexture(tex_type, self.id);
-            match self.ttype {
-                TextureType::Texture1D(_) => {
-                    gl::TexImage1D(tex_type, 0, self.ifd.0, self.get_width() as i32, 0, self.ifd.1, self.ifd.2, pointer);
-                }
-                // This is a 2D texture
-                TextureType::Texture2D(_, _) => {
-                    gl::TexImage2D(
-                        tex_type,
-                        0,
-                        self.ifd.0,
-                        self.get_width() as i32,
-                        self.get_height() as i32,
-                        0,
-                        self.ifd.1,
-                        self.ifd.2,
-                        pointer,
-                    );
-                }
-                // This is a 3D texture
-                TextureType::Texture3D(_, _, _) => {
-                    gl::TexImage3D(
-                        tex_type,
-                        0,
-                        self.ifd.0,
-                        self.get_width() as i32,
-                        self.get_height() as i32,
-                        self.get_depth() as i32,
-                        0,
-                        self.ifd.1,
-                        self.ifd.2,
-                        pointer,
-                    );
-                }
-                // This is a texture array
-                TextureType::TextureArray(x, y, l) => {
-                    gl::TexStorage3D(
-                        tex_type,
-                        Self::guess_mipmap_levels(x.max(y) as usize) as i32,
-                        self.ifd.0 as u32,
-                        x as i32,
-                        y as i32,
-                        l as i32,
-                    );
-                    // We might want to do mipmap
-                    for i in 0..l {
-                        let localized_bytes = bytes[(i as usize * y as usize * 4 * x as usize)..bytes.len()].as_ptr() as *const c_void;
-                        gl::TexSubImage3D(
-                            gl::TEXTURE_2D_ARRAY,
-                            0,
-                            0,
-                            0,
-                            i as i32,
-                            self.get_width() as i32,
-                            self.get_height() as i32,
-                            1,
-                            self.ifd.1,
-                            self.ifd.2,
-                            localized_bytes,
-                        );
-                    }
-                }
-            }
-            // Set the texture parameters for a normal texture
-            match self.filter {
-                TextureFilter::Linear => {
-                    // 'Linear' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-                }
-                TextureFilter::Nearest => {
-                    // 'Nearest' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-                }
-            }
-        }
-
-        // The texture is already bound to the TEXTURE_2D
-        if self.flags.contains(TextureFlags::MIPMAPS) {
-            // Create the mipmaps
-            unsafe {
-                gl::GenerateMipmap(tex_type);
-                // Set the texture parameters for a mipmapped texture
-                match self.filter {
-                    TextureFilter::Linear => {
-                        // 'Linear' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-                    }
-                    TextureFilter::Nearest => {
-                        // 'Nearest' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-                    }
-                }
-            }
-        }
-
-        // Set the wrap mode for the texture (Mipmapped or not)
-        let wrapping_mode: i32;
-        match self.wrap_mode {
-            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE as i32,
-            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER as i32,
-            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT as i32,
-            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT as i32,
-        }
-        unsafe {
-            // Now set the actual wrapping mode in the opengl texture
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
-        }
-        println!("Succsesfully generated texture {}", self.name);
-        Ok(self)
-    }
-    // Update a valid texture's data
-    pub fn update_data(&mut self, bytes: Vec<u8>) {
-        let mut pointer: *const c_void = null();
-        if !bytes.is_empty() {
-            pointer = bytes.as_ptr() as *const c_void;
-        }
-
-        let (internal_format, format, data_type) = get_ifd(self._format, self._type);
-        let tex_type = match self.ttype {
-            TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-
-        unsafe {
-            gl::BindTexture(tex_type, self.id);
-            match self.ttype {
-                TextureType::Texture1D(_) => gl::TexImage1D(tex_type, 0, internal_format, self.get_width() as i32, 0, format, data_type, pointer),
-                // This is a 2D texture
-                TextureType::Texture2D(_, _) => {
-                    gl::TexImage2D(
-                        tex_type,
-                        0,
-                        internal_format,
-                        self.get_width() as i32,
-                        self.get_height() as i32,
-                        0,
-                        format,
-                        data_type,
-                        pointer,
-                    );
-                }
-                // This is a 3D texture
-                TextureType::Texture3D(_, _, _) => {
-                    gl::TexImage3D(
-                        tex_type,
-                        0,
-                        internal_format,
-                        self.get_width() as i32,
-                        self.get_height() as i32,
-                        self.get_depth() as i32,
-                        0,
-                        format,
-                        data_type,
-                        pointer,
-                    );
-                }
-                // This is a texture array
-                TextureType::TextureArray(x, y, l) => {
-                    gl::TexStorage3D(tex_type, 10, internal_format as u32, x as i32, y as i32, l as i32);
-                    // We might want to do mipmap
-                    for i in 0..l {
-                        let localized_bytes = bytes[(i as usize * y as usize * 4 * x as usize)..bytes.len()].as_ptr() as *const c_void;
-                        gl::TexSubImage3D(
-                            gl::TEXTURE_2D_ARRAY,
-                            0,
-                            0,
-                            0,
-                            i as i32,
-                            self.get_width() as i32,
-                            self.get_height() as i32,
-                            1,
-                            format,
-                            data_type,
-                            localized_bytes,
-                        );
-                    }
-                }
-            }
-            // Set the texture parameters for a normal texture
-            match self.filter {
-                TextureFilter::Linear => {
-                    // 'Linear' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-                }
-                TextureFilter::Nearest => {
-                    // 'Nearest' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-                }
-            }
-        }
+        (bytes, TextureType::TextureArray(width, height, texture_paths.len() as u16))
     }
     // Get the image from this texture and fill an array of vec2s, vec3s or vec4s with it
     pub fn fill_array_veclib<V, U>(&self) -> Vec<V>

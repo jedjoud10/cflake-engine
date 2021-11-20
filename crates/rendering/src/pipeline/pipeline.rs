@@ -1,7 +1,7 @@
 use glfw::Context;
 
-use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedGPUObject, basics::*};
-use std::{ffi::CString, ptr::null, sync::{Arc, Mutex, mpsc::{Receiver, Sender}}};
+use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedData, basics::*};
+use std::{ffi::{CString, c_void}, mem::size_of, ptr::null, sync::{Arc, Mutex, mpsc::{Receiver, Sender}}};
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
@@ -125,7 +125,7 @@ impl RenderPipeline {
 }
 // The actual OpenGL tasks that are run on the render thread
 impl RenderPipeline {
-    fn create_compile_subshader(subshader: SharedGPUObject<SubShader>) -> GPUObject {
+    fn create_compile_subshader(subshader: SharedData<SubShader>) -> GPUObject {
         let shader_type: u32;
         let subshader = subshader.object.as_ref();
         match subshader.subshader_type {
@@ -162,7 +162,7 @@ impl RenderPipeline {
             GPUObject::SubShader(subshader.subshader_type, program)
         }
     }
-    fn create_compile_shader(shader: SharedGPUObject<Shader>) -> GPUObject {
+    fn create_compile_shader(shader: SharedData<Shader>) -> GPUObject {
         let shader = shader.object.as_ref();
         unsafe {
             let program = gl::CreateProgram();
@@ -196,6 +196,358 @@ impl RenderPipeline {
                 }
             }
             GPUObject::Shader(program)
+        }
+    }
+    fn create_model(model: SharedData<Model>) -> GPUObject {        
+        let mut gpu_data = ModelDataGPU::default();
+        let model = model.object.as_ref();
+        unsafe {
+            // Create the VAO
+            gl::GenVertexArrays(1, &mut gpu_data.vertex_array_object);
+            gl::BindVertexArray(gpu_data.vertex_array_object);
+
+            // Create the EBO
+            gl::GenBuffers(1, &mut gpu_data.element_buffer_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (model.triangles.len() * size_of::<u32>()) as isize,
+                model.triangles.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+
+            // Create the vertex buffer and populate it
+            gl::GenBuffers(1, &mut gpu_data.vertex_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.vertex_buf);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (model.vertices.len() * size_of::<f32>() * 3) as isize,
+                model.vertices.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+
+            // Create the normals buffer
+            gl::GenBuffers(1, &mut gpu_data.normal_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.normal_buf);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (model.normals.len() * size_of::<f32>() * 3) as isize,
+                model.normals.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+
+            if !model.tangents.is_empty() {
+                // And it's brother, the tangent buffer
+                gl::GenBuffers(1, &mut gpu_data.tangent_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (model.tangents.len() * size_of::<f32>() * 4) as isize,
+                    model.tangents.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
+
+            if !model.uvs.is_empty() {
+                // The texture coordinates buffer
+                gl::GenBuffers(1, &mut gpu_data.uv_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (model.uvs.len() * size_of::<f32>() * 2) as isize,
+                    model.uvs.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
+
+            if !model.colors.is_empty() {
+                // Finally, the vertex colors buffer
+                gl::GenBuffers(1, &mut gpu_data.color_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (model.colors.len() * size_of::<f32>() * 3) as isize,
+                    model.colors.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
+            // Create the vertex attrib arrays
+            gl::EnableVertexAttribArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.vertex_buf);
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+
+            // Normal attribute
+            gl::EnableVertexAttribArray(1);
+            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.normal_buf);
+            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
+
+            if !model.tangents.is_empty() {
+                // Tangent attribute
+                gl::EnableVertexAttribArray(2);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
+                gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
+            }
+            if !model.uvs.is_empty() {
+                // UV attribute
+                gl::EnableVertexAttribArray(3);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
+                gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
+            }
+            if !model.colors.is_empty() {
+                // Vertex color attribute
+                gl::EnableVertexAttribArray(4);
+                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
+            }
+            gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
+            // Unbind
+            gl::BindVertexArray(0);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+        }
+        GPUObject::Model(gpu_data.vertex_array_object)
+    }
+    fn dispose_model(mut gpu_data: ModelDataGPU) {
+        unsafe { 
+            // Delete the VBOs
+            gl::DeleteBuffers(1, &mut gpu_data.vertex_buf);
+            gl::DeleteBuffers(1, &mut gpu_data.normal_buf);
+            gl::DeleteBuffers(1, &mut gpu_data.uv_buf);
+            gl::DeleteBuffers(1, &mut gpu_data.tangent_buf);
+            gl::DeleteBuffers(1, &mut gpu_data.color_buf);
+            gl::DeleteBuffers(1, &mut gpu_data.element_buffer_object);
+            
+            // Delete the vertex array
+            gl::DeleteVertexArrays(1, &mut gpu_data.vertex_array_object);
+        }
+    }
+    fn generate_texture(texture: SharedData<Texture>) -> GPUObject {
+        let mut pointer: *const c_void = null();
+        let texture = texture.object.as_ref();
+        if !texture.bytes.is_empty() {
+            pointer = texture.bytes.as_ptr() as *const c_void;
+        }
+        let ifd = crate::get_ifd(texture._format, texture._type);
+
+        // Get the tex_type based on the TextureDimensionType
+        let tex_type = match texture.ttype {
+            TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+
+        // It's a normal mutable texture
+        let mut id: u32 = 0;
+        unsafe {
+            gl::GenTextures(1, &mut id as *mut u32);
+            gl::BindTexture(tex_type, id);
+            match texture.ttype {
+                TextureType::Texture1D(width) => {
+                    gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
+                }
+                // This is a 2D texture
+                TextureType::Texture2D(width, height) => {
+                    gl::TexImage2D(
+                        tex_type,
+                        0,
+                        ifd.0,
+                        width as i32,
+                        height as i32,
+                        0,
+                        ifd.1,
+                        ifd.2,
+                        pointer,
+                    );
+                }
+                // This is a 3D texture
+                TextureType::Texture3D(width, height, depth) => {
+                    gl::TexImage3D(
+                        tex_type,
+                        0,
+                        ifd.0,
+                        width as i32,
+                        height as i32,
+                        depth as i32,
+                        0,
+                        ifd.1,
+                        ifd.2,
+                        pointer,
+                    );
+                }
+                // This is a texture array
+                TextureType::TextureArray(width, height, depth) => {
+                    gl::TexStorage3D(
+                        tex_type,
+                        Texture::guess_mipmap_levels(width.max(height) as usize) as i32,
+                        ifd.0 as u32,
+                        width as i32,
+                        height as i32,
+                        depth as i32,
+                    );
+                    // We might want to do mipmap
+                    for i in 0..depth {
+                        let localized_bytes = texture.bytes[(i as usize * height as usize * 4 * width as usize)..texture.bytes.len()].as_ptr() as *const c_void;
+                        gl::TexSubImage3D(
+                            gl::TEXTURE_2D_ARRAY,
+                            0,
+                            0,
+                            0,
+                            i as i32,
+                            width as i32,
+                            height as i32,
+                            1,
+                            ifd.1,
+                            ifd.2,
+                            localized_bytes,
+                        );
+                    }
+                }
+            }
+            // Set the texture parameters for a normal texture
+            match texture.filter {
+                TextureFilter::Linear => {
+                    // 'Linear' filter
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                }
+                TextureFilter::Nearest => {
+                    // 'Nearest' filter
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                }
+            }
+        }
+
+        // The texture is already bound to the TEXTURE_2D
+        if texture.flags.contains(TextureFlags::MIPMAPS) {
+            // Create the mipmaps
+            unsafe {
+                gl::GenerateMipmap(tex_type);
+                // Set the texture parameters for a mipmapped texture
+                match texture.filter {
+                    TextureFilter::Linear => {
+                        // 'Linear' filter
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                    }
+                    TextureFilter::Nearest => {
+                        // 'Nearest' filter
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                    }
+                }
+            }
+        }
+
+        // Set the wrap mode for the texture (Mipmapped or not)
+        let wrapping_mode: i32;
+        match texture.wrap_mode {
+            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE as i32,
+            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER as i32,
+            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT as i32,
+            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT as i32,
+        }
+        unsafe {
+            // Now set the actual wrapping mode in the opengl texture
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
+        }
+        println!("Succsesfully generated texture {}", texture.name);
+        GPUObject::Texture(id)
+    }
+    fn update_texture_size(texture: &mut SharedData<Texture>, id: u32, ttype: TextureType) {
+        // Check if the current dimension type matches up with the new one
+        let texture = &mut texture.object;
+        texture.ttype = ttype;
+        let ifd = crate::get_ifd(texture._format, texture._type);
+        // This is a normal texture getting resized
+        unsafe {
+            match texture.ttype {
+                TextureType::Texture1D(width) => {
+                    gl::BindTexture(gl::TEXTURE_1D, id);
+                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
+                }
+                TextureType::Texture2D(width, height) => {
+                    gl::BindTexture(gl::TEXTURE_2D, id);
+                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, null());
+                }
+                TextureType::Texture3D(width, height, depth) => {
+                    gl::BindTexture(gl::TEXTURE_3D, id);
+                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, null());
+                }
+                TextureType::TextureArray(_, _, _) => todo!(),
+            }
+        }
+    }
+    fn update_texture_data(texture: &mut SharedData<Texture>, id: u32, bytes: Vec<u8>) {
+        let texture = &mut texture.object;
+        let mut pointer: *const c_void = null();
+        if !bytes.is_empty() {
+            pointer = bytes.as_ptr() as *const c_void;
+        }
+
+        let (internal_format, format, data_type) = crate::get_ifd(texture._format, texture._type);
+        let tex_type = match texture.ttype {
+            TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+
+        unsafe {
+            gl::BindTexture(tex_type, id);
+            match texture.ttype {
+                TextureType::Texture1D(width) => gl::TexImage1D(tex_type, 0, internal_format, width as i32, 0, format, data_type, pointer),
+                // This is a 2D texture
+                TextureType::Texture2D(width, height) => {
+                    gl::TexImage2D(
+                        tex_type,
+                        0,
+                        internal_format,
+                        width as i32,
+                        height as i32,
+                        0,
+                        format,
+                        data_type,
+                        pointer,
+                    );
+                }
+                // This is a 3D texture
+                TextureType::Texture3D(width, height, depth) => {
+                    gl::TexImage3D(
+                        tex_type,
+                        0,
+                        internal_format,
+                        width as i32,
+                        height as i32,
+                        depth as i32,
+                        0,
+                        format,
+                        data_type,
+                        pointer,
+                    );
+                }
+                // This is a texture array
+                TextureType::TextureArray(width, height, depth) => {
+                    gl::TexStorage3D(tex_type, 10, internal_format as u32, width as i32, height as i32, depth as i32);
+                    // We might want to do mipmap
+                    for i in 0..depth {
+                        let localized_bytes = bytes[(i as usize * height as usize * 4 * width as usize)..bytes.len()].as_ptr() as *const c_void;
+                        gl::TexSubImage3D(
+                            gl::TEXTURE_2D_ARRAY,
+                            0,
+                            0,
+                            0,
+                            i as i32,
+                            width as i32,
+                            height as i32,
+                            1,
+                            format,
+                            data_type,
+                            localized_bytes,
+                        );
+                    }
+                }
+            }
         }
     }
 }
