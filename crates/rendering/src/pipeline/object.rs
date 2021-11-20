@@ -12,7 +12,7 @@ pub struct TextureGPUObject(pub u32, pub TextureType);
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
 pub struct ShaderExcecutionGroup {
     // Uniforms
-    uniforms: HashMap<String, Uniform>
+    uniforms: HashMap<String, Uniform>,
 }
 
 // Gotta change the place where this shit is in
@@ -86,38 +86,31 @@ impl ShaderExcecutionGroup {
 impl ShaderGPUObject {
     // Get the excecution group
     pub fn new_excecution_group(&self) -> ShaderExcecutionGroup {
-        ShaderExcecutionGroup {
-            uniforms: HashMap::new()
-        }
+        ShaderExcecutionGroup { uniforms: HashMap::new() }
     }
 }
 
 impl ComputeShaderGPUObject {
     // Get the excecution group
     pub fn new_excecution_group(&self) -> ShaderExcecutionGroup {
-        ShaderExcecutionGroup {
-            uniforms: HashMap::new()
-        }
+        ShaderExcecutionGroup { uniforms: HashMap::new() }
     }
 }
 
 impl ComputeShaderGPUObject {
     // Compute shader stuff you know
-    pub fn run(&self, x: u16, y: u16, z: u16) {
-
-    }
-    pub fn lock_state(&self) {
-    }
+    pub fn run(&self, x: u16, y: u16, z: u16) {}
+    pub fn lock_state(&self) {}
 }
 
 // Some identifiers that we will use to communicate from the Render Thread -> Main Thread
 pub enum GPUObject {
-    None,                          // This value was not initalized yet
-    Model(ModelGPUObject),         // The VAO ID
-    SubShader(SubShaderGPUObject), // The subshader program ID
-    Shader(ShaderGPUObject),       // The shader program ID
+    None,                                  // This value was not initalized yet
+    Model(ModelGPUObject),                 // The VAO ID
+    SubShader(SubShaderGPUObject),         // The subshader program ID
+    Shader(ShaderGPUObject),               // The shader program ID
     ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions
-    Texture(TextureGPUObject),     // The texture ID
+    Texture(TextureGPUObject),             // The texture ID
 }
 
 impl Default for GPUObject {

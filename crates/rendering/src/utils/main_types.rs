@@ -1,6 +1,6 @@
-use std::rc::Rc;
-use crate::{TextureShaderAccessType, basics::Texture};
 use crate::pipeline::object::*;
+use crate::{basics::Texture, TextureShaderAccessType};
+use std::rc::Rc;
 
 // Some default uniforms that we will set
 pub enum Uniform {
@@ -23,7 +23,7 @@ pub enum Uniform {
     Texture2DArray(TextureGPUObject, u32),
     // Compute sheit
     Image2D(TextureGPUObject, TextureShaderAccessType),
-    Image3D(TextureGPUObject, TextureShaderAccessType)
+    Image3D(TextureGPUObject, TextureShaderAccessType),
 }
 
 // Simple main OpenGL types

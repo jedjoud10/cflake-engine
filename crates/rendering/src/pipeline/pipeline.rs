@@ -212,7 +212,7 @@ impl RenderPipeline {
             let mut compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap() {
                 GPUObject::SubShader(x) => match x.0 {
                     SubShaderType::Compute => true,
-                    _ => false
+                    _ => false,
                 },
                 _ => false,
             };
