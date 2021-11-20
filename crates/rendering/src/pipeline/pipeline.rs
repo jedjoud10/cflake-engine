@@ -11,14 +11,14 @@ use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null,
 #[derive(Default)]
 pub struct RenderPipeline {
     pub command_id: u128, // Next Command ID 
-    pub pending_wait_list: Vec<(RenderCommand, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
-    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects
-    pub render_to_main: Option<(Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>)>, // TX (RenderThread) and RX (MainThread)    
-    pub main_to_render: Option<(Sender<RenderCommand>, Receiver<RenderCommand>)>, // TX (MainThread) and RX (RenderThread)
+    pub pending_wait_list: Vec<(u128, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
+    pub gpu_objects: Option<HashMap<String, GPUObject>>, // The GPU objects
+    pub render_to_main: Option<Receiver<RenderTaskStatus>>, // RX (MainThread)    
+    pub main_to_render: Option<Sender<RenderCommand>>, // TX (MainThread)
 }
 impl RenderPipeline {
     // Run a command
-    fn command(command: RenderCommand, render_to_main: Sender<RenderTaskStatus>) {
+    fn command(command: RenderCommand, render_to_main: &Sender<RenderTaskStatus>) {
         let object = match command.input_task {
             RenderTask::DisposeRenderer(_) => todo!(),
             RenderTask::UpdateRendererTransform() => todo!(),
@@ -45,13 +45,13 @@ impl RenderPipeline {
         render_to_main.send(status).unwrap();
     }
     // The render thread that is continuously being ran
-    fn frame(render_to_main: Sender<RenderTaskStatus>, main_to_render: Receiver<RenderCommand>) {
+    fn frame(render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>) {
         // We must loop through every command that we receive from the main thread
         loop {
             match main_to_render.try_recv() {
                 Ok(x) => {
                     // Valid command
-                    Self::command(x, render_to_main);
+                    Self::command(x, &render_to_main);
                 }
                 Err(x) => match x {
                     std::sync::mpsc::TryRecvError::Empty =>
@@ -71,6 +71,7 @@ impl RenderPipeline {
         // Create the two channels
         let (tx, rx): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main
         let (tx2, rx2): (Sender<RenderCommand>, Receiver<RenderCommand>) = std::sync::mpsc::channel(); // Main to render
+        self.gpu_objects = Some(HashMap::new());
         let render_thread = unsafe {
             // Window and GLFW wrapper
             struct RenderWrapper(*mut glfw::Glfw, *mut glfw::Window);
@@ -85,13 +86,15 @@ impl RenderPipeline {
                 gl::load_with(|s| window.get_proc_address(s) as *const _);
                 glfw::ffi::glfwMakeContextCurrent(window.window_ptr() as *mut glfw::ffi::GLFWwindow);
                 // We must render every frame
+                let tx = tx.clone();
                 loop {
-                    Self::frame(tx, rx2)
+                    Self::frame(&tx, &rx2)
                 }
             })
         };
         // Vars
-        self.render_to_main = Some((tx, rx));
+        self.render_to_main = Some(rx);
+        self.main_to_render = Some(tx2);
     }
     // Complete a task immediatly
     pub fn task_immediate(&mut self, task: RenderTask) -> GPUObject {
@@ -99,22 +102,22 @@ impl RenderPipeline {
         let render_command = RenderCommand {
             message_id: self.command_id,
             input_task: task,
-        };
-        // Increment
-        self.command_id += 1;
+        };        
         // Send the command to the render thread
-        let tx = self.main_to_render.unwrap().0;
-        let rx = self.render_to_main.unwrap().1;
+        let tx = self.main_to_render.as_ref().unwrap();
+        let rx = self.render_to_main.as_ref().unwrap();
 
         // Send the command
         tx.send(render_command);
         // Wait for the result
         let recv = rx.recv().unwrap();
         let output = GPUObject::None;
+        // Increment
+        self.command_id += 1;
         return output;
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
-    pub fn task<F>(&mut self, task: RenderTask, mut callback: F)
+    pub fn task<F>(&mut self, task: RenderTask, callback: F)
     where
         F: FnMut(GPUObject) + 'static,
     {
@@ -123,25 +126,25 @@ impl RenderPipeline {
         let render_command = RenderCommand {
             message_id: self.command_id,
             input_task: task,
-        };
-        // Increment
-        self.command_id += 1;
+        };        
         // Send the command to the render thread
-        let tx = self.main_to_render.unwrap().0;
-        let rx = self.render_to_main.unwrap().1;
+        let tx = self.main_to_render.as_ref().unwrap();
+        let rx = self.render_to_main.as_ref().unwrap();
 
         // Send the command
         tx.send(render_command);
         // This time, we must add this to the wait list
-        self.pending_wait_list.push((render_command, boxed_fn_mut));
+        self.pending_wait_list.push((self.command_id, boxed_fn_mut));
+        // Increment
+        self.command_id += 1;
     }
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
-        self.gpu_objects.get(name).unwrap()
+        self.gpu_objects.as_ref().unwrap().get(name).unwrap()
     }
     // Check if a GPU object exists
     pub fn gpu_object_valid(&self, name: &str) -> bool {
-        self.gpu_objects.contains_key(name)
+        self.gpu_objects.as_ref().unwrap().contains_key(name)
     }
 }
 // The actual OpenGL tasks that are run on the render thread
@@ -452,7 +455,6 @@ impl RenderPipeline {
     pub fn update_texture_size(texture: &mut SharedData<Texture>, id: u32, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one
         let texture = &mut texture.object;
-        texture.ttype = ttype;
         let ifd = crate::get_ifd(texture._format, texture._type);
         // This is a normal texture getting resized
         unsafe {

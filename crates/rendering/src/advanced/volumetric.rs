@@ -79,18 +79,15 @@ impl Volumetric {
     }
     // Create the SDF texture from a compute shader complitely
     pub fn generate_sdf(&mut self, _asset_manager: &AssetManager) {
-        let group = self.compute_generator.new_uniform_group();
-        self.compute_generator.set_i3d("sdf_tex", &self.sdf_tex, TextureShaderAccessType::WriteOnly);
+        let mut group = self.compute_generator.new_uniform_group();
+        group.set_i3d("sdf_tex", self.sdf_tex, TextureShaderAccessType::WriteOnly);
         // Actually generate the SDF
         // Run the compute
-        compute
-            .run_compute((
-                self.sdf_tex.get_width() as u32 / 4,
-                self.sdf_tex.get_height() as u32 / 4,
-                self.sdf_tex.get_depth() as u32 / 4,
-            ))
-            .unwrap();
-        compute.get_compute_state().unwrap();
+        self.compute.run(
+            self.sdf_tex.1.get_width() / 4,
+            self.sdf_tex.1.get_height() / 4,
+            self.sdf_tex.1.get_depth() / 4);
+        self.compute.lock_state();
     }
     // Run the compute shader and calculate the result texture
     pub fn calculate_volumetric(
@@ -104,28 +101,20 @@ impl Volumetric {
             return;
         }
         // Run the compute shader
-        let shader = &mut self.compute;
+        let mut group = self.compute.new_uniform_group();
         // Create a custom View-Projection matrix that doesn't include the translation
-        shader.use_shader();
         let vp_m = projection_matrix * (veclib::Matrix4x4::from_quaternion(&rotation));
-        shader.set_i2d("result_tex", &self.result_tex, TextureShaderAccessType::WriteOnly);
-        shader.set_i2d("depth_tex", &self.depth_tex, TextureShaderAccessType::WriteOnly);
-        shader.set_t3d("sdf_tex", &self.sdf_tex, 2);
-        shader.set_vec3f32("camera_pos", &camera_position);
-        shader.set_mat44("custom_vp_matrix", &vp_m);
-        shader.set_mat44("projection_matrix", &projection_matrix);
-        shader.set_vec2f32("nf_planes", &veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));
-        // Get the actual compute shader
-        let compute = match &mut shader.additional_shader {
-            AdditionalShader::Compute(x) => x,
-            AdditionalShader::None => panic!(),
-        };
+        group.set_i2d("result_tex", self.result_tex, TextureShaderAccessType::WriteOnly);
+        group.set_i2d("depth_tex", self.depth_tex, TextureShaderAccessType::WriteOnly);
+        group.set_t3d("sdf_tex", self.sdf_tex, 2);
+        group.set_vec3f32("camera_pos", camera_position);
+        group.set_mat44("custom_vp_matrix", vp_m);
+        group.set_mat44("projection_matrix", projection_matrix);
+        group.set_vec2f32("nf_planes", veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));
 
         // Run the actual compute shader
-        compute
-            .run_compute((self.result_tex.get_width() as u32 / 16, self.result_tex.get_height() as u32 / 16, 1))
-            .unwrap();
-        compute.get_compute_state().unwrap();
+        self.compute.run(self.result_tex.1.get_width() / 16, self.result_tex.1.get_height() / 16, 1);
+        self.compute.lock_state();
     }
     // Enable volumetric rendering
     pub fn enable(&mut self) {

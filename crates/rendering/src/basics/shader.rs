@@ -134,7 +134,7 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
-                self.linked_subshaders_programs.push(pipec::subshader(subshader));
+                self.linked_subshaders_programs.push(pipec::subshader(subshader.clone()));
                 let rc_subshader: Rc<SubShader> = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap();
             }
         }

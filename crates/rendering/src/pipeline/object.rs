@@ -11,7 +11,7 @@ pub struct SubShaderGPUObject(pub SubShaderType, pub u32);
 pub struct ShaderGPUObject(pub u32);
 #[derive(Clone, Default)]
 pub struct ComputeShaderGPUObject(pub u32);
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TextureGPUObject(pub u32, pub TextureType);
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run

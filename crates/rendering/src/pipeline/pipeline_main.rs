@@ -1,6 +1,15 @@
-use crate::RenderPipeline;
+use std::{collections::HashMap, iter::FromIterator};
+use lazy_static::lazy_static;
+use crate::{GPUObject, RenderPipeline};
+
 // Static mut RenderPipeline
-pub static mut render_pipeline: RenderPipeline = RenderPipeline::default();
+pub static mut render_pipeline: RenderPipeline = RenderPipeline {
+    command_id: 0,
+    pending_wait_list: Vec::new(),
+    gpu_objects: None,
+    render_to_main: None,
+    main_to_render: None,
+};
 
 pub mod pipec {
     use assets::CachedObject;

@@ -250,7 +250,6 @@ impl Texture {
     }
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
     pub fn create_texturearray(
-        load_options: Option<TextureLoadOptions>,
         texture_paths: Vec<&str>,
         asset_manager: &mut AssetManager,
         width: u16,
@@ -259,7 +258,7 @@ impl Texture {
         // Load the textures
         let mut bytes: Vec<Vec<u8>> = Vec::new();
         let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
-        let length = texture_paths.len();
+        let length = texture_paths.len() as u16;
         for x in texture_paths {
             // Load this texture from the bytes
             let metadata = asset_manager.asset_cacher.load_md(x).unwrap();
@@ -272,6 +271,6 @@ impl Texture {
             let bytesa = image.to_bytes();
             bytes.push(bytesa);
         }
-        (bytes, TextureType::TextureArray(width, height, texture_paths.len() as u16))
+        (bytes, TextureType::TextureArray(width, height, length))
     }
 }
