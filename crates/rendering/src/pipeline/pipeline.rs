@@ -1,8 +1,16 @@
 use glfw::Context;
 
-use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedData, basics::*};
 use super::object::*;
-use std::{ffi::{CString, c_void}, mem::size_of, ptr::null, sync::{Arc, Mutex, mpsc::{Receiver, Sender}}};
+use crate::{basics::*, RenderCommand, RenderTask, RenderTaskStatus, SharedData};
+use std::{
+    ffi::{c_void, CString},
+    mem::size_of,
+    ptr::null,
+    sync::{
+        mpsc::{Receiver, Sender},
+        Arc, Mutex,
+    },
+};
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
@@ -29,7 +37,7 @@ impl RenderPipeline {
             RenderTask::TextureFillArray(_) => todo!(),
             RenderTask::TextureFillArrayVeclib(_) => todo!(),
             RenderTask::TextureUpdateSize(_, _) => todo!(),
-            RenderTask::TextureUpdateData(_, _) => todo!(),            
+            RenderTask::TextureUpdateData(_, _) => todo!(),
             RenderTask::ModelCreate(_) => todo!(),
             RenderTask::ComputeRun() => todo!(),
             RenderTask::ComputeLock() => todo!(),
@@ -52,12 +60,18 @@ impl RenderPipeline {
                 Ok(x) => {
                     // Valid command
                     Self::command(x, render_to_main);
-                },
+                }
                 Err(x) => match x {
-                    std::sync::mpsc::TryRecvError::Empty => /* Quit from the loop, we don't have any commands stacked up for this frame */ break,
-                    std::sync::mpsc::TryRecvError::Disconnected => /* The channel got disconnected */ {},
+                    std::sync::mpsc::TryRecvError::Empty =>
+                    /* Quit from the loop, we don't have any commands stacked up for this frame */
+                    {
+                        break
+                    }
+                    std::sync::mpsc::TryRecvError::Disconnected =>
+                        /* The channel got disconnected */
+                        {}
                 },
-            } 
+            }
         }
     }
     // Create the new render thread
@@ -205,7 +219,7 @@ impl RenderPipeline {
             GPUObject::Shader(ShaderGPUObject(program))
         }
     }
-    pub fn create_model(model: SharedData<Model>) -> GPUObject {        
+    pub fn create_model(model: SharedData<Model>) -> GPUObject {
         let mut gpu_data = ModelDataGPU::default();
         let model = model.object.as_ref();
         unsafe {
@@ -313,7 +327,7 @@ impl RenderPipeline {
         GPUObject::Model(ModelGPUObject(gpu_data.vertex_array_object))
     }
     pub fn dispose_model(mut gpu_data: ModelDataGPU) {
-        unsafe { 
+        unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut gpu_data.vertex_buf);
             gl::DeleteBuffers(1, &mut gpu_data.normal_buf);
@@ -321,7 +335,7 @@ impl RenderPipeline {
             gl::DeleteBuffers(1, &mut gpu_data.tangent_buf);
             gl::DeleteBuffers(1, &mut gpu_data.color_buf);
             gl::DeleteBuffers(1, &mut gpu_data.element_buffer_object);
-            
+
             // Delete the vertex array
             gl::DeleteVertexArrays(1, &mut gpu_data.vertex_array_object);
         }
@@ -353,32 +367,11 @@ impl RenderPipeline {
                 }
                 // This is a 2D texture
                 TextureType::Texture2D(width, height) => {
-                    gl::TexImage2D(
-                        tex_type,
-                        0,
-                        ifd.0,
-                        width as i32,
-                        height as i32,
-                        0,
-                        ifd.1,
-                        ifd.2,
-                        pointer,
-                    );
+                    gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
                 }
                 // This is a 3D texture
                 TextureType::Texture3D(width, height, depth) => {
-                    gl::TexImage3D(
-                        tex_type,
-                        0,
-                        ifd.0,
-                        width as i32,
-                        height as i32,
-                        depth as i32,
-                        0,
-                        ifd.1,
-                        ifd.2,
-                        pointer,
-                    );
+                    gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
                 }
                 // This is a texture array
                 TextureType::TextureArray(width, height, depth) => {
@@ -393,19 +386,7 @@ impl RenderPipeline {
                     // We might want to do mipmap
                     for i in 0..depth {
                         let localized_bytes = texture.bytes[(i as usize * height as usize * 4 * width as usize)..texture.bytes.len()].as_ptr() as *const c_void;
-                        gl::TexSubImage3D(
-                            gl::TEXTURE_2D_ARRAY,
-                            0,
-                            0,
-                            0,
-                            i as i32,
-                            width as i32,
-                            height as i32,
-                            1,
-                            ifd.1,
-                            ifd.2,
-                            localized_bytes,
-                        );
+                        gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
                     }
                 }
             }
@@ -506,32 +487,11 @@ impl RenderPipeline {
                 TextureType::Texture1D(width) => gl::TexImage1D(tex_type, 0, internal_format, width as i32, 0, format, data_type, pointer),
                 // This is a 2D texture
                 TextureType::Texture2D(width, height) => {
-                    gl::TexImage2D(
-                        tex_type,
-                        0,
-                        internal_format,
-                        width as i32,
-                        height as i32,
-                        0,
-                        format,
-                        data_type,
-                        pointer,
-                    );
+                    gl::TexImage2D(tex_type, 0, internal_format, width as i32, height as i32, 0, format, data_type, pointer);
                 }
                 // This is a 3D texture
                 TextureType::Texture3D(width, height, depth) => {
-                    gl::TexImage3D(
-                        tex_type,
-                        0,
-                        internal_format,
-                        width as i32,
-                        height as i32,
-                        depth as i32,
-                        0,
-                        format,
-                        data_type,
-                        pointer,
-                    );
+                    gl::TexImage3D(tex_type, 0, internal_format, width as i32, height as i32, depth as i32, 0, format, data_type, pointer);
                 }
                 // This is a texture array
                 TextureType::TextureArray(width, height, depth) => {
@@ -539,25 +499,17 @@ impl RenderPipeline {
                     // We might want to do mipmap
                     for i in 0..depth {
                         let localized_bytes = bytes[(i as usize * height as usize * 4 * width as usize)..bytes.len()].as_ptr() as *const c_void;
-                        gl::TexSubImage3D(
-                            gl::TEXTURE_2D_ARRAY,
-                            0,
-                            0,
-                            0,
-                            i as i32,
-                            width as i32,
-                            height as i32,
-                            1,
-                            format,
-                            data_type,
-                            localized_bytes,
-                        );
+                        gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, format, data_type, localized_bytes);
                     }
                 }
             }
         }
     }
-    pub fn texture_fill_array_veclib<V, U>(texture: SharedData<Texture>, id: u32) -> Vec<V> where V: veclib::Vector<U> + Default + Clone, U: veclib::DefaultStates, {
+    pub fn texture_fill_array_veclib<V, U>(texture: SharedData<Texture>, id: u32) -> Vec<V>
+    where
+        V: veclib::Vector<U> + Default + Clone,
+        U: veclib::DefaultStates,
+    {
         let texture = &texture.object;
         // Get the length of the vector
         let length: usize = match texture.ttype {
@@ -585,7 +537,10 @@ impl RenderPipeline {
         }
         pixels
     }
-    pub fn texture_fill_array<U>(texture: SharedData<Texture>, id: u32) -> Vec<U> where U: Clone + Default, {
+    pub fn texture_fill_array<U>(texture: SharedData<Texture>, id: u32) -> Vec<U>
+    where
+        U: Clone + Default,
+    {
         let texture = &texture.object;
         // Get the length of the vector
         let length: usize = match texture.ttype {

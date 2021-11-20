@@ -59,7 +59,6 @@ impl Model {
         output_model.tangents.extend(other.tangents.clone());
         output_model
     }
-    
 }
 
 // Struct that hold the model's information from OpenGL

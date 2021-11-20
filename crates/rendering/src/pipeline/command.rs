@@ -7,11 +7,12 @@ pub struct SharedData<T: Default> {
     pub object: Arc<T>,
 }
 
-impl<T> SharedData<T> where T: Default {
+impl<T> SharedData<T>
+where
+    T: Default,
+{
     pub fn new(x: T) -> Self {
-        Self {
-            object: Arc::new(x)
-        }
+        Self { object: Arc::new(x) }
     }
 }
 

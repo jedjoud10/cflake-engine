@@ -213,7 +213,13 @@ impl Texture {
         (image.to_bytes(), image.width() as u16, image.height() as u16)
     }
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    pub fn create_texturearray(load_options: Option<TextureLoadOptions>, texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> (Vec<Vec<u8>>, TextureType) {
+    pub fn create_texturearray(
+        load_options: Option<TextureLoadOptions>,
+        texture_paths: Vec<&str>,
+        asset_manager: &mut AssetManager,
+        width: u16,
+        height: u16,
+    ) -> (Vec<Vec<u8>>, TextureType) {
         // Load the textures
         let mut bytes: Vec<Vec<u8>> = Vec::new();
         let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
@@ -231,5 +237,5 @@ impl Texture {
             bytes.push(bytesa);
         }
         (bytes, TextureType::TextureArray(width, height, texture_paths.len() as u16))
-    }    
+    }
 }

@@ -2,8 +2,8 @@ use crate::advanced::ComputeShader;
 use crate::basics::AdditionalShader;
 use crate::basics::Shader;
 use crate::basics::*;
-use crate::pipeline::*;
 use crate::pipec;
+use crate::pipeline::*;
 use crate::utils::*;
 use assets::AssetManager;
 use ecs::Entity;
@@ -22,17 +22,19 @@ pub struct FrameStats {
 impl FrameStats {
     // Load the compute shaders and generate the default texture
     pub fn load_compute_shader(&mut self, asset_manager: &mut AssetManager) {
-        self.compute = pipec::create_shader(Shader::default()
-            .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
-            .load_shader(vec!["defaults\\shaders\\others\\frame_stats.cmpt.glsl"], asset_manager)
-            .unwrap());
-        self.texture = pipec::create_texture(Texture::default()
-            .set_dimensions(TextureType::Texture2D(256, 512))
-            .set_filter(TextureFilter::Nearest));
-        self.entities_texture = pipec::create_texture(Texture::default()
-            .set_format(TextureFormat::R16F)
-            .set_dimensions(TextureType::Texture1D(512))
-            .set_filter(TextureFilter::Nearest));
+        self.compute = pipec::create_shader(
+            Shader::default()
+                .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
+                .load_shader(vec!["defaults\\shaders\\others\\frame_stats.cmpt.glsl"], asset_manager)
+                .unwrap(),
+        );
+        self.texture = pipec::create_texture(Texture::default().set_dimensions(TextureType::Texture2D(256, 512)).set_filter(TextureFilter::Nearest));
+        self.entities_texture = pipec::create_texture(
+            Texture::default()
+                .set_format(TextureFormat::R16F)
+                .set_dimensions(TextureType::Texture1D(512))
+                .set_filter(TextureFilter::Nearest),
+        );
     }
     // Run the compute shader and update the texture
     pub fn update_texture(&mut self, time: &others::Time, entities: &SmartList<Entity>) {
