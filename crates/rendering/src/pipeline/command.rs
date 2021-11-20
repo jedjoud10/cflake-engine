@@ -1,8 +1,19 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::{GPUObject, Model, Renderer, Shader, SubShader, Texture};
 
-// Group task, a task that has multiple consecutive tasks that lead up to it, like auto-gen a model then create it's renderer
+// A shared GPU object that was sent to the render thread, and that can be returned back to the main thread at some point
+pub struct SharedGPUObject<T: Default> {
+    pub object: Arc<T>,
+}
+
+impl<T> SharedGPUObject<T> where T: Default {
+    pub fn new(x: T) -> Self {
+        Self {
+            object: Arc::new(x)
+        }
+    }
+}
 
 // Render task status
 pub enum RenderTaskStatus {
@@ -20,14 +31,13 @@ pub struct RenderCommand {
 // A render task (A specific message passed to the render thread)
 pub enum RenderTask {
     // Renderers
-    AddRenderer(usize, SimplifiedRenderer),
     DisposeRenderer(usize),
     // Update the transform of a specific renderer
     UpdateRendererTransform(),
     // Shader stuff
-    CreateSubShader(SubShader),
-    CreateShader(Shader),
-    GenerateTexture(Texture),
+    CreateSubShader(SharedGPUObject<SubShader>),
+    CreateShader(SharedGPUObject<Shader>),
+    GenerateTexture(SharedGPUObject<Texture>),
 
     RefreshModel(Model),
     RunCompute(),

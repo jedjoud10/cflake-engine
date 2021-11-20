@@ -15,12 +15,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234"
 
 [[package]]
-name = "ascii"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbf56136a5198c7b01a49e3afcbef6cf84597273d298f54432926024107b0109"
-
-[[package]]
 name = "assets"
 version = "0.1.0"
 dependencies = [
@@ -83,27 +77,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "assets",
- "debug",
- "defaults",
- "ecs",
- "fonts",
- "gl",
- "glfw",
- "input",
- "io",
- "others",
- "rendering",
- "systems",
- "ui",
- "veclib",
- "world_data",
-]
-
-[[package]]
 name = "crc32fast"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -157,39 +130,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "debug"
-version = "0.1.0"
-dependencies = [
- "assets",
- "gl",
- "math",
- "others",
- "rendering",
- "veclib",
-]
-
-[[package]]
-name = "defaults"
-version = "0.1.0"
-dependencies = [
- "assets",
- "debug",
- "ecs",
- "fonts",
- "gl",
- "input",
- "math",
- "others",
- "physics",
- "rendering",
- "systems",
- "terrain",
- "ui",
- "veclib",
- "world_data",
-]
-
-[[package]]
 name = "deflate"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -197,34 +137,6 @@ checksum = "73770f8e1fe7d64df17ca66ad28994a0a623ea497fa69486e14984e715c5d174"
 dependencies = [
  "adler32",
  "byteorder",
-]
-
-[[package]]
-name = "dev_game"
-version = "0.1.0"
-dependencies = [
- "main",
-]
-
-[[package]]
-name = "dirs-next"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf36e65a80337bea855cd4ef9b8401ffce06a7baedf2e85ec467b1ac3f6e82b6"
-dependencies = [
- "cfg-if",
- "dirs-sys-next",
-]
-
-[[package]]
-name = "dirs-sys-next"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ebda144c4fe02d1f7ea1a7d9641b6fc6b580adcfa024ae48797ecdeb6825b4d"
-dependencies = [
- "libc",
- "redox_users",
- "winapi",
 ]
 
 [[package]]
@@ -239,39 +151,6 @@ name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
-
-[[package]]
-name = "font_generator"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "fonts",
- "image",
- "veclib",
-]
-
-[[package]]
-name = "fonts"
-version = "0.1.0"
-dependencies = [
- "ascii",
- "assets",
- "byteorder",
- "gl",
- "rendering",
- "veclib",
-]
-
-[[package]]
-name = "getrandom"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
-dependencies = [
- "cfg-if",
- "libc",
- "wasi",
-]
 
 [[package]]
 name = "gif"
@@ -356,29 +235,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "input"
-version = "0.1.0"
-dependencies = [
- "glfw",
-]
-
-[[package]]
-name = "io"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "platform-dirs",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "itoa"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
-
-[[package]]
 name = "jpeg-decoder"
 version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -415,43 +271,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "main"
-version = "0.1.0"
-dependencies = [
- "assets",
- "core",
- "debug",
- "defaults",
- "ecs",
- "gl",
- "glfw",
- "input",
- "math",
- "others",
- "rendering",
- "systems",
- "terrain",
- "ui",
- "veclib",
- "world_data",
-]
-
-[[package]]
 name = "malloc_buf"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "math"
-version = "0.0.1"
-dependencies = [
- "others",
- "rayon",
- "veclib",
 ]
 
 [[package]]
@@ -547,22 +372,6 @@ name = "others"
 version = "0.1.0"
 
 [[package]]
-name = "physics"
-version = "0.1.0"
-dependencies = [
- "veclib",
-]
-
-[[package]]
-name = "platform-dirs"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e188d043c1a692985f78b5464853a263f1a27e5bd6322bad3a4078ee3c998a38"
-dependencies = [
- "dirs-next",
-]
-
-[[package]]
 name = "png"
 version = "0.16.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -572,24 +381,6 @@ dependencies = [
  "crc32fast",
  "deflate",
  "miniz_oxide 0.3.7",
-]
-
-[[package]]
-name = "proc-macro2"
-version = "1.0.32"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba508cc11742c0dc5c1659771673afbab7a0efab23aa17e854cbab0837ed0b43"
-dependencies = [
- "unicode-xid",
-]
-
-[[package]]
-name = "quote"
-version = "1.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38bc8cc6a5f2e3655e0899c1b848643b2562f853f114bfec7be120678e3ace05"
-dependencies = [
- "proc-macro2",
 ]
 
 [[package]]
@@ -627,25 +418,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "redox_syscall"
-version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8383f39639269cde97d255a32bdb68c047337295414940c68bdd30c2e13203ff"
-dependencies = [
- "bitflags",
-]
-
-[[package]]
-name = "redox_users"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
-dependencies = [
- "getrandom",
- "redox_syscall",
-]
-
-[[package]]
 name = "rendering"
 version = "0.1.0"
 dependencies = [
@@ -658,12 +430,6 @@ dependencies = [
  "others",
  "veclib",
 ]
-
-[[package]]
-name = "ryu"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
 name = "scoped_threadpool"
@@ -693,85 +459,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
-name = "serde"
-version = "1.0.130"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f12d06de37cf59146fbdecab66aa99f9fe4f78722e3607577a5375d66bd0c913"
-dependencies = [
- "serde_derive",
-]
-
-[[package]]
-name = "serde_derive"
-version = "1.0.130"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7bc1a1ab1961464eae040d96713baa5a724a8152c1222492465b54322ec508b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "serde_json"
-version = "1.0.70"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e277c495ac6cd1a01a58d0a0c574568b4d1ddf14f59965c6a58b8d96400b54f3"
-dependencies = [
- "itoa",
- "ryu",
- "serde",
-]
-
-[[package]]
-name = "syn"
-version = "1.0.81"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2afee18b8beb5a596ecb4a2dce128c719b4ba399d34126b9e4396e3f9860966"
-dependencies = [
- "proc-macro2",
- "quote",
- "unicode-xid",
-]
-
-[[package]]
-name = "systems"
-version = "0.1.0"
-dependencies = [
- "ecs",
- "others",
- "rayon",
- "world_data",
-]
-
-[[package]]
-name = "terrain"
-version = "0.1.0"
-dependencies = [
- "assets",
- "debug",
- "ecs",
- "input",
- "math",
- "others",
- "rayon",
- "rendering",
- "systems",
- "terrain_interpreter",
- "ui",
- "veclib",
- "world_data",
-]
-
-[[package]]
-name = "terrain_interpreter"
-version = "0.1.0"
-dependencies = [
- "math",
- "veclib",
-]
-
-[[package]]
 name = "tiff"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -783,31 +470,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "ui"
-version = "0.1.0"
-dependencies = [
- "assets",
- "fonts",
- "others",
- "veclib",
-]
-
-[[package]]
-name = "unicode-xid"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
-
-[[package]]
 name = "veclib"
 version = "0.1.8"
 source = "git+https://github.com/jedjoud10/veclib#b91cf6ea76b4a34fe02e43e1b589c47e86067fb9"
-
-[[package]]
-name = "wasi"
-version = "0.10.2+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "weezl"
@@ -836,20 +501,6 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-
-[[package]]
-name = "world_data"
-version = "0.1.0"
-dependencies = [
- "assets",
- "debug",
- "ecs",
- "input",
- "others",
- "rendering",
- "ui",
- "veclib",
-]
 
 [[package]]
 name = "xml-rs"

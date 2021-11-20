@@ -18,23 +18,21 @@ use std::rc::Rc;
 // A shader that contains two sub shaders that are compiled independently
 pub struct Shader {
     pub name: String,
+    pub source: String,
     pub id: GPUObject,
-    pub finalized: bool,
-    pub linked_subshaders_programs: Vec<(SubShaderType, u32)>,
+    pub linked_subshaders_programs: Vec<GPUObject>,
     pub additional_shader: AdditionalShader,
-    pub additional_shader_sources: Vec<String>,
 }
 
 impl Default for Shader {
     fn default() -> Self {
         unsafe {
             Self {
-                name: String::from("Undefined"),
+                name: "".to_string(),
+                source: "".to_string(),
                 id: GPUObject::None,
-                finalized: false,
                 linked_subshaders_programs: Vec::new(),
                 additional_shader: AdditionalShader::None,
-                additional_shader_sources: Vec::new(),
             }
         }
     }
@@ -76,15 +74,6 @@ impl Shader {
                     vectors_to_insert.push((i, new_lines));
                 }
             }
-            // Custom shader sources
-            if !self.additional_shader_sources.is_empty() && line.trim().starts_with("#include_custom") {
-                // Get the source
-                let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-                let source_id = c[2..(c.len() - 2)].parse::<usize>().unwrap();
-                let source = self.additional_shader_sources.get(source_id).unwrap();
-                let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                vectors_to_insert.push((i, lines));
-            }
         }
         // Add the newly included lines at their respective index
         let mut offset = 0;
@@ -106,11 +95,6 @@ impl Shader {
     // Set an additional shader for this shader before we finalize it
     pub fn set_additional_shader(mut self, additional_shader: AdditionalShader) -> Self {
         self.additional_shader = additional_shader;
-        self
-    }
-    // Set an additional shader source that can be loaded at runtime
-    pub fn set_additional_shader_sources(mut self, additional_shader_sources: Vec<&str>) -> Self {
-        self.additional_shader_sources = additional_shader_sources.into_iter().map(|x| x.to_string()).collect();
         self
     }
     // Creates a shader from multiple subshader files
@@ -171,54 +155,6 @@ impl Shader {
     pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {
         let name = self.name.clone();
         asset_manager.object_cacher.cache(&name, self).unwrap()
-    }
-    // Finalizes a vert/frag shader by compiling it
-    fn finalize_shader(&mut self) {
-        unsafe {
-            // Finalize the shader and stuff
-            gl::LinkProgram(self.program);
-
-            // Check for any errors
-            let mut info_log_length: i32 = 0;
-            let info_log_length_ptr: *mut i32 = &mut info_log_length;
-            let mut result: i32 = 0;
-            let result_ptr: *mut i32 = &mut result;
-            gl::GetProgramiv(self.program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-            gl::GetProgramiv(self.program, gl::LINK_STATUS, result_ptr);
-            // Print any errors that might've happened while finalizing this shader
-            if info_log_length > 0 {
-                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetProgramInfoLog(self.program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                println!("Error while finalizing shader {}!:", self.name);
-                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                let string = String::from_utf8(printable_log).unwrap();
-                println!("Error: \n\x1b[31m{}", string);
-                println!("\x1b[0m");
-                panic!();
-            }
-
-            for subshader_program in self.linked_subshaders_programs.iter() {
-                gl::DetachShader(self.program, subshader_program.1);
-            }
-
-            self.finalized = true;
-        }
-    }
-    // Use this shader for rendering a specific entity
-    pub fn use_shader(&self) {
-        // Check if the program even was finalized and ready for use
-        if self.finalized {
-            unsafe {
-                gl::UseProgram(self.program);
-            }
-        }
-    }
-    // Link a specific subshader to this shader
-    pub fn link_subshader(&mut self, subshader: &SubShader) {
-        self.linked_subshaders_programs.push((subshader.subshader_type, subshader.program));
-        unsafe {
-            gl::AttachShader(self.program, subshader.program);
-        }
     }
 }
 
