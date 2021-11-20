@@ -13,7 +13,7 @@ pub mod pipec {
     }
 
     // Actual commands start here
-    pub fn create_texture(texture: Texture) -> TextureGPUObject {
+    fn create_texture(texture: Texture) -> TextureGPUObject {
         unsafe {
             match render_pipeline.task_immediate(RenderTask::TextureCreate(SharedData::new(texture))) {
                 GPUObject::Texture(x) => x,
@@ -21,7 +21,7 @@ pub mod pipec {
             }
         }
     }
-    pub fn create_subshader(subshader: SubShader) -> SubShaderGPUObject {
+    fn create_subshader(subshader: SubShader) -> SubShaderGPUObject {
         unsafe {
             match render_pipeline.task_immediate(RenderTask::SubShaderCreate(SharedData::new(subshader))) {
                 GPUObject::SubShader(x) => x,
@@ -29,7 +29,7 @@ pub mod pipec {
             }
         }
     }
-    pub fn create_shader(shader: Shader) -> ShaderGPUObject {
+    fn create_shader(shader: Shader) -> ShaderGPUObject {
         unsafe {
             match render_pipeline.task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
                 GPUObject::Shader(x) => x,
@@ -37,7 +37,7 @@ pub mod pipec {
             }
         }
     }
-    pub fn create_compute_shader(shader: Shader) -> ComputeShaderGPUObject {
+    fn create_compute_shader(shader: Shader) -> ComputeShaderGPUObject {
         unsafe {
             match render_pipeline.task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
                 GPUObject::ComputeShader(x) => x,
@@ -47,7 +47,44 @@ pub mod pipec {
     }
     fn get_gpu_object(name: &str) -> GPUObject {
         unsafe {
-            render_pipeline.get_gpu_object(name)
+            render_pipeline.get_gpu_object(name).clone()
         }
+    }
+    fn gpu_object_valid(name: &str) -> bool {
+        unsafe {
+            render_pipeline.gpu_object_valid(name)
+        }
+    }
+    pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {
+        if let GPUObject::SubShader(x) = get_gpu_object(name) { x }  else { panic!() }
+    }
+    pub fn get_shader_object(name: &str) -> ShaderGPUObject {
+        if let GPUObject::Shader(x) = get_gpu_object(name) { x }  else { panic!() } 
+    }
+    pub fn get_compute_shader_object(name: &str) -> ComputeShaderGPUObject {
+        if let GPUObject::ComputeShader(x) = get_gpu_object(name) { x }  else { panic!() } 
+    }
+    pub fn get_model_object(name: &str) -> ModelGPUObject {
+        if let GPUObject::Model(x) = get_gpu_object(name) { x }  else { panic!() }
+    }
+    pub fn get_texture_object(name: &str) -> TextureGPUObject {
+        if let GPUObject::Texture(x) = get_gpu_object(name) { x }  else { panic!() }
+    }
+    // Load or create functions
+    pub fn subshader(subshader: SubShader) -> SubShaderGPUObject {
+        if gpu_object_valid(&subshader.name) { get_subshader_object(&subshader.name) }
+        else { create_subshader(subshader) }
+    }
+    pub fn shader(shader: Shader) -> ShaderGPUObject {
+        if gpu_object_valid(&shader.name) { get_shader_object(&shader.name) }
+        else { create_shader(shader) }
+    }
+    pub fn compute_shader(shader: Shader) -> ComputeShaderGPUObject {
+        if gpu_object_valid(&shader.name) { get_compute_shader_object(&shader.name) }
+        else { create_compute_shader(shader) }
+    }
+    pub fn texture(texture: Texture) -> TextureGPUObject {
+        if gpu_object_valid(&texture.name) { get_texture_object(&texture.name) }
+        else { create_texture(texture.clone()) }
     }
 }

@@ -3,10 +3,15 @@ use std::collections::HashMap;
 use crate::{SubShaderType, TextureShaderAccessType, TextureType, Uniform};
 
 // Cooler objects
+#[derive(Clone, Default)]
 pub struct ModelGPUObject(pub u32);
+#[derive(Clone, Default)]
 pub struct SubShaderGPUObject(pub SubShaderType, pub u32);
+#[derive(Clone, Default)]
 pub struct ShaderGPUObject(pub u32);
+#[derive(Clone, Default)]
 pub struct ComputeShaderGPUObject(pub u32);
+#[derive(Clone, Default)]
 pub struct TextureGPUObject(pub u32, pub TextureType);
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
@@ -17,6 +22,12 @@ pub struct ShaderExcecutionGroup {
 
 // Gotta change the place where this shit is in
 impl ShaderExcecutionGroup {
+    // Create a new empty shader excecution group (Used for initial states)
+    pub fn new_null() -> Self {
+        Self {
+            uniforms: HashMap::new(),
+        }
+    }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
         self.uniforms.insert(name.to_string(), Uniform::Bool(value));
@@ -104,6 +115,7 @@ impl ComputeShaderGPUObject {
 }
 
 // Some identifiers that we will use to communicate from the Render Thread -> Main Thread
+#[derive(Clone)]
 pub enum GPUObject {
     None,                                  // This value was not initalized yet
     Model(ModelGPUObject),                 // The VAO ID

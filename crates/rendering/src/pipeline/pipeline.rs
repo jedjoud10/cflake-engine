@@ -139,6 +139,10 @@ impl RenderPipeline {
     pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
         self.gpu_objects.get(name).unwrap()
     }
+    // Check if a GPU object exists
+    pub fn gpu_object_valid(&self, name: &str) -> bool {
+        self.gpu_objects.contains_key(name)
+    }
 }
 // The actual OpenGL tasks that are run on the render thread
 impl RenderPipeline {
@@ -205,19 +209,13 @@ impl RenderPipeline {
                 panic!();
             }
             // Check if this a compute shader
-            let mut compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap() {
-                GPUObject::SubShader(x) => match x.0 {
-                    SubShaderType::Compute => true,
-                    _ => false,
-                },
-                _ => false,
+            let mut compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap().0 {
+                SubShaderType::Compute => true,
+                _ => false
             };
             // Detach shaders
             for subshader_program in shader.linked_subshaders_programs.iter() {
-                match subshader_program {
-                    GPUObject::SubShader(x) => gl::DetachShader(program, x.1),
-                    _ => {}
-                }
+                gl::DetachShader(program, subshader_program.1);
             }
             if !compute_shader {
                 // Normal shader

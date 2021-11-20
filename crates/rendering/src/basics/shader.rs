@@ -1,3 +1,5 @@
+use crate::SubShaderGPUObject;
+use crate::pipec;
 use crate::utils::RenderingError;
 use crate::GPUObject;
 
@@ -18,7 +20,7 @@ use std::rc::Rc;
 pub struct Shader {
     pub name: String,
     pub source: String,
-    pub linked_subshaders_programs: Vec<GPUObject>,
+    pub linked_subshaders_programs: Vec<SubShaderGPUObject>,
 }
 
 impl Default for Shader {
@@ -96,9 +98,8 @@ impl Shader {
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached
             if asset_manager.object_cacher.cached(subshader_path) {
-                let rc_subshader = SubShader::object_load_o(subshader_path, &asset_manager.object_cacher);
-                let subshader = rc_subshader.as_ref();
-                self.link_subshader(subshader);
+                let subshader = pipec::get_subshader_object(subshader_path);
+                self.linked_subshaders_programs.push(subshader);
             } else {
                 // It was not cached, so we need to cache it
                 let mut subshader = SubShader::default()
@@ -133,12 +134,10 @@ impl Shader {
                 subshader.compile_subshader();
 
                 // Cache it, and link it
+                self.linked_subshaders_programs.push(pipec::subshader(subshader));
                 let rc_subshader: Rc<SubShader> = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap();
-                self.link_subshader(rc_subshader.as_ref());
             }
         }
-        // Finalize the shader and cache it
-        self.finalize_shader();
         Ok(self)
     }
     // Cache this shader

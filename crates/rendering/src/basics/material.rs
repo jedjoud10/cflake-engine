@@ -13,16 +13,15 @@ bitflags! {
 }
 
 // A material that can have multiple parameters and such
-#[derive(Clone)]
 pub struct Material {
     // Rendering stuff
-    pub shader: GPUObject,
+    pub shader: ShaderGPUObject,
     pub material_name: String,
     pub flags: MaterialFlags,
-    pub default_uniforms: HashMap<String, Uniform>,
+    pub uniforms: ShaderExcecutionGroup,
     // The default textures
-    pub diffuse_tex: GPUObject,
-    pub normal_tex: GPUObject,
+    pub diffuse_tex: TextureGPUObject,
+    pub normal_tex: TextureGPUObject,
     // Is this material even visible?
     pub visible: bool,
 }
@@ -30,12 +29,12 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         let material: Self = Material {
-            shader: GPUObject::None,
+            shader: ShaderGPUObject::default(),
             material_name: String::new(),
             flags: MaterialFlags::empty(),
-            default_uniforms: HashMap::new(),
-            diffuse_tex: GPUObject::None,
-            normal_tex: GPUObject::None,
+            uniforms: ShaderExcecutionGroup::new_null(),
+            diffuse_tex: TextureGPUObject::default(),
+            normal_tex: TextureGPUObject::default(),
             visible: true,
         };
         // Set the default shader args
@@ -59,12 +58,11 @@ impl Material {
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let texture = Texture::default()
+        let texture = pipec::texture(Texture::default()
             .enable_mipmaps()
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
-            .cache_load(diffuse_path, asset_manager)
-            .id;
+            .cache_load(diffuse_path, asset_manager));
         self.diffuse_tex = texture;
         self
     }
