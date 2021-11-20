@@ -1,30 +1,20 @@
+use crate::{FrameStats, Material, Renderer, pipeline::object::*};
 // The main renderer
 pub struct PipelineRenderer {
-
+    pub framebuffer: u32,
+    // The frame buffer textures
+    pub diffuse_texture: TextureGPUObject,
+    pub normals_texture: TextureGPUObject,
+    pub position_texture: TextureGPUObject,
+    pub depth_texture: TextureGPUObject,
+    pub debug_view: u16,
+    pub wireframe: bool,
+    wireframe_shader: ShaderGPUObject,
+    frame_stats: FrameStats,
+    quad_renderer: Renderer,
 }
 
-// Draw functions
-impl CustomData {
-    // Create the quad that will render the render buffer
-    fn create_screen_quad(&mut self, data: &mut WorldData) {
-        let mut quad_renderer_component = Renderer::default();
-        quad_renderer_component.model = Model::default()
-            .load_asset("defaults\\models\\screen_quad.mdl3d", &data.asset_manager.asset_cacher)
-            .unwrap();
-        // Create the screen quad material
-        let material: Material = Material::default().set_shader(
-            Shader::default()
-                .load_shader(
-                    vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
-                    &mut data.asset_manager,
-                )
-                .unwrap()
-                .cache(data.asset_manager),
-        );
-        let mut quad_renderer_component = quad_renderer_component.set_material(material);
-        quad_renderer_component.refresh_model();
-        self.quad_renderer = quad_renderer_component;
-    }
+impl PipelineRenderer {
     // Bind a specific texture attachement to the frame buffer
     fn bind_attachement(attachement: u32, texture: &Texture) {
         unsafe {
@@ -243,6 +233,7 @@ impl CustomData {
         }
     }
 }
+
 // Events
 fn system_enabled(system_data: &mut SystemData, data: &mut WorldData) {
     let system = system_data.cast_mut::<CustomData>().unwrap();

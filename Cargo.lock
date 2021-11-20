@@ -427,7 +427,6 @@ dependencies = [
  "gl",
  "glfw",
  "image",
- "lazy_static",
  "others",
  "veclib",
 ]

@@ -1,7 +1,8 @@
+use assets::AssetManager;
 use glfw::Context;
 
 use super::object::*;
-use crate::{basics::*, RenderCommand, RenderTask, RenderTaskStatus, SharedData};
+use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedData, basics::*, pipec};
 use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null, sync::{
         mpsc::{Receiver, Sender},
         Arc, Mutex,
@@ -12,9 +13,10 @@ use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null,
 pub struct RenderPipeline {
     pub command_id: u128, // Next Command ID 
     pub pending_wait_list: Vec<(u128, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
-    pub gpu_objects: Option<HashMap<String, GPUObject>>, // The GPU objects
+    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects
     pub render_to_main: Option<Receiver<RenderTaskStatus>>, // RX (MainThread)    
     pub main_to_render: Option<Sender<RenderCommand>>, // TX (MainThread)
+    pub default_material: Material,
 }
 impl RenderPipeline {
     // Run a command
@@ -71,7 +73,6 @@ impl RenderPipeline {
         // Create the two channels
         let (tx, rx): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main
         let (tx2, rx2): (Sender<RenderCommand>, Receiver<RenderCommand>) = std::sync::mpsc::channel(); // Main to render
-        self.gpu_objects = Some(HashMap::new());
         let render_thread = unsafe {
             // Window and GLFW wrapper
             struct RenderWrapper(*mut glfw::Glfw, *mut glfw::Window);
@@ -96,6 +97,32 @@ impl RenderPipeline {
         self.render_to_main = Some(rx);
         self.main_to_render = Some(tx2);
     }
+    // Load some default rendering things
+    pub fn start_world(&mut self, asset_manager: &mut AssetManager) {
+        // Default shader
+        let ds = pipec::shader(Shader::default()
+            .load_shader(
+                vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
+                &mut asset_manager,
+            )
+            .unwrap());
+        // Default material
+        let dm = Material::new("Default material", asset_manager)
+            .set_shader(ds);
+        self.default_material = dm;
+
+        let mut quad_renderer_component = Renderer::default();
+        quad_renderer_component.model = Model::default()
+            .load_asset("defaults\\models\\screen_quad.mdl3d", &data.asset_manager.asset_cacher)
+            .unwrap();
+        // Create the screen quad material
+        let material: Material = Material::default().set_shader(
+            ,
+        );
+        let mut quad_renderer_component = quad_renderer_component.set_material(material);
+        quad_renderer_component.refresh_model();
+        self.quad_renderer = quad_renderer_component;
+    } 
     // Complete a task immediatly
     pub fn task_immediate(&mut self, task: RenderTask) -> GPUObject {
         // Create a new render command and send it to the separate thread
@@ -140,11 +167,11 @@ impl RenderPipeline {
     }
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
-        self.gpu_objects.as_ref().unwrap().get(name).unwrap()
+        self.gpu_objects.get(name).unwrap()
     }
     // Check if a GPU object exists
     pub fn gpu_object_valid(&self, name: &str) -> bool {
-        self.gpu_objects.as_ref().unwrap().contains_key(name)
+        self.gpu_objects.contains_key(name)
     }
 }
 // The actual OpenGL tasks that are run on the render thread

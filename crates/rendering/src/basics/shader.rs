@@ -17,6 +17,7 @@ use std::ffi::CString;
 use std::rc::Rc;
 
 // A shader that contains two sub shaders that are compiled independently
+#[derive(Clone)]
 pub struct Shader {
     pub name: String,
     pub source: String,
@@ -139,11 +140,6 @@ impl Shader {
             }
         }
         Ok(self)
-    }
-    // Cache this shader
-    pub fn cache<'a>(self, asset_manager: &'a mut AssetManager) -> Rc<Self> {
-        let name = self.name.clone();
-        asset_manager.object_cacher.cache(&name, self).unwrap()
     }
 }
 

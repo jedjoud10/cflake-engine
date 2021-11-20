@@ -1,38 +1,37 @@
 use std::{collections::HashMap, iter::FromIterator};
-use lazy_static::lazy_static;
 use crate::{GPUObject, RenderPipeline};
 
 // Static mut RenderPipeline
-pub static mut render_pipeline: RenderPipeline = RenderPipeline {
-    command_id: 0,
-    pending_wait_list: Vec::new(),
-    gpu_objects: None,
-    render_to_main: None,
-    main_to_render: None,
-};
+pub static mut render_pipeline: Option<RenderPipeline> = None;
 
 pub mod pipec {
-    use assets::CachedObject;
+    use assets::{AssetManager, CachedObject};
 
     use crate::pipeline::object::*;
-    use crate::{render_pipeline, RenderTask, Shader, SharedData, SubShader, Texture};
+    use crate::{RenderPipeline, RenderTask, Shader, SharedData, SubShader, Texture, render_pipeline};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
-            render_pipeline.init_pipeline(glfw, window);
+            render_pipeline = Some(RenderPipeline::default());
+            render_pipeline.unwrap().init_pipeline(glfw, window);
+        }
+    }
+    pub fn start_world(asset_manager: &mut AssetManager) {
+        unsafe {
+            render_pipeline.unwrap().start_world(asset_manager);
         }
     }
     // Task
     pub fn task_immediate(task: RenderTask) -> GPUObject {
         unsafe {
-            render_pipeline.task_immediate(task)
+            render_pipeline.unwrap().task_immediate(task)
         }
     }
 
     // Actual commands start here
     fn create_texture(texture: Texture) -> TextureGPUObject {
         unsafe {
-            match render_pipeline.task_immediate(RenderTask::TextureCreate(SharedData::new(texture))) {
+            match render_pipeline.unwrap().task_immediate(RenderTask::TextureCreate(SharedData::new(texture))) {
                 GPUObject::Texture(x) => x,
                 _ => panic!(),
             }
@@ -40,7 +39,7 @@ pub mod pipec {
     }
     fn create_subshader(subshader: SubShader) -> SubShaderGPUObject {
         unsafe {
-            match render_pipeline.task_immediate(RenderTask::SubShaderCreate(SharedData::new(subshader))) {
+            match render_pipeline.unwrap().task_immediate(RenderTask::SubShaderCreate(SharedData::new(subshader))) {
                 GPUObject::SubShader(x) => x,
                 _ => panic!(),
             }
@@ -48,7 +47,7 @@ pub mod pipec {
     }
     fn create_shader(shader: Shader) -> ShaderGPUObject {
         unsafe {
-            match render_pipeline.task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
+            match render_pipeline.unwrap().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
                 GPUObject::Shader(x) => x,
                 _ => panic!(),
             }
@@ -56,7 +55,7 @@ pub mod pipec {
     }
     fn create_compute_shader(shader: Shader) -> ComputeShaderGPUObject {
         unsafe {
-            match render_pipeline.task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
+            match render_pipeline.unwrap().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
                 GPUObject::ComputeShader(x) => x,
                 _ => panic!(),
             }
@@ -64,12 +63,12 @@ pub mod pipec {
     }
     fn get_gpu_object(name: &str) -> GPUObject {
         unsafe {
-            render_pipeline.get_gpu_object(name).clone()
+            render_pipeline.unwrap().get_gpu_object(name).clone()
         }
     }
     fn gpu_object_valid(name: &str) -> bool {
         unsafe {
-            render_pipeline.gpu_object_valid(name)
+            render_pipeline.unwrap().gpu_object_valid(name)
         }
     }
     pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {
@@ -110,6 +109,13 @@ pub mod pipec {
         else { 
             let texture = texturec.rc.as_ref().clone();
             create_texture(texture)
+        }
+    }
+    pub fn shaderc(shaderc: CachedObject<Shader>) -> ShaderGPUObject {
+        if gpu_object_valid(&shaderc.rc.name) { get_shader_object(&shaderc.rc.name) }
+        else { 
+            let shader = shaderc.rc.as_ref().clone();
+            create_shader(shader)
         }
     }
 }
