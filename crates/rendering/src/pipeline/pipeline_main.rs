@@ -14,17 +14,17 @@ pub mod pipec {
     // Actual commands start here
     pub fn create_texture(texture: Texture) -> GPUObject {
         unsafe {
-            render_pipeline.task_immediate(RenderTask::GenerateTexture(SharedData::new(texture)))
+            render_pipeline.task_immediate(RenderTask::TextureCreate(SharedData::new(texture)))
         }
     }
     pub fn create_subshader(subshader: SubShader) -> GPUObject {
         unsafe {
-            render_pipeline.task_immediate(RenderTask::CreateSubShader(SharedData::new(subshader)))
+            render_pipeline.task_immediate(RenderTask::SubShaderCreate(SharedData::new(subshader)))
         }
     }
     pub fn create_shader(shader: Shader) -> GPUObject {
         unsafe {
-            render_pipeline.task_immediate(RenderTask::CreateShader(SharedData::new(shader)))
+            render_pipeline.task_immediate(RenderTask::ShaderCreate(SharedData::new(shader)))
         }
     }
 }

@@ -1,6 +1,7 @@
 use glfw::Context;
 
 use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedData, basics::*};
+use super::object::*;
 use std::{ffi::{CString, c_void}, mem::size_of, ptr::null, sync::{Arc, Mutex, mpsc::{Receiver, Sender}}};
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
@@ -21,11 +22,17 @@ impl RenderPipeline {
         let object = match command.input_task {
             RenderTask::DisposeRenderer(_) => todo!(),
             RenderTask::UpdateRendererTransform() => todo!(),
-            RenderTask::CreateSubShader(x) => Self::create_compile_subshader(x),
-            RenderTask::CreateShader(_) => todo!(),
-            RenderTask::GenerateTexture(_) => todo!(),
-            RenderTask::RefreshModel(_) => todo!(),
-            RenderTask::RunCompute() => todo!(),
+            RenderTask::SubShaderCreate(x) => Self::create_compile_subshader(x),
+            RenderTask::ShaderCreate(_) => todo!(),
+            RenderTask::TextureCreate(_) => todo!(),
+            RenderTask::TextureCreateNull(_) => todo!(),
+            RenderTask::TextureFillArray(_) => todo!(),
+            RenderTask::TextureFillArrayVeclib(_) => todo!(),
+            RenderTask::TextureUpdateSize(_, _) => todo!(),
+            RenderTask::TextureUpdateData(_, _) => todo!(),            
+            RenderTask::ModelCreate(_) => todo!(),
+            RenderTask::ComputeRun() => todo!(),
+            RenderTask::ComputeLock() => todo!(),
             RenderTask::DestroyRenderPipeline() => todo!(),
         };
         // Send back a possible new GPU object
@@ -125,7 +132,7 @@ impl RenderPipeline {
 }
 // The actual OpenGL tasks that are run on the render thread
 impl RenderPipeline {
-    fn create_compile_subshader(subshader: SharedData<SubShader>) -> GPUObject {
+    pub fn create_compile_subshader(subshader: SharedData<SubShader>) -> GPUObject {
         let shader_type: u32;
         let subshader = subshader.object.as_ref();
         match subshader.subshader_type {
@@ -159,10 +166,10 @@ impl RenderPipeline {
             }
 
             println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", subshader.name);
-            GPUObject::SubShader(subshader.subshader_type, program)
+            GPUObject::SubShader(SubShaderGPUObject(subshader.subshader_type, program))
         }
     }
-    fn create_compile_shader(shader: SharedData<Shader>) -> GPUObject {
+    pub fn create_compile_shader(shader: SharedData<Shader>) -> GPUObject {
         let shader = shader.object.as_ref();
         unsafe {
             let program = gl::CreateProgram();
@@ -191,14 +198,14 @@ impl RenderPipeline {
             // Detach shaders
             for subshader_program in shader.linked_subshaders_programs.iter() {
                 match subshader_program {
-                    GPUObject::SubShader(x, i) => gl::DetachShader(program, *i),
+                    GPUObject::SubShader(x) => gl::DetachShader(program, x.1),
                     _ => {}
                 }
             }
-            GPUObject::Shader(program)
+            GPUObject::Shader(ShaderGPUObject(program))
         }
     }
-    fn create_model(model: SharedData<Model>) -> GPUObject {        
+    pub fn create_model(model: SharedData<Model>) -> GPUObject {        
         let mut gpu_data = ModelDataGPU::default();
         let model = model.object.as_ref();
         unsafe {
@@ -303,9 +310,9 @@ impl RenderPipeline {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
-        GPUObject::Model(gpu_data.vertex_array_object)
+        GPUObject::Model(ModelGPUObject(gpu_data.vertex_array_object))
     }
-    fn dispose_model(mut gpu_data: ModelDataGPU) {
+    pub fn dispose_model(mut gpu_data: ModelDataGPU) {
         unsafe { 
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut gpu_data.vertex_buf);
@@ -319,7 +326,7 @@ impl RenderPipeline {
             gl::DeleteVertexArrays(1, &mut gpu_data.vertex_array_object);
         }
     }
-    fn generate_texture(texture: SharedData<Texture>) -> GPUObject {
+    pub fn generate_texture(texture: SharedData<Texture>) -> GPUObject {
         let mut pointer: *const c_void = null();
         let texture = texture.object.as_ref();
         if !texture.bytes.is_empty() {
@@ -452,9 +459,9 @@ impl RenderPipeline {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
         }
         println!("Succsesfully generated texture {}", texture.name);
-        GPUObject::Texture(id)
+        GPUObject::Texture(TextureGPUObject(id))
     }
-    fn update_texture_size(texture: &mut SharedData<Texture>, id: u32, ttype: TextureType) {
+    pub fn update_texture_size(texture: &mut SharedData<Texture>, id: u32, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one
         let texture = &mut texture.object;
         texture.ttype = ttype;
@@ -478,7 +485,7 @@ impl RenderPipeline {
             }
         }
     }
-    fn update_texture_data(texture: &mut SharedData<Texture>, id: u32, bytes: Vec<u8>) {
+    pub fn update_texture_data(texture: &mut SharedData<Texture>, id: u32, bytes: Vec<u8>) {
         let texture = &mut texture.object;
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
@@ -549,5 +556,61 @@ impl RenderPipeline {
                 }
             }
         }
+    }
+    pub fn texture_fill_array_veclib<V, U>(texture: SharedData<Texture>, id: u32) -> Vec<V> where V: veclib::Vector<U> + Default + Clone, U: veclib::DefaultStates, {
+        let texture = &texture.object;
+        // Get the length of the vector
+        let length: usize = match texture.ttype {
+            TextureType::Texture1D(x) => (x as usize),
+            TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
+            TextureType::TextureArray(_, _, _) => todo!(),
+        };
+        // Create the vector
+        let mut pixels: Vec<V> = vec![V::default(); length];
+
+        let tex_type = match texture.ttype {
+            TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+
+        // Actually read the pixels
+        unsafe {
+            // Bind the buffer before reading
+            gl::BindTexture(tex_type, id);
+            let (_internal_format, format, data_type) = crate::get_ifd(texture._format, texture._type);
+            gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
+        }
+        pixels
+    }
+    pub fn texture_fill_array<U>(texture: SharedData<Texture>, id: u32) -> Vec<U> where U: Clone + Default, {
+        let texture = &texture.object;
+        // Get the length of the vector
+        let length: usize = match texture.ttype {
+            TextureType::Texture1D(x) => (x as usize),
+            TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
+            TextureType::TextureArray(_, _, _) => todo!(),
+        };
+        // Create the vector
+        let mut pixels: Vec<U> = vec![U::default(); length];
+
+        let tex_type = match texture.ttype {
+            TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+
+        // Actually read the pixels
+        unsafe {
+            // Bind the buffer before reading
+            gl::BindTexture(tex_type, id);
+            let (_internal_format, format, data_type) = crate::get_ifd(texture._format, texture._type);
+            gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
+        }
+        pixels
     }
 }

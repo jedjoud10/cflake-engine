@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{GPUObject, Model, Renderer, Shader, SubShader, Texture};
+use crate::{GPUObject, Model, Renderer, Shader, SubShader, Texture, TextureType};
 
 // A shared GPU object that was sent to the render thread, and that can be returned back to the main thread at some point
 pub struct SharedData<T: Default> {
@@ -35,12 +35,20 @@ pub enum RenderTask {
     // Update the transform of a specific renderer
     UpdateRendererTransform(),
     // Shader stuff
-    CreateSubShader(SharedData<SubShader>),
-    CreateShader(SharedData<Shader>),
-    GenerateTexture(SharedData<Texture>),
-
-    RefreshModel(Model),
-    RunCompute(),
+    SubShaderCreate(SharedData<SubShader>),
+    ShaderCreate(SharedData<Shader>),
+    // Textures
+    TextureCreate(SharedData<Texture>),
+    TextureCreateNull(SharedData<Texture>),
+    TextureUpdateSize(GPUObject, TextureType),
+    TextureUpdateData(GPUObject, Vec<u8>),
+    TextureFillArrayVeclib(GPUObject),
+    TextureFillArray(GPUObject),
+    // Model
+    ModelCreate(Model),
+    // Compute
+    ComputeRun(),
+    ComputeLock(),
     // Destroy the render thread, since we are exiting from the application
     DestroyRenderPipeline(),
 }

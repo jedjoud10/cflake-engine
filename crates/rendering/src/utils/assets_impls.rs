@@ -16,9 +16,7 @@ impl Asset for Texture {
             .set_dimensions(TextureType::Texture2D(width, height))
             .set_format(TextureFormat::RGBA8R)
             .set_data_type(DataType::UByte)
-            .set_name(&data.name)
-            .generate_texture(bytes)
-            .unwrap();
+            .set_name(&data.name);
         Some(texture)
     }
 }
