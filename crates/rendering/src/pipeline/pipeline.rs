@@ -26,6 +26,7 @@ impl Pipeline {
             RenderTask::UpdateRendererTransform() => todo!(),
             RenderTask::SubShaderCreate(x) => Self::create_compile_subshader(x),
             RenderTask::ShaderCreate(_) => todo!(),
+            RenderTask::ShaderUniformGroup(_) => todo!(),
             RenderTask::TextureCreate(_) => todo!(),
             RenderTask::TextureCreateNull(_) => todo!(),
             RenderTask::TextureFillArray(_) => todo!(),
@@ -368,7 +369,7 @@ impl Pipeline {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
-        GPUObject::Model(ModelGPUObject(gpu_data.vertex_array_object))
+        GPUObject::Model(ModelGPUObject(gpu_data.vertex_array_object, gpu_data.element_buffer_object, model.triangles.len()))
     }
     pub fn dispose_model(mut gpu_data: ModelDataGPU) {
         unsafe {
@@ -484,7 +485,7 @@ impl Pipeline {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
         }
         println!("Succsesfully generated texture {}", texture.name);
-        GPUObject::Texture(TextureGPUObject(id, texture.ttype))
+        GPUObject::Texture(TextureGPUObject(id, ifd, texture.ttype))
     }
     pub fn update_texture_size(texture: &mut SharedData<Texture>, id: u32, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one

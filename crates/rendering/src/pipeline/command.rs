@@ -1,15 +1,15 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{GPUObject, Model, Renderer, Shader, SubShader, Texture, TextureGPUObject, TextureType};
+use crate::{GPUObject, Model, Renderer, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType};
 
 // A shared GPU object that was sent to the render thread, and that can be returned back to the main thread at some point
-pub struct SharedData<T: Default> {
+pub struct SharedData<T: Default + Sync> {
     pub object: Arc<T>,
 }
 
 impl<T> SharedData<T>
 where
-    T: Default,
+    T: Default + Sync,
 {
     pub fn new(x: T) -> Self {
         Self { object: Arc::new(x) }
@@ -38,6 +38,7 @@ pub enum RenderTask {
     // Shader stuff
     SubShaderCreate(SharedData<SubShader>),
     ShaderCreate(SharedData<Shader>),
+    ShaderUniformGroup(SharedData<ShaderUniformsGroup>),
     // Textures
     TextureCreate(SharedData<Texture>),
     TextureCreateNull(SharedData<Texture>),

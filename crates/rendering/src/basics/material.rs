@@ -11,6 +11,11 @@ bitflags! {
         const DOUBLE_SIDED = 0b00000001;
     }
 }
+impl Default for MaterialFlags {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
 
 // A material that can have multiple parameters and such
 pub struct Material {
@@ -29,7 +34,7 @@ impl Default for Material {
             shader: ShaderGPUObject::default(),
             material_name: String::new(),
             flags: MaterialFlags::empty(),
-            uniforms: ShaderUniformsGroup::new_null(),
+            uniforms: ShaderUniformsGroup::default(),
             visible: true,
         };
         // Set the default shader args
