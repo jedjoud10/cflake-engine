@@ -8,7 +8,7 @@ use glfw::{self, Context};
 use input::*;
 use io::SaverLoader;
 use others::*;
-use rendering::*;
+use ::rendering::*;
 use ui::UIManager;
 use world_data::*;
 
@@ -114,8 +114,7 @@ impl World {
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_name("black")
-            .generate_texture(vec![0, 0, 0, 255])
-            .unwrap()
+            .set_bytes(vec![0, 0, 0, 255])
             .object_cache_load("black", &mut self.asset_manager.object_cacher);
         // Create the white texture
         Texture::default()
@@ -123,8 +122,7 @@ impl World {
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_name("white")
-            .generate_texture(vec![255, 255, 255, 255])
-            .unwrap()
+            .set_bytes(vec![255, 255, 255, 255])
             .object_cache_load("white", &mut self.asset_manager.object_cacher);
         // Create the default normals texture
         Texture::default()
@@ -132,8 +130,7 @@ impl World {
             .set_filter(TextureFilter::Linear)
             .enable_mipmaps()
             .set_name("default_normals")
-            .generate_texture(vec![127, 128, 255, 255])
-            .unwrap()
+            .set_bytes(vec![127, 128, 255, 255])
             .object_cache_load("default_normals", &mut self.asset_manager.object_cacher);
 
         // Create some default UI that prints some default info to the screen
@@ -421,7 +418,7 @@ impl World {
         self.custom_data.window.dimensions = veclib::Vector2::new(size.0, size.1);
         unsafe {
             gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
-
+            /*
             let render_system = self
                 .system_manager
                 .get_custom_system_data_mut::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
@@ -435,6 +432,7 @@ impl World {
 
             //TODO: This
             render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions);
+            */
         }
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;

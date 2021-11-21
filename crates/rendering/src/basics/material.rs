@@ -18,6 +18,7 @@ impl Default for MaterialFlags {
 }
 
 // A material that can have multiple parameters and such
+#[derive(Clone)]
 pub struct Material {
     // Rendering stuff
     pub shader: ShaderGPUObject,

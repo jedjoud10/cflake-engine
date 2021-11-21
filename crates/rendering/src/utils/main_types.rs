@@ -3,6 +3,7 @@ use crate::{basics::Texture, TextureShaderAccessType};
 use std::rc::Rc;
 
 // Some default uniforms that we will set
+#[derive(Clone)]
 pub enum Uniform {
     // Singles
     Bool(bool),

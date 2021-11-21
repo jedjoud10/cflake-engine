@@ -24,11 +24,6 @@ pub fn world_initialized(world: &mut World) {
         custom_data: &mut world.custom_data,
         instance_manager: &mut world.instance_manager,
     };
-
-    // Load the rendering system
-    let mut rendering_system = systems::rendering_system::system(&mut data);
-    rendering_system.enable(&mut data);
-    world.system_manager.add_system(rendering_system);
     // Load the camera system
     let mut camera_system = systems::camera_system::system(&mut data);
     camera_system.enable(&mut data);
@@ -58,7 +53,7 @@ pub fn world_initialized(world: &mut World) {
 
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
-
+    /*
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
 
@@ -111,4 +106,5 @@ pub fn world_initialized(world: &mut World) {
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings, &mut data.asset_manager))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
+    */
 }

@@ -37,7 +37,7 @@ pub struct CustomData {
     pub vertex_array: u32,
 }
 crate::impl_custom_system_data!(CustomData);
-
+/*
 // Draw functions
 impl CustomData {
     // Set the default shader arguments to draw a normal panel
@@ -240,15 +240,15 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
         gl::Disable(gl::BLEND);
     }
 }
-
+*/
 // Create the UI system
 pub fn system(_data: &mut WorldData) -> System {
     let mut system = System::default();
     // Attach the custom system data
     system.custom_data(CustomData::default());
     // Attach the events
-    system.event(SystemEventType::SystemEnabled(enabled));
-    system.event(SystemEventType::SystemPostfire(postfire));
+    //system.event(SystemEventType::SystemEnabled(enabled));
+    //system.event(SystemEventType::SystemPostfire(postfire));
 
     system
 }

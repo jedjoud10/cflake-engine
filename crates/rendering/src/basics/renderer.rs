@@ -1,5 +1,5 @@
 use super::{model::Model, Material};
-use crate::{GPUObject};
+use crate::{GPUObject, ModelGPUObject};
 use assets::{Asset, AssetManager};
 
 use bitflags::bitflags;
@@ -14,7 +14,7 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     pub visible: bool,
-    pub model: GPUObject,
+    pub model: ModelGPUObject,
     pub material: Material,
     // Flags
     pub flags: RendererFlags,
@@ -24,7 +24,7 @@ impl Default for Renderer {
     fn default() -> Self {
         Self {
             visible: true,
-            model: GPUObject::None,
+            model: ModelGPUObject::default(),
             material: Material::default(),
             flags: RendererFlags::DEFAULT,
         }
@@ -34,7 +34,7 @@ impl Default for Renderer {
 // Everything related to the creation of a renderer
 impl Renderer {
     // Set a model
-    pub fn set_model(mut self, model: GPUObject) -> Self {
+    pub fn set_model(mut self, model: ModelGPUObject) -> Self {
         self.model = model;
         self
     }

@@ -20,7 +20,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 // Generate the Marching Cubes model
 pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
-    let mut sub_model_hashmap: HashMap<u8, Model> = HashMap::new();
+    let mut model: Model = Model::default();
     let i = Instant::now();
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
@@ -33,8 +33,6 @@ pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation:
                 let lv = &voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
-                sub_model_hashmap.entry(lv.shader_id).or_default();
-                let model = sub_model_hashmap.get_mut(&lv.shader_id).unwrap();
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
@@ -105,14 +103,14 @@ pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation:
         }
     }
     // Create a completely separate model for skirts
-    let mut skirts_models: HashMap<u8, Model> = HashMap::new();
+    let mut skirts_model: Model = Model::default();
     // Create the X skirt
     calculate_skirt(
         voxels,
         interpolation,
         false,
         DENSITY_OFFSET_X,
-        &mut skirts_models,
+        &mut skirts_model,
         |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
         transform_x_local,
     );
@@ -122,7 +120,7 @@ pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation:
         interpolation,
         true,
         DENSITY_OFFSET_Z,
-        &mut skirts_models,
+        &mut skirts_model,
         |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
         transform_z_local,
     );
@@ -132,13 +130,13 @@ pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation:
         interpolation,
         true,
         DENSITY_OFFSET_Y,
-        &mut skirts_models,
+        &mut skirts_model,
         |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
         transform_y_local,
     );
     TModel {
-        models: sub_model_hashmap,
-        skirts_models: skirts_models,
+        model: model,
+        skirts_model: skirts_model,
         coords: coords,
     }
 }
@@ -155,7 +153,7 @@ pub fn calculate_skirt(
     interpolation: bool,
     flip: bool,
     density_offset: [usize; 4],
-    skirts_models: &mut HashMap<u8, Model>,
+    skirts_model: &mut Model,
     indexf: fn(usize, usize, usize) -> usize,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
@@ -167,7 +165,7 @@ pub fn calculate_skirt(
                     Some((case, p, lv, ilv)) =>
                     // We intersected the surface
                     {
-                        solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &lv, &ilv, skirts_models, (slice == 1) ^ flip, tf)
+                        solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &lv, &ilv, skirts_model, (slice == 1) ^ flip, tf)
                     }
                     None => { /* Empty */ }
                 }
@@ -253,7 +251,7 @@ pub fn solve_marching_squares(
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
     ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
-    skirts_models: &mut HashMap<u8, Model>,
+    model: &mut Model,
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
@@ -342,10 +340,7 @@ pub fn solve_marching_squares(
             skirt_vertices.swap(swap_index0, swap_index1);
         }
     }
-    // The first vertex is the leading vertex
-    let material_id = lv[0].shader_id;
     // Actually add the skirt vertices
-    let model = skirts_models.entry(material_id).or_default();
     for x in skirt_vertices {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(x.position);

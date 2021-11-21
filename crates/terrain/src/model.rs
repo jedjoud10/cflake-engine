@@ -6,7 +6,7 @@ use crate::ChunkCoords;
 #[derive(Default)]
 pub struct TModel {
     // The sub models and their corresponding material
-    pub models: HashMap<u8, Model>,
-    pub skirts_models: HashMap<u8, Model>,
+    pub model: Model,
+    pub skirts_model: Model,
     pub coords: ChunkCoords,
 }

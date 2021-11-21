@@ -166,7 +166,7 @@ fn run_shader_uniform_group(shader: u32, group: &ShaderUniformsGroup) {
 }
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ShaderUniformsGroup {
     pub shader: u32,
     pub uniforms: HashMap<String, Uniform>,
