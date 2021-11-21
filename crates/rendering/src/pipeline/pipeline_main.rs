@@ -1,37 +1,53 @@
 use std::{collections::HashMap, iter::FromIterator};
 use crate::{GPUObject, Pipeline};
 
+pub struct StaticMut<T> {
+    opt: Option<T>
+}
+
+impl<T> StaticMut<T> {
+    // Set
+    pub fn set(&mut self, new: T) {
+        self.opt = Some(new);
+    }
+    // Get mut
+    pub fn as_mut(&mut self) -> &mut T {
+        self.opt.as_mut().unwrap()
+    }
+    pub const EMPTY: Self = Self { opt: None };
+}
+
 // Static mut RenderPipeline
-pub static mut render_pipeline: Option<Pipeline> = None;
+pub static mut RENDER_PIPELINE: StaticMut<Pipeline> = StaticMut::EMPTY;
 
 pub mod pipec {
     use assets::{AssetManager, CachedObject};
 
     use crate::pipeline::object::*;
-    use crate::{Model, Pipeline, RenderTask, Shader, SharedData, SubShader, Texture, render_pipeline};
+    use crate::{Model, Pipeline, RenderTask, Shader, SharedData, SubShader, Texture, RENDER_PIPELINE};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
-            render_pipeline = Some(Pipeline::default());
-            render_pipeline.unwrap().init_pipeline(glfw, window);
+            RENDER_PIPELINE.set(Pipeline::default());
+            RENDER_PIPELINE.as_mut().init_pipeline(glfw, window);
         }
     }
     pub fn start_world(asset_manager: &mut AssetManager) {
         unsafe {
-            render_pipeline.unwrap().start_world(asset_manager);
+            RENDER_PIPELINE.as_mut().start_world(asset_manager);
         }
     }
     // Task
     pub fn task_immediate(task: RenderTask) -> GPUObject {
         unsafe {
-            render_pipeline.unwrap().task_immediate(task)
+            RENDER_PIPELINE.as_mut().task_immediate(task)
         }
     }
 
     // Actual commands start here
     fn create_texture(texture: Texture) -> TextureGPUObject {
         unsafe {
-            match render_pipeline.unwrap().task_immediate(RenderTask::TextureCreate(SharedData::new(texture))) {
+            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::TextureCreate(SharedData::new(texture))) {
                 GPUObject::Texture(x) => x,
                 _ => panic!(),
             }
@@ -39,7 +55,7 @@ pub mod pipec {
     }
     fn create_subshader(subshader: SubShader) -> SubShaderGPUObject {
         unsafe {
-            match render_pipeline.unwrap().task_immediate(RenderTask::SubShaderCreate(SharedData::new(subshader))) {
+            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::SubShaderCreate(SharedData::new(subshader))) {
                 GPUObject::SubShader(x) => x,
                 _ => panic!(),
             }
@@ -47,7 +63,7 @@ pub mod pipec {
     }
     fn create_shader(shader: Shader) -> ShaderGPUObject {
         unsafe {
-            match render_pipeline.unwrap().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
+            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
                 GPUObject::Shader(x) => x,
                 _ => panic!(),
             }
@@ -55,7 +71,7 @@ pub mod pipec {
     }
     fn create_compute_shader(shader: Shader) -> ComputeShaderGPUObject {
         unsafe {
-            match render_pipeline.unwrap().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
+            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
                 GPUObject::ComputeShader(x) => x,
                 _ => panic!(),
             }
@@ -63,7 +79,7 @@ pub mod pipec {
     }
     fn create_model(model: Model) -> ModelGPUObject {
         unsafe {
-            match render_pipeline.unwrap().task_immediate(RenderTask::ModelCreate(SharedData::new(model))) {
+            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::ModelCreate(SharedData::new(model))) {
                 GPUObject::Model(x) => x,
                 _ => panic!(),
             }
@@ -71,12 +87,12 @@ pub mod pipec {
     }
     fn get_gpu_object(name: &str) -> GPUObject {
         unsafe {
-            render_pipeline.unwrap().get_gpu_object(name).clone()
+            RENDER_PIPELINE.as_mut().get_gpu_object(name).clone()
         }
     }
     fn gpu_object_valid(name: &str) -> bool {
         unsafe {
-            render_pipeline.unwrap().gpu_object_valid(name)
+            RENDER_PIPELINE.as_mut().gpu_object_valid(name)
         }
     }
     pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {

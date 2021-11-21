@@ -118,16 +118,33 @@ impl Pipeline {
         let ds = pipec::shader(Shader::default()
             .load_shader(
                 vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
-                &mut asset_manager,
+                asset_manager,
             )
             .unwrap());
         // Default material
         let dm = Material::new("Default material", asset_manager)
             .set_shader(ds);
         self.default_material = dm;
-
+        use veclib::consts::*;
         // Create the quad model
-        let quad = crate::static_models::QUAD;
+        let quad = Model {
+            vertices: vec![
+                vec3(1.0, -1.0, 0.0),
+                vec3(-1.0, 1.0, 0.0),
+                vec3(-1.0, -1.0, 0.0),
+                vec3(1.0, 1.0, 0.0)
+            ],
+            normals: vec![veclib::Vector3::ZERO; 4],
+            tangents: vec![veclib::Vector4::ZERO; 4],
+            uvs: vec![
+                vec2(1.0, 0.0),
+                vec2(0.0, 1.0),
+                vec2(0.0, 0.0),
+                vec2(1.0, 1.0)
+            ],
+            colors: vec![veclib::Vector3::ZERO; 4],
+            triangles: vec![0, 1, 2, 0, 3, 1],
+        };
         let quad_model = pipec::model(quad);
     } 
     // Complete a task immediatly

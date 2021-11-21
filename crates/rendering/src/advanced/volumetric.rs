@@ -84,9 +84,9 @@ impl Volumetric {
         // Actually generate the SDF
         // Run the compute
         self.compute.run(
-            self.sdf_tex.1.get_width() / 4,
-            self.sdf_tex.1.get_height() / 4,
-            self.sdf_tex.1.get_depth() / 4);
+            self.sdf_tex.2.get_width() / 4,
+            self.sdf_tex.2.get_height() / 4,
+            self.sdf_tex.2.get_depth() / 4);
         self.compute.lock_state();
     }
     // Run the compute shader and calculate the result texture
@@ -113,7 +113,7 @@ impl Volumetric {
         group.set_vec2f32("nf_planes", veclib::Vector2::<f32>::new(clip_planes.0, clip_planes.1));
 
         // Run the actual compute shader
-        self.compute.run(self.result_tex.1.get_width() / 16, self.result_tex.1.get_height() / 16, 1);
+        self.compute.run(self.result_tex.2.get_width() / 16, self.result_tex.2.get_height() / 16, 1);
         self.compute.lock_state();
     }
     // Enable volumetric rendering

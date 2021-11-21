@@ -17,6 +17,7 @@ pub struct TextureGPUObject(pub u32, pub (i32, u32, u32), pub TextureType);
 pub struct CameraDataGPUObject {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
+    pub clip_planes: veclib::Vector2<f32>,
     pub viewm: veclib::Matrix4x4<f32>,
     pub projm: veclib::Matrix4x4<f32>,
 }
@@ -142,9 +143,13 @@ fn run_shader_uniform_group(shader: u32, group: &ShaderUniformsGroup) {
                 Uniform::Vec3I32(x) => set_vec3i32(index, x),
                 Uniform::Vec4I32(x) => set_vec4i32(index, x),
                 Uniform::Mat44F32(x) => set_mat44(index, x),
+                Uniform::Texture1D(x, y) => set_t1d(index, x, y),
                 Uniform::Texture2D(x, y) => set_t2d(index, x, y),
                 Uniform::Texture3D(x, y) => set_t3d(index, x, y),
                 Uniform::Texture2DArray(x, y) => set_t2da(index, x, y),
+                Uniform::Image2D(x, y) => set_i2d(index, x, y),
+                Uniform::Image3D(x, y) => set_i3d(index, x, y),
+                Uniform::Bool(x) => todo!(),
             }
         }
     }
@@ -236,7 +241,7 @@ impl ShaderUniformsGroup {
         self.uniforms.insert(name.to_string(), Uniform::Vec4I32(vec));
     }
     // Send this group data as a task to the render thread
-    pub fn send(&self) {
+    pub fn send(self) {
         // Actual send logic here
     }
     // Does the same thing as the "send" function above, but this time this assumes that we are already in the render thread

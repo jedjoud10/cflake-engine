@@ -48,8 +48,8 @@ impl FrameStats {
         group.set_t1d("entities_texture", self.entities_texture, 1);
 
         // Run the compute shader
-        let x = self.texture.1.get_width();
-        let y = self.texture.1.get_height();
+        let x = self.texture.2.get_width();
+        let y = self.texture.2.get_height();
         self.compute.run(x / 8, y / 8, 1);
         self.compute.lock_state();
     }

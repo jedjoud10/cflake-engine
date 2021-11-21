@@ -5,7 +5,6 @@ mod main_types;
 mod procedural_model;
 mod utils;
 mod window;
-pub mod static_models;
 pub use assets_impls::*;
 pub use error::*;
 pub use frame_stats::*;

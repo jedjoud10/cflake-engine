@@ -17,6 +17,7 @@ pub struct PipelineRenderer {
     pub depth_texture: TextureGPUObject,
     pub debug_view: u16,
     pub wireframe: bool,
+    sky_texture: TextureGPUObject,
     wireframe_shader: ShaderGPUObject,
     frame_stats: FrameStats,
 }
@@ -31,9 +32,9 @@ pub fn render_debug_primitives(primitives: Vec<(RendererGPUObject, veclib::Matri
 
 // Render a renderer normally
 pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
-    let shader = (renderer.1).0;
-    let material = renderer.1;
-    let model = renderer.0;
+    let shader = &(renderer.1).0;
+    let material = &renderer.1;
+    let model = &renderer.0;
     let mut group = shader.new_uniform_group();
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
@@ -63,9 +64,9 @@ fn render_mm(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>
 
 // Render a renderer using wireframe 
 fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
-    let shader = (renderer.1).0;
-    let material = renderer.1;
-    let model = renderer.0;
+    let shader = &(renderer.1).0;
+    let material = &renderer.1;
+    let model = &renderer.0;
     let mut group = ws.new_uniform_group();
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
@@ -175,62 +176,35 @@ impl PipelineRenderer {
         }
     }    
     // Post-render event
-    pub fn post_render(&self, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject) {
+    pub fn post_render(&self, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject, quad: ModelGPUObject, screens: ShaderGPUObject) {
         // Update the frame stats texture
         //self.frame_stats.update_texture(data.time_manager, &data.entity_manager.entities);
         // Render the screen QUAD
-        let shader = self.quad_renderer.material.shader.as_ref().unwrap();
-        shader.use_shader();
-        shader.set_vec2i32("resolution", &(dimensions.into()));
-        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
-        shader.set_vec2f32("nf_planes", &veclib::Vector2::new(camera.clip_planes.0, camera.clip_planes.1));
-        shader.set_vec3f32("directional_light_dir", &data.custom_data.light_dir);
+        let mut group = screens.new_uniform_group();
+        group.set_vec2i32("resolution", dimensions.into());
+        group.set_vec2f32("nf_planes", camera.clip_planes);
+        group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
         // Textures
-        shader.set_t2d("diffuse_texture", &system.diffuse_texture, 0);
-        shader.set_t2d("normals_texture", &system.normals_texture, 1);
-        shader.set_t2d("position_texture", &system.position_texture, 2);
-        shader.set_t2d("depth_texture", &system.depth_texture, 3);
-        shader.set_t2d("default_sky_gradient", data.custom_data.sky_texture.as_ref().unwrap(), 5);
-        let vp_m = camera.projection_matrix * (veclib::Matrix4x4::from_quaternion(&camera_transform.rotation));
-        shader.set_mat44("custom_vp_matrix", &vp_m);
+        group.set_t2d("diffuse_texture", self.diffuse_texture, 0);
+        group.set_t2d("normals_texture", self.normals_texture, 1);
+        group.set_t2d("position_texture", self.position_texture, 2);
+        group.set_t2d("depth_texture", self.depth_texture, 3);
+        group.set_t2d("default_sky_gradient", self.sky_texture, 5);
+        let vp_m = camera.projm * (veclib::Matrix4x4::from_quaternion(&camera.rotation));
+        group.set_mat44("custom_vp_matrix", vp_m);
         // Other params
-        shader.set_vec3f32("camera_pos", &camera_transform.position);
-        shader.set_i32("debug_view", &(system.debug_view as i32));
-        shader.set_t2d("frame_stats", &system.frame_stats.texture, 6);
+        group.set_vec3f32("camera_pos", camera.position);
+        group.set_i32("debug_view", 0);
+        group.set_t2d("frame_stats", self.frame_stats.texture, 6);
+        group.consume();
+
         // Render the screen quad
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(system.quad_renderer.gpu_data.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, system.quad_renderer.gpu_data.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, system.quad_renderer.model.triangles.len() as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(quad.0);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad.1);
+            gl::DrawElements(gl::TRIANGLES, quad.2 as i32, gl::UNSIGNED_INT, null());
         }
     }
-}
-fn system_postfire(system_data: &mut SystemData, data: &mut WorldData) {
-    
-}
-fn entity_added(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
-    let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
-    // Make sure we create the OpenGL data for this entity's model
-    rc.refresh_model();
-    let transform = entity.get_component_mut::<components::Transform>(&mut data.component_manager).unwrap();
-    transform.update_matrix();
-}
-fn entity_removed(_system_data: &mut SystemData, entity: &Entity, data: &mut WorldData) {
-    let rc = entity.get_component_mut::<Renderer>(&mut data.component_manager).unwrap();
-    let i = Instant::now();
-    // Dispose the model when the entity gets destroyed
-    rc.dispose_model();
-    // Dispose of a complex model if it exists
-    match rc.multi_material.as_mut() {
-        Some(x) => {
-            // Dispose
-            x.dispose_models();
-        }
-        None => {}
-    }
-}
-fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
-    
 }
