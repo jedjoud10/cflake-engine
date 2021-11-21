@@ -43,7 +43,6 @@ pub mod pipec {
             RENDER_PIPELINE.as_mut().task_immediate(task)
         }
     }
-
     // Actual commands start here
     fn create_texture(texture: Texture) -> TextureGPUObject {
         unsafe {

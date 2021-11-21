@@ -8,6 +8,68 @@ use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null,
         Arc, Mutex,
     }};
 
+
+// Run a command
+fn command(command: RenderCommand, render_to_main: &Sender<RenderTaskStatus>) {
+    let object = match command.input_task {
+        // Shaders
+        RenderTask::SubShaderCreate(x) => Some(Pipeline::create_compile_subshader(x)),
+        RenderTask::ShaderCreate(x) => Some(Pipeline::create_compile_shader(x)),
+        RenderTask::ShaderUniformGroup(_) => todo!(),
+        // Textures
+        RenderTask::TextureCreate(x) => Some(Pipeline::generate_texture(x)),
+        RenderTask::TextureUpdateSize(x, y) => { Pipeline::update_texture_size(x, y); None },
+        RenderTask::TextureUpdateData(x, y) => { Pipeline::update_texture_data(x, y); None },
+        RenderTask::TextureFillArray(x) => { Pipeline::texture_fill_array(x); None },
+        RenderTask::TextureFillArrayVeclib(_) => {  },
+        // Model
+        RenderTask::ModelCreate(_) => todo!(),
+        RenderTask::ModelDispose(_) => todo!(),
+        // Compute
+        RenderTask::ComputeRun() => todo!(),
+        RenderTask::ComputeLock() => todo!(),
+        // Renderer
+        RenderTask::RendererAdd(_) => todo!(),
+        RenderTask::RendererRemove(_) => todo!(),
+        RenderTask::RendererUpdateTransform(_) => todo!(),
+        // Window
+        RenderTask::WindowSizeUpdate(_, _, _) => todo!(),
+        // Pipeline
+        RenderTask::DestroyRenderPipeline() => todo!(),
+    };
+    // Send back a possible new GPU object
+    let object = match object {
+        GPUObject::None => None,
+        _ => Some(object),
+    };
+    // Send back the message to the main thread
+    let status = RenderTaskStatus::Succsessful(object);
+    render_to_main.send(status).unwrap();
+}
+
+// The render thread that is continuously being ran
+fn frame(render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer) {
+    // We must loop through every command that we receive from the main thread
+    loop {
+        match main_to_render.try_recv() {
+            Ok(x) => {
+                // Valid command
+                command(x, &render_to_main);
+            }
+            Err(x) => match x {
+                std::sync::mpsc::TryRecvError::Empty =>
+                /* Quit from the loop, we don't have any commands stacked up for this frame */
+                {
+                    break
+                }
+                std::sync::mpsc::TryRecvError::Disconnected =>
+                    /* The channel got disconnected */
+                    {}
+            },
+        }
+    }
+}
+
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
 pub struct Pipeline {
@@ -18,58 +80,7 @@ pub struct Pipeline {
     pub main_to_render: Option<Sender<RenderCommand>>, // TX (MainThread)
     pub default_material: Material,
 }
-impl Pipeline {
-    // Run a command
-    fn command(command: RenderCommand, render_to_main: &Sender<RenderTaskStatus>) {
-        let object = match command.input_task {
-            RenderTask::DisposeRenderer(_) => todo!(),
-            RenderTask::UpdateRendererTransform() => todo!(),
-            RenderTask::SubShaderCreate(x) => Self::create_compile_subshader(x),
-            RenderTask::ShaderCreate(_) => todo!(),
-            RenderTask::ShaderUniformGroup(_) => todo!(),
-            RenderTask::TextureCreate(_) => todo!(),
-            RenderTask::TextureCreateNull(_) => todo!(),
-            RenderTask::TextureFillArray(_) => todo!(),
-            RenderTask::TextureFillArrayVeclib(_) => todo!(),
-            RenderTask::TextureUpdateSize(_, _) => todo!(),
-            RenderTask::TextureUpdateData(_, _) => todo!(),
-            RenderTask::ModelCreate(_) => todo!(),
-            RenderTask::ComputeRun() => todo!(),
-            RenderTask::ComputeLock() => todo!(),
-            RenderTask::DestroyRenderPipeline() => todo!(),
-            RenderTask::WindowSizeUpdate(_, _, _) => todo!(),
-        };
-        // Send back a possible new GPU object
-        let object = match object {
-            GPUObject::None => None,
-            _ => Some(object),
-        };
-        // Send back the message to the main thread
-        let status = RenderTaskStatus::Succsessful(object);
-        render_to_main.send(status).unwrap();
-    }
-    // The render thread that is continuously being ran
-    fn frame(render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer) {
-        // We must loop through every command that we receive from the main thread
-        loop {
-            match main_to_render.try_recv() {
-                Ok(x) => {
-                    // Valid command
-                    Self::command(x, &render_to_main);
-                }
-                Err(x) => match x {
-                    std::sync::mpsc::TryRecvError::Empty =>
-                    /* Quit from the loop, we don't have any commands stacked up for this frame */
-                    {
-                        break
-                    }
-                    std::sync::mpsc::TryRecvError::Disconnected =>
-                        /* The channel got disconnected */
-                        {}
-                },
-            }
-        }
-    }
+impl Pipeline {    
     // Create the new render thread
     pub fn init_pipeline(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         // Create the two channels
@@ -104,7 +115,7 @@ impl Pipeline {
                 // We must render every frame
                 let tx = tx.clone();
                 loop {
-                    Self::frame(&tx, &rx2, &mut pipeline_renderer);
+                    frame(&tx, &rx2, &mut pipeline_renderer);
                 }
             })
         };
@@ -503,38 +514,36 @@ impl Pipeline {
         println!("Succsesfully generated texture {}", texture.name);
         GPUObject::Texture(TextureGPUObject(id, ifd, texture.ttype))
     }
-    pub fn update_texture_size(texture: &mut SharedData<Texture>, id: u32, ttype: TextureType) {
+    pub fn update_texture_size(texture: TextureGPUObject, ttype: TextureType) {
         // Check if the current dimension type matches up with the new one
-        let texture = &mut texture.object;
-        let ifd = crate::get_ifd(texture._format, texture._type);
+        let ifd = texture.1;
         // This is a normal texture getting resized
         unsafe {
-            match texture.ttype {
+            match ttype {
                 TextureType::Texture1D(width) => {
-                    gl::BindTexture(gl::TEXTURE_1D, id);
+                    gl::BindTexture(gl::TEXTURE_1D, texture.0);
                     gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
                 }
                 TextureType::Texture2D(width, height) => {
-                    gl::BindTexture(gl::TEXTURE_2D, id);
+                    gl::BindTexture(gl::TEXTURE_2D, texture.0);
                     gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, null());
                 }
                 TextureType::Texture3D(width, height, depth) => {
-                    gl::BindTexture(gl::TEXTURE_3D, id);
+                    gl::BindTexture(gl::TEXTURE_3D, texture.0);
                     gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, null());
                 }
                 TextureType::TextureArray(_, _, _) => todo!(),
             }
         }
     }
-    pub fn update_texture_data(texture: &mut SharedData<Texture>, id: u32, bytes: Vec<u8>) {
-        let texture = &mut texture.object;
+    pub fn update_texture_data(texture: TextureGPUObject, bytes: Vec<u8>) {
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
         }
 
-        let (internal_format, format, data_type) = crate::get_ifd(texture._format, texture._type);
-        let tex_type = match texture.ttype {
+        let (internal_format, format, data_type) = texture.1;
+        let tex_type = match texture.2 {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
@@ -542,8 +551,8 @@ impl Pipeline {
         };
 
         unsafe {
-            gl::BindTexture(tex_type, id);
-            match texture.ttype {
+            gl::BindTexture(tex_type, texture.0);
+            match texture.2 {
                 TextureType::Texture1D(width) => gl::TexImage1D(tex_type, 0, internal_format, width as i32, 0, format, data_type, pointer),
                 // This is a 2D texture
                 TextureType::Texture2D(width, height) => {

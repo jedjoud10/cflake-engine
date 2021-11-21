@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 assets = { path = "../assets" }
+math = { path = "../math" }
 ecs = { path = "../ecs" }
 others = { path = "../others" }
 lazy_static = "1.4.0"

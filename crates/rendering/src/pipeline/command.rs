@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{GPUObject, Model, Renderer, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType};
+use crate::{GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType};
 
 // A shared GPU object that was sent to the render thread, and that can be returned back to the main thread at some point
 pub struct SharedData<T: Default + Sync> {
@@ -16,9 +16,12 @@ where
     }
 }
 
-// Render task status
+pub enum RenderTaskReturn {
+    GPUObject(GPUObject),
+    TextureFillData(Vec<u8>),
+}
+
 pub enum RenderTaskStatus {
-    PendingStartup,
     Succsessful(Option<GPUObject>),
     Failed,
 }
@@ -31,28 +34,28 @@ pub struct RenderCommand {
 }
 // A render task (A specific message passed to the render thread)
 pub enum RenderTask {
-    // Renderers
-    DisposeRenderer(usize),
-    // Update the transform of a specific renderer
-    UpdateRendererTransform(),
     // Shader stuff
     SubShaderCreate(SharedData<SubShader>),
     ShaderCreate(SharedData<Shader>),
     ShaderUniformGroup(SharedData<ShaderUniformsGroup>),
     // Textures
     TextureCreate(SharedData<Texture>),
-    TextureCreateNull(SharedData<Texture>),
     TextureUpdateSize(TextureGPUObject, TextureType),
     TextureUpdateData(TextureGPUObject, Vec<u8>),
-    TextureFillArrayVeclib(TextureGPUObject),
     TextureFillArray(TextureGPUObject),
+    TextureFillArrayVeclib(TextureGPUObject),
     // Model
     ModelCreate(SharedData<Model>),
+    ModelDispose(ModelGPUObject),
     // Compute
     ComputeRun(),
     ComputeLock(),
+    // Renderer
+    RendererAdd(SharedData<Renderer>),
+    RendererRemove(RendererGPUObject),
+    RendererUpdateTransform(SharedData<math::utils::Transform>),
     // Window settings
     WindowSizeUpdate(u16, u16, f32),
-    // Destroy the render thread, since we are exiting from the application
+    // Pipeline
     DestroyRenderPipeline(),
 }

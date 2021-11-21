@@ -280,6 +280,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "math"
+version = "0.0.1"
+dependencies = [
+ "others",
+ "rayon",
+ "veclib",
+]
+
+[[package]]
 name = "memoffset"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -428,6 +437,7 @@ dependencies = [
  "glfw",
  "image",
  "lazy_static",
+ "math",
  "others",
  "veclib",
 ]
