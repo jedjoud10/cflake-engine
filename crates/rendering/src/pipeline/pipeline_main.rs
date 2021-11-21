@@ -37,6 +37,12 @@ pub mod pipec {
             RENDER_PIPELINE.as_mut().start_world(asset_manager);
         }
     }
+    // Dispose of the render thread and render pipeline
+    pub fn dispose_pipeline() {
+        unsafe {
+            RENDER_PIPELINE.as_mut().dispose_pipeline();
+        }
+    }
     // Task
     pub fn task_immediate(task: RenderTask) -> GPUObject {
         unsafe {

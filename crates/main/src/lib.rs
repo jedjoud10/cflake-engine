@@ -43,8 +43,8 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
         }
     }
     // Create the world
-    let mut world: World = World::new(author_name, app_name);
-    world.start_world(&mut glfw, &mut window, callback);
+    //let mut world: World = World::new(author_name, app_name);
+    //world.start_world(&mut glfw, &mut window, callback);
     let mut last_time: f64 = 0.0;
 
     while !window.should_close() {
@@ -53,16 +53,31 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
         let delta = new_time - last_time;
         last_time = new_time;
         // Update the world
-        world.update_world(&mut window, &mut glfw, delta);
+        //world.update_world(&mut window, &mut glfw, delta);
 
         // Read the events at the start of the frame
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, &mut world, event);
+            //handle_window_event(&mut window, &mut world, event);
+            match event {
+                glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
+                    // Key event
+                    let action_id = match action_type {
+                        glfw::Action::Press => 0,
+                        glfw::Action::Release => 1,
+                        glfw::Action::Repeat => 2,
+                    };
+                    if let key = glfw::Key::Escape {
+                        rendering::pipec::dispose_pipeline();
+                    }
+                }
+                _ => {}
+            }
         }
     }
     // When the window closes and we exit from the game
-    world.kill_world();
+    //world.kill_world();
+    rendering::pipec::dispose_pipeline();
 }
 
 // When the window receives a new event

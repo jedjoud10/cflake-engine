@@ -92,6 +92,7 @@ fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4
 impl PipelineRenderer {
     // Init the pipeline renderer
     pub fn init(&mut self, dimensions: veclib::Vector2<u16>) {
+        return;
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {

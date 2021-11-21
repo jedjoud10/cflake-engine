@@ -20,6 +20,7 @@ pub enum RenderTaskReturn {
     None,
     GPUObject(GPUObject),
     TextureFillData(Vec<u8>),
+    DestroyRenderThread,
 }
 
 pub enum RenderTaskStatus {
@@ -57,5 +58,5 @@ pub enum RenderTask {
     // Window settings
     WindowSizeUpdate(u16, u16, f32),
     // Pipeline
-    DestroyRenderPipeline(),
+    DestroyRenderThread(),
 }
