@@ -1,5 +1,8 @@
-use crate::DataType;
-use crate::{FrameStats, Material, Renderer, Texture, TextureType, pipec, pipeline::object::*};
+use std::ffi::CString;
+use std::ptr::null;
+
+use crate::{DataType, Uniform};
+use crate::{FrameStats, Material, MaterialFlags, Renderer, Texture, TextureType, pipec, pipeline::object::*};
 use crate::basics::texture::*;
 // The main renderer, this is stored
 #[derive(Default)]
@@ -69,132 +72,62 @@ pub fn init_deferred_renderer(renderer: &mut PipelineRenderer, dimensions: vecli
     }
 }
 
-
 // Render a renderer normally
-pub fn draw(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
+pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
     let shader = (renderer.1).0;
-
-    // Use the shader, and update any uniforms
-    shader.use_shader();
+    let material = renderer.1;
+    let model = renderer.0;
+    let mut group = shader.new_uniform_group();
     // Calculate the mvp matrix
-    let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
+    let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     // Pass the MVP and the model matrix to the shader
-    shader.set_mat44("mvp_matrix", &mvp_matrix);
-    shader.set_mat44("model_matrix", model_matrix);
-    shader.set_mat44("view_matrix", view_matrix);
-    shader.set_vec3f32("view_pos", &camera_position);
-    shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+    group.set_mat44("mvp_matrix", mvp_matrix);
+    group.set_mat44("model_matrix", *model_matrix);
+    group.set_mat44("view_matrix", camera.viewm);
+    group.set_vec3f32("view_pos", camera.position);
+    group.consume();
 
-    // Set the default/custom uniforms
-    for uniform in material.default_uniforms.iter() {
-        let name = uniform.0.as_str();
-        match &uniform.1 {
-            Uniform::F32(x) => shader.set_f32(name, x),
-            Uniform::I32(x) => shader.set_i32(name, x),
-            Uniform::Vec2F32(x) => shader.set_vec2f32(name, x),
-            Uniform::Vec3F32(x) => shader.set_vec3f32(name, x),
-            Uniform::Vec4F32(x) => shader.set_vec4f32(name, x),
-            Uniform::Vec2I32(x) => shader.set_vec2i32(name, x),
-            Uniform::Vec3I32(x) => shader.set_vec3i32(name, x),
-            Uniform::Vec4I32(x) => shader.set_vec4i32(name, x),
-            Uniform::Mat44F32(x) => shader.set_mat44(name, x),
-            Uniform::Texture2D(x, y) => shader.set_t2d(name, x.as_ref(), *y),
-            Uniform::Texture3D(x, y) => shader.set_t3d(name, x.as_ref(), *y),
-            Uniform::Texture2DArray(x, y) => shader.set_t2da(name, x.as_ref(), *y),
-        }
-    }
+    unsafe {
+        // Enable / Disable vertex culling for double sided materials
+        if material.2.contains(MaterialFlags::DOUBLE_SIDED) { gl::Disable(gl::CULL_FACE); }            
+        else { gl::Enable(gl::CULL_FACE); }
 
-    // Set the textures
-    shader.set_t2d("diffuse_tex", material.diffuse_tex.as_ref().unwrap(), 0);
-    shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), 1);
-
-    // Draw normally
-    if gpu_data.initialized {
-        // Enable / Disable vertex culling
-        if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
-            unsafe {
-                gl::Disable(gl::CULL_FACE);
-            }
-        } else {
-            unsafe {
-                gl::Enable(gl::CULL_FACE);
-            }
-        }
-        unsafe {
-            // Actually draw the array
-            gl::BindVertexArray(gpu_data.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, indices_count, gl::UNSIGNED_INT, null());
-        }
+        // Actually draw
+        gl::BindVertexArray(model.0);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.1);
+        gl::DrawElements(gl::TRIANGLES, model.2 as i32, gl::UNSIGNED_INT, null());
     }
 }
 
-// All of this is ran on the Render Thread, so we have a valid OpenGl context
-impl PipelineRenderer {
-    // Draw a multi material renderer
-    fn draw_multi_material(
-        &self,
-        mm_renderer: &MultiMaterialRenderer,
-        wireframe: bool,
-        data: &WorldData,
-        camera_position: veclib::Vector3<f32>,
-        projection_matrix: &veclib::Matrix4x4<f32>,
-        view_matrix: &veclib::Matrix4x4<f32>,
-        model_matrix: &veclib::Matrix4x4<f32>,
-    ) {
-        // Loop the sub models and use them to make a sub renderer and render that separately
-        for (i, (sub_model, material_id)) in mm_renderer.sub_models.iter().enumerate() {
-            let material = mm_renderer.materials.get(*material_id).unwrap_or(mm_renderer.materials.get(0).unwrap());
-            match mm_renderer.sub_models_gpu_data.get(i) {
-                Some(gpu_data) => {
-                    if wireframe {
-                        self.draw_wireframe(&gpu_data, sub_model.triangles.len() as i32, projection_matrix, view_matrix, model_matrix);
-                    } else {
-                        self.draw_normal(
-                            material,
-                            &gpu_data,
-                            sub_model.triangles.len() as i32,
-                            data,
-                            camera_position,
-                            projection_matrix,
-                            view_matrix,
-                            model_matrix,
-                        );
-                    }
-                }
-                None => {}
-            }
-        }
-    }
-    // Draw a wireframe entity
-    fn draw_wireframe(
-        &self,
-        gpu_data: &ModelDataGPU,
-        indices_count: i32,
-        projection_matrix: &veclib::Matrix4x4<f32>,
-        view_matrix: &veclib::Matrix4x4<f32>,
-        model_matrix: &veclib::Matrix4x4<f32>,
-    ) {
-        self.wireframe_shader.use_shader();
-        // Calculate the mvp matrix
-        let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
-        self.wireframe_shader.set_mat44("mvp_matrix", &mvp_matrix);
-        self.wireframe_shader.set_mat44("model_matrix", model_matrix);
-        self.wireframe_shader.set_mat44("view_matrix", view_matrix);
-        unsafe {
-            // Set the wireframe rendering
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            gl::Enable(gl::LINE_SMOOTH);
+// Render a multi-material renderer
+fn render_mm(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
+    // TODO: Gotta reprogram the multi material system now
+}
 
-            gl::BindVertexArray(gpu_data.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, indices_count, gl::UNSIGNED_INT, null());
+// Render a renderer using wireframe 
+fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
+    let shader = (renderer.1).0;
+    let material = renderer.1;
+    let model = renderer.0;
+    let mut group = ws.new_uniform_group();
+    // Calculate the mvp matrix
+    let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
+    group.set_mat44("mvp_matrix", mvp_matrix);
+    group.set_mat44("model_matrix", *model_matrix);
+    group.set_mat44("view_matrix", camera.viewm);
+    unsafe {
+        // Set the wireframe rendering
+        gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+        gl::Enable(gl::LINE_SMOOTH);
 
-            // Reset the wireframe settings
-            gl::BindTexture(gl::TEXTURE_2D, 0);
-            gl::Disable(gl::LINE_SMOOTH);
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-        }
+        gl::BindVertexArray(model.0);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.1);
+        gl::DrawElements(gl::TRIANGLES, model.2 as i32, gl::UNSIGNED_INT, null());
+
+        // Reset the wireframe settings
+        gl::BindTexture(gl::TEXTURE_2D, 0);
+        gl::Disable(gl::LINE_SMOOTH);
+        gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
     }
 }
 
