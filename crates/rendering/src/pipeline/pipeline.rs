@@ -13,7 +13,7 @@ use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null,
 pub struct Pipeline {
     pub command_id: u128, // Next Command ID 
     pub pending_wait_list: Vec<(u128, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
-    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects
+    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
     pub render_to_main: Option<Receiver<RenderTaskStatus>>, // RX (MainThread)    
     pub main_to_render: Option<Sender<RenderCommand>>, // TX (MainThread)
     pub default_material: Material,
@@ -99,8 +99,7 @@ impl Pipeline {
                 
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
-                
-                crate::pipeline::rendering::init_deferred_renderer(&mut pipeline_renderer, veclib::consts::vec2(1280, 720));
+                pipeline_renderer.init(veclib::Vector2::new(1280, 720));
 
                 // We must render every frame
                 let tx = tx.clone();
