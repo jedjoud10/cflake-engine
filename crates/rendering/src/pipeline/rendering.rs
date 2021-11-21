@@ -1,4 +1,6 @@
-use crate::{FrameStats, Material, Renderer, pipeline::object::*};
+use crate::DataType;
+use crate::{FrameStats, Material, Renderer, Texture, TextureType, pipec, pipeline::object::*};
+use crate::basics::texture::*;
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
@@ -15,160 +17,120 @@ pub struct PipelineRenderer {
     quad_renderer: Renderer,
 }
 
-// All of this is ran on the Render Thread, so we have a valid OpenGl context
-impl PipelineRenderer {
-    // Bind a specific texture attachement to the frame buffer
-    fn bind_attachement(attachement: u32, texture: &Texture) {
+// Setup all the settings for OpenGL like culling and the clear color
+pub fn init_deferred_renderer(renderer: &mut PipelineRenderer, dimensions: veclib::Vector2<u16>) {
+    // Local function for binding a texture to a specific frame buffer attachement
+    fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {
         unsafe {
             // Default target, no multisamplind
             let target: u32 = gl::TEXTURE_2D;
-            gl::BindTexture(target, texture.id);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.id, 0);
+            gl::BindTexture(target, texture.0);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.0, 0);
+        }
+    }  
+    unsafe {
+        gl::GenFramebuffers(1, &mut renderer.framebuffer);
+        gl::BindFramebuffer(gl::FRAMEBUFFER, renderer.framebuffer);
+        let dims = TextureType::Texture2D(dimensions.x, dimensions.y);
+        // Create the diffuse render texture
+        renderer.diffuse_texture = pipec::texture(Texture::default()
+            .set_dimensions(dims)
+            .set_format(TextureFormat::RGB32F));
+        // Create the normals render texture
+        renderer.normals_texture = pipec::texture(Texture::default()
+            .set_dimensions(dims)
+            .set_format(TextureFormat::RGB8RS));
+        // Create the position render texture
+        renderer.position_texture = pipec::texture(Texture::default()
+            .set_dimensions(dims)
+            .set_format(TextureFormat::RGB32F));
+        // Create the depth render texture
+        renderer.depth_texture = pipec::texture(Texture::default()
+            .set_dimensions(dims)
+            .set_format(TextureFormat::DepthComponent32)
+            .set_data_type(DataType::Float32));
+        
+        // Now bind the attachememnts
+        bind_attachement(gl::COLOR_ATTACHMENT0, &renderer.diffuse_texture);
+        bind_attachement(gl::COLOR_ATTACHMENT1, &renderer.normals_texture);
+        bind_attachement(gl::COLOR_ATTACHMENT2, &renderer.position_texture);
+        bind_attachement(gl::DEPTH_ATTACHMENT, &renderer.depth_texture);
+        let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2];
+        gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
+
+        // Check if the frame buffer is okay
+        if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
+        } else {
+            panic!("Framebuffer has failed initialization! Error: '{}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
+        }
+
+        // Unbind
+        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+    }
+}
+
+
+// Render a renderer normally
+pub fn draw(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
+    let shader = (renderer.1).0;
+
+    // Use the shader, and update any uniforms
+    shader.use_shader();
+    // Calculate the mvp matrix
+    let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
+    // Pass the MVP and the model matrix to the shader
+    shader.set_mat44("mvp_matrix", &mvp_matrix);
+    shader.set_mat44("model_matrix", model_matrix);
+    shader.set_mat44("view_matrix", view_matrix);
+    shader.set_vec3f32("view_pos", &camera_position);
+    shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
+
+    // Set the default/custom uniforms
+    for uniform in material.default_uniforms.iter() {
+        let name = uniform.0.as_str();
+        match &uniform.1 {
+            Uniform::F32(x) => shader.set_f32(name, x),
+            Uniform::I32(x) => shader.set_i32(name, x),
+            Uniform::Vec2F32(x) => shader.set_vec2f32(name, x),
+            Uniform::Vec3F32(x) => shader.set_vec3f32(name, x),
+            Uniform::Vec4F32(x) => shader.set_vec4f32(name, x),
+            Uniform::Vec2I32(x) => shader.set_vec2i32(name, x),
+            Uniform::Vec3I32(x) => shader.set_vec3i32(name, x),
+            Uniform::Vec4I32(x) => shader.set_vec4i32(name, x),
+            Uniform::Mat44F32(x) => shader.set_mat44(name, x),
+            Uniform::Texture2D(x, y) => shader.set_t2d(name, x.as_ref(), *y),
+            Uniform::Texture3D(x, y) => shader.set_t3d(name, x.as_ref(), *y),
+            Uniform::Texture2DArray(x, y) => shader.set_t2da(name, x.as_ref(), *y),
         }
     }
-    // Setup all the settings for opengl like culling and the clear color
-    fn setup_opengl(&mut self, data: &mut WorldData) {
-        let dimensions = data.custom_data.window.dimensions;
-        // Initialize OpenGL
-        unsafe {
-            gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-            gl::Viewport(0, 0, dimensions.x as i32, dimensions.y as i32);
-            gl::Enable(gl::DEPTH_TEST);
-            gl::Enable(gl::CULL_FACE);
-            gl::CullFace(gl::BACK);
-        }
 
-        unsafe {
-            gl::GenFramebuffers(1, &mut self.framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            let dims = TextureType::Texture2D(dimensions.x, dimensions.y);
-            // Create the diffuse render texture
-            self.diffuse_texture = Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB32F)
-                .generate_texture(Vec::new())
-                .unwrap();
-            // Create the normals render texture
-            self.normals_texture = Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB8RS)
-                .generate_texture(Vec::new())
-                .unwrap();
-            // Create the position render texture
-            self.position_texture = Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB32F)
-                .generate_texture(Vec::new())
-                .unwrap();
-            // Create the depth render texture
-            self.depth_texture = Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::DepthComponent32)
-                .set_data_type(DataType::Float32)
-                .generate_texture(Vec::new())
-                .unwrap();
-            // Bind the color texture to the color attachement 0 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
-            // Bind the normal texture to the color attachement 1 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
-            // Bind the position texture to the color attachement 2 of the frame buffer
-            Self::bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
-            // Bind the depth/stenicl texture to the color attachement depth-stencil of the frame buffer
-            Self::bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture);
+    // Set the textures
+    shader.set_t2d("diffuse_tex", material.diffuse_tex.as_ref().unwrap(), 0);
+    shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), 1);
 
-            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2];
-            // Set the frame buffer attachements
-            gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
-
-            // Check if the frame buffer is okay
-            if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE {
-            } else {
-                panic!("Framebuffer has failed initialization! Error: '{}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
-            }
-
-            // Unbind
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        }
-
-        // Setup the debug renderer
-        data.debug.renderer.setup_debug_renderer(data.asset_manager);
-    }
-    // Draw an entity normally
-    fn draw_normal(
-        &self,
-        material: &Material,
-        gpu_data: &ModelDataGPU,
-        indices_count: i32,
-        data: &WorldData,
-        camera_position: veclib::Vector3<f32>,
-        projection_matrix: &veclib::Matrix4x4<f32>,
-        view_matrix: &veclib::Matrix4x4<f32>,
-        model_matrix: &veclib::Matrix4x4<f32>,
-    ) {
-        // Exit early
-        if !material.visible {
-            return;
-        }
-        // Shader name
-        let shader = match &material.shader {
-            None => self.default_material.shader.as_ref().unwrap(),
-            Some(x) => x,
-        };
-
-        // Use the shader, and update any uniforms
-        shader.use_shader();
-        // Calculate the mvp matrix
-        let mvp_matrix: veclib::Matrix4x4<f32> = *projection_matrix * *view_matrix * *model_matrix;
-        // Pass the MVP and the model matrix to the shader
-        shader.set_mat44("mvp_matrix", &mvp_matrix);
-        shader.set_mat44("model_matrix", model_matrix);
-        shader.set_mat44("view_matrix", view_matrix);
-        shader.set_vec3f32("view_pos", &camera_position);
-        shader.set_f32("time", &(data.time_manager.seconds_since_game_start as f32));
-
-        // Set the default/custom uniforms
-        for uniform in material.default_uniforms.iter() {
-            let name = uniform.0.as_str();
-            match &uniform.1 {
-                Uniform::F32(x) => shader.set_f32(name, x),
-                Uniform::I32(x) => shader.set_i32(name, x),
-                Uniform::Vec2F32(x) => shader.set_vec2f32(name, x),
-                Uniform::Vec3F32(x) => shader.set_vec3f32(name, x),
-                Uniform::Vec4F32(x) => shader.set_vec4f32(name, x),
-                Uniform::Vec2I32(x) => shader.set_vec2i32(name, x),
-                Uniform::Vec3I32(x) => shader.set_vec3i32(name, x),
-                Uniform::Vec4I32(x) => shader.set_vec4i32(name, x),
-                Uniform::Mat44F32(x) => shader.set_mat44(name, x),
-                Uniform::Texture2D(x, y) => shader.set_t2d(name, x.as_ref(), *y),
-                Uniform::Texture3D(x, y) => shader.set_t3d(name, x.as_ref(), *y),
-                Uniform::Texture2DArray(x, y) => shader.set_t2da(name, x.as_ref(), *y),
-            }
-        }
-
-        // Set the textures
-        shader.set_t2d("diffuse_tex", material.diffuse_tex.as_ref().unwrap(), 0);
-        shader.set_t2d("normals_tex", material.normal_tex.as_ref().unwrap(), 1);
-
-        // Draw normally
-        if gpu_data.initialized {
-            // Enable / Disable vertex culling
-            if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
-                unsafe {
-                    gl::Disable(gl::CULL_FACE);
-                }
-            } else {
-                unsafe {
-                    gl::Enable(gl::CULL_FACE);
-                }
-            }
+    // Draw normally
+    if gpu_data.initialized {
+        // Enable / Disable vertex culling
+        if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
             unsafe {
-                // Actually draw the array
-                gl::BindVertexArray(gpu_data.vertex_array_object);
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
-                gl::DrawElements(gl::TRIANGLES, indices_count, gl::UNSIGNED_INT, null());
+                gl::Disable(gl::CULL_FACE);
+            }
+        } else {
+            unsafe {
+                gl::Enable(gl::CULL_FACE);
             }
         }
+        unsafe {
+            // Actually draw the array
+            gl::BindVertexArray(gpu_data.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, indices_count, gl::UNSIGNED_INT, null());
+        }
     }
+}
+
+// All of this is ran on the Render Thread, so we have a valid OpenGl context
+impl PipelineRenderer {
     // Draw a multi material renderer
     fn draw_multi_material(
         &self,
@@ -445,37 +407,4 @@ fn entity_update(system_data: &mut SystemData, entity: &Entity, components: &Fil
             }
         }
     }
-}
-// Aa frustum culling
-fn entity_filter(components: &FilteredLinkedComponents, data: &WorldData) -> bool {
-    let renderer = components.get_component::<Renderer>(data.component_manager).unwrap();
-    let aabb = components.get_component::<components::AABB>(data.component_manager).unwrap().aabb;
-    // We have an AABB, we can do the frustum culling
-    let camera_entity = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
-    let frustum = &camera_entity.get_component::<components::Camera>(data.component_manager).unwrap().frustum;
-    let visible_frustum_culling = math::Intersection::frustum_aabb(&frustum, &aabb);
-    return renderer.visible && visible_frustum_culling;
-}
-
-// Create the rendering system
-pub fn system(data: &mut WorldData) -> System {
-    let mut system = System::default();
-    // Link the components
-    system.link_component::<components::Transform>(data.component_manager).unwrap();
-    system.link_component::<rendering::basics::Renderer>(data.component_manager).unwrap();
-    system.link_component::<components::AABB>(data.component_manager).unwrap();
-    // Some input events
-    data.input_manager.bind_key(input::Keys::F, "toggle_wireframe", input::MapType::Button);
-    data.input_manager.bind_key(input::Keys::F3, "change_debug_view", input::MapType::Button);
-    // Attach the events
-    system.event(SystemEventType::SystemEnabled(system_enabled));
-    system.event(SystemEventType::SystemPrefire(system_prefire));
-    system.event(SystemEventType::SystemPostfire(system_postfire));
-    system.event(SystemEventType::EntityAdded(entity_added));
-    system.event(SystemEventType::EntityRemoved(entity_removed));
-    system.event(SystemEventType::EntityUpdate(entity_update));
-    system.event(SystemEventType::EntityFilter(entity_filter));
-    // Attach the custom system data
-    system.custom_data(CustomData::default());
-    system
 }

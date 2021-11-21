@@ -3,7 +3,7 @@ mod model;
 mod renderer;
 mod shader;
 mod subshader;
-mod texture;
+pub mod texture;
 pub use material::*;
 pub use model::*;
 pub use renderer::*;

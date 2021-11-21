@@ -13,8 +13,20 @@ pub struct ShaderGPUObject(pub u32);
 pub struct ComputeShaderGPUObject(pub u32);
 #[derive(Clone, Copy, Default)]
 pub struct TextureGPUObject(pub u32, pub TextureType);
+#[derive(Clone, Default)]
+pub struct CameraDataGPUObject {
+    pub position: veclib::Vector3<f32>,
+    pub rotation: veclib::Quaternion<f32>,
+    pub viewm: veclib::Matrix4x4<f32>,
+    pub projm: veclib::Matrix4x4<f32>,
+}
+#[derive(Default)]
+pub struct MaterialGPUObject(pub ShaderGPUObject, pub ShaderUniformsGroup);
+#[derive(Default)]
+pub struct RendererGPUObject(pub ModelGPUObject, pub MaterialGPUObject);
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
+#[derive(Default)]
 pub struct ShaderUniformsGroup {
     // Uniforms
     uniforms: HashMap<String, Uniform>,
@@ -26,6 +38,17 @@ impl ShaderUniformsGroup {
     pub fn new_null() -> Self {
         Self {
             uniforms: HashMap::new(),
+        }
+    }
+    // Combine a shader uniform group with an another one
+    pub fn combine(a: Self, b: Self) -> Self {
+        let mut x = a.uniforms;
+        let y = b.uniforms;
+        for a in y {
+            x.insert(a.0, a.1);
+        }
+        return Self {
+            uniforms: x
         }
     }
     // Set a bool uniform

@@ -19,9 +19,6 @@ pub struct Material {
     pub material_name: String,
     pub flags: MaterialFlags,
     pub uniforms: ShaderUniformsGroup,
-    // The default textures
-    pub diffuse_tex: TextureGPUObject,
-    pub normal_tex: TextureGPUObject,
     // Is this material even visible?
     pub visible: bool,
 }
@@ -33,8 +30,6 @@ impl Default for Material {
             material_name: String::new(),
             flags: MaterialFlags::empty(),
             uniforms: ShaderUniformsGroup::new_null(),
-            diffuse_tex: TextureGPUObject::default(),
-            normal_tex: TextureGPUObject::default(),
             visible: true,
         };
         // Set the default shader args
@@ -48,12 +43,11 @@ impl Default for Material {
 impl Material {
     // Create a new material with a name
     pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
-        Self {
-            material_name: material_name.to_string(),
-            diffuse_tex: pipec::texturec(Texture::object_load_o("white", &mut asset_manager.object_cacher)),
-            normal_tex: pipec::texturec(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher)),
-            ..Self::default()
-        }
+        let mut material = Self::default();
+        material.material_name = material_name.to_string();
+        material.uniforms.set_t2d("diffuse_tex", pipec::texturec(Texture::object_load_o("white", &mut asset_manager.object_cacher)), 0);
+        material.uniforms.set_t2d("normals_tex", pipec::texturec(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher)), 1);
+        material
     }
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
@@ -63,7 +57,7 @@ impl Material {
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
             .cache_load(diffuse_path, asset_manager));
-        self.diffuse_tex = texture;
+        self.uniforms.set_t2d("diffuse_tex", texture, 0);
         self
     }
     // Load the normal texture
@@ -74,7 +68,7 @@ impl Material {
             .set_format(TextureFormat::RGBA8R)
             .apply_texture_load_options(opt)
             .cache_load(normal_path, asset_manager));
-        self.normal_tex = texture;
+        self.uniforms.set_t2d("normals_tex", texture, 1);
         self
     }
     // Set the main shader

@@ -85,10 +85,21 @@ impl Pipeline {
                 // Start OpenGL
                 let glfw = &mut *render_wrapper.0;
                 let window = &mut *render_wrapper.1;
+                // Initialize OpenGL
                 gl::load_with(|s| window.get_proc_address(s) as *const _);
                 glfw::ffi::glfwMakeContextCurrent(window.window_ptr() as *mut glfw::ffi::GLFWwindow);
+                unsafe {
+                    gl::ClearColor(0.0, 0.0, 0.0, 0.0);
+                    gl::Viewport(0, 0, 1280, 720);
+                    gl::Enable(gl::DEPTH_TEST);
+                    gl::Enable(gl::CULL_FACE);
+                    gl::CullFace(gl::BACK);
+                }                
+                
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
+                
+                crate::pipeline::rendering::init_deferred_renderer(&mut pipeline_renderer, veclib::consts::vec2(1280, 720));
 
                 // We must render every frame
                 let tx = tx.clone();
