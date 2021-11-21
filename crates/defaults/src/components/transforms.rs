@@ -1,8 +1,12 @@
 // Transforms components
 use ecs::{Component, ComponentID, ComponentInternal};
-use math::utils::Transform;
-
-type Transform = math::utils::Transform;
+// The transform component
+pub struct Transform {
+    pub position: veclib::Vector3<f32>,
+    pub rotation: veclib::Quaternion<f32>,
+    pub scale: veclib::Vector3<f32>,
+    pub matrix: veclib::Matrix4x4<f32>,
+}
 
 // Default transform
 impl Default for Transform {
@@ -11,6 +15,7 @@ impl Default for Transform {
             position: veclib::Vector3::ZERO,
             rotation: veclib::Quaternion::IDENTITY,
             scale: veclib::Vector3::ONE,
+            matrix: veclib::Matrix4x4::IDENTITY,
         }
     }
 }

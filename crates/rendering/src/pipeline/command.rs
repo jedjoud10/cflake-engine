@@ -53,7 +53,7 @@ pub enum RenderTask {
     // Renderer
     RendererAdd(SharedData<Renderer>),
     RendererRemove(RendererGPUObject),
-    RendererUpdateTransform(RendererGPUObject, SharedData<math::utils::Transform>),
+    RendererUpdateTransform(RendererGPUObject, SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector3<f32>)>),
     // Window settings
     WindowSizeUpdate(u16, u16, f32),
     // Pipeline

@@ -6,7 +6,6 @@ use crate::components;
 use components::Chunk;
 use ecs::*;
 use math::octrees::*;
-use rendering::*;
 use systems::*;
 use world_data::WorldData;
 

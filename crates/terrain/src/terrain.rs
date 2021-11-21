@@ -3,7 +3,7 @@ use math::{
     constructive_solid_geometry::CSGTree,
     octrees::{AdvancedOctree, Octree, OctreeNode},
 };
-use rendering::{advanced::ComputeShader, basics::AdditionalShader, basics::Shader};
+use rendering::{basics::Shader, pipec};
 
 use crate::{ChunkManager, TerrainSettings, VoxelGenerator, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
 // A terrain piece
@@ -35,11 +35,10 @@ impl Terrain {
 
         // Load the compute shader
         let (string, csgtree) = settings.voxel_generator_interpreter.finalize().unwrap();
-        let compute = Shader::default()
-            .set_additional_shader_sources(vec![&string])
-            .set_additional_shader(AdditionalShader::Compute(ComputeShader::default()))
+        let compute = pipec::compute_shader(Shader::default()
+            // TODO: Re-implement the additional shader sources
             .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER], asset_manager)
-            .unwrap();
+            .unwrap());
 
         // Finally, create self
         Self {

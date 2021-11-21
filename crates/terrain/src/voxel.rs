@@ -1,6 +1,8 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
-use rendering::advanced::*;
+use rendering::pipeline;
+use rendering::pipeline::object::*;
 use rendering::basics::*;
+use rendering::pipec;
 use rendering::utils::*;
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
@@ -15,22 +17,22 @@ pub struct Voxel {
 #[derive(Default)]
 pub struct VoxelGenerator {
     // The compute shader's name used for voxel generation
-    pub compute: Shader,
+    pub compute: ComputeShaderGPUObject,
     // The 3D texture used for voxel generation, only stores the density in a 16 bit value
-    pub voxel_texture: Texture,
+    pub voxel_texture: TextureGPUObject,
     // The 3D texture used to store MaterialID, BiomeID, Hardness and Smoothness
-    pub material_texture: Texture,
+    pub material_texture: TextureGPUObject,
 }
 
 impl VoxelGenerator {
     // New
-    pub fn new(compute: Shader) -> Self {
+    pub fn new(compute: ComputeShaderGPUObject) -> Self {
         Self { compute, ..Self::default() }
     }
     // Generate the voxel texture
     pub fn setup_voxel_generator(&mut self) {
         // Create the voxel texture
-        self.voxel_texture = Texture::default()
+        self.voxel_texture = pipec::texture(Texture::default()
             .set_dimensions(TextureType::Texture3D(
                 (MAIN_CHUNK_SIZE + 2) as u16,
                 (MAIN_CHUNK_SIZE + 2) as u16,
@@ -39,10 +41,8 @@ impl VoxelGenerator {
             .set_format(TextureFormat::R16F)
             .set_data_type(DataType::Float32)
             .set_filter(TextureFilter::Nearest)
-            .set_wrapping_mode(TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new())
-            .unwrap();
-        self.material_texture = Texture::default()
+            .set_wrapping_mode(TextureWrapping::ClampToBorder));
+        self.material_texture = pipec::texture(Texture::default()
             .set_dimensions(TextureType::Texture3D(
                 (MAIN_CHUNK_SIZE + 2) as u16,
                 (MAIN_CHUNK_SIZE + 2) as u16,
@@ -50,51 +50,37 @@ impl VoxelGenerator {
             ))
             .set_format(TextureFormat::RG8R)
             .set_filter(TextureFilter::Nearest)
-            .set_wrapping_mode(TextureWrapping::ClampToBorder)
-            .generate_texture(Vec::new())
-            .unwrap();
+            .set_wrapping_mode(TextureWrapping::ClampToBorder));
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
         //println!("Start voxel generation");
         // First pass
-        let shader = &mut self.compute;
-        shader.use_shader();
-        shader.set_i3d("voxel_image", &self.voxel_texture, TextureShaderAccessType::WriteOnly);
-        shader.set_i3d("material_image", &self.material_texture, TextureShaderAccessType::WriteOnly);
-        shader.set_i32("chunk_size", &((MAIN_CHUNK_SIZE + 2) as i32));
-        shader.set_vec3f32("node_pos", &veclib::Vector3::<f32>::from(position));
-        shader.set_i32("node_size", &(size as i32));
-        shader.set_i32("depth", &(depth as i32));
-        // Run the compute shader
-        let compute = match &mut shader.additional_shader {
-            AdditionalShader::Compute(c) => c,
-            _ => todo!(),
-        };
+        let mut group = self.compute.new_uniform_group();
+        group.set_i3d("voxel_image", self.voxel_texture, TextureShaderAccessType::WriteOnly);
+        group.set_i3d("material_image", self.material_texture, TextureShaderAccessType::WriteOnly);
+        group.set_i32("chunk_size", ((MAIN_CHUNK_SIZE + 2) as i32));
+        group.set_vec3f32("node_pos", veclib::Vector3::<f32>::from(position));
+        group.set_i32("node_size", size as i32);
+        group.set_i32("depth", depth as i32);
+        group.send();
         // Dispatch the compute shader, don't read back the data immediatly
-        compute
-            .run_compute((
-                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
-                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
-                (MAIN_CHUNK_SIZE + 2) as u32 / 8 + 1,
-            ))
-            .unwrap();
+        self.compute.run(
+            (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
+            (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
+            (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
+        );
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
         //println!("End voxel generation");
-        let shader = &mut self.compute;
-        shader.use_shader();
-        let compute = match &mut shader.additional_shader {
-            AdditionalShader::Compute(c) => c,
-            _ => panic!(),
-        };
-
         // Read back the compute shader data
-        compute.get_compute_state().unwrap();
+        self.compute.lock_state();
         // Read back the texture into the data buffer
-        let voxel_pixels = self.voxel_texture.fill_array_elems::<f32>();
-        let material_pixels = self.material_texture.fill_array_veclib::<veclib::Vector2<u8>, u8>();
+        let voxel_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.voxel_texture, 4));
+        let material_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.material_texture, 2));
+        let voxel_pixels = pipec::texture_read_array::<f32>(voxel_pixels);
+        let material_pixels = pipec::texture_read_array_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values
         let mut min = f32::MAX;
         let mut max = f32::MIN;

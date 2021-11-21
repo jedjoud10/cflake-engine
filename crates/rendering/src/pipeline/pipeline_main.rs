@@ -145,4 +145,14 @@ pub mod pipec {
             create_shader(shader)
         }
     }
+    // Read the data from an array that was filled using a texture
+    pub fn texture_read_array<T>(gpuobject: GPUObject) -> Vec<T> where T: Default + Clone + Sized {
+        let bytecount = std::mem::size_of::<T>();
+        todo!();
+    }
+    pub fn texture_read_array_veclib<T, U>(gpuobject: GPUObject) -> Vec<T>
+    where T: veclib::Vector<U> + Default + Clone, U: veclib::DefaultStates  {
+        let bytecount = std::mem::size_of::<T>();
+        todo!();
+    }
 }

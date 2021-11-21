@@ -1,6 +1,6 @@
 use crate::ChunkCoords;
 use ecs::EntityManager;
-use rendering::advanced::ComputeShader;
+use rendering::ComputeShaderGPUObject;
 use std::collections::HashMap;
 
 // Some detail that has a specific entity instance ID related to it that will be spawned in the wolrd
@@ -19,7 +19,7 @@ pub struct DetailManager {
 
 impl DetailManager {
     // Read back the details from the compute shader for a specific chunk
-    pub fn load_details(&mut self, _chunk_entity_id: usize, _compute_shader: &mut ComputeShader, _entity_manager: &mut EntityManager) {
+    pub fn load_details(&mut self, _chunk_entity_id: usize, _compute_shader: &mut ComputeShaderGPUObject, _entity_manager: &mut EntityManager) {
         // Load back the detail
         // Append the generated detail to it's corresponding detail group
     }
