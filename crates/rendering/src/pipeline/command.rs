@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType};
+use crate::{ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType};
 
 // A shared GPU object that was sent to the render thread, and that can be returned back to the main thread at some point
 pub struct SharedData<T: Default + Sync> {
@@ -17,12 +17,13 @@ where
 }
 
 pub enum RenderTaskReturn {
+    None,
     GPUObject(GPUObject),
     TextureFillData(Vec<u8>),
 }
 
 pub enum RenderTaskStatus {
-    Succsessful(Option<GPUObject>),
+    Succsessful(RenderTaskReturn),
     Failed,
 }
 
@@ -42,18 +43,17 @@ pub enum RenderTask {
     TextureCreate(SharedData<Texture>),
     TextureUpdateSize(TextureGPUObject, TextureType),
     TextureUpdateData(TextureGPUObject, Vec<u8>),
-    TextureFillArray(TextureGPUObject),
-    TextureFillArrayVeclib(TextureGPUObject),
+    TextureFillArray(TextureGPUObject, usize),
     // Model
     ModelCreate(SharedData<Model>),
     ModelDispose(ModelGPUObject),
     // Compute
-    ComputeRun(),
-    ComputeLock(),
+    ComputeRun(ComputeShaderGPUObject, (u16, u16, u16)),
+    ComputeLock(ComputeShaderGPUObject),
     // Renderer
     RendererAdd(SharedData<Renderer>),
     RendererRemove(RendererGPUObject),
-    RendererUpdateTransform(SharedData<math::utils::Transform>),
+    RendererUpdateTransform(RendererGPUObject, SharedData<math::utils::Transform>),
     // Window settings
     WindowSizeUpdate(u16, u16, f32),
     // Pipeline

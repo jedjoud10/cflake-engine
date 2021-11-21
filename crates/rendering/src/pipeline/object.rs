@@ -1,10 +1,20 @@
 use std::collections::HashMap;
 
-use crate::{SubShaderType, TextureShaderAccessType, TextureType, Uniform, MaterialFlags};
+use crate::{MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform};
 
 // Cooler objects
 #[derive(Clone, Default)]
-pub struct ModelGPUObject(pub u32, pub u32, pub usize);
+pub struct ModelGPUObject {
+    pub vertex_buf: u32,
+    pub normal_buf: u32,
+    pub uv_buf: u32,
+    pub tangent_buf: u32,
+    pub color_buf: u32,
+    pub vertex_array_object: u32,
+    pub element_buffer_object: u32,
+    pub element_count: usize,
+}
+
 #[derive(Clone, Default)]
 pub struct SubShaderGPUObject(pub SubShaderType, pub u32);
 #[derive(Clone, Default)]

@@ -4,7 +4,6 @@ use crate::pipec;
 use crate::pipeline::*;
 use crate::utils::*;
 use assets::AssetManager;
-use ecs::Entity;
 use others::SmartList;
 
 // Debugs some data about the current frame in a 64x256 texture. Could be used to graph the FPS or memory usage
@@ -34,16 +33,15 @@ impl FrameStats {
         );
     }
     // Run the compute shader and update the texture
-    pub fn update_texture(&mut self, time: &others::Time, entities: &SmartList<Entity>) {
+    pub fn update_texture(&mut self, time: &others::Time, mut entities: Vec<bool>) {
         // Don't forget to use it
         let mut group = self.compute.new_uniform_group();
         group.set_i2d("image_stats", self.texture, TextureShaderAccessType::ReadWrite);
         group.set_f32("time", time.seconds_since_game_start as f32);
         group.set_f32("fps", time.fps as f32);
         // Limit the number of entities to 131072
-        let mut vec = entities.elements.iter().map(|x| x.is_some()).collect::<Vec<bool>>();
-        vec.resize(512, false);
-        let vec = vec.iter().map(|x| if *x { 255 } else { 0 }).collect::<Vec<u8>>();
+        entities.resize(512, false);
+        let vec = entities.iter().map(|x| if *x { 255 } else { 0 }).collect::<Vec<u8>>();
         //self.entities_texture.update_data(vec);
         group.set_t1d("entities_texture", self.entities_texture, 1);
 

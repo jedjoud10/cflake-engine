@@ -1,7 +1,6 @@
-use super::{model::Model, model::ModelDataGPU, Material};
-use crate::{advanced::MultiMaterialRenderer, GPUObject};
+use super::{model::Model, Material};
+use crate::{GPUObject};
 use assets::{Asset, AssetManager};
-use ecs::{Component, ComponentID, ComponentInternal};
 
 use bitflags::bitflags;
 // Yup
@@ -19,8 +18,6 @@ pub struct Renderer {
     pub material: Material,
     // Flags
     pub flags: RendererFlags,
-    // Multi material support
-    pub multi_material: Option<MultiMaterialRenderer>,
 }
 
 impl Default for Renderer {
@@ -30,13 +27,9 @@ impl Default for Renderer {
             model: GPUObject::None,
             material: Material::default(),
             flags: RendererFlags::DEFAULT,
-            multi_material: None,
         }
     }
 }
-
-// Main traits implemented
-ecs::impl_component!(Renderer);
 
 // Everything related to the creation of a renderer
 impl Renderer {
@@ -57,11 +50,6 @@ impl Renderer {
     // With a specific material
     pub fn set_material(mut self, material: Material) -> Self {
         self.material = material;
-        self
-    }
-    // Set Multi Material Renderer
-    pub fn set_multimat(mut self, multi_mat_renderer: MultiMaterialRenderer) -> Self {
-        self.multi_material = Some(multi_mat_renderer);
         self
     }
     // Set visible

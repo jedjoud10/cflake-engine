@@ -51,9 +51,9 @@ pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32
         else { gl::Enable(gl::CULL_FACE); }
 
         // Actually draw
-        gl::BindVertexArray(model.0);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.1);
-        gl::DrawElements(gl::TRIANGLES, model.2 as i32, gl::UNSIGNED_INT, null());
+        gl::BindVertexArray(model.vertex_array_object);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.element_buffer_object);
+        gl::DrawElements(gl::TRIANGLES, model.element_count as i32, gl::UNSIGNED_INT, null());
     }
 }
 
@@ -78,9 +78,9 @@ fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4
         gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
         gl::Enable(gl::LINE_SMOOTH);
 
-        gl::BindVertexArray(model.0);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.1);
-        gl::DrawElements(gl::TRIANGLES, model.2 as i32, gl::UNSIGNED_INT, null());
+        gl::BindVertexArray(model.vertex_array_object);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.element_buffer_object);
+        gl::DrawElements(gl::TRIANGLES, model.element_count as i32, gl::UNSIGNED_INT, null());
 
         // Reset the wireframe settings
         gl::BindTexture(gl::TEXTURE_2D, 0);
@@ -202,9 +202,9 @@ impl PipelineRenderer {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(quad.0);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad.1);
-            gl::DrawElements(gl::TRIANGLES, quad.2 as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(quad.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, quad.element_count as i32, gl::UNSIGNED_INT, null());
         }
     }
 }

@@ -5,6 +5,7 @@ mod frustum;
 mod intersection;
 pub mod octrees;
 pub mod shapes;
+pub mod utils;
 mod spring;
 mod tests;
 pub use constructive_solid_geometry as csg;

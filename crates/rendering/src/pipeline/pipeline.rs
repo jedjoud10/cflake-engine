@@ -2,45 +2,39 @@ use assets::AssetManager;
 use glfw::Context;
 
 use super::object::*;
-use crate::{RenderCommand, RenderTask, RenderTaskStatus, SharedData, basics::*, pipec, rendering::PipelineRenderer};
+use crate::{RenderCommand, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, basics::*, pipec, rendering::PipelineRenderer};
 use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null, sync::{
         mpsc::{Receiver, Sender},
         Arc, Mutex,
     }};
 
 
-// Run a command
+// Run a command on the Render Thread
 fn command(command: RenderCommand, render_to_main: &Sender<RenderTaskStatus>) {
-    let object = match command.input_task {
+    let object: RenderTaskReturn = match command.input_task {
         // Shaders
-        RenderTask::SubShaderCreate(x) => Some(Pipeline::create_compile_subshader(x)),
-        RenderTask::ShaderCreate(x) => Some(Pipeline::create_compile_shader(x)),
-        RenderTask::ShaderUniformGroup(_) => todo!(),
+        RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
+        RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
+        RenderTask::ShaderUniformGroup(shared_uniformgroup) => todo!(),
         // Textures
-        RenderTask::TextureCreate(x) => Some(Pipeline::generate_texture(x)),
-        RenderTask::TextureUpdateSize(x, y) => { Pipeline::update_texture_size(x, y); None },
-        RenderTask::TextureUpdateData(x, y) => { Pipeline::update_texture_data(x, y); None },
-        RenderTask::TextureFillArray(x) => { Pipeline::texture_fill_array(x); None },
-        RenderTask::TextureFillArrayVeclib(_) => {  },
+        RenderTask::TextureCreate(shared_texture) => RenderTaskReturn::GPUObject(Pipeline::generate_texture(shared_texture)),
+        RenderTask::TextureUpdateSize(texture, ttype) => { Pipeline::update_texture_size(texture, ttype); RenderTaskReturn::None },
+        RenderTask::TextureUpdateData(texture, bytes) => { Pipeline::update_texture_data(texture, bytes); RenderTaskReturn::None },
+        RenderTask::TextureFillArray(texture, bytecount) => RenderTaskReturn::TextureFillData(Pipeline::texture_fill_array(texture, bytecount)),
         // Model
-        RenderTask::ModelCreate(_) => todo!(),
-        RenderTask::ModelDispose(_) => todo!(),
+        RenderTask::ModelCreate(shared_model) => RenderTaskReturn::GPUObject(Pipeline::create_model(shared_model)),
+        RenderTask::ModelDispose(gpumodel) => { Pipeline::dispose_model(gpumodel); RenderTaskReturn::None },
         // Compute
-        RenderTask::ComputeRun() => todo!(),
-        RenderTask::ComputeLock() => todo!(),
+        RenderTask::ComputeRun(compute, indices) => { Pipeline::run_compute(compute, indices); RenderTaskReturn::None },
+        RenderTask::ComputeLock(compute) => { Pipeline::lock_compute(compute); RenderTaskReturn::None },
         // Renderer
-        RenderTask::RendererAdd(_) => todo!(),
-        RenderTask::RendererRemove(_) => todo!(),
-        RenderTask::RendererUpdateTransform(_) => todo!(),
+        RenderTask::RendererAdd(shared_renderer) => { Pipeline::add_renderer(shared_renderer); RenderTaskReturn::None },
+        RenderTask::RendererRemove(renderer) => { Pipeline::remove_renderer(renderer); RenderTaskReturn::None },
+        RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),
         // Window
-        RenderTask::WindowSizeUpdate(_, _, _) => todo!(),
+        RenderTask::WindowSizeUpdate(width, height, aspect_ratio) => todo!(),
         // Pipeline
         RenderTask::DestroyRenderPipeline() => todo!(),
-    };
-    // Send back a possible new GPU object
-    let object = match object {
-        GPUObject::None => None,
-        _ => Some(object),
     };
     // Send back the message to the main thread
     let status = RenderTaskStatus::Succsessful(object);
@@ -292,8 +286,8 @@ impl Pipeline {
         }
     }
     pub fn create_model(model: SharedData<Model>) -> GPUObject {
-        let mut gpu_data = ModelDataGPU::default();
         let model = model.object.as_ref();
+        let mut gpu_data = ModelGPUObject::default();
         unsafe {
             // Create the VAO
             gl::GenVertexArrays(1, &mut gpu_data.vertex_array_object);
@@ -396,20 +390,20 @@ impl Pipeline {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
-        GPUObject::Model(ModelGPUObject(gpu_data.vertex_array_object, gpu_data.element_buffer_object, model.triangles.len()))
+        GPUObject::Model(gpu_data)
     }
-    pub fn dispose_model(mut gpu_data: ModelDataGPU) {
+    pub fn dispose_model(mut model: ModelGPUObject) {
         unsafe {
             // Delete the VBOs
-            gl::DeleteBuffers(1, &mut gpu_data.vertex_buf);
-            gl::DeleteBuffers(1, &mut gpu_data.normal_buf);
-            gl::DeleteBuffers(1, &mut gpu_data.uv_buf);
-            gl::DeleteBuffers(1, &mut gpu_data.tangent_buf);
-            gl::DeleteBuffers(1, &mut gpu_data.color_buf);
-            gl::DeleteBuffers(1, &mut gpu_data.element_buffer_object);
+            gl::DeleteBuffers(1, &mut model.vertex_buf);
+            gl::DeleteBuffers(1, &mut model.normal_buf);
+            gl::DeleteBuffers(1, &mut model.uv_buf);
+            gl::DeleteBuffers(1, &mut model.tangent_buf);
+            gl::DeleteBuffers(1, &mut model.color_buf);
+            gl::DeleteBuffers(1, &mut model.element_buffer_object);
 
             // Delete the vertex array
-            gl::DeleteVertexArrays(1, &mut gpu_data.vertex_array_object);
+            gl::DeleteVertexArrays(1, &mut model.vertex_array_object);
         }
     }
     pub fn generate_texture(texture: SharedData<Texture>) -> GPUObject {
@@ -574,23 +568,21 @@ impl Pipeline {
             }
         }
     }
-    pub fn texture_fill_array_veclib<V, U>(texture: SharedData<Texture>, id: u32) -> Vec<V>
-    where
-        V: veclib::Vector<U> + Default + Clone,
-        U: veclib::DefaultStates,
-    {
-        let texture = &texture.object;
+    pub fn texture_fill_array(texture: TextureGPUObject, bytecount: usize) -> Vec<u8> {
         // Get the length of the vector
-        let length: usize = match texture.ttype {
+        let length: usize = match texture.2 {
             TextureType::Texture1D(x) => (x as usize),
             TextureType::Texture2D(x, y) => (x as usize * y as usize),
             TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
             TextureType::TextureArray(_, _, _) => todo!(),
         };
-        // Create the vector
-        let mut pixels: Vec<V> = vec![V::default(); length];
+        // Get the byte size
+        let byte_length = bytecount * length;
 
-        let tex_type = match texture.ttype {
+        // Create the vector
+        let mut pixels: Vec<u8> = vec![0; byte_length];
+
+        let tex_type = match texture.2 {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
@@ -600,41 +592,22 @@ impl Pipeline {
         // Actually read the pixels
         unsafe {
             // Bind the buffer before reading
-            gl::BindTexture(tex_type, id);
-            let (_internal_format, format, data_type) = crate::get_ifd(texture._format, texture._type);
+            gl::BindTexture(tex_type, texture.0);
+            let (_internal_format, format, data_type) = texture.1;
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         pixels
     }
-    pub fn texture_fill_array<U>(texture: SharedData<Texture>, id: u32) -> Vec<U>
-    where
-        U: Clone + Default,
-    {
-        let texture = &texture.object;
-        // Get the length of the vector
-        let length: usize = match texture.ttype {
-            TextureType::Texture1D(x) => (x as usize),
-            TextureType::Texture2D(x, y) => (x as usize * y as usize),
-            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
-            TextureType::TextureArray(_, _, _) => todo!(),
-        };
-        // Create the vector
-        let mut pixels: Vec<U> = vec![U::default(); length];
-
-        let tex_type = match texture.ttype {
-            TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-
-        // Actually read the pixels
-        unsafe {
-            // Bind the buffer before reading
-            gl::BindTexture(tex_type, id);
-            let (_internal_format, format, data_type) = crate::get_ifd(texture._format, texture._type);
-            gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
-        }
-        pixels
+    pub fn run_compute(compute: ComputeShaderGPUObject, indices: (u16, u16, u16)) {
+        todo!();
+    }
+    pub fn lock_compute(compute: ComputeShaderGPUObject) {
+        todo!();
+    }
+    pub fn add_renderer(renderer: SharedData<Renderer>) -> RendererGPUObject {
+        todo!();
+    }
+    pub fn remove_renderer(renderer: RendererGPUObject) {
+        todo!();
     }
 }

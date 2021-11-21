@@ -295,6 +295,11 @@ impl Texture {
         self.ttype = ttype;
         self
     }
+    // Set the bytes of this texture
+    pub fn set_bytes(mut self, bytes: Vec<u8>) -> Self {
+        self.bytes = bytes;
+        self
+    }
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
     pub fn set_mutable(self, _mutable: bool) -> Self {
         /*

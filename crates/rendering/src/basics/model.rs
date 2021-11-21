@@ -60,15 +60,3 @@ impl Model {
         output_model
     }
 }
-
-// Struct that hold the model's information from OpenGL
-#[derive(Default, Clone)]
-pub struct ModelDataGPU {
-    pub vertex_buf: u32,
-    pub normal_buf: u32,
-    pub uv_buf: u32,
-    pub tangent_buf: u32,
-    pub color_buf: u32,
-    pub vertex_array_object: u32,
-    pub element_buffer_object: u32,
-}
