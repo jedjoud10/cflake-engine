@@ -17,6 +17,8 @@ pub struct PipelineRenderer {
     pub depth_texture: TextureGPUObject,
     pub debug_view: u16,
     pub wireframe: bool,
+    pub quad_model: ModelGPUObject,
+    pub screen_shader: ShaderGPUObject,
     sky_texture: TextureGPUObject,
     wireframe_shader: ShaderGPUObject,
     frame_stats: FrameStats,
@@ -57,11 +59,6 @@ pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32
     }
 }
 
-// Render a multi-material renderer
-fn render_mm(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
-    // TODO: Gotta reprogram the multi material system now
-}
-
 // Render a renderer using wireframe 
 fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
     let shader = &(renderer.1).0;
@@ -92,7 +89,6 @@ fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4
 impl PipelineRenderer {
     // Init the pipeline renderer
     pub fn init(&mut self, dimensions: veclib::Vector2<u16>) {
-        return;
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {
@@ -108,19 +104,19 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(dimensions.x, dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::texture(Texture::default()
+            self.diffuse_texture = pipec::itexture(Texture::default()
                 .set_dimensions(dims)
                 .set_format(TextureFormat::RGB32F));
             // Create the normals render texture
-            self.normals_texture = pipec::texture(Texture::default()
+            self.normals_texture = pipec::itexture(Texture::default()
                 .set_dimensions(dims)
                 .set_format(TextureFormat::RGB8RS));
             // Create the position render texture
-            self.position_texture = pipec::texture(Texture::default()
+            self.position_texture = pipec::itexture(Texture::default()
                 .set_dimensions(dims)
                 .set_format(TextureFormat::RGB32F));
             // Create the depth render texture
-            self.depth_texture = pipec::texture(Texture::default()
+            self.depth_texture = pipec::itexture(Texture::default()
                 .set_dimensions(dims)
                 .set_format(TextureFormat::DepthComponent32)
                 .set_data_type(DataType::Float32));

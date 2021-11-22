@@ -16,7 +16,6 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         RenderTask::WindowSizeUpdate(width, height, aspect_ratio) => todo!(),
         // Pipeline
         RenderTask::DestroyRenderThread() => RenderTaskReturn::DestroyRenderThread,
-        _ => RenderTaskReturn::None,
         // Shaders
         RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
         RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
@@ -35,15 +34,13 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         // Renderer
         RenderTask::RendererAdd(shared_renderer) => { Pipeline::add_renderer(shared_renderer); RenderTaskReturn::None },
         RenderTask::RendererRemove(renderer) => { Pipeline::remove_renderer(renderer); RenderTaskReturn::None },
-        RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),
-        
+        RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),        
     }
 }
 
 // The render thread that is continuously being ran
-fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool, frame_count: u128) {
+fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool, frame_count: u128, delta_time: f64) {
     // Clear
-    println!("{}", frame_count);
     unsafe {
         gl::Clear(gl::COLOR_BUFFER_BIT);
     }
@@ -115,6 +112,7 @@ impl Pipeline {
                 window.set_cursor_pos_polling(true);
                 window.set_scroll_polling(true);
                 window.set_size_polling(true);    
+                glfw.set_swap_interval(glfw::SwapInterval::None);
                 window.make_current();
                 if gl::Viewport::is_loaded() {
                     gl::Viewport(0, 0, 1280, 720);
@@ -131,12 +129,19 @@ impl Pipeline {
 
                 // We must render every frame
                 let tx = tx.clone();
+                // Timing stuff
+                let mut last_time: f64 = 0.0;
                 let mut frame_count: u128 = 0;
                 // If the render pipeline and thread are valid
                 let mut valid = true;
                 println!("Succsessfully created the RenderThread!");                
                 while valid {
-                    frame(glfw, window, &tx, &rx2, &mut pipeline_renderer, &mut valid, frame_count);
+                    // Update the delta_time
+                    let new_time = glfw.get_time();
+                    let delta = new_time - last_time;
+                    last_time = new_time;
+                    // Run the frame
+                    frame(glfw, window, &tx, &rx2, &mut pipeline_renderer, &mut valid, frame_count, delta);
                     frame_count += 1;
                 }      
             });
@@ -187,6 +192,7 @@ impl Pipeline {
     }
     // Complete a task immediatly
     pub fn task_immediate(&mut self, task: RenderTask) -> Option<RenderTaskReturn> {
+        println!("TaskImmediate! {}", self.command_id);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             message_id: self.command_id,
@@ -228,6 +234,20 @@ impl Pipeline {
         self.pending_wait_list.push((self.command_id, boxed_fn_mut));
         // Increment
         self.command_id += 1;
+    }
+    // Internal immediate task. This assumes that we are already on the RenderThread
+    pub fn internal_task_immediate(&mut self, task: RenderTask) -> Option<RenderTaskReturn> {
+        println!("InternalTaskImmediate! {}", self.command_id);
+        // Create a new render command and send it to the separate thread
+        let render_command = RenderCommand {
+            message_id: self.command_id,
+            input_task: task,
+        };        
+        // Just get the command lol
+        let output = command(render_command);
+        // Increment
+        self.command_id += 1;
+        return Some(output);
     }
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
@@ -550,7 +570,7 @@ impl Pipeline {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
         }
-        println!("Succsesfully generated texture {}", texture.name);
+        println!("RenderThread: Succsesfully generated texture {}", texture.name);
         GPUObject::Texture(TextureGPUObject(id, ifd, texture.ttype))
     }
     pub fn update_texture_size(texture: TextureGPUObject, ttype: TextureType) {

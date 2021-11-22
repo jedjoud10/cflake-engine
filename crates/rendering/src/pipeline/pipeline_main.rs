@@ -43,15 +43,31 @@ pub mod pipec {
             RENDER_PIPELINE.as_mut().dispose_pipeline();
         }
     }
-    // Task
+    // Immediate Task
     pub fn task_immediate(task: RenderTask) -> Option<RenderTaskReturn> {
         unsafe {
             RENDER_PIPELINE.as_mut().task_immediate(task)
         }
     }
+    // Internal task
+    pub fn internal_task(task: RenderTask) -> Option<RenderTaskReturn> {
+        unsafe {
+            RENDER_PIPELINE.as_mut().internal_task_immediate(task)
+        }
+    }
     // Task immmediate, with the inner GPU object
     fn task_immediate_gpuobject(task: RenderTask) -> Option<GPUObject> {
         match task_immediate(task) {
+            Some(x) => match x {
+                RenderTaskReturn::GPUObject(x) => Some(x),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+    // Internal immediate task, with the inner GPU object
+    fn internal_task_gpuobject(task: RenderTask) -> Option<GPUObject>  {
+        match internal_task(task) {
             Some(x) => match x {
                 RenderTaskReturn::GPUObject(x) => Some(x),
                 _ => None,
@@ -100,6 +116,7 @@ pub mod pipec {
             RENDER_PIPELINE.as_mut().gpu_object_valid(name)
         }
     }
+    
     pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {
         if let GPUObject::SubShader(x) = get_gpu_object(name) { x }  else { panic!() }
     }
@@ -136,6 +153,38 @@ pub mod pipec {
         // (TODO: Implement model caching)
         create_model(model)
     }
+    // And their internal counterpart, whoever, these don't cache/load. They alway do the conversion
+    pub fn isubshader(subshader: SubShader) -> SubShaderGPUObject {
+        match internal_task_gpuobject(RenderTask::SubShaderCreate(SharedData::new(subshader))).unwrap() {
+            GPUObject::SubShader(x) => x,
+            _ => panic!(),
+        }
+    }
+    pub fn ishader(shader: Shader) -> ShaderGPUObject {
+        match internal_task_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+            GPUObject::Shader(x) => x,
+            _ => panic!(),
+        }
+    }
+    pub fn icompute_shader(shader: Shader) -> ComputeShaderGPUObject {
+        match internal_task_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+            GPUObject::ComputeShader(x) => x,
+            _ => panic!(),
+        }
+    }
+    pub fn itexture(texture: Texture) -> TextureGPUObject {
+        match internal_task_gpuobject(RenderTask::TextureCreate(SharedData::new(texture))).unwrap() {
+            GPUObject::Texture(x) => x,
+            _ => panic!(),
+        } 
+    }
+    pub fn imodel(model: Model) -> ModelGPUObject {
+        match internal_task_gpuobject(RenderTask::ModelCreate(SharedData::new(model))).unwrap() {
+            GPUObject::Model(x) => x,
+            _ => panic!(),
+        }
+    }
+    
     // Load or create functions, cached type
     pub fn texturec(texturec: CachedObject<Texture>) -> TextureGPUObject {
         if gpu_object_valid(&texturec.rc.name) { get_texture_object(&texturec.rc.name) }
