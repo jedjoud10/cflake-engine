@@ -3,7 +3,6 @@ use assets::*;
 use debug::*;
 use defaults::{components, systems};
 use ecs::*;
-use gl;
 use glfw::{self, Context};
 use input::*;
 use io::SaverLoader;
@@ -167,8 +166,6 @@ impl World {
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
-        Utils::start_error_check_loop();
-
         // Load the default stuff
         self.load_defaults(window);
 
@@ -178,6 +175,7 @@ impl World {
         self.config_file = config_file_values;
 
         // Enable disable vsync
+        /*
         if self.config_file.vsync {
             // Enable VSync
             glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
@@ -185,9 +183,9 @@ impl World {
             // Disable VSync
             glfw.set_swap_interval(glfw::SwapInterval::None);
         }
-
         // Set the window mode
         self.set_fullscreen(self.config_file.fullscreen, glfw, window);
+        */
 
         // Update entity manager
         self.update_entity_manager();
@@ -218,7 +216,6 @@ impl World {
 
         // Update the system
         self.system_manager.update_systems(&mut data);
-        window.swap_buffers();
 
         // Update the inputs
         self.input_manager.late_update(self.time_manager.delta_time as f32);
@@ -298,7 +295,7 @@ impl World {
                 window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
                 unsafe {
                     // Update the OpenGL viewport
-                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+                    //gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
                 }
             });
         } else {
@@ -309,7 +306,7 @@ impl World {
                 window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
                 unsafe {
                     // Update the OpenGL viewport
-                    gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
+                    //gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
                 }
             });
         }
@@ -342,6 +339,7 @@ impl World {
             instance_manager: &mut self.instance_manager,
         };
         self.system_manager.kill_systems(&mut data);
+        println!("Kill world!");
     }
 }
 
@@ -417,7 +415,7 @@ impl World {
     pub fn resize_window_event(&mut self, size: (u16, u16)) {
         self.custom_data.window.dimensions = veclib::Vector2::new(size.0, size.1);
         unsafe {
-            gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
+            //gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
             /*
             let render_system = self
                 .system_manager

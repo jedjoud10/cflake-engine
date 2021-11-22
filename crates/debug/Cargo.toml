@@ -11,4 +11,3 @@ assets = { path = "../assets" }
 others = { path = "../others" }
 rendering = { path = "../rendering" }
 math = { path = "../math" }
-gl = "0.14.0"

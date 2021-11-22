@@ -11,4 +11,3 @@ ascii = { version = "1.0", default-features = false }
 byteorder = "1.4.3"
 assets = { path = "../assets" }
 rendering = { path = "../rendering" }
-gl = "0.14.0"

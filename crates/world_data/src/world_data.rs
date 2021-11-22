@@ -18,8 +18,6 @@ pub struct WorldData<'a> {
 #[derive(Default)]
 pub struct CustomWorldData {
     pub main_camera_entity_id: usize,
-    pub sky_texture: Option<Rc<Texture>>,
-    pub render_system_id: u8,
     pub window: Window,
     pub light_dir: veclib::Vector3<f32>,
 }

@@ -24,7 +24,7 @@ pub mod pipec {
     use assets::{AssetManager, CachedObject};
 
     use crate::pipeline::object::*;
-    use crate::{Model, Pipeline, RenderTask, Shader, SharedData, SubShader, Texture, RENDER_PIPELINE};
+    use crate::{Model, Pipeline, RENDER_PIPELINE, RenderTask, RenderTaskReturn, RenderTaskStatus, Shader, SharedData, SubShader, Texture};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
@@ -44,51 +44,51 @@ pub mod pipec {
         }
     }
     // Task
-    pub fn task_immediate(task: RenderTask) -> GPUObject {
+    pub fn task_immediate(task: RenderTask) -> Option<RenderTaskReturn> {
         unsafe {
             RENDER_PIPELINE.as_mut().task_immediate(task)
         }
     }
+    // Task immmediate, with the inner GPU object
+    fn task_immediate_gpuobject(task: RenderTask) -> Option<GPUObject> {
+        match task_immediate(task) {
+            Some(x) => match x {
+                RenderTaskReturn::GPUObject(x) => Some(x),
+                _ => None,
+            },
+            None => None,
+        }
+    }
     // Actual commands start here
     fn create_texture(texture: Texture) -> TextureGPUObject {
-        unsafe {
-            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::TextureCreate(SharedData::new(texture))) {
-                GPUObject::Texture(x) => x,
-                _ => panic!(),
-            }
-        }
+        match task_immediate_gpuobject(RenderTask::TextureCreate(SharedData::new(texture))).unwrap() {
+            GPUObject::Texture(x) => x,
+            _ => panic!(),
+        }        
     }
     fn create_subshader(subshader: SubShader) -> SubShaderGPUObject {
-        unsafe {
-            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::SubShaderCreate(SharedData::new(subshader))) {
-                GPUObject::SubShader(x) => x,
-                _ => panic!(),
-            }
-        }
+        match task_immediate_gpuobject(RenderTask::SubShaderCreate(SharedData::new(subshader))).unwrap() {
+            GPUObject::SubShader(x) => x,
+            _ => panic!(),
+        }        
     }
     fn create_shader(shader: Shader) -> ShaderGPUObject {
-        unsafe {
-            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
-                GPUObject::Shader(x) => x,
-                _ => panic!(),
-            }
-        }
+        match task_immediate_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+            GPUObject::Shader(x) => x,
+            _ => panic!(),
+        }        
     }
     fn create_compute_shader(shader: Shader) -> ComputeShaderGPUObject {
-        unsafe {
-            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::ShaderCreate(SharedData::new(shader))) {
-                GPUObject::ComputeShader(x) => x,
-                _ => panic!(),
-            }
-        }
+        match task_immediate_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+            GPUObject::ComputeShader(x) => x,
+            _ => panic!(),
+        }        
     }
     fn create_model(model: Model) -> ModelGPUObject {
-        unsafe {
-            match RENDER_PIPELINE.as_mut().task_immediate(RenderTask::ModelCreate(SharedData::new(model))) {
-                GPUObject::Model(x) => x,
-                _ => panic!(),
-            }
-        }
+        match task_immediate_gpuobject(RenderTask::ModelCreate(SharedData::new(model))).unwrap() {
+            GPUObject::Model(x) => x,
+            _ => panic!(),
+        }        
     }
     fn get_gpu_object(name: &str) -> GPUObject {
         unsafe {
@@ -152,11 +152,11 @@ pub mod pipec {
         }
     }
     // Read the data from an array that was filled using a texture
-    pub fn texture_read_array<T>(gpuobject: GPUObject) -> Vec<T> where T: Default + Clone + Sized {
+    pub fn convert_native<T>(taskreturn: RenderTaskReturn) -> Vec<T> where T: Default + Clone + Sized {
         let bytecount = std::mem::size_of::<T>();
         todo!();
     }
-    pub fn texture_read_array_veclib<T, U>(gpuobject: GPUObject) -> Vec<T>
+    pub fn convert_native_veclib<T, U>(taskreturn: RenderTaskReturn) -> Vec<T>
     where T: veclib::Vector<U> + Default + Clone, U: veclib::DefaultStates  {
         let bytecount = std::mem::size_of::<T>();
         todo!();

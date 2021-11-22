@@ -91,7 +91,6 @@ dependencies = [
  "defaults",
  "ecs",
  "fonts",
- "gl",
  "glfw",
  "input",
  "io",
@@ -161,7 +160,6 @@ name = "debug"
 version = "0.1.0"
 dependencies = [
  "assets",
- "gl",
  "math",
  "others",
  "rendering",
@@ -176,7 +174,6 @@ dependencies = [
  "debug",
  "ecs",
  "fonts",
- "gl",
  "input",
  "math",
  "others",
@@ -257,7 +254,6 @@ dependencies = [
  "ascii",
  "assets",
  "byteorder",
- "gl",
  "rendering",
  "veclib",
 ]

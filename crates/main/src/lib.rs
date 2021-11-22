@@ -37,8 +37,8 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
     window.set_scroll_polling(true);
     window.set_size_polling(true);   
     // Create the world
-    //let mut world: World = World::new(author_name, app_name);
-    //world.start_world(&mut glfw, &mut window, callback);
+    let mut world: World = World::new(author_name, app_name);
+    world.start_world(&mut glfw, &mut window, callback);
     let mut last_time: f64 = 0.0;
 
     while !window.should_close() {
@@ -47,37 +47,23 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
         let delta = new_time - last_time;
         last_time = new_time;
         // Update the world
-        //world.update_world(&mut window, &mut glfw, delta);
+        world.update_world(&mut window, &mut glfw, delta);
 
         // Read the events at the start of the frame
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            //handle_window_event(&mut window, &mut world, event);
-            match event {
-                glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
-                    // Key event
-                    let action_id = match action_type {
-                        glfw::Action::Press => 0,
-                        glfw::Action::Release => 1,
-                        glfw::Action::Repeat => 2,
-                    };
-                    if let glfw::Key::Escape = key {
-                        rendering::pipec::dispose_pipeline();
-                    }
-                }
-                _ => {}
-            }
+            handle_window_event(&mut window, &mut world, event);
         }
     }
     // When the window closes and we exit from the game
-    //world.kill_world();
     rendering::pipec::dispose_pipeline();
+    world.kill_world();
 }
 
 // When the window receives a new event
 fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glfw::WindowEvent) {
     match event {
-        glfw::WindowEvent::Key(_, key_scancode, action_type, _modifiers) => {
+        glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
             // Key event
             let action_id = match action_type {
                 glfw::Action::Press => 0,
@@ -87,6 +73,9 @@ fn handle_window_event(_window: &mut glfw::Window, world: &mut World, event: glf
             // Only accept the scancode of valid keys
             if key_scancode > 0 {
                 world.input_manager.receive_key_event(key_scancode, action_id);
+            }
+            if let glfw::Key::Escape = key {
+                _window.set_should_close(true);
             }
         }
         glfw::WindowEvent::Size(x, y) => {

@@ -12,6 +12,11 @@ use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null,
 // Run a command on the Render Thread
 fn command(command: RenderCommand) -> RenderTaskReturn {
     match command.input_task {
+        // Window
+        RenderTask::WindowSizeUpdate(width, height, aspect_ratio) => todo!(),
+        // Pipeline
+        RenderTask::DestroyRenderThread() => RenderTaskReturn::DestroyRenderThread,
+        _ => RenderTaskReturn::None,
         // Shaders
         RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
         RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
@@ -31,20 +36,21 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         RenderTask::RendererAdd(shared_renderer) => { Pipeline::add_renderer(shared_renderer); RenderTaskReturn::None },
         RenderTask::RendererRemove(renderer) => { Pipeline::remove_renderer(renderer); RenderTaskReturn::None },
         RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),
-        // Window
-        RenderTask::WindowSizeUpdate(width, height, aspect_ratio) => todo!(),
-        // Pipeline
-        RenderTask::DestroyRenderThread() => RenderTaskReturn::DestroyRenderThread,
+        
     }
 }
 
 // The render thread that is continuously being ran
-fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool) {
-    //println!("FRAME BABY");
+fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool, frame_count: u128) {
+    // Clear
+    println!("{}", frame_count);
+    unsafe {
+        gl::Clear(gl::COLOR_BUFFER_BIT);
+    }
     // We must loop through every command that we receive from the main thread
     loop {
         match main_to_render.try_recv() {
-            Ok(x) => {
+            Ok(x) => {                
                 // Valid command
                 let returnobj = command(x);
                 match returnobj {
@@ -54,7 +60,7 @@ fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Send
                         println!("Destroy RenderThread and RenderPipeline!");
                     }
                     _ => render_to_main.send(RenderTaskStatus::Succsessful(returnobj)).unwrap(),
-                }
+                }                
             }
             Err(x) => match x {
                 std::sync::mpsc::TryRecvError::Empty => {
@@ -65,9 +71,7 @@ fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Send
             },
         }
     }
-    unsafe {
-        gl::Clear(gl::COLOR_BUFFER_BIT);
-    }
+    // Swap the buffers after finishing rendering everything
     window.swap_buffers();
 }
 
@@ -114,9 +118,9 @@ impl Pipeline {
                 window.make_current();
                 if gl::Viewport::is_loaded() {
                     gl::Viewport(0, 0, 1280, 720);
-                    gl::ClearColor(0.0, 1.0, 0.0, 1.0);
-                    //gl::Enable(gl::DEPTH_TEST);
-                    //gl::Enable(gl::CULL_FACE);
+                    gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+                    gl::Enable(gl::DEPTH_TEST);
+                    gl::Enable(gl::CULL_FACE);
                     gl::CullFace(gl::BACK);
                     println!("Succsessfully initialized OpenGL!");
                 } else { /* NON */ panic!() }
@@ -127,13 +131,13 @@ impl Pipeline {
 
                 // We must render every frame
                 let tx = tx.clone();
+                let mut frame_count: u128 = 0;
                 // If the render pipeline and thread are valid
                 let mut valid = true;
-                println!("Succsessfully created the RenderThread!");
-                
+                println!("Succsessfully created the RenderThread!");                
                 while valid {
-                    std::thread::sleep(std::time::Duration::from_millis(10));
-                    frame(glfw, window, &tx, &rx2, &mut pipeline_renderer, &mut valid);
+                    frame(glfw, window, &tx, &rx2, &mut pipeline_renderer, &mut valid, frame_count);
+                    frame_count += 1;
                 }      
             });
         };
@@ -182,7 +186,7 @@ impl Pipeline {
         self.task_immediate(RenderTask::DestroyRenderThread());
     }
     // Complete a task immediatly
-    pub fn task_immediate(&mut self, task: RenderTask) -> GPUObject {
+    pub fn task_immediate(&mut self, task: RenderTask) -> Option<RenderTaskReturn> {
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             message_id: self.command_id,
@@ -195,8 +199,10 @@ impl Pipeline {
         // Send the command
         tx.send(render_command).unwrap();
         // Wait for the result
-        let recv = rx.recv().unwrap();
-        let output = GPUObject::None;
+        let output = match rx.recv().ok()? {
+            RenderTaskStatus::Succsessful(x) => Some(x),
+            RenderTaskStatus::Failed => None,
+        };
         // Increment
         self.command_id += 1;
         return output;
