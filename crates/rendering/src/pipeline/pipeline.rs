@@ -40,7 +40,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
 
 // The render thread that is continuously being ran
 fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool) {
-    println!("FRAME BABY");
+    //println!("FRAME BABY");
     // We must loop through every command that we receive from the main thread
     loop {
         match main_to_render.try_recv() {
@@ -64,6 +64,9 @@ fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Send
                 std::sync::mpsc::TryRecvError::Disconnected => { panic!() /* The channel got disconnected */ }
             },
         }
+    }
+    unsafe {
+        gl::Clear(gl::COLOR_BUFFER_BIT);
     }
     window.swap_buffers();
 }
@@ -92,26 +95,32 @@ impl Pipeline {
             unsafe impl Send for RenderWrapper {}
             unsafe impl Sync for RenderWrapper {}
             // Create the render wrapper
-            let render_wrapper = RenderWrapper(glfw as *mut glfw::Glfw, window as *mut glfw::Window);
-            gl::load_with(|s| window.get_proc_address(s) as *const _);
+            let render_wrapper = RenderWrapper(glfw as *mut glfw::Glfw, window as *mut glfw::Window);  
             std::thread::spawn(move || {
                 // Start OpenGL
                 let glfw = &mut *render_wrapper.0;
                 let window = &mut *render_wrapper.1;
                 // Initialize OpenGL
                 println!("Initializing OpenGL...");
-                window.make_current();    
-                glfw.make_context_current(Some(window));            
+                window.make_current();
+                glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
+                gl::load_with(|s| window.get_proc_address(s) as *const _);
+                
+                // Set the type of events that we want to listen to
+                window.set_key_polling(true);
+                window.set_cursor_pos_polling(true);
+                window.set_scroll_polling(true);
+                window.set_size_polling(true);    
+                window.make_current();
                 if gl::Viewport::is_loaded() {
                     gl::Viewport(0, 0, 1280, 720);
-                    gl::ClearColor(1.0, 1.0, 1.0, 1.0);
+                    gl::ClearColor(0.0, 1.0, 0.0, 1.0);
                     //gl::Enable(gl::DEPTH_TEST);
                     //gl::Enable(gl::CULL_FACE);
                     gl::CullFace(gl::BACK);
                     println!("Succsessfully initialized OpenGL!");
                 } else { /* NON */ panic!() }
                                
-                
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
                 pipeline_renderer.init(veclib::Vector2::new(1280, 720));
@@ -126,7 +135,6 @@ impl Pipeline {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                     frame(glfw, window, &tx, &rx2, &mut pipeline_renderer, &mut valid);
                 }      
-                      
             });
         };
         // Vars

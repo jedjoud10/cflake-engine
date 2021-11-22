@@ -35,7 +35,7 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
     window.set_key_polling(true);
     window.set_cursor_pos_polling(true);
     window.set_scroll_polling(true);
-    window.set_size_polling(true);    
+    window.set_size_polling(true);   
     // Create the world
     //let mut world: World = World::new(author_name, app_name);
     //world.start_world(&mut glfw, &mut window, callback);
