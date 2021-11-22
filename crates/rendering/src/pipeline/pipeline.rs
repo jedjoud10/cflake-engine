@@ -39,7 +39,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
 }
 
 // The render thread that is continuously being ran
-fn frame(render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool) {
+fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool) {
     println!("FRAME BABY");
     // We must loop through every command that we receive from the main thread
     loop {
@@ -65,6 +65,7 @@ fn frame(render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<Re
             },
         }
     }
+    window.swap_buffers();
 }
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
@@ -99,13 +100,16 @@ impl Pipeline {
                 let window = &mut *render_wrapper.1;
                 // Initialize OpenGL
                 println!("Initializing OpenGL...");
-                glfw::ffi::glfwMakeContextCurrent(window.window_ptr() as *mut glfw::ffi::GLFWwindow);
-                gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-                gl::Viewport(0, 0, 1280, 720);
-                gl::Enable(gl::DEPTH_TEST);
-                gl::Enable(gl::CULL_FACE);
-                gl::CullFace(gl::BACK);
-                println!("Succsessfully initialized OpenGL!");
+                window.make_current();    
+                glfw.make_context_current(Some(window));            
+                if gl::Viewport::is_loaded() {
+                    gl::Viewport(0, 0, 1280, 720);
+                    gl::ClearColor(1.0, 1.0, 1.0, 1.0);
+                    //gl::Enable(gl::DEPTH_TEST);
+                    //gl::Enable(gl::CULL_FACE);
+                    gl::CullFace(gl::BACK);
+                    println!("Succsessfully initialized OpenGL!");
+                } else { /* NON */ panic!() }
                                
                 
                 // Initialize the deferred renderer
@@ -117,10 +121,12 @@ impl Pipeline {
                 // If the render pipeline and thread are valid
                 let mut valid = true;
                 println!("Succsessfully created the RenderThread!");
+                
                 while valid {
                     std::thread::sleep(std::time::Duration::from_millis(10));
-                    frame(&tx, &rx2, &mut pipeline_renderer, &mut valid);
-                }                
+                    frame(glfw, window, &tx, &rx2, &mut pipeline_renderer, &mut valid);
+                }      
+                      
             });
         };
         // Vars

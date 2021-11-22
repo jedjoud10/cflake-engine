@@ -35,13 +35,7 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
     window.set_key_polling(true);
     window.set_cursor_pos_polling(true);
     window.set_scroll_polling(true);
-    window.set_size_polling(true);
-    window.make_current();
-    if gl::Viewport::is_loaded() {
-        unsafe {
-            gl::Viewport(0, 0, 300, 300);
-        }
-    }
+    window.set_size_polling(true);    
     // Create the world
     //let mut world: World = World::new(author_name, app_name);
     //world.start_world(&mut glfw, &mut window, callback);
@@ -67,7 +61,7 @@ pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
                         glfw::Action::Release => 1,
                         glfw::Action::Repeat => 2,
                     };
-                    if let key = glfw::Key::Escape {
+                    if let glfw::Key::Escape = key {
                         rendering::pipec::dispose_pipeline();
                     }
                 }
