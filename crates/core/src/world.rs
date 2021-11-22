@@ -1,3 +1,4 @@
+use ::rendering::*;
 use ::systems::*;
 use assets::*;
 use debug::*;
@@ -7,7 +8,6 @@ use glfw::{self, Context};
 use input::*;
 use io::SaverLoader;
 use others::*;
-use ::rendering::*;
 use ui::UIManager;
 use world_data::*;
 
@@ -108,29 +108,35 @@ impl World {
 
         // Load the default objects for the CacheManagers
         // Create the black texture
-        let black = pipec::texturec(Texture::default()
-            .set_dimensions(TextureType::Texture2D(1, 1))
-            .set_filter(TextureFilter::Linear)
-            .enable_mipmaps()
-            .set_name("black")
-            .set_bytes(vec![0, 0, 0, 255])
-            .object_cache_load("black", &mut self.asset_manager.object_cacher));
+        let black = pipec::texturec(
+            Texture::default()
+                .set_dimensions(TextureType::Texture2D(1, 1))
+                .set_filter(TextureFilter::Linear)
+                .enable_mipmaps()
+                .set_name("black")
+                .set_bytes(vec![0, 0, 0, 255])
+                .object_cache_load("black", &mut self.asset_manager.object_cacher),
+        );
         // Create the white texture
-        let white = pipec::texturec(Texture::default()
-            .set_dimensions(TextureType::Texture2D(1, 1))
-            .set_filter(TextureFilter::Linear)
-            .enable_mipmaps()
-            .set_name("white")
-            .set_bytes(vec![255, 255, 255, 255])
-            .object_cache_load("white", &mut self.asset_manager.object_cacher));
+        let white = pipec::texturec(
+            Texture::default()
+                .set_dimensions(TextureType::Texture2D(1, 1))
+                .set_filter(TextureFilter::Linear)
+                .enable_mipmaps()
+                .set_name("white")
+                .set_bytes(vec![255, 255, 255, 255])
+                .object_cache_load("white", &mut self.asset_manager.object_cacher),
+        );
         // Create the default normals texture
-        let default_normals = pipec::texturec(Texture::default()
-            .set_dimensions(TextureType::Texture2D(1, 1))
-            .set_filter(TextureFilter::Linear)
-            .enable_mipmaps()
-            .set_name("default_normals")
-            .set_bytes(vec![127, 128, 255, 255])
-            .object_cache_load("default_normals", &mut self.asset_manager.object_cacher));
+        let default_normals = pipec::texturec(
+            Texture::default()
+                .set_dimensions(TextureType::Texture2D(1, 1))
+                .set_filter(TextureFilter::Linear)
+                .enable_mipmaps()
+                .set_name("default_normals")
+                .set_bytes(vec![127, 128, 255, 255])
+                .object_cache_load("default_normals", &mut self.asset_manager.object_cacher),
+        );
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
         // ----Add the elements here----

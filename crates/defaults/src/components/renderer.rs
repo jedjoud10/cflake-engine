@@ -1,5 +1,5 @@
-use rendering::{GPUObject, Material, ModelGPUObject, RendererFlags};
 use ecs::{Component, ComponentID, ComponentInternal};
+use rendering::{GPUObject, Material, ModelGPUObject, RendererFlags};
 
 // Wrapper
 #[derive(Default)]

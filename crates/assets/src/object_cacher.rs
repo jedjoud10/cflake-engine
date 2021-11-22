@@ -52,9 +52,7 @@ pub trait Object {
             let any = &object.clone().downcast::<Self>().unwrap();
             // Put it back into an Rc
             let rc_object = Rc::clone(any);
-            CachedObject {
-                rc: rc_object
-            }
+            CachedObject { rc: rc_object }
         } else {
             // This object was not cached, not good
             panic!()
@@ -73,15 +71,11 @@ pub trait Object {
             let any = &object.clone().downcast::<Self>().unwrap();
             // Put it back into an Rc
             let rc_object = Rc::clone(any);
-            CachedObject {
-                rc: rc_object
-            }
+            CachedObject { rc: rc_object }
         } else {
             // This object was not cached, cache it
             let rc_object = object_cacher.cache(&name, self).unwrap();
-            CachedObject {
-                rc: rc_object
-            }
+            CachedObject { rc: rc_object }
         }
     }
     // Load this asset as a cached asset, but with preinitialized self
@@ -97,9 +91,7 @@ pub trait Object {
             let any = &object.clone().downcast::<Self>().unwrap();
             // Put it back into an Rc
             let rc_object = Rc::clone(any);
-            Some(CachedObject {
-                rc: rc_object
-            })
+            Some(CachedObject { rc: rc_object })
         } else {
             None
         }

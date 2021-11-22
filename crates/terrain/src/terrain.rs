@@ -35,10 +35,12 @@ impl Terrain {
 
         // Load the compute shader
         let (string, csgtree) = settings.voxel_generator_interpreter.finalize().unwrap();
-        let compute = pipec::compute_shader(Shader::default()
-            // TODO: Re-implement the additional shader sources
-            .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER], asset_manager)
-            .unwrap());
+        let compute = pipec::compute_shader(
+            Shader::default()
+                // TODO: Re-implement the additional shader sources
+                .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER], asset_manager)
+                .unwrap(),
+        );
 
         // Finally, create self
         Self {

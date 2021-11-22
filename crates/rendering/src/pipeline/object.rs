@@ -37,8 +37,8 @@ pub struct MaterialGPUObject(pub ShaderGPUObject, pub ShaderUniformsGroup, pub M
 pub struct RendererGPUObject(pub ModelGPUObject, pub MaterialGPUObject);
 
 pub mod uniform_setters {
-    use std::ffi::CString;
     use crate::{ShaderGPUObject, TextureGPUObject, TextureShaderAccessType};
+    use std::ffi::CString;
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
     pub fn get_uniform_location(shader: u32, name: &str) -> i32 {
@@ -62,7 +62,7 @@ pub mod uniform_setters {
         };
         let unit = index as u32;
         gl::BindTexture(gl::TEXTURE_2D, texture.0);
-        gl::BindImageTexture(unit, texture.0, 0, gl::FALSE, 0, new_access_type, (texture.1).0 as u32);        
+        gl::BindImageTexture(unit, texture.0, 0, gl::FALSE, 0, new_access_type, (texture.1).0 as u32);
     }
     // Set a i32
     pub unsafe fn set_i32(index: i32, value: &i32) {
@@ -79,7 +79,7 @@ pub mod uniform_setters {
         };
         let unit = index as u32;
         gl::BindTexture(gl::TEXTURE_3D, texture.0);
-        gl::BindImageTexture(unit, texture.0, 0, gl::FALSE, 0, new_access_type, (texture.1).0 as u32);        
+        gl::BindImageTexture(unit, texture.0, 0, gl::FALSE, 0, new_access_type, (texture.1).0 as u32);
     }
     // Set a matrix 4x4 f32
     pub unsafe fn set_mat44(index: i32, matrix: &veclib::Matrix4x4<f32>) {
@@ -181,10 +181,7 @@ impl ShaderUniformsGroup {
         for a in y {
             x.insert(a.0, a.1);
         }
-        return Self {
-            shader,
-            uniforms: x
-        }
+        return Self { shader, uniforms: x };
     }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
@@ -267,14 +264,20 @@ impl ShaderUniformsGroup {
 impl ShaderGPUObject {
     // Get a new uniform group
     pub fn new_uniform_group(&self) -> ShaderUniformsGroup {
-        ShaderUniformsGroup { shader: self.0, uniforms: HashMap::new() }
+        ShaderUniformsGroup {
+            shader: self.0,
+            uniforms: HashMap::new(),
+        }
     }
 }
 
 impl ComputeShaderGPUObject {
     // Get a new uniform group
     pub fn new_uniform_group(&self) -> ShaderUniformsGroup {
-        ShaderUniformsGroup { shader: self.0, uniforms: HashMap::new() }
+        ShaderUniformsGroup {
+            shader: self.0,
+            uniforms: HashMap::new(),
+        }
     }
 }
 

@@ -3,9 +3,9 @@ use std::ptr::null;
 
 use assets::{AssetManager, AssetObject};
 
-use crate::{DataType, Shader, Uniform};
-use crate::{FrameStats, Material, MaterialFlags, Renderer, Texture, TextureType, pipec, pipeline::object::*};
 use crate::basics::texture::*;
+use crate::{pipec, pipeline::object::*, FrameStats, Material, MaterialFlags, Renderer, Texture, TextureType};
+use crate::{DataType, Shader, Uniform};
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
@@ -27,7 +27,7 @@ pub struct PipelineRenderer {
 // Render debug primitives
 pub fn render_debug_primitives(primitives: Vec<(RendererGPUObject, veclib::Matrix4x4<f32>)>, camera: &CameraDataGPUObject) {
     let vp_m = camera.projm * camera.viewm;
-    for (primitive, modelm)  in primitives.iter() {
+    for (primitive, modelm) in primitives.iter() {
         render(primitive, modelm, camera);
     }
 }
@@ -49,8 +49,11 @@ pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32
 
     unsafe {
         // Enable / Disable vertex culling for double sided materials
-        if material.2.contains(MaterialFlags::DOUBLE_SIDED) { gl::Disable(gl::CULL_FACE); }            
-        else { gl::Enable(gl::CULL_FACE); }
+        if material.2.contains(MaterialFlags::DOUBLE_SIDED) {
+            gl::Disable(gl::CULL_FACE);
+        } else {
+            gl::Enable(gl::CULL_FACE);
+        }
 
         // Actually draw
         gl::BindVertexArray(model.vertex_array_object);
@@ -59,7 +62,7 @@ pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32
     }
 }
 
-// Render a renderer using wireframe 
+// Render a renderer using wireframe
 fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
     let shader = &(renderer.1).0;
     let material = &renderer.1;
@@ -98,28 +101,24 @@ impl PipelineRenderer {
                 gl::BindTexture(target, texture.0);
                 gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.0, 0);
             }
-        }  
+        }
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(dimensions.x, dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::itexture(Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB32F));
+            self.diffuse_texture = pipec::itexture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
             // Create the normals render texture
-            self.normals_texture = pipec::itexture(Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB8RS));
+            self.normals_texture = pipec::itexture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS));
             // Create the position render texture
-            self.position_texture = pipec::itexture(Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB32F));
+            self.position_texture = pipec::itexture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
             // Create the depth render texture
-            self.depth_texture = pipec::itexture(Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::DepthComponent32)
-                .set_data_type(DataType::Float32));
+            self.depth_texture = pipec::itexture(
+                Texture::default()
+                    .set_dimensions(dims)
+                    .set_format(TextureFormat::DepthComponent32)
+                    .set_data_type(DataType::Float32),
+            );
 
             // Now bind the attachememnts
             bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
@@ -153,7 +152,7 @@ impl PipelineRenderer {
                 asset_manager,
             ).unwrap());
         */
-        /* #endregion */ 
+        /* #endregion */
     }
     // Pre-render event
     pub fn pre_render(&mut self) {
@@ -163,7 +162,7 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {        
+    pub fn renderer_frame(&self, renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
         // TODO: Actually re-implement multi material renderers
         // Should we render in wireframe or not?
         if self.wireframe {
@@ -171,7 +170,7 @@ impl PipelineRenderer {
         } else {
             render(renderer, model_matrix, camera);
         }
-    }    
+    }
     // Post-render event
     pub fn post_render(&self, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject, quad: ModelGPUObject, screens: ShaderGPUObject) {
         // Update the frame stats texture

@@ -51,29 +51,39 @@ impl Material {
     pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
         let mut material = Self::default();
         material.material_name = material_name.to_string();
-        material.uniforms.set_t2d("diffuse_tex", pipec::texturec(Texture::object_load_o("white", &mut asset_manager.object_cacher)), 0);
-        material.uniforms.set_t2d("normals_tex", pipec::texturec(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher)), 1);
+        material
+            .uniforms
+            .set_t2d("diffuse_tex", pipec::texturec(Texture::object_load_o("white", &mut asset_manager.object_cacher)), 0);
+        material.uniforms.set_t2d(
+            "normals_tex",
+            pipec::texturec(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher)),
+            1,
+        );
         material
     }
     // Load the diffuse texture
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let texture = pipec::texturec(Texture::default()
-            .enable_mipmaps()
-            .set_format(TextureFormat::RGBA8R)
-            .apply_texture_load_options(opt)
-            .cache_load(diffuse_path, asset_manager));
+        let texture = pipec::texturec(
+            Texture::default()
+                .enable_mipmaps()
+                .set_format(TextureFormat::RGBA8R)
+                .apply_texture_load_options(opt)
+                .cache_load(diffuse_path, asset_manager),
+        );
         self.uniforms.set_t2d("diffuse_tex", texture, 0);
         self
     }
     // Load the normal texture
     pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
         // Load the texture
-        let texture = pipec::texturec(Texture::default()
-            .enable_mipmaps()
-            .set_format(TextureFormat::RGBA8R)
-            .apply_texture_load_options(opt)
-            .cache_load(normal_path, asset_manager));
+        let texture = pipec::texturec(
+            Texture::default()
+                .enable_mipmaps()
+                .set_format(TextureFormat::RGBA8R)
+                .apply_texture_load_options(opt)
+                .cache_load(normal_path, asset_manager),
+        );
         self.uniforms.set_t2d("normals_tex", texture, 1);
         self
     }

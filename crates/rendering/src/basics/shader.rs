@@ -1,7 +1,7 @@
-use crate::SubShaderGPUObject;
 use crate::pipec;
 use crate::utils::RenderingError;
 use crate::GPUObject;
+use crate::SubShaderGPUObject;
 
 use super::SubShader;
 use super::SubShaderType;

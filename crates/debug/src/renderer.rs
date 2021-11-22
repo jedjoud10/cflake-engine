@@ -4,11 +4,9 @@ pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality
 // I need to reprogram this with the new multithreaded renderer
 #[derive(Default)]
-pub struct DebugRenderer {
-}
+pub struct DebugRenderer {}
 
-impl DebugRenderer {    
-}
+impl DebugRenderer {}
 
 // A simple debug primitives
 pub struct DebugPrimitive {

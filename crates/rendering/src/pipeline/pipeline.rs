@@ -2,12 +2,17 @@ use assets::AssetManager;
 use glfw::Context;
 
 use super::object::*;
-use crate::{RenderCommand, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, basics::*, pipec, rendering::PipelineRenderer};
-use std::{collections::HashMap, ffi::{c_void, CString}, mem::size_of, ptr::null, sync::{
+use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData};
+use std::{
+    collections::HashMap,
+    ffi::{c_void, CString},
+    mem::size_of,
+    ptr::null,
+    sync::{
         mpsc::{Receiver, Sender},
         Arc, Mutex,
-    }};
-
+    },
+};
 
 // Run a command on the Render Thread
 fn command(command: RenderCommand) -> RenderTaskReturn {
@@ -22,24 +27,54 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         RenderTask::ShaderUniformGroup(shared_uniformgroup) => todo!(),
         // Textures
         RenderTask::TextureCreate(shared_texture) => RenderTaskReturn::GPUObject(Pipeline::generate_texture(shared_texture)),
-        RenderTask::TextureUpdateSize(texture, ttype) => { Pipeline::update_texture_size(texture, ttype); RenderTaskReturn::None },
-        RenderTask::TextureUpdateData(texture, bytes) => { Pipeline::update_texture_data(texture, bytes); RenderTaskReturn::None },
+        RenderTask::TextureUpdateSize(texture, ttype) => {
+            Pipeline::update_texture_size(texture, ttype);
+            RenderTaskReturn::None
+        }
+        RenderTask::TextureUpdateData(texture, bytes) => {
+            Pipeline::update_texture_data(texture, bytes);
+            RenderTaskReturn::None
+        }
         RenderTask::TextureFillArray(texture, bytecount) => RenderTaskReturn::TextureFillData(Pipeline::texture_fill_array(texture, bytecount)),
         // Model
         RenderTask::ModelCreate(shared_model) => RenderTaskReturn::GPUObject(Pipeline::create_model(shared_model)),
-        RenderTask::ModelDispose(gpumodel) => { Pipeline::dispose_model(gpumodel); RenderTaskReturn::None },
+        RenderTask::ModelDispose(gpumodel) => {
+            Pipeline::dispose_model(gpumodel);
+            RenderTaskReturn::None
+        }
         // Compute
-        RenderTask::ComputeRun(compute, indices) => { Pipeline::run_compute(compute, indices); RenderTaskReturn::None },
-        RenderTask::ComputeLock(compute) => { Pipeline::lock_compute(compute); RenderTaskReturn::None },
+        RenderTask::ComputeRun(compute, indices) => {
+            Pipeline::run_compute(compute, indices);
+            RenderTaskReturn::None
+        }
+        RenderTask::ComputeLock(compute) => {
+            Pipeline::lock_compute(compute);
+            RenderTaskReturn::None
+        }
         // Renderer
-        RenderTask::RendererAdd(shared_renderer) => { Pipeline::add_renderer(shared_renderer); RenderTaskReturn::None },
-        RenderTask::RendererRemove(renderer) => { Pipeline::remove_renderer(renderer); RenderTaskReturn::None },
-        RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),        
+        RenderTask::RendererAdd(shared_renderer) => {
+            Pipeline::add_renderer(shared_renderer);
+            RenderTaskReturn::None
+        }
+        RenderTask::RendererRemove(renderer) => {
+            Pipeline::remove_renderer(renderer);
+            RenderTaskReturn::None
+        }
+        RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),
     }
 }
 
 // The render thread that is continuously being ran
-fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Sender<RenderTaskStatus>, main_to_render: &Receiver<RenderCommand>, pipeline_renderer: &mut PipelineRenderer, valid: &mut bool, frame_count: u128, delta_time: f64) {
+fn frame(
+    glfw: &mut glfw::Glfw,
+    window: &mut glfw::Window,
+    render_to_main: &Sender<RenderTaskStatus>,
+    main_to_render: &Receiver<RenderCommand>,
+    pipeline_renderer: &mut PipelineRenderer,
+    valid: &mut bool,
+    frame_count: u128,
+    delta_time: f64,
+) {
     // Clear
     unsafe {
         gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -47,7 +82,7 @@ fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Send
     // We must loop through every command that we receive from the main thread
     loop {
         match main_to_render.try_recv() {
-            Ok(x) => {                
+            Ok(x) => {
                 // Valid command
                 let returnobj = command(x);
                 match returnobj {
@@ -57,14 +92,16 @@ fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Send
                         println!("Destroy RenderThread and RenderPipeline!");
                     }
                     _ => render_to_main.send(RenderTaskStatus::Succsessful(returnobj)).unwrap(),
-                }                
+                }
             }
             Err(x) => match x {
                 std::sync::mpsc::TryRecvError::Empty => {
                     /* Quit from the loop, we don't have any commands stacked up for this frame */
-                    break
+                    break;
                 }
-                std::sync::mpsc::TryRecvError::Disconnected => { panic!() /* The channel got disconnected */ }
+                std::sync::mpsc::TryRecvError::Disconnected => {
+                    panic!() /* The channel got disconnected */
+                }
             },
         }
     }
@@ -75,15 +112,15 @@ fn frame(glfw: &mut glfw::Glfw, window: &mut glfw::Window, render_to_main: &Send
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
 pub struct Pipeline {
-    pub command_id: u128, // Next Command ID 
+    pub command_id: u128,                                          // Next Command ID
     pub pending_wait_list: Vec<(u128, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
-    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
-    pub render_to_main: Option<Receiver<RenderTaskStatus>>, // RX (MainThread)    
-    pub main_to_render: Option<Sender<RenderCommand>>, // TX (MainThread)
+    pub gpu_objects: HashMap<String, GPUObject>,                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
+    pub render_to_main: Option<Receiver<RenderTaskStatus>>,        // RX (MainThread)
+    pub main_to_render: Option<Sender<RenderCommand>>,             // TX (MainThread)
     pub default_material: Material,
     pub renderer: PipelineRenderer,
 }
-impl Pipeline {    
+impl Pipeline {
     // Create the new render thread
     pub fn init_pipeline(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         println!("Initializing RenderPipeline...");
@@ -96,7 +133,7 @@ impl Pipeline {
             unsafe impl Send for RenderWrapper {}
             unsafe impl Sync for RenderWrapper {}
             // Create the render wrapper
-            let render_wrapper = RenderWrapper(glfw as *mut glfw::Glfw, window as *mut glfw::Window);  
+            let render_wrapper = RenderWrapper(glfw as *mut glfw::Glfw, window as *mut glfw::Window);
             std::thread::spawn(move || {
                 // Start OpenGL
                 let glfw = &mut *render_wrapper.0;
@@ -106,12 +143,12 @@ impl Pipeline {
                 window.make_current();
                 glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
                 gl::load_with(|s| window.get_proc_address(s) as *const _);
-                
+
                 // Set the type of events that we want to listen to
                 window.set_key_polling(true);
                 window.set_cursor_pos_polling(true);
                 window.set_scroll_polling(true);
-                window.set_size_polling(true);    
+                window.set_size_polling(true);
                 glfw.set_swap_interval(glfw::SwapInterval::None);
                 window.make_current();
                 if gl::Viewport::is_loaded() {
@@ -121,8 +158,11 @@ impl Pipeline {
                     gl::Enable(gl::CULL_FACE);
                     gl::CullFace(gl::BACK);
                     println!("Succsessfully initialized OpenGL!");
-                } else { /* NON */ panic!() }
-                               
+                } else {
+                    /* NON */
+                    panic!()
+                }
+
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
                 pipeline_renderer.init(veclib::Vector2::new(1280, 720));
@@ -134,7 +174,7 @@ impl Pipeline {
                 let mut frame_count: u128 = 0;
                 // If the render pipeline and thread are valid
                 let mut valid = true;
-                println!("Succsessfully created the RenderThread!");                
+                println!("Succsessfully created the RenderThread!");
                 while valid {
                     // Update the delta_time
                     let new_time = glfw.get_time();
@@ -143,7 +183,7 @@ impl Pipeline {
                     // Run the frame
                     frame(glfw, window, &tx, &rx2, &mut pipeline_renderer, &mut valid, frame_count, delta);
                     frame_count += 1;
-                }      
+                }
             });
         };
         // Vars
@@ -154,38 +194,29 @@ impl Pipeline {
     // Load some default rendering things
     pub fn start_world(&mut self, asset_manager: &mut AssetManager) {
         // Default shader
-        let ds = pipec::shader(Shader::default()
-            .load_shader(
-                vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
-                asset_manager,
-            )
-            .unwrap());
+        let ds = pipec::shader(
+            Shader::default()
+                .load_shader(
+                    vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
+                    asset_manager,
+                )
+                .unwrap(),
+        );
         // Default material
-        let dm = Material::new("Default material", asset_manager)
-            .set_shader(ds);
+        let dm = Material::new("Default material", asset_manager).set_shader(ds);
         self.default_material = dm;
         use veclib::consts::*;
         // Create the quad model
         let quad = Model {
-            vertices: vec![
-                vec3(1.0, -1.0, 0.0),
-                vec3(-1.0, 1.0, 0.0),
-                vec3(-1.0, -1.0, 0.0),
-                vec3(1.0, 1.0, 0.0)
-            ],
+            vertices: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
             normals: vec![veclib::Vector3::ZERO; 4],
             tangents: vec![veclib::Vector4::ZERO; 4],
-            uvs: vec![
-                vec2(1.0, 0.0),
-                vec2(0.0, 1.0),
-                vec2(0.0, 0.0),
-                vec2(1.0, 1.0)
-            ],
+            uvs: vec![vec2(1.0, 0.0), vec2(0.0, 1.0), vec2(0.0, 0.0), vec2(1.0, 1.0)],
             colors: vec![veclib::Vector3::ZERO; 4],
             triangles: vec![0, 1, 2, 0, 3, 1],
         };
         let quad_model = pipec::model(quad);
-    } 
+    }
     // Dispose of the current render thread and pipeline
     pub fn dispose_pipeline(&mut self) {
         self.task_immediate(RenderTask::DestroyRenderThread());
@@ -197,7 +228,7 @@ impl Pipeline {
         let render_command = RenderCommand {
             message_id: self.command_id,
             input_task: task,
-        };        
+        };
         // Send the command to the render thread
         let tx = self.main_to_render.as_ref().unwrap();
         let rx = self.render_to_main.as_ref().unwrap();
@@ -223,7 +254,7 @@ impl Pipeline {
         let render_command = RenderCommand {
             message_id: self.command_id,
             input_task: task,
-        };        
+        };
         // Send the command to the render thread
         let tx = self.main_to_render.as_ref().unwrap();
         let rx = self.render_to_main.as_ref().unwrap();
@@ -242,7 +273,7 @@ impl Pipeline {
         let render_command = RenderCommand {
             message_id: self.command_id,
             input_task: task,
-        };        
+        };
         // Just get the command lol
         let output = command(render_command);
         // Increment
@@ -335,7 +366,7 @@ impl Pipeline {
             // Check if this a compute shader
             let mut compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap().0 {
                 SubShaderType::Compute => true,
-                _ => false
+                _ => false,
             };
             // Detach shaders
             for subshader_program in shader.linked_subshaders_programs.iter() {

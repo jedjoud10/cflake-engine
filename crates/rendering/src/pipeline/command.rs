@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType};
+use crate::{
+    ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType,
+};
 
 // A shared GPU object that was sent to the render thread, and that can be returned back to the main thread at some point
 pub struct SharedData<T: Default + Sync> {

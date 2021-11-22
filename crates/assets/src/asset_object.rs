@@ -22,8 +22,7 @@ pub trait AssetObject: Asset + Object {
     }
 }
 
-
 // Cached asset object
 pub struct CachedObject<T> {
-    pub rc: Rc<T>
-} 
+    pub rc: Rc<T>,
+}
