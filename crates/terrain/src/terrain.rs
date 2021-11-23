@@ -28,7 +28,7 @@ impl Terrain {
         node.children_indices.is_none() && node.depth < max_depth && result
     }
     // New terrain data with specific parameters
-    pub fn new(mut settings: TerrainSettings, asset_manager: &mut AssetManager) -> Self {
+    pub fn new(mut settings: TerrainSettings) -> Self {
         // Create a new octree
         let internal_octree = Octree::new(settings.octree_depth, (MAIN_CHUNK_SIZE) as u64);
         let octree = AdvancedOctree::new(internal_octree, Self::can_node_subdivide_twin);
@@ -38,7 +38,7 @@ impl Terrain {
         let compute = pipec::compute_shader(
             Shader::default()
                 // TODO: Re-implement the additional shader sources
-                .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER], asset_manager)
+                .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER])
                 .unwrap(),
         );
 

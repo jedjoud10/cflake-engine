@@ -18,7 +18,6 @@ pub struct World {
     pub component_manager: ComponentManager,
     pub input_manager: InputManager,
     pub ui_manager: UIManager,
-    pub asset_manager: AssetManager,
     // ECS
     pub entity_manager: EntityManager,
     pub system_manager: SystemManager,
@@ -39,7 +38,6 @@ impl World {
             component_manager: ComponentManager::default(),
             input_manager: InputManager::default(),
             ui_manager: UIManager::default(),
-            asset_manager: AssetManager::default(),
             debug: MainDebug::default(),
 
             entity_manager: EntityManager::default(),
@@ -57,7 +55,7 @@ impl World {
         // Load all the default things
         // Pre load the resources
         // Pre load the resources
-        let cacher = &mut self.asset_manager.asset_cacher;
+        let mut cacher = assets::alocc::asset_cacher();
         // Rendering
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl", cacher);
@@ -115,7 +113,7 @@ impl World {
                 .enable_mipmaps()
                 .set_name("black")
                 .set_bytes(vec![0, 0, 0, 255])
-                .object_cache_load("black", &mut self.asset_manager.object_cacher),
+                .object_cache_load("black"),
         );
         // Create the white texture
         let white = pipec::texturec(
@@ -125,7 +123,7 @@ impl World {
                 .enable_mipmaps()
                 .set_name("white")
                 .set_bytes(vec![255, 255, 255, 255])
-                .object_cache_load("white", &mut self.asset_manager.object_cacher),
+                .object_cache_load("white"),
         );
         // Create the default normals texture
         let default_normals = pipec::texturec(
@@ -135,7 +133,7 @@ impl World {
                 .enable_mipmaps()
                 .set_name("default_normals")
                 .set_bytes(vec![127, 128, 255, 255])
-                .object_cache_load("default_normals", &mut self.asset_manager.object_cacher),
+                .object_cache_load("default_normals"),
         );
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
@@ -211,7 +209,6 @@ impl World {
             entity_manager: &mut self.entity_manager,
             component_manager: &mut self.component_manager,
             ui_manager: &mut self.ui_manager,
-            asset_manager: &mut self.asset_manager,
             input_manager: &mut self.input_manager,
             time_manager: &mut self.time_manager,
             debug: &mut self.debug,
@@ -337,7 +334,6 @@ impl World {
             component_manager: &mut self.component_manager,
             ui_manager: &mut self.ui_manager,
             input_manager: &mut self.input_manager,
-            asset_manager: &mut self.asset_manager,
             time_manager: &mut self.time_manager,
             debug: &mut self.debug,
             custom_data: &mut self.custom_data,
@@ -361,7 +357,6 @@ impl World {
                 component_manager: &mut self.component_manager,
                 ui_manager: &mut self.ui_manager,
                 input_manager: &mut self.input_manager,
-                asset_manager: &mut self.asset_manager,
                 time_manager: &mut self.time_manager,
                 debug: &mut self.debug,
                 custom_data: &mut self.custom_data,
@@ -398,7 +393,6 @@ impl World {
             component_manager: &mut self.component_manager,
             ui_manager: &mut self.ui_manager,
             input_manager: &mut self.input_manager,
-            asset_manager: &mut self.asset_manager,
             time_manager: &mut self.time_manager,
             debug: &mut self.debug,
             custom_data: &mut self.custom_data,

@@ -32,9 +32,9 @@ pub mod pipec {
             RENDER_PIPELINE.as_mut().init_pipeline(glfw, window);
         }
     }
-    pub fn start_world(asset_manager: &mut AssetManager) {
+    pub fn start_world() {
         unsafe {
-            RENDER_PIPELINE.as_mut().start_world(asset_manager);
+            RENDER_PIPELINE.as_mut().start_world();
         }
     }
     // Dispose of the render thread and render pipeline
@@ -211,18 +211,18 @@ pub mod pipec {
 
     // Load or create functions, cached type
     pub fn texturec(texturec: CachedObject<Texture>) -> TextureGPUObject {
-        if gpu_object_valid(&texturec.rc.name) {
-            get_texture_object(&texturec.rc.name)
+        if gpu_object_valid(&texturec.arc.name) {
+            get_texture_object(&texturec.arc.name)
         } else {
-            let texture = texturec.rc.as_ref().clone();
+            let texture = texturec.arc.as_ref().clone();
             create_texture(texture)
         }
     }
     pub fn shaderc(shaderc: CachedObject<Shader>) -> ShaderGPUObject {
-        if gpu_object_valid(&shaderc.rc.name) {
-            get_shader_object(&shaderc.rc.name)
+        if gpu_object_valid(&shaderc.arc.name) {
+            get_shader_object(&shaderc.arc.name)
         } else {
-            let shader = shaderc.rc.as_ref().clone();
+            let shader = shaderc.arc.as_ref().clone();
             create_shader(shader)
         }
     }

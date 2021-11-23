@@ -48,41 +48,41 @@ impl Default for Material {
 
 impl Material {
     // Create a new material with a name
-    pub fn new(material_name: &str, asset_manager: &mut AssetManager) -> Self {
+    pub fn new(material_name: &str) -> Self {
         let mut material = Self::default();
         material.material_name = material_name.to_string();
         material
             .uniforms
-            .set_t2d("diffuse_tex", pipec::texturec(Texture::object_load_o("white", &mut asset_manager.object_cacher)), 0);
+            .set_t2d("diffuse_tex", pipec::texturec(Texture::object_load_o("white")), 0);
         material.uniforms.set_t2d(
             "normals_tex",
-            pipec::texturec(Texture::object_load_o("default_normals", &mut asset_manager.object_cacher)),
+            pipec::texturec(Texture::object_load_o("default_normals")),
             1,
         );
         material
     }
     // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
+    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>) -> Self {
         // Load the texture
         let texture = pipec::texturec(
             Texture::default()
                 .enable_mipmaps()
                 .set_format(TextureFormat::RGBA8R)
                 .apply_texture_load_options(opt)
-                .cache_load(diffuse_path, asset_manager),
+                .cache_load(diffuse_path),
         );
         self.uniforms.set_t2d("diffuse_tex", texture, 0);
         self
     }
     // Load the normal texture
-    pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>, asset_manager: &mut AssetManager) -> Self {
+    pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>) -> Self {
         // Load the texture
         let texture = pipec::texturec(
             Texture::default()
                 .enable_mipmaps()
                 .set_format(TextureFormat::RGBA8R)
                 .apply_texture_load_options(opt)
-                .cache_load(normal_path, asset_manager),
+                .cache_load(normal_path),
         );
         self.uniforms.set_t2d("normals_tex", texture, 1);
         self

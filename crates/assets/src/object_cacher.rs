@@ -41,10 +41,11 @@ pub trait Object where Self: Sync + Send {
         local_path.to_string()
     }
     // Only load this object knowing that it was already cached
-    fn object_load_o(local_path: &str, object_cacher: &ObjectCacher) -> CachedObject<Self>
+    fn object_load_o(local_path: &str) -> CachedObject<Self>
     where
         Self: Sized + 'static,
     {
+        let object_cacher = alocc::object_cacher();
         if object_cacher.cached(local_path) {
             // This object is cached
             let object = object_cacher.load_cached(local_path).unwrap();
@@ -61,7 +62,7 @@ pub trait Object where Self: Sync + Send {
         Self: Sized + 'static,
     {
         let name = self.get_unique_object_name(local_path);
-        let mut oc = alocc::object_cacher_mut();
+        let mut oc = alocc::object_cacher();
         // Check if it was cached or not
         if oc.cached(&name) {
             // This object is cached
@@ -80,7 +81,7 @@ pub trait Object where Self: Sync + Send {
         Self: Sized + 'static,
     {
         let name = self.get_unique_object_name(local_path);
-        let oc = alocc::object_cacher_mut();
+        let oc = alocc::object_cacher();
         // Check if it was cached or not
         if oc.cached(&name) {
             // This object is cached

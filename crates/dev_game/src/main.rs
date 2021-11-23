@@ -18,7 +18,6 @@ pub fn world_initialized(world: &mut World) {
         component_manager: &mut world.component_manager,
         ui_manager: &mut world.ui_manager,
         input_manager: &mut world.input_manager,
-        asset_manager: &mut world.asset_manager,
         time_manager: &mut world.time_manager,
         debug: &mut world.debug,
         custom_data: &mut world.custom_data,

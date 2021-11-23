@@ -195,18 +195,17 @@ impl Pipeline {
         println!("Succsessfully initialized the RenderPipeline!");
     }
     // Load some default rendering things
-    pub fn start_world(&mut self, asset_manager: &mut AssetManager) {
+    pub fn start_world(&mut self) {
         // Default shader
         let ds = pipec::shader(
             Shader::default()
                 .load_shader(
-                    vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"],
-                    asset_manager,
+                    vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"]
                 )
                 .unwrap(),
         );
         // Default material
-        let dm = Material::new("Default material", asset_manager).set_shader(ds);
+        let dm = Material::new("Default material").set_shader(ds);
         self.default_material = dm;
     }
     // Dispose of the current render thread and pipeline

@@ -91,7 +91,7 @@ fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4
 
 impl PipelineRenderer {
     // Init the pipeline renderer
-    pub fn init(&mut self, dimensions: veclib::Vector2<u16>, screen_shader: ShaderGPUObject) {
+    pub fn init(&mut self, dimensions: veclib::Vector2<u16>) {
         // Create the quad model
         use crate::basics::Model;
         use veclib::consts::*;
@@ -104,7 +104,10 @@ impl PipelineRenderer {
             triangles: vec![0, 1, 2, 0, 3, 1],
         };
         self.quad_model = pipec::imodel(quad); 
-        self.screen_shader = screen_shader;
+        self.screen_shader = pipec::ishader(Shader::default()
+            .load_shader(
+                vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"])
+            .unwrap());
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {

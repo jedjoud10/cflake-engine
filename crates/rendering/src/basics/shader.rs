@@ -15,6 +15,7 @@ use gl;
 use std::collections::HashSet;
 use std::ffi::CString;
 use std::rc::Rc;
+use std::sync::Arc;
 
 // A shader that contains two sub shaders that are compiled independently
 #[derive(Clone)]
@@ -49,7 +50,6 @@ impl Shader {
         &self,
         subshader_name: &str,
         lines: &mut Vec<String>,
-        asset_manager: &'a AssetManager,
         included_paths: &mut HashSet<String>,
     ) -> Result<bool, RenderingError> {
         let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new();
@@ -62,7 +62,7 @@ impl Shader {
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = asset_manager.asset_cacher.load_text(local_path).map_err(|_x| {
+                    let text = assets::alocc::asset_cacher().load_text(local_path).map_err(|_x| {
                         RenderingError::new(format!(
                             "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
                             local_path, subshader_name
@@ -91,20 +91,20 @@ impl Shader {
         Ok(!vectors_to_insert.is_empty())
     }
     // Creates a shader from multiple subshader files
-    pub fn load_shader<'a>(mut self, subshader_paths: Vec<&str>, asset_manager: &'a mut AssetManager) -> Result<Self, RenderingError> {
+    pub fn load_shader<'a>(mut self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
         // Create the shader name
         self.name = subshader_paths.join("__");
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached
-            if asset_manager.object_cacher.cached(subshader_path) {
+            if assets::alocc::object_cacher().cached(subshader_path) {
                 let subshader = pipec::get_subshader_object(subshader_path);
                 self.linked_subshaders_programs.push(subshader);
             } else {
                 // It was not cached, so we need to cache it
                 let mut subshader = SubShader::default()
-                    .load_asset(subshader_path, &asset_manager.asset_cacher)
+                    .load_asset(subshader_path)
                     .ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
@@ -112,7 +112,7 @@ impl Shader {
                 // Included lines
                 let mut included_lines: Vec<String> = lines;
                 // Include the sources until no sources can be included
-                while Self::load_includes(&self, subshader_path, &mut included_lines, asset_manager, &mut included_paths)? {
+                while Self::load_includes(&self, subshader_path, &mut included_lines, &mut included_paths)? {
                     // We are still including paths
                 }
                 // Set the shader source for this shader
@@ -136,7 +136,8 @@ impl Shader {
 
                 // Cache it, and link it
                 self.linked_subshaders_programs.push(pipec::subshader(subshader.clone()));
-                let rc_subshader: Rc<SubShader> = asset_manager.object_cacher.cache(subshader_path, subshader).unwrap();
+                let mut object_cacher = assets::alocc::object_cacher();
+                let rc_subshader: Arc<SubShader> = object_cacher.cache(subshader_path, subshader).unwrap();
             }
         }
         Ok(self)

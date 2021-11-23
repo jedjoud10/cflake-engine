@@ -31,16 +31,8 @@ pub mod alocc {
     pub fn asset_cacher() -> MutexGuard<'static, AssetCacher> {
         ASSETM.lock().unwrap()
     }
-    // Get the asset cacher as a mut
-    pub fn asset_cacher_mut() -> MutexGuard<'static, AssetCacher> {
-        ASSETM.lock().unwrap()
-    }
     // Get the object cacher
     pub fn object_cacher() -> MutexGuard<'static, ObjectCacher> {
-        OBJECTM.lock().unwrap()
-    }
-    // Get the object cacher as a mut
-    pub fn object_cacher_mut() -> MutexGuard<'static, ObjectCacher> {
         OBJECTM.lock().unwrap()
     }
     // Load a single asset

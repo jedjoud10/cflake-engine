@@ -124,7 +124,7 @@ pub trait Asset {
     where
         Self: Sized,
     {
-        let ac = alocc::asset_cacher_mut();
+        let ac = alocc::asset_cacher();
         let s = ac.load_md(local_path).ok()?;
         self.load_medadata(s)
     }
