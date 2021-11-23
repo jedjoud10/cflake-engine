@@ -65,21 +65,8 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
     }
 }
 
-// The render thread that is continuously being ran
-fn frame(
-    glfw: &mut glfw::Glfw,
-    window: &mut glfw::Window,
-    render_to_main: &Sender<RenderTaskStatus>,
-    main_to_render: &Receiver<RenderCommand>,
-    pipeline_renderer: &mut PipelineRenderer,
-    valid: &mut bool,
-    frame_count: u128,
-    delta_time: f64,
-) {
-    // Clear
-    unsafe {
-        gl::Clear(gl::COLOR_BUFFER_BIT);
-    }
+// Poll commands that have been sent to us by the main thread
+fn poll_commands(main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {
     // We must loop through every command that we receive from the main thread
     loop {
         match main_to_render.try_recv() {
@@ -109,8 +96,27 @@ fn frame(
             },
         }
     }
-    // Swap the buffers after finishing rendering everything
-    window.swap_buffers();
+}
+
+// The render thread that is continuously being ran
+fn frame(
+    glfw: &mut glfw::Glfw,
+    window: &mut glfw::Window,
+    render_to_main: &Sender<RenderTaskStatus>,
+    main_to_render: &Receiver<RenderCommand>,
+    pipeline_renderer: &mut PipelineRenderer,
+    valid: &mut bool,
+    frame_count: u128,
+    delta_time: f64,
+) { 
+    // Poll first
+    poll_commands(main_to_render, valid, render_to_main);
+    // Pre-render
+    //pipeline_renderer.pre_render();
+    // Render
+    //pipeline_renderer.renderer_frame(renderer, model_matrix, camera)
+    // Post-render
+    pipeline_renderer.post_render(window);
 }
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
@@ -494,6 +500,7 @@ impl Pipeline {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
+        gpu_data.element_count = model.triangles.len();
         GPUObject::Model(gpu_data)
     }
     pub fn dispose_model(mut model: ModelGPUObject) {

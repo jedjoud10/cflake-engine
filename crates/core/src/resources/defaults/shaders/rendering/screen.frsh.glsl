@@ -22,7 +22,8 @@ uniform ivec2 resolution;
 uniform float time;
 in vec2 uv_coordinates;
 
-void main() {	
+void main() {
+	/*	
 	// Sample the textures
 	vec2 uvs = uv_coordinates;
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
@@ -79,6 +80,7 @@ void main() {
 			float y = (resolution.y - (uvs.y * resolution.y)) / 200;
 			color = texture(frame_stats, vec2(x, y)).rgb;
 		}
+		color = vec3(1, 1, 1);
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
@@ -88,4 +90,6 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
+	*/
+	color = vec3(1, 1, 1);
 }

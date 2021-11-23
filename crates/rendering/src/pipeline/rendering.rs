@@ -2,6 +2,7 @@ use std::ffi::CString;
 use std::ptr::null;
 
 use assets::{AssetManager, AssetObject};
+use glfw::Context;
 
 use crate::basics::texture::*;
 use crate::{pipec, pipeline::object::*, FrameStats, Material, MaterialFlags, Renderer, Texture, TextureType};
@@ -114,6 +115,7 @@ impl PipelineRenderer {
         );
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
+        /*
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {
             unsafe {
                 // Default target, no multisamplind
@@ -157,6 +159,7 @@ impl PipelineRenderer {
             // Unbind
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
+        */
         /* #endregion */
         /* #region Actual pipeline renderer shit */
         /*
@@ -193,13 +196,13 @@ impl PipelineRenderer {
         }
     }
     // Post-render event
-    pub fn post_render(&self, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject, quad: ModelGPUObject, screens: ShaderGPUObject) {
+    pub fn post_render(&self /*, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject */, window: &mut glfw::Window) {
         // Update the frame stats texture
         //self.frame_stats.update_texture(data.time_manager, &data.entity_manager.entities);
         // Render the screen QUAD
-        let mut group = screens.new_uniform_group();
-        group.set_vec2i32("resolution", dimensions.into());
-        group.set_vec2f32("nf_planes", camera.clip_planes);
+        let mut group = self.screen_shader.new_uniform_group();
+        //group.set_vec2i32("resolution", dimensions.into());
+        //group.set_vec2f32("nf_planes", camera.clip_planes);
         group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
         // Textures
         group.set_t2d("diffuse_texture", self.diffuse_texture, 0);
@@ -207,21 +210,23 @@ impl PipelineRenderer {
         group.set_t2d("position_texture", self.position_texture, 2);
         group.set_t2d("depth_texture", self.depth_texture, 3);
         group.set_t2d("default_sky_gradient", self.sky_texture, 5);
-        let vp_m = camera.projm * (veclib::Matrix4x4::from_quaternion(&camera.rotation));
-        group.set_mat44("custom_vp_matrix", vp_m);
+        //let vp_m = camera.projm * (veclib::Matrix4x4::from_quaternion(&camera.rotation));
+        //group.set_mat44("custom_vp_matrix", vp_m);
         // Other params
-        group.set_vec3f32("camera_pos", camera.position);
+        //group.set_vec3f32("camera_pos", camera.position);
         group.set_i32("debug_view", 0);
         group.set_t2d("frame_stats", self.frame_stats.texture, 6);
         group.consume();
 
         // Render the screen quad
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            //gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(quad.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, quad.element_count as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(self.quad_model.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.quad_model.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, self.quad_model.element_count as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(0);
+            window.swap_buffers();
         }
     }
 }
