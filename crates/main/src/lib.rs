@@ -23,12 +23,15 @@ pub use veclib;
 pub use world_data;
 
 // Load up the OpenGL window and such
-pub fn start(author_name: &str, app_name: &str, callback: fn(&mut World)) {
+pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), callback: fn(&mut World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let default_size = others::get_default_window_size();
     let (mut window, events) = glfw
         .create_window(default_size.0 as u32, default_size.1 as u32, app_name, glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
+    // Pre-load the assets first
+    core::preload_default_assets();
+    assets_preload_callback();
     // Hehe multithreaded renering goes BRRRRRRRR
     rendering::pipec::init_pipeline(&mut glfw, &mut window);
     // Set the type of events that we want to listen to

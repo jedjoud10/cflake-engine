@@ -8,7 +8,10 @@ use main::world_data::*;
 use main::*;
 fn main() {
     // Load up the engine
-    main::start("DevJed", "DevGame", world_initialized);
+    main::start("DevJed", "DevGame", assets_preload, world_initialized);
+}
+pub fn assets_preload() {
+    // -----Pre-load the game assets here-----
 }
 pub fn world_initialized(world: &mut World) {
     // ----Load the default systems----

@@ -26,7 +26,6 @@ pub mod alocc {
         static ref ASSETM: Mutex<AssetCacher> = Mutex::new(AssetCacher::default());
         static ref OBJECTM: Mutex<ObjectCacher> = Mutex::new(ObjectCacher::default());
     }
-
     // Get the asset cacher
     pub fn asset_cacher() -> MutexGuard<'static, AssetCacher> {
         ASSETM.lock().unwrap()
@@ -35,5 +34,4 @@ pub mod alocc {
     pub fn object_cacher() -> MutexGuard<'static, ObjectCacher> {
         OBJECTM.lock().unwrap()
     }
-    // Load a single asset
 }

@@ -106,7 +106,7 @@ impl PipelineRenderer {
         self.quad_model = pipec::imodel(quad);
         self.screen_shader = pipec::ishader(
             Shader::default()
-                .load_shader(vec![
+                .iload_shader(vec![
                     "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",
                     "defaults\\shaders\\rendering\\screen.frsh.glsl",
                 ])
@@ -173,6 +173,7 @@ impl PipelineRenderer {
             ).unwrap());
         */
         /* #endregion */
+        println!("Successfully initialized the RenderPipeline Renderer!");
     }
     // Pre-render event
     pub fn pre_render(&mut self) {

@@ -197,9 +197,10 @@ impl Pipeline {
             });
         };
         // Wait for the init message...
+        let i = std::time::Instant::now();
         println!("Waiting for RenderThread init confirmation...");
         let x = rx3.recv().unwrap();
-        println!("Received RenderThread init confirmation!");
+        println!("Received RenderThread init confirmation! Took {}ms to init RenderThread", i.elapsed().as_millis());
         // Vars
         self.render_to_main = Some(rx);
         self.main_to_render = Some(tx2);
