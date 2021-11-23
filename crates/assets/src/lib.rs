@@ -18,9 +18,9 @@ pub use object_cacher::*;
 pub mod alocc {
     use std::sync::MutexGuard;
 
-    use crate::*; 
-    use lazy_static::lazy_static;
     use crate::AssetCacher;
+    use crate::*;
+    use lazy_static::lazy_static;
     // Half-assed multithreaded rendering lol
     lazy_static! {
         static ref ASSETM: Mutex<AssetCacher> = Mutex::new(AssetCacher::default());

@@ -9,9 +9,7 @@ pub struct TerrainData {
 
 impl TerrainData {
     pub fn new(settings: TerrainSettings) -> Self {
-        Self {
-            terrain: Terrain::new(settings),
-        }
+        Self { terrain: Terrain::new(settings) }
     }
 }
 

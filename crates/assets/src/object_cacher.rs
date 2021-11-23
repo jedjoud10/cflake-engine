@@ -1,5 +1,5 @@
+use crate::{alocc, CachedObject, ObjectLoadError};
 use std::{any::Any, collections::HashMap, ops::DerefMut, sync::Arc};
-use crate::{CachedObject, ObjectLoadError, alocc};
 
 // The object cacher
 #[derive(Default)]
@@ -35,7 +35,10 @@ impl ObjectCacher {
 }
 
 // An object that will be cached inside the object cacher
-pub trait Object where Self: Sync + Send {
+pub trait Object
+where
+    Self: Sync + Send,
+{
     // Get unique object
     fn get_unique_object_name(&self, local_path: &str) -> String {
         local_path.to_string()
@@ -49,7 +52,7 @@ pub trait Object where Self: Sync + Send {
         if object_cacher.cached(local_path) {
             // This object is cached
             let object = object_cacher.load_cached(local_path).unwrap();
-            let arc: Arc<Self> =  Arc::downcast(object.clone()).unwrap();
+            let arc: Arc<Self> = Arc::downcast(object.clone()).unwrap();
             CachedObject { arc }
         } else {
             // This object was not cached, not good

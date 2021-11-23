@@ -51,14 +51,8 @@ impl Material {
     pub fn new(material_name: &str) -> Self {
         let mut material = Self::default();
         material.material_name = material_name.to_string();
-        material
-            .uniforms
-            .set_t2d("diffuse_tex", pipec::texturec(Texture::object_load_o("white")), 0);
-        material.uniforms.set_t2d(
-            "normals_tex",
-            pipec::texturec(Texture::object_load_o("default_normals")),
-            1,
-        );
+        material.uniforms.set_t2d("diffuse_tex", pipec::texturec(Texture::object_load_o("white")), 0);
+        material.uniforms.set_t2d("normals_tex", pipec::texturec(Texture::object_load_o("default_normals")), 1);
         material
     }
     // Load the diffuse texture

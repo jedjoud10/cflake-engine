@@ -1,5 +1,5 @@
-use std::{sync::Arc};
-use crate::{Asset, Object, alocc};
+use crate::{alocc, Asset, Object};
+use std::sync::Arc;
 
 // Asset object
 pub trait AssetObject: Asset + Object {
@@ -22,6 +22,9 @@ pub trait AssetObject: Asset + Object {
 }
 
 // Cached asset object
-pub struct CachedObject<T> where T: Send + Sync {
+pub struct CachedObject<T>
+where
+    T: Send + Sync,
+{
     pub arc: Arc<T>,
 }

@@ -19,11 +19,7 @@ pub struct FrameStats {
 impl FrameStats {
     // Load the compute shaders and generate the default texture
     pub fn load_compute_shader(&mut self) {
-        self.compute = pipec::compute_shader(
-            Shader::default()
-                .load_shader(vec!["defaults\\shaders\\others\\frame_stats.cmpt.glsl"])
-                .unwrap(),
-        );
+        self.compute = pipec::compute_shader(Shader::default().load_shader(vec!["defaults\\shaders\\others\\frame_stats.cmpt.glsl"]).unwrap());
         self.texture = pipec::texture(Texture::default().set_dimensions(TextureType::Texture2D(256, 512)).set_filter(TextureFilter::Nearest));
         self.entities_texture = pipec::texture(
             Texture::default()

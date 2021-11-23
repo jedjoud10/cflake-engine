@@ -46,12 +46,7 @@ impl Object for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(
-        &self,
-        subshader_name: &str,
-        lines: &mut Vec<String>,
-        included_paths: &mut HashSet<String>,
-    ) -> Result<bool, RenderingError> {
+    fn load_includes<'a>(&self, subshader_name: &str, lines: &mut Vec<String>, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
         let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new();
         for (i, line) in lines.iter().enumerate() {
             // Check if this is an include statement

@@ -199,9 +199,10 @@ impl Pipeline {
         // Default shader
         let ds = pipec::shader(
             Shader::default()
-                .load_shader(
-                    vec!["defaults\\shaders\\rendering\\passthrough.vrsh.glsl", "defaults\\shaders\\rendering\\screen.frsh.glsl"]
-                )
+                .load_shader(vec![
+                    "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",
+                    "defaults\\shaders\\rendering\\screen.frsh.glsl",
+                ])
                 .unwrap(),
         );
         // Default material

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{AssetMetadataLoadError, alocc};
+use crate::{alocc, AssetMetadataLoadError};
 
 // Caches the embeded bytes into an array basically
 #[derive(Default)]
