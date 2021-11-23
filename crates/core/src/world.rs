@@ -56,6 +56,7 @@ impl World {
         // Pre load the resources
         // Pre load the resources
         let mut cacher = assets::alocc::asset_cacher();
+        println!("Pre-loading default assets...");
         // Rendering
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl", cacher);
         preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl", cacher);
@@ -97,6 +98,7 @@ impl World {
         preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
         preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png", cacher);
         preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png", cacher);
+        println!("Finished pre-loading default assets!");
         // Load default bindings
         self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
@@ -166,6 +168,7 @@ impl World {
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
         console_root.visible = false;
         self.ui_manager.add_root("console", console_root);
+        println!("Hello world!");
     }
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {

@@ -22,7 +22,10 @@ pub enum RenderTaskReturn {
     None,
     GPUObject(GPUObject),
     TextureFillData(Vec<u8>),
-    DestroyRenderThread,
+}
+
+pub enum SpecialPipelineMessage {
+    RenderThreadInitialized,
 }
 
 pub enum RenderTaskStatus {

@@ -75,6 +75,7 @@ where
         } else {
             // This object was not cached, cache it
             let arc = oc.cache(&name, self).unwrap();
+            println!("Object {} is cached!", local_path);
             CachedObject { arc }
         }
     }
