@@ -23,8 +23,3 @@ pub struct SubShader {
     pub source: String,
     pub subshader_type: SubShaderType,
 }
-
-impl SubShader {
-    // Compile the current subshader's source code
-    pub fn compile_subshader(&mut self) {}
-}

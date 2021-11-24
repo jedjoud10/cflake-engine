@@ -126,8 +126,6 @@ impl Shader {
                     })
                     .collect::<Vec<&str>>()
                     .join("\n");
-                // Compile the subshader
-                subshader.compile_subshader();
 
                 // Cache it, and link it
                 self.linked_subshaders_programs.push(if internal { 
@@ -144,11 +142,11 @@ impl Shader {
         Ok(self)
     }
     // Creates a shader from multiple subshader files
-    pub fn load_shader(mut self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
+    pub fn load_shader(self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
         self.load_shader_main(subshader_paths, false)
     }
     // Internal load shader (This assumes that this is ran on the RenderThread)
-    pub fn iload_shader(mut self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
+    pub fn iload_shader(self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
         self.load_shader_main(subshader_paths, true)
     }
 }

@@ -91,5 +91,5 @@ void main() {
 		color = ambient_lighting_color;
 	}
 	*/
-	color = vec3(1, 1, 1);
+	color = vec3(1, 0, 0);
 }

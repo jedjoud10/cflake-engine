@@ -356,6 +356,12 @@ impl Pipeline {
         let shader = shader.object.as_ref();
         unsafe {
             let program = gl::CreateProgram();
+
+            // Attach the shaders
+            for subshader_program in shader.linked_subshaders_programs.iter() {
+                gl::AttachShader(program, subshader_program.1);
+            }
+
             // Finalize the shader and stuff
             gl::LinkProgram(program);
 
@@ -378,7 +384,7 @@ impl Pipeline {
                 panic!();
             }
             // Check if this a compute shader
-            let mut compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap().0 {
+            let compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap().0 {
                 SubShaderType::Compute => true,
                 _ => false,
             };
