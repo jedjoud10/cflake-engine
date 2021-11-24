@@ -227,10 +227,9 @@ impl Pipeline {
                 RenderTaskStatus::Failed => panic!(),
             };
             // Call the callbacks
-            let callback = self.render_commands_buffer.get_mut(&message_id).unwrap();
+            let mut callback = self.render_commands_buffer.remove(&message_id).unwrap();
             callback(RenderTaskStatus::Succsessful(task_return, message_id));
             // We can get rid of this
-            self.render_commands_buffer.remove(&message_id).unwrap();
         }
     }
     // Dispose of the current render thread and pipeline
@@ -258,7 +257,7 @@ impl Pipeline {
         };
         // Increment
         self.command_id += 1;
-        println!("TaskImmediate {} succsess!", self.command_id);
+        println!("TaskImmediate {} success!", self.command_id-1);
         return output;
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
@@ -296,7 +295,7 @@ impl Pipeline {
         let output = command(render_command);
         // Increment
         self.command_id += 1;
-        println!("InternalTaskImmediate {} succsess!", self.command_id);
+        println!("InternalTaskImmediate {} success!", self.command_id-1);
         return Some(output);
     }
     // Get GPU object using it's specified name
