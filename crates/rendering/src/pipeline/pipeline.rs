@@ -68,7 +68,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
 // Poll commands that have been sent to us by the main thread
 fn poll_commands(main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {    
     // We must loop through every command that we receive from the main thread
-    for _command in main_to_render {
+    for _command in main_to_render.try_iter() {        
         // Check special commands first
         let message_id = _command.message_id;
         match _command.input_task {
@@ -81,10 +81,10 @@ fn poll_commands(main_to_render: &Receiver<RenderCommand>, valid: &mut bool, ren
             _ => {
                 // Valid command
                 let returnobj = command(_command);
-                render_to_main.send(RenderTaskStatus::Succsessful(returnobj, message_id)).unwrap();
+                render_to_main.send(RenderTaskStatus::Successful(returnobj, message_id)).unwrap();
             }
-        }        
-    }    
+        }   
+    }
 }
 
 // The render thread that is continuously being ran
@@ -221,15 +221,20 @@ impl Pipeline {
     pub fn frame_main_thread(&mut self) {
         // Receive the return data that was sent from the render thread
         let render_to_main = self.render_to_main.as_ref().unwrap();
-        for received in render_to_main {
+        for received in render_to_main.try_iter() {
             let (task_return, message_id) = match received {
-                RenderTaskStatus::Succsessful(x, message_id) => (x, message_id),
+                RenderTaskStatus::Successful(x, message_id) => (x, message_id),
                 RenderTaskStatus::Failed => panic!(),
             };
             // Call the callbacks
             let mut callback = self.render_commands_buffer.remove(&message_id).unwrap();
-            callback(RenderTaskStatus::Succsessful(task_return, message_id));
-            // We can get rid of this
+            match &task_return {
+                RenderTaskReturn::GPUObject(x) => {
+                    self.gpu_objects.insert(message_id, x.clone());
+                },
+                _ => {}
+            }
+            callback(RenderTaskStatus::Successful(task_return, message_id));
         }
     }
     // Dispose of the current render thread and pipeline
@@ -252,7 +257,7 @@ impl Pipeline {
         tx.send(render_command).unwrap();
         // Wait for the result
         let output = match rx.recv().ok()? {
-            RenderTaskStatus::Succsessful(x, _) => Some(x),
+            RenderTaskStatus::Successful(x, _) => Some(x),
             RenderTaskStatus::Failed => None,
         };
         // Increment

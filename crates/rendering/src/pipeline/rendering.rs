@@ -227,6 +227,7 @@ impl PipelineRenderer {
             gl::DrawElements(gl::TRIANGLES, self.quad_model.element_count as i32, gl::UNSIGNED_INT, null());
             gl::BindVertexArray(0);
             window.swap_buffers();
+            println!("Swap buffers!");
         }
     }
 }

@@ -29,7 +29,7 @@ pub enum SpecialPipelineMessage {
 }
 
 pub enum RenderTaskStatus {
-    Succsessful(RenderTaskReturn, u128),
+    Successful(RenderTaskReturn, u128),
     Failed,
 }
 
