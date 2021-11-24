@@ -53,10 +53,9 @@ pub mod pipec {
     }
     // Task immmediate, with the inner GPU object
     fn task_immediate_gpuobject(task: RenderTask) -> Option<GPUObject> {
-        println!("TIGPU");
         match task_immediate(task) {
             Some(x) => match x {
-                RenderTaskReturn::GPUObject(x) => { println!("TIGPU NICE"); Some(x) },
+                RenderTaskReturn::GPUObject(x) => { Some(x) },
                 _ => None,
             },
             None => None,

@@ -66,36 +66,25 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
 }
 
 // Poll commands that have been sent to us by the main thread
-fn poll_commands(main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {
+fn poll_commands(main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {    
     // We must loop through every command that we receive from the main thread
-    loop {
-        match main_to_render.try_recv() {
-            Ok(x) => {
-                // Check special commands first
-                match x.input_task {
-                    RenderTask::DestroyRenderThread() => {
-                        // Destroy the render thread
-                        *valid = false;
-                        println!("Destroy RenderThread and RenderPipeline!");
-                        break;                        
-                    },
-                    _ => {}
-                }
-                // Valid command
-                let returnobj = command(x);
-                render_to_main.send(RenderTaskStatus::Succsessful(returnobj)).unwrap();
-            }
-            Err(x) => match x {
-                std::sync::mpsc::TryRecvError::Empty => {
-                    /* Quit from the loop, we don't have any commands stacked up for this frame */
-                    break;
-                }
-                std::sync::mpsc::TryRecvError::Disconnected => {
-                    panic!() /* The channel got disconnected */
-                }
+    for _command in main_to_render {
+        // Check special commands first
+        let message_id = _command.message_id;
+        match _command.input_task {
+            RenderTask::DestroyRenderThread() => {
+                // Destroy the render thread
+                *valid = false;
+                println!("Destroy RenderThread and RenderPipeline!");
+                break;                        
             },
-        }
-    }
+            _ => {
+                // Valid command
+                let returnobj = command(_command);
+                render_to_main.send(RenderTaskStatus::Succsessful(returnobj, message_id)).unwrap();
+            }
+        }        
+    }    
 }
 
 // The render thread that is continuously being ran
@@ -123,8 +112,9 @@ fn frame(
 #[derive(Default)]
 pub struct Pipeline {
     pub command_id: u128,                                          // Next Command ID
-    pub pending_wait_list: Vec<(u128, Box<dyn FnMut(GPUObject)>)>, // The tasks that are asynchronous and are pending their return values
-    pub gpu_objects: HashMap<String, GPUObject>,                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
+    pub render_commands_buffer: HashMap<u128, Box<dyn FnMut(RenderTaskStatus)>>, // The tasks that are asynchronous and are pending their return values
+    pub gpu_objects: HashMap<u128, GPUObject>,                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
+    pub gpu_objects_names: HashMap<String, u128>, // A name to GPU initialization ID 
     pub render_to_main: Option<Receiver<RenderTaskStatus>>,        // RX (MainThread)
     pub main_to_render: Option<Sender<RenderCommand>>,             // TX (MainThread)
     pub default_material: Material,
@@ -227,6 +217,22 @@ impl Pipeline {
         let dm = Material::new("Default material").set_shader(ds);
         self.default_material = dm;
     }
+    // Frame on the main thread
+    pub fn frame_main_thread(&mut self) {
+        // Receive the return data that was sent from the render thread
+        let render_to_main = self.render_to_main.as_ref().unwrap();
+        for received in render_to_main {
+            let (task_return, message_id) = match received {
+                RenderTaskStatus::Succsessful(x, message_id) => (x, message_id),
+                RenderTaskStatus::Failed => panic!(),
+            };
+            // Call the callbacks
+            let callback = self.render_commands_buffer.get_mut(&message_id).unwrap();
+            callback(RenderTaskStatus::Succsessful(task_return, message_id));
+            // We can get rid of this
+            self.render_commands_buffer.remove(&message_id).unwrap();
+        }
+    }
     // Dispose of the current render thread and pipeline
     pub fn dispose_pipeline(&mut self) {
         self.task_immediate(RenderTask::DestroyRenderThread());
@@ -247,7 +253,7 @@ impl Pipeline {
         tx.send(render_command).unwrap();
         // Wait for the result
         let output = match rx.recv().ok()? {
-            RenderTaskStatus::Succsessful(x) => Some(x),
+            RenderTaskStatus::Succsessful(x, _) => Some(x),
             RenderTaskStatus::Failed => None,
         };
         // Increment
@@ -258,10 +264,10 @@ impl Pipeline {
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
     pub fn task<F>(&mut self, task: RenderTask, callback: F)
     where
-        F: FnMut(GPUObject) + 'static,
+        F: FnMut(RenderTaskStatus) + 'static,
     {
         println!("Task! {}", self.command_id);
-        let boxed_fn_mut: Box<dyn FnMut(GPUObject)> = Box::new(callback);
+        let boxed_fn_mut: Box<dyn FnMut(RenderTaskStatus)> = Box::new(callback);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             message_id: self.command_id,
@@ -269,12 +275,11 @@ impl Pipeline {
         };
         // Send the command to the render thread
         let tx = self.main_to_render.as_ref().unwrap();
-        let rx = self.render_to_main.as_ref().unwrap();
 
         // Send the command
         tx.send(render_command).unwrap();
         // This time, we must add this to the wait list
-        self.pending_wait_list.push((self.command_id, boxed_fn_mut));
+        self.render_commands_buffer.insert(self.command_id, boxed_fn_mut);
         // Increment
         self.command_id += 1;
         println!("Task! {} succsess", self.command_id);
@@ -296,11 +301,13 @@ impl Pipeline {
     }
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
-        self.gpu_objects.get(name).unwrap()
+        // Convert the name to an ID first
+        let id = self.gpu_objects_names[name];
+        self.gpu_objects.get(&id).unwrap()
     }
     // Check if a GPU object exists
     pub fn gpu_object_valid(&self, name: &str) -> bool {
-        self.gpu_objects.contains_key(name)
+        self.gpu_objects_names.contains_key(name)
     }
 }
 // Rendering stuff
