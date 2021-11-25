@@ -15,7 +15,7 @@ use std::{
 };
 
 // Run a command on the Render Thread
-fn command(pr: PipelineRenderer, command: RenderCommand) -> RenderTaskReturn {
+fn command(command: RenderCommand) -> RenderTaskReturn {
     // Handle the common cases
     match command.input_task {
         // Window
@@ -53,17 +53,14 @@ fn command(pr: PipelineRenderer, command: RenderCommand) -> RenderTaskReturn {
             RenderTaskReturn::None
         }
         // Renderer
-        RenderTask::RendererAdd(shared_renderer) => RenderTaskReturn::GPUObject(Pipeline::add_renderer(shared_renderer)),
-        RenderTask::RendererRemove(renderer) => {
-            Pipeline::remove_renderer(renderer);
-            RenderTaskReturn::None
-        }
+        RenderTask::RendererAdd(_) => RenderTaskReturn::None,
+        RenderTask::RendererRemove(_) => RenderTaskReturn::None,        
         RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),
     }
 }
 
 // Poll commands that have been sent to us by the main thread
-fn poll_commands(main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {    
+fn poll_commands(pr: &mut PipelineRenderer, main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {    
     // We must loop through every command that we receive from the main thread
     for _command in main_to_render.try_iter() {        
         // Check special commands first
@@ -75,6 +72,11 @@ fn poll_commands(main_to_render: &Receiver<RenderCommand>, valid: &mut bool, ren
                 println!("Destroy RenderThread and RenderPipeline!");
                 break;                        
             },
+            // Renderer commands
+            RenderTask::RendererAdd(shared_renderer) => {
+                let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
+            },
+            RenderTask::RendererRemove(renderer_id) => Pipeline::remove_renderer(pr, renderer_id),
             _ => {
                 // Valid command
                 let returnobj = command(_command);
@@ -96,7 +98,7 @@ fn frame(
     delta_time: f64,
 ) { 
     // Poll first
-    poll_commands(main_to_render, valid, render_to_main);
+    poll_commands(pipeline_renderer, main_to_render, valid, render_to_main);
     // Pre-render
     //pipeline_renderer.pre_render();
     // Render
@@ -311,14 +313,17 @@ impl Pipeline {
 // Renderers
 impl Pipeline {
     // Add the renderer to the renderer (lol I need better name)
-    pub fn add_renderer(&mut self, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> RendererGPUObject {
-        let renderer_gpuobject = Self::create_renderer(renderer.object.0);
-        self.renderer.add_renderer(renderer_gpuobject);
-        renderer_gpuobject
+    pub fn add_renderer(pr: &mut PipelineRenderer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObject {
+        let renderer = &renderer.object.0;
+        let model = renderer.model.clone();
+        let material = Self::create_material(renderer.material.clone());
+        let renderer_gpuobject = RendererGPUObject(model, material);
+        let x = pr.add_renderer(renderer_gpuobject);
+        GPUObject::Renderer(x)
     }
     // Remove the renderer using it's renderer ID
-    pub fn remove_renderer(&mut self, renderer_id: usize) {
-        self.renderer.remove_renderer(renderer_id)
+    pub fn remove_renderer(pr: &mut PipelineRenderer, renderer_id: usize) {
+        pr.remove_renderer(renderer_id);
     }
 }
 
@@ -729,9 +734,6 @@ impl Pipeline {
     }
     pub fn lock_compute(compute: ComputeShaderGPUObject) {
         todo!();
-    }
-    pub fn create_renderer(renderer: Renderer) -> RendererGPUObject {
-        RendererGPUObject(renderer.model, Self::create_material(renderer.material))
     }
     pub fn create_material(material: Material) -> MaterialGPUObject {
         MaterialGPUObject(material.shader, material.uniforms, material.flags)

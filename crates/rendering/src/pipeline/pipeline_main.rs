@@ -52,6 +52,12 @@ pub mod pipec {
     pub fn task_immediate(task: RenderTask) -> Option<RenderTaskReturn> {
         unsafe { RENDER_PIPELINE.as_mut().task_immediate(task) }
     }
+    // Normal callback task
+    pub fn task<F>(task: RenderTask, callback: F) 
+    where
+        F: FnMut(RenderTaskStatus) + 'static, {
+        unsafe { RENDER_PIPELINE.as_mut().task(task, callback) }
+    }
     // Internal task
     pub fn internal_task(task: RenderTask) -> Option<RenderTaskReturn> {
         unsafe { RENDER_PIPELINE.as_mut().internal_task_immediate(task) }
@@ -247,8 +253,14 @@ pub mod pipec {
         let bytecount = std::mem::size_of::<T>();
         todo!();
     }
-    // Update the renderers
-    pub fn add_renderer(renderer: Renderer, matrix: veclib::Matrix4x4<f32>) {
-        task_immediate_gpuobject(RenderTask::RendererAdd(SharedData::new((renderer, matrix)))).unwrap();
+    // Renderers
+    pub fn add_renderer(renderer: Renderer, matrix: veclib::Matrix4x4<f32>) -> usize {
+        match task_immediate_gpuobject(RenderTask::RendererAdd(SharedData::new((renderer, matrix)))).unwrap() {
+            GPUObject::Renderer(x) => x,
+            _ => panic!(),
+        }
+    }
+    pub fn remove_renderer(index: usize) {
+        task_immediate_gpuobject(RenderTask::RendererRemove(index)).unwrap();
     }
 }

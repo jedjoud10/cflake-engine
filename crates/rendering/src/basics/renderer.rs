@@ -12,6 +12,7 @@ bitflags! {
 }
 
 // A component that will be linked to entities that are renderable
+#[derive(Clone)]
 pub struct Renderer {
     pub index: usize, // The ID of this renderer in the pipeline 
     pub visible: bool,
