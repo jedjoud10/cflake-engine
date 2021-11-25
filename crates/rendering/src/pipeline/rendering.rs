@@ -38,10 +38,10 @@ pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32
     let shader = &(renderer.1).0;
     let material = &renderer.1;
     let model = &renderer.0;
-    let mut group = shader.new_uniform_group();
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     // Pass the MVP and the model matrix to the shader
+    let mut group = material.1.clone();
     group.set_mat44("mvp_matrix", mvp_matrix);
     group.set_mat44("model_matrix", *model_matrix);
     group.set_mat44("view_matrix", camera.viewm);
@@ -227,7 +227,6 @@ impl PipelineRenderer {
             gl::DrawElements(gl::TRIANGLES, self.quad_model.element_count as i32, gl::UNSIGNED_INT, null());
             gl::BindVertexArray(0);
             window.swap_buffers();
-            println!("Swap buffers!");
         }
     }
 }

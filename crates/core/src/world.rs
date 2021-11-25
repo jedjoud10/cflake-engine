@@ -51,8 +51,8 @@ impl World {
         }
     }    
     // Load everything that needs to be loaded by default
-    fn load_defaults(&mut self, window: &mut glfw::Window) {
-        // Load all the default things        
+    fn load_defaults(&mut self, window: &mut glfw::Window) {        
+
         // Load default bindings
         self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
@@ -91,6 +91,42 @@ impl World {
                 .set_bytes(vec![127, 128, 255, 255])
                 .object_cache_load("default_normals"),
         );
+
+        // Load the default systems
+        let mut data: WorldData = WorldData {
+            entity_manager: &mut self.entity_manager,
+            component_manager: &mut self.component_manager,
+            ui_manager: &mut self.ui_manager,
+            input_manager: &mut self.input_manager,
+            time_manager: &mut self.time_manager,
+            debug: &mut self.debug,
+            custom_data: &mut self.custom_data,
+            instance_manager: &mut self.instance_manager,
+        };
+        // Rendering system
+        let mut rendering_system = systems::rendering_system::system(&mut data);
+        rendering_system.enable(&mut data);
+        self.system_manager.add_system(rendering_system);
+        // Camera system
+        let mut camera_system = systems::camera_system::system(&mut data);
+        camera_system.enable(&mut data);
+        self.system_manager.add_system(camera_system);
+        /*
+        let mut ui_system = systems::ui_system::system(&mut data);
+        ui_system.enable(&mut data);
+        self.system_manager.add_system(ui_system);
+        */
+        // Load the default command system
+        let mut command_system = systems::command_system::system(&mut data);
+        command_system.enable(&mut data);
+        self.system_manager.add_system(command_system);
+        // Load the terrain system
+        /*
+        let mut terrain_system = systems::terrain_system::system(&mut data);
+        terrain_system.enable(&mut data);
+        self.system_manager.add_system(terrain_system);
+        */
+
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
         // ----Add the elements here----
@@ -416,10 +452,6 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl", cacher);
-    // Volumetric
-    preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\sdf_gen.cmpt.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric_screen.cmpt.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\volumetric\\volumetric.func.glsl", cacher);
     // UI
     preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_elem.vrsh.glsl", cacher);
     preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_panel.frsh.glsl", cacher);

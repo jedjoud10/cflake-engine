@@ -41,7 +41,7 @@ impl Default for Material {
         // Set the default shader args
         material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
         material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
-        material.uniforms.set_f32("normals_strength", 1.0);
+        material.uniforms.set_f32("normals_strength", 1.0);        
         material
     }
 }

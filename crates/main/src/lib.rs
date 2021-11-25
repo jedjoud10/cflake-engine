@@ -45,6 +45,8 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     let mut last_time: f64 = 0.0;
 
     while !window.should_close() {
+        // Poll the rendering commands
+        rendering::pipec::frame_main_thread();
         // Update the delta_time
         let new_time = glfw.get_time();
         let delta = new_time - last_time;

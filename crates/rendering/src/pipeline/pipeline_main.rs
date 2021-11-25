@@ -37,6 +37,11 @@ pub mod pipec {
             RENDER_PIPELINE.as_mut().start_world();
         }
     }
+    pub fn frame_main_thread() {
+        unsafe {
+            RENDER_PIPELINE.as_mut().frame_main_thread();
+        }
+    }
     // Dispose of the render thread and render pipeline
     pub fn dispose_pipeline() {
         unsafe {

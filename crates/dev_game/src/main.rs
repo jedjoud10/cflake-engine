@@ -26,23 +26,7 @@ pub fn world_initialized(world: &mut World) {
         custom_data: &mut world.custom_data,
         instance_manager: &mut world.instance_manager,
     };
-    // Load the camera system
-    let mut camera_system = systems::camera_system::system(&mut data);
-    camera_system.enable(&mut data);
-    world.system_manager.add_system(camera_system);
-    // Load the default UI system
-    let mut ui_system = systems::ui_system::system(&mut data);
-    ui_system.enable(&mut data);
-    world.system_manager.add_system(ui_system);
-    // Load the default command system
-    let mut command_system = systems::command_system::system(&mut data);
-    command_system.enable(&mut data);
-    world.system_manager.add_system(command_system);
-    // Load the terrain system
-    let mut terrain_system = systems::terrain_system::system(&mut data);
-    terrain_system.enable(&mut data);
-    world.system_manager.add_system(terrain_system);
-
+    
     // ----Load the entities----
     // Create a camera entity
 
@@ -55,6 +39,12 @@ pub fn world_initialized(world: &mut World) {
 
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
+    
+    let mut entity = Entity::new("Test");
+    entity.link_default_component::<components::Transform>(data.component_manager).unwrap();
+    let renderer = components::Renderer::default().set_model(pipec::model(Model::new().load_asset("defaults\\models\\cube.mdl3d").unwrap()));
+    entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
+    data.entity_manager.add_entity_s(entity);
     /*
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");

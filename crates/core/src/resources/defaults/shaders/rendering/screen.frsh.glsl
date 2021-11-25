@@ -23,10 +23,9 @@ uniform float time;
 in vec2 uv_coordinates;
 
 void main() {
-	/*	
-	// Sample the textures
 	vec2 uvs = uv_coordinates;
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
+	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
 	vec3 position = texture(position_texture, uvs).xyz;
@@ -90,6 +89,5 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-	*/
-	color = vec3(0, 0, 0);
+	color = vec3(uvs, 0);
 }
