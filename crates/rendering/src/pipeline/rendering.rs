@@ -3,6 +3,7 @@ use std::ptr::null;
 
 use assets::{AssetManager, AssetObject};
 use glfw::Context;
+use others::SmartList;
 
 use crate::basics::texture::*;
 use crate::{pipec, pipeline::object::*, FrameStats, Material, MaterialFlags, Renderer, Texture, TextureType};
@@ -10,19 +11,19 @@ use crate::{DataType, Shader, Uniform};
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
-    pub framebuffer: u32,
-    // The frame buffer textures
-    pub diffuse_texture: TextureGPUObject,
-    pub normals_texture: TextureGPUObject,
-    pub position_texture: TextureGPUObject,
-    pub depth_texture: TextureGPUObject,
-    pub debug_view: u16,
-    pub wireframe: bool,
-    pub quad_model: ModelGPUObject,
-    pub screen_shader: ShaderGPUObject,
-    sky_texture: TextureGPUObject,
-    wireframe_shader: ShaderGPUObject,
-    frame_stats: FrameStats,
+    framebuffer: u32, // The master frame buffer
+    diffuse_texture: TextureGPUObject, // Diffuse texture, can also store HDR values
+    normals_texture: TextureGPUObject, // World Normals texture
+    position_texture: TextureGPUObject, // World Positions texture 
+    depth_texture: TextureGPUObject, // Depth texture
+    debug_view: u16, // OUr currenty debug view mode
+    wireframe: bool, // Are we rendering in wireframe or not
+    quad_model: ModelGPUObject, // The current screen quad model that we are using
+    screen_shader: ShaderGPUObject, // The current screen quad shader that we are using
+    sky_texture: TextureGPUObject, // The sky gradient texture
+    wireframe_shader: ShaderGPUObject, // The current wireframe shader
+    frame_stats: FrameStats, // Some frame stats
+    renderers: SmartList<RendererGPUObject> // The collection of valid renderers (Can include renderers that are culled out or invisible)
 }
 
 // Render debug primitives
@@ -228,5 +229,14 @@ impl PipelineRenderer {
             gl::BindVertexArray(0);
             window.swap_buffers();
         }
+    }
+    // Renderers
+    // Add a renderer
+    pub fn add_renderer(&mut self, renderer: RendererGPUObject) -> usize {
+        self.renderers.add_element(renderer)
+    }
+    // Remove a renderer
+    pub fn remove_renderer(&mut self, renderer_id: usize) {
+        self.renderers.remove_element(renderer_id);
     }
 }

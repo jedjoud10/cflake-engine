@@ -1,5 +1,6 @@
 // An improved multithreaded rendering system
 use ecs::{Entity, FilteredLinkedComponents};
+use rendering::pipec;
 use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
 
@@ -7,7 +8,7 @@ use crate::components;
 
 // Add the renderer in the render pipeline renderer
 fn add_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
-
+    pipec::add_renderer();
 }
 // Remove the renderer from the pipeline renderer
 fn remove_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {

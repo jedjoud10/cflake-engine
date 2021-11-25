@@ -13,16 +13,17 @@ bitflags! {
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
+    pub index: usize, // The ID of this renderer in the pipeline 
     pub visible: bool,
-    pub model: ModelGPUObject,
-    pub material: Material,
-    // Flags
-    pub flags: RendererFlags,
+    pub model: ModelGPUObject, // The model GPU of this renderer
+    pub material: Material, // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
+    pub flags: RendererFlags, // Flags
 }
 
 impl Default for Renderer {
     fn default() -> Self {
         Self {
+            index: 0,
             visible: true,
             model: ModelGPUObject::default(),
             material: Material::default(),

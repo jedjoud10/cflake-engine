@@ -57,8 +57,8 @@ pub enum RenderTask {
     ComputeRun(ComputeShaderGPUObject, (u16, u16, u16)),
     ComputeLock(ComputeShaderGPUObject),
     // Renderer
-    RendererAdd(SharedData<Renderer>),
-    RendererRemove(RendererGPUObject),
+    RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
+    RendererRemove(usize),
     RendererUpdateTransform(RendererGPUObject, SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector3<f32>)>),
     // Window settings
     WindowSizeUpdate(u16, u16, f32),

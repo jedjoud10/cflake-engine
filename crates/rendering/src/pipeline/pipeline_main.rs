@@ -24,7 +24,7 @@ pub mod pipec {
     use assets::{AssetManager, CachedObject};
 
     use crate::pipeline::object::*;
-    use crate::{Model, Pipeline, RenderTask, RenderTaskReturn, RenderTaskStatus, Shader, SharedData, SubShader, Texture, RENDER_PIPELINE};
+    use crate::{Model, Pipeline, RENDER_PIPELINE, RenderTask, RenderTaskReturn, RenderTaskStatus, Renderer, Shader, SharedData, SubShader, Texture};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
@@ -246,5 +246,9 @@ pub mod pipec {
     {
         let bytecount = std::mem::size_of::<T>();
         todo!();
+    }
+    // Update the renderers
+    pub fn add_renderer(renderer: Renderer, matrix: veclib::Matrix4x4<f32>) {
+        task_immediate_gpuobject(RenderTask::RendererAdd(SharedData::new((renderer, matrix)))).unwrap();
     }
 }

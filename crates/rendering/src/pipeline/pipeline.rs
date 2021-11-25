@@ -15,7 +15,7 @@ use std::{
 };
 
 // Run a command on the Render Thread
-fn command(command: RenderCommand) -> RenderTaskReturn {
+fn command(pr: PipelineRenderer, command: RenderCommand) -> RenderTaskReturn {
     // Handle the common cases
     match command.input_task {
         // Window
@@ -53,10 +53,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
             RenderTaskReturn::None
         }
         // Renderer
-        RenderTask::RendererAdd(shared_renderer) => {
-            Pipeline::add_renderer(shared_renderer);
-            RenderTaskReturn::None
-        }
+        RenderTask::RendererAdd(shared_renderer) => RenderTaskReturn::GPUObject(Pipeline::add_renderer(shared_renderer)),
         RenderTask::RendererRemove(renderer) => {
             Pipeline::remove_renderer(renderer);
             RenderTaskReturn::None
@@ -117,8 +114,6 @@ pub struct Pipeline {
     pub gpu_objects_names: HashMap<String, u128>, // A name to GPU initialization ID 
     pub render_to_main: Option<Receiver<RenderTaskStatus>>,        // RX (MainThread)
     pub main_to_render: Option<Sender<RenderCommand>>,             // TX (MainThread)
-    pub default_material: Material,
-    pub renderer: PipelineRenderer,
 }
 impl Pipeline {
     // Create the new render thread
@@ -215,7 +210,6 @@ impl Pipeline {
         );
         // Default material
         let dm = Material::new("Default material").set_shader(ds);
-        self.default_material = dm;
     }
     // Frame on the main thread
     pub fn frame_main_thread(&mut self) {
@@ -314,13 +308,17 @@ impl Pipeline {
         self.gpu_objects_names.contains_key(name)
     }
 }
-// Rendering stuff
+// Renderers
 impl Pipeline {
-    pub fn add_renderer(renderer: SharedData<Renderer>) -> RendererGPUObject {
-        todo!();
+    // Add the renderer to the renderer (lol I need better name)
+    pub fn add_renderer(&mut self, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> RendererGPUObject {
+        let renderer_gpuobject = Self::create_renderer(renderer.object.0);
+        self.renderer.add_renderer(renderer_gpuobject);
+        renderer_gpuobject
     }
-    pub fn remove_renderer(renderer: RendererGPUObject) {
-        todo!();
+    // Remove the renderer using it's renderer ID
+    pub fn remove_renderer(&mut self, renderer_id: usize) {
+        self.renderer.remove_renderer(renderer_id)
     }
 }
 
@@ -731,5 +729,11 @@ impl Pipeline {
     }
     pub fn lock_compute(compute: ComputeShaderGPUObject) {
         todo!();
+    }
+    pub fn create_renderer(renderer: Renderer) -> RendererGPUObject {
+        RendererGPUObject(renderer.model, Self::create_material(renderer.material))
+    }
+    pub fn create_material(material: Material) -> MaterialGPUObject {
+        MaterialGPUObject(material.shader, material.uniforms, material.flags)
     }
 }
