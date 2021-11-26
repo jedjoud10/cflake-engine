@@ -27,18 +27,19 @@ pub struct PipelineRenderer {
 }
 
 // Render debug primitives
-pub fn render_debug_primitives(primitives: Vec<(RendererGPUObject, veclib::Matrix4x4<f32>)>, camera: &CameraDataGPUObject) {
+pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &CameraDataGPUObject) {
     let vp_m = camera.projm * camera.viewm;
-    for (primitive, modelm) in primitives.iter() {
-        render(primitive, modelm, camera);
+    for primitive in &primitives {
+        render(primitive, camera);
     }
 }
 
 // Render a renderer normally
-pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
+pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject) {
     let shader = &(renderer.1).0;
     let material = &renderer.1;
     let model = &renderer.0;
+    let model_matrix = &renderer.2;
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     // Pass the MVP and the model matrix to the shader
@@ -65,10 +66,11 @@ pub fn render(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32
 }
 
 // Render a renderer using wireframe
-fn render_wireframe(renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
+fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
     let shader = &(renderer.1).0;
     let material = &renderer.1;
     let model = &renderer.0;
+    let model_matrix = &renderer.2;
     let mut group = ws.new_uniform_group();
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
@@ -188,15 +190,14 @@ impl PipelineRenderer {
     }
     // Called each frame, for each renderer that is valid in the pipeline
     pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
-        for renderer in self.renderers.elements.iter() {
-
-        }
-        // Should we render in wireframe or not?
-        if self.wireframe {
-            render_wireframe(renderer, model_matrix, camera, &self.wireframe_shader);
-        } else {
-            render(renderer, model_matrix, camera);
-        }
+        for renderer in self.renderers.elements.iter().filter_map(|x| x.as_ref()) {
+            // Should we render in wireframe or not?
+            if self.wireframe {
+                render_wireframe(renderer, camera, &self.wireframe_shader);
+            } else {
+                render(renderer, camera);
+            }
+        }        
     }
     // Post-render event
     pub fn post_render(&self /*, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject */, window: &mut glfw::Window) {

@@ -64,4 +64,5 @@ pub enum RenderTask {
     WindowSizeUpdate(u16, u16, f32),
     // Pipeline
     DestroyRenderThread(),
+    CameraDataUpdate(SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)>)
 }

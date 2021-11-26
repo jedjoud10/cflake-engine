@@ -22,6 +22,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         RenderTask::WindowSizeUpdate(width, height, aspect_ratio) => todo!(),
         // Pipeline
         RenderTask::DestroyRenderThread() => todo!(),
+        RenderTask::CameraDataUpdate(_) => RenderTaskReturn::None, 
         // Shaders
         RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
         RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
@@ -60,7 +61,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
 }
 
 // Poll commands that have been sent to us by the main thread
-fn poll_commands(pr: &mut PipelineRenderer, main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {    
+fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {    
     // We must loop through every command that we receive from the main thread
     for _command in main_to_render.try_iter() {        
         // Check special commands first
@@ -74,14 +75,36 @@ fn poll_commands(pr: &mut PipelineRenderer, main_to_render: &Receiver<RenderComm
             },
             // Renderer commands
             RenderTask::RendererAdd(shared_renderer) => {
+                println!("Add renderer");
                 let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
             },
             RenderTask::RendererRemove(renderer_id) => Pipeline::remove_renderer(pr, renderer_id),
+            // Camera update command
+            RenderTask::CameraDataUpdate(shared) => {
+                let pos = shared.object.0;
+                let rot = shared.object.1;
+                let clip_planes = shared.object.2;
+                let projm = shared.object.3;
+                // Calculate the view matrix using the position and rotation
+                let viewm = {
+                    let rm = veclib::Matrix4x4::from_quaternion(&rot);
+                    let forward_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0)).normalized();
+                    let up_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0)).normalized();
+                    veclib::Matrix4x4::look_at(&pos, &up_vector, &(forward_vector + pos))
+                };
+                *camera = CameraDataGPUObject {
+                    position: pos,
+                    rotation: rot,
+                    clip_planes,
+                    viewm,
+                    projm,
+                }
+            }
             _ => {
                 // Valid command
                 let returnobj = command(_command);
                 render_to_main.send(RenderTaskStatus::Successful(returnobj, message_id)).unwrap();
-            }
+            }            
         }   
     }
 }
@@ -93,12 +116,13 @@ fn frame(
     render_to_main: &Sender<RenderTaskStatus>,
     main_to_render: &Receiver<RenderCommand>,
     pipeline_renderer: &mut PipelineRenderer,
+    camera: &mut CameraDataGPUObject,
     valid: &mut bool,
     frame_count: u128,
     delta_time: f64,
 ) { 
     // Poll first
-    poll_commands(pipeline_renderer, main_to_render, valid, render_to_main);
+    poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main);
     // Pre-render
     pipeline_renderer.pre_render();
     // Render
@@ -168,6 +192,15 @@ impl Pipeline {
                 let mut pipeline_renderer = PipelineRenderer::default();
                 pipeline_renderer.init(veclib::Vector2::new(1280, 720));
 
+                // El camera
+                let mut camera = CameraDataGPUObject {
+                    position: veclib::Vector3::ZERO,
+                    rotation: veclib::Quaternion::IDENTITY,
+                    clip_planes: veclib::Vector2::ZERO,
+                    viewm: veclib::Matrix4x4::IDENTITY,
+                    projm: veclib::Matrix4x4::IDENTITY,
+                };
+
                 // We must render every frame
                 // Timing stuff
                 let mut last_time: f64 = 0.0;
@@ -184,7 +217,7 @@ impl Pipeline {
                     let delta = new_time - last_time;
                     last_time = new_time;
                     // Run the frame
-                    frame(glfw, window, &render_to_main, &main_to_render, &mut pipeline_renderer, &mut valid, frame_count, delta);
+                    frame(glfw, window, &render_to_main, &main_to_render, &mut pipeline_renderer, &mut camera, &mut valid, frame_count, delta);
                     frame_count += 1;
                 }
             });
@@ -314,11 +347,13 @@ impl Pipeline {
 impl Pipeline {
     // Add the renderer to the renderer (lol I need better name)
     pub fn add_renderer(pr: &mut PipelineRenderer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObject {
+        let matrix = &renderer.object.1;
         let renderer = &renderer.object.0;
         let model = renderer.model.clone();
         let material = Self::create_material(renderer.material.clone());
-        let renderer_gpuobject = RendererGPUObject(model, material);
+        let renderer_gpuobject = RendererGPUObject(model, material, *matrix);
         let x = pr.add_renderer(renderer_gpuobject);
+        println!("Index: {}", x);
         GPUObject::Renderer(x)
     }
     // Remove the renderer using it's renderer ID

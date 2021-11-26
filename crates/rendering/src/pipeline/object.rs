@@ -34,7 +34,7 @@ pub struct CameraDataGPUObject {
 #[derive(Default)]
 pub struct MaterialGPUObject(pub ShaderGPUObject, pub ShaderUniformsGroup, pub MaterialFlags);
 #[derive(Default)]
-pub struct RendererGPUObject(pub ModelGPUObject, pub MaterialGPUObject);
+pub struct RendererGPUObject(pub ModelGPUObject, pub MaterialGPUObject, pub veclib::Matrix4x4<f32>);
 
 pub mod uniform_setters {
     use crate::{ShaderGPUObject, TextureGPUObject, TextureShaderAccessType};
