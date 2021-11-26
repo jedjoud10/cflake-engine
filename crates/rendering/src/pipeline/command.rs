@@ -91,7 +91,7 @@ impl RenderTask {
             RenderTask::RendererUpdateTransform(_, _) => false,
             RenderTask::WindowSizeUpdate(_, _, _) => false,
             RenderTask::DestroyRenderThread() => false,
-            RenderTask::CameraDataUpdate(_) => false,
+            RenderTask::CameraDataUpdate(_) => true,
         }
     }
 }

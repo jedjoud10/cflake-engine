@@ -297,7 +297,6 @@ impl Pipeline {
             name = format!("_{}", self.next_command_name_id);
             self.next_command_name_id += 1;
         }
-        println!("TaskImmediate! {}", name);
         let should_wait = task.returns_to_main();
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
@@ -316,10 +315,8 @@ impl Pipeline {
                 RenderTaskStatus::Successful(x, _) => Some(x),
                 RenderTaskStatus::Failed => None,
             };
-            println!("TaskImmediate {} success!", name);
             output
         } else {
-            println!("TaskImmediate {} success! Though did not need to wait", name);
             Some(RenderTaskReturn::NoneUnwaitable)
         }
     }
@@ -333,7 +330,6 @@ impl Pipeline {
             name = format!("_{}", self.next_command_name_id);
             self.next_command_name_id += 1;
         }
-        println!("Task! {}", name);
         let has_data_for_main_thread = task.returns_to_main(); // Must figure out a better name for this
         let boxed_fn_mut: Box<dyn FnMut(RenderTaskStatus)> = Box::new(callback);
         // Create a new render command and send it to the separate thread
@@ -350,7 +346,6 @@ impl Pipeline {
             // This time, we must add this to the wait list
             self.render_commands_buffer.insert(name.clone(), boxed_fn_mut);
         }        
-        println!("Task! {} succsess", name);
     }
     // Internal immediate task. This assumes that we are already on the RenderThread
     pub fn internal_task_immediate(&mut self, task: RenderTask, mut name: String) -> Option<RenderTaskReturn> {
@@ -359,7 +354,6 @@ impl Pipeline {
             name = format!("_{}", self.next_command_name_id);
             self.next_command_name_id += 1;
         }
-        println!("InternalTaskImmediate! {}", name);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             name: name.clone(),
@@ -367,7 +361,6 @@ impl Pipeline {
         };
         // Just get the command lol
         let output = command(render_command);
-        println!("InternalTaskImmediate {} success!", name);
         Some(output)
     }
     // Get GPU object using it's specified name

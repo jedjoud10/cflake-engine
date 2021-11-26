@@ -65,15 +65,15 @@ pub mod pipec {
         unsafe { RENDER_PIPELINE.as_mut().task_immediate(task, name.to_string()) }
     }
     // Normal callback task
-    pub fn task<F>(task: RenderTask, name: String, callback: F)
+    pub fn task<F>(task: RenderTask, name: &str, callback: F)
     where
         F: FnMut(RenderTaskStatus) + 'static,
     {
-        unsafe { RENDER_PIPELINE.as_mut().task(task, name, callback) }
+        unsafe { RENDER_PIPELINE.as_mut().task(task, name.to_string(), callback) }
     }
     // Internal task
-    pub fn internal_task(task: RenderTask, name: String) -> Option<RenderTaskReturn> {
-        unsafe { RENDER_PIPELINE.as_mut().internal_task_immediate(task, name) }
+    pub fn internal_task(task: RenderTask, name: &str) -> Option<RenderTaskReturn> {
+        unsafe { RENDER_PIPELINE.as_mut().internal_task_immediate(task, name.to_string()) }
     }
     // Task immmediate, with the inner GPU object
     fn task_immediate_gpuobject(task: RenderTask, name: &str) -> Option<GPUObject> {
@@ -87,7 +87,7 @@ pub mod pipec {
     }
     // Internal immediate task, with the inner GPU object
     fn internal_task_gpuobject(task: RenderTask, name: &str) -> Option<GPUObject> {
-        match internal_task(task, name.to_string()) {
+        match internal_task(task, name) {
             Some(x) => match x {
                 RenderTaskReturn::GPUObject(x) => Some(x),
                 _ => None,
