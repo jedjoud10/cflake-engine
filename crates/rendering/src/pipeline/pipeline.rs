@@ -100,9 +100,9 @@ fn frame(
     // Poll first
     poll_commands(pipeline_renderer, main_to_render, valid, render_to_main);
     // Pre-render
-    //pipeline_renderer.pre_render();
+    pipeline_renderer.pre_render();
     // Render
-    //pipeline_renderer.renderer_frame(renderer, model_matrix, camera)
+    pipeline_renderer.renderer_frame(camera);
     // Post-render
     pipeline_renderer.post_render(window);
 }

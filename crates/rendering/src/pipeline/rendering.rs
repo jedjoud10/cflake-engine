@@ -187,8 +187,10 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, renderer: &RendererGPUObject, model_matrix: &veclib::Matrix4x4<f32>, camera: &CameraDataGPUObject) {
-        // TODO: Actually re-implement multi material renderers
+    pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
+        for renderer in self.renderers.elements.iter() {
+
+        }
         // Should we render in wireframe or not?
         if self.wireframe {
             render_wireframe(renderer, model_matrix, camera, &self.wireframe_shader);

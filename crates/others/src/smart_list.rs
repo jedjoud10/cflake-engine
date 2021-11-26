@@ -96,3 +96,25 @@ impl<T> SmartList<T> {
         return c;
     }
 }
+
+// Into iterator
+impl<T> IntoIterator for SmartList<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.elements.into_iter().filter_map(|x| x).collect::<Vec<T>>().into_iter()
+    }
+}
+
+impl<'a, T> IntoIterator for &'a SmartList<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let x = self.elements.iter();
+        let y = x.filter_map(|x| x.as_ref());
+        let z = y.collect::<Vec<T>>().iter();
+        z
+    }
+}
