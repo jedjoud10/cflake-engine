@@ -1,3 +1,5 @@
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+
 use crate::{utils::*};
 use assets::*;
 use bitflags::bitflags;
@@ -254,7 +256,7 @@ pub struct Texture {
 impl Default for Texture {
     fn default() -> Self {
         Self {
-            name: String::new(),
+            name: crate::pipeline::rname("texture"),
             bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,

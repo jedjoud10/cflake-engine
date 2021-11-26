@@ -68,10 +68,10 @@ fn poll_commands(
     render_to_main: &Sender<RenderTaskStatus>,
 ) {
     // We must loop through every command that we receive from the main thread
-    for _command in main_to_render.try_iter() {
+    for cmd in main_to_render.try_iter() {
         // Check special commands first
-        let message_id = _command.message_id;
-        match _command.input_task {
+        let name = cmd.name.clone();
+        match cmd.input_task {
             RenderTask::DestroyRenderThread() => {
                 // Destroy the render thread
                 *valid = false;
@@ -82,7 +82,7 @@ fn poll_commands(
             RenderTask::RendererAdd(shared_renderer) => {
                 println!("Add renderer");
                 let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
-                render_to_main.send(RenderTaskStatus::Successful(gpuobject, message_id)).unwrap();
+                render_to_main.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
             }
             RenderTask::RendererRemove(renderer_id) => Pipeline::remove_renderer(pr, renderer_id),
             // Camera update command
@@ -108,11 +108,11 @@ fn poll_commands(
             }
             _ => {
                 // Valid command
-                match command(_command) {
+                match command(cmd) {
                     RenderTaskReturn::None | RenderTaskReturn::NoneUnwaitable => { /* Fat bruh */ }
                     x => {
                         // Valid
-                        render_to_main.send(RenderTaskStatus::Successful(x, message_id)).unwrap();
+                        render_to_main.send(RenderTaskStatus::Successful(x, name)).unwrap();
                     }
                 }
             }
@@ -144,11 +144,10 @@ fn frame(
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
-pub struct Pipeline {
-    pub command_id: u128,                                                        // Next Command ID
-    pub render_commands_buffer: HashMap<u128, Box<dyn FnMut(RenderTaskStatus)>>, // The tasks that are asynchronous and are pending their return values
-    pub gpu_objects: HashMap<u128, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
-    pub gpu_objects_names: HashMap<String, u128>,                                // A name to GPU initialization ID
+pub struct Pipeline {    
+    pub next_command_name_id: u128,                                                 // Next Command ID
+    pub render_commands_buffer: HashMap<String, Box<dyn FnMut(RenderTaskStatus)>>, // The tasks that are asynchronous and are pending their return values
+    pub gpu_objects: HashMap<String, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
     pub render_to_main: Option<Receiver<RenderTaskStatus>>,                      // RX (MainThread)
     pub main_to_render: Option<Sender<RenderCommand>>,                           // TX (MainThread)
 }
@@ -272,66 +271,74 @@ impl Pipeline {
         // Receive the return data that was sent from the render thread
         let render_to_main = self.render_to_main.as_ref().unwrap();
         for received in render_to_main.try_iter() {
-            let (task_return, message_id) = match received {
-                RenderTaskStatus::Successful(x, message_id) => (x, message_id),
+            let (task_return, name) = match received {
+                RenderTaskStatus::Successful(x, name) => (x, name),
                 RenderTaskStatus::Failed => panic!(),
             };
             // Call the callbacks
-            let mut callback = self.render_commands_buffer.remove(&message_id).unwrap();
+            let mut callback = self.render_commands_buffer.remove(&name).unwrap();
             match &task_return {
                 RenderTaskReturn::GPUObject(x) => {
-                    self.gpu_objects.insert(message_id, x.clone());
+                    self.gpu_objects.insert(name.clone(), x.clone());
                 }
                 _ => {}
             }
-            callback(RenderTaskStatus::Successful(task_return, message_id));
+            callback(RenderTaskStatus::Successful(task_return, name));
         }
     }
     // Dispose of the current render thread and pipeline
     pub fn dispose_pipeline(&mut self) {
-        self.task_immediate(RenderTask::DestroyRenderThread());
+        self.task_immediate(RenderTask::DestroyRenderThread(), "dispose_pipeline".to_string());
     }
     // Complete a task immediatly
-    pub fn task_immediate(&mut self, task: RenderTask) -> Option<RenderTaskReturn> {
-        println!("TaskImmediate! {}", self.command_id);
+    pub fn task_immediate(&mut self, task: RenderTask, mut name: String) -> Option<RenderTaskReturn> {
+        // If the name is null, we must use the next_command_name_id
+        if name.is_empty() {
+            name = format!("_{}", self.next_command_name_id);
+            self.next_command_name_id += 1;
+        }
+        println!("TaskImmediate! {}", name);
         let should_wait = task.returns_to_main();
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
-            message_id: self.command_id,
+            name: name.clone(),
             input_task: task,
         };
         // Send the command to the render thread
-        let tx = self.main_to_render.as_ref().unwrap();
+        let tx = self.main_to_render.as_ref().unwrap(); 
         let rx = self.render_to_main.as_ref().unwrap();
 
         // Send the command
         tx.send(render_command).unwrap();
-        // Increment
-        self.command_id += 1;
         // Wait for the result (only if we need to)
         if should_wait {
             let output = match rx.recv().ok()? {
                 RenderTaskStatus::Successful(x, _) => Some(x),
                 RenderTaskStatus::Failed => None,
             };
-            println!("TaskImmediate {} success!", self.command_id - 1);
+            println!("TaskImmediate {} success!", name);
             output
         } else {
-            println!("TaskImmediate {} success! Though did not need to wait", self.command_id - 1);
+            println!("TaskImmediate {} success! Though did not need to wait", name);
             Some(RenderTaskReturn::NoneUnwaitable)
         }
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
-    pub fn task<F>(&mut self, task: RenderTask, callback: F)
+    pub fn task<F>(&mut self, task: RenderTask, mut name: String, callback: F)
     where
         F: FnMut(RenderTaskStatus) + 'static,
     {
-        println!("Task! {}", self.command_id);
+        // If the name is null, we must use the next_command_name_id
+        if name.is_empty() {
+            name = format!("_{}", self.next_command_name_id);
+            self.next_command_name_id += 1;
+        }
+        println!("Task! {}", name);
         let has_data_for_main_thread = task.returns_to_main(); // Must figure out a better name for this
         let boxed_fn_mut: Box<dyn FnMut(RenderTaskStatus)> = Box::new(callback);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
-            message_id: self.command_id,
+            name: name.clone(),
             input_task: task,
         };
         // Send the command to the render thread
@@ -341,36 +348,35 @@ impl Pipeline {
         tx.send(render_command).unwrap();
         if has_data_for_main_thread {
             // This time, we must add this to the wait list
-            self.render_commands_buffer.insert(self.command_id, boxed_fn_mut);
+            self.render_commands_buffer.insert(name.clone(), boxed_fn_mut);
         }        
-        // Increment
-        self.command_id += 1;
-        println!("Task! {} succsess", self.command_id);
+        println!("Task! {} succsess", name);
     }
     // Internal immediate task. This assumes that we are already on the RenderThread
-    pub fn internal_task_immediate(&mut self, task: RenderTask) -> Option<RenderTaskReturn> {
-        println!("InternalTaskImmediate! {}", self.command_id);
+    pub fn internal_task_immediate(&mut self, task: RenderTask, mut name: String) -> Option<RenderTaskReturn> {
+        // If the name is null, we must use the next_command_name_id
+        if name.is_empty() {
+            name = format!("_{}", self.next_command_name_id);
+            self.next_command_name_id += 1;
+        }
+        println!("InternalTaskImmediate! {}", name);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
-            message_id: self.command_id,
+            name: name.clone(),
             input_task: task,
         };
         // Just get the command lol
         let output = command(render_command);
-        // Increment
-        self.command_id += 1;
-        println!("InternalTaskImmediate {} success!", self.command_id - 1);
+        println!("InternalTaskImmediate {} success!", name);
         Some(output)
     }
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
-        // Convert the name to an ID first
-        let id = self.gpu_objects_names[name];
-        self.gpu_objects.get(&id).unwrap()
+        self.gpu_objects.get(name).unwrap()
     }
     // Check if a GPU object exists
     pub fn gpu_object_valid(&self, name: &str) -> bool {
-        self.gpu_objects_names.contains_key(name)
+        self.gpu_objects.contains_key(name)
     }
 }
 // Renderers

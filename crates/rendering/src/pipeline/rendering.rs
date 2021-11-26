@@ -103,6 +103,7 @@ impl PipelineRenderer {
             uvs: vec![vec2(1.0, 0.0), vec2(0.0, 1.0), vec2(0.0, 0.0), vec2(1.0, 1.0)],
             colors: vec![veclib::Vector3::ZERO; 4],
             triangles: vec![0, 1, 2, 0, 3, 1],
+            ..Model::default()
         };
         self.quad_model = pipec::imodel(quad);
         self.screen_shader = pipec::ishader(

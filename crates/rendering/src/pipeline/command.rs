@@ -33,14 +33,14 @@ pub enum SpecialPipelineMessage {
 
 // The task status that is sent back to the main thread
 pub enum RenderTaskStatus {
-    Successful(RenderTaskReturn, u128), // GG EZ
+    Successful(RenderTaskReturn, String), // GG EZ
     Failed,                             // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
 }
 
 // A render command
 pub struct RenderCommand {
     // Message stuff
-    pub message_id: u128,
+    pub name: String,
     pub input_task: RenderTask,
 }
 // A render task (A specific message passed to the render thread)

@@ -1,3 +1,5 @@
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+
 use crate::{Pipeline};
 
 
@@ -19,6 +21,15 @@ impl<T> StaticMut<T> {
 
 // Static mut RenderPipeline
 pub static mut RENDER_PIPELINE: StaticMut<Pipeline> = StaticMut::EMPTY;
+
+pub fn rname(prefix: &str) -> String {
+    // Create a randomized name for a texture without a name
+    let mut hash = DefaultHasher::new();
+    let st = std::time::SystemTime::now();
+    st.hash(&mut hash);
+    let x = hash.finish();
+    format!("{}_{:x}", prefix, x).to_string()    
+}
 
 pub mod pipec {
     use assets::{CachedObject};
@@ -50,23 +61,23 @@ pub mod pipec {
         }
     }
     // Immediate Task
-    pub fn task_immediate(task: RenderTask) -> Option<RenderTaskReturn> {
-        unsafe { RENDER_PIPELINE.as_mut().task_immediate(task) }
+    pub fn task_immediate(task: RenderTask, name: &str) -> Option<RenderTaskReturn> {
+        unsafe { RENDER_PIPELINE.as_mut().task_immediate(task, name.to_string()) }
     }
     // Normal callback task
-    pub fn task<F>(task: RenderTask, callback: F)
+    pub fn task<F>(task: RenderTask, name: String, callback: F)
     where
         F: FnMut(RenderTaskStatus) + 'static,
     {
-        unsafe { RENDER_PIPELINE.as_mut().task(task, callback) }
+        unsafe { RENDER_PIPELINE.as_mut().task(task, name, callback) }
     }
     // Internal task
-    pub fn internal_task(task: RenderTask) -> Option<RenderTaskReturn> {
-        unsafe { RENDER_PIPELINE.as_mut().internal_task_immediate(task) }
+    pub fn internal_task(task: RenderTask, name: String) -> Option<RenderTaskReturn> {
+        unsafe { RENDER_PIPELINE.as_mut().internal_task_immediate(task, name) }
     }
     // Task immmediate, with the inner GPU object
-    fn task_immediate_gpuobject(task: RenderTask) -> Option<GPUObject> {
-        match task_immediate(task) {
+    fn task_immediate_gpuobject(task: RenderTask, name: &str) -> Option<GPUObject> {
+        match task_immediate(task, name) {
             Some(x) => match x {
                 RenderTaskReturn::GPUObject(x) => Some(x),
                 _ => None,
@@ -75,8 +86,8 @@ pub mod pipec {
         }
     }
     // Internal immediate task, with the inner GPU object
-    fn internal_task_gpuobject(task: RenderTask) -> Option<GPUObject> {
-        match internal_task(task) {
+    fn internal_task_gpuobject(task: RenderTask, name: &str) -> Option<GPUObject> {
+        match internal_task(task, name.to_string()) {
             Some(x) => match x {
                 RenderTaskReturn::GPUObject(x) => Some(x),
                 _ => None,
@@ -86,31 +97,36 @@ pub mod pipec {
     }
     // Actual commands start here
     fn create_texture(texture: Texture) -> TextureGPUObject {
-        match task_immediate_gpuobject(RenderTask::TextureCreate(SharedData::new(texture))).unwrap() {
+        let name = texture.name.clone();
+        match task_immediate_gpuobject(RenderTask::TextureCreate(SharedData::new(texture)), &format!("crt_txtre_{}", name)).unwrap() {
             GPUObject::Texture(x) => x,
             _ => panic!(),
         }
     }
     fn create_subshader(subshader: SubShader) -> SubShaderGPUObject {
-        match task_immediate_gpuobject(RenderTask::SubShaderCreate(SharedData::new(subshader))).unwrap() {
+        let name = subshader.name.clone();
+        match task_immediate_gpuobject(RenderTask::SubShaderCreate(SharedData::new(subshader)), &format!("crt_sbshdr_{}", name)).unwrap() {
             GPUObject::SubShader(x) => x,
             _ => panic!(),
         }
     }
     fn create_shader(shader: Shader) -> ShaderGPUObject {
-        match task_immediate_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+        let name = shader.name.clone();
+        match task_immediate_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader)), &format!("crt_shdr_{}", name)).unwrap() {
             GPUObject::Shader(x) => x,
             _ => panic!(),
         }
     }
     fn create_compute_shader(shader: Shader) -> ComputeShaderGPUObject {
-        match task_immediate_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+        let name = shader.name.clone();
+        match task_immediate_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader)), &format!("crt_cmptshdr_{}", name)).unwrap() {
             GPUObject::ComputeShader(x) => x,
             _ => panic!(),
         }
     }
     fn create_model(model: Model) -> ModelGPUObject {
-        match task_immediate_gpuobject(RenderTask::ModelCreate(SharedData::new(model))).unwrap() {
+        let name = model.name.clone();
+        match task_immediate_gpuobject(RenderTask::ModelCreate(SharedData::new(model)), &format!("crt_mdl{}", name)).unwrap() {
             GPUObject::Model(x) => x,
             _ => panic!(),
         }
@@ -192,31 +208,36 @@ pub mod pipec {
     }
     // And their internal counterpart, whoever, these don't cache/load. They alway do the conversion
     pub fn isubshader(subshader: SubShader) -> SubShaderGPUObject {
-        match internal_task_gpuobject(RenderTask::SubShaderCreate(SharedData::new(subshader))).unwrap() {
+        let name = subshader.name.clone();
+        match internal_task_gpuobject(RenderTask::SubShaderCreate(SharedData::new(subshader)), &format!("icrt_sbshdr_{}", name)).unwrap() {
             GPUObject::SubShader(x) => x,
             _ => panic!(),
         }
     }
     pub fn ishader(shader: Shader) -> ShaderGPUObject {
-        match internal_task_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+        let name = shader.name.clone();
+        match internal_task_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader)), &format!("icrt_shdr_{}", name)).unwrap() {
             GPUObject::Shader(x) => x,
             _ => panic!(),
         }
     }
     pub fn icompute_shader(shader: Shader) -> ComputeShaderGPUObject {
-        match internal_task_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader))).unwrap() {
+        let name = shader.name.clone();
+        match internal_task_gpuobject(RenderTask::ShaderCreate(SharedData::new(shader)), &format!("icrt_cmptshdr_{}", name)).unwrap() {
             GPUObject::ComputeShader(x) => x,
             _ => panic!(),
         }
     }
     pub fn itexture(texture: Texture) -> TextureGPUObject {
-        match internal_task_gpuobject(RenderTask::TextureCreate(SharedData::new(texture))).unwrap() {
+        let name = texture.name.clone();
+        match internal_task_gpuobject(RenderTask::TextureCreate(SharedData::new(texture)), &format!("icrt_txtre_{}", name)).unwrap() {
             GPUObject::Texture(x) => x,
             _ => panic!(),
         }
     }
     pub fn imodel(model: Model) -> ModelGPUObject {
-        match internal_task_gpuobject(RenderTask::ModelCreate(SharedData::new(model))).unwrap() {
+        let name = model.name.clone();
+        match internal_task_gpuobject(RenderTask::ModelCreate(SharedData::new(model)), &format!("icrt_mdl_{}", name)).unwrap() {
             GPUObject::Model(x) => x,
             _ => panic!(),
         }
@@ -266,12 +287,12 @@ pub mod pipec {
     }
     // Renderers
     pub fn add_renderer(renderer: Renderer, matrix: veclib::Matrix4x4<f32>) -> usize {
-        match task_immediate_gpuobject(RenderTask::RendererAdd(SharedData::new((renderer, matrix)))).unwrap() {
+        match task_immediate_gpuobject(RenderTask::RendererAdd(SharedData::new((renderer, matrix))), "").unwrap() {
             GPUObject::Renderer(x) => x,
             _ => panic!(),
         }
     }
     pub fn remove_renderer(index: usize) {
-        task_immediate_gpuobject(RenderTask::RendererRemove(index)).unwrap();
+        task_immediate_gpuobject(RenderTask::RendererRemove(index), "").unwrap();
     }
 }

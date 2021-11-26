@@ -32,6 +32,7 @@ impl ProceduralModelGenerator {
             uvs: todo!(),
             colors: todo!(),
             triangles: todo!(),
+            ..Model::default()
         };
     }
 }

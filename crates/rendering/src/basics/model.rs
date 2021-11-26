@@ -1,8 +1,9 @@
 
 
 // A simple model that holds vertex, normal, and color data
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Model {
+    pub name: String,
     pub vertices: Vec<veclib::Vector3<f32>>,
     pub normals: Vec<veclib::Vector3<f32>>,
     pub tangents: Vec<veclib::Vector4<f32>>,
@@ -11,18 +12,21 @@ pub struct Model {
     pub triangles: Vec<u32>,
 }
 
-impl Model {
-    // Create a new empty model
-    pub fn new() -> Self {
+impl Default for Model {
+    fn default() -> Self {
         Self {
+            name: crate::pipeline::rname("model"),
             vertices: Vec::new(),
             normals: Vec::new(),
             tangents: Vec::new(),
             uvs: Vec::new(),
             colors: Vec::new(),
             triangles: Vec::new(),
-        }
+        }    
     }
+}
+
+impl Model {
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
         for i in (0..self.triangles.len()).step_by(3) {

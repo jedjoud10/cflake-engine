@@ -81,8 +81,8 @@ impl VoxelGenerator {
         // Read back the compute shader data
         self.compute.lock_state();
         // Read back the texture into the data buffer
-        let voxel_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.voxel_texture, 4)).unwrap();
-        let material_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.material_texture, 2)).unwrap();
+        let voxel_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.voxel_texture, 4), "get_voxel_density").unwrap();
+        let material_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.material_texture, 2), "get_voxel_material").unwrap();
         let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
         let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values
