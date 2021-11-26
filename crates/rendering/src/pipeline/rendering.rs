@@ -1,13 +1,13 @@
-use std::ffi::CString;
+
 use std::ptr::null;
 
-use assets::{AssetManager, AssetObject, Object};
+use assets::{Object};
 use glfw::Context;
 use others::SmartList;
 
-use crate::basics::texture::*;
-use crate::{pipec, pipeline::object::*, FrameStats, Material, MaterialFlags, Renderer, Texture, TextureType};
-use crate::{DataType, Shader, Uniform};
+
+use crate::{pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
+use crate::{Shader};
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
@@ -28,7 +28,7 @@ pub struct PipelineRenderer {
 
 // Render debug primitives
 pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &CameraDataGPUObject) {
-    let vp_m = camera.projm * camera.viewm;
+    let _vp_m = camera.projm * camera.viewm;
     for primitive in &primitives {
         render(primitive, camera);
     }
@@ -36,7 +36,7 @@ pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &Came
 
 // Render a renderer normally
 pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject) {
-    let shader = &(renderer.1).0;
+    let _shader = &(renderer.1).0;
     let material = &renderer.1;
     let model = &renderer.0;
     let model_matrix = &renderer.2;
@@ -67,8 +67,8 @@ pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject) {
 
 // Render a renderer using wireframe
 fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
-    let shader = &(renderer.1).0;
-    let material = &renderer.1;
+    let _shader = &(renderer.1).0;
+    let _material = &renderer.1;
     let model = &renderer.0;
     let model_matrix = &renderer.2;
     let mut group = ws.new_uniform_group();
@@ -95,7 +95,7 @@ fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, 
 
 impl PipelineRenderer {
     // Init the pipeline renderer
-    pub fn init(&mut self, dimensions: veclib::Vector2<u16>) {
+    pub fn init(&mut self, _dimensions: veclib::Vector2<u16>) {
         // Create the quad model
         use crate::basics::Model;
         use veclib::consts::*;

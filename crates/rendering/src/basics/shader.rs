@@ -1,20 +1,20 @@
 use crate::pipec;
 use crate::utils::RenderingError;
-use crate::GPUObject;
+
 use crate::SubShaderGPUObject;
 
 use super::SubShader;
-use super::SubShaderType;
-use super::Texture;
-use super::TextureShaderAccessType;
+
+
+
 use assets::Asset;
-use assets::AssetManager;
+
 use assets::Object;
-use gl;
+
 
 use std::collections::HashSet;
-use std::ffi::CString;
-use std::rc::Rc;
+
+
 use std::sync::Arc;
 
 // A shader that contains two sub shaders that are compiled independently
@@ -136,7 +136,7 @@ impl Shader {
                     pipec::subshader(subshader.clone())
                 });
                 let mut object_cacher = assets::alocc::object_cacher();
-                let rc_subshader: Arc<SubShader> = object_cacher.cache(subshader_path, subshader).unwrap();
+                let _rc_subshader: Arc<SubShader> = object_cacher.cache(subshader_path, subshader).unwrap();
             }
         }
         Ok(self)

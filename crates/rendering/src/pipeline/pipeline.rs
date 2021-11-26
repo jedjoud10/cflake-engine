@@ -1,4 +1,4 @@
-use assets::AssetManager;
+
 use glfw::Context;
 
 use super::object::*;
@@ -10,7 +10,6 @@ use std::{
     ptr::null,
     sync::{
         mpsc::{Receiver, Sender},
-        Arc, Mutex,
     },
 };
 
@@ -19,14 +18,14 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
     // Handle the common cases
     match command.input_task {
         // Window
-        RenderTask::WindowSizeUpdate(width, height, aspect_ratio) => todo!(),
+        RenderTask::WindowSizeUpdate(_width, _height, _aspect_ratio) => todo!(),
         // Pipeline
         RenderTask::DestroyRenderThread() => todo!(),
         RenderTask::CameraDataUpdate(_) => RenderTaskReturn::None,
         // Shaders
         RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
         RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
-        RenderTask::ShaderUniformGroup(shared_uniformgroup) => todo!(),
+        RenderTask::ShaderUniformGroup(_shared_uniformgroup) => todo!(),
         // Textures
         RenderTask::TextureCreate(shared_texture) => RenderTaskReturn::GPUObject(Pipeline::generate_texture(shared_texture)),
         RenderTask::TextureUpdateSize(texture, ttype) => {
@@ -56,7 +55,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         // Renderer
         RenderTask::RendererAdd(_) => RenderTaskReturn::None,
         RenderTask::RendererRemove(_) => RenderTaskReturn::None,
-        RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),
+        RenderTask::RendererUpdateTransform(_renderer, _transform) => todo!(),
     }
 }
 
@@ -123,15 +122,15 @@ fn poll_commands(
 
 // The render thread that is continuously being ran
 fn frame(
-    glfw: &mut glfw::Glfw,
+    _glfw: &mut glfw::Glfw,
     window: &mut glfw::Window,
     render_to_main: &Sender<RenderTaskStatus>,
     main_to_render: &Receiver<RenderCommand>,
     pipeline_renderer: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
     valid: &mut bool,
-    frame_count: u128,
-    delta_time: f64,
+    _frame_count: u128,
+    _delta_time: f64,
 ) {
     // Poll first
     poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main);
@@ -247,7 +246,7 @@ impl Pipeline {
         // Wait for the init message...
         let i = std::time::Instant::now();
         println!("Waiting for RenderThread init confirmation...");
-        let x = rx3.recv().unwrap();
+        let _x = rx3.recv().unwrap();
         println!("Received RenderThread init confirmation! Took {}ms to init RenderThread", i.elapsed().as_millis());
         // Vars
         self.render_to_main = Some(rx);
@@ -266,7 +265,7 @@ impl Pipeline {
                 .unwrap(),
         );
         // Default material
-        let dm = Material::new("Default material").set_shader(ds);
+        let _dm = Material::new("Default material").set_shader(ds);
     }
     // Frame on the main thread
     pub fn frame_main_thread(&mut self) {
@@ -316,10 +315,10 @@ impl Pipeline {
                 RenderTaskStatus::Failed => None,
             };
             println!("TaskImmediate {} success!", self.command_id - 1);
-            return output;
+            output
         } else {
             println!("TaskImmediate {} success! Though did not need to wait", self.command_id - 1);
-            return Some(RenderTaskReturn::NoneUnwaitable);
+            Some(RenderTaskReturn::NoneUnwaitable)
         }
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
@@ -358,7 +357,7 @@ impl Pipeline {
         // Increment
         self.command_id += 1;
         println!("InternalTaskImmediate {} success!", self.command_id - 1);
-        return Some(output);
+        Some(output)
     }
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
@@ -792,10 +791,10 @@ impl Pipeline {
         }
         pixels
     }
-    pub fn run_compute(compute: ComputeShaderGPUObject, indices: (u16, u16, u16)) {
+    pub fn run_compute(_compute: ComputeShaderGPUObject, _indices: (u16, u16, u16)) {
         todo!();
     }
-    pub fn lock_compute(compute: ComputeShaderGPUObject) {
+    pub fn lock_compute(_compute: ComputeShaderGPUObject) {
         todo!();
     }
     pub fn create_material(material: Material) -> MaterialGPUObject {

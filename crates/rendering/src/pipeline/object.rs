@@ -37,14 +37,14 @@ pub struct MaterialGPUObject(pub ShaderGPUObject, pub ShaderUniformsGroup, pub M
 pub struct RendererGPUObject(pub ModelGPUObject, pub MaterialGPUObject, pub veclib::Matrix4x4<f32>);
 
 pub mod uniform_setters {
-    use crate::{ShaderGPUObject, TextureGPUObject, TextureShaderAccessType};
+    use crate::{TextureGPUObject, TextureShaderAccessType};
     use std::ffi::CString;
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
     pub fn get_uniform_location(shader: u32, name: &str) -> i32 {
         unsafe {
-            let x = gl::GetUniformLocation(shader, CString::new(name).unwrap().as_ptr());
-            x
+            
+            gl::GetUniformLocation(shader, CString::new(name).unwrap().as_ptr())
         }
     }
     // Set a f32 uniform
@@ -159,7 +159,7 @@ fn run_shader_uniform_group(shader: u32, group: &ShaderUniformsGroup) {
                 Uniform::Texture2DArray(x, y) => set_t2da(index, x, y),
                 Uniform::Image2D(x, y) => set_i2d(index, x, y),
                 Uniform::Image3D(x, y) => set_i3d(index, x, y),
-                Uniform::Bool(x) => todo!(),
+                Uniform::Bool(_x) => todo!(),
             }
         }
     }
@@ -181,7 +181,7 @@ impl ShaderUniformsGroup {
         for a in y {
             x.insert(a.0, a.1);
         }
-        return Self { shader, uniforms: x };
+        Self { shader, uniforms: x }
     }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
@@ -283,7 +283,7 @@ impl ComputeShaderGPUObject {
 
 impl ComputeShaderGPUObject {
     // Compute shader stuff you know
-    pub fn run(&self, x: u16, y: u16, z: u16) {}
+    pub fn run(&self, _x: u16, _y: u16, _z: u16) {}
     pub fn lock_state(&self) {}
 }
 

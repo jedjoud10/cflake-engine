@@ -1,6 +1,6 @@
 use crate::basics::*;
 use crate::utils::*;
-use assets::CachedObject;
+
 use assets::{Asset, AssetObject, Object};
 
 // All the Asset trait implementations are here
@@ -11,7 +11,7 @@ impl Asset for Texture {
         Self: Sized,
     {
         // Load this texture from the bytes
-        let (bytes, width, height) = Self::read_bytes(data);
+        let (_bytes, width, height) = Self::read_bytes(data);
         // Return a texture with the default parameters
         let texture = self
             .set_dimensions(TextureType::Texture2D(width, height))

@@ -1,9 +1,9 @@
-use crate::{utils::*, GPUObject};
+use crate::{utils::*};
 use assets::*;
 use bitflags::bitflags;
 use gl;
 use image::{EncodableLayout, GenericImageView};
-use std::{ffi::c_void, ptr::null};
+
 bitflags! {
     pub struct TextureFlags: u8 {
         const MUTABLE = 0b00000001;
@@ -212,7 +212,7 @@ impl TextureType {
     // Get the height of this texture
     pub fn get_height(&self) -> u16 {
         match self {
-            TextureType::Texture1D(y) => panic!(),
+            TextureType::Texture1D(_y) => panic!(),
             TextureType::Texture2D(_, y) => *y,
             TextureType::Texture3D(_, y, _) => *y,
             TextureType::TextureArray(_, y, _) => *y,
@@ -398,7 +398,7 @@ impl Texture {
     pub fn create_texturearray(texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> (Vec<Vec<u8>>, TextureType) {
         // Load the textures
         let mut bytes: Vec<Vec<u8>> = Vec::new();
-        let name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
+        let _name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
         let length = texture_paths.len() as u16;
         for x in texture_paths {
             // Load this texture from the bytes

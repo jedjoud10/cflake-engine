@@ -1,6 +1,6 @@
-use super::{model::Model, Material};
-use crate::{GPUObject, ModelGPUObject};
-use assets::{Asset, AssetManager};
+use super::{Material};
+use crate::{ModelGPUObject};
+
 
 use bitflags::bitflags;
 // Yup

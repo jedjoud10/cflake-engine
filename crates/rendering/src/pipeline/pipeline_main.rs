@@ -1,5 +1,5 @@
-use crate::{GPUObject, Pipeline};
-use std::{collections::HashMap, iter::FromIterator};
+use crate::{Pipeline};
+
 
 pub struct StaticMut<T> {
     opt: Option<T>,
@@ -21,7 +21,7 @@ impl<T> StaticMut<T> {
 pub static mut RENDER_PIPELINE: StaticMut<Pipeline> = StaticMut::EMPTY;
 
 pub mod pipec {
-    use assets::{AssetManager, CachedObject};
+    use assets::{CachedObject};
 
     use crate::pipeline::object::*;
     use crate::{Model, Pipeline, RenderTask, RenderTaskReturn, RenderTaskStatus, Renderer, Shader, SharedData, SubShader, Texture, RENDER_PIPELINE};
@@ -182,7 +182,7 @@ pub mod pipec {
         if gpu_object_valid(&texture.name) {
             get_texture_object(&texture.name)
         } else {
-            create_texture(texture.clone())
+            create_texture(texture)
         }
     }
     pub fn model(model: Model) -> ModelGPUObject {
@@ -248,19 +248,19 @@ pub mod pipec {
         }
     }
     // Read the data from an array that was filled using a texture
-    pub fn convert_native<T>(taskreturn: RenderTaskReturn) -> Vec<T>
+    pub fn convert_native<T>(_taskreturn: RenderTaskReturn) -> Vec<T>
     where
         T: Default + Clone + Sized,
     {
-        let bytecount = std::mem::size_of::<T>();
+        let _bytecount = std::mem::size_of::<T>();
         todo!();
     }
-    pub fn convert_native_veclib<T, U>(taskreturn: RenderTaskReturn) -> Vec<T>
+    pub fn convert_native_veclib<T, U>(_taskreturn: RenderTaskReturn) -> Vec<T>
     where
         T: veclib::Vector<U> + Default + Clone,
         U: veclib::DefaultStates,
     {
-        let bytecount = std::mem::size_of::<T>();
+        let _bytecount = std::mem::size_of::<T>();
         todo!();
     }
     // Renderers

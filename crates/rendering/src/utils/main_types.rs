@@ -1,6 +1,6 @@
 use crate::pipeline::object::*;
-use crate::{basics::Texture, TextureShaderAccessType};
-use std::rc::Rc;
+use crate::{TextureShaderAccessType};
+
 
 // Some default uniforms that we will set
 #[derive(Clone)]

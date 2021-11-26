@@ -1,10 +1,10 @@
 use crate::basics::*;
 use crate::pipeline::*;
-use crate::utils::*;
-use assets::{AssetManager, AssetObject, Object};
+
+use assets::{AssetObject, Object};
 use bitflags::bitflags;
-use std::sync::Arc;
-use std::{collections::HashMap, rc::Rc};
+
+
 
 bitflags! {
     pub struct MaterialFlags: u8 {

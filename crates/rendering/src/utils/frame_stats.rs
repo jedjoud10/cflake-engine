@@ -2,9 +2,9 @@ use crate::basics::Shader;
 use crate::basics::*;
 use crate::pipec;
 use crate::pipeline::*;
-use crate::utils::*;
-use assets::AssetManager;
-use others::SmartList;
+
+
+
 
 // Debugs some data about the current frame in a 64x256 texture. Could be used to graph the FPS or memory usage
 #[derive(Default)]
@@ -37,7 +37,7 @@ impl FrameStats {
         group.set_f32("fps", time.fps as f32);
         // Limit the number of entities to 131072
         entities.resize(512, false);
-        let vec = entities.iter().map(|x| if *x { 255 } else { 0 }).collect::<Vec<u8>>();
+        let _vec = entities.iter().map(|x| if *x { 255 } else { 0 }).collect::<Vec<u8>>();
         //self.entities_texture.update_data(vec);
         group.set_t1d("entities_texture", self.entities_texture, 1);
 
