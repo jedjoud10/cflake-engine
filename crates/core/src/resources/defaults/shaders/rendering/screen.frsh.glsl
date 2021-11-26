@@ -21,7 +21,6 @@ uniform float test;
 
 void main() {
 	vec2 uvs = uv_coordinates;
-	/*
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
@@ -82,6 +81,4 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-	*/
-	color = texture(default_sky_gradient, uvs).rgb;
 }

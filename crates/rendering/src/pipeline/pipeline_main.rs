@@ -24,7 +24,8 @@ pub mod pipec {
     use assets::{CachedObject};
 
     use crate::pipeline::object::*;
-    use crate::{Model, Pipeline, RenderTask, RenderTaskReturn, RenderTaskStatus, Renderer, Shader, SharedData, SubShader, Texture, RENDER_PIPELINE};
+    use crate::{Model, Pipeline, RenderTaskReturn, RenderTaskStatus, Renderer, Shader, SharedData, SubShader, Texture, RENDER_PIPELINE};
+    pub use crate::RenderTask;
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {

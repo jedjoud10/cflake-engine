@@ -327,6 +327,7 @@ impl Pipeline {
         F: FnMut(RenderTaskStatus) + 'static,
     {
         println!("Task! {}", self.command_id);
+        let has_data_for_main_thread = task.returns_to_main(); // Must figure out a better name for this
         let boxed_fn_mut: Box<dyn FnMut(RenderTaskStatus)> = Box::new(callback);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
@@ -338,8 +339,10 @@ impl Pipeline {
 
         // Send the command
         tx.send(render_command).unwrap();
-        // This time, we must add this to the wait list
-        self.render_commands_buffer.insert(self.command_id, boxed_fn_mut);
+        if has_data_for_main_thread {
+            // This time, we must add this to the wait list
+            self.render_commands_buffer.insert(self.command_id, boxed_fn_mut);
+        }        
         // Increment
         self.command_id += 1;
         println!("Task! {} succsess", self.command_id);

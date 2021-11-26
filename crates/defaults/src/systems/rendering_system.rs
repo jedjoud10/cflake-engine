@@ -27,6 +27,18 @@ fn remove_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
 }
 // Send the updated data from the entity to the render pipeline as commands
 fn update_entity(sd: &mut SystemData, entity: &Entity, flc: &FilteredLinkedComponents, data: &mut WorldData) {}
+// System prefire so we can send the camera data to the render pipeline
+fn system_prefire(sd: &mut SystemData, data: &mut WorldData) {
+    // Camera data
+    let camera = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
+    let cd = camera.get_component::<components::Camera>(data.component_manager).unwrap();
+    // Transform data
+    let ct = camera.get_component::<components::Transform>(data.component_manager).unwrap();
+    let pos = ct.position;
+    let rot = ct.rotation;
+    let shared_data = rendering::SharedData::new((pos, rot, cd.clip_planes, cd.projection_matrix));
+    pipec::task(pipec::RenderTask::CameraDataUpdate(shared_data), |_| { println!("Update the camera data") })
+}
 
 // Create a rendering system
 pub fn system(data: &mut WorldData) -> System {
@@ -38,6 +50,7 @@ pub fn system(data: &mut WorldData) -> System {
     system.event(SystemEventType::EntityAdded(add_entity));
     system.event(SystemEventType::EntityUpdate(update_entity));
     system.event(SystemEventType::EntityRemoved(remove_entity));
+    system.event(SystemEventType::SystemPrefire(system_prefire));
     // Attach the events
     system
 }
