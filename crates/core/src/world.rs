@@ -49,10 +49,9 @@ impl World {
             saver_loader: SaverLoader::new(author_name, app_name),
             config_file: GameConfig::default(),
         }
-    }    
+    }
     // Load everything that needs to be loaded by default
-    fn load_defaults(&mut self, window: &mut glfw::Window) {        
-
+    fn load_defaults(&mut self, window: &mut glfw::Window) {
         // Load default bindings
         self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);

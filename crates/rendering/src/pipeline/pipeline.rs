@@ -2,7 +2,7 @@ use assets::AssetManager;
 use glfw::Context;
 
 use super::object::*;
-use crate::{RenderCommand, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage, basics::*, pipec, rendering::PipelineRenderer};
+use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage};
 use std::{
     collections::HashMap,
     ffi::{c_void, CString},
@@ -22,7 +22,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         RenderTask::WindowSizeUpdate(width, height, aspect_ratio) => todo!(),
         // Pipeline
         RenderTask::DestroyRenderThread() => todo!(),
-        RenderTask::CameraDataUpdate(_) => RenderTaskReturn::None, 
+        RenderTask::CameraDataUpdate(_) => RenderTaskReturn::None,
         // Shaders
         RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
         RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
@@ -55,15 +55,21 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
         }
         // Renderer
         RenderTask::RendererAdd(_) => RenderTaskReturn::None,
-        RenderTask::RendererRemove(_) => RenderTaskReturn::None,        
+        RenderTask::RendererRemove(_) => RenderTaskReturn::None,
         RenderTask::RendererUpdateTransform(renderer, transform) => todo!(),
     }
 }
 
 // Poll commands that have been sent to us by the main thread
-fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, main_to_render: &Receiver<RenderCommand>, valid: &mut bool, render_to_main: &Sender<RenderTaskStatus>) {    
+fn poll_commands(
+    pr: &mut PipelineRenderer,
+    camera: &mut CameraDataGPUObject,
+    main_to_render: &Receiver<RenderCommand>,
+    valid: &mut bool,
+    render_to_main: &Sender<RenderTaskStatus>,
+) {
     // We must loop through every command that we receive from the main thread
-    for _command in main_to_render.try_iter() {        
+    for _command in main_to_render.try_iter() {
         // Check special commands first
         let message_id = _command.message_id;
         match _command.input_task {
@@ -71,14 +77,14 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, ma
                 // Destroy the render thread
                 *valid = false;
                 println!("Destroy RenderThread and RenderPipeline!");
-                break;                        
-            },
+                break;
+            }
             // Renderer commands
             RenderTask::RendererAdd(shared_renderer) => {
                 println!("Add renderer");
                 let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
                 render_to_main.send(RenderTaskStatus::Successful(gpuobject, message_id)).unwrap();
-            },
+            }
             RenderTask::RendererRemove(renderer_id) => Pipeline::remove_renderer(pr, renderer_id),
             // Camera update command
             RenderTask::CameraDataUpdate(shared) => {
@@ -104,14 +110,14 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, ma
             _ => {
                 // Valid command
                 match command(_command) {
-                    RenderTaskReturn::None | RenderTaskReturn::NoneUnwaitable => { /* Fat bruh */ },
+                    RenderTaskReturn::None | RenderTaskReturn::NoneUnwaitable => { /* Fat bruh */ }
                     x => {
                         // Valid
                         render_to_main.send(RenderTaskStatus::Successful(x, message_id)).unwrap();
                     }
                 }
-            }            
-        }   
+            }
+        }
     }
 }
 
@@ -126,7 +132,7 @@ fn frame(
     valid: &mut bool,
     frame_count: u128,
     delta_time: f64,
-) { 
+) {
     // Poll first
     poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main);
     // Pre-render
@@ -140,12 +146,12 @@ fn frame(
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
 pub struct Pipeline {
-    pub command_id: u128,                                          // Next Command ID
+    pub command_id: u128,                                                        // Next Command ID
     pub render_commands_buffer: HashMap<u128, Box<dyn FnMut(RenderTaskStatus)>>, // The tasks that are asynchronous and are pending their return values
-    pub gpu_objects: HashMap<u128, GPUObject>,                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
-    pub gpu_objects_names: HashMap<String, u128>, // A name to GPU initialization ID 
-    pub render_to_main: Option<Receiver<RenderTaskStatus>>,        // RX (MainThread)
-    pub main_to_render: Option<Sender<RenderCommand>>,             // TX (MainThread)
+    pub gpu_objects: HashMap<u128, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
+    pub gpu_objects_names: HashMap<String, u128>,                                // A name to GPU initialization ID
+    pub render_to_main: Option<Receiver<RenderTaskStatus>>,                      // RX (MainThread)
+    pub main_to_render: Option<Sender<RenderCommand>>,                           // TX (MainThread)
 }
 impl Pipeline {
     // Create the new render thread
@@ -223,7 +229,17 @@ impl Pipeline {
                     let delta = new_time - last_time;
                     last_time = new_time;
                     // Run the frame
-                    frame(glfw, window, &render_to_main, &main_to_render, &mut pipeline_renderer, &mut camera, &mut valid, frame_count, delta);
+                    frame(
+                        glfw,
+                        window,
+                        &render_to_main,
+                        &main_to_render,
+                        &mut pipeline_renderer,
+                        &mut camera,
+                        &mut valid,
+                        frame_count,
+                        delta,
+                    );
                     frame_count += 1;
                 }
             });
@@ -266,7 +282,7 @@ impl Pipeline {
             match &task_return {
                 RenderTaskReturn::GPUObject(x) => {
                     self.gpu_objects.insert(message_id, x.clone());
-                },
+                }
                 _ => {}
             }
             callback(RenderTaskStatus::Successful(task_return, message_id));
@@ -299,10 +315,10 @@ impl Pipeline {
                 RenderTaskStatus::Successful(x, _) => Some(x),
                 RenderTaskStatus::Failed => None,
             };
-            println!("TaskImmediate {} success!", self.command_id-1);
+            println!("TaskImmediate {} success!", self.command_id - 1);
             return output;
         } else {
-            println!("TaskImmediate {} success! Though did not need to wait", self.command_id-1);
+            println!("TaskImmediate {} success! Though did not need to wait", self.command_id - 1);
             return Some(RenderTaskReturn::NoneUnwaitable);
         }
     }
@@ -341,7 +357,7 @@ impl Pipeline {
         let output = command(render_command);
         // Increment
         self.command_id += 1;
-        println!("InternalTaskImmediate {} success!", self.command_id-1);
+        println!("InternalTaskImmediate {} success!", self.command_id - 1);
         return Some(output);
     }
     // Get GPU object using it's specified name

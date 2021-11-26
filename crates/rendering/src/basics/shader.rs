@@ -128,9 +128,9 @@ impl Shader {
                     .join("\n");
 
                 // Cache it, and link it
-                self.linked_subshaders_programs.push(if internal { 
+                self.linked_subshaders_programs.push(if internal {
                     // Internally create the subshader
-                    pipec::isubshader(subshader.clone()) 
+                    pipec::isubshader(subshader.clone())
                 } else {
                     // Create the subshader as if we were on the main thread
                     pipec::subshader(subshader.clone())

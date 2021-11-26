@@ -31,10 +31,10 @@ pub enum SpecialPipelineMessage {
     RenderThreadInitialized,
 }
 
-// The task status that is sent back to the main thread 
+// The task status that is sent back to the main thread
 pub enum RenderTaskStatus {
     Successful(RenderTaskReturn, u128), // GG EZ
-    Failed, // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
+    Failed,                             // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
 }
 
 // A render command
@@ -68,7 +68,7 @@ pub enum RenderTask {
     WindowSizeUpdate(u16, u16, f32),
     // Pipeline
     DestroyRenderThread(),
-    CameraDataUpdate(SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)>)
+    CameraDataUpdate(SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)>),
 }
 
 impl RenderTask {

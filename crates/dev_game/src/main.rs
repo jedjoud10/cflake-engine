@@ -26,7 +26,7 @@ pub fn world_initialized(world: &mut World) {
         custom_data: &mut world.custom_data,
         instance_manager: &mut world.instance_manager,
     };
-    
+
     // ----Load the entities----
     // Create a camera entity
 
@@ -39,7 +39,7 @@ pub fn world_initialized(world: &mut World) {
 
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
-    
+
     let mut entity = Entity::new("Test");
     entity.link_default_component::<components::Transform>(data.component_manager).unwrap();
     let renderer = components::Renderer::default().set_model(pipec::model(Model::new().load_asset("defaults\\models\\cube.mdl3d").unwrap()));

@@ -24,7 +24,7 @@ pub mod pipec {
     use assets::{AssetManager, CachedObject};
 
     use crate::pipeline::object::*;
-    use crate::{Model, Pipeline, RENDER_PIPELINE, RenderTask, RenderTaskReturn, RenderTaskStatus, Renderer, Shader, SharedData, SubShader, Texture};
+    use crate::{Model, Pipeline, RenderTask, RenderTaskReturn, RenderTaskStatus, Renderer, Shader, SharedData, SubShader, Texture, RENDER_PIPELINE};
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe {
@@ -53,9 +53,10 @@ pub mod pipec {
         unsafe { RENDER_PIPELINE.as_mut().task_immediate(task) }
     }
     // Normal callback task
-    pub fn task<F>(task: RenderTask, callback: F) 
+    pub fn task<F>(task: RenderTask, callback: F)
     where
-        F: FnMut(RenderTaskStatus) + 'static, {
+        F: FnMut(RenderTaskStatus) + 'static,
+    {
         unsafe { RENDER_PIPELINE.as_mut().task(task, callback) }
     }
     // Internal task
@@ -66,7 +67,7 @@ pub mod pipec {
     fn task_immediate_gpuobject(task: RenderTask) -> Option<GPUObject> {
         match task_immediate(task) {
             Some(x) => match x {
-                RenderTaskReturn::GPUObject(x) => { Some(x) },
+                RenderTaskReturn::GPUObject(x) => Some(x),
                 _ => None,
             },
             None => None,
@@ -235,6 +236,15 @@ pub mod pipec {
         } else {
             let shader = shaderc.arc.as_ref().clone();
             create_shader(shader)
+        }
+    }
+    // Load or create functions, cached type, internal
+    pub fn itexturec(texturec: CachedObject<Texture>) -> TextureGPUObject {
+        if gpu_object_valid(&texturec.arc.name) {
+            get_texture_object(&texturec.arc.name)
+        } else {
+            let texture = texturec.arc.as_ref().clone();
+            itexture(texture)
         }
     }
     // Read the data from an array that was filled using a texture

@@ -21,6 +21,7 @@ uniform vec3 camera_pos;
 uniform ivec2 resolution;
 uniform float time;
 in vec2 uv_coordinates;
+uniform float test;
 
 void main() {
 	vec2 uvs = uv_coordinates;
@@ -89,5 +90,5 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-	color = vec3(uvs, 0);
+	color = vec3(test, test, test);
 }

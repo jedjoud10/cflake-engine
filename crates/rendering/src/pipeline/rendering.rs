@@ -1,7 +1,7 @@
 use std::ffi::CString;
 use std::ptr::null;
 
-use assets::{AssetManager, AssetObject};
+use assets::{AssetManager, AssetObject, Object};
 use glfw::Context;
 use others::SmartList;
 
@@ -11,19 +11,19 @@ use crate::{DataType, Shader, Uniform};
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
-    framebuffer: u32, // The master frame buffer
-    diffuse_texture: TextureGPUObject, // Diffuse texture, can also store HDR values
-    normals_texture: TextureGPUObject, // World Normals texture
-    position_texture: TextureGPUObject, // World Positions texture 
-    depth_texture: TextureGPUObject, // Depth texture
-    debug_view: u16, // OUr currenty debug view mode
-    wireframe: bool, // Are we rendering in wireframe or not
-    quad_model: ModelGPUObject, // The current screen quad model that we are using
-    screen_shader: ShaderGPUObject, // The current screen quad shader that we are using
-    sky_texture: TextureGPUObject, // The sky gradient texture
-    wireframe_shader: ShaderGPUObject, // The current wireframe shader
-    frame_stats: FrameStats, // Some frame stats
-    renderers: SmartList<RendererGPUObject> // The collection of valid renderers (Can include renderers that are culled out or invisible)
+    framebuffer: u32,                        // The master frame buffer
+    diffuse_texture: TextureGPUObject,       // Diffuse texture, can also store HDR values
+    normals_texture: TextureGPUObject,       // World Normals texture
+    position_texture: TextureGPUObject,      // World Positions texture
+    depth_texture: TextureGPUObject,         // Depth texture
+    debug_view: u16,                         // OUr currenty debug view mode
+    wireframe: bool,                         // Are we rendering in wireframe or not
+    quad_model: ModelGPUObject,              // The current screen quad model that we are using
+    screen_shader: ShaderGPUObject,          // The current screen quad shader that we are using
+    sky_texture: TextureGPUObject,           // The sky gradient texture
+    wireframe_shader: ShaderGPUObject,       // The current wireframe shader
+    frame_stats: FrameStats,                 // Some frame stats
+    renderers: SmartList<RendererGPUObject>, // The collection of valid renderers (Can include renderers that are culled out or invisible)
 }
 
 // Render debug primitives
@@ -116,6 +116,7 @@ impl PipelineRenderer {
                 ])
                 .unwrap(),
         );
+        self.sky_texture = pipec::itexturec(Texture::default().object_cache_load("defaults\\textures\\sky_gradient.png"));
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         /*
@@ -197,7 +198,7 @@ impl PipelineRenderer {
             } else {
                 render(renderer, camera);
             }
-        }        
+        }
     }
     // Post-render event
     pub fn post_render(&self /*, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject */, window: &mut glfw::Window) {
@@ -220,11 +221,12 @@ impl PipelineRenderer {
         //group.set_vec3f32("camera_pos", camera.position);
         group.set_i32("debug_view", 0);
         group.set_t2d("frame_stats", self.frame_stats.texture, 6);
+        //group.set_f32("test", self.);
         group.consume();
 
         // Render the screen quad
         unsafe {
-            //gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::BindVertexArray(self.quad_model.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.quad_model.element_buffer_object);

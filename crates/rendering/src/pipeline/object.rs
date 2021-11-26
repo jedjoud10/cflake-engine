@@ -296,7 +296,7 @@ pub enum GPUObject {
     Shader(ShaderGPUObject),               // The shader program ID
     ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions
     Texture(TextureGPUObject),             // The texture ID
-    Renderer(usize), // The renderer ID
+    Renderer(usize),                       // The renderer ID
 }
 
 impl Default for GPUObject {

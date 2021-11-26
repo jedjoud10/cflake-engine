@@ -14,11 +14,11 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 #[derive(Clone)]
 pub struct Renderer {
-    pub index: usize, // The ID of this renderer in the pipeline 
+    pub index: usize, // The ID of this renderer in the pipeline
     pub visible: bool,
     pub model: ModelGPUObject, // The model GPU of this renderer
-    pub material: Material, // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
-    pub flags: RendererFlags, // Flags
+    pub material: Material,    // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
+    pub flags: RendererFlags,  // Flags
 }
 
 impl Default for Renderer {
