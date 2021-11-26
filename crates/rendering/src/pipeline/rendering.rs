@@ -1,13 +1,10 @@
 
 use std::ptr::null;
-
-use assets::{Object};
+use assets::{AssetObject, Object};
 use glfw::Context;
 use others::SmartList;
-
-
-use crate::{pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
-use crate::{Shader};
+use crate::{Shader, pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
+use crate::{DataType, texture::*};
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
@@ -95,7 +92,7 @@ fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, 
 
 impl PipelineRenderer {
     // Init the pipeline renderer
-    pub fn init(&mut self, _dimensions: veclib::Vector2<u16>) {
+    pub fn init(&mut self, dimensions: veclib::Vector2<u16>) {
         // Create the quad model
         use crate::basics::Model;
         use veclib::consts::*;
@@ -115,11 +112,9 @@ impl PipelineRenderer {
                     "defaults\\shaders\\rendering\\screen.frsh.glsl",
                 ])
                 .unwrap(),
-        );
-        self.sky_texture = pipec::itexturec(Texture::default().object_cache_load("defaults\\textures\\sky_gradient.png"));
+        );        
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
-        /*
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {
             unsafe {
                 // Default target, no multisamplind
@@ -163,22 +158,18 @@ impl PipelineRenderer {
             // Unbind
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
-        */
         /* #endregion */
         /* #region Actual pipeline renderer shit */
-        /*
         // Load sky gradient texture
-        let texture = pipec::texturec(Texture::default()
-            .set_wrapping_mode(TextureWrapping::ClampToEdge)
-            .cache_load("defaults\\textures\\sky_gradient.png", asset_manager));
+        self.sky_texture = pipec::itexturec(Texture::default()
+            .set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge)
+            .cache_load("defaults\\textures\\sky_gradient.png"));
 
         // Load the wireframe shader
-        self.wireframe_shader = pipec::shader(Shader::default()
-            .load_shader(
+        self.wireframe_shader = pipec::ishader(Shader::default()
+            .iload_shader(
                 vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
-                asset_manager,
-            ).unwrap());
-        */
+            ).unwrap());        
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
@@ -193,11 +184,13 @@ impl PipelineRenderer {
     pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
         for renderer in self.renderers.elements.iter().filter_map(|x| x.as_ref()) {
             // Should we render in wireframe or not?
+            /*
             if self.wireframe {
                 render_wireframe(renderer, camera, &self.wireframe_shader);
             } else {
                 render(renderer, camera);
             }
+            */
         }
     }
     // Post-render event
@@ -214,13 +207,13 @@ impl PipelineRenderer {
         group.set_t2d("normals_texture", self.normals_texture, 1);
         group.set_t2d("position_texture", self.position_texture, 2);
         group.set_t2d("depth_texture", self.depth_texture, 3);
-        group.set_t2d("default_sky_gradient", self.sky_texture, 5);
+        group.set_t2d("default_sky_gradient", self.sky_texture, 4);
         //let vp_m = camera.projm * (veclib::Matrix4x4::from_quaternion(&camera.rotation));
         //group.set_mat44("custom_vp_matrix", vp_m);
         // Other params
         //group.set_vec3f32("camera_pos", camera.position);
         group.set_i32("debug_view", 0);
-        group.set_t2d("frame_stats", self.frame_stats.texture, 6);
+        group.set_t2d("frame_stats", self.frame_stats.texture, 5);
         //group.set_f32("test", self.);
         group.consume();
 

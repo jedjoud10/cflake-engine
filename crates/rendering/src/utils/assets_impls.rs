@@ -11,9 +11,10 @@ impl Asset for Texture {
         Self: Sized,
     {
         // Load this texture from the bytes
-        let (_bytes, width, height) = Self::read_bytes(data);
+        let (bytes, width, height) = Self::read_bytes(data);
         // Return a texture with the default parameters
         let texture = self
+            .set_bytes(bytes)
             .set_dimensions(TextureType::Texture2D(width, height))
             .set_format(TextureFormat::RGBA8R)
             .set_data_type(DataType::UByte)

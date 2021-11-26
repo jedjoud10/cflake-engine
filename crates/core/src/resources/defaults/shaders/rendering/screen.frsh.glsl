@@ -1,17 +1,13 @@
 #version 460 core
 out vec3 color;
-uniform sampler2D diffuse_texture;
-uniform sampler2D normals_texture;
-uniform sampler2D position_texture;
-uniform sampler2D depth_texture;
+uniform sampler2D diffuse_texture; // 0
+uniform sampler2D normals_texture; // 1
+uniform sampler2D position_texture; // 2
+uniform sampler2D depth_texture; // 3
 
 // Ambient sky gradient
-uniform sampler2D default_sky_gradient;
-
-uniform sampler2D frame_stats;
-uniform sampler2D volumetric_texture;
-uniform sampler2D volumetric_depth_texture;
-uniform sampler3D sdf_texture;
+uniform sampler2D default_sky_gradient; // 4
+uniform sampler2D frame_stats; // 5
 
 uniform vec3 directional_light_dir;
 uniform mat4 custom_vp_matrix;
@@ -25,6 +21,7 @@ uniform float test;
 
 void main() {
 	vec2 uvs = uv_coordinates;
+	/*
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
@@ -52,13 +49,8 @@ void main() {
 		final_color = diffuse;
 	}
 
-	// Sample the volumetric result texture
-	vec3 volumetric_color = texture(volumetric_texture, uvs).rgb;
-	float new_depth = texture(volumetric_depth_texture, uvs).r;
-	float depth = texture(depth_texture, uvs).x;
-	float old_depth = (nf_planes.x * depth) / (nf_planes.y - depth * (nf_planes.y - nf_planes.x));
-	// Compare the depths
-	bool draw = old_depth > new_depth && new_depth != 0;
+	float odepth = texture(depth_texture, uvs).x;
+	float depth = (nf_planes.x * odepth) / (nf_planes.y - odepth * (nf_planes.y - nf_planes.x));
 
 	// Sky gradient texture moment
     vec3 pixel_dir = normalize((inverse(custom_vp_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
@@ -69,7 +61,7 @@ void main() {
 
 	if (debug_view == 0) {
 		// Depth test the sky
-		if (old_depth > 0.999) {
+		if (depth > 0.999) {
 			color = sky_color;
 		} else {
 			color = final_color;
@@ -90,5 +82,6 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-	color = vec3(test, test, test);
+	*/
+	color = texture(default_sky_gradient, uvs).rgb;
 }

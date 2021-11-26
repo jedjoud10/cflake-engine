@@ -213,7 +213,7 @@ impl ShaderUniformsGroup {
     }
     // Set a 2D texture
     pub fn set_t2d(&mut self, name: &str, texture: TextureGPUObject, active_texture_id: u32) {
-        self.uniforms.insert(name.to_string(), Uniform::Texture1D(texture, active_texture_id));
+        self.uniforms.insert(name.to_string(), Uniform::Texture2D(texture, active_texture_id));
     }
     // Set a texture2d array
     pub fn set_t2da(&mut self, name: &str, texture: TextureGPUObject, active_texture_id: u32) {
