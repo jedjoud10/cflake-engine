@@ -18,19 +18,23 @@ where
     }
 }
 
+// The return type of the render task
 pub enum RenderTaskReturn {
     None,
+    NoneUnwaitable,
     GPUObject(GPUObject),
     TextureFillData(Vec<u8>),
 }
 
+// Special
 pub enum SpecialPipelineMessage {
     RenderThreadInitialized,
 }
 
+// The task status that is sent back to the main thread 
 pub enum RenderTaskStatus {
-    Successful(RenderTaskReturn, u128),
-    Failed,
+    Successful(RenderTaskReturn, u128), // GG EZ
+    Failed, // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
 }
 
 // A render command
@@ -65,4 +69,29 @@ pub enum RenderTask {
     // Pipeline
     DestroyRenderThread(),
     CameraDataUpdate(SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)>)
+}
+
+impl RenderTask {
+    // For each case, check the render tasks that must give back a result to the main thread so we can wait for it
+    pub fn returns_to_main(&self) -> bool {
+        match self {
+            RenderTask::SubShaderCreate(_) => true,
+            RenderTask::ShaderCreate(_) => true,
+            RenderTask::ShaderUniformGroup(_) => false,
+            RenderTask::TextureCreate(_) => true,
+            RenderTask::TextureUpdateSize(_, _) => false,
+            RenderTask::TextureUpdateData(_, _) => true,
+            RenderTask::TextureFillArray(_, _) => true,
+            RenderTask::ModelCreate(_) => true,
+            RenderTask::ModelDispose(_) => false,
+            RenderTask::ComputeRun(_, _) => false,
+            RenderTask::ComputeLock(_) => false,
+            RenderTask::RendererAdd(_) => true,
+            RenderTask::RendererRemove(_) => false,
+            RenderTask::RendererUpdateTransform(_, _) => false,
+            RenderTask::WindowSizeUpdate(_, _, _) => false,
+            RenderTask::DestroyRenderThread() => false,
+            RenderTask::CameraDataUpdate(_) => false,
+        }
+    }
 }

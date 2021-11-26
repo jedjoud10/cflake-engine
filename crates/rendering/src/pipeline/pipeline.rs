@@ -77,6 +77,7 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, ma
             RenderTask::RendererAdd(shared_renderer) => {
                 println!("Add renderer");
                 let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
+                render_to_main.send(RenderTaskStatus::Successful(gpuobject, message_id)).unwrap();
             },
             RenderTask::RendererRemove(renderer_id) => Pipeline::remove_renderer(pr, renderer_id),
             // Camera update command
@@ -102,8 +103,13 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, ma
             }
             _ => {
                 // Valid command
-                let returnobj = command(_command);
-                render_to_main.send(RenderTaskStatus::Successful(returnobj, message_id)).unwrap();
+                match command(_command) {
+                    RenderTaskReturn::None | RenderTaskReturn::NoneUnwaitable => { /* Fat bruh */ },
+                    x => {
+                        // Valid
+                        render_to_main.send(RenderTaskStatus::Successful(x, message_id)).unwrap();
+                    }
+                }
             }            
         }   
     }
@@ -273,6 +279,7 @@ impl Pipeline {
     // Complete a task immediatly
     pub fn task_immediate(&mut self, task: RenderTask) -> Option<RenderTaskReturn> {
         println!("TaskImmediate! {}", self.command_id);
+        let should_wait = task.returns_to_main();
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             message_id: self.command_id,
@@ -284,15 +291,20 @@ impl Pipeline {
 
         // Send the command
         tx.send(render_command).unwrap();
-        // Wait for the result
-        let output = match rx.recv().ok()? {
-            RenderTaskStatus::Successful(x, _) => Some(x),
-            RenderTaskStatus::Failed => None,
-        };
         // Increment
         self.command_id += 1;
-        println!("TaskImmediate {} success!", self.command_id-1);
-        return output;
+        // Wait for the result (only if we need to)
+        if should_wait {
+            let output = match rx.recv().ok()? {
+                RenderTaskStatus::Successful(x, _) => Some(x),
+                RenderTaskStatus::Failed => None,
+            };
+            println!("TaskImmediate {} success!", self.command_id-1);
+            return output;
+        } else {
+            println!("TaskImmediate {} success! Though did not need to wait", self.command_id-1);
+            return Some(RenderTaskReturn::NoneUnwaitable);
+        }
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
     pub fn task<F>(&mut self, task: RenderTask, callback: F)
