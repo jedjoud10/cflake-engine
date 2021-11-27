@@ -1,10 +1,10 @@
 // Some asset commands
 pub mod assetc {
-    use crate::{Asset, AssetType, main::asset_cacher};
+    use crate::{Asset, AssetType};
     // Load an asset
     pub fn load<T: Asset>(obj: T, path: &str) -> Option<T> {
         // Load the metadata first
-        let assetcacher = asset_cacher();
+        let assetcacher = crate::main::ASSETM.lock().unwrap();
         let md = assetcacher
             .cached_metadata
             .get(path)?;
@@ -13,7 +13,7 @@ pub mod assetc {
     // Load an asset as UTF8 text
     pub fn load_text(path: &str) -> Option<String> {
         // Load the metadata first
-        let assetcacher = asset_cacher();
+        let mut assetcacher = crate::main::ASSETM.lock().unwrap();
         drop(assetcacher);
         panic!();
         let md = assetcacher
@@ -39,11 +39,10 @@ pub mod cachec {
     use crate::Asset;
     use crate::Object;
     use crate::ObjectLoadError;
-    use crate::main::object_cacher;
 
     // Cache a specific Object
     pub fn cache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<Arc<T>, ObjectLoadError> {
-        let mut cacher = object_cacher();
+        let mut cacher = crate::main::OBJECTM.lock().unwrap();
         if cached(object_name) {
             // We cache the asset
             let string_name = object_name.to_string();
@@ -58,7 +57,7 @@ pub mod cachec {
     }
     // Load a specific Object
     pub fn load<T: 'static + Object + Send + Sync>(cache_name: &str) -> Result<Arc<T>, ObjectLoadError> {
-        let cacher = object_cacher();
+        let cacher = crate::main::OBJECTM.lock().unwrap();
         let obj = cacher.cached_objects.get(cache_name).ok_or(ObjectLoadError::new_str("Could not load cached asset!"))?;
         let obj = Arc::downcast::<T>(obj.clone()).unwrap();
         return Ok(obj);
@@ -76,7 +75,7 @@ pub mod cachec {
     }
     // Check if an Object is cached
     pub fn cached(object_name: &str) -> bool {
-        let cacher = object_cacher();
+        let cacher = crate::main::OBJECTM.lock().unwrap();
         return cacher.cached_objects.contains_key(object_name);
     }
 
