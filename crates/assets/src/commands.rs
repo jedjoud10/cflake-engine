@@ -1,9 +1,34 @@
 // Some asset commands
 pub mod assetc {
-    use crate::Asset;
+    use std::fs::Metadata;
 
-    pub fn load<T: Asset>(path: &str) -> Option<T> {
-        None
+    use crate::{Asset, AssetMetadata, AssetMetadataLoadError, main::asset_cacher};
+    // Load some medadata for an asset
+    pub fn metadata(path: &str) -> Result<&AssetMetadata, AssetMetadataLoadError> {
+        let assetcacher = asset_cacher();
+        assetcacher
+            .cached_metadata
+            .get(name)
+            .ok_or(AssetMetadataLoadError::new(format!("Asset '{}' was not pre-loaded!", path)))
+    }
+    // Load an asset
+    pub fn load<T: Asset>(obj: T, path: &str) -> Option<T> {
+        let md = metadata(path).ok()?;
+        obj.load_medadata(md)
+    }
+    // Load an asset as UTF8 text
+    pub fn load_text(path: &str) -> Option<String> {
+        let md = metadata(name)?;
+        match &md.asset_type {
+            // This asset is a text asset
+            AssetType::Text => {
+                let text = String::from_utf8(md.bytes.clone()).ok().unwrap();
+                return Ok(text);
+            }
+            _ => {
+                panic!()
+            }
+        }
     }
 }
 // Some caching commands
@@ -13,7 +38,7 @@ pub mod cachec {
     use crate::Asset;
     use crate::Object;
     use crate::ObjectLoadError;
-    use crate::main::*;
+    use crate::main::object_cacher;
 
     // Cache a specific Object
     pub fn cache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<Arc<T>, ObjectLoadError> {
@@ -61,7 +86,7 @@ pub mod cachec {
             Ok(load(object_name).unwrap())
         } else {
             // Load from the asset, then cache it
-            let asset = crate::assetc::load(object_name).unwrap();
+            let asset = crate::assetc::load(obj, object_name).unwrap();
             let output = cache(object_name, asset);
             output
         }

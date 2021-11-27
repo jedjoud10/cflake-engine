@@ -39,30 +39,7 @@ impl AssetCacher {
         };
         self.cached_metadata.insert(name.to_string(), data);
         Ok(())
-    }
-    // Load asset metadata
-    pub fn load_md(&self, name: &str) -> Result<&AssetMetadata, AssetMetadataLoadError> {
-        // Load
-        let data = self
-            .cached_metadata
-            .get(name)
-            .ok_or(AssetMetadataLoadError::new(format!("Asset '{}' was not pre-loaded!", name)))?;
-        return Ok(data);
-    }
-    // Load a text file from the asset cacher
-    pub fn load_text(&self, name: &str) -> Result<String, AssetMetadataLoadError> {
-        let md = self.load_md(name)?;
-        match &md.asset_type {
-            // This asset is a text asset
-            AssetType::Text => {
-                let text = String::from_utf8(md.bytes.clone()).ok().unwrap();
-                return Ok(text);
-            }
-            _ => {
-                panic!()
-            }
-        }
-    }
+    }  
     // Unload asset metadata (if possible)
     pub fn unload(&mut self, name: &str) -> Result<AssetMetadata, AssetMetadataLoadError> {
         // Check the load type
@@ -85,7 +62,7 @@ impl AssetCacher {
 pub enum AssetLoadType {
     Static,       // You can only load it, you can't unload it
     Dynamic,      // You can load it, and you can also unload it
-    CustomCached, // Dispose of the bytes data, since the asset is customly cached
+    Manual,       // Dispose of the bytes data, since the asset is manually cached
 }
 // Asset type
 pub enum AssetType {
@@ -100,9 +77,7 @@ pub enum AssetType {
 }
 // Some data
 pub struct AssetMetadata {
-    // Bytes
     pub bytes: Vec<u8>,
-    // Doodoo water
     pub load_type: AssetLoadType,
     pub asset_type: AssetType,
     pub name: String,
@@ -119,13 +94,4 @@ pub trait Asset {
     fn load_medadata(self, data: &AssetMetadata) -> Option<Self>
     where
         Self: Sized;
-    // Combination of the two
-    fn load_asset(self, local_path: &str) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        let ac = main::asset_cacher();
-        let s = ac.load_md(local_path).ok()?;
-        self.load_medadata(s)
-    }
 }
