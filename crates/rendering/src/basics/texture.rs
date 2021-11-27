@@ -413,7 +413,6 @@ impl Texture {
             // Flip
             let image = image.flipv();
             let bytesa = image.to_bytes();
-            drop(assetcacher);
             bytes.push(bytesa);
         }
         (bytes, TextureType::TextureArray(width, height, length))

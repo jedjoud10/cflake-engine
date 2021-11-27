@@ -10,7 +10,6 @@ pub mod assetc {
             .cached_metadata
             .get(path)?;
         let x = obj.load_medadata(md);
-        drop(assetcacher);
         x
     }
     // Load an asset (By creating a default version of it)
@@ -34,7 +33,6 @@ pub mod assetc {
             _ => None
         };
         // Pls
-        drop(assetcacher);
         output
     }
 }
@@ -60,7 +58,6 @@ pub mod cachec {
             let cached_object = CachedObject {
                 arc
             };
-            drop(cacher);
             Ok(cached_object)
         } else {
             // Asset was already cached
@@ -75,7 +72,6 @@ pub mod cachec {
         let cached_object = CachedObject {
             arc
         };
-        drop(cacher);
         return Ok(cached_object);
     }
     // Cache once, load endlessly
