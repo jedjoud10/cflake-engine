@@ -1,4 +1,3 @@
-use assets::AssetManager;
 use ecs::{Component, ComponentID, ComponentInternal};
 use terrain::{Terrain, TerrainSettings};
 

@@ -62,33 +62,30 @@ impl World {
         // Load the default objects for the CacheManagers
         // Create the black texture
         let black = pipec::texturec(
-            Texture::default()
+            assets::cachec::cache("black", Texture::default()
                 .set_dimensions(TextureType::Texture2D(1, 1))
                 .set_filter(TextureFilter::Linear)
                 .enable_mipmaps()
                 .set_name("black")
-                .set_bytes(vec![0, 0, 0, 255])
-                .object_cache_load("black"),
+                .set_bytes(vec![0, 0, 0, 255])).unwrap()
         );
         // Create the white texture
         let white = pipec::texturec(
-            Texture::default()
+            assets::cachec::cache("white", Texture::default()
                 .set_dimensions(TextureType::Texture2D(1, 1))
                 .set_filter(TextureFilter::Linear)
                 .enable_mipmaps()
                 .set_name("white")
-                .set_bytes(vec![255, 255, 255, 255])
-                .object_cache_load("white"),
+                .set_bytes(vec![255, 255, 255, 255])).unwrap()
         );
         // Create the default normals texture
         let default_normals = pipec::texturec(
-            Texture::default()
+            assets::cachec::cache("default_normals", Texture::default()
                 .set_dimensions(TextureType::Texture2D(1, 1))
                 .set_filter(TextureFilter::Linear)
                 .enable_mipmaps()
                 .set_name("default_normals")
-                .set_bytes(vec![127, 128, 255, 255])
-                .object_cache_load("default_normals"),
+                .set_bytes(vec![127, 128, 255, 255])).unwrap(),
         );
 
         // Load the default systems
@@ -419,44 +416,43 @@ impl World {
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the resources
-    let mut cacher = assets::alocc::asset_cacher();
     println!("Pre-loading default assets...");
     // Rendering
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl");
     // Others
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\wireframe.frsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\wireframe.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl");
     // UI
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_elem.vrsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_panel.frsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.vrsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.frsh.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\fonts\\default_font.font", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_elem.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_panel.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\fonts\\default_font.font");
     // Models
-    preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d", cacher);
-    preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d", cacher);
-    preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d", cacher);
-    preload_asset!(".\\resources\\defaults\\models\\cube.mdl3d", cacher);
+    preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d");
+    preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d");
+    preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d");
+    preload_asset!(".\\resources\\defaults\\models\\cube.mdl3d");
     // Noise
-    preload_asset!(".\\resources\\defaults\\shaders\\noises\\simplex.func.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\noises\\voronoi.func.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\noises\\simplex.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\noises\\voronoi.func.glsl");
     // Voxel terrain
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_shader.func.glsl", cacher);
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl", cacher);
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_shader.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
     // Textures
-    preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png", cacher);
-    preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png", cacher);
-    preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png", cacher);
-    preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png", cacher);
+    preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png");
+    preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png");
+    preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png");
+    preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png");
     println!("Finished pre-loading default assets!");
 }

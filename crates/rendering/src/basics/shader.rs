@@ -57,12 +57,12 @@ impl Shader {
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = assets::alocc::asset_cacher().load_text(local_path).map_err(|_x| {
+                    let text = assets::assetc::load_text(local_path).ok_or(
                         RenderingError::new(format!(
                             "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
                             local_path, subshader_name
-                        ))
-                    })?;
+                        )
+                    ))?;
                     let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                     vectors_to_insert.push((i, new_lines));
                 }
@@ -93,13 +93,12 @@ impl Shader {
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached (In the object cacher) and check if it's cached in the pipeline as well
-            if assets::alocc::object_cacher().cached(subshader_path) && pipec::gpu_object_valid(subshader_path) {               
+            if assets::cachec::cached(subshader_path) && pipec::gpu_object_valid(subshader_path) {               
                 let subshader = pipec::get_subshader_object(subshader_path);
                 self.linked_subshaders_programs.push(subshader);                
             } else {
                 // It was not cached, so we need to cache it
-                let mut subshader = SubShader::default()
-                    .load_asset(subshader_path)
+                let mut subshader: SubShader = assets::assetc::dload(subshader_path)
                     .ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
@@ -135,8 +134,7 @@ impl Shader {
                     // Create the subshader as if we were on the main thread
                     pipec::subshader(subshader.clone())
                 });
-                let mut object_cacher = assets::alocc::object_cacher();
-                let _rc_subshader: Arc<SubShader> = object_cacher.cache(subshader_path, subshader).unwrap();
+                let _rc_subshader = assets::cachec::cache(subshader_path, subshader).unwrap();
             }
         }
         Ok(self)

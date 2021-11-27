@@ -1,14 +1,19 @@
 // Some asset commands
 pub mod assetc {
-    use crate::{Asset, AssetType, main::asset_cacher};
+    use crate::{Asset, AssetType};
+    pub use crate::globals::asset_cacher;
     // Load an asset
-    pub fn load<T: Asset>(obj: T, path: &str) -> Option<T> {
+    pub fn load<T: Asset>(path: &str, obj: T) -> Option<T> {
         // Load the metadata first
         let assetcacher = asset_cacher();
         let md = assetcacher
             .cached_metadata
             .get(path)?;
         obj.load_medadata(md)
+    }
+    // Load an asset (By creating a default version of it)
+    pub fn dload<T: Asset + Default>(path: &str) -> Option<T> {
+        load(path, T::default())
     }
     // Load an asset as UTF8 text
     pub fn load_text(path: &str) -> Option<String> {
@@ -34,12 +39,13 @@ pub mod cachec {
     use std::sync::Arc;
 
     use crate::Asset;
+    use crate::CachedObject;
     use crate::Object;
     use crate::ObjectLoadError;
-    use crate::main::object_cacher;
+    pub use crate::globals::object_cacher;
 
     // Cache a specific Object
-    pub fn cache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<Arc<T>, ObjectLoadError> {
+    pub fn cache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<CachedObject<T>, ObjectLoadError> {
         let mut cacher = object_cacher();
         if cached(object_name) {
             // We cache the asset
@@ -47,21 +53,27 @@ pub mod cachec {
             let arc = Arc::new(obj);
             // Only cache when the object isn't cached yet
             cacher.cached_objects.insert(string_name, arc.clone());
-            Ok(arc)
+            let cached_object = CachedObject {
+                arc
+            };
+            Ok(cached_object)
         } else {
             // Asset was already cached
             Err(ObjectLoadError::new_str("Asset was already cached!"))
         }
     }
     // Load a specific Object
-    pub fn load<T: 'static + Object + Send + Sync>(cache_name: &str) -> Result<Arc<T>, ObjectLoadError> {
+    pub fn load<T: 'static + Object + Send + Sync>(cache_name: &str) -> Result<CachedObject<T>, ObjectLoadError> {
         let cacher = object_cacher();
         let obj = cacher.cached_objects.get(cache_name).ok_or(ObjectLoadError::new_str("Could not load cached asset!"))?;
-        let obj = Arc::downcast::<T>(obj.clone()).unwrap();
-        return Ok(obj);
+        let arc = Arc::downcast::<T>(obj.clone()).unwrap();
+        let cached_object = CachedObject {
+            arc
+        };
+        return Ok(cached_object);
     }
     // Cache once, load endlessly
-    pub fn cache_once_load<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<Arc<T>, ObjectLoadError> {
+    pub fn lcache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<CachedObject<T>, ObjectLoadError> {
         if cached(object_name) {
             // Cached asset
             Ok(load(object_name).unwrap())
@@ -78,15 +90,18 @@ pub mod cachec {
     }
 
     // Cache once (by loading the asset), load endlessly
-    pub fn cache_once_load_asset<T: 'static + Object + Asset + Send + Sync>(object_name: &str, obj: T) -> Result<Arc<T>, ObjectLoadError> {
+    pub fn acache_l<T: 'static + Object + Asset + Send + Sync>(object_name: &str, obj: T) -> Result<CachedObject<T>, ObjectLoadError> {
         if cached(object_name) {
             // Cached asset
             Ok(load(object_name).unwrap())
         } else {
             // Load from the asset, then cache it
-            let asset = crate::assetc::load(obj, object_name).unwrap();
-            let output = cache(object_name, asset);
-            output
+            let asset = crate::assetc::load(object_name, obj).unwrap();
+            cache(object_name, asset)
         }
+    }
+    // Cache once (by loading the asset), load endlessly (Returns a clone of the object)
+    pub fn acache_lc<T: 'static + Object + Asset + Send + Sync + Clone>(object_name: &str, obj: T) -> Result<T, ObjectLoadError> {
+        Ok(acache_l(object_name, obj)?.arc.as_ref().clone())
     }
 }

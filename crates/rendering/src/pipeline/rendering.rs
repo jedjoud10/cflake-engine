@@ -1,6 +1,6 @@
 
 use std::ptr::null;
-use assets::{AssetObject, Object};
+use assets::{Object};
 use glfw::Context;
 use others::SmartList;
 use crate::{Shader, pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
@@ -164,9 +164,10 @@ impl PipelineRenderer {
         /* #endregion */
         /* #region Actual pipeline renderer shit */
         // Load sky gradient texture
-        self.sky_texture = pipec::itexturec(Texture::default()
-            .set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge)
-            .cache_load("defaults\\textures\\sky_gradient.png"));
+        self.sky_texture = pipec::itexturec(
+        assets::cachec::acache_l("defaults\\textures\\sky_gradient.png", 
+            Texture::default().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge)).unwrap()
+        );
 
         // Load the wireframe shader
         self.wireframe_shader = pipec::ishader(Shader::default()

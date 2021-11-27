@@ -1,4 +1,3 @@
-use assets::AssetManager;
 use math::{
     constructive_solid_geometry::CSGTree,
     octrees::{AdvancedOctree, Octree, OctreeNode},

@@ -1,4 +1,4 @@
-use crate::{main, CachedObject, ObjectLoadError};
+use crate::{globals, CachedObject, ObjectLoadError};
 use std::{any::Any, collections::HashMap, ops::DerefMut, sync::Arc};
 
 // The object cacher. Just holds the data about the objects
