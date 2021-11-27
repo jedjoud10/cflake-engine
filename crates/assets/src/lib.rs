@@ -5,6 +5,8 @@ mod assets_manager;
 mod error;
 mod macros;
 mod object_cacher;
+mod tests;
+mod commands;
 use std::sync::Mutex;
 
 pub use asset_cacher::*;
@@ -13,9 +15,10 @@ pub use assets_manager::*;
 pub use error::*;
 pub use macros::*;
 pub use object_cacher::*;
+pub use commands::*;
 
 // Asset Loading and Object Caching Commands
-pub mod alocc {
+mod main {
     use std::sync::MutexGuard;
 
     use crate::AssetCacher;

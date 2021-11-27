@@ -1,4 +1,4 @@
-use crate::{alocc, Asset, Object};
+use crate::{main, Asset, Object};
 use std::sync::Arc;
 
 // Asset object
@@ -8,6 +8,8 @@ pub trait AssetObject: Asset + Object {
     where
         Self: Sized + 'static,
     {
+        todo!()
+        /*
         // Check if it was cached
         if alocc::object_cacher().cached(local_path) {
             return self.object_load_ot(local_path).unwrap();
@@ -18,6 +20,7 @@ pub trait AssetObject: Asset + Object {
             let output = texture.object_cache_load(local_path);
             output
         }
+        */
     }
 }
 

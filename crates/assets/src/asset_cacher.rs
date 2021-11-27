@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{alocc, AssetMetadataLoadError};
+use crate::{main, AssetMetadataLoadError};
 
 // Caches the embeded bytes into an array basically
 #[derive(Default)]
@@ -124,7 +124,7 @@ pub trait Asset {
     where
         Self: Sized,
     {
-        let ac = alocc::asset_cacher();
+        let ac = main::asset_cacher();
         let s = ac.load_md(local_path).ok()?;
         self.load_medadata(s)
     }
