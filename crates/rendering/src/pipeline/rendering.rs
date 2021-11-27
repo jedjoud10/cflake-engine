@@ -42,6 +42,7 @@ pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject) {
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     // Pass the MVP and the model matrix to the shader
     let mut group = material.1.clone();
+    group.with_shader(_shader);
     group.set_mat44("mvp_matrix", mvp_matrix);
     group.set_mat44("model_matrix", *model_matrix);
     group.set_mat44("view_matrix", camera.viewm);
@@ -70,6 +71,7 @@ fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, 
     let model = &renderer.0;
     let model_matrix = &renderer.2;
     let mut group = ws.new_uniform_group();
+    group.with_shader(_shader);
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     group.set_mat44("mvp_matrix", mvp_matrix);

@@ -183,6 +183,10 @@ impl ShaderUniformsGroup {
         }
         Self { shader, uniforms: x }
     }
+    // With shader
+    pub fn with_shader(&mut self, shader: &ShaderGPUObject) {
+        self.shader = shader.0;
+    } 
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
         self.uniforms.insert(name.to_string(), Uniform::Bool(value));

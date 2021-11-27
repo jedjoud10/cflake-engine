@@ -40,9 +40,10 @@ pub fn world_initialized(world: &mut World) {
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
 
+    let default_material = Material::new("Default material").load_diffuse("defaults\\textures\\rock_diffuse.png", None);
     let mut entity = Entity::new("Test");
     entity.link_default_component::<components::Transform>(data.component_manager).unwrap();
-    let renderer = components::Renderer::default().set_model(pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap()));
+    let renderer = components::Renderer::default().set_model(pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap())).set_material(default_material);
     entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(entity);
     /*

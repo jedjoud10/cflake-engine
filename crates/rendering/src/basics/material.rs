@@ -31,7 +31,7 @@ pub struct Material {
 
 impl Default for Material {
     fn default() -> Self {
-        let mut material: Self = Material {
+        let material: Self = Material {
             shader: ShaderGPUObject::default(),
             material_name: String::new(),
             flags: MaterialFlags::empty(),

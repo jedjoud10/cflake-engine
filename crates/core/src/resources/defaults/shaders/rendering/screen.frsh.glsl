@@ -20,9 +20,6 @@ in vec2 uv_coordinates;
 uniform float test;
 
 void main() {
-	vec3 diffuse = texture(diffuse_texture, uv_coordinates).xyz;
-	color = diffuse;
-	/*
 	vec2 uvs = uv_coordinates;
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
 	// Sample the textures
@@ -84,5 +81,5 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-	*/
+	color = diffuse;
 }
