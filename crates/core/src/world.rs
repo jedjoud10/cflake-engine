@@ -60,8 +60,12 @@ impl World {
         window.set_cursor_pos(0.0, 0.0);
 
         // Load the default objects for the CacheManagers
+        // Load the missing texture 
+        pipec::texturec(
+            assets::cachec::acache_l("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap()
+        );
         // Create the black texture
-        let black = pipec::texturec(
+        pipec::texturec(
             assets::cachec::cache("black", Texture::default()
                 .set_dimensions(TextureType::Texture2D(1, 1))
                 .set_filter(TextureFilter::Linear)
@@ -70,7 +74,7 @@ impl World {
                 .set_bytes(vec![0, 0, 0, 255])).unwrap()
         );
         // Create the white texture
-        let white = pipec::texturec(
+        pipec::texturec(
             assets::cachec::cache("white", Texture::default()
                 .set_dimensions(TextureType::Texture2D(1, 1))
                 .set_filter(TextureFilter::Linear)
@@ -79,7 +83,7 @@ impl World {
                 .set_bytes(vec![255, 255, 255, 255])).unwrap()
         );
         // Create the default normals texture
-        let default_normals = pipec::texturec(
+        pipec::texturec(
             assets::cachec::cache("default_normals", Texture::default()
                 .set_dimensions(TextureType::Texture2D(1, 1))
                 .set_filter(TextureFilter::Linear)
@@ -454,5 +458,5 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png");
     preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png");
     preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png");
-    println!("Finished pre-loading default assets!");
+    println!("Finished pre-loading default assets!");    
 }

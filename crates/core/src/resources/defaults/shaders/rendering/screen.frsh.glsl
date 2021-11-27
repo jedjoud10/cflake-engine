@@ -32,7 +32,7 @@ void main() {
 	float light_val = max(dot(normal, normalize(directional_light_dir)), 0) * directional_light_strength;
 
 	// Used for ambient lighting
-	float ambient_lighting_strength = 0.0;
+	float ambient_lighting_strength = 0.02;
 	float light_val_inverted = max(-dot(normal, normalize(directional_light_dir)), 0);
 
 	float sky_light_val = dot(normal, vec3(0, 1, 0)); 
@@ -65,13 +65,14 @@ void main() {
 		} else {
 			color = final_color;
 		}
+		/*
 		// Show the frame stats at the top left corner of the screen
 		if ((uvs.x * resolution.x < 400) && (uvs.y * resolution.y > resolution.y - 200)) {
 			float x = (uvs.x * resolution.x) / 400;
 			float y = (resolution.y - (uvs.y * resolution.y)) / 200;
 			color = texture(frame_stats, vec2(x, y)).rgb;
 		}
-		color = vec3(1, 1, 1);
+		*/
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
@@ -81,5 +82,4 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-	color = diffuse;
 }
