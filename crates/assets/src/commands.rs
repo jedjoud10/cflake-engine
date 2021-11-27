@@ -1,32 +1,32 @@
 // Some asset commands
 pub mod assetc {
-    use std::fs::Metadata;
-
-    use crate::{Asset, AssetMetadata, AssetMetadataLoadError, main::asset_cacher};
-    // Load some medadata for an asset
-    pub fn metadata(path: &str) -> Result<&AssetMetadata, AssetMetadataLoadError> {
-        let assetcacher = asset_cacher();
-        assetcacher
-            .cached_metadata
-            .get(name)
-            .ok_or(AssetMetadataLoadError::new(format!("Asset '{}' was not pre-loaded!", path)))
-    }
+    use crate::{Asset, AssetType, main::asset_cacher};
     // Load an asset
     pub fn load<T: Asset>(obj: T, path: &str) -> Option<T> {
-        let md = metadata(path).ok()?;
+        // Load the metadata first
+        let assetcacher = asset_cacher();
+        let md = assetcacher
+            .cached_metadata
+            .get(path)?;
         obj.load_medadata(md)
     }
     // Load an asset as UTF8 text
     pub fn load_text(path: &str) -> Option<String> {
-        let md = metadata(name)?;
+        // Load the metadata first
+        let assetcacher = asset_cacher();
+        panic!();
+        let md = assetcacher
+            .cached_metadata
+            .get(path)?;
+        println!("COCK");
         match &md.asset_type {
             // This asset is a text asset
             AssetType::Text => {
                 let text = String::from_utf8(md.bytes.clone()).ok().unwrap();
-                return Ok(text);
+                return Some(text);
             }
             _ => {
-                panic!()
+                None
             }
         }
     }

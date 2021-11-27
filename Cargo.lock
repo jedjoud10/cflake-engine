@@ -23,4 +23,4 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 [[package]]
 name = "veclib"
 version = "0.1.9"
-source = "git+https://github.com/jedjoud10/veclib#286feeac807d862ed1b4fdf3fca637e1476600a6"
+source = "git+https://github.com/jedjoud10/veclib#908fbd30fc78e2e8f2df1f85f4640f25bb72e721"

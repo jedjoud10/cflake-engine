@@ -19,7 +19,7 @@ impl AssetCacher {
             "frsh.glsl" => AssetType::FragSubshader,
             "mdl3d" => AssetType::Model,
             "cmpt.glsl" => AssetType::ComputeSubshader,
-            "func.glsl" => AssetType::Text,
+            "func.glsl" | "txt" => AssetType::Text,
             "png" => AssetType::Texture,
             "font" => AssetType::Font,
             _ => {
@@ -40,22 +40,6 @@ impl AssetCacher {
         self.cached_metadata.insert(name.to_string(), data);
         Ok(())
     }  
-    // Unload asset metadata (if possible)
-    pub fn unload(&mut self, name: &str) -> Result<AssetMetadata, AssetMetadataLoadError> {
-        // Check the load type
-        let _type = self
-            .cached_metadata
-            .get(name)
-            .ok_or(AssetMetadataLoadError::new_str("Asset is not loaded in the first place!"))?;
-        match &_type.load_type {
-            AssetLoadType::Dynamic => {
-                // Unload
-                return Ok(self.cached_metadata.remove(name).unwrap());
-            }
-            _ => { /* Nothing */ }
-        }
-        Err(AssetMetadataLoadError::new_str("No"))
-    }
 }
 
 // For how long will this asset be alive?
