@@ -4,7 +4,7 @@ use assets::{AssetObject, Object};
 use glfw::Context;
 use others::SmartList;
 use crate::{Shader, pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
-use crate::{DataType, texture::*};
+use crate::{DataType, Window, texture::*};
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
@@ -21,6 +21,7 @@ pub struct PipelineRenderer {
     wireframe_shader: ShaderGPUObject,       // The current wireframe shader
     frame_stats: FrameStats,                 // Some frame stats
     renderers: SmartList<RendererGPUObject>, // The collection of valid renderers (Can include renderers that are culled out or invisible)
+    window: Window, // Window
 }
 
 // Render debug primitives
@@ -92,7 +93,8 @@ fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, 
 
 impl PipelineRenderer {
     // Init the pipeline renderer
-    pub fn init(&mut self, dimensions: veclib::Vector2<u16>) {
+    pub fn init(&mut self) {
+        self.window = Window::default();
         // Create the quad model
         use crate::basics::Model;
         use veclib::consts::*;
@@ -127,7 +129,7 @@ impl PipelineRenderer {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            let dims = TextureType::Texture2D(dimensions.x, dimensions.y);
+            let dims = TextureType::Texture2D(self.window.dimensions.x, self.window.dimensions.y);
             // Create the diffuse render texture
             self.diffuse_texture = pipec::itexture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
             // Create the normals render texture
@@ -184,8 +186,8 @@ impl PipelineRenderer {
     // Called each frame, for each renderer that is valid in the pipeline
     pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
         for renderer in self.renderers.elements.iter().filter_map(|x| x.as_ref()) {
-            // Should we render in wireframe or not?
             /*
+            // Should we render in wireframe or not?
             if self.wireframe {
                 render_wireframe(renderer, camera, &self.wireframe_shader);
             } else {
@@ -195,13 +197,14 @@ impl PipelineRenderer {
         }
     }
     // Post-render event
-    pub fn post_render(&self /*, dimensions: veclib::Vector2<u16>, camera: &CameraDataGPUObject */, window: &mut glfw::Window) {
+    pub fn post_render(&self, camera: &CameraDataGPUObject, window: &mut glfw::Window) {
         // Update the frame stats texture
         //self.frame_stats.update_texture(data.time_manager, &data.entity_manager.entities);
+        let dimensions = self.window.dimensions;
         // Render the screen QUAD
         let mut group = self.screen_shader.new_uniform_group();
-        //group.set_vec2i32("resolution", dimensions.into());
-        //group.set_vec2f32("nf_planes", camera.clip_planes);
+        group.set_vec2i32("resolution", dimensions.into());
+        group.set_vec2f32("nf_planes", camera.clip_planes);
         group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
         // Textures
         group.set_t2d("diffuse_texture", self.diffuse_texture, 0);
@@ -209,13 +212,12 @@ impl PipelineRenderer {
         group.set_t2d("position_texture", self.position_texture, 2);
         group.set_t2d("depth_texture", self.depth_texture, 3);
         group.set_t2d("default_sky_gradient", self.sky_texture, 4);
-        //let vp_m = camera.projm * (veclib::Matrix4x4::from_quaternion(&camera.rotation));
-        //group.set_mat44("custom_vp_matrix", vp_m);
+        let vp_m = camera.projm * (veclib::Matrix4x4::from_quaternion(&camera.rotation));
+        group.set_mat44("custom_vp_matrix", vp_m);
         // Other params
-        //group.set_vec3f32("camera_pos", camera.position);
+        group.set_vec3f32("camera_pos", camera.position);
         group.set_i32("debug_view", 0);
         group.set_t2d("frame_stats", self.frame_stats.texture, 5);
-        //group.set_f32("test", self.);
         group.consume();
 
         // Render the screen quad

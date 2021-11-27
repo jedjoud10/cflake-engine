@@ -26,6 +26,12 @@ pub enum RenderTaskReturn {
     TextureFillData(Vec<u8>),
 }
 
+// The type of the render command
+pub enum RenderCommandType {
+    Async,
+    Immediate,
+}
+
 // Special
 pub enum SpecialPipelineMessage {
     RenderThreadInitialized,
@@ -39,7 +45,7 @@ pub enum RenderTaskStatus {
 
 // A render command
 pub struct RenderCommand {
-    // Message stuff
+    pub _type: RenderCommandType, 
     pub name: String,
     pub input_task: RenderTask,
 }
@@ -91,7 +97,7 @@ impl RenderTask {
             RenderTask::RendererUpdateTransform(_, _) => false,
             RenderTask::WindowSizeUpdate(_, _, _) => false,
             RenderTask::DestroyRenderThread() => false,
-            RenderTask::CameraDataUpdate(_) => true,
+            RenderTask::CameraDataUpdate(_) => false,
         }
     }
 }

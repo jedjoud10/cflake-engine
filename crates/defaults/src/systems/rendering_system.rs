@@ -37,7 +37,7 @@ fn system_prefire(sd: &mut SystemData, data: &mut WorldData) {
     let pos = ct.position;
     let rot = ct.rotation;
     let shared_data = rendering::SharedData::new((pos, rot, cd.clip_planes, cd.projection_matrix));
-    pipec::task(pipec::RenderTask::CameraDataUpdate(shared_data), "update_camera_data", |_| { println!("Update the camera data") })
+    pipec::task(pipec::RenderTask::CameraDataUpdate(shared_data), "update_camera_data", |x| { })
 }
 
 // Create a rendering system

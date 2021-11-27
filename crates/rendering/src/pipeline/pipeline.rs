@@ -2,7 +2,7 @@
 use glfw::Context;
 
 use super::object::*;
-use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage};
+use crate::{RenderCommand, RenderCommandType, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage, basics::*, pipec, rendering::PipelineRenderer};
 use std::{
     collections::HashMap,
     ffi::{c_void, CString},
@@ -66,11 +66,17 @@ fn poll_commands(
     main_to_render: &Receiver<RenderCommand>,
     valid: &mut bool,
     render_to_main: &Sender<RenderTaskStatus>,
+    render_to_main_async: &Sender<RenderTaskStatus>,
 ) {
     // We must loop through every command that we receive from the main thread
     for cmd in main_to_render.try_iter() {
         // Check special commands first
         let name = cmd.name.clone();
+        // Get the channel that we must send the output to
+        let channel = match cmd._type {
+            crate::RenderCommandType::Async => render_to_main_async,
+            crate::RenderCommandType::Immediate => render_to_main,
+        };
         match cmd.input_task {
             RenderTask::DestroyRenderThread() => {
                 // Destroy the render thread
@@ -82,7 +88,7 @@ fn poll_commands(
             RenderTask::RendererAdd(shared_renderer) => {
                 println!("Add renderer");
                 let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
-                render_to_main.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
+                channel.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
             }
             RenderTask::RendererRemove(renderer_id) => Pipeline::remove_renderer(pr, renderer_id),
             // Camera update command
@@ -104,7 +110,8 @@ fn poll_commands(
                     clip_planes,
                     viewm,
                     projm,
-                }
+                };
+                channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
             }
             _ => {
                 // Valid command
@@ -112,7 +119,8 @@ fn poll_commands(
                     RenderTaskReturn::None | RenderTaskReturn::NoneUnwaitable => { /* Fat bruh */ }
                     x => {
                         // Valid
-                        render_to_main.send(RenderTaskStatus::Successful(x, name)).unwrap();
+                        println!("Send to main thread");
+                        channel.send(RenderTaskStatus::Successful(x, name)).unwrap();
                     }
                 }
             }
@@ -125,6 +133,7 @@ fn frame(
     _glfw: &mut glfw::Glfw,
     window: &mut glfw::Window,
     render_to_main: &Sender<RenderTaskStatus>,
+    render_to_main_async: &Sender<RenderTaskStatus>,
     main_to_render: &Receiver<RenderCommand>,
     pipeline_renderer: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
@@ -133,13 +142,13 @@ fn frame(
     _delta_time: f64,
 ) {
     // Poll first
-    poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main);
+    poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main, render_to_main_async);
     // Pre-render
     pipeline_renderer.pre_render();
     // Render
     pipeline_renderer.renderer_frame(camera);
     // Post-render
-    pipeline_renderer.post_render(window);
+    pipeline_renderer.post_render(camera, window);
 }
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
@@ -149,6 +158,7 @@ pub struct Pipeline {
     pub render_commands_buffer: HashMap<String, Box<dyn FnMut(RenderTaskStatus)>>, // The tasks that are asynchronous and are pending their return values
     pub gpu_objects: HashMap<String, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
     pub render_to_main: Option<Receiver<RenderTaskStatus>>,                      // RX (MainThread)
+    pub render_to_main_async: Option<Receiver<RenderTaskStatus>>, // RX (MainThread) asnyc
     pub main_to_render: Option<Sender<RenderCommand>>,                           // TX (MainThread)
 }
 impl Pipeline {
@@ -157,6 +167,7 @@ impl Pipeline {
         println!("Initializing RenderPipeline...");
         // Create the two channels
         let (tx, rx): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main
+        let (tx_async, rx_async): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main async
         let (tx2, rx2): (Sender<RenderCommand>, Receiver<RenderCommand>) = std::sync::mpsc::channel(); // Main to render
         let (tx3, rx3): (Sender<SpecialPipelineMessage>, Receiver<SpecialPipelineMessage>) = std::sync::mpsc::channel(); // Render to main, but for special cases
         unsafe {
@@ -196,11 +207,12 @@ impl Pipeline {
                 }
                 // Renaming a bit
                 let render_to_main = tx;
+                let render_to_main_async = tx_async;
                 let main_to_render = rx2;
 
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
-                pipeline_renderer.init(veclib::Vector2::new(1280, 720));
+                pipeline_renderer.init();
 
                 // El camera
                 let mut camera = CameraDataGPUObject {
@@ -231,6 +243,7 @@ impl Pipeline {
                         glfw,
                         window,
                         &render_to_main,
+                        &render_to_main_async,
                         &main_to_render,
                         &mut pipeline_renderer,
                         &mut camera,
@@ -249,6 +262,7 @@ impl Pipeline {
         println!("Received RenderThread init confirmation! Took {}ms to init RenderThread", i.elapsed().as_millis());
         // Vars
         self.render_to_main = Some(rx);
+        self.render_to_main_async = Some(rx_async);
         self.main_to_render = Some(tx2);
         println!("Successfully initialized the RenderPipeline!");
     }
@@ -269,21 +283,23 @@ impl Pipeline {
     // Frame on the main thread
     pub fn frame_main_thread(&mut self) {
         // Receive the return data that was sent from the render thread
-        let render_to_main = self.render_to_main.as_ref().unwrap();
-        for received in render_to_main.try_iter() {
+        let receiver = self.render_to_main_async.as_ref().unwrap();
+        for received in receiver.try_iter() {
             let (task_return, name) = match received {
                 RenderTaskStatus::Successful(x, name) => (x, name),
                 RenderTaskStatus::Failed => panic!(),
             };
-            // Call the callbacks
-            let mut callback = self.render_commands_buffer.remove(&name).unwrap();
-            match &task_return {
-                RenderTaskReturn::GPUObject(x) => {
-                    self.gpu_objects.insert(name.clone(), x.clone());
+            // Call the callback if possible
+            if self.render_commands_buffer.contains_key(&name) {                
+                let mut callback = self.render_commands_buffer.remove(&name).unwrap();
+                match &task_return {
+                    RenderTaskReturn::GPUObject(x) => {
+                        self.gpu_objects.insert(name.clone(), x.clone());
+                    }
+                    _ => {}
                 }
-                _ => {}
+                callback(RenderTaskStatus::Successful(task_return, name));
             }
-            callback(RenderTaskStatus::Successful(task_return, name));
         }
     }
     // Dispose of the current render thread and pipeline
@@ -300,6 +316,7 @@ impl Pipeline {
         let should_wait = task.returns_to_main();
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
+            _type: RenderCommandType::Immediate,
             name: name.clone(),
             input_task: task,
         };
@@ -334,6 +351,7 @@ impl Pipeline {
         let boxed_fn_mut: Box<dyn FnMut(RenderTaskStatus)> = Box::new(callback);
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
+            _type: RenderCommandType::Async,
             name: name.clone(),
             input_task: task,
         };
@@ -356,6 +374,7 @@ impl Pipeline {
         }
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
+            _type: RenderCommandType::Immediate,
             name: name.clone(),
             input_task: task,
         };
