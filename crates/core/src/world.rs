@@ -192,9 +192,9 @@ impl World {
         callback(self);
     }
     // We do the following in this function
-    pub fn update_world(&mut self, window: &mut glfw::Window, glfw: &mut glfw::Glfw, delta: f64) {
+    pub fn update_world(&mut self, delta: f64) {
         // Check for default input events
-        self.check_default_input_events(window, glfw);
+        self.check_default_input_events();
         // Upate the console
         self.update_console();
         // Create the data for the systems
@@ -235,11 +235,12 @@ impl World {
 
         // Check for default mapping events
         if self.debug.console.listen_command("quit").is_some() {
-            window.set_should_close(true);
+            self.kill_world();    
         }
         // Toggle the fullscreen
         if self.debug.console.listen_command("toggle-fullscreen").is_some() {
-            self.toggle_fullscreen(glfw, window);
+            self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
+            self.set_fullscreen(self.custom_data.window.fullscreen);
         }
         // Toggle the rendering
         if self.debug.console.listen_command("toggle-render").is_some() {
@@ -248,7 +249,7 @@ impl World {
         }
     }
     // Check for default key map events
-    fn check_default_input_events(&mut self, _window: &mut glfw::Window, _glfw: &mut glfw::Glfw) {}
+    fn check_default_input_events(&mut self) {}
     // Update the console
     fn update_console(&mut self) {
         // Check if we should start key registering if the console is active
@@ -281,44 +282,9 @@ impl World {
         }
     }
     // Set the fullscreen status
-    fn set_fullscreen(&mut self, fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    fn set_fullscreen(&mut self, fullscreen: bool) {
         self.custom_data.window.fullscreen = fullscreen;
-        if self.custom_data.window.fullscreen {
-            // Set the glfw window as a fullscreen window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let videomode = monitor.unwrap().get_video_mode().unwrap();
-                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
-                unsafe {
-                    // Update the OpenGL viewport
-                    //gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-                }
-            });
-        } else {
-            // Set the glfw window as a windowed window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                let default_window_size = others::get_default_window_size();
-                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
-                unsafe {
-                    // Update the OpenGL viewport
-                    //gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
-                }
-            });
-        }
-    }
-    // Toggle fullscreen
-    fn toggle_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-        self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
-        self.set_fullscreen(self.custom_data.window.fullscreen, glfw, window);
-
-        // Enable disable vsync
-        if self.config_file.vsync {
-            // Enable VSync
-            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-        } else {
-            // Disable VSync
-            glfw.set_swap_interval(glfw::SwapInterval::None);
-        }
+        pipec::task(pipec::RenderTask::WindowSetFullscreen(self.custom_data.window.fullscreen), "", |_| {});
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {
@@ -334,6 +300,8 @@ impl World {
         };
         self.system_manager.kill_systems(&mut data);
         println!("Kill world!");
+        // Kill the render pipeline
+        pipec::dispose_pipeline();
     }
 }
 

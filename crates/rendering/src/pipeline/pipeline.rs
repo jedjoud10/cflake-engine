@@ -14,14 +14,74 @@ use std::{
 };
 
 // Run a command on the Render Thread
-fn command(command: RenderCommand) -> RenderTaskReturn {
+fn command(
+    name: String,
+    pr: &mut PipelineRenderer,
+    camera: &mut CameraDataGPUObject,
+    main_to_render: &Receiver<RenderCommand>,
+    channel: &Sender<RenderTaskStatus>,
+    command: RenderCommand,
+    window: &mut glfw::Window,
+    glfw: &mut glfw::Glfw,
+) -> RenderTaskReturn {
     // Handle the common cases
     match command.input_task {
         // Window
-        RenderTask::WindowUpdate(_) => RenderTaskReturn::None,
+        RenderTask::WindowUpdate(window) => {
+            // Update the window
+            pr.update_window(window.object.clone().as_ref());
+            channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
+            RenderTaskReturn::None
+        },
+        RenderTask::WindowSetFullscreen(fullscreen) => {            
+            if fullscreen {
+                // Set the glfw window as a fullscreen window
+                glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                    let videomode = monitor.unwrap().get_video_mode().unwrap();
+                    window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
+                    unsafe {
+                        // Update the OpenGL viewport
+                        //gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+                    }
+                });
+            } else {
+                // Set the glfw window as a windowed window
+                glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                    let _videomode = monitor.unwrap().get_video_mode().unwrap();
+                    let default_window_size = others::get_default_window_size();
+                    window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
+                    unsafe {
+                        // Update the OpenGL viewport
+                        //gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
+                    }
+                });
+            }
+            RenderTaskReturn::None
+        }
         // Pipeline
         RenderTask::DestroyRenderThread() => todo!(),
-        RenderTask::CameraDataUpdate(_) => RenderTaskReturn::None,
+        RenderTask::CameraDataUpdate(shared) => {
+            let pos = shared.object.0;
+            let rot = shared.object.1;
+            let clip_planes = shared.object.2;
+            let projm = shared.object.3;
+            // Calculate the view matrix using the position and rotation
+            let viewm = {
+                let rm = veclib::Matrix4x4::from_quaternion(&rot);
+                let forward_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0)).normalized();
+                let up_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0)).normalized();
+                veclib::Matrix4x4::look_at(&pos, &up_vector, &(forward_vector + pos))
+            };
+            *camera = CameraDataGPUObject {
+                position: pos,
+                rotation: rot,
+                clip_planes,
+                viewm,
+                projm,
+            };
+            channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
+            RenderTaskReturn::None
+        }
         // Shaders
         RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
         RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
@@ -53,8 +113,14 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
             RenderTaskReturn::None
         }
         // Renderer
-        RenderTask::RendererAdd(_) => RenderTaskReturn::None,
-        RenderTask::RendererRemove(_) => RenderTaskReturn::None,
+        // Renderer commands
+        RenderTask::RendererAdd(shared_renderer) => {
+            println!("Add renderer");
+            let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
+            channel.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
+            RenderTaskReturn::None
+        }
+        RenderTask::RendererRemove(renderer_id) => { Pipeline::remove_renderer(pr, renderer_id); RenderTaskReturn::None },
         RenderTask::RendererUpdateTransform(_renderer, _transform) => todo!(),
     }
 }
@@ -67,6 +133,8 @@ fn poll_commands(
     valid: &mut bool,
     render_to_main: &Sender<RenderTaskStatus>,
     render_to_main_async: &Sender<RenderTaskStatus>,
+    window: &mut glfw::Window,
+    glfw: &mut glfw::Glfw,
 ) {
     // We must loop through every command that we receive from the main thread
     for cmd in main_to_render.try_iter() {
@@ -84,44 +152,10 @@ fn poll_commands(
                 *valid = false;
                 println!("Destroy RenderThread and RenderPipeline!");
                 break;
-            },
-            RenderTask::WindowUpdate(window) => {
-                // Update the window
-                pr.update_window(window.object.clone().as_ref());
-                channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
-            }
-            // Renderer commands
-            RenderTask::RendererAdd(shared_renderer) => {
-                println!("Add renderer");
-                let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
-                channel.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
-            }
-            RenderTask::RendererRemove(renderer_id) => Pipeline::remove_renderer(pr, renderer_id),
-            // Camera update command
-            RenderTask::CameraDataUpdate(shared) => {
-                let pos = shared.object.0;
-                let rot = shared.object.1;
-                let clip_planes = shared.object.2;
-                let projm = shared.object.3;
-                // Calculate the view matrix using the position and rotation
-                let viewm = {
-                    let rm = veclib::Matrix4x4::from_quaternion(&rot);
-                    let forward_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0)).normalized();
-                    let up_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0)).normalized();
-                    veclib::Matrix4x4::look_at(&pos, &up_vector, &(forward_vector + pos))
-                };
-                *camera = CameraDataGPUObject {
-                    position: pos,
-                    rotation: rot,
-                    clip_planes,
-                    viewm,
-                    projm,
-                };
-                channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
-            }
+            },            
             _ => {
                 // Valid command
-                match command(cmd) {
+                match command(name, pr, camera, main_to_render, channel, cmd, window, glfw) {
                     RenderTaskReturn::None | RenderTaskReturn::NoneUnwaitable => { /* Fat bruh */ }
                     x => {
                         // Valid
@@ -148,7 +182,7 @@ fn frame(
     _delta_time: f64,
 ) {
     // Poll first
-    poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main, render_to_main_async);
+    poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main, render_to_main_async, window, _glfw);
     // Pre-render
     pipeline_renderer.pre_render();
     // Render
