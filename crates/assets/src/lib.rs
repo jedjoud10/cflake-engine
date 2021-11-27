@@ -30,14 +30,12 @@ mod main {
         static ref OBJECTM: Mutex<ObjectCacher> = Mutex::new(ObjectCacher::default());
     }
     // Get the asset cacher
-    #[inline]
-    pub fn asset_cacher() -> MutexGuard<'static, AssetCacher> {
-        println!("AA");
-        ASSETM.lock().unwrap()
+    pub fn asset_cacher<'a>() -> MutexGuard<'a, AssetCacher> {
+        let x = ASSETM.lock().unwrap();
+        x
     }
     // Get the object cacher
-    #[inline]
-    pub fn object_cacher() -> MutexGuard<'static, ObjectCacher> {
+    pub fn object_cacher<'a>() -> MutexGuard<'a, ObjectCacher> {
         OBJECTM.lock().unwrap()
     }
 }

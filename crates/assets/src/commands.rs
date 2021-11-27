@@ -14,6 +14,7 @@ pub mod assetc {
     pub fn load_text(path: &str) -> Option<String> {
         // Load the metadata first
         let assetcacher = asset_cacher();
+        drop(assetcacher);
         panic!();
         let md = assetcacher
             .cached_metadata
