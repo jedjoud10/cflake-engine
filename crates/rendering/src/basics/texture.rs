@@ -397,14 +397,15 @@ impl Texture {
         (image.to_bytes(), image.width() as u16, image.height() as u16)
     }
     // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    pub fn create_texturearray(texture_paths: Vec<&str>, asset_manager: &mut AssetManager, width: u16, height: u16) -> (Vec<Vec<u8>>, TextureType) {
+    pub fn create_texturearray(texture_paths: Vec<&str>, width: u16, height: u16) -> (Vec<Vec<u8>>, TextureType) {
         // Load the textures
         let mut bytes: Vec<Vec<u8>> = Vec::new();
         let _name = &format!("{}-{}", "2dtexturearray", texture_paths.join("--"));
         let length = texture_paths.len() as u16;
         for x in texture_paths {
             // Load this texture from the bytes
-            let metadata = asset_manager.asset_cacher.load_md(x).unwrap();
+            let assetcacher = assets::assetc::asset_cacher();
+            let metadata =  assetcacher.cached_metadata.get(x).unwrap();
             let png_bytes = metadata.bytes.as_bytes();
             let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
             // Resize the image so it fits the dimension criteria

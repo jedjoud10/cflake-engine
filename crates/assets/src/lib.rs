@@ -1,7 +1,6 @@
 // Export
 mod asset_cacher;
 mod asset_object;
-mod assets_manager;
 mod error;
 mod macros;
 mod object_cacher;
@@ -11,14 +10,13 @@ use std::sync::Mutex;
 
 pub use asset_cacher::*;
 pub use asset_object::*;
-pub use assets_manager::*;
 pub use error::*;
 pub use macros::*;
 pub use object_cacher::*;
 pub use commands::*;
 
 // Asset Loading and Object Caching Commands
-mod main {
+pub mod globals {
     use std::sync::MutexGuard;
 
     use crate::AssetCacher;
@@ -26,15 +24,15 @@ mod main {
     use lazy_static::lazy_static;
     // Half-assed multithreaded rendering lol
     lazy_static! {
-        static ref ASSETM: Mutex<AssetCacher> = Mutex::new(AssetCacher::default());
-        static ref OBJECTM: Mutex<ObjectCacher> = Mutex::new(ObjectCacher::default());
+        static ref ASSETM: no_deadlocks::Mutex<AssetCacher> = no_deadlocks::Mutex::new(AssetCacher::default());
+        static ref OBJECTM: no_deadlocks::Mutex<ObjectCacher> = no_deadlocks::Mutex::new(ObjectCacher::default());
     }
     // Get the asset cacher
-    pub fn asset_cacher() -> MutexGuard<'static, AssetCacher> {
+    pub fn asset_cacher() -> no_deadlocks::MutexGuard<'static, AssetCacher> {
         ASSETM.lock().unwrap()
     }
     // Get the object cacher
-    pub fn object_cacher() -> MutexGuard<'static, ObjectCacher> {
+    pub fn object_cacher() -> no_deadlocks::MutexGuard<'static, ObjectCacher> {
         OBJECTM.lock().unwrap()
     }
 }

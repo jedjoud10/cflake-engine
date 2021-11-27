@@ -42,7 +42,7 @@ pub fn world_initialized(world: &mut World) {
 
     let mut entity = Entity::new("Test");
     entity.link_default_component::<components::Transform>(data.component_manager).unwrap();
-    let renderer = components::Renderer::default().set_model(pipec::model(Model::default().load_asset("defaults\\models\\cube.mdl3d").unwrap()));
+    let renderer = components::Renderer::default().set_model(pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap()));
     entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
     data.entity_manager.add_entity_s(entity);
     /*

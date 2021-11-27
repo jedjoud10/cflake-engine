@@ -1,7 +1,7 @@
 use crate::FontChar;
 use ::rendering::{basics::*, pipec, pipeline::*};
 use ascii::AsciiStr;
-use assets::{Asset, AssetObject, Object};
+use assets::{Asset, Object};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 // A simple font containing the characters
@@ -108,4 +108,3 @@ impl Asset for Font {
     }
 }
 impl Object for Font {}
-impl AssetObject for Font {}

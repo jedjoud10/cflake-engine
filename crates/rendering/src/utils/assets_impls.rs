@@ -1,7 +1,7 @@
 use crate::basics::*;
 use crate::utils::*;
 
-use assets::{Asset, AssetObject, Object};
+use assets::{Asset, Object};
 
 // All the Asset trait implementations are here
 // One for the textures
@@ -24,7 +24,6 @@ impl Asset for Texture {
 }
 
 impl Object for Texture {}
-impl AssetObject for Texture {}
 // One for the models
 impl Asset for Model {
     // Load a model from an asset
