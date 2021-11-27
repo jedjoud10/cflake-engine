@@ -134,7 +134,7 @@ impl Shader {
                     // Create the subshader as if we were on the main thread
                     pipec::subshader(subshader.clone())
                 });
-                let _rc_subshader = assets::cachec::cache(subshader_path, subshader).unwrap();
+                let _rc_subshader = assets::cachec::cache_l(subshader_path, subshader).unwrap();
             }
         }
         Ok(self)

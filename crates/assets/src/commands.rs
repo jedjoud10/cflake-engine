@@ -9,7 +9,9 @@ pub mod assetc {
         let md = assetcacher
             .cached_metadata
             .get(path)?;
-        obj.load_medadata(md)
+        let x = obj.load_medadata(md);
+        drop(assetcacher);
+        x
     }
     // Load an asset (By creating a default version of it)
     pub fn dload<T: Asset + Default>(path: &str) -> Option<T> {
@@ -22,16 +24,18 @@ pub mod assetc {
         let md = assetcacher
             .cached_metadata
             .get(path)?;
-        match &md.asset_type {
+        // Pls don't deadlock again
+        let output = match &md.asset_type {
             // This asset is a text asset
             AssetType::Text => {
                 let text = String::from_utf8(md.bytes.clone()).ok().unwrap();
-                return Some(text);
-            }
-            _ => {
-                None
-            }
-        }
+                Some(text)
+            },
+            _ => None
+        };
+        // Pls
+        drop(assetcacher);
+        output
     }
 }
 // Some caching commands
@@ -45,9 +49,9 @@ pub mod cachec {
     pub use crate::globals::object_cacher;
 
     // Cache a specific Object
-    pub fn cache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<CachedObject<T>, ObjectLoadError> {
-        let mut cacher = object_cacher();
-        if cached(object_name) {
+    pub fn cache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<CachedObject<T>, ObjectLoadError> {        
+        if !cached(object_name) {
+            let mut cacher = object_cacher();
             // We cache the asset
             let string_name = object_name.to_string();
             let arc = Arc::new(obj);
@@ -56,6 +60,7 @@ pub mod cachec {
             let cached_object = CachedObject {
                 arc
             };
+            drop(cacher);
             Ok(cached_object)
         } else {
             // Asset was already cached
@@ -70,10 +75,11 @@ pub mod cachec {
         let cached_object = CachedObject {
             arc
         };
+        drop(cacher);
         return Ok(cached_object);
     }
     // Cache once, load endlessly
-    pub fn lcache<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<CachedObject<T>, ObjectLoadError> {
+    pub fn cache_l<T: 'static + Object + Send + Sync>(object_name: &str, obj: T) -> Result<CachedObject<T>, ObjectLoadError> {
         if cached(object_name) {
             // Cached asset
             Ok(load(object_name).unwrap())
@@ -86,7 +92,8 @@ pub mod cachec {
     // Check if an Object is cached
     pub fn cached(object_name: &str) -> bool {
         let cacher = object_cacher();
-        return cacher.cached_objects.contains_key(object_name);
+        let cached = cacher.cached_objects.contains_key(object_name);
+        cached
     }
 
     // Cache once (by loading the asset), load endlessly
