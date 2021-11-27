@@ -131,43 +131,43 @@ pub mod pipec {
             _ => panic!(),
         }
     }
-    fn get_gpu_object(name: &str) -> GPUObject {
-        unsafe { RENDER_PIPELINE.as_mut().get_gpu_object(name).clone() }
+    fn get_gpu_object(name: &str) -> Option<GPUObject> {
+        unsafe { RENDER_PIPELINE.as_mut().get_gpu_object(name).cloned() }
     }
-    fn gpu_object_valid(name: &str) -> bool {
+    pub fn gpu_object_valid(name: &str) -> bool {
         unsafe { RENDER_PIPELINE.as_mut().gpu_object_valid(name) }
     }
 
     pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {
-        if let GPUObject::SubShader(x) = get_gpu_object(name) {
+        if let GPUObject::SubShader(x) = get_gpu_object(name).unwrap() {
             x
         } else {
             panic!()
         }
     }
     pub fn get_shader_object(name: &str) -> ShaderGPUObject {
-        if let GPUObject::Shader(x) = get_gpu_object(name) {
+        if let GPUObject::Shader(x) = get_gpu_object(name).unwrap() {
             x
         } else {
             panic!()
         }
     }
     pub fn get_compute_shader_object(name: &str) -> ComputeShaderGPUObject {
-        if let GPUObject::ComputeShader(x) = get_gpu_object(name) {
+        if let GPUObject::ComputeShader(x) = get_gpu_object(name).unwrap() {
             x
         } else {
             panic!()
         }
     }
     pub fn get_model_object(name: &str) -> ModelGPUObject {
-        if let GPUObject::Model(x) = get_gpu_object(name) {
+        if let GPUObject::Model(x) = get_gpu_object(name).unwrap() {
             x
         } else {
             panic!()
         }
     }
     pub fn get_texture_object(name: &str) -> TextureGPUObject {
-        if let GPUObject::Texture(x) = get_gpu_object(name) {
+        if let GPUObject::Texture(x) = get_gpu_object(name).unwrap() {
             x
         } else {
             panic!()

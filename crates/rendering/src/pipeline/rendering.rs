@@ -186,14 +186,12 @@ impl PipelineRenderer {
     // Called each frame, for each renderer that is valid in the pipeline
     pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
         for renderer in self.renderers.elements.iter().filter_map(|x| x.as_ref()) {
-            /*
             // Should we render in wireframe or not?
             if self.wireframe {
                 render_wireframe(renderer, camera, &self.wireframe_shader);
             } else {
                 render(renderer, camera);
-            }
-            */
+            }            
         }
     }
     // Post-render event

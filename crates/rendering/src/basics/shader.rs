@@ -92,10 +92,10 @@ impl Shader {
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
-            // Check if we even have the subshader cached
-            if assets::alocc::object_cacher().cached(subshader_path) {
+            // Check if we even have the subshader cached (In the object cacher) and check if it's cached in the pipeline as well
+            if assets::alocc::object_cacher().cached(subshader_path) && pipec::gpu_object_valid(subshader_path) {               
                 let subshader = pipec::get_subshader_object(subshader_path);
-                self.linked_subshaders_programs.push(subshader);
+                self.linked_subshaders_programs.push(subshader);                
             } else {
                 // It was not cached, so we need to cache it
                 let mut subshader = SubShader::default()

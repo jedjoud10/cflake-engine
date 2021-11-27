@@ -38,6 +38,10 @@ impl Default for Material {
             uniforms: ShaderUniformsGroup::default(),
             visible: true,
         };
+        // Load the default shader
+        let mut material = material.set_shader(pipec::shader(Shader::default().load_shader(
+            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"]
+        ).unwrap()));
         // Set the default shader args
         material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
         material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);

@@ -12,7 +12,7 @@ impl ObjectCacher {
     // Cache a specific struct that implements the Asset trait
     pub fn cache<T: 'static + Object + Send + Sync>(&mut self, object_name: &str, obj: T) -> Result<Arc<T>, ObjectLoadError> {
         if !self.cached(object_name) {
-            // Cached asset
+            // We cache the asset
             let string_name = object_name.to_string();
             let arc = Arc::new(obj);
             // Only cache when the object isn't cached yet
@@ -21,6 +21,16 @@ impl ObjectCacher {
         } else {
             // Asset was already cached
             Err(ObjectLoadError::new_str("Asset was already cached!"))
+        }
+    }
+    // Cache if the object was not cached, and load it if it was already cached
+    pub fn cache_once_load<T: 'static + Send + Sync>(&mut self, object_name: &str, obj: T) -> Result<&Arc<dyn Any + Send + Sync>, ObjectLoadError> {
+        if self.cached(object_name) {
+            // Cached asset
+            Ok(self.load_cached(object_name).unwrap())
+        } else {
+            // Cache it
+            self.cache(object_name, obj)
         }
     }
     // Load a cached object

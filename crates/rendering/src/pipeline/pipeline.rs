@@ -389,8 +389,8 @@ impl Pipeline {
         Some(output)
     }
     // Get GPU object using it's specified name
-    pub fn get_gpu_object(&self, name: &str) -> &GPUObject {
-        self.gpu_objects.get(name).unwrap()
+    pub fn get_gpu_object(&self, name: &str) -> Option<&GPUObject> {
+        self.gpu_objects.get(name)
     }
     // Check if a GPU object exists
     pub fn gpu_object_valid(&self, name: &str) -> bool {
