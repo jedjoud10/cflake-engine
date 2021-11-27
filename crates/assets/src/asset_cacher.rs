@@ -42,13 +42,15 @@ impl AssetCacher {
     }  
 }
 
-// For how long will this asset be alive?
+// For how long will this asset be loaded?
+#[derive(Debug)]
 pub enum AssetLoadType {
     Static,       // You can only load it, you can't unload it
     Dynamic,      // You can load it, and you can also unload it
     Manual,       // Dispose of the bytes data, since the asset is manually cached
 }
 // Asset type
+#[derive(Debug)]
 pub enum AssetType {
     VertSubshader,
     FragSubshader,
@@ -60,6 +62,7 @@ pub enum AssetType {
     Font,
 }
 // Some data
+#[derive(Debug)]
 pub struct AssetMetadata {
     pub bytes: Vec<u8>,
     pub load_type: AssetLoadType,

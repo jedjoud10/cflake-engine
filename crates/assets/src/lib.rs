@@ -26,7 +26,15 @@ mod main {
     use lazy_static::lazy_static;
     // Half-assed multithreaded rendering lol
     lazy_static! {
-        pub static ref ASSETM: Mutex<AssetCacher> = Mutex::new(AssetCacher::default());
-        pub static ref OBJECTM: Mutex<ObjectCacher> = Mutex::new(ObjectCacher::default());
+        static ref ASSETM: Mutex<AssetCacher> = Mutex::new(AssetCacher::default());
+        static ref OBJECTM: Mutex<ObjectCacher> = Mutex::new(ObjectCacher::default());
+    }
+    // Get the asset cacher
+    pub fn asset_cacher() -> MutexGuard<'static, AssetCacher> {
+        ASSETM.lock().unwrap()
+    }
+    // Get the object cacher
+    pub fn object_cacher() -> MutexGuard<'static, ObjectCacher> {
+        OBJECTM.lock().unwrap()
     }
 }
