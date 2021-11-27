@@ -405,24 +405,7 @@ impl World {
     // When we resize the window
     pub fn resize_window_event(&mut self, size: (u16, u16)) {
         self.custom_data.window.dimensions = veclib::Vector2::new(size.0, size.1);
-        unsafe {
-            //gl::Viewport(0, 0, size.0 as i32, size.1 as i32);
-            /*
-            let render_system = self
-                .system_manager
-                .get_custom_system_data_mut::<systems::rendering_system::CustomData>(self.custom_data.render_system_id)
-                .unwrap();
-            // Update the size of each texture that is bound to the framebuffer
-            let dims = TextureType::Texture2D(size.0, size.1);
-            render_system.diffuse_texture.update_size(dims);
-            render_system.depth_texture.update_size(dims);
-            render_system.normals_texture.update_size(dims);
-            render_system.position_texture.update_size(dims);
-
-            //TODO: This
-            render_system.volumetric.update_texture_resolution(self.custom_data.window.dimensions);
-            */
-        }
+        pipec::task(pipec::RenderTask::WindowUpdate(pipec::SharedData::new(self.custom_data.window.clone())), "window_data_update", |x| println!("Doodo fard water"));
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(&mut self.component_manager).unwrap();

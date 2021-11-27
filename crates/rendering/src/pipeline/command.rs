@@ -71,7 +71,7 @@ pub enum RenderTask {
     RendererRemove(usize),
     RendererUpdateTransform(RendererGPUObject, SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector3<f32>)>),
     // Window settings
-    WindowSizeUpdate(u16, u16, f32),
+    WindowUpdate(SharedData<crate::Window>),
     // Pipeline
     DestroyRenderThread(),
     CameraDataUpdate(SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)>),
@@ -95,7 +95,7 @@ impl RenderTask {
             RenderTask::RendererAdd(_) => true,
             RenderTask::RendererRemove(_) => false,
             RenderTask::RendererUpdateTransform(_, _) => false,
-            RenderTask::WindowSizeUpdate(_, _, _) => false,
+            RenderTask::WindowUpdate(_) => true,
             RenderTask::DestroyRenderThread() => false,
             RenderTask::CameraDataUpdate(_) => false,
         }

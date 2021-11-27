@@ -240,4 +240,17 @@ impl PipelineRenderer {
     pub fn remove_renderer(&mut self, renderer_id: usize) {
         self.renderers.remove_element(renderer_id);
     }
+    // Update window
+    pub fn update_window(&mut self, window: &Window) {
+        self.window = window.clone();
+        // Update the size of each texture that is bound to the framebuffer
+        let dims = TextureType::Texture2D(window.dimensions.x, window.dimensions.y);
+        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims), "resize_deferred_renderer_diffuse_tex").unwrap();
+        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims), "resize_deferred_renderer_depth_tex").unwrap();
+        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims), "resize_deferred_renderer_normals_tex").unwrap();
+        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims), "resize_deferred_renderer_position_tex").unwrap();
+        unsafe {
+            gl::Viewport(0, 0, window.dimensions.x as i32, window.dimensions.y as i32);
+        }
+    }
 }

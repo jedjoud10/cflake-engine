@@ -18,7 +18,7 @@ fn command(command: RenderCommand) -> RenderTaskReturn {
     // Handle the common cases
     match command.input_task {
         // Window
-        RenderTask::WindowSizeUpdate(_width, _height, _aspect_ratio) => todo!(),
+        RenderTask::WindowUpdate(_) => RenderTaskReturn::None,
         // Pipeline
         RenderTask::DestroyRenderThread() => todo!(),
         RenderTask::CameraDataUpdate(_) => RenderTaskReturn::None,
@@ -78,11 +78,17 @@ fn poll_commands(
             crate::RenderCommandType::Immediate => render_to_main,
         };
         match cmd.input_task {
+            // Pipeline shit
             RenderTask::DestroyRenderThread() => {
                 // Destroy the render thread
                 *valid = false;
                 println!("Destroy RenderThread and RenderPipeline!");
                 break;
+            },
+            RenderTask::WindowUpdate(window) => {
+                // Update the window
+                pr.update_window(window.object.clone().as_ref());
+                channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
             }
             // Renderer commands
             RenderTask::RendererAdd(shared_renderer) => {
