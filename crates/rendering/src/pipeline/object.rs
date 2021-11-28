@@ -44,10 +44,7 @@ pub mod uniform_setters {
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
     pub fn get_uniform_location(shader: u32, name: &str) -> i32 {
-        unsafe {
-            
-            gl::GetUniformLocation(shader, CString::new(name).unwrap().as_ptr())
-        }
+        unsafe { gl::GetUniformLocation(shader, CString::new(name).unwrap().as_ptr()) }
     }
     // Set a f32 uniform
     pub unsafe fn set_f32(index: i32, value: &f32) {
@@ -188,7 +185,7 @@ impl ShaderUniformsGroup {
     // With shader
     pub fn with_shader(&mut self, shader: &ShaderGPUObject) {
         self.shader = shader.0;
-    } 
+    }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
         self.uniforms.insert(name.to_string(), Uniform::Bool(value));
@@ -286,7 +283,7 @@ impl ComputeShaderGPUObject {
 impl ComputeShaderGPUObject {
     // Compute shader stuff you know (Waitable task)
     pub fn run(&self, x: u16, y: u16, z: u16, uniforms_group: ShaderUniformsGroup) {
-        crate::pipec::task(crate::RenderTask::ComputeRun(self.clone(), (x, y, z), uniforms_group), "", |_| { });
+        crate::pipec::task(crate::RenderTask::ComputeRun(self.clone(), (x, y, z), uniforms_group), "", |_| {});
     }
     // Lock the state of this compute shader (Immediate task, force run the shader task if it was not polled yet)
     pub fn lock_state(&self) {
@@ -303,7 +300,7 @@ pub enum GPUObject {
     Shader(ShaderGPUObject),               // The shader program ID
     ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions
     Texture(TextureGPUObject),             // The texture ID
-    TextureFill(TextureFillGPUObject), // Texture fill ID
+    TextureFill(TextureFillGPUObject),     // Texture fill ID
     Renderer(usize),                       // The renderer ID
 }
 

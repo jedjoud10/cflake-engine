@@ -1,6 +1,5 @@
 use crate::pipeline::object::*;
-use crate::{TextureShaderAccessType};
-
+use crate::TextureShaderAccessType;
 
 // Some default uniforms that we will set
 #[derive(Clone)]

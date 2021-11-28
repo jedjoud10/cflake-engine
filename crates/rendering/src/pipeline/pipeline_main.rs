@@ -1,7 +1,9 @@
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
-use crate::{Pipeline};
-
+use crate::Pipeline;
 
 pub struct StaticMut<T> {
     opt: Option<T>,
@@ -28,13 +30,13 @@ pub fn rname(prefix: &str) -> String {
     let st = std::time::SystemTime::now();
     st.hash(&mut hash);
     let x = hash.finish();
-    format!("{}_{:x}", prefix, x).to_string()    
+    format!("{}_{:x}", prefix, x).to_string()
 }
 
 pub mod pipec {
     use std::ffi::c_void;
 
-    use assets::{CachedObject};
+    use assets::CachedObject;
 
     use crate::pipeline::object::*;
     use crate::{Model, Pipeline, RenderTaskReturn, RenderTaskStatus, Renderer, Shader, SubShader, Texture, RENDER_PIPELINE};
@@ -280,16 +282,12 @@ pub mod pipec {
         let (bytes, _) = match taskreturn {
             RenderTaskReturn::GPUObject(x) => match x {
                 GPUObject::TextureFill(x) => (x.0, x.1),
-                _ => panic!()
+                _ => panic!(),
             },
-            _ => panic!()
+            _ => panic!(),
         };
         // Unsafe
-        let t = bytes.chunks_exact(std::mem::size_of::<T>())
-            .map(|x| unsafe { 
-                std::ptr::read::<T>(x.as_ptr() as *const _)
-            }
-        );
+        let t = bytes.chunks_exact(std::mem::size_of::<T>()).map(|x| unsafe { std::ptr::read::<T>(x.as_ptr() as *const _) });
         let pixels: Vec<T> = t.collect();
         pixels
     }
@@ -302,16 +300,12 @@ pub mod pipec {
         let (bytes, _) = match taskreturn {
             RenderTaskReturn::GPUObject(x) => match x {
                 GPUObject::TextureFill(x) => (x.0, x.1),
-                _ => panic!()
+                _ => panic!(),
             },
-            _ => panic!()
+            _ => panic!(),
         };
         // Unsafe
-        let t = bytes.chunks_exact(std::mem::size_of::<T>())
-            .map(|x| unsafe { 
-                std::ptr::read::<T>(x.as_ptr() as *const _)
-            }
-        );
+        let t = bytes.chunks_exact(std::mem::size_of::<T>()).map(|x| unsafe { std::ptr::read::<T>(x.as_ptr() as *const _) });
         let pixels: Vec<T> = t.collect();
         pixels
     }

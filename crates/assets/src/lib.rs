@@ -1,19 +1,19 @@
 // Export
 mod asset_cacher;
 mod asset_object;
+mod commands;
 mod error;
 mod macros;
 mod object_cacher;
 mod tests;
-mod commands;
 use std::sync::Mutex;
 
 pub use asset_cacher::*;
 pub use asset_object::*;
+pub use commands::*;
 pub use error::*;
 pub use macros::*;
 pub use object_cacher::*;
-pub use commands::*;
 
 // Asset Loading and Object Caching Commands
 pub mod globals {

@@ -1,5 +1,3 @@
-
-
 // A simple model that holds vertex, normal, and color data
 #[derive(Clone)]
 pub struct Model {
@@ -22,7 +20,7 @@ impl Default for Model {
             uvs: Vec::new(),
             colors: Vec::new(),
             triangles: Vec::new(),
-        }    
+        }
     }
 }
 

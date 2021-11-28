@@ -1,16 +1,13 @@
-
 use glfw::Context;
 
 use super::object::*;
-use crate::{RenderCommand, RenderCommandType, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage, basics::*, pipec, rendering::PipelineRenderer};
+use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderCommandType, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage};
 use std::{
     collections::HashMap,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
-    sync::{
-        mpsc::{Receiver, Sender},
-    },
+    sync::mpsc::{Receiver, Sender},
 };
 
 // Commands that can be ran internally
@@ -68,7 +65,7 @@ fn command(
         RenderTask::WindowUpdateFullscreen(fullscreen) => {
             pr.window.fullscreen = fullscreen;
             RenderTaskReturn::None
-        },
+        }
         RenderTask::WindowUpdateVSync(vsync) => {
             pr.window.vsync = vsync;
             // We need an OpenGL context to do this shit
@@ -80,12 +77,12 @@ fn command(
                 glfw.set_swap_interval(glfw::SwapInterval::None);
             }
             RenderTaskReturn::None
-        },
+        }
         RenderTask::WindowUpdateSize(size) => {
             pr.window.dimensions = size;
             pr.update_window_dimensions(size);
             RenderTaskReturn::None
-        },
+        }
         // Pipeline
         RenderTask::DestroyRenderThread() => todo!(),
         RenderTask::CameraDataUpdate(shared) => {
@@ -109,17 +106,20 @@ fn command(
             };
             channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
             RenderTaskReturn::None
-        }        
+        }
         // Renderer commands
         RenderTask::RendererAdd(shared_renderer) => {
             let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
             channel.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
             RenderTaskReturn::None
         }
-        RenderTask::RendererRemove(renderer_id) => { Pipeline::remove_renderer(pr, renderer_id); RenderTaskReturn::None },
+        RenderTask::RendererRemove(renderer_id) => {
+            Pipeline::remove_renderer(pr, renderer_id);
+            RenderTaskReturn::None
+        }
         RenderTask::RendererUpdateTransform(_renderer, _transform) => todo!(),
         // Internal cases
-        x => internal_task(x)
+        x => internal_task(x),
     }
 }
 
@@ -149,7 +149,7 @@ fn poll_commands(
                 // Destroy the render thread
                 *valid = false;
                 break;
-            },            
+            }
             _ => {
                 // Valid command
                 match command(name.clone(), pr, camera, channel, cmd, window, glfw) {
@@ -189,13 +189,13 @@ fn frame(
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 #[derive(Default)]
-pub struct Pipeline {    
-    pub next_command_name_id: u128,                                                 // Next Command ID
+pub struct Pipeline {
+    pub next_command_name_id: u128,                                                // Next Command ID
     pub render_commands_buffer: HashMap<String, Box<dyn FnMut(RenderTaskStatus)>>, // The tasks that are asynchronous and are pending their return values
     pub gpu_objects: HashMap<String, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
-    pub render_to_main: Option<Receiver<RenderTaskStatus>>,                      // RX (MainThread)
-    pub render_to_main_async: Option<Receiver<RenderTaskStatus>>, // RX (MainThread) asnyc
-    pub main_to_render: Option<Sender<RenderCommand>>,                           // TX (MainThread)
+    pub render_to_main: Option<Receiver<RenderTaskStatus>>,                        // RX (MainThread)
+    pub render_to_main_async: Option<Receiver<RenderTaskStatus>>,                  // RX (MainThread) asnyc
+    pub main_to_render: Option<Sender<RenderCommand>>,                             // TX (MainThread)
 }
 impl Pipeline {
     // Create the new render thread
@@ -248,7 +248,7 @@ impl Pipeline {
 
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
-                pipeline_renderer.init();                
+                pipeline_renderer.init();
 
                 // El camera
                 let mut camera = CameraDataGPUObject {
@@ -326,7 +326,7 @@ impl Pipeline {
                 RenderTaskStatus::Failed => panic!(),
             };
             // Call the callback if possible
-            if self.render_commands_buffer.contains_key(&name) {                
+            if self.render_commands_buffer.contains_key(&name) {
                 let mut callback = self.render_commands_buffer.remove(&name).unwrap();
                 match &task_return {
                     RenderTaskReturn::GPUObject(x) => {
@@ -349,7 +349,7 @@ impl Pipeline {
             name = format!("_{}", self.next_command_name_id);
             self.next_command_name_id += 1;
         }
-        let should_wait = task.returns_to_main();        
+        let should_wait = task.returns_to_main();
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             _type: RenderCommandType::Immediate,
@@ -357,12 +357,12 @@ impl Pipeline {
             input_task: task,
         };
         // Send the command to the render thread
-        let tx = self.main_to_render.as_ref().unwrap(); 
+        let tx = self.main_to_render.as_ref().unwrap();
         let rx = self.render_to_main.as_ref().unwrap();
 
         // Send the command
         tx.send(render_command).unwrap();
-        if !should_wait { 
+        if !should_wait {
             Some(RenderTaskReturn::None)
         } else {
             // Wait for the result (only if we need to)
@@ -398,7 +398,7 @@ impl Pipeline {
         if has_data_for_main_thread {
             // This time, we must add this to the wait list
             self.render_commands_buffer.insert(name.clone(), boxed_fn_mut);
-        }        
+        }
     }
     // Internal immediate task. This assumes that we are already on the RenderThread
     pub fn internal_task_immediate(&mut self, task: RenderTask, mut name: String) -> Option<RenderTaskReturn> {

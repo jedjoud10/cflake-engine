@@ -35,5 +35,5 @@ where
     // Get unique object
     fn get_unique_object_name(&self, local_path: &str) -> String {
         local_path.to_string()
-    }    
+    }
 }

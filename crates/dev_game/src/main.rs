@@ -39,43 +39,61 @@ pub fn world_initialized(world: &mut World) {
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
     let model = pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap());
-    let default_material = Material::new("Default material").load_diffuse("defaults\\textures\\rock_normal.png", Some(TextureLoadOptions {
-        filter: TextureFilter::Nearest,
-        wrapping: TextureWrapping::Repeat,
-    }));
-    for x in 0..5 {        
+    let default_material = Material::new("Default material").load_diffuse(
+        "defaults\\textures\\rock_normal.png",
+        Some(TextureLoadOptions {
+            filter: TextureFilter::Nearest,
+            wrapping: TextureWrapping::Repeat,
+        }),
+    );
+    for x in 0..5 {
         let mut entity = Entity::new("Test");
-        entity.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::<f32>::new(x as f32, 0.0, 0.0))).unwrap();
+        entity
+            .link_component::<components::Transform>(
+                data.component_manager,
+                components::Transform::default().with_position(veclib::Vector3::<f32>::new(x as f32, 0.0, 0.0)),
+            )
+            .unwrap();
         let renderer = components::Renderer::default().set_model(model.clone()).set_material(default_material.clone());
         entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
-        data.entity_manager.add_entity_s(entity);    
+        data.entity_manager.add_entity_s(entity);
     }
-    
+
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
     // The terrain shader
-    let terrain_shader = pipec::shader(Shader::default()
-        .load_shader(
-            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl"],
-        ).unwrap());
+    let terrain_shader = pipec::shader(
+        Shader::default()
+            .load_shader(vec![
+                "defaults\\shaders\\rendering\\default.vrsh.glsl",
+                "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl",
+            ])
+            .unwrap(),
+    );
     // Material
     let mut material = Material::new("Terrain material").set_shader(terrain_shader);
     material.uniforms.set_f32("normals_strength", 2.0);
     material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE * 0.7);
     // Create the diffuse texture array
-    let texture = pipec::texturec(assets::cachec::cache_l("terrain_diffuse_texture", Texture::create_texturearray(
-        vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"],
-        256, 256)
-        .apply_texture_load_options(None)
-        .enable_mipmaps()
-    ).unwrap());
+    let texture = pipec::texturec(
+        assets::cachec::cache_l(
+            "terrain_diffuse_texture",
+            Texture::create_texturearray(vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"], 256, 256)
+                .apply_texture_load_options(None)
+                .enable_mipmaps(),
+        )
+        .unwrap(),
+    );
     // Create the normalmap texture array
-    let texture2 = pipec::texturec(assets::cachec::cache_l("terrain_normal_map_texture", Texture::create_texturearray(
-        vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"],
-        256, 256)
-        .apply_texture_load_options(None)
-        .enable_mipmaps()
-    ).unwrap());
+    let texture2 = pipec::texturec(
+        assets::cachec::cache_l(
+            "terrain_normal_map_texture",
+            Texture::create_texturearray(vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"], 256, 256)
+                .apply_texture_load_options(None)
+                .enable_mipmaps(),
+        )
+        .unwrap(),
+    );
     // Assign
     let group = &mut material.uniforms;
     group.set_t2da("diffuse_textures", texture, 0);

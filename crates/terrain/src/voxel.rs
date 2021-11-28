@@ -71,7 +71,7 @@ impl VoxelGenerator {
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
-            group
+            group,
         );
     }
     // Read back the data from the compute shader
@@ -80,7 +80,11 @@ impl VoxelGenerator {
         self.compute.lock_state();
         // Read back the texture into the data buffer
         let voxel_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()), "get_voxel_density").unwrap();
-        let material_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2), "get_voxel_material").unwrap();
+        let material_pixels = pipec::task_immediate(
+            pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2),
+            "get_voxel_material",
+        )
+        .unwrap();
         let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
         let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values

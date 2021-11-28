@@ -1,5 +1,5 @@
+use crate::AssetLoadError;
 use std::collections::HashMap;
-use crate::{AssetLoadError};
 
 // Caches the embeded bytes into an array basically
 #[derive(Default)]
@@ -38,15 +38,15 @@ impl AssetCacher {
         };
         self.cached_metadata.insert(name.to_string(), data);
         Ok(())
-    }  
+    }
 }
 
 // For how long will this asset be loaded?
 #[derive(Debug)]
 pub enum AssetLoadType {
-    Static,       // You can only load it, you can't unload it
-    Dynamic,      // You can load it, and you can also unload it
-    Manual,       // Dispose of the bytes data, since the asset is manually cached
+    Static,  // You can only load it, you can't unload it
+    Dynamic, // You can load it, and you can also unload it
+    Manual,  // Dispose of the bytes data, since the asset is manually cached
 }
 // Asset type
 #[derive(Debug)]

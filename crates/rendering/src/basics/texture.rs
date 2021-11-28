@@ -1,6 +1,9 @@
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
-use crate::{utils::*};
+use crate::utils::*;
 use assets::*;
 use bitflags::bitflags;
 use gl;
@@ -403,7 +406,7 @@ impl Texture {
         for x in &texture_paths {
             // Load this texture from the bytes
             let assetcacher = assets::assetc::asset_cacher();
-            let metadata =  assetcacher.cached_metadata.get(*x).unwrap();
+            let metadata = assetcacher.cached_metadata.get(*x).unwrap();
             let png_bytes = metadata.bytes.as_bytes();
             let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
             // Resize the image so it fits the dimension criteria
@@ -415,7 +418,7 @@ impl Texture {
         }
         Texture {
             name: format!("{}-{}", "2dtexturearray", texture_paths.join("--")),
-            bytes:  bytes.into_iter().flatten().collect::<Vec<u8>>(),
+            bytes: bytes.into_iter().flatten().collect::<Vec<u8>>(),
             ttype: TextureType::TextureArray(width, height, texture_paths.len() as u16),
             ..Texture::default()
         }

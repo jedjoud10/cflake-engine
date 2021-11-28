@@ -3,9 +3,6 @@ use crate::basics::*;
 use crate::pipec;
 use crate::pipeline::*;
 
-
-
-
 // Debugs some data about the current frame in a 64x256 texture. Could be used to graph the FPS or memory usage
 #[derive(Default)]
 pub struct FrameStats {

@@ -1,4 +1,4 @@
-use std::sync::{Arc};
+use std::sync::Arc;
 
 use crate::{
     ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType,
@@ -38,12 +38,12 @@ pub enum SpecialPipelineMessage {
 // The task status that is sent back to the main thread
 pub enum RenderTaskStatus {
     Successful(RenderTaskReturn, String), // GG EZ
-    Failed,                             // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
+    Failed,                               // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
 }
 
 // A render command
 pub struct RenderCommand {
-    pub _type: RenderCommandType, 
+    pub _type: RenderCommandType,
     pub name: String,
     pub input_task: RenderTask,
 }

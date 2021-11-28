@@ -58,36 +58,46 @@ impl World {
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
 
         // Load the default objects for the CacheManagers
-        // Load the missing texture 
-        pipec::texturec(
-            assets::cachec::acache_l("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap()
-        );
+        // Load the missing texture
+        pipec::texturec(assets::cachec::acache_l("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap());
         // Create the black texture
         pipec::texturec(
-            assets::cachec::cache("black", Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("black")
-                .set_bytes(vec![0, 0, 0, 255])).unwrap()
+            assets::cachec::cache(
+                "black",
+                Texture::default()
+                    .set_dimensions(TextureType::Texture2D(1, 1))
+                    .set_filter(TextureFilter::Linear)
+                    .enable_mipmaps()
+                    .set_name("black")
+                    .set_bytes(vec![0, 0, 0, 255]),
+            )
+            .unwrap(),
         );
         // Create the white texture
         pipec::texturec(
-            assets::cachec::cache("white", Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("white")
-                .set_bytes(vec![255, 255, 255, 255])).unwrap()
+            assets::cachec::cache(
+                "white",
+                Texture::default()
+                    .set_dimensions(TextureType::Texture2D(1, 1))
+                    .set_filter(TextureFilter::Linear)
+                    .enable_mipmaps()
+                    .set_name("white")
+                    .set_bytes(vec![255, 255, 255, 255]),
+            )
+            .unwrap(),
         );
         // Create the default normals texture
         pipec::texturec(
-            assets::cachec::cache("default_normals", Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("default_normals")
-                .set_bytes(vec![127, 128, 255, 255])).unwrap(),
+            assets::cachec::cache(
+                "default_normals",
+                Texture::default()
+                    .set_dimensions(TextureType::Texture2D(1, 1))
+                    .set_filter(TextureFilter::Linear)
+                    .enable_mipmaps()
+                    .set_name("default_normals")
+                    .set_bytes(vec![127, 128, 255, 255]),
+            )
+            .unwrap(),
         );
 
         // Load the default systems
@@ -122,7 +132,7 @@ impl World {
         let mut terrain_system = systems::terrain_system::system(&mut data);
         terrain_system.enable(&mut data);
         self.system_manager.add_system(terrain_system);
-        
+
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
         // ----Add the elements here----
@@ -156,9 +166,9 @@ impl World {
         self.ui_manager.add_root("console", console_root);
     }
     // When the world started initializing
-    pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window,  callback: fn(&mut Self)) {
+    pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
         // Load the default stuff
-        self.load_defaults();        
+        self.load_defaults();
         window_commands::hide_cursor(window);
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.json", &GameConfig::default());
@@ -169,9 +179,9 @@ impl World {
         window_commands::set_vsync(self.config_file.vsync);
         // Update entity manager
         self.update_entity_manager();
-        
+
         self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 2.0).normalized();
-        
+
         // Callback
         callback(self);
         println!("Hello world!");
@@ -218,7 +228,7 @@ impl World {
 
         // Check for default mapping events
         if self.debug.console.listen_command("quit").is_some() {
-            self.kill_world();    
+            self.kill_world();
         }
         // Toggle the fullscreen
         if self.debug.console.listen_command("toggle-fullscreen").is_some() {
@@ -350,7 +360,7 @@ impl World {
     // When we resize the window
     pub fn resize_window_event(&mut self, size: (u16, u16)) {
         let dims = veclib::Vector2::new(size.0, size.1);
-        pipec::task(pipec::RenderTask::WindowUpdateSize(dims), "window_data_update", |_| { });
+        pipec::task(pipec::RenderTask::WindowUpdateSize(dims), "window_data_update", |_| {});
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(&mut self.component_manager).unwrap();
@@ -402,6 +412,5 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png");
     preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png");
     preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png");
-    println!("Finished pre-loading default assets!");    
+    println!("Finished pre-loading default assets!");
 }
-

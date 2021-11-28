@@ -1,7 +1,7 @@
+use super::SubShader;
 use crate::pipec;
 use crate::utils::RenderingError;
 use crate::SubShaderGPUObject;
-use super::SubShader;
 use assets::Object;
 use std::collections::{HashMap, HashSet};
 // A shader that contains two sub shaders that are compiled independently
@@ -20,7 +20,7 @@ impl Default for Shader {
             source: "".to_string(),
             externalcode: HashMap::new(),
             linked_subshaders_programs: Vec::new(),
-        }        
+        }
     }
 }
 
@@ -31,7 +31,7 @@ impl Object for Shader {
     }
 }
 
-impl Shader {    
+impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
     fn load_includes<'a>(&self, subshader_name: &str, lines: &mut Vec<String>, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
         let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new();
@@ -44,12 +44,12 @@ impl Shader {
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = assets::assetc::load_text(local_path).map_err(|_|
+                    let text = assets::assetc::load_text(local_path).map_err(|_| {
                         RenderingError::new(format!(
                             "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
                             local_path, subshader_name
-                        )
-                    ))?;
+                        ))
+                    })?;
                     let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                     vectors_to_insert.push((i, new_lines));
                 }
@@ -91,9 +91,9 @@ impl Shader {
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached (In the object cacher) and check if it's cached in the pipeline as well
-            if assets::cachec::cached(subshader_path) && pipec::gpu_object_valid(subshader_path) {               
+            if assets::cachec::cached(subshader_path) && pipec::gpu_object_valid(subshader_path) {
                 let subshader = pipec::get_subshader_object(subshader_path);
-                self.linked_subshaders_programs.push(subshader);                
+                self.linked_subshaders_programs.push(subshader);
             } else {
                 // It was not cached, so we need to cache it
                 let mut subshader: SubShader = assets::assetc::dload(subshader_path).map_err(|_| RenderingError::new_str("Sub-shader was not pre-loaded!"))?;

@@ -1,10 +1,9 @@
-
-use std::ptr::null;
-use assets::{Object};
+use crate::{pipec, pipeline::object::*, FrameStats, MaterialFlags, Shader, Texture};
+use crate::{texture::*, DataType, Material, Window};
+use assets::Object;
 use glfw::Context;
 use others::SmartList;
-use crate::{Shader, pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
-use crate::{DataType, Material, Window, texture::*};
+use std::ptr::null;
 
 // These should be ran on the main thread btw
 pub mod window_commands {
@@ -32,11 +31,11 @@ pub mod window_commands {
                 }
             });
         }
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen), "", |_| { });
+        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen), "", |_| {});
     }
     // Set vsync
     pub fn set_vsync(vsync: bool) {
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync), "", |_| { });        
+        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync), "", |_| {});
     }
     // Hide the cursor
     pub fn hide_cursor(window: &mut glfw::Window) {
@@ -60,8 +59,8 @@ pub struct PipelineRenderer {
     wireframe_shader: ShaderGPUObject,       // The current wireframe shader
     frame_stats: FrameStats,                 // Some frame stats
     renderers: SmartList<RendererGPUObject>, // The collection of valid renderers (Can include renderers that are culled out or invisible)
-    pub window: Window, // Window
-    pub default_material: Option<Material>, // Self explanatory
+    pub window: Window,                      // Window
+    pub default_material: Option<Material>,  // Self explanatory
 }
 
 // Render debug primitives
@@ -158,11 +157,15 @@ impl PipelineRenderer {
                     "defaults\\shaders\\rendering\\screen.frsh.glsl",
                 ])
                 .unwrap(),
-        );       
+        );
         // Create a default material
-        self.default_material = Some(Material::default().set_shader(pipec::ishader(Shader::default().iload_shader(
-            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"]
-        ).unwrap())));
+        self.default_material = Some(
+            Material::default().set_shader(pipec::ishader(
+                Shader::default()
+                    .iload_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
+                    .unwrap(),
+            )),
+        );
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {
@@ -212,15 +215,19 @@ impl PipelineRenderer {
         /* #region Actual pipeline renderer shit */
         // Load sky gradient texture
         self.sky_texture = pipec::itexturec(
-        assets::cachec::acache_l("defaults\\textures\\sky_gradient.png", 
-            Texture::default().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge)).unwrap()
+            assets::cachec::acache_l(
+                "defaults\\textures\\sky_gradient.png",
+                Texture::default().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge),
+            )
+            .unwrap(),
         );
 
         // Load the wireframe shader
-        self.wireframe_shader = pipec::ishader(Shader::default()
-            .iload_shader(
-                vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"],
-            ).unwrap());        
+        self.wireframe_shader = pipec::ishader(
+            Shader::default()
+                .iload_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"])
+                .unwrap(),
+        );
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
@@ -239,7 +246,7 @@ impl PipelineRenderer {
                 render_wireframe(renderer, camera, &self.wireframe_shader);
             } else {
                 render(renderer, camera);
-            }            
+            }
         }
     }
     // Post-render event

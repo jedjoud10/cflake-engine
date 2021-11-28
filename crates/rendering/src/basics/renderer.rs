@@ -1,6 +1,5 @@
-use super::{Material};
-use crate::{ModelGPUObject};
-
+use super::Material;
+use crate::ModelGPUObject;
 
 use bitflags::bitflags;
 // Yup

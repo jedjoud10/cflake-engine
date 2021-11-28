@@ -1,4 +1,3 @@
-
 // Get the default width and height of the starting window
 pub const WINDOW_SIZE: veclib::Vector2<u16> = veclib::consts::vec2(1280, 720);
 

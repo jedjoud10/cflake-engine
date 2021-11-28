@@ -1,10 +1,8 @@
 use crate::basics::*;
 use crate::pipeline::*;
 
-use assets::{Object};
+use assets::Object;
 use bitflags::bitflags;
-
-
 
 bitflags! {
     pub struct MaterialFlags: u8 {
@@ -45,10 +43,14 @@ impl Default for Material {
 impl Material {
     // Create a new material with a name
     pub fn new(material_name: &str) -> Self {
-        let mut material = Self::default();        
+        let mut material = Self::default();
         material.material_name = material_name.to_string();
-        material.uniforms.set_t2d("diffuse_tex", pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
-        material.uniforms.set_t2d("normals_tex", pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
+        material
+            .uniforms
+            .set_t2d("diffuse_tex", pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
+        material
+            .uniforms
+            .set_t2d("normals_tex", pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
         material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
         material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
         material.uniforms.set_f32("normals_strength", 1.0);
@@ -58,10 +60,11 @@ impl Material {
     pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>) -> Self {
         // Load the texture
         let texture = pipec::texturec(
-            assets::cachec::acache_l(diffuse_path, Texture::default()
-                .enable_mipmaps()
-                .set_format(TextureFormat::RGBA8R)
-                .apply_texture_load_options(opt)).unwrap()
+            assets::cachec::acache_l(
+                diffuse_path,
+                Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
+            )
+            .unwrap(),
         );
         self.uniforms.set_t2d("diffuse_tex", texture, 0);
         self
@@ -70,10 +73,11 @@ impl Material {
     pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>) -> Self {
         // Load the texture
         let texture = pipec::texturec(
-            assets::cachec::acache_l(normal_path, Texture::default()
-                .enable_mipmaps()
-                .set_format(TextureFormat::RGBA8R)
-                .apply_texture_load_options(opt)).unwrap()
+            assets::cachec::acache_l(
+                normal_path,
+                Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
+            )
+            .unwrap(),
         );
         self.uniforms.set_t2d("normals_tex", texture, 1);
         self
