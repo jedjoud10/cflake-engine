@@ -52,7 +52,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         let delta = new_time - last_time;
         last_time = new_time;
         // Update the world
-        world.update_world(&mut window, &mut glfw, delta);
+        world.update_world(delta);
 
         // Read the events at the start of the frame
         glfw.poll_events();

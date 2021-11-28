@@ -67,7 +67,6 @@ pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components
     // Update the matrices
     let camera = components.get_component_mut::<components::Camera>(data.component_manager).unwrap();
     camera.update_view_matrix(position, rotation);
-    camera.update_projection_matrix(&data.custom_data.window);
     if !data.input_manager.map_toggled("cull_update") {
         camera.update_frustum_culling_matrix();
     }

@@ -21,10 +21,16 @@ impl Camera {
             ..Self::default()
         }
     }
+    // Update the aspect ratio of this camera
+    pub fn update_aspect_ratio(&mut self, dims: veclib::Vector2<u16>) {
+        self.aspect_ratio = dims.x as f32 / dims.y as f32;
+        // Also update the projection matrix
+        self.update_projection_matrix();
+    }
     // Update the projection matrix of this camera
-    pub fn update_projection_matrix(&mut self, window: &Window) {
+    pub fn update_projection_matrix(&mut self) {
         // Turn the horizontal fov into a vertical one
-        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (window.dimensions.y as f32 / window.dimensions.x as f32)).atan();
+        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (self.aspect_ratio))).atan();
         self.projection_matrix = veclib::Matrix4x4::from_perspective(self.clip_planes.x, self.clip_planes.y, self.aspect_ratio, vertical_fov);
     }
     // Calculate the view matrix using a rotation and a position

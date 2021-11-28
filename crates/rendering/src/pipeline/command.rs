@@ -71,8 +71,9 @@ pub enum RenderTask {
     RendererRemove(usize),
     RendererUpdateTransform(RendererGPUObject, SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector3<f32>)>),
     // Window settings
-    WindowUpdate(SharedData<crate::Window>),
-    WindowSetFullscreen(bool),
+    WindowUpdateSize(veclib::Vector2<u16>),
+    WindowUpdateVSync(bool),
+    WindowUpdateFullscreen(bool),
     // Pipeline
     DestroyRenderThread(),
     CameraDataUpdate(SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)>),
@@ -96,8 +97,9 @@ impl RenderTask {
             RenderTask::RendererAdd(_) => true,
             RenderTask::RendererRemove(_) => false,
             RenderTask::RendererUpdateTransform(_, _) => false,
-            RenderTask::WindowUpdate(_) => true,
-            RenderTask::WindowSetFullscreen(_) => false,
+            RenderTask::WindowUpdateSize(_) => false,
+            RenderTask::WindowUpdateVSync(_) => false,
+            RenderTask::WindowUpdateFullscreen(_) => false,
             RenderTask::DestroyRenderThread() => false,
             RenderTask::CameraDataUpdate(_) => false,
         }

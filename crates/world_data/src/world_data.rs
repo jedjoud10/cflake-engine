@@ -16,7 +16,7 @@ pub struct WorldData<'a> {
 // Some custom data that will be passed to systems
 #[derive(Default)]
 pub struct CustomWorldData {
+    pub fullscreen: bool,
     pub main_camera_entity_id: usize,
-    pub window: Window,
     pub light_dir: veclib::Vector3<f32>,
 }

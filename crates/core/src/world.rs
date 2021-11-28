@@ -169,19 +169,9 @@ impl World {
         self.saver_loader.create_default("config\\game_config.json", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.json");
         self.config_file = config_file_values;
-
-        // Enable disable vsync
-        /*
-        if self.config_file.vsync {
-            // Enable VSync
-            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-        } else {
-            // Disable VSync
-            glfw.set_swap_interval(glfw::SwapInterval::None);
-        }
-        // Set the window mode
-        self.set_fullscreen(self.config_file.fullscreen, glfw, window);
-        */
+        // Apply the config file's data to the rendering window
+        pipec::task_immediate(pipec::RenderTask::WindowUpdateFullscreen(self.config_file.fullscreen), "initialize_default_window_settings").unwrap();
+        pipec::task_immediate(pipec::RenderTask::WindowUpdateFullscreen(self.config_file.vsync), "initialize_default_window_settings").unwrap();
 
         // Update entity manager
         self.update_entity_manager();
@@ -239,8 +229,8 @@ impl World {
         }
         // Toggle the fullscreen
         if self.debug.console.listen_command("toggle-fullscreen").is_some() {
-            self.custom_data.window.fullscreen = !self.custom_data.window.fullscreen;
-            self.set_fullscreen(self.custom_data.window.fullscreen);
+            self.custom_data.fullscreen = !self.custom_data.fullscreen;
+            self.set_fullscreen(self.custom_data.fullscreen);
         }
         // Toggle the rendering
         if self.debug.console.listen_command("toggle-render").is_some() {
@@ -283,8 +273,7 @@ impl World {
     }
     // Set the fullscreen status
     fn set_fullscreen(&mut self, fullscreen: bool) {
-        self.custom_data.window.fullscreen = fullscreen;
-        pipec::task(pipec::RenderTask::WindowSetFullscreen(self.custom_data.window.fullscreen), "", |_| {});
+        pipec::task(pipec::RenderTask::WindowUpdateFullscreen(fullscreen), "", |_| {});
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {
@@ -373,13 +362,13 @@ impl World {
 impl World {
     // When we resize the window
     pub fn resize_window_event(&mut self, size: (u16, u16)) {
-        self.custom_data.window.dimensions = veclib::Vector2::new(size.0, size.1);
-        pipec::task(pipec::RenderTask::WindowUpdate(pipec::SharedData::new(self.custom_data.window.clone())), "window_data_update", |x| println!("Doodo fard water"));
+        let dims = veclib::Vector2::new(size.0, size.1);
+        pipec::task(pipec::RenderTask::WindowUpdateSize(dims), "window_data_update", |_| { });
         let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
         let entity_clone_id = camera_entity_clone.entity_id;
         let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(&mut self.component_manager).unwrap();
         camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
-        camera_component.update_projection_matrix(&self.custom_data.window);
+        camera_component.update_aspect_ratio(dims);
         // Update the original entity
         *self.entity_manager.get_entity_mut(entity_clone_id).unwrap() = camera_entity_clone;
     }

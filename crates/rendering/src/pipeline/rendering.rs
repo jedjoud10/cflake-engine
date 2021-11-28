@@ -21,7 +21,7 @@ pub struct PipelineRenderer {
     wireframe_shader: ShaderGPUObject,       // The current wireframe shader
     frame_stats: FrameStats,                 // Some frame stats
     renderers: SmartList<RendererGPUObject>, // The collection of valid renderers (Can include renderers that are culled out or invisible)
-    window: Window, // Window
+    pub window: Window, // Window
 }
 
 // Render debug primitives
@@ -242,16 +242,15 @@ impl PipelineRenderer {
         self.renderers.remove_element(renderer_id);
     }
     // Update window
-    pub fn update_window(&mut self, window: &Window) {
-        self.window = window.clone();
+    pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
         // Update the size of each texture that is bound to the framebuffer
-        let dims = TextureType::Texture2D(window.dimensions.x, window.dimensions.y);
+        let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
         pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims), "resize_deferred_renderer_diffuse_tex").unwrap();
         pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims), "resize_deferred_renderer_depth_tex").unwrap();
         pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims), "resize_deferred_renderer_normals_tex").unwrap();
         pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims), "resize_deferred_renderer_position_tex").unwrap();
         unsafe {
-            gl::Viewport(0, 0, window.dimensions.x as i32, window.dimensions.y as i32);
+            gl::Viewport(0, 0, window_dimensions.x as i32, window_dimensions.y as i32);
         }
     }
 }
