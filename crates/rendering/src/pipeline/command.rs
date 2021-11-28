@@ -22,7 +22,6 @@ where
 pub enum RenderTaskReturn {
     None,
     GPUObject(GPUObject),
-    TextureFillData(Vec<u8>),
 }
 
 // The type of the render command

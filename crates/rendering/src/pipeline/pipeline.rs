@@ -31,7 +31,7 @@ fn internal_task(task: RenderTask) -> RenderTaskReturn {
             Pipeline::update_texture_data(texture, bytes);
             RenderTaskReturn::None
         }
-        RenderTask::TextureFillArray(texture, bytecount) => RenderTaskReturn::TextureFillData(Pipeline::texture_fill_array(texture, bytecount)),
+        RenderTask::TextureFillArray(texture, bytecount) => RenderTaskReturn::GPUObject(Pipeline::texture_fill_array(texture, bytecount)),
         // Model
         RenderTask::ModelCreate(shared_model) => RenderTaskReturn::GPUObject(Pipeline::create_model(shared_model)),
         RenderTask::ModelDispose(gpumodel) => {
@@ -817,7 +817,7 @@ impl Pipeline {
             }
         }
     }
-    pub fn texture_fill_array(texture: TextureGPUObject, bytecount: usize) -> Vec<u8> {
+    pub fn texture_fill_array(texture: TextureGPUObject, bytecount: usize) -> GPUObject {
         // Get the length of the vector
         let length: usize = match texture.2 {
             TextureType::Texture1D(x) => (x as usize),
@@ -845,7 +845,7 @@ impl Pipeline {
             let (_internal_format, format, data_type) = texture.1;
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
-        pixels
+        GPUObject::TextureFill(TextureFillGPUObject(pixels, bytecount))
     }
     pub fn run_compute(_compute: ComputeShaderGPUObject, _indices: (u16, u16, u16)) {
         todo!();

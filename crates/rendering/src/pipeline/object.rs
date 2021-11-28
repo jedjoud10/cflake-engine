@@ -24,6 +24,8 @@ pub struct ComputeShaderGPUObject(pub u32);
 #[derive(Clone, Copy, Default)]
 pub struct TextureGPUObject(pub u32, pub (i32, u32, u32), pub TextureType);
 #[derive(Clone, Default)]
+pub struct TextureFillGPUObject(pub Vec<u8>, pub usize);
+#[derive(Clone, Default)]
 pub struct CameraDataGPUObject {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
@@ -300,6 +302,7 @@ pub enum GPUObject {
     Shader(ShaderGPUObject),               // The shader program ID
     ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions
     Texture(TextureGPUObject),             // The texture ID
+    TextureFill(TextureFillGPUObject), // Texture fill ID
     Renderer(usize),                       // The renderer ID
 }
 

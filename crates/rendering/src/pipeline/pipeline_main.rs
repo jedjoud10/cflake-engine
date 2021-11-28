@@ -276,72 +276,34 @@ pub mod pipec {
     where
         T: Default + Clone + Sized,
     {
-        // Get the texture data
-        let texture = match taskreturn {
+        // Convert the bytes into a vector of vectors
+        let (mut bytes, bytecount) = match taskreturn {
             RenderTaskReturn::GPUObject(x) => match x {
-                GPUObject::Texture(x) => x,
+                GPUObject::TextureFill(x) => (x.0, x.1),
                 _ => panic!()
             },
             _ => panic!()
         };
-        // Get the length of the vector
-        let length: usize = match texture.2 {
-            crate::TextureType::Texture1D(x) => (x as usize),
-            crate::TextureType::Texture2D(x, y) => (x as usize * y as usize),
-            crate::TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
-            crate::TextureType::TextureArray(_, _, _) => todo!(),
-        };
-        // Create the vector
-        let mut pixels: Vec<T> = vec![T::default(); length];
-        let tex_type = match texture.2 {
-            crate::TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            crate::TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            crate::TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            crate::TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-        // Actually read the pixels
-        unsafe {
-            // Bind the buffer before reading
-            gl::BindTexture(tex_type, texture.0);
-            gl::GetTexImage(tex_type, 0, (texture.1).1, (texture.1).2, pixels.as_mut_ptr() as *mut c_void);
-        }
-        return pixels;
+        // Unsafe
+        let pixels: Vec<T> = unsafe { Vec::from_raw_parts(bytes.as_mut_ptr() as *mut T, bytes.len() / bytecount, bytes.len() / bytecount) };
+        pixels
     }
     pub fn convert_native_veclib<T, U>(taskreturn: RenderTaskReturn) -> Vec<T>
     where
         T: veclib::Vector<U> + Default + Clone,
         U: veclib::DefaultStates,
     {
-        // Get the texture data
-        let texture = match taskreturn {
+        // Convert the bytes into a vector of vectors
+        let (mut bytes, bytecount) = match taskreturn {
             RenderTaskReturn::GPUObject(x) => match x {
-                GPUObject::Texture(x) => x,
+                GPUObject::TextureFill(x) => (x.0, x.1),
                 _ => panic!()
             },
             _ => panic!()
         };
-        // Get the length of the vector
-        let length: usize = match texture.2 {
-            crate::TextureType::Texture1D(x) => (x as usize),
-            crate::TextureType::Texture2D(x, y) => (x as usize * y as usize),
-            crate::TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
-            crate::TextureType::TextureArray(_, _, _) => todo!(),
-        };
-        // Create the vector
-        let mut pixels: Vec<T> = vec![T::default(); length];
-        let tex_type = match texture.2 {
-            crate::TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            crate::TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            crate::TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            crate::TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-        // Actually read the pixels
-        unsafe {
-            // Bind the buffer before reading
-            gl::BindTexture(tex_type, texture.0);
-            gl::GetTexImage(tex_type, 0, (texture.1).1, (texture.1).2, pixels.as_mut_ptr() as *mut c_void);
-        }
-        return pixels;
+        // Unsafe
+        let pixels: Vec<T> = unsafe { Vec::from_raw_parts(bytes.as_mut_ptr() as *mut T, bytes.len() / bytecount, bytes.len() / bytecount) };
+        pixels
     }
     // Renderers
     pub fn add_renderer(renderer: Renderer, matrix: veclib::Matrix4x4<f32>) -> usize {
