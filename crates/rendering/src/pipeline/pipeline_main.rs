@@ -79,6 +79,18 @@ pub mod pipec {
     pub fn internal_task(task: RenderTask, name: &str) -> Option<RenderTaskReturn> {
         unsafe { RENDER_PIPELINE.as_mut().internal_task_immediate(task, name.to_string()) }
     }
+    pub fn task_gpuobject<F>(task: RenderTask, name: &str, mut callback: F) 
+    where 
+        F: FnMut(GPUObject) + 'static,
+    {
+        unsafe { RENDER_PIPELINE.as_mut().task(task, name.to_string(), move |x| match x {
+            RenderTaskStatus::Successful(x, _) => match x {
+                RenderTaskReturn::GPUObject(gpuobject) => callback(gpuobject),
+                RenderTaskReturn::None => panic!(),
+            },
+            RenderTaskStatus::Failed => panic!(),
+        }) }
+    }
     // Task immmediate, with the inner GPU object
     fn task_immediate_gpuobject(task: RenderTask, name: &str) -> Option<GPUObject> {
         match task_immediate(task, name) {
@@ -310,11 +322,14 @@ pub mod pipec {
         pixels
     }
     // Renderers
-    pub fn add_renderer(renderer: Renderer, matrix: veclib::Matrix4x4<f32>) -> usize {
-        match task_immediate_gpuobject(RenderTask::RendererAdd(SharedData::new((renderer, matrix))), "").unwrap() {
-            GPUObject::Renderer(x) => x,
-            _ => panic!(),
-        }
+    pub fn add_renderer<F>(renderer: Renderer, matrix: veclib::Matrix4x4<f32>, mut callback: F)
+    where 
+        F: FnMut(usize) + 'static,
+    {    
+        task_gpuobject(RenderTask::RendererAdd(SharedData::new((renderer, matrix))), "", move |x| match x {
+            GPUObject::Renderer(index) => callback(index),
+            _ => panic!()
+        });
     }
     pub fn remove_renderer(index: usize) {
         task(RenderTask::RendererRemove(index), "", |x| {});

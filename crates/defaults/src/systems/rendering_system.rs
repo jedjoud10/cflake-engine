@@ -13,9 +13,10 @@ fn add_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let transform = entity.get_component_mut::<components::Transform>(data.component_manager).unwrap();
     transform.update_matrix();
     let matrix = transform.matrix;
-    let index = pipec::add_renderer(irenderer, matrix);
-    // Update the index
-    entity.get_component_mut::<components::Renderer>(data.component_manager).unwrap().internal_renderer.index = index;
+    pipec::add_renderer(irenderer, matrix, |new_index| 
+        // Update the index
+        entity.get_component_mut::<components::Renderer>(data.component_manager).unwrap().internal_renderer.index
+    );
 }
 // Remove the renderer from the pipeline renderer
 fn remove_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
