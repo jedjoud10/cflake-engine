@@ -160,15 +160,15 @@ impl World {
     // When the world started initializing
     pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window,  callback: fn(&mut Self)) {
         // Load the default stuff
-        self.load_defaults();
-        
+        self.load_defaults();        
+        window_commands::hide_cursor(window);
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.json", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.json");
         self.config_file = config_file_values;
         // Apply the config file's data to the rendering window
         window_commands::set_fullscreen(self.config_file.fullscreen, glfw, window);
-        window_commands::set_vsync(self.config_file.vsync, glfw, window);
+        window_commands::set_vsync(self.config_file.vsync);
         // Update entity manager
         self.update_entity_manager();
         

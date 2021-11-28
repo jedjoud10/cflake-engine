@@ -35,8 +35,13 @@ pub mod window_commands {
         crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen), "", |_| { });
     }
     // Set vsync
-    pub fn set_vsync(vsync: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    pub fn set_vsync(vsync: bool) {
         crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync), "", |_| { });        
+    }
+    // Hide the cursor
+    pub fn hide_cursor(window: &mut glfw::Window) {
+        window.set_cursor_mode(glfw::CursorMode::Disabled);
+        window.set_cursor_pos(0.0, 0.0);
     }
 }
 // The main renderer, this is stored

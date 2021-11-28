@@ -5,7 +5,7 @@ use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
 
 // Events
-pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
     // Rotate the camera around
     let mouse_pos = data.input_manager.get_accumulated_mouse_position();
     const SENSIVITY: f32 = 0.001;
@@ -71,6 +71,11 @@ pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components
         camera.update_frustum_culling_matrix();
     }
 }
+fn entity_added(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
+    // Initialize the camera
+    let camera = entity.get_component_mut::<components::Camera>(data.component_manager).unwrap();
+    camera.update_projection_matrix();
+}
 
 // Create the camera system
 pub fn system(data: &mut WorldData) -> System {
@@ -89,5 +94,6 @@ pub fn system(data: &mut WorldData) -> System {
     data.input_manager.bind_key(Keys::RightShift, "cull_update", MapType::Toggle);
     // Attach the events
     system.event(SystemEventType::EntityUpdate(entity_update));
+    system.event(SystemEventType::EntityAdded(entity_added));
     system
 }

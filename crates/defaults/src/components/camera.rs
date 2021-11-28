@@ -62,7 +62,7 @@ impl Default for Camera {
             view_matrix: veclib::Matrix4x4::IDENTITY,
             projection_matrix: veclib::Matrix4x4::IDENTITY,
             horizontal_fov: 90.0,
-            aspect_ratio: 16.0 / 9.0,
+            aspect_ratio: rendering::WINDOW_SIZE.x as f32 / rendering::WINDOW_SIZE.y as f32,
             clip_planes: veclib::Vector2::new(0.3, 4000.0),
             frustum: math::Frustum::default(),
         }
