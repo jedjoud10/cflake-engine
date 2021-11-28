@@ -158,7 +158,7 @@ impl World {
         self.ui_manager.add_root("console", console_root);
     }
     // When the world started initializing
-    pub fn start_world(&mut self, callback: fn(&mut Self)) {
+    pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window,  callback: fn(&mut Self)) {
         // Load the default stuff
         self.load_defaults();
         
@@ -167,9 +167,8 @@ impl World {
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.json");
         self.config_file = config_file_values;
         // Apply the config file's data to the rendering window
-        pipec::task(pipec::RenderTask::WindowUpdateFullscreen(self.config_file.fullscreen), "initialize_default_window_settings", |_| {});
-        pipec::task(pipec::RenderTask::WindowUpdateVSync(self.config_file.vsync), "initialize_default_window_settings2", |_| {});
-        pipec::task(pipec::RenderTask::WindowUpdateSize(WINDOW_SIZE), "initialize_default_window_settings3", |_| {});
+        window_commands::set_fullscreen(self.config_file.fullscreen, glfw, window);
+        window_commands::set_vsync(self.config_file.vsync, glfw, window);
         // Update entity manager
         self.update_entity_manager();
         
@@ -180,9 +179,7 @@ impl World {
         println!("Hello world!");
     }
     // We do the following in this function
-    pub fn update_world(&mut self, delta: f64) {
-        // Check for default input events
-        self.check_default_input_events();
+    pub fn update_world(&mut self, delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         // Upate the console
         self.update_console();
         // Create the data for the systems
@@ -228,7 +225,7 @@ impl World {
         // Toggle the fullscreen
         if self.debug.console.listen_command("toggle-fullscreen").is_some() {
             self.custom_data.fullscreen = !self.custom_data.fullscreen;
-            self.set_fullscreen(self.custom_data.fullscreen);
+            window_commands::set_fullscreen(self.custom_data.fullscreen, glfw, window);
         }
         // Toggle the rendering
         if self.debug.console.listen_command("toggle-render").is_some() {
@@ -236,8 +233,6 @@ impl World {
             rendering_system.disable();
         }
     }
-    // Check for default key map events
-    fn check_default_input_events(&mut self) {}
     // Update the console
     fn update_console(&mut self) {
         // Check if we should start key registering if the console is active
@@ -268,10 +263,6 @@ impl World {
                 // We don't have to update anything
             }
         }
-    }
-    // Set the fullscreen status
-    fn set_fullscreen(&mut self, fullscreen: bool) {
-        pipec::task(pipec::RenderTask::WindowUpdateFullscreen(fullscreen), "", |_| {});
     }
     // When we want to close the application
     pub fn kill_world(&mut self) {
@@ -415,3 +406,4 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png");
     println!("Finished pre-loading default assets!");    
 }
+

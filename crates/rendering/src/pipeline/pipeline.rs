@@ -65,11 +65,13 @@ fn command(
     // Handle the common cases
     match command.input_task {
         // Window tasks
-        RenderTask::WindowUpdateSize(window_dimensions) => { pr.update_window_dimensions(window_dimensions); RenderTaskReturn::None },
+        RenderTask::WindowUpdateFullscreen(fullscreen) => {
+            pr.window.fullscreen = fullscreen;
+            RenderTaskReturn::None
+        },
         RenderTask::WindowUpdateVSync(vsync) => {
-            // Update vsync
             pr.window.vsync = vsync;
-            // Enable disable vsync
+            // We need an OpenGL context to do this shit
             if vsync {
                 // Enable VSync
                 glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
@@ -78,34 +80,10 @@ fn command(
                 glfw.set_swap_interval(glfw::SwapInterval::None);
             }
             RenderTaskReturn::None
-        }
-        RenderTask::WindowUpdateFullscreen(fullscreen) => {
-            // Update fullscreen
-            pr.window.fullscreen = fullscreen;
-            println!("{}", fullscreen);
-            if fullscreen {
-                // Set the glfw window as a fullscreen window
-                glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                    let videomode = monitor.unwrap().get_video_mode().unwrap();
-                    window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
-                    unsafe {
-                        // Update the OpenGL viewport
-                        gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-                    }
-                });
-            } else {
-                // Set the glfw window as a windowed window
-                glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                    let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                    let size = crate::WINDOW_SIZE;
-                    window.set_monitor(glfw::WindowMode::Windowed, 50, 50, size.x as u32, size.y as u32, None);
-                    unsafe {
-                        // Update the OpenGL viewport
-                        gl::Viewport(0, 0, size.x as i32, size.y as i32);
-                        println!("ADFA");
-                    }
-                });
-            }
+        },
+        RenderTask::WindowUpdateSize(size) => {
+            pr.window.dimensions = size;
+            pr.update_window_dimensions(size);
             RenderTaskReturn::None
         },
         // Pipeline
@@ -176,9 +154,8 @@ fn poll_commands(
             },            
             _ => {
                 // Valid command
-                println!("{}", name);
                 match command(name.clone(), pr, camera, channel, cmd, window, glfw) {
-                    RenderTaskReturn::None => { /* Fat bruh */ println!("Bruhed"); }
+                    RenderTaskReturn::None => { /* Fat bruh */ }
                     x => {
                         // Valid
                         println!("Send to main thread");

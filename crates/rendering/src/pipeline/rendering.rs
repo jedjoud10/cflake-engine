@@ -5,6 +5,40 @@ use glfw::Context;
 use others::SmartList;
 use crate::{Shader, pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
 use crate::{DataType, Window, texture::*};
+
+// These should be ran on the main thread btw
+pub mod window_commands {
+    // Set fullscreen
+    pub fn set_fullscreen(fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+        if fullscreen {
+            // Set the glfw window as a fullscreen window
+            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                let videomode = monitor.unwrap().get_video_mode().unwrap();
+                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
+                unsafe {
+                    // Update the OpenGL viewport
+                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+                }
+            });
+        } else {
+            // Set the glfw window as a windowed window
+            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                let _videomode = monitor.unwrap().get_video_mode().unwrap();
+                let size = crate::WINDOW_SIZE;
+                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, size.x as u32, size.y as u32, None);
+                unsafe {
+                    // Update the OpenGL viewport
+                    gl::Viewport(0, 0, size.x as i32, size.y as i32);
+                }
+            });
+        }
+        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen), "", |_| { });
+    }
+    // Set vsync
+    pub fn set_vsync(vsync: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync), "", |_| { });        
+    }
+}
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {

@@ -40,7 +40,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     window.set_size_polling(true);
     // Create the world
     let mut world: World = World::new(author_name, app_name);
-    world.start_world(callback);
+    world.start_world(&mut glfw, &mut window, callback);
     let mut last_time: f64 = 0.0;
 
     while !window.should_close() {
@@ -51,7 +51,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         let delta = new_time - last_time;
         last_time = new_time;
         // Update the world
-        world.update_world(delta);
+        world.update_world(delta, &mut glfw, &mut window);
 
         // Read the events at the start of the frame
         glfw.poll_events();

@@ -96,9 +96,7 @@ impl RenderTask {
             RenderTask::RendererAdd(_) => true,
             RenderTask::RendererRemove(_) => false,
             RenderTask::RendererUpdateTransform(_, _) => false,
-            RenderTask::WindowUpdateSize(_) => false,
-            RenderTask::WindowUpdateVSync(_) => false,
-            RenderTask::WindowUpdateFullscreen(_) => false,
+            RenderTask::WindowUpdateSize(_) | RenderTask::WindowUpdateVSync(_) | RenderTask::WindowUpdateFullscreen(_) => false,
             RenderTask::DestroyRenderThread() => false,
             RenderTask::CameraDataUpdate(_) => false,
         }
