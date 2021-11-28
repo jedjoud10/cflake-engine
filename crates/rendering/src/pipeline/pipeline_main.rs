@@ -32,6 +32,8 @@ pub fn rname(prefix: &str) -> String {
 }
 
 pub mod pipec {
+    use std::ffi::c_void;
+
     use assets::{CachedObject};
 
     use crate::pipeline::object::*;
@@ -270,20 +272,76 @@ pub mod pipec {
         }
     }
     // Read the data from an array that was filled using a texture
-    pub fn convert_native<T>(_taskreturn: RenderTaskReturn) -> Vec<T>
+    pub fn convert_native<T>(taskreturn: RenderTaskReturn) -> Vec<T>
     where
         T: Default + Clone + Sized,
     {
-        let _bytecount = std::mem::size_of::<T>();
-        todo!();
+        // Get the texture data
+        let texture = match taskreturn {
+            RenderTaskReturn::GPUObject(x) => match x {
+                GPUObject::Texture(x) => x,
+                _ => panic!()
+            },
+            _ => panic!()
+        };
+        // Get the length of the vector
+        let length: usize = match texture.2 {
+            crate::TextureType::Texture1D(x) => (x as usize),
+            crate::TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            crate::TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
+            crate::TextureType::TextureArray(_, _, _) => todo!(),
+        };
+        // Create the vector
+        let mut pixels: Vec<T> = vec![T::default(); length];
+        let tex_type = match texture.2 {
+            crate::TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            crate::TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            crate::TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            crate::TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+        // Actually read the pixels
+        unsafe {
+            // Bind the buffer before reading
+            gl::BindTexture(tex_type, texture.0);
+            gl::GetTexImage(tex_type, 0, (texture.1).1, (texture.1).2, pixels.as_mut_ptr() as *mut c_void);
+        }
+        return pixels;
     }
-    pub fn convert_native_veclib<T, U>(_taskreturn: RenderTaskReturn) -> Vec<T>
+    pub fn convert_native_veclib<T, U>(taskreturn: RenderTaskReturn) -> Vec<T>
     where
         T: veclib::Vector<U> + Default + Clone,
         U: veclib::DefaultStates,
     {
-        let _bytecount = std::mem::size_of::<T>();
-        todo!();
+        // Get the texture data
+        let texture = match taskreturn {
+            RenderTaskReturn::GPUObject(x) => match x {
+                GPUObject::Texture(x) => x,
+                _ => panic!()
+            },
+            _ => panic!()
+        };
+        // Get the length of the vector
+        let length: usize = match texture.2 {
+            crate::TextureType::Texture1D(x) => (x as usize),
+            crate::TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            crate::TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
+            crate::TextureType::TextureArray(_, _, _) => todo!(),
+        };
+        // Create the vector
+        let mut pixels: Vec<T> = vec![T::default(); length];
+        let tex_type = match texture.2 {
+            crate::TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            crate::TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            crate::TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            crate::TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+        // Actually read the pixels
+        unsafe {
+            // Bind the buffer before reading
+            gl::BindTexture(tex_type, texture.0);
+            gl::GetTexImage(tex_type, 0, (texture.1).1, (texture.1).2, pixels.as_mut_ptr() as *mut c_void);
+        }
+        return pixels;
     }
     // Renderers
     pub fn add_renderer(renderer: Renderer, matrix: veclib::Matrix4x4<f32>) -> usize {
