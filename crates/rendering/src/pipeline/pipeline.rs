@@ -251,7 +251,7 @@ impl Pipeline {
 
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
-                pipeline_renderer.init();
+                pipeline_renderer.init();                
 
                 // El camera
                 let mut camera = CameraDataGPUObject {
@@ -433,7 +433,7 @@ impl Pipeline {
         let matrix = &renderer.object.1;
         let renderer = &renderer.object.0;
         let model = renderer.model.clone();
-        let material = Self::create_material(renderer.material.clone());
+        let material = Self::create_material(renderer.material.clone(), pr.default_material.as_ref().unwrap());
         let renderer_gpuobject = RendererGPUObject(model, material, *matrix);
         let x = pr.add_renderer(renderer_gpuobject);
         println!("Index: {}", x);
@@ -860,7 +860,8 @@ impl Pipeline {
             gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
         }
     }
-    pub fn create_material(material: Material) -> MaterialGPUObject {
-        MaterialGPUObject(material.shader, material.uniforms, material.flags)
+    pub fn create_material(material: Material, default_material: &Material) -> MaterialGPUObject {
+        let default_shader = default_material.shader.as_ref().unwrap().clone();
+        MaterialGPUObject(material.shader.unwrap_or(default_shader), material.uniforms, material.flags)
     }
 }

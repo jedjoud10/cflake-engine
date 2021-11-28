@@ -21,7 +21,7 @@ impl Default for MaterialFlags {
 #[derive(Clone)]
 pub struct Material {
     // Rendering stuff
-    pub shader: ShaderGPUObject,
+    pub shader: Option<ShaderGPUObject>,
     pub material_name: String,
     pub flags: MaterialFlags,
     pub uniforms: ShaderUniformsGroup,
@@ -32,20 +32,12 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         let material: Self = Material {
-            shader: ShaderGPUObject::default(),
+            shader: None,
             material_name: String::new(),
             flags: MaterialFlags::empty(),
             uniforms: ShaderUniformsGroup::default(),
             visible: true,
         };
-        // Load the default shader
-        let mut material = material.set_shader(pipec::shader(Shader::default().load_shader(
-            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"]
-        ).unwrap()));
-        // Set the default shader args
-        material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
-        material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
-        material.uniforms.set_f32("normals_strength", 1.0);
         material
     }
 }
@@ -53,10 +45,13 @@ impl Default for Material {
 impl Material {
     // Create a new material with a name
     pub fn new(material_name: &str) -> Self {
-        let mut material = Self::default();
+        let mut material = Self::default();        
         material.material_name = material_name.to_string();
         material.uniforms.set_t2d("diffuse_tex", pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
         material.uniforms.set_t2d("normals_tex", pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
+        material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
+        material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
+        material.uniforms.set_f32("normals_strength", 1.0);
         material
     }
     // Load the diffuse texture
@@ -85,7 +80,7 @@ impl Material {
     }
     // Set the main shader
     pub fn set_shader(mut self, shader: ShaderGPUObject) -> Self {
-        self.shader = shader;
+        self.shader = Some(shader);
         self
     }
     // Toggle the double sided flag for this material

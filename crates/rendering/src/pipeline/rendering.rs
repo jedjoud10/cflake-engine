@@ -4,7 +4,7 @@ use assets::{Object};
 use glfw::Context;
 use others::SmartList;
 use crate::{Shader, pipec, pipeline::object::*, FrameStats, MaterialFlags, Texture};
-use crate::{DataType, Window, texture::*};
+use crate::{DataType, Material, Window, texture::*};
 
 // These should be ran on the main thread btw
 pub mod window_commands {
@@ -61,6 +61,7 @@ pub struct PipelineRenderer {
     frame_stats: FrameStats,                 // Some frame stats
     renderers: SmartList<RendererGPUObject>, // The collection of valid renderers (Can include renderers that are culled out or invisible)
     pub window: Window, // Window
+    pub default_material: Option<Material>, // Self explanatory
 }
 
 // Render debug primitives
@@ -156,7 +157,11 @@ impl PipelineRenderer {
                     "defaults\\shaders\\rendering\\screen.frsh.glsl",
                 ])
                 .unwrap(),
-        );        
+        );       
+        // Create a default material
+        self.default_material = Some(Material::default().set_shader(pipec::ishader(Shader::default().iload_shader(
+            vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"]
+        ).unwrap())));
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {
