@@ -23,7 +23,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     // Get the terrain data
     let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
     let terrain = &mut td.terrain;
-    let bound_materials = terrain.settings.bound_materials.clone();
+    let material = terrain.settings.material.clone();
     let octree_size = terrain.octree.internal_octree.size;
     let octree_depth = terrain.settings.octree_depth;
 
@@ -85,14 +85,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
 
                 // Turn the model into a GPU model
                 let model = pipec::model(tmodel.model);
-                // Multi Material Renderer
-                let mut bm = Vec::new();
-                for x in bound_materials.iter() {
-                    let mut m = x.instantiate(data.instance_manager);
-                    let d = coords.depth as f32 / octree_depth as f32;
-                    bm.push(m);
-                }
-                let renderer = components::Renderer::default().set_wireframe(true).set_model(model);
+                let renderer = components::Renderer::default().set_material(material.clone()).set_wireframe(true).set_model(model);
                 entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
                 // Create the AABB
                 let aabb = components::AABB::from_components(&entity, data.component_manager);

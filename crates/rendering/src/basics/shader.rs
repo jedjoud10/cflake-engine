@@ -1,39 +1,26 @@
 use crate::pipec;
 use crate::utils::RenderingError;
-
 use crate::SubShaderGPUObject;
-
 use super::SubShader;
-
-
-
-use assets::Asset;
-
 use assets::Object;
-
-
-use std::collections::HashSet;
-
-
-use std::sync::Arc;
-
+use std::collections::{HashMap, HashSet};
 // A shader that contains two sub shaders that are compiled independently
 #[derive(Clone)]
 pub struct Shader {
     pub name: String,
     pub source: String,
+    externalcode: HashMap<String, String>,
     pub linked_subshaders_programs: Vec<SubShaderGPUObject>,
 }
 
 impl Default for Shader {
     fn default() -> Self {
-        unsafe {
-            Self {
-                name: "".to_string(),
-                source: "".to_string(),
-                linked_subshaders_programs: Vec::new(),
-            }
-        }
+        Self {
+            name: "".to_string(),
+            source: "".to_string(),
+            externalcode: HashMap::new(),
+            linked_subshaders_programs: Vec::new(),
+        }        
     }
 }
 
@@ -44,7 +31,7 @@ impl Object for Shader {
     }
 }
 
-impl Shader {
+impl Shader {    
     // Load the files that need to be included for this specific shader and return the included lines
     fn load_includes<'a>(&self, subshader_name: &str, lines: &mut Vec<String>, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
         let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new();
@@ -65,6 +52,17 @@ impl Shader {
                     ))?;
                     let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                     vectors_to_insert.push((i, new_lines));
+                }
+            }
+            // External shader code
+            if self.externalcode.len() > 0 {
+                if line.trim().starts_with("#include_custom") {
+                    // Get the source
+                    let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
+                    let source_id = &c[2..(c.len() - 2)];
+                    let source = self.externalcode.get(source_id).unwrap();
+                    let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+                    vectors_to_insert.push((i, lines));
                 }
             }
         }
@@ -146,6 +144,11 @@ impl Shader {
     // Internal load shader (This assumes that this is ran on the RenderThread)
     pub fn iload_shader(self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
         self.load_shader_main(subshader_paths, true)
+    }
+    // Load some external code that can be loading using specific include points
+    pub fn load_externalcode(mut self, id: &str, string: String) -> Self {
+        self.externalcode.insert(id.to_string(), string);
+        self
     }
 }
 

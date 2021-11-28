@@ -119,12 +119,10 @@ impl World {
         command_system.enable(&mut data);
         self.system_manager.add_system(command_system);
         // Load the terrain system
-        /*
         let mut terrain_system = systems::terrain_system::system(&mut data);
         terrain_system.enable(&mut data);
         self.system_manager.add_system(terrain_system);
-        */
-
+        
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
         // ----Add the elements here----

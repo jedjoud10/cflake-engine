@@ -44,24 +44,20 @@ pub fn world_initialized(world: &mut World) {
     entity.link_default_component::<components::Transform>(data.component_manager).unwrap();
     let renderer = components::Renderer::default().set_model(pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap())).set_material(default_material);
     entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
-    data.entity_manager.add_entity_s(entity);
-    /*
+    data.entity_manager.add_entity_s(entity);    
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
 
     // The terrain shader
-    let terrain_shader = Shader::default()
+    let terrain_shader = pipec::shader(Shader::default()
         .load_shader(
             vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl"],
-            data.asset_manager,
-        )
-        .unwrap()
-        .cache(&mut data.asset_manager);
+        ).unwrap());
     // Material
-    let material = Material::new("Terrain material", &mut data.asset_manager)
-        .set_shader(terrain_shader)
-        .set_uniform("normals_strength", Uniform::F32(2.0))
-        .set_uniform("uv_scale", Uniform::Vec2F32(veclib::Vector2::ONE * 0.7));
+    let mut material = Material::new("Terrain material").set_shader(terrain_shader);
+    material.uniforms.set_f32("normals_strength", 2.0);
+    material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE * 0.7);
+    /*
     let texture = Texture::create_texturearray(
         Some(TextureLoadOptions {
             filter: TextureFilter::Nearest,
@@ -85,18 +81,18 @@ pub fn world_initialized(world: &mut World) {
     )
     .object_cache_load("fasdfart", &mut data.asset_manager.object_cacher);
     let bound_materials = vec![material
-        .instantiate(data.instance_manager)
-        .set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0))
-        .set_uniform("normals_textures", Uniform::Texture2DArray(texture2, 1))
-        .set_uniform("material_id", Uniform::I32(0))];
+    .instantiate(data.instance_manager)
+    .set_uniform("diffuse_textures", Uniform::Texture2DArray(texture, 0))
+    .set_uniform("normals_textures", Uniform::Texture2DArray(texture2, 1))
+    .set_uniform("material_id", Uniform::I32(0))];
+    */
     let settings = terrain::TerrainSettings {
         octree_depth: 10,
-        bound_materials,
+        material,
         voxel_generator_interpreter: terrain::interpreter::Interpreter::new_pregenerated(),
     };
     terrain_entity
-        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings, &mut data.asset_manager))
+        .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
-    */
 }

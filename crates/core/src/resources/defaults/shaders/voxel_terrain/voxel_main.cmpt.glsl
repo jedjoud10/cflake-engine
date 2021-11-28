@@ -18,7 +18,7 @@ void get_voxel(vec3 pos, int depth, out Voxel voxel, out MaterialVoxel material_
     int shader_id = 0;
     int material_id = 0;
 
-    #include_custom {"0"}
+    #include_custom {"voxel_interpreter"}
     // Write the result
     voxel = Voxel(final_density);
     material_voxel = MaterialVoxel(shader_id, material_id);

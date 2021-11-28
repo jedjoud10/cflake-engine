@@ -37,6 +37,7 @@ impl Terrain {
         let compute = pipec::compute_shader(
             Shader::default()
                 // TODO: Re-implement the additional shader sources
+                .load_externalcode("voxel_interpreter", string)
                 .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER])
                 .unwrap(),
         );
