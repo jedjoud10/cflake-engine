@@ -38,16 +38,17 @@ pub fn world_initialized(world: &mut World) {
 
     // Make it the default camera
     data.custom_data.main_camera_entity_id = data.entity_manager.add_entity_s(camera);
-
-    let default_material = Material::new("Default material");
-    let mut entity = Entity::new("Test");
-    entity.link_default_component::<components::Transform>(data.component_manager).unwrap();
-    let renderer = components::Renderer::default().set_model(pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap())).set_material(default_material);
-    entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
-    data.entity_manager.add_entity_s(entity);    
+    for x in 0..30 {        
+        let default_material = Material::new("Default material");
+        let mut entity = Entity::new("Test");
+        entity.link_component::<components::Transform>(data.component_manager, components::Transform::default().with_position(veclib::Vector3::<f32>::new(x as f32, 0.0, 0.0))).unwrap();
+        let renderer = components::Renderer::default().set_model(pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap())).set_material(default_material);
+        entity.link_component::<components::Renderer>(data.component_manager, renderer).unwrap();
+        data.entity_manager.add_entity_s(entity);    
+    }
+    
     // Create the terrain entity
     let mut terrain_entity = Entity::new("Default Terrain");
-
     // The terrain shader
     let terrain_shader = pipec::shader(Shader::default()
         .load_shader(
@@ -94,5 +95,5 @@ pub fn world_initialized(world: &mut World) {
     terrain_entity
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings))
         .unwrap();
-    data.entity_manager.add_entity_s(terrain_entity);
+    //data.entity_manager.add_entity_s(terrain_entity);
 }

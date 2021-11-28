@@ -847,11 +847,18 @@ impl Pipeline {
         }
         GPUObject::TextureFill(TextureFillGPUObject(pixels, bytecount))
     }
-    pub fn run_compute(_compute: ComputeShaderGPUObject, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
-        todo!();
+    pub fn run_compute(compute: ComputeShaderGPUObject, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
+        uniforms_group.consume();
+        unsafe {
+            gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
+        }
     }
-    pub fn lock_compute(_compute: ComputeShaderGPUObject) {
-        todo!();
+    pub fn lock_compute(compute: ComputeShaderGPUObject) {
+        unsafe {
+            // Remember to use the shader first
+            gl::UseProgram(compute.0);
+            gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        }
     }
     pub fn create_material(material: Material) -> MaterialGPUObject {
         MaterialGPUObject(material.shader, material.uniforms, material.flags)

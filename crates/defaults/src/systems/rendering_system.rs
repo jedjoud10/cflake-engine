@@ -10,7 +10,9 @@ use crate::components;
 fn add_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let renderer = entity.get_component::<components::Renderer>(data.component_manager).unwrap();
     let irenderer = renderer.internal_renderer.clone();
-    let matrix = entity.get_component::<components::Transform>(data.component_manager).unwrap().matrix;
+    let transform = entity.get_component_mut::<components::Transform>(data.component_manager).unwrap();
+    transform.update_matrix();
+    let matrix = transform.matrix;
     let index = pipec::add_renderer(irenderer, matrix);
     // Update the index
     entity.get_component_mut::<components::Renderer>(data.component_manager).unwrap().internal_renderer.index = index;
