@@ -12,7 +12,6 @@ pub struct SystemData {
 impl SystemData {
     // Turn a specific struct into a system data
     pub fn convert<T: InternalSystemData + 'static>(&mut self, system_data: T) {
-        println!("Convert");
         self.internal_system_data = Some(Box::new(system_data));
     }
     // Cast the internal system data to a custom system data generic type

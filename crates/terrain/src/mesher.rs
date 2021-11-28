@@ -187,13 +187,11 @@ pub fn calculate_marching_square_case(
     // Get the marching cube case
     let mut case = 0_u8;
     // Get the local voxels
-    //println!("START");
     let local_voxels1: Vec<Voxel> = (0..4)
         .into_iter()
         .map(|x| {
             let local_voxel = voxels[i + density_offset[x]];
             // Increase the case index if we have some voxels that are below the isoline
-            //println!("Le bruh index: {} {}", x, local_voxel.density);
             if local_voxel.density <= ISOLINE {
                 case |= 2_u8.pow(x as u32);
             }
@@ -207,7 +205,6 @@ pub fn calculate_marching_square_case(
     // Slice to sized array
     let mut local_voxels: [Voxel; 4] = [Voxel::default(); 4];
     local_voxels.copy_from_slice(&local_voxels1[0..4]);
-    //println!("Case {}", case);
     // Get the interpolated voxels
     let local_interpolated_voxels1: Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>> = (0..4)
         .into_iter()
@@ -218,8 +215,6 @@ pub fn calculate_marching_square_case(
             let voxel2 = voxels[i + density_offset[two_voxels[1] as usize]];
             // Check if the edge is intersecting the surface
             if (voxel1.density <= ISOLINE) ^ (voxel2.density <= ISOLINE) {
-                //println!("{} {}", two_voxels[0], two_voxels[1]);
-                //println!("{} {}", voxel1.density, voxel2.density);
                 let value: f32 = if interpolation {
                     inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
                 } else {
@@ -231,7 +226,6 @@ pub fn calculate_marching_square_case(
                 let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
                 let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
                 let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
-                //println!("{}", offset);
                 Some((normal, offset))
             } else {
                 None
@@ -241,7 +235,6 @@ pub fn calculate_marching_square_case(
     let mut local_interpolated_voxels: [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4] = [None; 4];
     local_interpolated_voxels.copy_from_slice(&local_interpolated_voxels1[0..4]);
     Some((case, p, local_voxels, local_interpolated_voxels))
-    //println!("{:?}", local_interpolated_voxels);
     // Solve the case
 }
 // Solve a single marching squares case using a passed function for

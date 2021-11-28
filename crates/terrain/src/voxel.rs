@@ -58,7 +58,6 @@ impl VoxelGenerator {
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
-        println!("Start voxel generation");
         // First pass
         let mut group = self.compute.new_uniform_group();
         group.set_i3d("voxel_image", self.voxel_texture, TextureShaderAccessType::WriteOnly);
@@ -77,7 +76,6 @@ impl VoxelGenerator {
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
-        println!("End voxel generation");
         // Read back the compute shader data
         self.compute.lock_state();
         // Read back the texture into the data buffer
@@ -130,7 +128,6 @@ impl VoxelGenerator {
         }
         // Only generate the mesh if we have a surface
         if (min < ISOLINE) != (max < ISOLINE) {
-            println!("GENERATE");
             Some(data)
         } else {
             None

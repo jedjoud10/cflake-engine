@@ -60,7 +60,7 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
     match terrain.chunk_manager.update(&mut terrain.voxel_generator, data.time_manager.frame_count) {
         Some((added_chunks, removed_chunks)) => {
             let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
-
+            let i = std::time::Instant::now();
             // Add the entities to the entity manager
             for (coords, tmodel) in added_chunks {
                 // Add the entity
@@ -93,7 +93,10 @@ fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &Fi
                 let entity_id = data.entity_manager.add_entity_s(entity);
                 added_chunk_entities_ids.push((entity_id, coords.clone()));
             }
-
+            let x = i.elapsed().as_millis();
+            if x != 0 {
+                println!("Elapsed: {}", x);
+            }
             // Reassign
             let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
             let terrain = &mut td.terrain;

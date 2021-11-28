@@ -112,7 +112,6 @@ fn command(
         }        
         // Renderer commands
         RenderTask::RendererAdd(shared_renderer) => {
-            println!("Add renderer");
             let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
             channel.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
             RenderTaskReturn::None
@@ -149,7 +148,6 @@ fn poll_commands(
             RenderTask::DestroyRenderThread() => {
                 // Destroy the render thread
                 *valid = false;
-                println!("Destroy RenderThread and RenderPipeline!");
                 break;
             },            
             _ => {
@@ -158,7 +156,6 @@ fn poll_commands(
                     RenderTaskReturn::None => { /* Fat bruh */ }
                     x => {
                         // Valid
-                        println!("Send to main thread");
                         channel.send(RenderTaskStatus::Successful(x, name)).unwrap();
                     }
                 }
@@ -366,7 +363,6 @@ impl Pipeline {
         // Send the command
         tx.send(render_command).unwrap();
         if !should_wait { 
-            println!("This will not wait for an immediate task return!");
             Some(RenderTaskReturn::None)
         } else {
             // Wait for the result (only if we need to)
@@ -440,7 +436,6 @@ impl Pipeline {
         let material = Self::create_material(renderer.material.clone(), pr.default_material.as_ref().unwrap());
         let renderer_gpuobject = RendererGPUObject(model, material, *matrix);
         let x = pr.add_renderer(renderer_gpuobject);
-        println!("Index: {}", x);
         GPUObject::Renderer(x)
     }
     // Remove the renderer using it's renderer ID
