@@ -323,6 +323,6 @@ pub mod pipec {
         }
     }
     pub fn remove_renderer(index: usize) {
-        task_immediate_gpuobject(RenderTask::RendererRemove(index), "").unwrap();
+        task(RenderTask::RendererRemove(index), "", |x| {});
     }
 }

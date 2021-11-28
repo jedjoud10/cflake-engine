@@ -117,6 +117,7 @@ fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, 
     group.set_mat44("mvp_matrix", mvp_matrix);
     group.set_mat44("model_matrix", *model_matrix);
     group.set_mat44("view_matrix", camera.viewm);
+    group.consume();
     unsafe {
         // Set the wireframe rendering
         gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -162,6 +163,7 @@ impl PipelineRenderer {
         self.default_material = Some(Material::default().set_shader(pipec::ishader(Shader::default().iload_shader(
             vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"]
         ).unwrap())));
+        self.wireframe = true;
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {

@@ -352,8 +352,7 @@ impl Pipeline {
             name = format!("_{}", self.next_command_name_id);
             self.next_command_name_id += 1;
         }
-        let should_wait = task.returns_to_main();
-        if !should_wait { panic!("This will not wait for an immediate task return!"); }
+        let should_wait = task.returns_to_main();        
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             _type: RenderCommandType::Immediate,
@@ -366,10 +365,15 @@ impl Pipeline {
 
         // Send the command
         tx.send(render_command).unwrap();
-        // Wait for the result (only if we need to)
-        match rx.recv().ok()? {
-            RenderTaskStatus::Successful(x, _) => Some(x),
-            RenderTaskStatus::Failed => None,
+        if !should_wait { 
+            println!("This will not wait for an immediate task return!");
+            Some(RenderTaskReturn::None)
+        } else {
+            // Wait for the result (only if we need to)
+            match rx.recv().ok()? {
+                RenderTaskStatus::Successful(x, _) => Some(x),
+                RenderTaskStatus::Failed => None,
+            }
         }
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes

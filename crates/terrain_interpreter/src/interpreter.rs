@@ -43,15 +43,14 @@ impl Interpreter {
         let shape = Shape::new_axis_plane(2.5, veclib::Vec3Axis::Y, math::csg::CSGType::Union)
             .new(&[p], &mut interpreter)
             .unwrap();
-        /*let d = Noise::default()
+        let d = Noise::default()
             .set_type(NoiseType::Simplex)
             .set_inverted(true)
             .set_strength(120.0)
             .set_scale(0.003)
             .new(&[p], &mut interpreter)
             .unwrap();
-        */
-        //let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
+        let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
         interpreter
     }
     // Add a specific node to the system
