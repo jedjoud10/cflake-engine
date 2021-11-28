@@ -2,11 +2,11 @@ use std::fmt;
 
 // Asset metadata load error
 #[derive(Debug)]
-pub struct AssetMetadataLoadError {
-    details: String,
+pub struct AssetLoadError {
+    pub details: String,
 }
 
-impl AssetMetadataLoadError {
+impl AssetLoadError {
     pub fn new(msg: String) -> Self {
         Self { details: msg }
     }
@@ -15,13 +15,13 @@ impl AssetMetadataLoadError {
     }
 }
 
-impl fmt::Display for AssetMetadataLoadError {
+impl fmt::Display for AssetLoadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.details)
     }
 }
 
-impl std::error::Error for AssetMetadataLoadError {
+impl std::error::Error for AssetLoadError {
     fn description(&self) -> &str {
         &self.details
     }
@@ -30,7 +30,7 @@ impl std::error::Error for AssetMetadataLoadError {
 // Object load error
 #[derive(Debug)]
 pub struct ObjectLoadError {
-    details: String,
+    pub details: String,
 }
 
 impl ObjectLoadError {

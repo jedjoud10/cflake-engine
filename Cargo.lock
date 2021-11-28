@@ -376,9 +376,9 @@ dependencies = [
 
 [[package]]
 name = "glfw-sys"
-version = "3.3.4"
+version = "3.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6161d9c57357d4e77622f1cde280e3909ee72ba978d5cb79fe7cfc2ceec8a24"
+checksum = "5b0cbb12e2dfac494316e91f6bf7cf070ccd9c61501a02f4af14d71222c9f67f"
 dependencies = [
  "cmake",
 ]
@@ -806,9 +806,9 @@ checksum = "7ef03e0a2b150c7a90d01faf6254c9c48a41e95fb2a8c2ac1c6f0d2b9aefc342"
 
 [[package]]
 name = "ryu"
-version = "1.0.5"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
+checksum = "3c9613b5a66ab9ba26415184cfc41156594925a9cf3a2057e57f31ff145f6568"
 
 [[package]]
 name = "scoped_threadpool"

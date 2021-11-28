@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-
-use crate::{AssetMetadataLoadError};
+use crate::{AssetLoadError};
 
 // Caches the embeded bytes into an array basically
 #[derive(Default)]
@@ -29,7 +28,7 @@ impl AssetCacher {
         }
     }
     // Pre-load some asset metadata
-    pub fn pre_load(&mut self, name: &str, bytes: &[u8]) -> Result<(), AssetMetadataLoadError> {
+    pub fn pre_load(&mut self, name: &str, bytes: &[u8]) -> Result<(), AssetLoadError> {
         let name = name.split("resources\\").last().unwrap();
         let data = AssetMetadata {
             bytes: bytes.to_vec(),

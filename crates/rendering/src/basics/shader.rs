@@ -44,7 +44,7 @@ impl Shader {
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = assets::assetc::load_text(local_path).ok_or(
+                    let text = assets::assetc::load_text(local_path).map_err(|_|
                         RenderingError::new(format!(
                             "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
                             local_path, subshader_name
@@ -96,8 +96,7 @@ impl Shader {
                 self.linked_subshaders_programs.push(subshader);                
             } else {
                 // It was not cached, so we need to cache it
-                let mut subshader: SubShader = assets::assetc::dload(subshader_path)
-                    .ok_or(RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
+                let mut subshader: SubShader = assets::assetc::dload(subshader_path).map_err(|_| RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
                 // Recursively load the shader includes
                 let lines = subshader.source.lines().collect::<Vec<&str>>();
                 let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
