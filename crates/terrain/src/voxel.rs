@@ -58,7 +58,7 @@ impl VoxelGenerator {
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
-        //println!("Start voxel generation");
+        println!("Start voxel generation");
         // First pass
         let mut group = self.compute.new_uniform_group();
         group.set_i3d("voxel_image", self.voxel_texture, TextureShaderAccessType::WriteOnly);
@@ -67,24 +67,23 @@ impl VoxelGenerator {
         group.set_vec3f32("node_pos", veclib::Vector3::<f32>::from(position));
         group.set_i32("node_size", size as i32);
         group.set_i32("depth", depth as i32);
-        group.send();
         // Dispatch the compute shader, don't read back the data immediatly
         self.compute.run(
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
+            group
         );
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
-        //println!("End voxel generation");
+        println!("End voxel generation");
         // Read back the compute shader data
         self.compute.lock_state();
         // Read back the texture into the data buffer
         let voxel_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()), "get_voxel_density").unwrap();
         let material_pixels = pipec::task_immediate(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2), "get_voxel_material").unwrap();
         let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
-        println!("{}", voxel_pixels.len());
         let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values
         let mut min = f32::MAX;
@@ -131,6 +130,7 @@ impl VoxelGenerator {
         }
         // Only generate the mesh if we have a surface
         if (min < ISOLINE) != (max < ISOLINE) {
+            println!("GENERATE");
             Some(data)
         } else {
             None

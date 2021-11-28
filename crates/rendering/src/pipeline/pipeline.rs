@@ -39,8 +39,8 @@ fn internal_task(task: RenderTask) -> RenderTaskReturn {
             RenderTaskReturn::None
         }
         // Compute
-        RenderTask::ComputeRun(compute, indices) => {
-            Pipeline::run_compute(compute, indices);
+        RenderTask::ComputeRun(compute, axii, uniforms_group) => {
+            Pipeline::run_compute(compute, axii, uniforms_group);
             RenderTaskReturn::None
         }
         RenderTask::ComputeLock(compute) => {
@@ -847,7 +847,7 @@ impl Pipeline {
         }
         GPUObject::TextureFill(TextureFillGPUObject(pixels, bytecount))
     }
-    pub fn run_compute(_compute: ComputeShaderGPUObject, _indices: (u16, u16, u16)) {
+    pub fn run_compute(_compute: ComputeShaderGPUObject, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
         todo!();
     }
     pub fn lock_compute(_compute: ComputeShaderGPUObject) {

@@ -62,7 +62,7 @@ pub enum RenderTask {
     ModelCreate(SharedData<Model>),
     ModelDispose(ModelGPUObject),
     // Compute
-    ComputeRun(ComputeShaderGPUObject, (u16, u16, u16)),
+    ComputeRun(ComputeShaderGPUObject, (u16, u16, u16), ShaderUniformsGroup),
     ComputeLock(ComputeShaderGPUObject),
     // Renderer
     RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
@@ -90,7 +90,7 @@ impl RenderTask {
             RenderTask::TextureFillArray(_, _) => true,
             RenderTask::ModelCreate(_) => true,
             RenderTask::ModelDispose(_) => false,
-            RenderTask::ComputeRun(_, _) => false,
+            RenderTask::ComputeRun(_, _, _) => false,
             RenderTask::ComputeLock(_) => false,
             RenderTask::RendererAdd(_) => true,
             RenderTask::RendererRemove(_) => false,

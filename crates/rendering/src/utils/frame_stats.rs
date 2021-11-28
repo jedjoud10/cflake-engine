@@ -44,7 +44,7 @@ impl FrameStats {
         // Run the compute shader
         let x = self.texture.2.get_width();
         let y = self.texture.2.get_height();
-        self.compute.run(x / 8, y / 8, 1);
+        self.compute.run(x / 8, y / 8, 1, group);
         self.compute.lock_state();
     }
 }

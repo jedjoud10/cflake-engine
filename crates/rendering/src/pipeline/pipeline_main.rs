@@ -277,7 +277,7 @@ pub mod pipec {
         T: Default + Clone + Sized,
     {
         // Convert the bytes into a vector of vectors
-        let (mut bytes, bytecount) = match taskreturn {
+        let (bytes, _) = match taskreturn {
             RenderTaskReturn::GPUObject(x) => match x {
                 GPUObject::TextureFill(x) => (x.0, x.1),
                 _ => panic!()
@@ -285,7 +285,12 @@ pub mod pipec {
             _ => panic!()
         };
         // Unsafe
-        let pixels: Vec<T> = unsafe { Vec::from_raw_parts(bytes.as_mut_ptr() as *mut T, bytes.len() / bytecount, bytes.len() / bytecount) };
+        let t = bytes.chunks_exact(std::mem::size_of::<T>())
+            .map(|x| unsafe { 
+                std::ptr::read::<T>(x.as_ptr() as *const _)
+            }
+        );
+        let pixels: Vec<T> = t.collect();
         pixels
     }
     pub fn convert_native_veclib<T, U>(taskreturn: RenderTaskReturn) -> Vec<T>
@@ -294,7 +299,7 @@ pub mod pipec {
         U: veclib::DefaultStates,
     {
         // Convert the bytes into a vector of vectors
-        let (mut bytes, bytecount) = match taskreturn {
+        let (bytes, _) = match taskreturn {
             RenderTaskReturn::GPUObject(x) => match x {
                 GPUObject::TextureFill(x) => (x.0, x.1),
                 _ => panic!()
@@ -302,7 +307,12 @@ pub mod pipec {
             _ => panic!()
         };
         // Unsafe
-        let pixels: Vec<T> = unsafe { Vec::from_raw_parts(bytes.as_mut_ptr() as *mut T, bytes.len() / bytecount, bytes.len() / bytecount) };
+        let t = bytes.chunks_exact(std::mem::size_of::<T>())
+            .map(|x| unsafe { 
+                std::ptr::read::<T>(x.as_ptr() as *const _)
+            }
+        );
+        let pixels: Vec<T> = t.collect();
         pixels
     }
     // Renderers

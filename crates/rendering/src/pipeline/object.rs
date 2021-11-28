@@ -253,10 +253,6 @@ impl ShaderUniformsGroup {
     pub fn set_vec4i32(&mut self, name: &str, vec: veclib::Vector4<i32>) {
         self.uniforms.insert(name.to_string(), Uniform::Vec4I32(vec));
     }
-    // Send this group data as a task to the render thread
-    pub fn send(self) {
-        // Actual send logic here
-    }
     // Does the same thing as the "send" function above, but this time this assumes that we are already in the render thread
     // So we only need to consume the current uniform group and use the shader
     pub fn consume(self) {
@@ -288,9 +284,14 @@ impl ComputeShaderGPUObject {
 }
 
 impl ComputeShaderGPUObject {
-    // Compute shader stuff you know
-    pub fn run(&self, _x: u16, _y: u16, _z: u16) {}
-    pub fn lock_state(&self) {}
+    // Compute shader stuff you know (Waitable task)
+    pub fn run(&self, x: u16, y: u16, z: u16, uniforms_group: ShaderUniformsGroup) {
+        crate::pipec::task(crate::RenderTask::ComputeRun(self.clone(), (x, y, z), uniforms_group), "", |_| { println!("Running compute shader!") });
+    }
+    // Lock the state of this compute shader (Immediate task, force run the shader task if it was not polled yet)
+    pub fn lock_state(&self) {
+        crate::pipec::task(crate::RenderTask::ComputeLock(self.clone()), "", |x| {});
+    }
 }
 
 // Some identifiers that we will use to communicate from the Render Thread -> Main Thread
