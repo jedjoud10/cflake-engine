@@ -51,13 +51,11 @@ impl World {
         }
     }
     // Load everything that needs to be loaded by default
-    fn load_defaults(&mut self, window: &mut glfw::Window) {
+    fn load_defaults(&mut self) {
         // Load default bindings
         self.input_manager.create_key_cache();
         self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
         self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
-        window.set_cursor_mode(glfw::CursorMode::Disabled);
-        window.set_cursor_pos(0.0, 0.0);
 
         // Load the default objects for the CacheManagers
         // Load the missing texture 
@@ -158,28 +156,28 @@ impl World {
         ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
         console_root.visible = false;
         self.ui_manager.add_root("console", console_root);
-        println!("Hello world!");
     }
     // When the world started initializing
-    pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
+    pub fn start_world(&mut self, callback: fn(&mut Self)) {
         // Load the default stuff
-        self.load_defaults(window);
-
+        self.load_defaults();
+        
         // Load the config file for this world
         self.saver_loader.create_default("config\\game_config.json", &GameConfig::default());
         let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.json");
         self.config_file = config_file_values;
         // Apply the config file's data to the rendering window
-        pipec::task_immediate(pipec::RenderTask::WindowUpdateFullscreen(self.config_file.fullscreen), "initialize_default_window_settings").unwrap();
-        pipec::task_immediate(pipec::RenderTask::WindowUpdateFullscreen(self.config_file.vsync), "initialize_default_window_settings").unwrap();
-
+        pipec::task(pipec::RenderTask::WindowUpdateFullscreen(self.config_file.fullscreen), "initialize_default_window_settings", |_| {});
+        pipec::task(pipec::RenderTask::WindowUpdateVSync(self.config_file.vsync), "initialize_default_window_settings2", |_| {});
+        pipec::task(pipec::RenderTask::WindowUpdateSize(WINDOW_SIZE), "initialize_default_window_settings3", |_| {});
         // Update entity manager
         self.update_entity_manager();
-
+        
         self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 2.0).normalized();
-
+        
         // Callback
         callback(self);
+        println!("Hello world!");
     }
     // We do the following in this function
     pub fn update_world(&mut self, delta: f64) {

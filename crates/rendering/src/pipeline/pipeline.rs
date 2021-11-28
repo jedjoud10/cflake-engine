@@ -57,7 +57,6 @@ fn command(
     name: String,
     pr: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
-    main_to_render: &Receiver<RenderCommand>,
     channel: &Sender<RenderTaskStatus>,
     command: RenderCommand,
     window: &mut glfw::Window,
@@ -83,6 +82,7 @@ fn command(
         RenderTask::WindowUpdateFullscreen(fullscreen) => {
             // Update fullscreen
             pr.window.fullscreen = fullscreen;
+            println!("{}", fullscreen);
             if fullscreen {
                 // Set the glfw window as a fullscreen window
                 glfw.with_primary_monitor_mut(|_glfw2, monitor| {
@@ -90,18 +90,19 @@ fn command(
                     window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
                     unsafe {
                         // Update the OpenGL viewport
-                        //gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+                        gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
                     }
                 });
             } else {
                 // Set the glfw window as a windowed window
                 glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                     let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                    let default_window_size = others::get_default_window_size();
-                    window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.0 as u32, default_window_size.1 as u32, None);
+                    let size = crate::WINDOW_SIZE;
+                    window.set_monitor(glfw::WindowMode::Windowed, 50, 50, size.x as u32, size.y as u32, None);
                     unsafe {
                         // Update the OpenGL viewport
-                        //gl::Viewport(0, 0, default_window_size.0 as i32, default_window_size.1 as i32);
+                        gl::Viewport(0, 0, size.x as i32, size.y as i32);
+                        println!("ADFA");
                     }
                 });
             }
@@ -175,8 +176,9 @@ fn poll_commands(
             },            
             _ => {
                 // Valid command
-                match command(name.clone(), pr, camera, main_to_render, channel, cmd, window, glfw) {
-                    RenderTaskReturn::None | RenderTaskReturn::NoneUnwaitable => { /* Fat bruh */ }
+                println!("{}", name);
+                match command(name.clone(), pr, camera, channel, cmd, window, glfw) {
+                    RenderTaskReturn::None => { /* Fat bruh */ println!("Bruhed"); }
                     x => {
                         // Valid
                         println!("Send to main thread");
@@ -374,6 +376,7 @@ impl Pipeline {
             self.next_command_name_id += 1;
         }
         let should_wait = task.returns_to_main();
+        if !should_wait { panic!("This will not wait for an immediate task return!"); }
         // Create a new render command and send it to the separate thread
         let render_command = RenderCommand {
             _type: RenderCommandType::Immediate,
@@ -387,14 +390,9 @@ impl Pipeline {
         // Send the command
         tx.send(render_command).unwrap();
         // Wait for the result (only if we need to)
-        if should_wait {
-            let output = match rx.recv().ok()? {
-                RenderTaskStatus::Successful(x, _) => Some(x),
-                RenderTaskStatus::Failed => None,
-            };
-            output
-        } else {
-            Some(RenderTaskReturn::NoneUnwaitable)
+        match rx.recv().ok()? {
+            RenderTaskStatus::Successful(x, _) => Some(x),
+            RenderTaskStatus::Failed => None,
         }
     }
     // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes

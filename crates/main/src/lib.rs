@@ -25,9 +25,8 @@ pub use world_data;
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), callback: fn(&mut World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-    let default_size = others::get_default_window_size();
     let (mut window, events) = glfw
-        .create_window(default_size.0 as u32, default_size.1 as u32, app_name, glfw::WindowMode::Windowed)
+        .create_window(rendering::WINDOW_SIZE.x as u32, rendering::WINDOW_SIZE.y as u32, app_name, glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
     // Pre-load the assets first
     core::preload_default_assets();
@@ -41,7 +40,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     window.set_size_polling(true);
     // Create the world
     let mut world: World = World::new(author_name, app_name);
-    world.start_world(&mut glfw, &mut window, callback);
+    world.start_world(callback);
     let mut last_time: f64 = 0.0;
 
     while !window.should_close() {

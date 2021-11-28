@@ -21,7 +21,6 @@ where
 // The return type of the render task
 pub enum RenderTaskReturn {
     None,
-    NoneUnwaitable,
     GPUObject(GPUObject),
     TextureFillData(Vec<u8>),
 }
