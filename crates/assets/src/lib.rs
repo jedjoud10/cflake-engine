@@ -17,8 +17,6 @@ pub use object_cacher::*;
 
 // Asset Loading and Object Caching Commands
 pub mod globals {
-    use std::sync::MutexGuard;
-
     use crate::AssetCacher;
     use crate::*;
     use lazy_static::lazy_static;
