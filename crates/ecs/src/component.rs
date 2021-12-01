@@ -108,14 +108,14 @@ pub trait ComponentID {
 }
 // The filtered components that are linked to a specific entity, and that also match a specific c_bitfield
 #[derive(Default)]
-pub struct FilteredLinkedComponents {
+pub struct LinkedComponents {
     pub components: HashMap<usize, usize>,
 }
 
 // Get the components
-impl FilteredLinkedComponents {
+impl LinkedComponents {
     // Get the matching filtered components from a specific entity
-    pub fn get_filtered_linked_components(entity: &Entity, system_c_bitfield: usize) -> Self {
+    pub fn get_linked_components(entity: &Entity, system_c_bitfield: usize) -> Self {
         let mut filtered_linked_components: Self = Self::default();
         let global_ids: HashMap<usize, usize> = entity
             .linked_components

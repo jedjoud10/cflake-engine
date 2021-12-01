@@ -1,11 +1,11 @@
 use super::super::components;
-use ecs::{Entity, FilteredLinkedComponents};
+use ecs::{Entity, LinkedComponents};
 use input::*;
 use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
 
 // Events
-fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &LinkedComponents, data: &mut WorldData) {
     // Rotate the camera around
     let mouse_pos = data.input_manager.get_accumulated_mouse_position();
     const SENSIVITY: f32 = 0.001;

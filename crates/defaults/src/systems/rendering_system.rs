@@ -1,5 +1,5 @@
 // An improved multithreaded rendering system
-use ecs::{Entity, FilteredLinkedComponents};
+use ecs::{Entity, LinkedComponents};
 use rendering::pipec;
 use systems::{System, SystemData, SystemEventType};
 use world_data::WorldData;
@@ -29,7 +29,7 @@ fn remove_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     pipec::remove_renderer(index);
 }
 // Send the updated data from the entity to the render pipeline as commands
-fn update_entity(sd: &mut SystemData, entity: &Entity, flc: &FilteredLinkedComponents, data: &mut WorldData) {}
+fn update_entity(sd: &mut SystemData, entity: &Entity, flc: &LinkedComponents, data: &mut WorldData) {}
 // System prefire so we can send the camera data to the render pipeline
 fn system_prefire(sd: &mut SystemData, data: &mut WorldData) {
     // Camera data

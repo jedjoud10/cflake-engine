@@ -87,10 +87,9 @@ pub enum SystemEventType {
     // Entity events
     EntityAdded(fn(&mut SystemData, &Entity, &mut WorldData)),
     EntityRemoved(fn(&mut SystemData, &Entity, &mut WorldData)),
-    EntityUpdate(fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)),
+    EntityUpdate(fn(&mut SystemData, &Entity, &LinkedComponents, &mut WorldData)),
     // Entity custom event
-    EntityCustomEvent(fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent)),
-    EntityFilter(fn(&FilteredLinkedComponents, &WorldData) -> bool),
+    EntityFilter(fn(&LinkedComponents, &WorldData) -> bool),
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
@@ -113,9 +112,8 @@ pub struct System {
     // Entity events
     entity_added_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
     entity_removed_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
-    entity_update_evn: Option<fn(&mut SystemData, &Entity, &FilteredLinkedComponents, &mut WorldData)>,
-    entity_custom_event: Option<fn(&SystemData, &Entity, &FilteredLinkedComponents, &WorldData, EntityCustomEvent)>,
-    entity_filter: Option<fn(&FilteredLinkedComponents, &WorldData) -> bool>,
+    entity_update_evn: Option<fn(&mut SystemData, &Entity, &LinkedComponents, &mut WorldData)>,
+    entity_filter: Option<fn(&LinkedComponents, &WorldData) -> bool>,
 }
 
 // System code
@@ -163,30 +161,8 @@ impl System {
             SystemEventType::EntityAdded(x) => self.entity_added_evn = Some(x),
             SystemEventType::EntityRemoved(x) => self.entity_removed_evn = Some(x),
             SystemEventType::EntityUpdate(x) => self.entity_update_evn = Some(x),
-            SystemEventType::EntityCustomEvent(x) => self.entity_custom_event = Some(x),
             SystemEventType::EntityFilter(x) => self.entity_filter = Some(x),
         };
-    }
-    // Update the load state of a specific entity
-    pub fn update_entity_load_state(&self, entity: &Entity, data: &WorldData, new_ls_and_reason: (LoadState, LoadStateUpdateReason)) {
-        // Send the custom entity event to the specific entity
-        self.custom_entity_event(entity, data, EntityCustomEvent::LoadStateUpdate(new_ls_and_reason.0, new_ls_and_reason.1));
-    }
-    // Run a specific custom entity event on a specific entity
-    fn custom_entity_event(&self, entity: &Entity, data: &WorldData, custom_entity_event: EntityCustomEvent) {
-        if !self.enabled {
-            return;
-        }
-        match self.entity_custom_event {
-            Some(x) => x(
-                &self.system_data,
-                entity,
-                &FilteredLinkedComponents::get_filtered_linked_components(entity, self.required_c_bitfield),
-                data,
-                custom_entity_event,
-            ),
-            None => {}
-        }
     }
     // Add an entity to the current system
     fn add_entity(&mut self, entity: &Entity, data: &mut WorldData) {
@@ -194,7 +170,6 @@ impl System {
             return;
         }
         self.entities.push(entity.entity_id);
-        self.update_entity_load_state(entity, data, (LoadState::Loaded, LoadStateUpdateReason::AddedEntity));
         // Fire the event
         match self.entity_added_evn {
             Some(x) => x(&mut self.system_data, entity, data),
@@ -250,7 +225,7 @@ impl System {
                         // Filter the entities
                         let entity_clone = &entity_manager_immutable.get_entity(**entity_id).unwrap();
                         // Get the linked components
-                        let linked_components = FilteredLinkedComponents::get_filtered_linked_components(entity_clone, self.flc_c_bitfield);
+                        let linked_components = LinkedComponents::get_linked_components(entity_clone, self.flc_c_bitfield);
                         x(&linked_components, data)
                     })
                     .cloned()
@@ -268,7 +243,7 @@ impl System {
                 for entity_id in filtered_entity_ids {
                     let entity_clone = data.entity_manager.get_entity(entity_id).unwrap().clone();
                     // Get the linked entity components from the current entity
-                    let linked_components = FilteredLinkedComponents::get_filtered_linked_components(&entity_clone, self.flc_c_bitfield);
+                    let linked_components = LinkedComponents::get_linked_components(&entity_clone, self.flc_c_bitfield);
                     x(&mut self.system_data, &entity_clone, &linked_components, data);
                 }
             }

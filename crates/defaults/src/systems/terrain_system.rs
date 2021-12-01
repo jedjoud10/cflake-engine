@@ -10,7 +10,7 @@ use math::octrees::*;
 use systems::*;
 use world_data::WorldData;
 
-fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
+fn entity_update(system_data: &mut SystemData, _entity: &Entity, components: &LinkedComponents, data: &mut WorldData) {
     // Timing
     let t = Instant::now();
     // Get the camera location
