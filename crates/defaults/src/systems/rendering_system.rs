@@ -13,10 +13,16 @@ fn add_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
     let transform = entity.get_component_mut::<components::Transform>(data.component_manager).unwrap();
     transform.update_matrix();
     let matrix = transform.matrix;
-    pipec::add_renderer(irenderer, matrix, |new_index| 
-        // Update the index
-        entity.get_component_mut::<components::Renderer>(data.component_manager).unwrap().internal_renderer.index
-    );
+    let i = std::time::Instant::now();
+    let x = match pipec::task_immediate(pipec::RenderTask::RendererAdd(pipec::SharedData::new((irenderer, matrix))), "").unwrap() {
+        rendering::RenderTaskReturn::None => todo!(),
+        rendering::RenderTaskReturn::GPUObject(x) => match x {
+            rendering::GPUObject::Renderer(x) => x,
+            _ => panic!()
+        },
+    };
+    entity.get_component_mut::<components::Renderer>(data.component_manager).unwrap().internal_renderer.index = x;
+    println!("{}", i.elapsed().as_millis());
 }
 // Remove the renderer from the pipeline renderer
 fn remove_entity(sd: &mut SystemData, entity: &Entity, data: &mut WorldData) {
