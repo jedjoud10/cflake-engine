@@ -9,27 +9,25 @@ edition = "2018"
 
 [workspace]
 members = [
-    "crates\\dev_game",
-    "crates\\main",
-    "crates\\world_data",
-    "crates\\debug",
-    "crates\\core",
-    "crates\\systems",
+    #"crates\\dev_game",
+    #"crates\\main",
+    #"crates\\debug",
+    #"crates\\core",
     "crates\\ecs",
-    "crates\\math",
-    "crates\\physics",
-    "crates\\rendering",
+    #"crates\\math",
+    #"crates\\physics",
+    #"crates\\rendering",
     
-    "crates\\input",
-    "crates\\defaults",
+    #"crates\\input",
+    #"crates\\defaults",
     "crates\\others",
-    "crates\\assets",
-    "crates\\terrain_interpreter",
-    "crates\\terrain",
-    "crates\\ui",
-    "crates\\io",
-    "crates\\fonts",
-    "crates\\font_generator"
+    #"crates\\assets",
+    #"crates\\terrain_interpreter",
+    #"crates\\terrain",
+    #"crates\\ui",
+    #"crates\\io",
+    #"crates\\fonts",
+    #"crates\\font_generator"
 ]
 
 

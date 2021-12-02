@@ -8,9 +8,7 @@ edition = "2018"
 [dependencies]
 glfw = "0.41.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-world_data = { path = "../world_data" }
 input = { path = "../input" }
-systems = { path = "../systems" }
 others = { path = "../others" }
 ecs = { path = "../ecs" }
 ui = { path = "../ui" }

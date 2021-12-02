@@ -10,9 +10,7 @@ veclib = { git = "https://github.com/jedjoud10/veclib" }
 terrain_interpreter = { path = "../terrain_interpreter" }
 rayon = "1.5.1"
 math = { path = "../math" }
-systems = { path = "../systems" }
 ui = { path = "../ui" }
-world_data = { path = "../world_data" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
