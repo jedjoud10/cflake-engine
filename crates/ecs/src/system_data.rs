@@ -1,7 +1,5 @@
 use std::any::Any;
 
-use ecs::*;
-
 // Some system data
 #[derive(Default)]
 pub struct SystemData {

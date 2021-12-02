@@ -12,7 +12,7 @@ members = [
     #"crates\\dev_game",
     #"crates\\main",
     #"crates\\debug",
-    #"crates\\core",
+    "crates\\core",
     "crates\\ecs",
     #"crates\\math",
     #"crates\\physics",

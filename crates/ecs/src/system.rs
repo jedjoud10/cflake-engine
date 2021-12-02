@@ -1,100 +1,93 @@
-use ecs::*;
-use others::Time;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use world_data::*;
-
-use crate::{InternalSystemData, SystemData};
+use crate::{Entity, ECSError, system_data::{SystemData, InternalSystemData}, LinkedComponents, ComponentManager, ComponentID, EntityManager};
 
 #[derive(Default)]
 // Manages the systems
-pub struct SystemManager {
-    pub systems: Vec<System>,
+pub struct SystemManager<T> {
+    pub systems: Vec<System<T>>,
 }
 
-impl SystemManager {
+impl<T> SystemManager<T> where T: {
     // Remove an entity from it's corresponding systems, this is done before actually removing the entity to allow the systems to dispose of it's data
-    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: usize, data: &mut WorldData) {
+    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: usize, data: &T) {
         // Remove the entity from all the systems it was in
         for system in self.systems.iter_mut() {
             // Only remove the entity from the systems that it was in
             if system.is_entity_valid(entity) {
-                system.remove_entity(entity_id, entity, data);
             }
         }
     }
     // Add an entity to it's corresponding systems
-    pub fn add_entity_to_systems(&mut self, entity: &Entity, data: &mut WorldData) {
+    pub fn add_entity_to_systems(&mut self, entity: &Entity, data: &T) {
         // Check if there are systems that need this entity
         for system in self.systems.iter_mut() {
             if system.is_entity_valid(entity) {
                 // Add the entity to the system
-                system.add_entity(entity, data);
             }
         }
     }
     // Add a system to the world, and returns it's system ID
-    pub fn add_system(&mut self, mut system: System) -> u8 {
+    pub fn add_system(&mut self, mut system: System<T>) -> u8 {
         let id = self.systems.len() as u8;
         system.system_id = id;
         self.systems.push(system);
         id
     }
     // Update all the systems
-    pub fn update_systems(&mut self, data: &mut WorldData) {
+    pub fn update_systems(&mut self, entity_manager: &EntityManager,  data: &T) {
         for system in self.systems.iter_mut() {
-            system.run_system(data);
+            system.run_system(entity_manager, data);
         }
     }
     // Kill all the systems
-    pub fn kill_systems(&mut self, data: &mut WorldData) {
+    pub fn kill_systems(&mut self, entity_manager: &EntityManager, data: &T) {
         for system in self.systems.iter_mut() {
             // Shut down each system first
             system.disable();
         }
         // Then end them
         for system in self.systems.iter_mut() {
-            system.end_system(data);
+            system.end_system(entity_manager, data);
         }
     }
     // Gets a reference to a system
-    pub fn get_system(&self, system_id: u8) -> Result<&System, ECSError> {
+    pub fn get_system(&self, system_id: u8) -> Result<&System<T>, ECSError> {
         self.systems.get(system_id as usize).ok_or(ECSError::new_str("System does not exist!"))
     }
     // Gets a mutable reference to a system
-    pub fn get_system_mut(&mut self, system_id: u8) -> Result<&mut System, ECSError> {
+    pub fn get_system_mut(&mut self, system_id: u8) -> Result<&mut System<T>, ECSError> {
         self.systems.get_mut(system_id as usize).ok_or(ECSError::new_str("System does not exist!"))
     }
     // Gets a reference to the custom data of a specific system
-    pub fn get_custom_system_data<T: InternalSystemData + 'static>(&self, system_id: u8) -> Result<&T, ECSError> {
+    pub fn get_custom_system_data<U: InternalSystemData + 'static>(&self, system_id: u8) -> Result<&U, ECSError> {
         let system = self.get_system(system_id)?;
-        let data = system.system_data.cast::<T>().unwrap();
+        let data = system.system_data.cast::<U>().unwrap();
         return Ok(data);
     }
     // Gets a mutable reference to the custom data a specific system
-    pub fn get_custom_system_data_mut<T: InternalSystemData + 'static>(&mut self, system_id: u8) -> Result<&mut T, ECSError> {
+    pub fn get_custom_system_data_mut<U: InternalSystemData + 'static>(&mut self, system_id: u8) -> Result<&mut U, ECSError> {
         let system = self.get_system_mut(system_id)?;
-        let data = system.system_data.cast_mut::<T>().unwrap();
+        let data = system.system_data.cast_mut::<U>().unwrap();
         return Ok(data);
     }
 }
 // A system event enum
-pub enum SystemEventType {
+pub enum SystemEventType<T> where T: Sized {
     // Control events
-    SystemEnabled(fn(&mut SystemData, &mut WorldData)),
-    SystemDisabled(fn(&mut SystemData, &mut WorldData)),
-    SystemPrefire(fn(&mut SystemData, &mut WorldData)),
-    SystemPostfire(fn(&mut SystemData, &mut WorldData)),
+    SystemEnabled(fn(&mut SystemData, &T)),
+    SystemDisabled(fn(&mut SystemData, &T)),
+    SystemPrefire(fn(&mut SystemData, &T)),
+    SystemPostfire(fn(&mut SystemData, &T)),
     // Entity events
-    EntityAdded(fn(&mut SystemData, &Entity, &mut WorldData)),
-    EntityRemoved(fn(&mut SystemData, &Entity, &mut WorldData)),
-    EntityUpdate(fn(&mut SystemData, &Entity, &LinkedComponents, &mut WorldData)),
+    EntityAdded(fn(&mut SystemData, &Entity, &T)),
+    EntityRemoved(fn(&mut SystemData, &Entity, &T)),
+    EntityUpdate(fn(&mut SystemData, &Entity, &LinkedComponents, &T)),
     // Entity custom event
-    EntityFilter(fn(&LinkedComponents, &WorldData) -> bool),
+    EntityFilter(fn(&LinkedComponents, &T) -> bool),
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
 #[derive(Default)]
-pub struct System {
+pub struct System<T> {
     required_c_bitfield: usize,
     flc_c_bitfield: usize,
     system_id: u8,
@@ -105,19 +98,19 @@ pub struct System {
 
     // Events
     // Control events
-    system_enabled_evn: Option<fn(&mut SystemData, &mut WorldData)>,
-    system_disabled_evn: Option<fn(&mut SystemData, &mut WorldData)>,
-    system_prefire_evn: Option<fn(&mut SystemData, &mut WorldData)>,
-    system_postfire_evn: Option<fn(&mut SystemData, &mut WorldData)>,
+    system_enabled_evn: Option<fn(&mut SystemData, &T)>,
+    system_disabled_evn: Option<fn(&mut SystemData, &T)>,
+    system_prefire_evn: Option<fn(&mut SystemData, &T)>,
+    system_postfire_evn: Option<fn(&mut SystemData, &T)>,
     // Entity events
-    entity_added_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
-    entity_removed_evn: Option<fn(&mut SystemData, &Entity, &mut WorldData)>,
-    entity_update_evn: Option<fn(&mut SystemData, &Entity, &LinkedComponents, &mut WorldData)>,
-    entity_filter: Option<fn(&LinkedComponents, &WorldData) -> bool>,
+    entity_added_evn: Option<fn(&mut SystemData, &Entity, &T)>,
+    entity_removed_evn: Option<fn(&mut SystemData, &Entity, &T)>,
+    entity_update_evn: Option<fn(&mut SystemData, &Entity, &LinkedComponents, &T)>,
+    entity_filter: Option<fn(&LinkedComponents, &T) -> bool>,
 }
 
 // System code
-impl System {
+impl<T> System<T> {
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(&self, entity: &Entity) -> bool {
         // Check if the system matches the component ID of the entity
@@ -126,31 +119,31 @@ impl System {
         bitfield == 0
     }
     // Add a component to this system's component bitfield id
-    pub fn link_component<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
-        if component_manager.is_component_registered::<T>() {
-            let c = component_manager.get_component_id::<T>()?;
+    pub fn link_component<U: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
+        if component_manager.is_component_registered::<U>() {
+            let c = component_manager.get_component_id::<U>()?;
             self.required_c_bitfield |= c;
             self.flc_c_bitfield |= c;
         } else {
-            component_manager.register_component::<T>();
-            let c = component_manager.get_component_id::<T>()?;
+            component_manager.register_component::<U>();
+            let c = component_manager.get_component_id::<U>()?;
             self.required_c_bitfield |= c;
             self.flc_c_bitfield |= c;
         }
         Ok(())
     }
     // Add a component that each entity *can* have, this is not necessary
-    pub fn link_component_flc_extra<T: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
-        if component_manager.is_component_registered::<T>() {
-            self.flc_c_bitfield |= component_manager.get_component_id::<T>()?;
+    pub fn link_component_flc_extra<U: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
+        if component_manager.is_component_registered::<U>() {
+            self.flc_c_bitfield |= component_manager.get_component_id::<U>()?;
         } else {
-            component_manager.register_component::<T>();
-            self.flc_c_bitfield |= component_manager.get_component_id::<T>()?;
+            component_manager.register_component::<U>();
+            self.flc_c_bitfield |= component_manager.get_component_id::<U>()?;
         }
         Ok(())
     }
     // Attach the a specific system event
-    pub fn event(&mut self, event: SystemEventType) {
+    pub fn event(&mut self, event: SystemEventType<T>) {
         match event {
             // Control events
             SystemEventType::SystemEnabled(x) => self.system_enabled_evn = Some(x),
@@ -165,19 +158,19 @@ impl System {
         };
     }
     // Add an entity to the current system
-    fn add_entity(&mut self, entity: &Entity, data: &mut WorldData) {
+    fn add_entity(&mut self, entity: &Entity, world: &T) {
         if !self.enabled {
             return;
         }
         self.entities.push(entity.entity_id);
         // Fire the event
         match self.entity_added_evn {
-            Some(x) => x(&mut self.system_data, entity, data),
+            Some(x) => x(&mut self.system_data, entity, world),
             None => {}
         }
     }
     // Remove an entity from the current system
-    fn remove_entity(&mut self, entity_id: usize, entity: &Entity, data: &mut WorldData) {
+    fn remove_entity(&mut self, entity_id: usize, entity: &Entity, world: &T) {
         if !self.enabled {
             return;
         }
@@ -186,37 +179,37 @@ impl System {
         self.entities.remove(system_entity_local_id);
         // Fire the event
         match self.entity_removed_evn {
-            Some(x) => x(&mut self.system_data, entity, data),
+            Some(x) => x(&mut self.system_data, entity, world),
             None => {}
         }
     }
     // Stop the system permanently
-    fn end_system(&mut self, data: &mut WorldData) {
+    fn end_system(&mut self, entity_manager: &EntityManager, world: &T) {
         match self.entity_removed_evn {
             Some(x) => {
                 // Fire the entity removed event
                 for entity_id in self.entities.iter() {
                     // Get the entity
-                    let entity = data.entity_manager.get_entity(*entity_id).unwrap().clone();
-                    x(&mut self.system_data, &entity, data);
+                    let entity = entity_manager.get_entity(*entity_id).unwrap().clone();
+                    x(&mut self.system_data, &entity, world);
                 }
             }
             None => {}
         }
     }
     // Run the system for a single iteration
-    fn run_system(&mut self, data: &mut WorldData) {
+    fn run_system(&mut self, entity_manager: &EntityManager, world: &T) {
         if !self.enabled {
             return;
         }
         // Pre fire event
         match self.system_prefire_evn {
-            Some(x) => x(&mut self.system_data, data),
+            Some(x) => x(&mut self.system_data, world),
             None => {}
         }
 
         // Filter the entities
-        let entity_manager_immutable = &*data.entity_manager;
+        let entity_manager_immutable = entity_manager;
         let filtered_entity_ids = match self.entity_filter {
             Some(x) => {
                 self.entities
@@ -226,7 +219,7 @@ impl System {
                         let entity_clone = &entity_manager_immutable.get_entity(**entity_id).unwrap();
                         // Get the linked components
                         let linked_components = LinkedComponents::get_linked_components(entity_clone, self.flc_c_bitfield);
-                        x(&linked_components, data)
+                        x(&linked_components, world)
                     })
                     .cloned()
                     .collect()
@@ -241,10 +234,10 @@ impl System {
             Some(x) => {
                 // Loop over all the entities and fire the event
                 for entity_id in filtered_entity_ids {
-                    let entity_clone = data.entity_manager.get_entity(entity_id).unwrap().clone();
+                    let entity_clone = entity_manager.get_entity(entity_id).unwrap().clone();
                     // Get the linked entity components from the current entity
                     let linked_components = LinkedComponents::get_linked_components(&entity_clone, self.flc_c_bitfield);
-                    x(&mut self.system_data, &entity_clone, &linked_components, data);
+                    x(&mut self.system_data, &entity_clone, &linked_components, world);
                 }
             }
             None => {}
@@ -252,16 +245,16 @@ impl System {
 
         // Post fire event
         match self.system_postfire_evn {
-            Some(x) => x(&mut self.system_data, data),
+            Some(x) => x(&mut self.system_data, world),
             None => {}
         }
     }
     // Enable this system
-    pub fn enable(&mut self, data: &mut WorldData) {
+    pub fn enable(&mut self, world: &T) {
         self.enabled = true;
         // Fire the event
         match self.system_enabled_evn {
-            Some(x) => x(&mut self.system_data, data),
+            Some(x) => x(&mut self.system_data, world),
             None => {}
         }
     }
@@ -277,7 +270,7 @@ impl System {
         */
     }
     // With custom data
-    pub fn custom_data<T: InternalSystemData + 'static>(&mut self, data: T) {
+    pub fn custom_data<U: InternalSystemData + 'static>(&mut self, data: U) {
         self.system_data.convert(data)
     }
 }
