@@ -13,7 +13,7 @@ use crate::{GameConfig, MTWorld};
 pub struct World {
     pub input_manager: InputManager,
     pub ui_manager: UIManager,
-    pub ecs_manager: ECSManager<MTWorld>,
+    pub ecs_manager: ECSManager,
 
     // Miscs
     pub debug: MainDebug,

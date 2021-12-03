@@ -4,9 +4,6 @@ use std::{ffi::c_void, ptr::null};
 use assets::Asset;
 use fonts::{Font, FontOptions};
 use rendering::basics::Shader;
-use systems::{InternalSystemData, System, SystemData, SystemEventType};
-use ui::ElementType;
-use world_data::WorldData;
 
 // Constant values
 const QUAD_VERTS: [veclib::Vector2<f32>; 6] = [
@@ -242,7 +239,7 @@ fn postfire(system_data: &mut SystemData, data: &mut WorldData) {
 }
 */
 // Create the UI system
-pub fn system(_data: &mut WorldData) -> System {
+pub fn system(data: &mut SharedWorld) -> System {
     let mut system = System::default();
     // Attach the custom system data
     system.custom_data(CustomData::default());

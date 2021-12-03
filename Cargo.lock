@@ -125,7 +125,6 @@ version = "0.1.0"
 dependencies = [
  "assets",
  "debug",
- "defaults",
  "ecs",
  "fonts",
  "glfw",
@@ -212,6 +211,7 @@ name = "defaults"
 version = "0.1.0"
 dependencies = [
  "assets",
+ "core",
  "debug",
  "ecs",
  "fonts",
@@ -233,6 +233,13 @@ checksum = "73770f8e1fe7d64df17ca66ad28994a0a623ea497fa69486e14984e715c5d174"
 dependencies = [
  "adler32",
  "byteorder",
+]
+
+[[package]]
+name = "dev_game"
+version = "0.1.0"
+dependencies = [
+ "main",
 ]
 
 [[package]]
@@ -268,6 +275,16 @@ name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
+name = "font_generator"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "fonts",
+ "image",
+ "veclib",
+]
 
 [[package]]
 name = "fonts"
@@ -447,6 +464,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "main"
+version = "0.1.0"
+dependencies = [
+ "assets",
+ "core",
+ "debug",
+ "defaults",
+ "ecs",
+ "gl",
+ "glfw",
+ "input",
+ "math",
+ "others",
+ "rendering",
+ "terrain",
+ "ui",
+ "veclib",
 ]
 
 [[package]]
