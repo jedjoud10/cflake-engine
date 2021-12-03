@@ -8,12 +8,12 @@ use input::*;
 use io::SaverLoader;
 use others::*;
 use ui::UIManager;
-use crate::GameConfig;
+use crate::{GameConfig, MTWorld};
 //  The actual world
 pub struct World {
     pub input_manager: InputManager,
     pub ui_manager: UIManager,
-    pub ecs_manager: ECSManager,
+    pub ecs_manager: ECSManager<MTWorld>,
 
     // Miscs
     pub debug: MainDebug,
@@ -27,13 +27,10 @@ pub struct World {
 // Get a new copy of a brand new world
 pub fn new(author_name: &str, app_name: &str) -> World {
     Self {
-        component_manager: ComponentManager::default(),
+        ecs_manager: ECSManager::default(),
         input_manager: InputManager::default(),
         ui_manager: UIManager::default(),
         debug: MainDebug::default(),
-
-        entity_manager: EntityManager::default(),
-        system_manager: SystemManager::default(),
 
         instance_manager: InstanceManager::default(),
         custom_data: CustomWorldData::default(),
