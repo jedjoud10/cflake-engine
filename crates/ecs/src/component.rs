@@ -96,7 +96,7 @@ impl ComponentManager {
 }
 // The main component trait
 // We do a little bit of googling https://stackoverflow.com/questions/26983355/is-there-a-way-to-combine-multiple-traits-in-order-to-define-a-new-trait
-pub trait Component: ComponentInternal + ComponentID {}
+pub trait Component: ComponentInternal + ComponentID + Sync + Send {}
 // A component trait that can be added to other components
 pub trait ComponentInternal {
     fn as_any(&self) -> &dyn Any;

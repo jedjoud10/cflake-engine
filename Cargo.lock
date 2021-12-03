@@ -130,6 +130,7 @@ dependencies = [
  "glfw",
  "input",
  "io",
+ "lazy_static",
  "others",
  "rendering",
  "ui",

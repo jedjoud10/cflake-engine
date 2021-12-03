@@ -1,14 +1,13 @@
 use ::rendering::*;
 use assets::*;
 use debug::*;
-use defaults::{components, systems};
 use ecs::*;
 use glfw::{self, Context};
 use input::*;
 use io::SaverLoader;
 use others::*;
 use ui::UIManager;
-use crate::{GameConfig, MTWorld};
+use crate::{GameConfig};
 //  The actual world
 pub struct World {
     pub input_manager: InputManager,
@@ -17,7 +16,6 @@ pub struct World {
 
     // Miscs
     pub debug: MainDebug,
-    pub custom_data: CustomWorldData,
     pub instance_manager: others::InstanceManager,
     pub time_manager: Time,
     pub saver_loader: SaverLoader,
