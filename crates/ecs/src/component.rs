@@ -2,55 +2,26 @@ use crate::ECSError;
 
 use super::entity::Entity;
 use others::SmartList;
-use std::{any::Any, collections::HashMap};
-
-
+use std::{any::Any, collections::HashMap, sync::{atomic::AtomicUsize, Arc, RwLock}};
 
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
-    pub smart_components_list: SmartList<Box<dyn ComponentInternal + Sync + Send>>,
+    pub components: SmartList<Box<dyn ComponentInternal + Sync + Send>>,
 }
 
 impl Default for ComponentManager {
     fn default() -> Self {
         Self {
-            smart_components_list: SmartList::default(),
+            components: SmartList::default(),
         }
     }
 }
 
 // Implement all the functions
-impl ComponentManager {
-    // Registers a specific component
-    pub fn register_component<T: ComponentID>(&mut self) -> usize {
-        let name: String = T::get_component_name();
-        // Register the component
-        self.component_ids.insert(name, self.current_component_id);
-        // Make a copy of the id before the bit shift
-        let component_id = self.current_component_id;
-        // Bit shift to the left
-        self.current_component_id <<= 1;
-        // Return the component id before the bit shift
-        component_id
-    }
-    // Get the component id for a specific entity
-    pub fn get_component_id<T: ComponentID>(&self) -> Result<usize, ECSError> {
-        let name: String = T::get_component_name();
-        // It found the component, so just return it's id
-        if self.component_ids.contains_key(&name) {
-            let value = self.component_ids[&name];
-            Ok(value)
-        } else {
-            return Err(ECSError::new(format!("Component {} not registered!", name)));
-        }
-    }
-    // Checks if a specific component is registered
-    pub fn is_component_registered<T: ComponentID>(&self) -> bool {
-        self.component_ids.contains_key(&T::get_component_name())
-    }
+impl ComponentManager {    
     // Add a specific linked componment to the component manager, returns the global IDs of the components
     pub fn add_linked_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
-        let global_id = self.smart_components_list.add_element(Box::new(component));
+        let global_id = self.components.add_element(Box::new(component));
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
@@ -68,7 +39,7 @@ impl ComponentManager {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self
-            .smart_components_list
+            .components
             .get_element(global_id)
             .unwrap()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
@@ -78,7 +49,7 @@ impl ComponentManager {
     // Get a mutable reference to a specific linked entity components struct
     pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: usize) -> Result<&mut T, ECSError> {
         let linked_component = self
-            .smart_components_list
+            .components
             .get_element_mut(global_id)
             .unwrap()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
@@ -88,7 +59,7 @@ impl ComponentManager {
     // Remove a specified component from the list
     pub fn id_remove_linked_component(&mut self, global_id: usize) -> Result<(), ECSError> {
         // To remove a specific component just set it's component slot to None
-        self.smart_components_list.remove_element(global_id).unwrap();
+        self.components.remove_element(global_id).unwrap();
         return Ok(());
     }
 }
@@ -130,7 +101,7 @@ impl LinkedComponents {
     }
     // Get a reference to a component using the component manager
     pub fn get_component<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a ComponentManager) -> Result<&'a T, ECSError> {
-        let id = component_manager.get_component_id::<T>()?;
+        let id = crate::registry::get_component_id::<T>()?;
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
             // We are allowed to get this component
@@ -144,7 +115,7 @@ impl LinkedComponents {
     }
     // Get a mutable reference to a component using the component manager
     pub fn get_component_mut<'a, T: Component + ComponentID + 'static>(&'a self, component_manager: &'a mut ComponentManager) -> Result<&'a mut T, ECSError> {
-        let id = component_manager.get_component_id::<T>()?;
+        let id = crate::registry::get_component_id::<T>()?;
         // Check if we are even allowed to get that components
         if self.components.contains_key(&id) {
             // We are allowed to get this component

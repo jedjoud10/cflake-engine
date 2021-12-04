@@ -8,6 +8,8 @@ mod load_state;
 mod macros;
 mod ecs_manager;
 mod linking;
+pub mod component_registry;
+pub use component_registry as registry;
 
 pub use linking::*;
 pub use ecs_manager::*;

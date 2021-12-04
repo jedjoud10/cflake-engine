@@ -1,0 +1,41 @@
+use lazy_static::lazy_static;
+use std::{sync::{atomic::AtomicUsize, Arc, RwLock, Mutex}, collections::HashMap};
+
+use crate::{ComponentID, ECSError};
+// Use to keep track of the component IDs
+lazy_static! {
+    static ref NEXT_REGISTERED_COMPONENT_ID: Arc<Mutex<usize>> = Arc::new(Mutex::new(1));
+    static ref REGISTERED_COMPONENTS: Arc<RwLock<HashMap<String, usize>>> = Arc::new(RwLock::new(HashMap::new()));
+}
+
+// Register a specific component
+pub fn register_component<T: ComponentID>() -> usize {
+    // Register the component
+    let mut rc = REGISTERED_COMPONENTS.as_ref().write().unwrap();
+    let id = NEXT_REGISTERED_COMPONENT_ID.lock().unwrap();
+    rc.insert(T::get_component_name(), *id);
+    // Make a copy of the id before the bit shift
+    let component_id = *id;
+    // Bit shift to the left
+    let mut x = NEXT_REGISTERED_COMPONENT_ID.lock().unwrap();
+    *x <<= 1;
+    // Return the component id before the bit shift
+    component_id
+}
+// Get the bitfield ID of a specific component
+pub fn get_component_id<T: ComponentID>() -> Result<usize, ECSError> {
+    let name: String = T::get_component_name();
+    let rc = REGISTERED_COMPONENTS.as_ref().read().unwrap();
+    // It found the component, so just return it's id
+    if rc.contains_key(&name) {
+        let value = rc[&name];
+        Ok(value)
+    } else {
+        return Err(ECSError::new(format!("Component {} not registered!", name)));
+    }
+}
+// Checks if a specific component is registered
+pub fn is_component_registered<T: ComponentID>() -> bool {
+    let rc = REGISTERED_COMPONENTS.as_ref().read().unwrap();
+    rc.contains_key(&T::get_component_name())
+}

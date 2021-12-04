@@ -76,8 +76,7 @@ pub enum SystemEventType {
 // A system, stored on the stack, but it's SystemData is a trait object
 #[derive(Default)]
 pub struct System {
-    required_c_bitfield: usize,
-    flc_c_bitfield: usize,
+    c_bitfield: usize,
     system_id: u8,
     enabled: bool,
     entities: Vec<usize>,
@@ -100,31 +99,19 @@ impl System {
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(&self, entity: &Entity) -> bool {
         // Check if the system matches the component ID of the entity
-        let bitfield: usize = self.required_c_bitfield & !entity.c_bitfield;
+        let bitfield: usize = self.c_bitfield & !entity.c_bitfield;
         // If the entity is valid, all the bits would be 0
         bitfield == 0
     }
     // Add a component to this system's component bitfield id
     pub fn link_component<U: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
-        if component_manager.is_component_registered::<U>() {
-            let c = component_manager.get_component_id::<U>()?;
-            self.required_c_bitfield |= c;
-            self.flc_c_bitfield |= c;
+        if crate::registry::is_component_registered::<U>() {
+            // Link the component if it was already registered
+            let c = crate::registry::get_component_id::<U>()?;
+            self.c_bitfield |= c;
         } else {
-            component_manager.register_component::<U>();
-            let c = component_manager.get_component_id::<U>()?;
-            self.required_c_bitfield |= c;
-            self.flc_c_bitfield |= c;
-        }
-        Ok(())
-    }
-    // Add a component that each entity *can* have, this is not necessary
-    pub fn link_component_flc_extra<U: ComponentID>(&mut self, component_manager: &mut ComponentManager) -> Result<(), ECSError> {
-        if component_manager.is_component_registered::<U>() {
-            self.flc_c_bitfield |= component_manager.get_component_id::<U>()?;
-        } else {
-            component_manager.register_component::<U>();
-            self.flc_c_bitfield |= component_manager.get_component_id::<U>()?;
+            // Link the component if it was not registered yet
+            self.c_bitfield |= crate::registry::register_component::<U>();
         }
         Ok(())
     }
@@ -175,9 +162,11 @@ impl System {
             Some(x) => {
                 // Fire the entity removed event
                 for entity_id in self.entities.iter() {
+                    /*
                     // Get the entity
                     let entity = entity_manager.get_entity(*entity_id).unwrap().clone();
                     x(&entity);
+                    */
                 }
             }
             None => {}
@@ -201,11 +190,14 @@ impl System {
                 self.entities
                     .iter()
                     .filter(|entity_id| {
+                        /*
                         // Filter the entities
                         let entity_clone = &entity_manager_immutable.get_entity(**entity_id).unwrap();
                         // Get the linked components
                         let linked_components = LinkedComponents::get_linked_components(entity_clone, self.flc_c_bitfield);
                         x(&linked_components)
+                        */
+                        true
                     })
                     .cloned()
                     .collect()
@@ -220,10 +212,12 @@ impl System {
             Some(x) => {
                 // Loop over all the entities and fire the event
                 for entity_id in filtered_entity_ids {
+                    /*
                     let entity_clone = entity_manager.get_entity(entity_id).unwrap().clone();
                     // Get the linked entity components from the current entity
                     let linked_components = LinkedComponents::get_linked_components(&entity_clone, self.flc_c_bitfield);
                     x(&entity_clone, &linked_components);
+                    */
                 }
             }
             None => {}
