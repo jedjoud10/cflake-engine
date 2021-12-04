@@ -8,6 +8,26 @@ use io::SaverLoader;
 use others::*;
 use ui::UIManager;
 use crate::{GameConfig};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+
+// Global main for purely just low level task management
+use lazy_static::lazy_static;
+lazy_static! {
+    static ref WORLD: Arc<RwLock<World>> = Arc::new(RwLock::new(World::new("NullDev", "NullGame")));
+}
+
+// Get a reference to the world
+pub fn world() -> RwLockReadGuard<'static, World> {
+    let x = WORLD.as_ref().read().unwrap();
+    x
+}
+
+// Get a mutable reference to the world
+pub fn world_mut() -> RwLockWriteGuard<'static, World> {
+    let x = WORLD.as_ref().write().unwrap();
+    x
+}
+
 //  The actual world
 pub struct World {
     pub input_manager: InputManager,
@@ -39,7 +59,7 @@ pub fn new(author_name: &str, app_name: &str) -> World {
 // Load everything that needs to be loaded by default
 fn load_defaults() {
     // Load default bindings
-    crate::global::input::create_key_cache();
+    crate::local::input::create_key_cache();
     crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);
     crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);
 
@@ -140,20 +160,9 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: f
     println!("Hello world!");
 }
 // We do the following in this function
-pub fn update_world(&mut self, delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+pub fn update_world(delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Upate the console
     self.update_console();
-    // Create the data for the systems
-    let mut data: WorldData = WorldData {
-        entity_manager: &mut self.entity_manager,
-        component_manager: &mut self.component_manager,
-        ui_manager: &mut self.ui_manager,
-        input_manager: &mut self.input_manager,
-        time_manager: &mut self.time_manager,
-        debug: &mut self.debug,
-        custom_data: &mut self.custom_data,
-        instance_manager: &mut self.instance_manager,
-    };
 
     // Update the system
     self.system_manager.update_systems(&mut data);
@@ -195,7 +204,7 @@ pub fn update_world(&mut self, delta: f64, glfw: &mut glfw::Glfw, window: &mut g
     }
 }
 // Update the console
-fn update_console(&mut self) {
+fn update_console() {
     // Check if we should start key registering if the console is active
     if self.input_manager.map_pressed_uncheck("toggle_console") || (self.input_manager.map_pressed_uncheck("enter") && self.input_manager.keys_reg_active()) {
         match self.input_manager.toggle_keys_reg() {
@@ -226,84 +235,14 @@ fn update_console(&mut self) {
     }
 }
 // When we want to close the application
-pub fn kill_world(&mut self) {
-    let mut data: WorldData = WorldData {
-        entity_manager: &mut self.entity_manager,
-        component_manager: &mut self.component_manager,
-        ui_manager: &mut self.ui_manager,
-        input_manager: &mut self.input_manager,
-        time_manager: &mut self.time_manager,
-        debug: &mut self.debug,
-        custom_data: &mut self.custom_data,
-        instance_manager: &mut self.instance_manager,
-    };
+pub fn kill_world() {
     self.system_manager.kill_systems(&mut data);
     println!("Kill world!");
     // Kill the render pipeline
     pipec::dispose_pipeline();
 }
-// Add the specified entity ID to the systems that it needs
-pub fn add_entity_to_systems(&mut self, entity_id: usize) {
-    let entity = self.entity_manager.get_entity(entity_id).unwrap().clone();
-    // Since we cloned the entity variable we gotta update the entity manager with the new one
-    self.system_manager.add_entity_to_systems(
-        &entity,
-        &mut WorldData {
-            entity_manager: &mut self.entity_manager,
-            component_manager: &mut self.component_manager,
-            ui_manager: &mut self.ui_manager,
-            input_manager: &mut self.input_manager,
-            time_manager: &mut self.time_manager,
-            debug: &mut self.debug,
-            custom_data: &mut self.custom_data,
-            instance_manager: &mut self.instance_manager,
-        },
-    );
-    *self.entity_manager.get_entity_mut(entity_id).unwrap() = entity;
-}
-// Add all the pending entities from the entity manager to the systems and remove the ones that we must destroy
-pub fn update_entity_manager(&mut self) {
-    // Only update if it we need to
-    if self.entity_manager.entities_to_add.len() > 0 || self.entity_manager.entities_to_remove.len() > 0 {
-        // Add the entities to the systems
-        for entity in self.entity_manager.entities_to_add.clone() {
-            self.add_entity_to_systems(entity.entity_id);
-        }
-        self.entity_manager.entities_to_add.clear();
-
-        // Remove the entities from the systems
-        for entity_id in self.entity_manager.entities_to_remove.clone() {
-            self.remove_entity_from_systems(entity_id).unwrap();
-            // After removing it from the systems, we can actually remove the entity
-            self.entity_manager.entities.remove_element(entity_id);
-        }
-        self.entity_manager.entities_to_remove.clear();
-    }
-}
-// Remove the specified entity ID from the systems it was in
-pub fn remove_entity_from_systems(&mut self, entity_id: usize) -> Result<Entity, ECSError> {
-    // Remove this entity from the systems it was in first
-    let entity = self.entity_manager.get_entity(entity_id)?.clone();
-    let mut data = WorldData {
-        entity_manager: &mut self.entity_manager,
-        component_manager: &mut self.component_manager,
-        ui_manager: &mut self.ui_manager,
-        input_manager: &mut self.input_manager,
-        time_manager: &mut self.time_manager,
-        debug: &mut self.debug,
-        custom_data: &mut self.custom_data,
-        instance_manager: &mut self.instance_manager,
-    };
-    self.system_manager.remove_entity_from_systems(&entity, entity_id, &mut data);
-    // Then remove the actual entity last, so it allows for systems to run their entity_removed event
-    // Remove all the components then entity had
-    for global_component_id in entity.linked_components.values() {
-        self.component_manager.id_remove_linked_component(*global_component_id).unwrap();
-    }
-    Ok(entity)
-}
 // When we resize the window
-pub fn resize_window_event(&mut self, size: (u16, u16)) {
+pub fn resize_window_event(size: (u16, u16)) {
     let dims = veclib::Vector2::new(size.0, size.1);
     pipec::task(pipec::RenderTask::WindowUpdateSize(dims), "window_data_update", |_| {});
     let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
