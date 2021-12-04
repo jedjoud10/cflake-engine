@@ -5,7 +5,9 @@ pub mod ecs {
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) {}
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
-    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) {}
+    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) {
+        let x = crate::command::task::<usize>(crate::command::CommandQuery::Singular());
+    }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
     pub fn entity_remove() {}
     // Get a component
@@ -14,7 +16,7 @@ pub mod ecs {
     pub fn component_mut() {}
     // Create a component linking group
     pub fn component_linking_group(entity: &ecs::Entity) -> ecs::ComponentLinkingGroup {
-        ecs::ComponentLinkingGroup::new(entity)
+        ecs::ComponentLinkingGroup::new()
     }
     // This is an alternate function that links the component directly, no linking group
     pub fn link_component_direct() {}
