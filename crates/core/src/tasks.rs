@@ -15,3 +15,10 @@ pub struct WorldTaskReturn<T> {
     pub id: u64,
     pub val: T,
 }
+
+impl<T> WorldTaskReturn<T> {
+    // Wait for the main thread to finish this specific task
+    pub fn wait() {
+        
+    }
+}

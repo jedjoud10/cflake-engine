@@ -7,7 +7,7 @@ use std::{any::Any, collections::HashMap};
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
     component_ids: HashMap<String, usize>,
-    pub smart_components_list: SmartList<Box<dyn ComponentInternal>>,
+    pub smart_components_list: SmartList<Box<dyn ComponentInternal + Sync + Send>>,
     pub current_component_id: usize,
 }
 

@@ -1,7 +1,6 @@
 // Export
 mod component;
 mod entity;
-mod system_data;
 mod system;
 mod entity_custom_event;
 mod error;

@@ -1,4 +1,4 @@
-use crate::{Entity, ECSError, system_data::{SystemData, InternalSystemData}, LinkedComponents, ComponentManager, ComponentID, EntityManager};
+use crate::{Entity, ECSError, LinkedComponents, ComponentManager, ComponentID, EntityManager};
 
 #[derive(Default)]
 // Manages the systems
@@ -57,30 +57,18 @@ impl SystemManager {
     pub fn get_system_mut(&mut self, system_id: u8) -> Result<&mut System, ECSError> {
         self.systems.get_mut(system_id as usize).ok_or(ECSError::new_str("System does not exist!"))
     }
-    // Gets a reference to the custom data of a specific system
-    pub fn get_custom_system_data<U: InternalSystemData + 'static>(&self, system_id: u8) -> Result<&U, ECSError> {
-        let system = self.get_system(system_id)?;
-        let data = system.system_data.cast::<U>().unwrap();
-        return Ok(data);
-    }
-    // Gets a mutable reference to the custom data a specific system
-    pub fn get_custom_system_data_mut<U: InternalSystemData + 'static>(&mut self, system_id: u8) -> Result<&mut U, ECSError> {
-        let system = self.get_system_mut(system_id)?;
-        let data = system.system_data.cast_mut::<U>().unwrap();
-        return Ok(data);
-    }
 }
 // A system event enum
 pub enum SystemEventType {
     // Control events
-    SystemEnabled(fn(&mut SystemData)),
-    SystemDisabled(fn(&mut SystemData)),
-    SystemPrefire(fn(&mut SystemData)),
-    SystemPostfire(fn(&mut SystemData)),
+    SystemEnabled(fn()),
+    SystemDisabled(fn()),
+    SystemPrefire(fn()),
+    SystemPostfire(fn()),
     // Entity events
-    EntityAdded(fn(&mut SystemData, &Entity)),
-    EntityRemoved(fn(&mut SystemData, &Entity)),
-    EntityUpdate(fn(&mut SystemData, &Entity, &LinkedComponents)),
+    EntityAdded(fn(&Entity)),
+    EntityRemoved(fn(&Entity)),
+    EntityUpdate(fn(&Entity, &LinkedComponents)),
     // Entity custom event
     EntityFilter(fn(&LinkedComponents) -> bool),
 }
@@ -93,19 +81,17 @@ pub struct System {
     system_id: u8,
     enabled: bool,
     entities: Vec<usize>,
-    // The system data
-    system_data: SystemData,
 
     // Events
     // Control events
-    system_enabled_evn: Option<fn(&mut SystemData)>,
-    system_disabled_evn: Option<fn(&mut SystemData)>,
-    system_prefire_evn: Option<fn(&mut SystemData)>,
-    system_postfire_evn: Option<fn(&mut SystemData)>,
+    system_enabled_evn: Option<fn()>,
+    system_disabled_evn: Option<fn()>,
+    system_prefire_evn: Option<fn()>,
+    system_postfire_evn: Option<fn()>,
     // Entity events
-    entity_added_evn: Option<fn(&mut SystemData, &Entity)>,
-    entity_removed_evn: Option<fn(&mut SystemData, &Entity)>,
-    entity_update_evn: Option<fn(&mut SystemData, &Entity, &LinkedComponents)>,
+    entity_added_evn: Option<fn(&Entity)>,
+    entity_removed_evn: Option<fn(&Entity)>,
+    entity_update_evn: Option<fn(&Entity, &LinkedComponents)>,
     entity_filter: Option<fn(&LinkedComponents) -> bool>,
 }
 
@@ -165,7 +151,7 @@ impl System {
         self.entities.push(entity.entity_id);
         // Fire the event
         match self.entity_added_evn {
-            Some(x) => x(&mut self.system_data, entity),
+            Some(x) => x(entity),
             None => {}
         }
     }
@@ -179,7 +165,7 @@ impl System {
         self.entities.remove(system_entity_local_id);
         // Fire the event
         match self.entity_removed_evn {
-            Some(x) => x(&mut self.system_data, entity),
+            Some(x) => x(entity),
             None => {}
         }
     }
@@ -191,7 +177,7 @@ impl System {
                 for entity_id in self.entities.iter() {
                     // Get the entity
                     let entity = entity_manager.get_entity(*entity_id).unwrap().clone();
-                    x(&mut self.system_data, &entity);
+                    x(&entity);
                 }
             }
             None => {}
@@ -204,7 +190,7 @@ impl System {
         }
         // Pre fire event
         match self.system_prefire_evn {
-            Some(x) => x(&mut self.system_data),
+            Some(x) => x(),
             None => {}
         }
 
@@ -237,7 +223,7 @@ impl System {
                     let entity_clone = entity_manager.get_entity(entity_id).unwrap().clone();
                     // Get the linked entity components from the current entity
                     let linked_components = LinkedComponents::get_linked_components(&entity_clone, self.flc_c_bitfield);
-                    x(&mut self.system_data, &entity_clone, &linked_components);
+                    x(&entity_clone, &linked_components);
                 }
             }
             None => {}
@@ -245,7 +231,7 @@ impl System {
 
         // Post fire event
         match self.system_postfire_evn {
-            Some(x) => x(&mut self.system_data),
+            Some(x) => x(),
             None => {}
         }
     }
@@ -254,7 +240,7 @@ impl System {
         self.enabled = true;
         // Fire the event
         match self.system_enabled_evn {
-            Some(x) => x(&mut self.system_data),
+            Some(x) => x(),
             None => {}
         }
     }
@@ -268,9 +254,5 @@ impl System {
             None => {}
         }
         */
-    }
-    // With custom data
-    pub fn custom_data<U: InternalSystemData + 'static>(&mut self, data: U) {
-        self.system_data.convert(data)
     }
 }

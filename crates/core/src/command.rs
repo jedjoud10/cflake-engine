@@ -1,5 +1,3 @@
-use crate::tasks::WorldTask;
-
 // A dispatch group used to dispatch multiple commands to the world at the same time, so we don't have to wait for them on the system threads
 pub struct WorldCommandDispatchGroup {
     pub commands: Vec<WorldCommand>
