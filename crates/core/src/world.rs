@@ -24,21 +24,20 @@ pub struct World {
 
 // Get a new copy of a brand new world
 pub fn new(author_name: &str, app_name: &str) -> World {
-    Self {
+    World {
         ecs_manager: ECSManager::default(),
         input_manager: InputManager::default(),
         ui_manager: UIManager::default(),
         debug: MainDebug::default(),
 
         instance_manager: InstanceManager::default(),
-        custom_data: CustomWorldData::default(),
         time_manager: Time::default(),
         saver_loader: SaverLoader::new(author_name, app_name),
         config_file: GameConfig::default(),
     }
 }
 // Load everything that needs to be loaded by default
-fn load_defaults(&mut self) {
+fn load_defaults() {
     // Load default bindings
     self.input_manager.create_key_cache();
     self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
@@ -153,9 +152,9 @@ fn load_defaults(&mut self) {
     self.ui_manager.add_root("console", console_root);
 }
 // When the world started initializing
-pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn(&mut Self)) {
+pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn()) {
     // Load the default stuff
-    self.load_defaults();
+    load_defaults();
     window_commands::hide_cursor(window);
     // Load the config file for this world
     self.saver_loader.create_default("config\\game_config.json", &GameConfig::default());
@@ -170,7 +169,7 @@ pub fn start_world(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, 
     self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 2.0).normalized();
 
     // Callback
-    callback(self);
+    callback();
     println!("Hello world!");
 }
 // We do the following in this function
