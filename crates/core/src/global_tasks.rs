@@ -8,11 +8,13 @@ lazy_static! {
     static ref WORLD: Arc<RwLock<World>> = Arc::new(RwLock::new(crate::new("NullDev", "NullGame")));
 }
 
+// Get a reference to the world
 pub fn world() -> RwLockReadGuard<'static, World> {
     let x = WORLD.as_ref().read().unwrap();
     x
 }
 
+// Get a mutable reference to the world
 pub fn world_mut() -> RwLockWriteGuard<'static, World> {
     let x = WORLD.as_ref().write().unwrap();
     x

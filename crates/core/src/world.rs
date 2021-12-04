@@ -39,9 +39,9 @@ pub fn new(author_name: &str, app_name: &str) -> World {
 // Load everything that needs to be loaded by default
 fn load_defaults() {
     // Load default bindings
-    self.input_manager.create_key_cache();
-    self.input_manager.bind_key(Keys::F4, "toggle_console", MapType::Button);
-    self.input_manager.bind_key(Keys::Enter, "enter", MapType::Button);
+    crate::global::input::create_key_cache();
+    crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);
+    crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);
 
     // Load the default objects for the CacheManagers
     // Load the missing texture
@@ -85,39 +85,6 @@ fn load_defaults() {
         )
         .unwrap(),
     );
-
-    // Load the default systems
-    let mut data: WorldData = WorldData {
-        entity_manager: &mut self.entity_manager,
-        component_manager: &mut self.component_manager,
-        ui_manager: &mut self.ui_manager,
-        input_manager: &mut self.input_manager,
-        time_manager: &mut self.time_manager,
-        debug: &mut self.debug,
-        custom_data: &mut self.custom_data,
-        instance_manager: &mut self.instance_manager,
-    };
-    // Rendering system
-    let mut rendering_system = systems::rendering_system::system(&mut data);
-    rendering_system.enable(&mut data);
-    self.system_manager.add_system(rendering_system);
-    // Camera system
-    let mut camera_system = systems::camera_system::system(&mut data);
-    camera_system.enable(&mut data);
-    self.system_manager.add_system(camera_system);
-    /*
-    let mut ui_system = systems::ui_system::system(&mut data);
-    ui_system.enable(&mut data);
-    self.system_manager.add_system(ui_system);
-    */
-    // Load the default command system
-    let mut command_system = systems::command_system::system(&mut data);
-    command_system.enable(&mut data);
-    self.system_manager.add_system(command_system);
-    // Load the terrain system
-    let mut terrain_system = systems::terrain_system::system(&mut data);
-    terrain_system.enable(&mut data);
-    self.system_manager.add_system(terrain_system);
 
     // Create some default UI that prints some default info to the screen
     let mut root = ui::Root::new(1);

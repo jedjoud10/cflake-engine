@@ -134,11 +134,11 @@ impl InputManager {
         self.scancode_cache = cache;
     }
     // Get the key scancode using the cache that we have
-    pub fn get_key_scancode(&self, key: Keys) -> Option<&i32> {
+    fn get_key_scancode(&self, key: Keys) -> Option<&i32> {
         return self.scancode_cache.get(&key);
     }
     // Convert a key to it's string literal
-    pub fn convert_key_to_string(&self, key: Keys) -> String {
+    fn convert_key_to_string(&self, key: Keys) -> String {
         match key {
             Keys::Space => " ",
             Keys::Minus => "-",
