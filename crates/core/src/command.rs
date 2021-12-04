@@ -12,6 +12,6 @@ pub struct WorldCommand {
 
 // A task sender that will send tasks from other thread to the main thread, asynchronously.
 pub struct WorldTaskSender {
-
+    
 }
 
