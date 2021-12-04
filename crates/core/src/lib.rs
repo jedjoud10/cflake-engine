@@ -7,3 +7,4 @@ mod command;
 pub use command::*;
 mod tasks;
 mod global_tasks;
+mod global;

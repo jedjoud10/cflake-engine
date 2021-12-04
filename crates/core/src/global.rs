@@ -10,6 +10,10 @@ pub mod ecs {
     pub fn component() {}
     // Get a component mutably
     pub fn component_mut() {}
+    // Create a component linking group
+    pub fn component_linking_group(entity: &ecs::Entity) -> ecs::ComponentLinkingGroup {
+        
+    }
     // Each time we link a component to an entity, we don't actually add it, we wait until we add that entity to actually add the component
     pub fn link_component() {}
     // This is an alternate function that links the component directly, but it is slower than the original one
