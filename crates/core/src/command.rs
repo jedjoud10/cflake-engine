@@ -30,18 +30,21 @@ mod tasks {
             // Wait for the main thread to send back the confirmation
             todo!()
         }
+        // Use a callback instead of waiting
+        pub fn callback<F>(self, callback: F) where F: Fn(T) + Send + 'static {
+            others::callbacks::add_callback(callback);
+        }
     }
 
     // Excecute a specific task and give back it's result
     fn excecute_task(t: Task) -> WaitableTask<TaskReturn> {
         match t {
-            Task::CreateComponent() => todo!(),
-            Task::DestroyComponent() => todo!(),
-            Task::CreateEntity(entity, linking_group) => {
-            },
+            Task::CreateComponentDirect() => todo!(),
+            Task::DestroyComponentDirect(_) => todo!(),
+            Task::CreateEntity(_, _) => todo!(),
             Task::DestroyEntity() => todo!(),
-            Task::LinkComponentDirect() => todo!(),
-            Task::UnlinkComponentDirect() => todo!(),
+            Task::LinkComponentDirect(_, _) => todo!(),
+            Task::UnlinkComponentDirect(_, _) => todo!(),
         }
     }
 }
