@@ -10,7 +10,7 @@ pub struct ComponentLinkingGroup {
 // Linking methods
 impl ComponentLinkingGroup {
     // Creete a new component linking group from an entity
-    pub fn new(entity: &Entity) -> Self {
+    pub fn new() -> Self {
         Self {
             linked_components: HashMap::new(),
             c_bitfield: 0
