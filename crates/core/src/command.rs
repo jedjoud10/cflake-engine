@@ -19,25 +19,13 @@ mod tasks {
         DestroyEntity(Option<()>),
     }
     // The return type for a world task, we can wait for the return or just not care lol
-    pub struct WaitableTask<T> {
+    pub struct WaitableTask {
         pub id: u64,
-        pub val: Option<T>,
-    }
-
-    impl<T> WaitableTask<T> {
-        // Wait for the main thread to finish this specific task
-        pub fn wait(self) -> T {
-            // Wait for the main thread to send back the confirmation
-            todo!()
-        }
-        // Use a callback instead of waiting
-        pub fn callback<F>(self, callback: F) where F: Fn(T) + Send + 'static {
-            others::callbacks::add_callback(callback);
-        }
-    }
+        pub thread_id: std::thread::ThreadId,
+    }    
 
     // Excecute a specific task and give back it's result
-    fn excecute_task(t: Task) -> WaitableTask<TaskReturn> {
+    pub fn excecute_task(t: Task) -> TaskReturn {
         match t {
             Task::CreateComponentDirect() => todo!(),
             Task::DestroyComponentDirect(_) => todo!(),
@@ -52,8 +40,8 @@ mod tasks {
 mod commands {
     // A sent command query
     pub enum CommandQuery {
-        Group(u64, Vec<Task>),
-        Singular(u64, Task),
+        Group(u64, std::thread::ThreadId, Vec<Task>),
+        Singular(u64, std::thread::ThreadId, Task),
     }
     pub use super::tasks::Task;
     use super::tasks::{TaskReturn, WaitableTask};
@@ -69,61 +57,78 @@ lazy_static! {
     static ref SENDER: Mutex<WorldTaskSender> = Mutex::new(WorldTaskSender::default());
     // Receiver of tasks. Is called on the main thread, receives messages from the worker threads
     static ref RECEIVER: Mutex<WorldTaskReceiver> = Mutex::new(WorldTaskReceiver::default());
-    // The waitable tasks' return values that would be polled by the worker threads when they run WaitableTask.wait()
-    static ref PENDING_RETURNS: Arc<Mutex<Vec<WaitableTask<TaskReturn>>>> = Arc::new(Mutex::new(Vec::new()));
 }
 // Worker threads
 #[derive(Default)]
 pub struct WorldTaskSender {
     pub tx: Option<Sender<CommandQuery>>, // CommandQuery. WorkerThreads -> MainThread 
+    pub rx: Option<crossbeam_channel::Receiver<WaitableTask>> // WaitableTask<TaskReturn>. MainThread -> WorkerThreads
 }
 // Main thread
 #[derive(Default)]
 pub struct WorldTaskReceiver {
+    pub tx: Option<crossbeam_channel::Sender<WaitableTask>>, // WaitableTask<TaskReturn>. MainThread -> WorkerThreads
     pub rx: Option<Receiver<CommandQuery>>, // CommandQuery. WorkerThreads -> MainThread
+}
+impl WaitableTask {
+    // Wait for the main thread to finish this specific task
+    pub fn wait(self) -> TaskReturn {
+        // Wait for the main thread to send back the return task
+        let sender = SENDER.lock().unwrap();
+        let rx = sender.rx.unwrap();
+        rx.
+    }
 }
 // The functions
 pub fn initialize_channels() {
     // Create the channels
     let (tx, rx) = std::sync::mpsc::channel::<CommandQuery>();
+    let (tx2, rx2) = crossbeam_channel::unbounded::<WaitableTask>();
     let receiver = RECEIVER.lock().unwrap();
     let sender = SENDER.lock().unwrap();
-    let mut pending_returns = PENDING_RETURNS.as_ref().lock().unwrap();
-    *pending_returns = Vec::new();
+    // The task senders
     receiver.rx = Some(rx);
     sender.tx = Some(tx);
+    // The taskreturn senders
+    sender.rx = Some(rx2);
+    receiver.tx = Some(tx2);
 }
 // Frame tick on the main thread. Polls the current tasks and excecutes them. This is called at the end of each logic frame (16ms per frame)
 pub fn frame_main_thread() {
     // Poll each command query
     let receiver = RECEIVER.lock().unwrap();
+    let tx = receiver.tx.unwrap();
     for x in receiver.rx.unwrap().try_recv() {
-        match x {
-            CommandQuery::Group(id, tgroup) => {
+        let (id, thread_id, task) = match x {
+            CommandQuery::Group(id, thread_id, tgroup) => {
                 // Execute the task group
+                (id, thread_id, tasks::excecute_task(tgroup[0]))
             },
-            CommandQuery::Singular(id, t) => {
-                // Execute the singular task                
+            CommandQuery::Singular(id, thread_id, t) => {
+                // Execute the singular task        
+                (id, thread_id, tasks::excecute_task(t))
             },
-        }
+        };
+        let waitabletask = WaitableTask { id, thread_id, val: Some(task) };
+        // Send the result back to system threads
+        tx.send(waitabletask).unwrap();
     }
 }
 // Send a command query to the world, giving back a command return that can be waited for
-pub fn command<T>(query: CommandQuery) -> WaitableTask<T> {
+pub fn command(query: CommandQuery) -> WaitableTask {
     // Send the command query
     let x = SENDER.lock().unwrap();
     let tx = x.tx.as_ref().unwrap();
     tx.send(query);
     // Get the corresponding return command value
     match query {
-        CommandQuery::Group(id, commands) => WaitableTask {
+        CommandQuery::Group(id, thread_id, tasks) => WaitableTask {
             id,
-            val: None,
+            thread_id: std::thread::current().id(),
         },
-        CommandQuery::Singular(id, command) => WaitableTask {
+        CommandQuery::Singular(id, thread_id, task) => WaitableTask {
             id,
-            val: None,
+            thread_id: std::thread::current().id(),
         },
     }
 }
-// Send multiple tasks
