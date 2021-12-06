@@ -21,6 +21,7 @@ mod tasks {
     // The return type for a world task, we can wait for the return or just not care lol
     pub struct WaitableTask {
         pub id: u64,
+        pub val: Option<TaskReturn>,
         pub thread_id: std::thread::ThreadId,
     }    
 
@@ -40,35 +41,51 @@ mod tasks {
 mod commands {
     // A sent command query
     pub enum CommandQuery {
-        Group(u64, std::thread::ThreadId, Vec<Task>),
-        Singular(u64, std::thread::ThreadId, Task),
+        Singular(std::thread::ThreadId, Task),
+        Group(std::thread::ThreadId, Vec<Task>),
+    }
+    impl CommandQuery {
+        // From single
+        pub fn single(task: Task) -> Self {
+            let thread_id = std::thread::current().id();
+            Self::Singular(thread_id, task)
+        }
+        // From group
+        pub fn group(tasks: Vec<Task>) -> Self {
+            let thread_id = std::thread::current().id();
+            Self::Group(thread_id, tasks)
+        }
     }
     pub use super::tasks::Task;
     use super::tasks::{TaskReturn, WaitableTask};
 }
 
 // Sending - Receiving
-use std::sync::{mpsc::{Sender, Receiver}, RwLock, Arc, Mutex};
+use std::{sync::{mpsc::{Sender, Receiver}, RwLock, Arc, Mutex, atomic::{Ordering, AtomicU64}}, collections::HashMap};
 pub use self::commands::*;
 pub use self::tasks::*;
 use lazy_static::lazy_static;
 lazy_static! {
+    // A counter for the number of commands issued
+    static ref COUNTER: AtomicU64 = AtomicU64::new(0);
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
     static ref SENDER: Mutex<WorldTaskSender> = Mutex::new(WorldTaskSender::default());
     // Receiver of tasks. Is called on the main thread, receives messages from the worker threads
     static ref RECEIVER: Mutex<WorldTaskReceiver> = Mutex::new(WorldTaskReceiver::default());
+    // Some buffer that holds data that could not be used for the current calling system. This is only locked on the system threads, not on the main thread
+    static ref BUFFER: Mutex<HashMap<u64, WaitableTask>> = Mutex::new(HashMap::new());
 }
 // Worker threads
 #[derive(Default)]
 pub struct WorldTaskSender {
-    pub tx: Option<Sender<CommandQuery>>, // CommandQuery. WorkerThreads -> MainThread 
+    pub tx: Option<Sender<(u64, CommandQuery)>>, // CommandQuery. WorkerThreads -> MainThread 
     pub rx: Option<crossbeam_channel::Receiver<WaitableTask>> // WaitableTask<TaskReturn>. MainThread -> WorkerThreads
 }
 // Main thread
 #[derive(Default)]
 pub struct WorldTaskReceiver {
     pub tx: Option<crossbeam_channel::Sender<WaitableTask>>, // WaitableTask<TaskReturn>. MainThread -> WorkerThreads
-    pub rx: Option<Receiver<CommandQuery>>, // CommandQuery. WorkerThreads -> MainThread
+    pub rx: Option<Receiver<(u64, CommandQuery)>>, // CommandQuery. WorkerThreads -> MainThread
 }
 impl WaitableTask {
     // Wait for the main thread to finish this specific task
@@ -76,13 +93,36 @@ impl WaitableTask {
         // Wait for the main thread to send back the return task
         let sender = SENDER.lock().unwrap();
         let rx = sender.rx.unwrap();
-        rx.
+        let buf = BUFFER.lock().unwrap();
+        let thread_id = std::thread::current().id();
+        let id = self.id;
+        for x in rx.try_iter() {
+            // The waitable task is valid for this specific thread!
+            if x.thread_id == thread_id {
+                return x.val.unwrap();
+            } else {
+                // Not valid, add it to the buffer
+                buf.insert(x.id, x);
+            }
+        }
+
+        // We must wait until the value becomes valid in the buffer
+        loop {
+            if buf.contains_key(&id) {
+                // Double check just in case
+                let x = buf.remove(&id).unwrap();
+                if x.thread_id == thread_id {
+                    // We finally got the value, we can return it and stop waiting
+                    return buf.remove(&id).unwrap().val.unwrap();
+                }
+            }
+        }
     }
 }
 // The functions
 pub fn initialize_channels() {
     // Create the channels
-    let (tx, rx) = std::sync::mpsc::channel::<CommandQuery>();
+    let (tx, rx) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
     let (tx2, rx2) = crossbeam_channel::unbounded::<WaitableTask>();
     let receiver = RECEIVER.lock().unwrap();
     let sender = SENDER.lock().unwrap();
@@ -98,15 +138,15 @@ pub fn frame_main_thread() {
     // Poll each command query
     let receiver = RECEIVER.lock().unwrap();
     let tx = receiver.tx.unwrap();
-    for x in receiver.rx.unwrap().try_recv() {
-        let (id, thread_id, task) = match x {
-            CommandQuery::Group(id, thread_id, tgroup) => {
+    for (id, x) in receiver.rx.unwrap().try_recv() {
+        let (thread_id, task) = match x {
+            CommandQuery::Group(thread_id, tgroup) => {
                 // Execute the task group
-                (id, thread_id, tasks::excecute_task(tgroup[0]))
+                (thread_id, tasks::excecute_task(tgroup[0]))
             },
-            CommandQuery::Singular(id, thread_id, t) => {
+            CommandQuery::Singular(thread_id, t) => {
                 // Execute the singular task        
-                (id, thread_id, tasks::excecute_task(t))
+                (thread_id, tasks::excecute_task(t))
             },
         };
         let waitabletask = WaitableTask { id, thread_id, val: Some(task) };
@@ -119,15 +159,19 @@ pub fn command(query: CommandQuery) -> WaitableTask {
     // Send the command query
     let x = SENDER.lock().unwrap();
     let tx = x.tx.as_ref().unwrap();
-    tx.send(query);
+    let id = COUNTER.fetch_add(0, Ordering::Relaxed);
+    tx.send((id, query));    
+    // Increment the counter
     // Get the corresponding return command value
     match query {
-        CommandQuery::Group(id, thread_id, tasks) => WaitableTask {
+        CommandQuery::Group(thread_id, tasks) => WaitableTask {
             id,
+            val: None,
             thread_id: std::thread::current().id(),
         },
-        CommandQuery::Singular(id, thread_id, task) => WaitableTask {
+        CommandQuery::Singular(thread_id, task) => WaitableTask {
             id,
+            val: None,
             thread_id: std::thread::current().id(),
         },
     }

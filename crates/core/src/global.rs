@@ -2,11 +2,13 @@
 // Commands grouped for each module
 // Entity Component Systems
 pub mod ecs {
+    use crate::command::*;
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) {}
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
     pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) {
-        let x = crate::command::task::<usize>(crate::command::CommandQuery::Singular());
+        let waitable = command(CommandQuery::single(Task::CreateEntity(entity, linkings)));
+        let x = waitable.wait();
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
     pub fn entity_remove() {}

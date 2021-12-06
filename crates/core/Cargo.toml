@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 glfw = "0.41.0"
 lazy_static = "1.4.0"
+crossbeam-channel = "0.5.1"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 input = { path = "../input" }
 others = { path = "../others" }
