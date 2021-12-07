@@ -47,9 +47,9 @@ pub mod input {
         w.input_manager.keys_reg_active()
     }
     // Stop registering the keys as a sentence and return it
-    pub fn stop_keys_reg() -> String {}
+    pub fn stop_keys_reg() -> String { todo!() }
     // Toggle the registering of the keys as a literal string
-    pub fn toggle_keys_reg() -> Option<String> {}
+    pub fn toggle_keys_reg() -> Option<String> { todo!() }
     // Returns true when the map is pressed
     pub fn map_pressed(name: &str) -> bool {
         let w = crate::world::world();

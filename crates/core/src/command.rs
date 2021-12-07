@@ -1,5 +1,7 @@
 // Tasks
 mod tasks {
+    use std::sync::mpsc::Receiver;
+
     // Some world tasks
     pub enum Task {
         // Components
@@ -61,7 +63,7 @@ mod commands {
 }
 
 // Sending - Receiving
-use std::{sync::{mpsc::{Sender, Receiver}, RwLock, Arc, Mutex, atomic::{Ordering, AtomicU64}}, collections::HashMap};
+use std::{sync::{mpsc::{Sender, Receiver}, RwLock, Arc, Mutex, atomic::{Ordering, AtomicU64}}, collections::HashMap, cell::{Cell, RefCell}};
 pub use self::commands::*;
 pub use self::tasks::*;
 use lazy_static::lazy_static;
@@ -72,50 +74,72 @@ lazy_static! {
     static ref SENDER: Mutex<WorldTaskSender> = Mutex::new(WorldTaskSender::default());
     // Receiver of tasks. Is called on the main thread, receives messages from the worker threads
     static ref RECEIVER: Mutex<WorldTaskReceiver> = Mutex::new(WorldTaskReceiver::default());
-    // Some buffer that holds data that could not be used for the current calling system. This is only locked on the system threads, not on the main thread
-    static ref BUFFER: Mutex<HashMap<u64, WaitableTask>> = Mutex::new(HashMap::new());
+}
+// Some data for a system group thread
+#[derive(Default)]
+pub struct SystemGroupThreadData {
+    pub buffer: HashMap<u64, WaitableTask>, // The receiving buffer
+    pub rx: Option<crossbeam_channel::Receiver<WaitableTask>>, // The receiver
+}
+// The system group thread data is local to each system thread
+thread_local! {
+    static SYSTEM_GROUP_THREAD_DATA: RefCell<SystemGroupThreadData> = RefCell::new(SystemGroupThreadData::default());
 }
 // Worker threads
 #[derive(Default)]
 pub struct WorldTaskSender {
     pub tx: Option<Sender<(u64, CommandQuery)>>, // CommandQuery. WorkerThreads -> MainThread 
-    pub rx: Option<crossbeam_channel::Receiver<WaitableTask>> // WaitableTask<TaskReturn>. MainThread -> WorkerThreads
 }
 // Main thread
 #[derive(Default)]
 pub struct WorldTaskReceiver {
-    pub tx: Option<crossbeam_channel::Sender<WaitableTask>>, // WaitableTask<TaskReturn>. MainThread -> WorkerThreads
     pub rx: Option<Receiver<(u64, CommandQuery)>>, // CommandQuery. WorkerThreads -> MainThread
+    pub txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<WaitableTask>>>, // WaitableTask. MainThread -> WorkerThreads
 }
 impl WaitableTask {
     // Wait for the main thread to finish this specific task
     pub fn wait(self) -> TaskReturn {
         // Wait for the main thread to send back the return task
         let sender = SENDER.lock().unwrap();
-        let rx = sender.rx.unwrap();
-        let buf = BUFFER.lock().unwrap();
+        let rx = SYSTEM_GROUP_THREAD_DATA.with(|x| {
+            let y = x.borrow();
+            y.rx.as_ref().unwrap()
+        });
         let thread_id = std::thread::current().id();
         let id = self.id;
-        for x in rx.try_iter() {
-            // The waitable task is valid for this specific thread!
-            if x.thread_id == thread_id {
-                return x.val.unwrap();
-            } else {
-                // Not valid, add it to the buffer
-                buf.insert(x.id, x);
-            }
-        }
-
-        // We must wait until the value becomes valid in the buffer
         loop {
-            if buf.contains_key(&id) {
-                // Double check just in case
-                let x = buf.remove(&id).unwrap();
-                if x.thread_id == thread_id {
-                    // We finally got the value, we can return it and stop waiting
-                    return buf.remove(&id).unwrap().val.unwrap();
-                }
+            // Receive infinitely until we get the valid return task value
+            match rx.try_recv() {
+                Ok(x) => {
+                    // Either add this to the buffer and continue the loop or return early
+                    if x.id == id {
+                        // The same ID, we can exit early 
+                        return x.val.unwrap();
+                    } else {
+                        // Add it to the buffer
+                        let id = x.id;
+                        SYSTEM_GROUP_THREAD_DATA.with(|data| {
+                            let data = data.borrow_mut();
+                            data.buffer.insert(id, x);
+                        })
+                    }
+                },
+                Err(_) => {
+                    // Handle error
+                },
             }
+            let x: Option<TaskReturn> = SYSTEM_GROUP_THREAD_DATA.with(|data| {
+                // Always check if the current group thread data contains our answer
+                let data = data.borrow_mut();
+                if data.buffer.contains_key(&id) {
+                    // We found our answer!
+                    let x = data.buffer.remove(&id).unwrap();
+                    return Some(x.val.unwrap())
+                } else {
+                    None
+                }
+            });    
+            return x.unwrap();        
         }
     }
 }
@@ -123,21 +147,18 @@ impl WaitableTask {
 pub fn initialize_channels() {
     // Create the channels
     let (tx, rx) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
-    let (tx2, rx2) = crossbeam_channel::unbounded::<WaitableTask>();
     let receiver = RECEIVER.lock().unwrap();
     let sender = SENDER.lock().unwrap();
     // The task senders
-    receiver.rx = Some(rx);
+    receiver.txs = Some(HashMap::new());
     sender.tx = Some(tx);
     // The taskreturn senders
-    sender.rx = Some(rx2);
-    receiver.tx = Some(tx2);
+    receiver.rx = Some(rx);
 }
 // Frame tick on the main thread. Polls the current tasks and excecutes them. This is called at the end of each logic frame (16ms per frame)
 pub fn frame_main_thread() {
     // Poll each command query
     let receiver = RECEIVER.lock().unwrap();
-    let tx = receiver.tx.unwrap();
     for (id, x) in receiver.rx.unwrap().try_recv() {
         let (thread_id, task) = match x {
             CommandQuery::Group(thread_id, tgroup) => {
@@ -150,8 +171,14 @@ pub fn frame_main_thread() {
             },
         };
         let waitabletask = WaitableTask { id, thread_id, val: Some(task) };
-        // Send the result back to system threads
-        tx.send(waitabletask).unwrap();
+        // Send the result to the corresponding system threads
+        match receiver.txs.unwrap().get(&thread_id) {
+            Some(x) => {
+                // Send the return value to the corresponding receiver
+                x.send(waitabletask).unwrap();
+            },
+            None => { /* Not the correct thread id */ },
+        }
     }
 }
 // Send a command query to the world, giving back a command return that can be waited for
