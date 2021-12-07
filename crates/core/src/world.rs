@@ -144,23 +144,17 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: f
     load_defaults();
     window_commands::hide_cursor(window);
     // Load the config file for this world
-    self.saver_loader.create_default("config\\game_config.json", &GameConfig::default());
-    let config_file_values = self.saver_loader.load::<GameConfig>("config\\game_config.json");
-    self.config_file = config_file_values;
+    let config_file_copy = crate::global::io::create_config_file();    
     // Apply the config file's data to the rendering window
-    window_commands::set_fullscreen(self.config_file.fullscreen, glfw, window);
-    window_commands::set_vsync(self.config_file.vsync);
-    // Update entity manager
-    self.update_entity_manager();
-
-    self.custom_data.light_dir = veclib::Vector3::<f32>::new(0.0, 1.0, 2.0).normalized();
-
+    window_commands::set_fullscreen(config_file_copy.fullscreen, glfw, window);
+    window_commands::set_vsync(config_file_copy.vsync);
     // Callback
     callback();
-    println!("Hello world!");
+    println!("Hello world from MainThread!");
 }
-// We do the following in this function
+// This is the main Update loop, ran on the main thread
 pub fn update_world(delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    /*
     // Upate the console
     self.update_console();
 
@@ -202,6 +196,7 @@ pub fn update_world(delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window
         let rendering_system = self.system_manager.get_system_mut(0).unwrap();
         rendering_system.disable();
     }
+    */
 }
 // Update the console
 fn update_console() {
@@ -236,7 +231,6 @@ fn update_console() {
 }
 // When we want to close the application
 pub fn kill_world() {
-    self.system_manager.kill_systems(&mut data);
     println!("Kill world!");
     // Kill the render pipeline
     pipec::dispose_pipeline();

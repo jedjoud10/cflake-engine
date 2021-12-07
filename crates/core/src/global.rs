@@ -85,7 +85,26 @@ pub mod ui {
         command(CommandQuery::single(Task::AddRoot(name.to_string(), root))).wait();
     }
 }
+// IO stuff
+pub mod io {
+    use crate::command::{CommandQuery, Task, command};
+    // Create the default config file
+    pub fn create_config_file() -> crate::GameConfig {
+        command(CommandQuery::single(Task::CreateConfigFile())).wait();
+        let w = crate::world::world();
+        return w.saver_loader.load::<crate::GameConfig>("config\\game_config.json");
+    }
+    // Load a copy of the config file
+    pub fn load_config_file() -> crate::GameConfig {
+        let w = crate::world::world();
+        return w.saver_loader.load::<crate::GameConfig>("config\\game_config.json");
+    }
+    // Load a copy of the saver loader
+    pub fn saver_loader() -> io::SaverLoader {
+        let w = crate::world::world(); 
+        return w.saver_loader;
+    }
+}
 // Mains
 pub mod main {
-
 }

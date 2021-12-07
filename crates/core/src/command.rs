@@ -16,6 +16,8 @@ mod tasks {
         // UI
         AddRoot(String, ui::Root),
         SetRootVisibility(bool),
+        // Main 
+        CreateConfigFile(),
     }
     // And their corresponding output
     pub enum TaskReturn {
@@ -31,7 +33,7 @@ mod tasks {
     }    
 
     // Excecute a specific task and give back it's result
-    pub fn excecute_task(t: Task) -> TaskReturn {
+    pub fn excecute_task(t: Task, world: &mut World) -> TaskReturn {
         match t {
             Task::CreateComponentDirect() => todo!(),
             Task::DestroyComponentDirect(_) => todo!(),
@@ -87,6 +89,7 @@ pub struct SystemGroupThreadData {
 // The system group thread data is local to each system thread
 thread_local! {
     static SYSTEM_GROUP_THREAD_DATA: RefCell<SystemGroupThreadData> = RefCell::new(SystemGroupThreadData::default());
+    static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
 }
 // Worker threads
 #[derive(Default)]
@@ -102,6 +105,11 @@ pub struct WorldTaskReceiver {
 impl WaitableTask {
     // Wait for the main thread to finish this specific task
     pub fn wait(self) -> TaskReturn {
+        // No need to do any of this multithreading shit if we're already on the main thread
+        let x = IS_MAIN_THREAD.with(|x| x.get());
+        if x {
+            return self.val.unwrap();
+        }
         // Wait for the main thread to send back the return task
         let sender = SENDER.lock().unwrap();
         let rx = SYSTEM_GROUP_THREAD_DATA.with(|x| {
@@ -190,19 +198,38 @@ pub fn command(query: CommandQuery) -> WaitableTask {
     let x = SENDER.lock().unwrap();
     let tx = x.tx.as_ref().unwrap();
     let id = COUNTER.fetch_add(0, Ordering::Relaxed);
-    tx.send((id, query));    
-    // Increment the counter
-    // Get the corresponding return command value
-    match query {
-        CommandQuery::Group(thread_id, tasks) => WaitableTask {
-            id,
-            val: None,
-            thread_id: std::thread::current().id(),
-        },
-        CommandQuery::Singular(thread_id, task) => WaitableTask {
-            id,
-            val: None,
-            thread_id: std::thread::current().id(),
-        },
+    let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
+    // Early main thread exit lol
+    if !is_main_thread {
+        tx.send((id, query));    
+        // Increment the counter
+        // Get the corresponding return command value
+        match query {
+            CommandQuery::Group(thread_id, tasks) => WaitableTask {
+                id,
+                val: None,
+                thread_id: std::thread::current().id(),
+            },
+            CommandQuery::Singular(thread_id, task) => WaitableTask {
+                id,
+                val: None,
+                thread_id: std::thread::current().id(),
+            },
+        }
+    } else {
+        // This is the main thread calling, we don't give a  f u c k
+        let output = command()
+        match query {
+            CommandQuery::Group(thread_id, tasks) => WaitableTask {
+                id,
+                val: Some(),
+                thread_id: std::thread::current().id(),
+            },
+            CommandQuery::Singular(thread_id, task) => WaitableTask {
+                id,
+                val: None,
+                thread_id: std::thread::current().id(),
+            },
+        }
     }
 }
