@@ -13,6 +13,9 @@ mod tasks {
         // This is only valid if the entity is also valid
         LinkComponentDirect(usize, usize),
         UnlinkComponentDirect(usize, usize),
+        // UI
+        AddRoot(String, ui::Root),
+        SetRootVisibility(bool),
     }
     // And their corresponding output
     pub enum TaskReturn {

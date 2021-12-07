@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 // Global main for purely just low level task management
 use lazy_static::lazy_static;
 lazy_static! {
-    static ref WORLD: Arc<RwLock<World>> = Arc::new(RwLock::new(World::new("NullDev", "NullGame")));
+    static ref WORLD: Arc<RwLock<World>> = Arc::new(RwLock::new(new("NullDev", "NullGame")));
 }
 
 // Get a reference to the world
@@ -120,7 +120,7 @@ fn load_defaults() {
     }
 
     // Set this as the default root
-    self.ui_manager.set_default_root(root);
+    crate::global::ui::add_root("default", root);
 
     // Create the default root for the console
     let mut console_root = ui::Root::new(64);
@@ -136,7 +136,7 @@ fn load_defaults() {
     let console_text_id = console_root.add_element(console_text);
     ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
     console_root.visible = false;
-    self.ui_manager.add_root("console", console_root);
+    crate::global::ui::add_root("console", console_root);
 }
 // When the world started initializing
 pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn()) {

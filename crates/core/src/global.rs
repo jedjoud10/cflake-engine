@@ -78,7 +78,12 @@ pub mod input {
 }
 // User Interface shit
 pub mod ui {
+    use crate::command::{command, CommandQuery, Task};
 
+    // Add a root the world
+    pub fn add_root(name: &str, root: ui::Root) {
+        command(CommandQuery::single(Task::AddRoot(name.to_string(), root))).wait();
+    }
 }
 // Mains
 pub mod main {
