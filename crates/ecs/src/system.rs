@@ -1,101 +1,55 @@
-use crate::{Entity, ECSError, LinkedComponents, ComponentManager, ComponentID, EntityManager};
+use crate::{Entity, ECSError, ComponentManager, ComponentID, EntityManager};
 
 #[derive(Default)]
-// Manages the systems
+// Manages the systems, however each system is in it's own thread (For now at least)
 pub struct SystemManager {
-    pub systems: Vec<System>,
+    pub systems: Vec<SystemThreadData>,
 }
 
-impl SystemManager {
-    // Remove an entity from it's corresponding systems, this is done before actually removing the entity to allow the systems to dispose of it's data
-    pub fn remove_entity_from_systems(&mut self, entity: &Entity, entity_id: usize) {
-        // Remove the entity from all the systems it was in
-        for system in self.systems.iter_mut() {
-            // Only remove the entity from the systems that it was in
-            if system.is_entity_valid(entity) {
-            }
-        }
-    }
-    // Add an entity to it's corresponding systems
-    pub fn add_entity_to_systems(&mut self, entity: &Entity) {
-        // Check if there are systems that need this entity
-        for system in self.systems.iter_mut() {
-            if system.is_entity_valid(entity) {
-                // Add the entity to the system
-            }
-        }
-    }
-    // Add a system to the world, and returns it's system ID
-    pub fn add_system(&mut self, mut system: System) -> u8 {
-        let id = self.systems.len() as u8;
-        system.system_id = id;
-        self.systems.push(system);
-        id
-    }
-    // Update all the systems
-    pub fn update_systems(&mut self, entity_manager: &EntityManager) {
-        for system in self.systems.iter_mut() {
-            system.run_system(entity_manager);
-        }
-    }
-    // Kill all the systems
-    pub fn kill_systems(&mut self, entity_manager: &EntityManager) {
-        for system in self.systems.iter_mut() {
-            // Shut down each system first
-            system.disable();
-        }
-        // Then end them
-        for system in self.systems.iter_mut() {
-            system.end_system(entity_manager);
-        }
-    }
-    // Gets a reference to a system
-    pub fn get_system(&self, system_id: u8) -> Result<&System, ECSError> {
-        self.systems.get(system_id as usize).ok_or(ECSError::new_str("System does not exist!"))
-    }
-    // Gets a mutable reference to a system
-    pub fn get_system_mut(&mut self, system_id: u8) -> Result<&mut System, ECSError> {
-        self.systems.get_mut(system_id as usize).ok_or(ECSError::new_str("System does not exist!"))
-    }
+// Contains some data about the actual system on the thread
+pub struct SystemThreadData {
 }
+
 // A system event enum
-pub enum SystemEventType {
+pub enum SystemEventType<T> {
     // Control events
-    SystemEnabled(fn()),
-    SystemDisabled(fn()),
-    SystemPrefire(fn()),
-    SystemPostfire(fn()),
+    SystemEnabled(fn(&mut T)),
+    SystemDisabled(fn(&mut T)),
+    SystemPrefire(fn(&mut T)),
+    SystemPostfire(fn(&mut T)),
     // Entity events
-    EntityAdded(fn(&Entity)),
-    EntityRemoved(fn(&Entity)),
-    EntityUpdate(fn(&Entity, &LinkedComponents)),
+    EntityAdded(fn(&mut T, &Entity)),
+    EntityRemoved(fn(&mut T, &Entity)),
+    EntityUpdate(fn(&mut T, &Entity)),
     // Entity custom event
-    EntityFilter(fn(&LinkedComponents) -> bool),
+    EntityFilter(fn(&mut T, &Entity) -> bool),
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
 #[derive(Default)]
-pub struct System {
+pub struct System<T> where T: CustomSystemData {
+    custom_data: T,
     c_bitfield: usize,
     system_id: u8,
     enabled: bool,
     entities: Vec<usize>,
 
+
     // Events
     // Control events
-    system_enabled_evn: Option<fn()>,
-    system_disabled_evn: Option<fn()>,
-    system_prefire_evn: Option<fn()>,
-    system_postfire_evn: Option<fn()>,
+    system_enabled: Option<fn(&mut T)>,
+    system_disabled: Option<fn(&mut T)>,
+    system_prefire: Option<fn(&mut T)>,
+    system_postfire: Option<fn(&mut T)>,
     // Entity events
-    entity_added_evn: Option<fn(&Entity)>,
-    entity_removed_evn: Option<fn(&Entity)>,
-    entity_update_evn: Option<fn(&Entity, &LinkedComponents)>,
-    entity_filter: Option<fn(&LinkedComponents) -> bool>,
+    entity_added: Option<fn(&mut T, &Entity)>,
+    entity_removed: Option<fn(&mut T, &Entity)>,
+    entity_update: Option<fn(&mut T, &Entity)>,
+    entity_filter: Option<fn(&mut T, &Entity) -> bool>,
 }
 
 // System code
-impl System {
+impl<T> System<T> where T: CustomSystemData {
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(&self, entity: &Entity) -> bool {
         // Check if the system matches the component ID of the entity
@@ -116,17 +70,17 @@ impl System {
         Ok(())
     }
     // Attach the a specific system event
-    pub fn event(&mut self, event: SystemEventType) {
+    pub fn event(&mut self, event: SystemEventType<T>) {
         match event {
             // Control events
-            SystemEventType::SystemEnabled(x) => self.system_enabled_evn = Some(x),
-            SystemEventType::SystemDisabled(x) => self.system_disabled_evn = Some(x),
-            SystemEventType::SystemPrefire(x) => self.system_prefire_evn = Some(x),
-            SystemEventType::SystemPostfire(x) => self.system_postfire_evn = Some(x),
+            SystemEventType::SystemEnabled(x) => self.system_enabled = Some(x),
+            SystemEventType::SystemDisabled(x) => self.system_disabled = Some(x),
+            SystemEventType::SystemPrefire(x) => self.system_prefire = Some(x),
+            SystemEventType::SystemPostfire(x) => self.system_postfire = Some(x),
             // Entity events
-            SystemEventType::EntityAdded(x) => self.entity_added_evn = Some(x),
-            SystemEventType::EntityRemoved(x) => self.entity_removed_evn = Some(x),
-            SystemEventType::EntityUpdate(x) => self.entity_update_evn = Some(x),
+            SystemEventType::EntityAdded(x) => self.entity_added = Some(x),
+            SystemEventType::EntityRemoved(x) => self.entity_removed = Some(x),
+            SystemEventType::EntityUpdate(x) => self.entity_update = Some(x),
             SystemEventType::EntityFilter(x) => self.entity_filter = Some(x),
         };
     }
@@ -137,8 +91,8 @@ impl System {
         }
         self.entities.push(entity.entity_id);
         // Fire the event
-        match self.entity_added_evn {
-            Some(x) => x(entity),
+        match self.entity_added {
+            Some(entity_added_evn) => entity_added_evn(&mut self.custom_data, entity),
             None => {}
         }
     }
@@ -151,14 +105,14 @@ impl System {
         let system_entity_local_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
         self.entities.remove(system_entity_local_id);
         // Fire the event
-        match self.entity_removed_evn {
-            Some(x) => x(entity),
+        match self.entity_removed {
+            Some(entity_removed_evn) => entity_removed_evn(&mut self.custom_data, entity),
             None => {}
         }
     }
     // Stop the system permanently
     fn end_system(&mut self, entity_manager: &EntityManager) {
-        match self.entity_removed_evn {
+        match self.entity_removed {
             Some(x) => {
                 // Fire the entity removed event
                 for entity_id in self.entities.iter() {
@@ -178,8 +132,8 @@ impl System {
             return;
         }
         // Pre fire event
-        match self.system_prefire_evn {
-            Some(x) => x(),
+        match self.system_prefire {
+            Some(system_prefire_event) => system_prefire_event(&mut self.custom_data),
             None => {}
         }
 
@@ -208,7 +162,7 @@ impl System {
             }
         };
         // Only update the entities if we have a a valid event. No need to waste time updating them ¯\_(ツ)_/¯
-        match self.entity_update_evn {
+        match self.entity_update {
             Some(x) => {
                 // Loop over all the entities and fire the event
                 for entity_id in filtered_entity_ids {
@@ -224,8 +178,8 @@ impl System {
         }
 
         // Post fire event
-        match self.system_postfire_evn {
-            Some(x) => x(),
+        match self.system_postfire {
+            Some(system_postfire) => system_postfire(&mut self.custom_data),
             None => {}
         }
     }
@@ -233,20 +187,22 @@ impl System {
     pub fn enable(&mut self) {
         self.enabled = true;
         // Fire the event
-        match self.system_enabled_evn {
-            Some(x) => x(),
+        match self.system_enabled {
+            Some(system_enabled) => system_enabled(&mut self.custom_data),
             None => {}
         }
     }
     // Disable this system
     pub fn disable(&mut self) {
         self.enabled = false;
-        /*
         // Fire the event
-        match self.system_disabled_evn {
-            Some(x) => x(&mut self.system_data, data),
+        match self.system_disabled {
+            Some(system_disabled) => system_disabled(&mut self.custom_data),
             None => {}
         }
-        */
     }
+}
+
+// Trait for custom system data 
+pub trait CustomSystemData {
 }

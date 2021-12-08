@@ -1,8 +1,6 @@
 use super::super::components;
 use ecs::{Entity, LinkedComponents};
 use input::*;
-use systems::{System, SystemData, SystemEventType};
-use world_data::WorldData;
 
 // Events
 fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &LinkedComponents, data: &mut WorldData) {

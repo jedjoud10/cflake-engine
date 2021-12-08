@@ -8,14 +8,9 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub struct EntityManager {
     pub entities: SmartList<Entity>,
-
-    // Entities to add / remove from systems
-    pub entities_to_remove: HashSet<usize>,
-    pub entities_to_add: Vec<Entity>,
 }
 
-impl EntityManager {
-    
+impl EntityManager {    
 }
 
 // A simple entity in the world

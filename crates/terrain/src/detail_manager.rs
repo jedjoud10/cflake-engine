@@ -19,12 +19,12 @@ pub struct DetailManager {
 
 impl DetailManager {
     // Read back the details from the compute shader for a specific chunk
-    pub fn load_details(&mut self, _chunk_entity_id: usize, _compute_shader: &mut ComputeShaderGPUObject, _entity_manager: &mut EntityManager) {
+    pub fn load_details(&mut self, _chunk_entity_id: usize, _compute_shader: &mut ComputeShaderGPUObject) {
         // Load back the detail
         // Append the generated detail to it's corresponding detail group
     }
     // Delete a specific detail group from the detail manager when it's chunk gets unloaded
-    pub fn unload_detail(&mut self, chunk_coords: &ChunkCoords, entity_manager: &mut EntityManager) {
+    pub fn unload_detail(&mut self, chunk_coords: &ChunkCoords) {
         // The removed detail
         let mut removed_entities: Vec<usize> = Vec::new();
         // Ez check first
@@ -35,7 +35,7 @@ impl DetailManager {
         }
         // Remove the detail etities from the entity manager
         for entity_id in removed_entities {
-            entity_manager.remove_entity_s(entity_id).unwrap();
+            //entity_manager.remove_entity_s(entity_id).unwrap();
         }
     }
 }

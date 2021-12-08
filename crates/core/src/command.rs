@@ -45,20 +45,15 @@ mod tasks {
 // Command groups
 mod commands {
     // A sent command query
-    pub enum CommandQuery {
-        Singular(std::thread::ThreadId, Task),
-        Group(std::thread::ThreadId, Vec<Task>),
+    pub struct CommandQuery {
+        pub thread_id: std::thread::ThreadId,
+        pub task: Task,
     }
     impl CommandQuery {
         // From single
-        pub fn single(task: Task) -> Self {
+        pub fn new(task: Task) -> Self {
             let thread_id = std::thread::current().id();
-            Self::Singular(thread_id, task)
-        }
-        // From group
-        pub fn group(tasks: Vec<Task>) -> Self {
-            let thread_id = std::thread::current().id();
-            Self::Group(thread_id, tasks)
+            Self { thread_id, task }
         }
     }
     pub use super::tasks::Task;
