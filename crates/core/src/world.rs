@@ -7,7 +7,7 @@ use input::*;
 use io::SaverLoader;
 use others::*;
 use ui::UIManager;
-use crate::{GameConfig};
+use crate::{GameConfig, custom_world_data::CustomWorldData};
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 // Global main for purely just low level task management
@@ -37,6 +37,7 @@ pub struct World {
     // Miscs
     pub debug: MainDebug,
     pub instance_manager: others::InstanceManager,
+    pub custom_data: CustomWorldData,
     pub time_manager: Time,
     pub saver_loader: SaverLoader,
     pub config_file: GameConfig,
@@ -51,6 +52,7 @@ pub fn new(author_name: &str, app_name: &str) -> World {
         debug: MainDebug::default(),
 
         instance_manager: InstanceManager::default(),
+        custom_data: CustomWorldData::default(),
         time_manager: Time::default(),
         saver_loader: SaverLoader::new(author_name, app_name),
         config_file: GameConfig::default(),
@@ -200,6 +202,7 @@ pub fn update_world(delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window
 }
 // Update the console
 fn update_console() {
+    /*
     // Check if we should start key registering if the console is active
     if self.input_manager.map_pressed_uncheck("toggle_console") || (self.input_manager.map_pressed_uncheck("enter") && self.input_manager.keys_reg_active()) {
         match self.input_manager.toggle_keys_reg() {
@@ -228,6 +231,7 @@ fn update_console() {
             // We don't have to update anything
         }
     }
+    */
 }
 // When we want to close the application
 pub fn kill_world() {
@@ -239,11 +243,10 @@ pub fn kill_world() {
 pub fn resize_window_event(size: (u16, u16)) {
     let dims = veclib::Vector2::new(size.0, size.1);
     pipec::task(pipec::RenderTask::WindowUpdateSize(dims), "window_data_update", |_| {});
-    let camera_entity_clone = self.entity_manager.get_entity(self.custom_data.main_camera_entity_id).unwrap().clone();
+    let world = crate::world::world_mut();
+    let camera_entity_clone = world.ecs_manager.entitym.get_entity_mut(world.custom_data.main_camera_entity_id).unwrap();
     let entity_clone_id = camera_entity_clone.entity_id;
-    let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(&mut self.component_manager).unwrap();
+    let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(world.ecs_manager.componentm).unwrap();
     camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
     camera_component.update_aspect_ratio(dims);
-    // Update the original entity
-    *self.entity_manager.get_entity_mut(entity_clone_id).unwrap() = camera_entity_clone;
 }

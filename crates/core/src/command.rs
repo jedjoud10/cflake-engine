@@ -4,12 +4,9 @@ mod tasks {
 
     // Some world tasks
     pub enum Task {
-        // Components
-        CreateComponentDirect(),
-        DestroyComponentDirect(usize),
         // Entity
         CreateEntity(ecs::Entity, ecs::ComponentLinkingGroup),
-        DestroyEntity(),
+        DestroyEntity(usize),
         // This is only valid if the entity is also valid
         LinkComponentDirect(usize, usize),
         UnlinkComponentDirect(usize, usize),
@@ -33,14 +30,15 @@ mod tasks {
     }    
 
     // Excecute a specific task and give back it's result
-    pub fn excecute_task(t: Task, world: &mut World) -> TaskReturn {
+    pub fn excecute_task(t: Task, world: &mut crate::world::World) -> TaskReturn {
         match t {
-            Task::CreateComponentDirect() => todo!(),
-            Task::DestroyComponentDirect(_) => todo!(),
             Task::CreateEntity(_, _) => todo!(),
-            Task::DestroyEntity() => todo!(),
+            Task::DestroyEntity(_) => todo!(),
             Task::LinkComponentDirect(_, _) => todo!(),
             Task::UnlinkComponentDirect(_, _) => todo!(),
+            Task::AddRoot(_, _) => todo!(),
+            Task::SetRootVisibility(_) => todo!(),
+            Task::CreateConfigFile() => todo!(),
         }
     }
 }
@@ -170,15 +168,16 @@ pub fn initialize_channels() {
 pub fn frame_main_thread() {
     // Poll each command query
     let receiver = RECEIVER.lock().unwrap();
+    let world = crate::world::world_mut();
     for (id, x) in receiver.rx.unwrap().try_recv() {
         let (thread_id, task) = match x {
             CommandQuery::Group(thread_id, tgroup) => {
                 // Execute the task group
-                (thread_id, tasks::excecute_task(tgroup[0]))
+                (thread_id, tasks::excecute_task(tgroup[0], &mut *world))
             },
             CommandQuery::Singular(thread_id, t) => {
                 // Execute the singular task        
-                (thread_id, tasks::excecute_task(t))
+                (thread_id, tasks::excecute_task(t, &mut *world))
             },
         };
         let waitabletask = WaitableTask { id, thread_id, val: Some(task) };
@@ -217,12 +216,15 @@ pub fn command(query: CommandQuery) -> WaitableTask {
             },
         }
     } else {
-        // This is the main thread calling, we don't give a  f u c k
-        let output = command()
+        // This is the main thread calling, we don't give a  f u c k        
         match query {
             CommandQuery::Group(thread_id, tasks) => WaitableTask {
                 id,
-                val: Some(),
+                val: {
+                    let world = crate::world::world_mut();
+                    let output = tasks::excecute_task(tasks[0], &mut *world);
+                    Some(output)
+                },
                 thread_id: std::thread::current().id(),
             },
             CommandQuery::Singular(thread_id, task) => WaitableTask {

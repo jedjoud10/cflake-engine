@@ -126,6 +126,7 @@ dependencies = [
  "assets",
  "crossbeam-channel",
  "debug",
+ "defaults",
  "ecs",
  "fonts",
  "glfw",
@@ -213,7 +214,6 @@ name = "defaults"
 version = "0.1.0"
 dependencies = [
  "assets",
- "core",
  "debug",
  "ecs",
  "fonts",
