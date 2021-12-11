@@ -68,13 +68,7 @@ pub mod ecs {
         F: FnOnce() -> ecs::System<T> + 'static + Send,
     {
         // Create a new thread and initialize the system on it
-        let join_handle = std::thread::spawn(move || {
-            // Create the system on this thread
-            let _system = callback();
-
-            // Start the system loop
-            loop {}
-        });
+        let join_handle = crate::system::create_worker_thread(callback);
         let system_thread_data = ecs::SystemThreadData::new(join_handle);
         let mut w = crate::world::world_mut();
         w.ecs_manager.systemm.systems.push(system_thread_data);
