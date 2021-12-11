@@ -10,8 +10,7 @@ pub struct EntityManager {
     pub entities: SmartList<Entity>,
 }
 
-impl EntityManager {    
-}
+impl EntityManager {}
 
 // A simple entity in the world
 #[derive(Clone, Default)]
@@ -31,7 +30,7 @@ impl Entity {
             name: name.to_string(),
             ..Self::default()
         }
-    }    
+    }
 }
 
 // Each entity is instantiable
@@ -48,6 +47,13 @@ impl Instance for Entity {
 // Display
 impl std::fmt::Display for Entity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Entity '{}': {{ ID: '{}', cBitfield: {}, #Components Linked: '{}' }}", self.name, self.entity_id, self.c_bitfield, self.linked_components.len())
+        write!(
+            f,
+            "Entity '{}': {{ ID: '{}', cBitfield: {}, #Components Linked: '{}' }}",
+            self.name,
+            self.entity_id,
+            self.c_bitfield,
+            self.linked_components.len()
+        )
     }
 }

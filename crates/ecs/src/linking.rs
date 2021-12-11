@@ -1,5 +1,5 @@
+use crate::{Component, ComponentID, ComponentInternal, ECSError, Entity};
 use std::collections::HashMap;
-use crate::{ComponentInternal, Component, ECSError, ComponentID, Entity};
 
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 pub struct ComponentLinkingGroup {
@@ -10,7 +10,7 @@ pub struct ComponentLinkingGroup {
 // Linking methods
 impl ComponentLinkingGroup {
     pub fn empty() -> Self {
-        Self  {
+        Self {
             linked_components: HashMap::new(),
             c_bitfield: 0,
         }
@@ -19,7 +19,7 @@ impl ComponentLinkingGroup {
     pub fn new(entity: &Entity) -> Self {
         Self {
             linked_components: HashMap::new(),
-            c_bitfield: entity.c_bitfield
+            c_bitfield: entity.c_bitfield,
         }
     }
     // Link a component to this entity and automatically set it to the default variable

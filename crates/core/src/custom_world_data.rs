@@ -1,4 +1,3 @@
-
 #[derive(Default)]
 pub struct CustomWorldData {
     pub main_camera_entity_id: usize,

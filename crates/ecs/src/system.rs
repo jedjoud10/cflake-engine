@@ -1,4 +1,4 @@
-use crate::{Entity, ECSError, ComponentManager, ComponentID, EntityManager, ComponentLinkingGroup};
+use crate::{ComponentID, ComponentLinkingGroup, ComponentManager, ECSError, Entity, EntityManager};
 
 #[derive(Default)]
 // Manages the systems, however each system is in it's own thread (For now at least)
@@ -8,15 +8,13 @@ pub struct SystemManager {
 
 // Contains some data about the actual system on the worker thread
 pub struct SystemThreadData {
-    join_handle: std::thread::JoinHandle<()>
+    join_handle: std::thread::JoinHandle<()>,
 }
 
 impl SystemThreadData {
     // New
     pub fn new(join_handle: std::thread::JoinHandle<()>) -> Self {
-        Self {
-            join_handle,
-        }
+        Self { join_handle }
     }
 }
 
@@ -32,11 +30,13 @@ pub enum SystemEventType<T> {
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
-pub struct System<T> where T: CustomSystemData {
+pub struct System<T>
+where
+    T: CustomSystemData,
+{
     custom_data: T,
     c_bitfield: usize,
     entities: Vec<usize>,
-
 
     // Events
     // Control events
@@ -49,7 +49,10 @@ pub struct System<T> where T: CustomSystemData {
 }
 
 // Initialization of the system
-impl<T> System<T> where T: CustomSystemData {
+impl<T> System<T>
+where
+    T: CustomSystemData,
+{
     // Create a new system
     pub fn new(custom_data: T) -> Self {
         System {
@@ -66,7 +69,10 @@ impl<T> System<T> where T: CustomSystemData {
 }
 
 // System code
-impl<T> System<T> where T: CustomSystemData {
+impl<T> System<T>
+where
+    T: CustomSystemData,
+{
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(&self, entity: &Entity) -> bool {
         // Check if the system matches the component ID of the entity
@@ -123,7 +129,7 @@ impl<T> System<T> where T: CustomSystemData {
             Some(entity_removed) => {
                 // Fire the entity removed event
                 for entity in entities.iter() {
-                    entity_removed(&mut self.custom_data, entity);                    
+                    entity_removed(&mut self.custom_data, entity);
                 }
             }
             None => {}
@@ -141,8 +147,8 @@ impl<T> System<T> where T: CustomSystemData {
         match self.entity_update {
             Some(entity_update) => {
                 // Loop over all the entities and fire the event
-                for entity in entities.iter() {      
-                    entity_update(&mut self.custom_data, entity);                    
+                for entity in entities.iter() {
+                    entity_update(&mut self.custom_data, entity);
                 }
             }
             None => {}
@@ -156,8 +162,7 @@ impl<T> System<T> where T: CustomSystemData {
     }
 }
 
-// Trait for custom system data 
-pub trait CustomSystemData {
-}
+// Trait for custom system data
+pub trait CustomSystemData {}
 
 impl CustomSystemData for () {}

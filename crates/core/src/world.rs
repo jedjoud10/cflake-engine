@@ -1,3 +1,4 @@
+use crate::{custom_world_data::CustomWorldData, GameConfig};
 use ::rendering::*;
 use assets::*;
 use debug::*;
@@ -6,9 +7,8 @@ use glfw::{self, Context};
 use input::*;
 use io::SaverLoader;
 use others::*;
-use ui::UIManager;
-use crate::{GameConfig, custom_world_data::CustomWorldData};
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use ui::UIManager;
 
 // Global main for purely just low level task management
 use lazy_static::lazy_static;
@@ -141,7 +141,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     crate::global::ui::add_root("console", console_root);
     window_commands::hide_cursor(window);
     // Load the config file for this world
-    let config_file_copy = crate::global::io::create_config_file();    
+    let config_file_copy = crate::global::io::create_config_file();
     // Apply the config file's data to the rendering window
     window_commands::set_fullscreen(config_file_copy.fullscreen, glfw, window);
     window_commands::set_vsync(config_file_copy.vsync);
@@ -233,16 +233,12 @@ pub fn kill_world() {
     pipec::dispose_pipeline();
 }
 
-pub fn receive_key_event(key_scancode: i32, action_id: i32) {
-}
+pub fn receive_key_event(key_scancode: i32, action_id: i32) {}
 
-pub fn receive_mouse_pos_event(x: f64, y: f64) {
-}
-pub fn receive_mouse_scroll_event(scroll: f64) {
-}
+pub fn receive_mouse_pos_event(x: f64, y: f64) {}
+pub fn receive_mouse_scroll_event(scroll: f64) {}
 
-pub fn resize_window_event(x: u16, y: u16) {
-}
+pub fn resize_window_event(x: u16, y: u16) {}
 /*
 // When we resize the window
 pub fn resize_window_event(size: (u16, u16)) {

@@ -4,7 +4,7 @@ pub fn update_entity(data: &mut (), entity: &ecs::Entity) {
 }
 
 // Create the default system
-pub fn system()  {
+pub fn system() {
     core::global::ecs::add_system(|| {
         // Create a system
         let mut system = ecs::System::new(());

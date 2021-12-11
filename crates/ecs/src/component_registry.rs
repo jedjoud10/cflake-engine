@@ -1,5 +1,11 @@
 use lazy_static::lazy_static;
-use std::{sync::{atomic::{AtomicUsize, Ordering}, Arc, RwLock, Mutex}, collections::HashMap};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex, RwLock,
+    },
+};
 
 use crate::{ComponentID, ECSError};
 // Use to keep track of the component IDs

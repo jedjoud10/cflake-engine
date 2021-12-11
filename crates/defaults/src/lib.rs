@@ -50,5 +50,4 @@ pub fn preload_default_assets() {
 }
 
 // Pre-load the default systems
-pub fn preload_systems() {
-}
+pub fn preload_systems() {}

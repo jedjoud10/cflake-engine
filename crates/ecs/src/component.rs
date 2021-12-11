@@ -1,8 +1,15 @@
-use crate::{ECSError, stored::{Stored, StoredMut}};
+use crate::{
+    stored::{Stored, StoredMut},
+    ECSError,
+};
 
 use super::entity::Entity;
 use others::SmartList;
-use std::{any::Any, collections::HashMap, sync::{atomic::AtomicUsize, Arc, RwLock}};
+use std::{
+    any::Any,
+    collections::HashMap,
+    sync::{atomic::AtomicUsize, Arc, RwLock},
+};
 
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {
@@ -11,14 +18,12 @@ pub struct ComponentManager {
 
 impl Default for ComponentManager {
     fn default() -> Self {
-        Self {
-            components: SmartList::default(),
-        }
+        Self { components: SmartList::default() }
     }
 }
 
 // Implement all the functions
-impl ComponentManager {    
+impl ComponentManager {
     // Add a specific linked componment to the component manager, returns the global IDs of the components
     pub fn add_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
         let global_id = self.components.add_element(Box::new(component));
@@ -74,9 +79,16 @@ pub trait ComponentInternal {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 // A trait used to identify each component by their name
-pub trait ComponentID where Self: Sized {
+pub trait ComponentID
+where
+    Self: Sized,
+{
     fn get_component_name() -> String;
     // Wrappers
-    fn get_component_id() -> usize { crate::registry::get_component_id::<Self>().unwrap() }
-    fn is_registered() -> bool { crate::registry::is_component_registered::<Self>() }
+    fn get_component_id() -> usize {
+        crate::registry::get_component_id::<Self>().unwrap()
+    }
+    fn is_registered() -> bool {
+        crate::registry::is_component_registered::<Self>()
+    }
 }

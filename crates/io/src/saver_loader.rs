@@ -31,9 +31,7 @@ impl SaverLoader {
         let old_path = format!("{}\\{}\\", author_name, app_name);
         let path = AppDirs::new(Some(&old_path), false).unwrap();
         println!("{:?}", path.config_dir);
-        SaverLoader {
-            local_path: path.config_dir,
-        }
+        SaverLoader { local_path: path.config_dir }
     }
     // Load a struct from a file
     pub fn load<'a, T: serde::Serialize + serde::de::DeserializeOwned>(&self, file_path: &'a str) -> T {

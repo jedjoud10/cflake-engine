@@ -1,8 +1,11 @@
 // Export
-pub mod world;
 mod game_file;
+pub mod world;
 pub use game_file::*;
 mod command;
+mod communication;
 mod custom_world_data;
-mod local;
 pub mod global;
+mod local;
+mod system;
+mod tasks;

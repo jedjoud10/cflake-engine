@@ -20,7 +20,6 @@ pub use terrain;
 pub use ui;
 pub use veclib;
 
-
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), callback: fn()) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
