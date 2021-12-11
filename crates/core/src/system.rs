@@ -13,12 +13,12 @@ pub struct WorkThreadSync {}
 
 // Some data for a system group thread
 #[derive(Default)]
-pub struct SystemGroupThreadData {
+pub struct WorkerThreadCommonData {
     pub buffer: HashMap<u64, WaitableTask>,                    // The receiving buffer
     pub rx: Option<crossbeam_channel::Receiver<WaitableTask>>, // The receiver
 }
 // The system group thread data is local to each system thread
 thread_local! {
-    pub static SYSTEM_GROUP_THREAD_DATA: RefCell<SystemGroupThreadData> = RefCell::new(SystemGroupThreadData::default());
+    pub static SYSTEM_GROUP_THREAD_DATA: RefCell<WorkerThreadCommonData> = RefCell::new(WorkerThreadCommonData::default());
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
 }

@@ -81,7 +81,10 @@ impl WaitableTask {
                     None
                 }
             });
-            return x.unwrap();
+            match x {
+                Some(x) => return x /* The buffer does indeed contain the result */,
+                None => todo!(),
+            }
         }
         /* #endregion */
     }

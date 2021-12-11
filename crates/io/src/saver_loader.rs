@@ -47,7 +47,7 @@ impl SaverLoader {
         let global_path = self.local_path.join(file_path);
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());
         let string = serde_json::to_string_pretty(struct_to_save).unwrap();
-        writer.write(string.as_bytes()).unwrap();
+        writer.write_all(string.as_bytes()).unwrap();
     }
     // Save a string to a specific log file in the local user data
     pub fn save_string(&self, file_path: &str, string: String) {}
