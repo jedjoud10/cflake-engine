@@ -2,6 +2,8 @@
 // Commands grouped for each module
 // Entity Component Systems
 pub mod ecs {
+    use ecs::{ComponentInternal, Component};
+
     use crate::command::*;
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) {}
@@ -13,9 +15,15 @@ pub mod ecs {
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
     pub fn entity_remove() {}
     // Get a component
-    pub fn component() {}
-    // Get a component mutably
-    pub fn component_mut() {}
+    pub fn component<T: Component + 'static>(entity: &ecs::Entity) -> &'static T {
+        // Get the corresponding global component ID from the entity
+        let global_id = entity.linked_components.get()
+        // Get the world using it's RwLock
+        let w = crate::world::world();
+        w.ecs_manager.componentm.get_component::<T>(global_id)
+    }
+    // Get a component mutably, since this is going to run at the end of the frame using an FnOnce
+    pub fn component_mut<T: Component, F: FnOnce(&mut T)>() {}
     // Create a component linking group
     pub fn component_linking_group(entity: &ecs::Entity) -> ecs::ComponentLinkingGroup {
         ecs::ComponentLinkingGroup::new()
