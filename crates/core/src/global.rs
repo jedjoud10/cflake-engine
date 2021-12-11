@@ -65,12 +65,19 @@ pub mod ecs {
     /* #endregion */
     /* #region Systems */
     // Add the system on the main thread
-    pub fn add_system<T: ecs::CustomSystemData>(system: ecs::System<T>) {
-        let mut w = crate::world::world_mut();
-        let system_thread_data = ecs::SystemThreadData {
+    pub fn add_system<T: ecs::CustomSystemData, F>(callback: F) where F: FnOnce() -> ecs::System<T> + 'static + Send {
+        // Create a new thread and initialize the system on it
+        let join_handle = std::thread::spawn(move || {
+            // Create the system on this thread
+            let system = callback();
 
-        };
-        // Add the thread data
+            // Start the system loop 
+            loop {
+                
+            }
+        });
+        let system_thread_data = ecs::SystemThreadData::new(join_handle);
+        let mut w = crate::world::world_mut();
         w.ecs_manager.systemm.systems.push(system_thread_data);
     }
     /* #endregion */

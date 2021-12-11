@@ -8,6 +8,16 @@ pub struct SystemManager {
 
 // Contains some data about the actual system on the worker thread
 pub struct SystemThreadData {
+    join_handle: std::thread::JoinHandle<()>
+}
+
+impl SystemThreadData {
+    // New
+    pub fn new(join_handle: std::thread::JoinHandle<()>) -> Self {
+        Self {
+            join_handle,
+        }
+    }
 }
 
 // A system event enum
@@ -149,3 +159,5 @@ impl<T> System<T> where T: CustomSystemData {
 // Trait for custom system data 
 pub trait CustomSystemData {
 }
+
+impl CustomSystemData for () {}

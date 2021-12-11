@@ -59,6 +59,10 @@ mod commands {
     pub use super::tasks::Task;
     use super::tasks::{TaskReturn, WaitableTask};
 }
+#[derive(Default)]
+pub struct WorkThreadSync {
+
+}
 
 // Sending - Receiving
 use std::{sync::{mpsc::{Sender, Receiver}, RwLock, Arc, Mutex, atomic::{Ordering, AtomicU64}}, collections::HashMap, cell::{Cell, RefCell}};
@@ -72,6 +76,8 @@ lazy_static! {
     static ref SENDER: Mutex<WorldTaskSender> = Mutex::new(WorldTaskSender::default());
     // Receiver of tasks. Is called on the main thread, receives messages from the worker threads
     static ref RECEIVER: Mutex<WorldTaskReceiver> = Mutex::new(WorldTaskReceiver::default());
+    // A special channel just for synchronizing the worker threads
+    static ref SYNCHRONIZE: Mutex<WorkThreadSync> = Mutex::new(WorkThreadSync::default());
 }
 // Some data for a system group thread
 #[derive(Default)]

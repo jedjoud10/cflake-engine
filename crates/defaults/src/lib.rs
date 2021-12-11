@@ -51,6 +51,4 @@ pub fn preload_default_assets() {
 
 // Pre-load the default systems
 pub fn preload_systems() {
-    // Create the default system
-    core::global::ecs::add_system(crate::default_system::system());
 }
