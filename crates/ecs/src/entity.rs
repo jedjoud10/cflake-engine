@@ -44,3 +44,10 @@ impl Instance for Entity {
         self.name.clone()
     }
 }
+
+// Display
+impl std::fmt::Display for Entity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Entity '{}': {{ ID: '{}', cBitfield: {}, #Components Linked: '{}' }}", self.name, self.entity_id, self.c_bitfield, self.linked_components.len())
+    }
+}

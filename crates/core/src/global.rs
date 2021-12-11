@@ -3,10 +3,9 @@
 // Entity Component Systems
 pub mod ecs {
     use std::sync::{RwLockReadGuard, RwLockWriteGuard};
-
     use ecs::{ComponentInternal, Component};
-
     use crate::command::*;
+    /* #region Entities */
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
         let w = crate::world::world();
@@ -14,7 +13,7 @@ pub mod ecs {
     }
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) -> WaitableTask {
-        let empty_linkings = ecs::ComponentLinkingGroup::new();
+        let empty_linkings = ecs::ComponentLinkingGroup::empty();
         entity_add(entity, empty_linkings)
     }
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
@@ -25,6 +24,8 @@ pub mod ecs {
     pub fn entity_remove(entity: &ecs::Entity) -> WaitableTask {
         command(CommandQuery::new(Task::EntityRemove(entity.entity_id)))        
     }
+    /* #endregion */
+    /* #region Components */
     // Get a component
     pub fn component<'a, T: Component + 'static>(entity: &ecs::Entity) -> ecs::stored::Stored<T> {
         // Get the corresponding global component ID from the entity
@@ -57,10 +58,22 @@ pub mod ecs {
     }
     // Create a component linking group
     pub fn component_linking_group(entity: &ecs::Entity) -> ecs::ComponentLinkingGroup {
-        ecs::ComponentLinkingGroup::new()
+        ecs::ComponentLinkingGroup::new(entity)
     }
     // This is an alternate function that links the component directly, no linking group
     pub fn link_component_direct() {}
+    /* #endregion */
+    /* #region Systems */
+    // Add the system on the main thread
+    pub fn add_system<T: ecs::CustomSystemData>(system: ecs::System<T>) {
+        let mut w = crate::world::world_mut();
+        let system_thread_data = ecs::SystemThreadData {
+
+        };
+        // Add the thread data
+        w.ecs_manager.systemm.systems.push(system_thread_data);
+    }
+    /* #endregion */
 }
 // Input
 pub mod input {    

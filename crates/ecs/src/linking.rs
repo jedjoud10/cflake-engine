@@ -9,24 +9,30 @@ pub struct ComponentLinkingGroup {
 
 // Linking methods
 impl ComponentLinkingGroup {
+    pub fn empty() -> Self {
+        Self  {
+            linked_components: HashMap::new(),
+            c_bitfield: 0,
+        }
+    }
     // Creete a new component linking group from an entity
-    pub fn new() -> Self {
+    pub fn new(entity: &Entity) -> Self {
         Self {
             linked_components: HashMap::new(),
-            c_bitfield: 0
+            c_bitfield: entity.c_bitfield
         }
     }
     // Link a component to this entity and automatically set it to the default variable
-    pub fn link_default_component<T: Component + Default + 'static>(&mut self) -> Result<(), ECSError> {
+    pub fn link_default<T: Component + Default + 'static>(&mut self) -> Result<(), ECSError> {
         // Simple wrapper around the default link component
-        self.link_component(T::default())
+        self.link(T::default())
     }
     // Check if we have a component linked
     pub fn is_component_linked(&self, component_id: usize) -> bool {
         self.linked_components.contains_key(&component_id)
     }
     // Link a component to this entity and also link it's default component dependencies if they are not linked yet
-    pub fn link_component<T: Component + 'static>(&mut self, default_state: T) -> Result<(), ECSError> {
+    pub fn link<T: Component + 'static>(&mut self, default_state: T) -> Result<(), ECSError> {
         let component_id = crate::registry::get_component_id::<T>()?;
         // Check if we have the component linked on this entity
         if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(component_id) {

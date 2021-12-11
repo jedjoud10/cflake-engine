@@ -58,9 +58,9 @@ pub fn new(author_name: &str, app_name: &str) -> World {
         config_file: GameConfig::default(),
     }
 }
-// Load everything that needs to be loaded by default
-fn load_defaults() {
-    // Load default bindings
+// When the world started initializing
+pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    // Load the default stuff
     crate::local::input::create_key_cache();
     crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);
     crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);
@@ -139,11 +139,6 @@ fn load_defaults() {
     ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
     console_root.visible = false;
     crate::global::ui::add_root("console", console_root);
-}
-// When the world started initializing
-pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-    // Load the default stuff
-    load_defaults();
     window_commands::hide_cursor(window);
     // Load the config file for this world
     let config_file_copy = crate::global::io::create_config_file();    

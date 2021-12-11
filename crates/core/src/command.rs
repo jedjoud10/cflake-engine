@@ -196,7 +196,7 @@ pub fn command(query: CommandQuery) -> WaitableTask {
     let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
     // Early main thread exit lol
     if !is_main_thread {
-        tx.send((id, query));    
+        tx.send((id, query)).unwrap();    
         // Increment the counter
         // Get the corresponding return command value
         WaitableTask { 
