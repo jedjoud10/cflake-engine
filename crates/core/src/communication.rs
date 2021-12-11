@@ -1,3 +1,5 @@
+use crate::{command::CommandQuery, tasks::WaitableTask};
+use lazy_static::lazy_static;
 use std::{
     collections::HashMap,
     sync::{
@@ -6,11 +8,6 @@ use std::{
         Mutex,
     },
 };
-use crate::{
-    command::CommandQuery,
-    tasks::{Task, WaitableTask},
-};
-use lazy_static::lazy_static;
 
 lazy_static! {
     // A counter for the number of commands issued

@@ -1,9 +1,9 @@
 use crate::{custom_world_data::CustomWorldData, GameConfig};
 use ::rendering::*;
-use assets::*;
+
 use debug::*;
 use ecs::*;
-use glfw::{self, Context};
+use glfw::{self};
 use input::*;
 use io::SaverLoader;
 use others::*;
@@ -148,7 +148,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     println!("Hello world from MainThread! Must call initalization callback!");
 }
 // This is the main Update loop, ran on the main thread
-pub fn update_world(delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
     /*
     // Upate the console
     self.update_console();
@@ -233,12 +233,12 @@ pub fn kill_world() {
     pipec::dispose_pipeline();
 }
 
-pub fn receive_key_event(key_scancode: i32, action_id: i32) {}
+pub fn receive_key_event(_key_scancode: i32, _action_id: i32) {}
 
-pub fn receive_mouse_pos_event(x: f64, y: f64) {}
-pub fn receive_mouse_scroll_event(scroll: f64) {}
+pub fn receive_mouse_pos_event(_x: f64, _y: f64) {}
+pub fn receive_mouse_scroll_event(_scroll: f64) {}
 
-pub fn resize_window_event(x: u16, y: u16) {}
+pub fn resize_window_event(_x: u16, _y: u16) {}
 /*
 // When we resize the window
 pub fn resize_window_event(size: (u16, u16)) {

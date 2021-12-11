@@ -1,6 +1,5 @@
 use crate::communication::*;
 use crate::system::{IS_MAIN_THREAD, SYSTEM_GROUP_THREAD_DATA};
-use std::sync::mpsc::Receiver;
 
 // Some world tasks
 pub enum Task {
@@ -41,13 +40,13 @@ impl WaitableTask {
         /* #endregion */
         /* #region Wait for the main thread to send a return task */
         // Wait for the main thread to send back the return task
-        let sender = SENDER.lock().unwrap();
+        let _sender = SENDER.lock().unwrap();
         let rx = SYSTEM_GROUP_THREAD_DATA.with(|x| {
             let system_group_thread_data = x.borrow();
             let rx = system_group_thread_data.rx.as_ref().unwrap().clone();
             rx
         });
-        let thread_id = std::thread::current().id();
+        let _thread_id = std::thread::current().id();
         let id = self.id;
         loop {
             // Receive infinitely until we get the valid return task value
@@ -76,13 +75,13 @@ impl WaitableTask {
                 if data.buffer.contains_key(&id) {
                     // We found our answer!
                     let x = data.buffer.remove(&id).unwrap();
-                    return Some(x.val.unwrap());
+                    Some(x.val.unwrap())
                 } else {
                     None
                 }
             });
             match x {
-                Some(x) => return x /* The buffer does indeed contain the result */,
+                Some(x) => return x, /* The buffer does indeed contain the result */
                 None => todo!(),
             }
         }
@@ -91,7 +90,7 @@ impl WaitableTask {
 }
 
 // Excecute a specific task and give back it's result
-pub fn excecute_task(t: Task, world: &mut crate::world::World) -> TaskReturn {
+pub fn excecute_task(t: Task, _world: &mut crate::world::World) -> TaskReturn {
     match t {
         Task::EntityAdd(_, _) => todo!(),
         Task::EntityRemove(_) => todo!(),

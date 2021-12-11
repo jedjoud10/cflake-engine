@@ -2,15 +2,7 @@
 use crate::communication::*;
 use crate::system::*;
 use crate::tasks::*;
-use std::{
-    cell::{Cell, RefCell},
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        mpsc::{Receiver, Sender},
-        Arc, Mutex, RwLock,
-    },
-};
+use std::{collections::HashMap, sync::atomic::Ordering};
 
 // A sent command query
 pub struct CommandQuery {

@@ -4,7 +4,7 @@
 pub mod ecs {
     use crate::command::*;
     use crate::tasks::*;
-    use ecs::{Component, ComponentInternal};
+    use ecs::Component;
     use std::sync::{RwLockReadGuard, RwLockWriteGuard};
     /* #region Entities */
     // Get an entity using it's global ID
@@ -37,7 +37,7 @@ pub mod ecs {
         componentm.get_component::<T>(*global_id).unwrap()
     }
     // Get a component mutably, since this is going to run at the end of the frame using an FnOnce
-    pub fn component_mut<T: Component + 'static, F: Fn(&'static mut T)>(entity: &ecs::Entity, callback: F) {
+    pub fn component_mut<T: Component + 'static, F: Fn(&'static mut T)>(entity: &ecs::Entity, _callback: F) {
         /* #region We are on the main thread */
         let main_thread = crate::system::IS_MAIN_THREAD.with(|x| x.get());
         if main_thread {
@@ -46,9 +46,8 @@ pub mod ecs {
             // Get the corresponding global component ID from the entity
             let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
             let componentm = &mut world.ecs_manager.componentm;
-            let x = componentm.get_component_mut::<T>(*global_id).unwrap();
+            let _x = componentm.get_component_mut::<T>(*global_id).unwrap();
             //callback(x);
-            return;
         }
         /* #endregion */
         else {
@@ -71,7 +70,7 @@ pub mod ecs {
         // Create a new thread and initialize the system on it
         let join_handle = std::thread::spawn(move || {
             // Create the system on this thread
-            let system = callback();
+            let _system = callback();
 
             // Start the system loop
             loop {}
@@ -84,9 +83,9 @@ pub mod ecs {
 }
 // Input
 pub mod input {
-    
+
     // Bind key
-    pub fn bind_key(key: input::Keys, map_name: &str, _map_type: input::MapType) {}
+    pub fn bind_key(_key: input::Keys, _map_name: &str, _map_type: input::MapType) {}
     // Get the accumulated mouse position
     pub fn mouse_pos() -> (i32, i32) {
         let w = crate::world::world();
@@ -158,12 +157,12 @@ pub mod io {
         command(CommandQuery::new(Task::CreateConfigFile())).wait();
         let w = crate::world::world();
         let saver_loader = &w.saver_loader;
-        return saver_loader.load::<crate::GameConfig>("config\\game_config.json");
+        saver_loader.load::<crate::GameConfig>("config\\game_config.json")
     }
     // Load a copy of the config file
     pub fn load_config_file() -> crate::GameConfig {
         let w = crate::world::world();
-        return w.saver_loader.load::<crate::GameConfig>("config\\game_config.json");
+        w.saver_loader.load::<crate::GameConfig>("config\\game_config.json")
     }
 }
 // Mains
