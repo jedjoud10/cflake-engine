@@ -1,10 +1,8 @@
 use main::assets::*;
 use main::defaults::components;
-use main::defaults::systems;
 use main::ecs::*;
 use main::others::Instance;
 use main::rendering::*;
-use main::world_data::*;
 use main::*;
 fn main() {
     // Load up the engine
@@ -13,7 +11,8 @@ fn main() {
 pub fn assets_preload() {
     // -----Pre-load the game assets here-----
 }
-pub fn world_initialized(world: &mut World) {
+pub fn world_initialized() {
+    /*
     // ----Load the default systems----
     // Create the custom data
     let mut data: WorldData = WorldData {
@@ -108,4 +107,5 @@ pub fn world_initialized(world: &mut World) {
         .link_component::<components::TerrainData>(data.component_manager, components::TerrainData::new(settings))
         .unwrap();
     data.entity_manager.add_entity_s(terrain_entity);
+    */
 }

@@ -1,5 +1,5 @@
 // Export
-mod world;
+pub mod world;
 mod game_file;
 pub use game_file::*;
 mod command;

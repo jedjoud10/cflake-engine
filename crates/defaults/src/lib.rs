@@ -50,3 +50,7 @@ pub fn preload_default_assets() {
     println!("Finished pre-loading default assets!");
 }
 
+// Pre-load the default systems
+pub fn preload_systems() {
+    
+}

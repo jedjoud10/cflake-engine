@@ -11,6 +11,11 @@ impl<T> Stored<T> {
     }
 }
 
+impl<T> std::ops::Deref for Stored<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target { unsafe { &*self.ptr } }
+}
+
 pub struct StoredMut<T> where T: Sized {
     pub ptr_mut: *mut T
 }
@@ -21,4 +26,13 @@ impl<T> StoredMut<T> {
             ptr_mut: reference_mut as *mut T,
         }
     }
+}
+
+impl<T> std::ops::Deref for StoredMut<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target { unsafe { &*self.ptr_mut } }
+}
+
+impl<T> std::ops::DerefMut for StoredMut<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target { unsafe { &mut *self.ptr_mut } }
 }

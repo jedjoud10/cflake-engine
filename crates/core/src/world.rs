@@ -141,7 +141,7 @@ fn load_defaults() {
     crate::global::ui::add_root("console", console_root);
 }
 // When the world started initializing
-pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: fn()) {
+pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Load the default stuff
     load_defaults();
     window_commands::hide_cursor(window);
@@ -150,9 +150,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window, callback: f
     // Apply the config file's data to the rendering window
     window_commands::set_fullscreen(config_file_copy.fullscreen, glfw, window);
     window_commands::set_vsync(config_file_copy.vsync);
-    // Callback
-    callback();
-    println!("Hello world from MainThread!");
+    println!("Hello world from MainThread! Must call initalization callback!");
 }
 // This is the main Update loop, ran on the main thread
 pub fn update_world(delta: f64, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -238,6 +236,17 @@ pub fn kill_world() {
     println!("Kill world!");
     // Kill the render pipeline
     pipec::dispose_pipeline();
+}
+
+pub fn receive_key_event(key_scancode: i32, action_id: i32) {
+}
+
+pub fn receive_mouse_pos_event(x: f64, y: f64) {
+}
+pub fn receive_mouse_scroll_event(scroll: f64) {
+}
+
+pub fn resize_window_event(x: u16, y: u16) {
 }
 /*
 // When we resize the window
