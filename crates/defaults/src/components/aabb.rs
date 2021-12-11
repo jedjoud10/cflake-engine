@@ -35,8 +35,8 @@ impl AABB {
         aabb
     }
     // Generate the AABB from a renderer entity
-    pub fn from_components(entity: &Entity, component_manager: &ComponentManager) -> Self {
-        let transform = entity.get_component::<super::Transform>(component_manager).unwrap();
+    pub fn from_components(entity: &Entity) -> Self {
+        let transform = core::global::ecs::component<super::Transform>()(entity).unwrap();
         /*
         let renderer = entity.get_component::<super::Renderer>(component_manager).unwrap();
         let aabb = math::bounds::AABB::new_vertices(&renderer.model.vertices);

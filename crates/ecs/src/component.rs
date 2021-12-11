@@ -20,7 +20,7 @@ impl Default for ComponentManager {
 // Implement all the functions
 impl ComponentManager {    
     // Add a specific linked componment to the component manager, returns the global IDs of the components
-    pub fn add_linked_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
+    pub fn add_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
         let global_id = self.components.add_element(Box::new(component));
         Ok(global_id)
     }
@@ -35,7 +35,7 @@ impl ComponentManager {
         component_any.downcast_mut::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))
     }
     // Get a reference to a specific linked component
-    pub fn id_get_linked_component<T: Component + 'static>(&self, global_id: usize) -> Result<&T, ECSError> {
+    pub fn get_component<T: Component + 'static>(&self, global_id: usize) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self
@@ -47,7 +47,7 @@ impl ComponentManager {
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn id_get_linked_component_mut<T: Component + 'static>(&mut self, global_id: usize) -> Result<&mut T, ECSError> {
+    pub fn get_component_mut<T: Component + 'static>(&mut self, global_id: usize) -> Result<&mut T, ECSError> {
         let linked_component = self
             .components
             .get_element_mut(global_id)
@@ -57,7 +57,7 @@ impl ComponentManager {
         Ok(component)
     }
     // Remove a specified component from the list
-    pub fn id_remove_linked_component(&mut self, global_id: usize) -> Result<(), ECSError> {
+    pub fn remove_component(&mut self, global_id: usize) -> Result<(), ECSError> {
         // To remove a specific component just set it's component slot to None
         self.components.remove_element(global_id).unwrap();
         return Ok(());
@@ -72,6 +72,9 @@ pub trait ComponentInternal {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 // A trait used to identify each component by their name
-pub trait ComponentID {
+pub trait ComponentID where Self: Sized {
     fn get_component_name() -> String;
+    // Wrappers
+    fn get_component_id() -> usize { crate::registry::get_component_id::<Self>().unwrap() }
+    fn is_registered() -> bool { crate::registry::is_component_registered::<Self>() }
 }

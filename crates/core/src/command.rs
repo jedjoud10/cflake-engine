@@ -5,11 +5,11 @@ mod tasks {
     // Some world tasks
     pub enum Task {
         // Entity
-        CreateEntity(ecs::Entity, ecs::ComponentLinkingGroup),
-        DestroyEntity(usize),
+        EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup),
+        EntityRemove(usize),
         // This is only valid if the entity is also valid
-        LinkComponentDirect(usize, usize),
-        UnlinkComponentDirect(usize, usize),
+        ComponentLinkDirect(usize, usize),
+        ComponentUnlinkDirect(usize, usize),
         // UI
         AddRoot(String, ui::Root),
         SetRootVisibility(bool),
@@ -32,10 +32,10 @@ mod tasks {
     // Excecute a specific task and give back it's result
     pub fn excecute_task(t: Task, world: &mut crate::world::World) -> TaskReturn {
         match t {
-            Task::CreateEntity(_, _) => todo!(),
-            Task::DestroyEntity(_) => todo!(),
-            Task::LinkComponentDirect(_, _) => todo!(),
-            Task::UnlinkComponentDirect(_, _) => todo!(),
+            Task::EntityAdd(_, _) => todo!(),
+            Task::EntityRemove(_) => todo!(),
+            Task::ComponentLinkDirect(_, _) => todo!(),
+            Task::ComponentUnlinkDirect(_, _) => todo!(),
             Task::AddRoot(_, _) => todo!(),
             Task::SetRootVisibility(_) => todo!(),
             Task::CreateConfigFile() => todo!(),
@@ -82,7 +82,7 @@ pub struct SystemGroupThreadData {
 // The system group thread data is local to each system thread
 thread_local! {
     static SYSTEM_GROUP_THREAD_DATA: RefCell<SystemGroupThreadData> = RefCell::new(SystemGroupThreadData::default());
-    static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
+    pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
 }
 // Worker threads
 #[derive(Default)]
@@ -98,16 +98,20 @@ pub struct WorldTaskReceiver {
 impl WaitableTask {
     // Wait for the main thread to finish this specific task
     pub fn wait(self) -> TaskReturn {
+        /* #region We are already on the main thread */
         // No need to do any of this multithreading shit if we're already on the main thread
         let x = IS_MAIN_THREAD.with(|x| x.get());
         if x {
             return self.val.unwrap();
         }
+        /* #endregion */
+        /* #region Wait for the main thread to send a return task */
         // Wait for the main thread to send back the return task
         let sender = SENDER.lock().unwrap();
         let rx = SYSTEM_GROUP_THREAD_DATA.with(|x| {
-            let y = x.borrow();
-            y.rx.as_ref().unwrap()
+            let system_group_thread_data = x.borrow();
+            let rx = system_group_thread_data.rx.as_ref().unwrap().clone();
+            rx
         });
         let thread_id = std::thread::current().id();
         let id = self.id;
@@ -123,7 +127,7 @@ impl WaitableTask {
                         // Add it to the buffer
                         let id = x.id;
                         SYSTEM_GROUP_THREAD_DATA.with(|data| {
-                            let data = data.borrow_mut();
+                            let mut data = data.borrow_mut();
                             data.buffer.insert(id, x);
                         })
                     }
@@ -134,7 +138,7 @@ impl WaitableTask {
             }
             let x: Option<TaskReturn> = SYSTEM_GROUP_THREAD_DATA.with(|data| {
                 // Always check if the current group thread data contains our answer
-                let data = data.borrow_mut();
+                let mut data = data.borrow_mut();
                 if data.buffer.contains_key(&id) {
                     // We found our answer!
                     let x = data.buffer.remove(&id).unwrap();
@@ -145,14 +149,15 @@ impl WaitableTask {
             });    
             return x.unwrap();        
         }
+        /* #endregion */
     }
 }
 // The functions
 pub fn initialize_channels() {
     // Create the channels
     let (tx, rx) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
-    let receiver = RECEIVER.lock().unwrap();
-    let sender = SENDER.lock().unwrap();
+    let mut receiver = RECEIVER.lock().unwrap();
+    let mut sender = SENDER.lock().unwrap();
     // The task senders
     receiver.txs = Some(HashMap::new());
     sender.tx = Some(tx);
@@ -164,20 +169,14 @@ pub fn frame_main_thread() {
     // Poll each command query
     let receiver = RECEIVER.lock().unwrap();
     let world = crate::world::world_mut();
-    for (id, x) in receiver.rx.unwrap().try_recv() {
-        let (thread_id, task) = match x {
-            CommandQuery::Group(thread_id, tgroup) => {
-                // Execute the task group
-                (thread_id, tasks::excecute_task(tgroup[0], &mut *world))
-            },
-            CommandQuery::Singular(thread_id, t) => {
-                // Execute the singular task        
-                (thread_id, tasks::excecute_task(t, &mut *world))
-            },
+    for (id, query) in receiver.rx.unwrap().try_recv() {
+        let waitabletask = WaitableTask { 
+            id, 
+            thread_id: query.thread_id, 
+            val: Some(excecute_task(query.task, &mut world))
         };
-        let waitabletask = WaitableTask { id, thread_id, val: Some(task) };
         // Send the result to the corresponding system threads
-        match receiver.txs.unwrap().get(&thread_id) {
+        match receiver.txs.unwrap().get(&query.thread_id) {
             Some(x) => {
                 // Send the return value to the corresponding receiver
                 x.send(waitabletask).unwrap();
@@ -198,35 +197,21 @@ pub fn command(query: CommandQuery) -> WaitableTask {
         tx.send((id, query));    
         // Increment the counter
         // Get the corresponding return command value
-        match query {
-            CommandQuery::Group(thread_id, tasks) => WaitableTask {
-                id,
-                val: None,
-                thread_id: std::thread::current().id(),
-            },
-            CommandQuery::Singular(thread_id, task) => WaitableTask {
-                id,
-                val: None,
-                thread_id: std::thread::current().id(),
-            },
+        WaitableTask { 
+            id,
+            thread_id: std::thread::current().id(),
+            val: None,
         }
     } else {
-        // This is the main thread calling, we don't give a  f u c k        
-        match query {
-            CommandQuery::Group(thread_id, tasks) => WaitableTask {
-                id,
-                val: {
-                    let world = crate::world::world_mut();
-                    let output = tasks::excecute_task(tasks[0], &mut *world);
-                    Some(output)
-                },
-                thread_id: std::thread::current().id(),
+        // This is the main thread calling, we don't give a  f u c k   
+        WaitableTask { 
+            id,
+            thread_id: std::thread::current().id(),
+            val: {
+                let world = crate::world::world_mut();
+                let output = tasks::excecute_task(query.task, &mut *world);
+                Some(output)
             },
-            CommandQuery::Singular(thread_id, task) => WaitableTask {
-                id,
-                val: None,
-                thread_id: std::thread::current().id(),
-            },
-        }
+        }    
     }
 }

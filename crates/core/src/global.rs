@@ -5,25 +5,51 @@ pub mod ecs {
     use ecs::{ComponentInternal, Component};
 
     use crate::command::*;
+    // Get an entity using it's global ID
+    pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
+        let w = crate::world::world();
+        w.ecs_manager.entitym.entities.get_element(entity_id).unwrap().cloned()
+    }
     // Add an entity without any linking groups
-    pub fn entity_add_empty(entity: ecs::Entity) {}
+    pub fn entity_add_empty(entity: ecs::Entity) -> WaitableTask {
+        let empty_linkings = ecs::ComponentLinkingGroup::new();
+        entity_add(entity, empty_linkings)
+    }
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
-    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) {
-        let waitable = command(CommandQuery::single(Task::CreateEntity(entity, linkings)));
-        let x = waitable.wait();
+    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) -> WaitableTask {
+        command(CommandQuery::new(Task::EntityAdd(entity, linkings)))
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
-    pub fn entity_remove() {}
+    pub fn entity_remove(entity: &ecs::Entity) -> WaitableTask {
+        command(CommandQuery::new(Task::EntityRemove(entity.entity_id)))        
+    }
     // Get a component
     pub fn component<T: Component + 'static>(entity: &ecs::Entity) -> &'static T {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get()
+        let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
         // Get the world using it's RwLock
         let w = crate::world::world();
-        w.ecs_manager.componentm.get_component::<T>(global_id)
+        w.ecs_manager.componentm.get_component::<T>(*global_id).unwrap()
     }
     // Get a component mutably, since this is going to run at the end of the frame using an FnOnce
-    pub fn component_mut<T: Component, F: FnOnce(&mut T)>() {}
+    pub fn component_mut<T: Component + 'static, F: FnOnce(&mut T)>(entity: &ecs::Entity, callback: F) {
+        /* #region We are on the main thread */
+        let main_thread = crate::command::IS_MAIN_THREAD.with(|x| x.get());
+        if main_thread {
+            // We are on the main thread, we can get the world as a mut
+            let world = crate::world::world_mut();
+            // Get the corresponding global component ID from the entity
+            let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
+            let x = world.ecs_manager.componentm.get_component_mut::<T>(*global_id).unwrap();
+            callback(x);
+        } 
+        /* #endregion */
+        else {
+            // At the end of the current frame, run the callback on the main thread (If we are on a worker thread)
+
+        }
+
+    }
     // Create a component linking group
     pub fn component_linking_group(entity: &ecs::Entity) -> ecs::ComponentLinkingGroup {
         ecs::ComponentLinkingGroup::new()
@@ -90,7 +116,7 @@ pub mod ui {
 
     // Add a root the world
     pub fn add_root(name: &str, root: ui::Root) {
-        command(CommandQuery::single(Task::AddRoot(name.to_string(), root))).wait();
+        command(CommandQuery::new(Task::AddRoot(name.to_string(), root))).wait();
     }
 }
 // IO stuff
@@ -98,7 +124,7 @@ pub mod io {
     use crate::command::{CommandQuery, Task, command};
     // Create the default config file
     pub fn create_config_file() -> crate::GameConfig {
-        command(CommandQuery::single(Task::CreateConfigFile())).wait();
+        command(CommandQuery::new(Task::CreateConfigFile())).wait();
         let w = crate::world::world();
         return w.saver_loader.load::<crate::GameConfig>("config\\game_config.json");
     }

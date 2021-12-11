@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 ui = { path = "../ui" }
+core = { path = "../core" }
 physics = { path = "../physics" }
 math = { path = "../math" }
 fonts = { path = "../fonts"  }

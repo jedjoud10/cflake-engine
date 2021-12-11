@@ -239,14 +239,18 @@ pub fn kill_world() {
     // Kill the render pipeline
     pipec::dispose_pipeline();
 }
+/*
 // When we resize the window
 pub fn resize_window_event(size: (u16, u16)) {
     let dims = veclib::Vector2::new(size.0, size.1);
     pipec::task(pipec::RenderTask::WindowUpdateSize(dims), "window_data_update", |_| {});
     let world = crate::world::world_mut();
-    let camera_entity_clone = world.ecs_manager.entitym.get_entity_mut(world.custom_data.main_camera_entity_id).unwrap();
+    let camera_entity_clone = crate::global::ecs::entity(world.custom_data.main_camera_entity_id).unwrap();
     let entity_clone_id = camera_entity_clone.entity_id;
-    let camera_component = camera_entity_clone.get_component_mut::<components::Camera>(world.ecs_manager.componentm).unwrap();
+    let camera_component = crate::global::ecs::component_mut::<components::Camera>(camera_entity_clone, |x| {
+
+    }).unwrap();
     camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
     camera_component.update_aspect_ratio(dims);
 }
+*/
