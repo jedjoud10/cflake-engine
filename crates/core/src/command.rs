@@ -168,15 +168,17 @@ pub fn initialize_channels() {
 pub fn frame_main_thread() {
     // Poll each command query
     let receiver = RECEIVER.lock().unwrap();
-    let world = crate::world::world_mut();
-    for (id, query) in receiver.rx.unwrap().try_recv() {
+    let rx = receiver.rx.as_ref().unwrap();
+    let txs = receiver.txs.as_ref().unwrap();
+    let mut world = crate::world::world_mut();
+    for (id, query) in rx.try_recv() {
         let waitabletask = WaitableTask { 
             id, 
             thread_id: query.thread_id, 
             val: Some(excecute_task(query.task, &mut world))
         };
         // Send the result to the corresponding system threads
-        match receiver.txs.unwrap().get(&query.thread_id) {
+        match txs.get(&query.thread_id) {
             Some(x) => {
                 // Send the return value to the corresponding receiver
                 x.send(waitabletask).unwrap();
@@ -208,8 +210,8 @@ pub fn command(query: CommandQuery) -> WaitableTask {
             id,
             thread_id: std::thread::current().id(),
             val: {
-                let world = crate::world::world_mut();
-                let output = tasks::excecute_task(query.task, &mut *world);
+                let mut world = crate::world::world_mut();
+                let output = tasks::excecute_task(query.task, &mut world);
                 Some(output)
             },
         }    

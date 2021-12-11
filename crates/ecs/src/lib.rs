@@ -10,6 +10,7 @@ mod ecs_manager;
 mod linking;
 pub mod component_registry;
 pub use component_registry as registry;
+pub mod stored;
 
 pub use linking::*;
 pub use ecs_manager::*;

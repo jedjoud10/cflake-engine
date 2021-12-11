@@ -2,6 +2,8 @@
 // Commands grouped for each module
 // Entity Component Systems
 pub mod ecs {
+    use std::sync::{RwLockReadGuard, RwLockWriteGuard};
+
     use ecs::{ComponentInternal, Component};
 
     use crate::command::*;
@@ -24,24 +26,27 @@ pub mod ecs {
         command(CommandQuery::new(Task::EntityRemove(entity.entity_id)))        
     }
     // Get a component
-    pub fn component<T: Component + 'static>(entity: &ecs::Entity) -> &'static T {
+    pub fn component<'a, T: Component + 'static>(entity: &ecs::Entity) -> ecs::stored::Stored<T> {
         // Get the corresponding global component ID from the entity
         let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
         // Get the world using it's RwLock
-        let w = crate::world::world();
-        w.ecs_manager.componentm.get_component::<T>(*global_id).unwrap()
+        let w: RwLockReadGuard<'static, crate::world::World> = crate::world::world();
+        let componentm = &w.ecs_manager.componentm; 
+        componentm.get_component::<T>(*global_id).unwrap()
     }
     // Get a component mutably, since this is going to run at the end of the frame using an FnOnce
-    pub fn component_mut<T: Component + 'static, F: FnOnce(&mut T)>(entity: &ecs::Entity, callback: F) {
+    pub fn component_mut<T: Component + 'static, F: Fn(&'static mut T)>(entity: &ecs::Entity, callback: F) {
         /* #region We are on the main thread */
         let main_thread = crate::command::IS_MAIN_THREAD.with(|x| x.get());
         if main_thread {
             // We are on the main thread, we can get the world as a mut
-            let world = crate::world::world_mut();
+            let mut world: RwLockWriteGuard<'static, crate::world::World> = crate::world::world_mut();
             // Get the corresponding global component ID from the entity
             let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
-            let x = world.ecs_manager.componentm.get_component_mut::<T>(*global_id).unwrap();
-            callback(x);
+            let componentm = &mut world.ecs_manager.componentm;
+            let x = componentm.get_component_mut::<T>(*global_id).unwrap();
+            //callback(x);
+            return;
         } 
         /* #endregion */
         else {
@@ -126,17 +131,13 @@ pub mod io {
     pub fn create_config_file() -> crate::GameConfig {
         command(CommandQuery::new(Task::CreateConfigFile())).wait();
         let w = crate::world::world();
-        return w.saver_loader.load::<crate::GameConfig>("config\\game_config.json");
+        let saver_loader = &w.saver_loader;
+        return saver_loader.load::<crate::GameConfig>("config\\game_config.json");
     }
     // Load a copy of the config file
     pub fn load_config_file() -> crate::GameConfig {
         let w = crate::world::world();
         return w.saver_loader.load::<crate::GameConfig>("config\\game_config.json");
-    }
-    // Load a copy of the saver loader
-    pub fn saver_loader() -> io::SaverLoader {
-        let w = crate::world::world(); 
-        return w.saver_loader;
     }
 }
 // Mains

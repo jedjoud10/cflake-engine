@@ -12,8 +12,6 @@ pub struct SaverLoader {
     // The path where all the local data will be stored into
     // %appdata%\\{game_name}\\data\\
     pub local_path: PathBuf,
-    // Paths
-    loaded_strings: Vec<String>,
 }
 
 impl SaverLoader {
@@ -35,21 +33,14 @@ impl SaverLoader {
         println!("{:?}", path.config_dir);
         SaverLoader {
             local_path: path.config_dir,
-            loaded_strings: Vec::new(),
         }
     }
     // Load a struct from a file
-    pub fn load<'a, T: serde::Serialize + serde::Deserialize<'a>>(&'a mut self, file_path: &'a str) -> T {
+    pub fn load<'a, T: serde::Serialize + serde::de::DeserializeOwned>(&self, file_path: &'a str) -> T {
         // Load the file
         let global_path = self.local_path.join(file_path);
-        let mut reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
-        // Save the string because it can't handle the real shrigma-ness
-        let mut string = String::new();
-        reader.read_to_string(&mut string).unwrap();
-        self.loaded_strings.push(string);
-        let string = self.loaded_strings.last().unwrap();
-
-        let x: T = serde_json::from_str(string).unwrap();
+        let reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
+        let x = serde_json::from_reader(reader).unwrap();
         return x;
     }
     // Save a struct to a file

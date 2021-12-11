@@ -1,4 +1,4 @@
-use crate::ECSError;
+use crate::{ECSError, stored::{Stored, StoredMut}};
 
 use super::entity::Entity;
 use others::SmartList;
@@ -25,17 +25,19 @@ impl ComponentManager {
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentInternal + 'static>(boxed_component: &'a dyn ComponentInternal) -> Result<&'a T, ECSError> {
-        let component_any: &dyn Any = boxed_component.as_any();
-        component_any.downcast_ref::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))
+    fn cast_component<'a, T: ComponentInternal + 'static>(linked_component: &'a dyn ComponentInternal) -> Result<Stored<T>, ECSError> {
+        let component_any: &dyn Any = linked_component.as_any();
+        let reference = component_any.downcast_ref::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
+        Ok(Stored::new(reference))
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal) -> Result<&'a mut T, ECSError> {
+    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal) -> Result<StoredMut<T>, ECSError> {
         let component_any: &mut dyn Any = boxed_component.as_any_mut();
-        component_any.downcast_mut::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))
+        let reference_mut = component_any.downcast_mut::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
+        Ok(StoredMut::new_mut(reference_mut))
     }
     // Get a reference to a specific linked component
-    pub fn get_component<T: Component + 'static>(&self, global_id: usize) -> Result<&T, ECSError> {
+    pub fn get_component<'a, T: Component + 'static>(&'a self, global_id: usize) -> Result<Stored<T>, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self
@@ -43,17 +45,17 @@ impl ComponentManager {
             .get_element(global_id)
             .unwrap()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component(linked_component.as_ref())?;
+        let component = Self::cast_component::<T>(linked_component.as_ref())?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_component_mut<T: Component + 'static>(&mut self, global_id: usize) -> Result<&mut T, ECSError> {
+    pub fn get_component_mut<'a, T: Component + 'static>(&'a mut self, global_id: usize) -> Result<StoredMut<T>, ECSError> {
         let linked_component = self
             .components
             .get_element_mut(global_id)
             .unwrap()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component_mut(linked_component.as_mut())?;
+        let component = Self::cast_component_mut::<T>(linked_component.as_mut())?;
         Ok(component)
     }
     // Remove a specified component from the list
