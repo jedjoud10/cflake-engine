@@ -21,6 +21,22 @@ pub fn fetch_threadlocal_callbacks() {
 
 }
 
+// Fetch the local callbacks and return a GPU object if we fetched one with the same name
+fn fetch_threadlocal_callbacks_specific(name: &str) -> Option<GPUObject> {
+    None
+}
+
+// Wait until we properly fetch a valid GPU object
+pub fn wait_fetch_threadlocal_callbacks_specific(name: &str) -> GPUObject {
+    let mut result = None;
+    // Loop and wait until we fetch a valid one
+    while result.is_none() { match fetch_threadlocal_callbacks_specific(&name) {
+        Some(x) => result = Some(x),
+        None => {},
+    }}
+    result.unwrap()
+}
+
 // We must ask the Interface if we have these objects in cache
 pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
     let pipeline_ = crate::PIPELINE.as_ref().lock().unwrap();

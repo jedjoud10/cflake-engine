@@ -35,6 +35,7 @@ pub mod pipec {
     use crate::pipeline::object::*;
     use crate::{Model, Pipeline, RenderTaskReturn, Renderer, Shader, SubShader, Texture, Material, RenderCommand, COMMAND_COUNT, SubShaderType};
     pub use crate::{RenderTask, SharedData};
+    pub use crate::pipeline::global_interface::*;
     // Start the render pipeline by initializing OpenGL on the new render thread
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         crate::pipeline::init_pipeline(glfw, window);
@@ -57,6 +58,10 @@ pub mod pipec {
     pub fn dispose_pipeline() {
         //self.task_immediate(RenderTask::DestroyRenderThread(), "dispose_pipeline".to_string());
     }
+    // Generate a command name
+    pub fn generate_command_name() -> String {
+        format!("c_{}", COMMAND_COUNT.fetch_add(1, Ordering::Relaxed))
+    }
     // Normal callback task
     pub fn task<F>(task: RenderTask, name: &str, callback: F)
     where
@@ -64,7 +69,7 @@ pub mod pipec {
     {
         // Create the render command
         let command = RenderCommand {
-            name: if name.is_empty() { format!("c_{}", COMMAND_COUNT.fetch_add(1, Ordering::Relaxed)) } else { name.to_string() },
+            name: if name.is_empty() { panic!() } else { name.to_string() },
             input_task: task,
         };
         crate::RENDER_COMMAND_SENDER.with(|x| {
@@ -124,78 +129,43 @@ pub mod pipec {
         if gpu_object_valid(&subshader.name) {
             get_subshader_object(&subshader.name)
         } else {
-            let name = subshader.name.clone();
-            let mut result = None;
-            task(RenderTask::SubShaderCreate(SharedData::new(subshader)), &format!("crt_sbshdr_{}", name), |x| 
-                match x {                
-                    GPUObject::SubShader(subshader_gpuobject) => result = Some(subshader_gpuobject),
-                    _ => panic!()
-                }
-            );
-            while result.is_none() { crate::fetch_threadlocal_callbacks(); }
-            result.unwrap()
+            let name = format!("crt_sbshdr_{}", subshader.name.clone());
+            task(RenderTask::SubShaderCreate(SharedData::new(subshader)), &name, |_| {});
+            if let GPUObject::SubShader(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }        
         }
     }
     pub fn shader(shader: Shader) -> ShaderGPUObject {
         if gpu_object_valid(&shader.name) {
             get_shader_object(&shader.name)
         } else {
-            let name = shader.name.clone();
-            let mut result = None;
-            task(RenderTask::ShaderCreate(SharedData::new(shader)), &format!("crt_shdr_{}", name), |x | 
-                match x {
-                    GPUObject::Shader(shader_gpuobject) => result = Some(shader_gpuobject),
-                    _ => panic!()
-                }                
-            );
-            while result.is_none() { crate::fetch_threadlocal_callbacks(); }
-            result.unwrap()
+            let name = format!("crt_shdr_{}", shader.name.clone());
+            task(RenderTask::ShaderCreate(SharedData::new(shader)), &name, |_| {});
+            if let GPUObject::Shader(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }      
         }
     }
     pub fn compute_shader(shader: Shader) -> ComputeShaderGPUObject {
         if gpu_object_valid(&shader.name) {
             get_compute_shader_object(&shader.name)
         } else {
-            let name = shader.name.clone();
-            let mut result = None;
-            task(RenderTask::ShaderCreate(SharedData::new(shader)), &format!("crt_cmptshdr_{}", name), |x| {
-                match x {
-                    GPUObject::ComputeShader(compute_gpuobject) => result = Some(compute_gpuobject),
-                    _ => panic!()                    
-                }
-            });
-            while result.is_none() { crate::fetch_threadlocal_callbacks(); }
-            result.unwrap()
+            let name = format!("crt_cmptshdr_{}", shader.name.clone());
+            task(RenderTask::ShaderCreate(SharedData::new(shader)), &name, |_| {});
+            if let GPUObject::ComputeShader(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
         }
     }
     pub fn texture(texture: Texture) -> TextureGPUObject {
         if gpu_object_valid(&texture.name) {
             get_texture_object(&texture.name)
         } else {
-            let name = texture.name.clone();
-            let mut result = None;
-            task(RenderTask::TextureCreate(SharedData::new(texture)), &format!("crt_txtre_{}", name), |x|
-                match x {
-                    GPUObject::Texture(texture_gpuobject) => result = Some(texture_gpuobject),
-                    _ => panic!()                    
-                }
-            );
-            while result.is_none() { crate::fetch_threadlocal_callbacks(); }
-            result.unwrap()
+            let name = format!("crt_txtre_{}", texture.name.clone());
+            task(RenderTask::TextureCreate(SharedData::new(texture)), &name, |_| {});
+            if let GPUObject::Texture(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
         }
     }
     pub fn model(model: Model) -> ModelGPUObject {
         // (TODO: Implement model caching)
-        let name = model.name.clone();
-        let mut result = None;
-        task(RenderTask::ModelCreate(SharedData::new(model)), &format!("crt_mdl{}", name), |x|
-            match x {                
-                GPUObject::Model(model_gpuobject) => result = Some(model_gpuobject),
-                _ => panic!()
-            }
-        );
-        if result.is_none() { crate::fetch_threadlocal_callbacks(); }
-        result.unwrap()
+        let name = format!("crt_mdl{}", model.name.clone());
+        task(RenderTask::ModelCreate(SharedData::new(model)), &name, |_| {});
+        if let GPUObject::Model(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
     }
 
     // Load or create functions, cached type
@@ -216,16 +186,13 @@ pub mod pipec {
         }
     }
     // Read the data from an array that was filled using a texture
-    pub fn convert_native<T>(taskreturn: RenderTaskReturn) -> Vec<T>
+    pub fn convert_native<T>(gpuobject: GPUObject) -> Vec<T>
     where
         T: Default + Clone + Sized,
     {
         // Convert the bytes into a vector of vectors
-        let (bytes, _) = match taskreturn {
-            RenderTaskReturn::GPUObject(x, _) => match x {
-                GPUObject::TextureFill(x) => (x.0, x.1),
-                _ => panic!(),
-            },
+        let (bytes, _) = match gpuobject {
+            GPUObject::TextureFill(x) => (x.0, x.1),
             _ => panic!(),
         };
         // Unsafe
@@ -233,17 +200,14 @@ pub mod pipec {
         let pixels: Vec<T> = t.collect();
         pixels
     }
-    pub fn convert_native_veclib<T, U>(taskreturn: RenderTaskReturn) -> Vec<T>
+    pub fn convert_native_veclib<T, U>(gpuobject: GPUObject) -> Vec<T>
     where
         T: veclib::Vector<U> + Default + Clone,
         U: veclib::DefaultStates,
     {
         // Convert the bytes into a vector of vectors
-        let (bytes, _) = match taskreturn {
-            RenderTaskReturn::GPUObject(x, _) => match x {
-                GPUObject::TextureFill(x) => (x.0, x.1),
-                _ => panic!(),
-            },
+        let (bytes, _) = match gpuobject {
+            GPUObject::TextureFill(x) => (x.0, x.1),
             _ => panic!(),
         };
         // Unsafe
