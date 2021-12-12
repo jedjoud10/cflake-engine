@@ -7,7 +7,7 @@ use std::{
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
-    sync::mpsc::{Receiver, Sender},
+    sync::{mpsc::{Receiver, Sender}, Arc, Mutex, atomic::AtomicPtr}, borrow::BorrowMut,
 };
 
 // Commands that can be ran internally
@@ -208,15 +208,17 @@ impl Pipeline {
         let (tx3, rx3): (Sender<SpecialPipelineMessage>, Receiver<SpecialPipelineMessage>) = std::sync::mpsc::channel(); // Render to main, but for special cases
         unsafe {
             // Window and GLFW wrapper
-            struct RenderWrapper(*mut glfw::Glfw, *mut glfw::Window);
+            struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
+            // Create the render wrapper
+            let glfw = glfw as *mut glfw::Glfw;
+            let window = window as *mut glfw::Window;
+            let render_wrapper = RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window));
             unsafe impl Send for RenderWrapper {}
             unsafe impl Sync for RenderWrapper {}
-            // Create the render wrapper
-            let render_wrapper = RenderWrapper(glfw as *mut glfw::Glfw, window as *mut glfw::Window);
             std::thread::spawn(move || {
                 // Start OpenGL
-                let glfw = &mut *render_wrapper.0;
-                let window = &mut *render_wrapper.1;
+                let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
+                let window = &mut *render_wrapper.1.load(std::sync::atomic::Ordering::Relaxed);
                 // Initialize OpenGL
                 println!("Initializing OpenGL...");
                 window.make_current();
@@ -276,8 +278,8 @@ impl Pipeline {
                     last_time = new_time;
                     // Run the frame
                     frame(
-                        glfw,
-                        window,
+                        glfw.borrow_mut(),
+                        window.borrow_mut(),
                         &render_to_main,
                         &render_to_main_async,
                         &main_to_render,
