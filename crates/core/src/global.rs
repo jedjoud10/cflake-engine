@@ -13,16 +13,16 @@ pub mod ecs {
         w.ecs_manager.entitym.entities.get_element(entity_id).unwrap().cloned()
     }
     // Add an entity without any linking groups
-    pub fn entity_add_empty(entity: ecs::Entity) -> WaitableTask {
+    pub fn entity_add_empty(entity: ecs::Entity) {
         let empty_linkings = ecs::ComponentLinkingGroup::empty();
         entity_add(entity, empty_linkings)
     }
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
-    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) -> WaitableTask {
+    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) {
         command(CommandQuery::new(Task::EntityAdd(entity, linkings)))
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
-    pub fn entity_remove(entity: &ecs::Entity) -> WaitableTask {
+    pub fn entity_remove(entity: &ecs::Entity) {
         command(CommandQuery::new(Task::EntityRemove(entity.entity_id)))
     }
     /* #endregion */
@@ -138,7 +138,7 @@ pub mod ui {
 
     // Add a root the world
     pub fn add_root(name: &str, root: ui::Root) {
-        command(CommandQuery::new(Task::AddRoot(name.to_string(), root))).wait();
+        command(CommandQuery::new(Task::AddRoot(name.to_string(), root)));
     }
 }
 // IO stuff

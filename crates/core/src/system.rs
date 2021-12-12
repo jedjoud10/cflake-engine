@@ -1,5 +1,4 @@
 use crate::communication::WorldTaskSender;
-use crate::tasks::WaitableTask;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::thread::JoinHandle;
@@ -15,11 +14,6 @@ lazy_static! {
     pub static ref WTCOMMAND_SENDER: Mutex<WorkerThreadCommandSender> = Mutex::new(WorkerThreadCommandSender::default());
 }
 
-// Some data for a system group thread
-#[derive(Default)]
-pub struct WorkerThreadCommonData {
-    pub buffer: HashMap<u64, WaitableTask>, // The receiving buffer    
-}
 
 // WorkerThreadCommand sender
 #[derive(Default)]
@@ -34,7 +28,6 @@ pub struct WorkerThreadsReceiver {
 
 // The system group thread data is local to each system thread
 thread_local! {
-    pub static WORKER_THREAD_COMMON_DATA: RefCell<WorkerThreadCommonData> = RefCell::new(WorkerThreadCommonData::default());
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
     // The receiving end of the system commands
     pub static WORKER_THREADS_RECEIVER: RefCell<WorkerThreadsReceiver> = RefCell::new(WorkerThreadsReceiver::default());
@@ -56,7 +49,6 @@ where
             let mut running = true;
             let sender_ = x.borrow();
             let sender = sender_.as_ref().unwrap();
-            let rx = &sender.rx;
             let wtc_rx = &sender.wtc_rx;
 
             // Start the system loop
