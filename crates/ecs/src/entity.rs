@@ -10,10 +10,18 @@ pub struct EntityManager {
     pub entities: SmartList<Entity>,
 }
 
-impl EntityManager {}
+impl EntityManager {
+    // Add an entity to the manager
+    pub fn add_entity(&mut self, mut entity: Entity) -> usize {
+        // Set the entity ID
+        let next_id = self.entities.get_next_valid_id();
+        entity.entity_id = next_id;
+        self.entities.add_element(entity)
+    }
+}
 
 // A simple entity in the world
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Entity {
     pub name: String,
     pub entity_id: usize,

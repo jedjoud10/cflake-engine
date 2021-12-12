@@ -13,18 +13,18 @@ use ui::UIManager;
 // Global main for purely just low level task management
 use lazy_static::lazy_static;
 lazy_static! {
-    static ref WORLD: Arc<RwLock<World>> = Arc::new(RwLock::new(new("NullDev", "NullGame")));
+    static ref WORLD: RwLock<World> = RwLock::new(new_internal());
 }
 
 // Get a reference to the world
 pub fn world() -> RwLockReadGuard<'static, World> {
-    let x = WORLD.as_ref().read().unwrap();
+    let x = WORLD.read().unwrap();
     x
 }
 
 // Get a mutable reference to the world
 pub fn world_mut() -> RwLockWriteGuard<'static, World> {
-    let x = WORLD.as_ref().write().unwrap();
+    let x = WORLD.write().unwrap();
     x
 }
 
@@ -43,8 +43,8 @@ pub struct World {
     pub config_file: GameConfig,    
 }
 
-// Get a new copy of a brand new world
-pub fn new(author_name: &str, app_name: &str) -> World {
+// Get a new copy of a brand new world (Though don't initialize the SaverLoader yet)
+pub fn new_internal() -> World {
     World {
         ecs_manager: ECSManager::default(),
         input_manager: InputManager::default(),
@@ -54,10 +54,16 @@ pub fn new(author_name: &str, app_name: &str) -> World {
         instance_manager: InstanceManager::default(),
         custom_data: CustomWorldData::default(),
         time_manager: Time::default(),
-        saver_loader: SaverLoader::new(author_name, app_name),
+        saver_loader: SaverLoader::default(),
         config_file: GameConfig::default(),
     }
 }
+// Just update the saver loader basically
+pub fn new(author_name: &str, app_name: &str) {
+    let mut w = world_mut();
+    w.saver_loader = SaverLoader::new(author_name, app_name);
+}
+// Just create a new saver loader 
 // When the world started initializing
 pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Start the multithreaded shit

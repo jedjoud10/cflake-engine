@@ -1,5 +1,5 @@
 // The load state of a specific entity
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum LoadState {
     Loaded,
     Unloaded,

@@ -25,8 +25,8 @@ impl Default for ComponentManager {
 // Implement all the functions
 impl ComponentManager {
     // Add a specific linked componment to the component manager, returns the global IDs of the components
-    pub fn add_component<T: Component + ComponentID + 'static>(&mut self, component: T) -> Result<usize, ECSError> {
-        let global_id = self.components.add_element(Box::new(component));
+    pub fn add_component(&mut self, component: Box<dyn ComponentInternal + Send + Sync + 'static>) -> Result<usize, ECSError> {
+        let global_id = self.components.add_element(component);
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component

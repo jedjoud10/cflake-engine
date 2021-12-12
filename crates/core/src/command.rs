@@ -39,6 +39,9 @@ pub fn initialize_channels_main() {
         tx: tx_command,
         wtc_rx: wtc_rx,
     });
+    // This is indeed the main thread
+    IS_MAIN_THREAD.with(|x| x.set(true));
+    println!("Initialized the channels on the MainThread");
 }
 // Initialize the channels on a worker thread (This must be called on the worker thread)
 pub fn initialize_channels_worker_thread() {
@@ -79,15 +82,28 @@ pub fn frame_main_thread() {
 }
 // Send a command query to the world, giving back a command return that can be waited for
 pub fn command(query: CommandQuery) -> WaitableTask {
-    // Send the command query
-    SENDER.with(|sender| {
-        let sender_ = sender.borrow();
-        let sender = sender_.as_ref().unwrap();
-        let tx = &sender.tx;
-        let id = COUNTER.fetch_add(0, Ordering::Relaxed);
-        let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
-        // Early main thread exit lol
-        if !is_main_thread {
+    println!("{:?}", query.task);
+    println!("Calling thread {:?}", query.thread_id);
+    let id = COUNTER.fetch_add(0, Ordering::Relaxed);
+    // Check if we are running on the main thread
+    let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
+    if is_main_thread {
+        // This is the main thread calling, we don't give a  f u c k
+        WaitableTask {
+            id,
+            thread_id: std::thread::current().id(),
+            val: {
+                let mut world = crate::world::world_mut();
+                let output = excecute_task(query.task, &mut world);
+                Some(output)
+            },
+        }
+    } else {
+        // Send the command query
+        SENDER.with(|sender| {
+            let sender_ = sender.borrow();
+            let sender = sender_.as_ref().unwrap();
+            let tx = &sender.tx;
             tx.send((id, query)).unwrap();
             // Increment the counter
             // Get the corresponding return command value
@@ -95,18 +111,7 @@ pub fn command(query: CommandQuery) -> WaitableTask {
                 id,
                 thread_id: std::thread::current().id(),
                 val: None,
-            }
-        } else {
-            // This is the main thread calling, we don't give a  f u c k
-            WaitableTask {
-                id,
-                thread_id: std::thread::current().id(),
-                val: {
-                    let mut world = crate::world::world_mut();
-                    let output = excecute_task(query.task, &mut world);
-                    Some(output)
-                },
-            }
-        }
-    })    
+            }         
+        }) 
+    }  
 }

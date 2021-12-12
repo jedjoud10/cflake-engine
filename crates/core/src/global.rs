@@ -148,10 +148,11 @@ pub mod io {
 
     // Create the default config file
     pub fn create_config_file() -> crate::GameConfig {
-        command(CommandQuery::new(Task::CreateConfigFile())).wait();
-        let w = crate::world::world();
-        let saver_loader = &w.saver_loader;
-        saver_loader.load::<crate::GameConfig>("config\\game_config.json")
+        let mut w = crate::world::world_mut();
+        let saver_loader = &mut w.saver_loader;
+        saver_loader.create_default("config\\game_config.json", &crate::GameConfig::default());
+        // Then load
+        return saver_loader.load("config\\game_config.json");
     }
     // Load a copy of the config file
     pub fn load_config_file() -> crate::GameConfig {

@@ -1,10 +1,16 @@
 use crate::{Component, ComponentID, ComponentInternal, ECSError, Entity};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 pub struct ComponentLinkingGroup {
     pub linked_components: HashMap<usize, Box<dyn ComponentInternal + Sync + Send>>,
     pub c_bitfield: usize,
+}
+
+impl Debug for ComponentLinkingGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComponentLinkingGroup").field("c_bitfield", &self.c_bitfield).finish()
+    }
 }
 
 // Linking methods

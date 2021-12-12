@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use crate::communication::*;
 use crate::system::{IS_MAIN_THREAD, WORKER_THREAD_COMMON_DATA, WORKER_THREADS_RECEIVER};
 
 // Some world tasks
+#[derive(Debug)]
 pub enum Task {
     // Entity
     EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup),
@@ -12,14 +15,13 @@ pub enum Task {
     // UI
     AddRoot(String, ui::Root),
     SetRootVisibility(bool),
-    // Main
-    CreateConfigFile(),
 }
 // And their corresponding output
 pub enum TaskReturn {
     // Entity
     CreateEntity(usize),
     DestroyEntity(Option<()>),
+    None,
 }
 // The return type for a world task, we can wait for the return or just not care lol
 pub struct WaitableTask {
@@ -90,14 +92,27 @@ impl WaitableTask {
 }
 
 // Excecute a specific task and give back it's result
-pub fn excecute_task(t: Task, _world: &mut crate::world::World) -> TaskReturn {
+pub fn excecute_task(t: Task, world: &mut crate::world::World) -> TaskReturn {
     match t {
-        Task::EntityAdd(_, _) => todo!(),
-        Task::EntityRemove(_) => todo!(),
-        Task::ComponentLinkDirect(_, _) => todo!(),
-        Task::ComponentUnlinkDirect(_, _) => todo!(),
-        Task::AddRoot(_, _) => todo!(),
-        Task::SetRootVisibility(_) => todo!(),
-        Task::CreateConfigFile() => todo!(),
+        Task::EntityAdd(mut entity, linkings) => {
+            // Add the components first
+            let mut hashmap: HashMap<usize, usize> = HashMap::new();
+            for (id, boxed_component) in linkings.linked_components {
+                let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
+                hashmap.insert(id, new_global_id);
+            }
+            // Then add the entity
+            entity.linked_components = hashmap;
+            world.ecs_manager.entitym.add_entity(entity);
+            TaskReturn::None
+        },
+        Task::EntityRemove(_) => { 
+            // Remove the entity from the world and dispose of it's components
+            TaskReturn::None
+        },
+        Task::ComponentLinkDirect(_, _) => { TaskReturn::None },
+        Task::ComponentUnlinkDirect(_, _) => { TaskReturn::None },
+        Task::AddRoot(_, _) => { TaskReturn::None },
+        Task::SetRootVisibility(_) => { TaskReturn::None },
     }
 }
