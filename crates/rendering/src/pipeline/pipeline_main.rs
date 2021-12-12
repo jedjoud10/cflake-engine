@@ -1,28 +1,13 @@
 use std::{
     collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
+    hash::{Hash, Hasher}, sync::RwLock,
 };
-
 use crate::Pipeline;
+use lazy_static::lazy_static;
 
-pub struct StaticMut<T> {
-    opt: Option<T>,
+lazy_static! {
+    pub static ref RENDER_PIPELINE: RwLock<Pipeline> = RwLock::new(Pipeline::default());
 }
-
-impl<T> StaticMut<T> {
-    // Set
-    pub fn set(&mut self, new: T) {
-        self.opt = Some(new);
-    }
-    // Get mut
-    pub fn as_mut(&mut self) -> &mut T {
-        self.opt.as_mut().unwrap()
-    }
-    pub const EMPTY: Self = Self { opt: None };
-}
-
-// Static mut RenderPipeline
-pub static mut RENDER_PIPELINE: StaticMut<Pipeline> = StaticMut::EMPTY;
 
 pub fn rname(prefix: &str) -> String {
     // Create a randomized name for a texture without a name
@@ -35,7 +20,6 @@ pub fn rname(prefix: &str) -> String {
 
 pub mod pipec {
     use std::ffi::c_void;
-
     use assets::CachedObject;
 
     use crate::pipeline::object::*;
