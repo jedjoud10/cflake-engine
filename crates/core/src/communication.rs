@@ -26,12 +26,12 @@ pub struct CommunicationChannelsCopied {
 
 // Some struct that sends tasks to the main thread. This is present on all the worker threads, since there is a 1 : n connection between the main thread and worker threads
 pub struct WorldTaskSender {
-    pub tx: Sender<(u64, CommandQuery)>, // CommandQuery. WorkerThreads -> MainThread
-    pub wtc_rx: crossbeam_channel::Receiver<WorkerThreadCommand>,  // WorkerThreadCommand. MainThread -> WorkerThreads
+    pub tx: Sender<(u64, CommandQuery)>,                          // CommandQuery. WorkerThreads -> MainThread
+    pub wtc_rx: crossbeam_channel::Receiver<WorkerThreadCommand>, // WorkerThreadCommand. MainThread -> WorkerThreads
 }
 // Main thread
 pub struct WorldTaskReceiver {
-    pub rx: Receiver<(u64, CommandQuery)>,                                            // CommandQuery. WorkerThreads -> MainThread
+    pub rx: Receiver<(u64, CommandQuery)>,                                                       // CommandQuery. WorkerThreads -> MainThread
     pub wtc_txs: HashMap<std::thread::ThreadId, crossbeam_channel::Sender<WorkerThreadCommand>>, // WaitableTask. MainThread -> WorkerThreads
     // Some template values that will be copied
     pub template_wtc_tx: crossbeam_channel::Sender<WorkerThreadCommand>,

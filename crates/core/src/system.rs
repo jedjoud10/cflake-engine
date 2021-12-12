@@ -5,15 +5,12 @@ use std::thread::JoinHandle;
 use std::{collections::HashMap, sync::Mutex};
 
 // Some special worker thread commands
-pub enum WorkerThreadCommand {
-
-}
+pub enum WorkerThreadCommand {}
 
 lazy_static! {
     // The sender end of the worker thread commands
     pub static ref WTCOMMAND_SENDER: Mutex<WorkerThreadCommandSender> = Mutex::new(WorkerThreadCommandSender::default());
 }
-
 
 // WorkerThreadCommand sender
 #[derive(Default)]
@@ -22,9 +19,7 @@ pub struct WorkerThreadCommandSender {
 }
 // System command receiver
 #[derive(Default)]
-pub struct WorkerThreadsReceiver {
-    
-}
+pub struct WorkerThreadsReceiver {}
 
 // The system group thread data is local to each system thread
 thread_local! {
@@ -58,6 +53,5 @@ where
                 // Check if the system is still running
             }
         });
-        
     })
 }

@@ -40,7 +40,7 @@ pub struct World {
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
     pub saver_loader: SaverLoader,
-    pub config_file: GameConfig,    
+    pub config_file: GameConfig,
 }
 
 // Get a new copy of a brand new world (Though don't initialize the SaverLoader yet)
@@ -63,7 +63,7 @@ pub fn new(author_name: &str, app_name: &str) {
     let mut w = world_mut();
     w.saver_loader = SaverLoader::new(author_name, app_name);
 }
-// Just create a new saver loader 
+// Just create a new saver loader
 // When the world started initializing
 pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Start the multithreaded shit

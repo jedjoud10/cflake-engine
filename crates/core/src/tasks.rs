@@ -30,13 +30,13 @@ pub fn excecute_task(t: Task, world: &mut crate::world::World) {
             // Then add the entity
             entity.linked_components = hashmap;
             world.ecs_manager.entitym.add_entity(entity);
-        },
-        Task::EntityRemove(_) => { 
+        }
+        Task::EntityRemove(_) => {
             // Remove the entity from the world and dispose of it's components
-        },
-        Task::ComponentLinkDirect(_, _) => { },
-        Task::ComponentUnlinkDirect(_, _) => { },
-        Task::AddRoot(_, _) => { },
-        Task::SetRootVisibility(_) => { },
+        }
+        Task::ComponentLinkDirect(_, _) => {}
+        Task::ComponentUnlinkDirect(_, _) => {}
+        Task::AddRoot(_, _) => {}
+        Task::SetRootVisibility(_) => {}
     }
 }
