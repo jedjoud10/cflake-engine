@@ -62,7 +62,6 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         }
     }
     // When the window closes and we exit from the game
-    rendering::pipec::dispose_pipeline();
     core::world::kill_world();
 }
 

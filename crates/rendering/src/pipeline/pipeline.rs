@@ -1,7 +1,7 @@
 use glfw::Context;
-
 use super::object::*;
-use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderCommandType, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage};
+use lazy_static::lazy_static;
+use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, SharedData};
 use std::{
     borrow::BorrowMut,
     collections::HashMap,
@@ -11,46 +11,151 @@ use std::{
     sync::{
         atomic::AtomicPtr,
         mpsc::{Receiver, Sender},
-        Arc, Mutex,
+        Arc, Mutex, RwLock,
     },
 };
 
+lazy_static! {
+    // The pipeline that is stored on the render thread
+    pub static ref PIPELINE: Arc<Mutex<Option<Pipeline>>> = Arc::new(Mutex::new(None));
+}
+
+// Create the new render thread
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    println!("Initializing RenderPipeline...");
+    // Create the two channels
+    let (tx, rx): (Sender<RenderCommand>, Receiver<RenderCommand>) = std::sync::mpsc::channel(); // Main to render
+    unsafe {
+        // Window and GLFW wrapper
+        struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
+        // Create the render wrapper
+        let glfw = glfw as *mut glfw::Glfw;
+        let window = window as *mut glfw::Window;
+        let render_wrapper = RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window));
+        unsafe impl Send for RenderWrapper {}
+        unsafe impl Sync for RenderWrapper {}
+        std::thread::spawn(move || {
+            // Start OpenGL
+            let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
+            let window = &mut *render_wrapper.1.load(std::sync::atomic::Ordering::Relaxed);
+            // Initialize OpenGL
+            println!("Initializing OpenGL...");
+            window.make_current();
+            glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
+            gl::load_with(|s| window.get_proc_address(s) as *const _);
+
+            // Set the type of events that we want to listen to
+            window.set_key_polling(true);
+            window.set_cursor_pos_polling(true);
+            window.set_scroll_polling(true);
+            window.set_size_polling(true);
+            glfw.set_swap_interval(glfw::SwapInterval::None);
+            window.make_current();
+            if gl::Viewport::is_loaded() {
+                gl::Viewport(0, 0, 1280, 720);
+                gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+                gl::Enable(gl::DEPTH_TEST);
+                gl::Enable(gl::CULL_FACE);
+                gl::CullFace(gl::BACK);
+                println!("Successfully initialized OpenGL!");
+            } else {
+                /* NON */
+                panic!()
+            }
+            // The render command receiver
+            let threads_to_render = rx;
+
+            // Set the pipeline
+            let pipeline = Pipeline {
+                gpu_objects: HashMap::new(),
+            };
+            let mut p = PIPELINE.as_ref().lock().unwrap();
+            *p = Some(pipeline);
+            // Initialize the deferred renderer
+            let mut pipeline_renderer = PipelineRenderer::default();
+            pipeline_renderer.init();
+
+            // El camera
+            let mut camera = CameraDataGPUObject {
+                position: veclib::Vector3::ZERO,
+                rotation: veclib::Quaternion::IDENTITY,
+                clip_planes: veclib::Vector2::ZERO,
+                viewm: veclib::Matrix4x4::IDENTITY,
+                projm: veclib::Matrix4x4::IDENTITY,
+            };
+
+            // We must render every frame
+            // Timing stuff
+            let mut last_time: f64 = 0.0;
+            let mut frame_count: u128 = 0;
+            // If the render pipeline and thread are valid
+            let mut valid = true;
+            println!("Successfully created the RenderThread!");
+
+            while valid {
+                // Update the delta_time
+                let new_time = glfw.get_time();
+                let delta = new_time - last_time;
+                last_time = new_time;
+                // Run the frame
+                frame(
+                    glfw.borrow_mut(),
+                    window.borrow_mut(),
+                    &threads_to_render,
+                    &mut pipeline_renderer,
+                    &mut camera,
+                    &mut valid,
+                    frame_count,
+                    delta,
+                );
+                frame_count += 1;
+            }
+            println!("Stopping the render thread!");
+        });
+    };
+    // Wait for the init message...
+    let i = std::time::Instant::now();
+    println!("Waiting for RenderThread init confirmation...");
+    println!("Received RenderThread init confirmation! Took {}ms to init RenderThread", i.elapsed().as_millis());
+    println!("Successfully initialized the RenderPipeline!");    
+}
+
 // Commands that can be ran internally
-fn internal_task(task: RenderTask) -> RenderTaskReturn {
+fn internal_task(task: RenderTask) -> GPUObject {
     // Handle the internal case
     match task {
         // Shaders
-        RenderTask::SubShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_subshader(shared_shader)),
-        RenderTask::ShaderCreate(shared_shader) => RenderTaskReturn::GPUObject(Pipeline::create_compile_shader(shared_shader)),
+        RenderTask::SubShaderCreate(shared_shader) => Pipeline::create_compile_subshader(shared_shader),
+        RenderTask::ShaderCreate(shared_shader) => Pipeline::create_compile_shader(shared_shader),
         RenderTask::ShaderUniformGroup(_shared_uniformgroup) => todo!(),
         // Textures
-        RenderTask::TextureCreate(shared_texture) => RenderTaskReturn::GPUObject(Pipeline::generate_texture(shared_texture)),
+        RenderTask::TextureCreate(shared_texture) => Pipeline::generate_texture(shared_texture),
         RenderTask::TextureUpdateSize(texture, ttype) => {
             Pipeline::update_texture_size(texture, ttype);
-            RenderTaskReturn::None
+            GPUObject::None
         }
         RenderTask::TextureUpdateData(texture, bytes) => {
             Pipeline::update_texture_data(texture, bytes);
-            RenderTaskReturn::None
+            GPUObject::None
         }
-        RenderTask::TextureFillArray(texture, bytecount) => RenderTaskReturn::GPUObject(Pipeline::texture_fill_array(texture, bytecount)),
+        RenderTask::TextureFillArray(texture, bytecount) => Pipeline::texture_fill_array(texture, bytecount),
         // Model
-        RenderTask::ModelCreate(shared_model) => RenderTaskReturn::GPUObject(Pipeline::create_model(shared_model)),
+        RenderTask::ModelCreate(shared_model) => Pipeline::create_model(shared_model),
         RenderTask::ModelDispose(gpumodel) => {
             Pipeline::dispose_model(gpumodel);
-            RenderTaskReturn::None
+            GPUObject::None
         }
         // Compute
         RenderTask::ComputeRun(compute, axii, uniforms_group) => {
             Pipeline::run_compute(compute, axii, uniforms_group);
-            RenderTaskReturn::None
+            GPUObject::None
         }
         RenderTask::ComputeLock(compute) => {
             Pipeline::lock_compute(compute);
-            RenderTaskReturn::None
+            GPUObject::None
         }
         // Others
-        _ => RenderTaskReturn::None,
+        _ => GPUObject::None,
     }
 }
 
@@ -59,7 +164,6 @@ fn command(
     name: String,
     pr: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
-    channel: &Sender<RenderTaskStatus>,
     command: RenderCommand,
     window: &mut glfw::Window,
     glfw: &mut glfw::Glfw,
@@ -109,14 +213,11 @@ fn command(
                 viewm,
                 projm,
             };
-            channel.send(RenderTaskStatus::Successful(RenderTaskReturn::None, name)).unwrap();
             RenderTaskReturn::None
         }
         // Renderer commands
         RenderTask::RendererAdd(shared_renderer) => {
-            let gpuobject = RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer));
-            channel.send(RenderTaskStatus::Successful(gpuobject, name)).unwrap();
-            RenderTaskReturn::None
+            RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer), name)
         }
         RenderTask::RendererRemove(renderer_id) => {
             Pipeline::remove_renderer(pr, renderer_id);
@@ -124,7 +225,7 @@ fn command(
         }
         RenderTask::RendererUpdateTransform(_renderer, _transform) => todo!(),
         // Internal cases
-        x => internal_task(x),
+        x => RenderTaskReturn::GPUObject(internal_task(x), name),
     }
 }
 
@@ -132,22 +233,15 @@ fn command(
 fn poll_commands(
     pr: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
-    main_to_render: &Receiver<RenderCommand>,
+    rx: &Receiver<RenderCommand>,
     valid: &mut bool,
-    render_to_main: &Sender<RenderTaskStatus>,
-    render_to_main_async: &Sender<RenderTaskStatus>,
     window: &mut glfw::Window,
     glfw: &mut glfw::Glfw,
 ) {
     // We must loop through every command that we receive from the main thread
-    for cmd in main_to_render.try_iter() {
+    for cmd in rx.try_iter() {
         // Check special commands first
         let name = cmd.name.clone();
-        // Get the channel that we must send the output to
-        let channel = match cmd._type {
-            crate::RenderCommandType::Async => render_to_main_async,
-            crate::RenderCommandType::Immediate => render_to_main,
-        };
         match cmd.input_task {
             // Pipeline shit
             RenderTask::DestroyRenderThread() => {
@@ -157,11 +251,22 @@ fn poll_commands(
             }
             _ => {
                 // Valid command
-                match command(name.clone(), pr, camera, channel, cmd, window, glfw) {
-                    RenderTaskReturn::None => { /* Fat bruh */ }
-                    x => {
-                        // Valid
-                        channel.send(RenderTaskStatus::Successful(x, name)).unwrap();
+                match command(name.clone(), pr, camera, cmd, window, glfw) {
+                    RenderTaskReturn::None => { /* Not valid */ }
+                    taskreturn => {
+                        match taskreturn {
+                            RenderTaskReturn::None => { /* Not valid */ } ,
+                            RenderTaskReturn::GPUObject(object, name) => /* We *might* have a GPU object */ {
+                                match object {
+                                    GPUObject::None => {
+                                        /* Not valid */
+                                    },
+                                    _ => {
+                                        // We have a valid GPU object
+                                    }
+                                }
+                            },
+                        }
                     }
                 }
             }
@@ -173,9 +278,7 @@ fn poll_commands(
 fn frame(
     _glfw: &mut glfw::Glfw,
     window: &mut glfw::Window,
-    render_to_main: &Sender<RenderTaskStatus>,
-    render_to_main_async: &Sender<RenderTaskStatus>,
-    main_to_render: &Receiver<RenderCommand>,
+    rx: &Receiver<RenderCommand>,
     pipeline_renderer: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
     valid: &mut bool,
@@ -183,7 +286,7 @@ fn frame(
     _delta_time: f64,
 ) {
     // Poll first
-    poll_commands(pipeline_renderer, camera, main_to_render, valid, render_to_main, render_to_main_async, window, _glfw);
+    poll_commands(pipeline_renderer, camera, rx, valid, window, _glfw);
     // Pre-render
     pipeline_renderer.pre_render();
     // Render
@@ -193,237 +296,10 @@ fn frame(
 }
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
-#[derive(Default)]
 pub struct Pipeline {
-    pub next_command_name_id: u128,                                                // Next Command ID
-    pub render_commands_buffer: HashMap<String, Box<dyn FnMut(RenderTaskStatus)>>, // The tasks that are asynchronous and are pending their return values
     pub gpu_objects: HashMap<String, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
-    pub render_to_main: Option<Receiver<RenderTaskStatus>>,                        // RX (MainThread)
-    pub render_to_main_async: Option<Receiver<RenderTaskStatus>>,                  // RX (MainThread) asnyc
-    pub main_to_render: Option<Sender<RenderCommand>>,                             // TX (MainThread)
 }
-impl Pipeline {
-    // Create the new render thread
-    pub fn init_pipeline(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-        println!("Initializing RenderPipeline...");
-        // Create the two channels
-        let (tx, rx): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main
-        let (tx_async, rx_async): (Sender<RenderTaskStatus>, Receiver<RenderTaskStatus>) = std::sync::mpsc::channel(); // Render to main async
-        let (tx2, rx2): (Sender<RenderCommand>, Receiver<RenderCommand>) = std::sync::mpsc::channel(); // Main to render
-        let (tx3, rx3): (Sender<SpecialPipelineMessage>, Receiver<SpecialPipelineMessage>) = std::sync::mpsc::channel(); // Render to main, but for special cases
-        unsafe {
-            // Window and GLFW wrapper
-            struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
-            // Create the render wrapper
-            let glfw = glfw as *mut glfw::Glfw;
-            let window = window as *mut glfw::Window;
-            let render_wrapper = RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window));
-            unsafe impl Send for RenderWrapper {}
-            unsafe impl Sync for RenderWrapper {}
-            std::thread::spawn(move || {
-                // Start OpenGL
-                let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
-                let window = &mut *render_wrapper.1.load(std::sync::atomic::Ordering::Relaxed);
-                // Initialize OpenGL
-                println!("Initializing OpenGL...");
-                window.make_current();
-                glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
-                gl::load_with(|s| window.get_proc_address(s) as *const _);
-
-                // Set the type of events that we want to listen to
-                window.set_key_polling(true);
-                window.set_cursor_pos_polling(true);
-                window.set_scroll_polling(true);
-                window.set_size_polling(true);
-                glfw.set_swap_interval(glfw::SwapInterval::None);
-                window.make_current();
-                if gl::Viewport::is_loaded() {
-                    gl::Viewport(0, 0, 1280, 720);
-                    gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-                    gl::Enable(gl::DEPTH_TEST);
-                    gl::Enable(gl::CULL_FACE);
-                    gl::CullFace(gl::BACK);
-                    println!("Successfully initialized OpenGL!");
-                } else {
-                    /* NON */
-                    panic!()
-                }
-                // Renaming a bit
-                let render_to_main = tx;
-                let render_to_main_async = tx_async;
-                let main_to_render = rx2;
-
-                // Initialize the deferred renderer
-                let mut pipeline_renderer = PipelineRenderer::default();
-                pipeline_renderer.init();
-
-                // El camera
-                let mut camera = CameraDataGPUObject {
-                    position: veclib::Vector3::ZERO,
-                    rotation: veclib::Quaternion::IDENTITY,
-                    clip_planes: veclib::Vector2::ZERO,
-                    viewm: veclib::Matrix4x4::IDENTITY,
-                    projm: veclib::Matrix4x4::IDENTITY,
-                };
-
-                // We must render every frame
-                // Timing stuff
-                let mut last_time: f64 = 0.0;
-                let mut frame_count: u128 = 0;
-                // If the render pipeline and thread are valid
-                let mut valid = true;
-                println!("Successfully created the RenderThread!");
-                // Send a message to the main thread indicating that the RenderThread successfully launched
-                tx3.send(SpecialPipelineMessage::RenderThreadInitialized).unwrap();
-
-                while valid {
-                    // Update the delta_time
-                    let new_time = glfw.get_time();
-                    let delta = new_time - last_time;
-                    last_time = new_time;
-                    // Run the frame
-                    frame(
-                        glfw.borrow_mut(),
-                        window.borrow_mut(),
-                        &render_to_main,
-                        &render_to_main_async,
-                        &main_to_render,
-                        &mut pipeline_renderer,
-                        &mut camera,
-                        &mut valid,
-                        frame_count,
-                        delta,
-                    );
-                    frame_count += 1;
-                }
-            });
-        };
-        // Wait for the init message...
-        let i = std::time::Instant::now();
-        println!("Waiting for RenderThread init confirmation...");
-        let _x = rx3.recv().unwrap();
-        println!("Received RenderThread init confirmation! Took {}ms to init RenderThread", i.elapsed().as_millis());
-        // Vars
-        self.render_to_main = Some(rx);
-        self.render_to_main_async = Some(rx_async);
-        self.main_to_render = Some(tx2);
-        println!("Successfully initialized the RenderPipeline!");
-    }
-    // Load some default rendering things
-    pub fn start_world(&mut self) {
-        // Default shader
-        let ds = pipec::shader(
-            Shader::default()
-                .load_shader(vec![
-                    "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",
-                    "defaults\\shaders\\rendering\\screen.frsh.glsl",
-                ])
-                .unwrap(),
-        );
-        // Default material
-        let _dm = Material::new("Default material").set_shader(ds);
-    }
-    // Frame on the main thread
-    pub fn frame_main_thread(&mut self) {
-        // Receive the return data that was sent from the render thread
-        let receiver = self.render_to_main_async.as_ref().unwrap();
-        for received in receiver.try_iter() {
-            let (task_return, name) = match received {
-                RenderTaskStatus::Successful(x, name) => (x, name),
-                RenderTaskStatus::Failed => panic!(),
-            };
-            // Call the callback if possible
-            if self.render_commands_buffer.contains_key(&name) {
-                let mut callback = self.render_commands_buffer.remove(&name).unwrap();
-                match &task_return {
-                    RenderTaskReturn::GPUObject(x) => {
-                        self.gpu_objects.insert(name.clone(), x.clone());
-                    }
-                    _ => {}
-                }
-                callback(RenderTaskStatus::Successful(task_return, name));
-            }
-        }
-    }
-    // Dispose of the current render thread and pipeline
-    pub fn dispose_pipeline(&mut self) {
-        self.task_immediate(RenderTask::DestroyRenderThread(), "dispose_pipeline".to_string());
-    }
-    // Complete a task immediatly
-    pub fn task_immediate(&mut self, task: RenderTask, mut name: String) -> Option<RenderTaskReturn> {
-        // If the name is null, we must use the next_command_name_id
-        if name.is_empty() {
-            name = format!("_{}", self.next_command_name_id);
-            self.next_command_name_id += 1;
-        }
-        let should_wait = task.returns_to_main();
-        // Create a new render command and send it to the separate thread
-        let render_command = RenderCommand {
-            _type: RenderCommandType::Immediate,
-            name: name.clone(),
-            input_task: task,
-        };
-        // Send the command to the render thread
-        let tx = self.main_to_render.as_ref().unwrap();
-        let rx = self.render_to_main.as_ref().unwrap();
-
-        // Send the command
-        tx.send(render_command).unwrap();
-        if !should_wait {
-            Some(RenderTaskReturn::None)
-        } else {
-            // Wait for the result (only if we need to)
-            match rx.recv().ok()? {
-                RenderTaskStatus::Successful(x, _) => Some(x),
-                RenderTaskStatus::Failed => None,
-            }
-        }
-    }
-    // Complete a task, but the result is not needed immediatly, and call the call back when the task finishes
-    pub fn task<F>(&mut self, task: RenderTask, mut name: String, callback: F)
-    where
-        F: FnMut(RenderTaskStatus) + 'static,
-    {
-        // If the name is null, we must use the next_command_name_id
-        if name.is_empty() {
-            name = format!("_{}", self.next_command_name_id);
-            self.next_command_name_id += 1;
-        }
-        let has_data_for_main_thread = task.returns_to_main(); // Must figure out a better name for this
-        let boxed_fn_mut: Box<dyn FnMut(RenderTaskStatus)> = Box::new(callback);
-        // Create a new render command and send it to the separate thread
-        let render_command = RenderCommand {
-            _type: RenderCommandType::Async,
-            name: name.clone(),
-            input_task: task,
-        };
-        // Send the command to the render thread
-        let tx = self.main_to_render.as_ref().unwrap();
-
-        // Send the command
-        tx.send(render_command).unwrap();
-        if has_data_for_main_thread {
-            // This time, we must add this to the wait list
-            self.render_commands_buffer.insert(name.clone(), boxed_fn_mut);
-        }
-    }
-    // Internal immediate task. This assumes that we are already on the RenderThread
-    pub fn internal_task_immediate(&mut self, task: RenderTask, mut name: String) -> Option<RenderTaskReturn> {
-        // If the name is null, we must use the next_command_name_id
-        if name.is_empty() {
-            name = format!("_{}", self.next_command_name_id);
-            self.next_command_name_id += 1;
-        }
-        // Create a new render command and send it to the separate thread
-        let render_command = RenderCommand {
-            _type: RenderCommandType::Immediate,
-            name: name.clone(),
-            input_task: task,
-        };
-        // Just get the command lol
-        let output = internal_task(render_command.input_task);
-        Some(output)
-    }
+impl Pipeline {    
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> Option<&GPUObject> {
         self.gpu_objects.get(name)

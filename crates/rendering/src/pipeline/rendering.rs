@@ -149,10 +149,10 @@ impl PipelineRenderer {
             triangles: vec![0, 1, 2, 0, 3, 1],
             ..Model::default()
         };
-        self.quad_model = pipec::imodel(quad);
-        self.screen_shader = pipec::ishader(
+        self.quad_model = pipec::model(quad);
+        self.screen_shader = pipec::shader(
             Shader::default()
-                .iload_shader(vec![
+                .load_shader(vec![
                     "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",
                     "defaults\\shaders\\rendering\\screen.frsh.glsl",
                 ])
@@ -160,9 +160,9 @@ impl PipelineRenderer {
         );
         // Create a default material
         self.default_material = Some(
-            Material::default().set_shader(pipec::ishader(
+            Material::default().set_shader(pipec::shader(
                 Shader::default()
-                    .iload_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
+                    .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
                     .unwrap(),
             )),
         );
@@ -181,13 +181,13 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(self.window.dimensions.x, self.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::itexture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
+            self.diffuse_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
             // Create the normals render texture
-            self.normals_texture = pipec::itexture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS));
+            self.normals_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS));
             // Create the position render texture
-            self.position_texture = pipec::itexture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
+            self.position_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
             // Create the depth render texture
-            self.depth_texture = pipec::itexture(
+            self.depth_texture = pipec::texture(
                 Texture::default()
                     .set_dimensions(dims)
                     .set_format(TextureFormat::DepthComponent32)
@@ -214,7 +214,7 @@ impl PipelineRenderer {
         /* #endregion */
         /* #region Actual pipeline renderer shit */
         // Load sky gradient texture
-        self.sky_texture = pipec::itexturec(
+        self.sky_texture = pipec::texturec(
             assets::cachec::acache_l(
                 "defaults\\textures\\sky_gradient.png",
                 Texture::default().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge),
@@ -223,9 +223,9 @@ impl PipelineRenderer {
         );
 
         // Load the wireframe shader
-        self.wireframe_shader = pipec::ishader(
+        self.wireframe_shader = pipec::shader(
             Shader::default()
-                .iload_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"])
+                .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"])
                 .unwrap(),
         );
         /* #endregion */

@@ -40,12 +40,14 @@ pub fn initialize_channels_main() {
 pub fn initialize_channels_worker_thread() {
     crate::system::SENDER.with(|x| {
         let mut sender_ = x.borrow_mut();
-        let sender = sender_.as_mut().unwrap();
+        let sender = &mut *sender_;
         let copy_ = COMMUNICATION_CHANNEL_COPY.lock().unwrap();
         let copy = copy_.as_ref().unwrap();
         // We do the cloning
-        sender.tx = copy.tx.clone();
-        sender.wtc_rx = copy.wtc_rx.clone();
+        *sender = Some(WorldTaskSender {
+            tx: copy.tx.clone(),
+            wtc_rx: copy.wtc_rx.clone(),
+        });
     })
 }
 // Frame tick on the main thread. Polls the current tasks and excecutes them. This is called at the end of each logic frame (16ms per frame)

@@ -20,30 +20,12 @@ where
 
 // The return type of the render task
 pub enum RenderTaskReturn {
-    None,
-    GPUObject(GPUObject),
-}
-
-// The type of the render command
-pub enum RenderCommandType {
-    Async,
-    Immediate,
-}
-
-// Special
-pub enum SpecialPipelineMessage {
-    RenderThreadInitialized,
-}
-
-// The task status that is sent back to the main thread
-pub enum RenderTaskStatus {
-    Successful(RenderTaskReturn, String), // GG EZ
-    Failed,                               // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
+    None, // Oopsie woopsie! I did a wittle fuckie wuckie >w<. Please excwuse my shitty code. Tehe!
+    GPUObject(GPUObject, String),
 }
 
 // A render command
 pub struct RenderCommand {
-    pub _type: RenderCommandType,
     pub name: String,
     pub input_task: RenderTask,
 }

@@ -1,6 +1,8 @@
 mod command;
 pub mod object;
 mod pipeline;
+mod global_interface;
+pub use global_interface::*;
 mod pipeline_main;
 pub mod rendering;
 pub use command::*;

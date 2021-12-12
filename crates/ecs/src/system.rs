@@ -8,7 +8,7 @@ pub struct SystemManager {
 
 // Contains some data about the actual system on the worker thread
 pub struct SystemThreadData {
-    join_handle: std::thread::JoinHandle<()>,
+    pub join_handle: std::thread::JoinHandle<()>,
 }
 
 impl SystemThreadData {

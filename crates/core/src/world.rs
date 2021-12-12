@@ -1,4 +1,4 @@
-use crate::{custom_world_data::CustomWorldData, GameConfig};
+use crate::{custom_world_data::CustomWorldData, GameConfig, system::WorkerThreadCommand};
 use ::rendering::*;
 
 use debug::*;
@@ -157,6 +157,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 }
 // This is the main Update loop, ran on the main thread
 pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
+    println!("MainWorld update");
     /*
     // Upate the console
     self.update_console();
@@ -236,6 +237,20 @@ fn update_console() {
 }
 // When we want to close the application
 pub fn kill_world() {
+    println!("Killing SystemWorkerThreads...");
+    let mut w = world_mut();
+    let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
+    // Tell the systems to stop
+    for data in &systems {
+        let receiver = crate::communication::RECEIVER.lock().unwrap();
+        let receiver = receiver.as_ref().unwrap();
+        let wtc_tx = receiver.wtc_txs.get(&data.join_handle.thread().id()).unwrap();
+        wtc_tx.send(WorkerThreadCommand::StopSystem).unwrap();
+    }
+    // Then we join them
+    for data in systems {
+        data.join_handle.join().unwrap();
+    }
     println!("Kill world!");
     // Kill the render pipeline
     pipec::dispose_pipeline();

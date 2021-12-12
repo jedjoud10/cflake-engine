@@ -83,8 +83,8 @@ impl Shader {
         }
         Ok(!vectors_to_insert.is_empty())
     }
-    // Main load function
-    fn load_shader_main(mut self, subshader_paths: Vec<&str>, internal: bool) -> Result<Self, RenderingError> {
+    // Creates a shader from multiple subshader files
+    pub fn load_shader(mut self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
         // Create the shader name
         self.name = subshader_paths.join("__");
         let mut included_paths: HashSet<String> = HashSet::new();
@@ -124,25 +124,11 @@ impl Shader {
                     .join("\n");
 
                 // Cache it, and link it
-                self.linked_subshaders_programs.push(if internal {
-                    // Internally create the subshader
-                    pipec::isubshader(subshader.clone())
-                } else {
-                    // Create the subshader as if we were on the main thread
-                    pipec::subshader(subshader.clone())
-                });
+                self.linked_subshaders_programs.push(pipec::subshader(subshader.clone()));
                 let _rc_subshader = assets::cachec::cache_l(subshader_path, subshader).unwrap();
             }
         }
         Ok(self)
-    }
-    // Creates a shader from multiple subshader files
-    pub fn load_shader(self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
-        self.load_shader_main(subshader_paths, false)
-    }
-    // Internal load shader (This assumes that this is ran on the RenderThread)
-    pub fn iload_shader(self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
-        self.load_shader_main(subshader_paths, true)
     }
     // Load some external code that can be loading using specific include points
     pub fn load_externalcode(mut self, id: &str, string: String) -> Self {
