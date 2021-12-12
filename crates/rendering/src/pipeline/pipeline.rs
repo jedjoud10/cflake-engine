@@ -3,11 +3,16 @@ use glfw::Context;
 use super::object::*;
 use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderCommandType, RenderTask, RenderTaskReturn, RenderTaskStatus, SharedData, SpecialPipelineMessage};
 use std::{
+    borrow::BorrowMut,
     collections::HashMap,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
-    sync::{mpsc::{Receiver, Sender}, Arc, Mutex, atomic::AtomicPtr}, borrow::BorrowMut,
+    sync::{
+        atomic::AtomicPtr,
+        mpsc::{Receiver, Sender},
+        Arc, Mutex,
+    },
 };
 
 // Commands that can be ran internally
