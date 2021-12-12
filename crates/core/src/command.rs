@@ -17,24 +17,49 @@ impl CommandQuery {
     }
 }
 
-// The functions
-pub fn initialize_channels() {
+// Initialize the main channels on the main thread
+pub fn initialize_channels_main() {
     // Create the channels
-    let (tx, rx) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
-    let mut receiver = RECEIVER.lock().unwrap();
-    let mut sender = SENDER.lock().unwrap();
-    // The task senders
-    receiver.txs = Some(HashMap::new());
-    sender.tx = Some(tx);
-    // The taskreturn senders
-    receiver.rx = Some(rx);
+    let (tx_command, rx_command) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
+    let (tx_waitabletask, rx_waitabletask) = crossbeam_channel::unbounded::<WaitableTask>();
+    let (wtc_tx, wtc_rx) = crossbeam_channel::unbounded::<WorkerThreadCommand>();
+    let mut copy_ = COMMUNICATION_CHANNEL_COPY.lock().unwrap();
+    let mut receiver_ = RECEIVER.lock().unwrap();
+    // Set the main thread values
+    *receiver_ = Some(WorldTaskReceiver {
+        rx: rx_command,
+        txs: HashMap::new(),
+        wtc_txs: HashMap::new(),
+        template_tx: tx_waitabletask,
+        template_wtc_tx: wtc_tx,
+    });
+    // And then the worker thread template values
+    *copy_ = Some(CommunicationChannelsCopied {
+        rx: rx_waitabletask,
+        tx: tx_command,
+        wtc_rx: wtc_rx,
+    });
+}
+// Initialize the channels on a worker thread (This must be called on the worker thread)
+pub fn initialize_channels_worker_thread() {
+    crate::system::SENDER.with(|x| {
+        let mut sender_ = x.borrow_mut();
+        let sender = sender_.as_mut().unwrap();
+        let copy_ = COMMUNICATION_CHANNEL_COPY.lock().unwrap();
+        let copy = copy_.as_ref().unwrap();
+        // We do the cloning
+        sender.rx = copy.rx.clone();
+        sender.tx = copy.tx.clone();
+        sender.wtc_rx = copy.wtc_rx.clone();
+    })
 }
 // Frame tick on the main thread. Polls the current tasks and excecutes them. This is called at the end of each logic frame (16ms per frame)
 pub fn frame_main_thread() {
     // Poll each command query
-    let receiver = RECEIVER.lock().unwrap();
-    let rx = receiver.rx.as_ref().unwrap();
-    let txs = receiver.txs.as_ref().unwrap();
+    let receiver_ = RECEIVER.lock().unwrap();
+    let receiver = receiver_.as_ref().unwrap(); 
+    let rx = &receiver.rx;
+    let txs = &receiver.txs;
     let mut world = crate::world::world_mut();
     for (id, query) in rx.try_recv() {
         let waitabletask = WaitableTask {
@@ -55,30 +80,33 @@ pub fn frame_main_thread() {
 // Send a command query to the world, giving back a command return that can be waited for
 pub fn command(query: CommandQuery) -> WaitableTask {
     // Send the command query
-    let x = SENDER.lock().unwrap();
-    let tx = x.tx.as_ref().unwrap();
-    let id = COUNTER.fetch_add(0, Ordering::Relaxed);
-    let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
-    // Early main thread exit lol
-    if !is_main_thread {
-        tx.send((id, query)).unwrap();
-        // Increment the counter
-        // Get the corresponding return command value
-        WaitableTask {
-            id,
-            thread_id: std::thread::current().id(),
-            val: None,
+    SENDER.with(|sender| {
+        let sender_ = sender.borrow();
+        let sender = sender_.as_ref().unwrap();
+        let tx = &sender.tx;
+        let id = COUNTER.fetch_add(0, Ordering::Relaxed);
+        let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
+        // Early main thread exit lol
+        if !is_main_thread {
+            tx.send((id, query)).unwrap();
+            // Increment the counter
+            // Get the corresponding return command value
+            WaitableTask {
+                id,
+                thread_id: std::thread::current().id(),
+                val: None,
+            }
+        } else {
+            // This is the main thread calling, we don't give a  f u c k
+            WaitableTask {
+                id,
+                thread_id: std::thread::current().id(),
+                val: {
+                    let mut world = crate::world::world_mut();
+                    let output = excecute_task(query.task, &mut world);
+                    Some(output)
+                },
+            }
         }
-    } else {
-        // This is the main thread calling, we don't give a  f u c k
-        WaitableTask {
-            id,
-            thread_id: std::thread::current().id(),
-            val: {
-                let mut world = crate::world::world_mut();
-                let output = excecute_task(query.task, &mut world);
-                Some(output)
-            },
-        }
-    }
+    })    
 }

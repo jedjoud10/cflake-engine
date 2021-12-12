@@ -40,7 +40,7 @@ pub struct World {
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
     pub saver_loader: SaverLoader,
-    pub config_file: GameConfig,
+    pub config_file: GameConfig,    
 }
 
 // Get a new copy of a brand new world
@@ -60,6 +60,8 @@ pub fn new(author_name: &str, app_name: &str) -> World {
 }
 // When the world started initializing
 pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    // Start the multithreaded shit
+    crate::command::initialize_channels_main();
     // Load the default stuff
     crate::local::input::create_key_cache();
     crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);

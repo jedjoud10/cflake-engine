@@ -1,6 +1,7 @@
-use crate::{command::CommandQuery, tasks::WaitableTask};
+use crate::{command::CommandQuery, tasks::WaitableTask, system::WorkerThreadCommand};
 use lazy_static::lazy_static;
 use std::{
+    cell::RefCell,
     collections::HashMap,
     sync::{
         atomic::AtomicU64,
@@ -13,21 +14,29 @@ lazy_static! {
     // A counter for the number of commands issued
     pub static ref COUNTER: AtomicU64 = AtomicU64::new(0);
     // Receiver of tasks. Is called on the main thread, receives messages from the worker threads
-    pub  static ref RECEIVER: Mutex<WorldTaskReceiver> = Mutex::new(WorldTaskReceiver::default());
+    pub static ref RECEIVER: Mutex<Option<WorldTaskReceiver>> = Mutex::new(None);
+    // A copy of the WorldTaskSender, because we will need to copy it for each worker thread
+    pub static ref COMMUNICATION_CHANNEL_COPY: Mutex<Option<crate::communication::CommunicationChannelsCopied>> = Mutex::new(None);
+}
+// A copy of the communication channels for each worker thread
+pub struct CommunicationChannelsCopied {
+    pub tx: Sender<(u64, CommandQuery)>,
+    pub rx: crossbeam_channel::Receiver<WaitableTask>,
+    pub wtc_rx: crossbeam_channel::Receiver<WorkerThreadCommand>,
 }
 
-thread_local! {    
-    // Sender of tasks. Is called on the worker threads, sends message to the main thread
-    pub static SENDER: WorldTaskSender = WorldTaskSender::default();
-}
 // Some struct that sends tasks to the main thread. This is present on all the worker threads, since there is a 1 : n connection between the main thread and worker threads
-#[derive(Default)]
 pub struct WorldTaskSender {
-    pub tx: Option<Sender<(u64, CommandQuery)>>, // CommandQuery. WorkerThreads -> MainThread
+    pub tx: Sender<(u64, CommandQuery)>, // CommandQuery. WorkerThreads -> MainThread
+    pub rx: crossbeam_channel::Receiver<WaitableTask>, // WaitableTask. MainThread -> WorkerThreads
+    pub wtc_rx: crossbeam_channel::Receiver<WorkerThreadCommand>,  // WorkerThreadCommand. MainThread -> WorkerThreads
 }
 // Main thread
-#[derive(Default)]
 pub struct WorldTaskReceiver {
-    pub rx: Option<Receiver<(u64, CommandQuery)>>,                                            // CommandQuery. WorkerThreads -> MainThread
-    pub txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<WaitableTask>>>, // WaitableTask. MainThread -> WorkerThreads
+    pub rx: Receiver<(u64, CommandQuery)>,                                            // CommandQuery. WorkerThreads -> MainThread
+    pub txs: HashMap<std::thread::ThreadId, crossbeam_channel::Sender<WaitableTask>>, // WaitableTask. MainThread -> WorkerThreads
+    pub wtc_txs: HashMap<std::thread::ThreadId, crossbeam_channel::Sender<WorkerThreadCommand>>, // WaitableTask. MainThread -> WorkerThreads
+    // Some template values that will be copied
+    pub template_tx: crossbeam_channel::Sender<WaitableTask>,
+    pub template_wtc_tx: crossbeam_channel::Sender<WorkerThreadCommand>,
 }

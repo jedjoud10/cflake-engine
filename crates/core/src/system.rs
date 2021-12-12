@@ -1,27 +1,45 @@
+use crate::communication::WorldTaskSender;
 use crate::tasks::WaitableTask;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::thread::JoinHandle;
 use std::{collections::HashMap, sync::Mutex};
 
-lazy_static! {
-    // A special channel just for synchronizing the worker threads
-    static ref SYNCHRONIZE: Mutex<WorkThreadSync> = Mutex::new(WorkThreadSync::default());
+// Some special worker thread commands
+pub enum WorkerThreadCommand {
+
 }
 
-#[derive(Default)]
-pub struct WorkThreadSync {}
+lazy_static! {
+    // The sender end of the worker thread commands
+    pub static ref WTCOMMAND_SENDER: Mutex<WorkerThreadCommandSender> = Mutex::new(WorkerThreadCommandSender::default());
+}
 
 // Some data for a system group thread
 #[derive(Default)]
 pub struct WorkerThreadCommonData {
-    pub buffer: HashMap<u64, WaitableTask>,                    // The receiving buffer
-    pub rx: Option<crossbeam_channel::Receiver<WaitableTask>>, // The receiver
+    pub buffer: HashMap<u64, WaitableTask>, // The receiving buffer    
 }
+
+// WorkerThreadCommand sender
+#[derive(Default)]
+pub struct WorkerThreadCommandSender {
+    pub wtc_txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<WorkerThreadCommand>>>,
+}
+// System command receiver
+#[derive(Default)]
+pub struct WorkerThreadsReceiver {
+    
+}
+
 // The system group thread data is local to each system thread
 thread_local! {
-    pub static SYSTEM_GROUP_THREAD_DATA: RefCell<WorkerThreadCommonData> = RefCell::new(WorkerThreadCommonData::default());
+    pub static WORKER_THREAD_COMMON_DATA: RefCell<WorkerThreadCommonData> = RefCell::new(WorkerThreadCommonData::default());
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
+    // The receiving end of the system commands
+    pub static WORKER_THREADS_RECEIVER: RefCell<WorkerThreadsReceiver> = RefCell::new(WorkerThreadsReceiver::default());
+    // Sender of tasks. Is called on the worker threads, sends message to the main thread
+    pub static SENDER: RefCell<Option<WorldTaskSender>> = RefCell::new(None);
 }
 
 // Create a worker thread
@@ -30,16 +48,24 @@ where
     F: FnOnce() -> ecs::System<T> + 'static + Send,
 {
     std::thread::spawn(move || {
+        // We must initialize the channels
+        crate::command::initialize_channels_worker_thread();
         // Create the system on this thread
-        let system = callback();
-        let mut running = true;
-        let rx = crate::communication::SENDER.lock()
+        SENDER.with(|x| {
+            let system = callback();
+            let mut running = true;
+            let sender_ = x.borrow();
+            let sender = sender_.as_ref().unwrap();
+            let rx = &sender.rx;
+            let wtc_rx = &sender.wtc_rx;
 
-        // Start the system loop
-        while running {
-            // Start of the independent system frame
-            // End of the independent system frame, we must wait until the main thread allows us to continue
-            // Check if the system is still running
-        }
+            // Start the system loop
+            while running {
+                // Start of the independent system frame
+                // End of the independent system frame, we must wait until the main thread allows us to continue
+                // Check if the system is still running
+            }
+        });
+        
     })
 }
