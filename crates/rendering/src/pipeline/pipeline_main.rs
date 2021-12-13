@@ -2,7 +2,7 @@ use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher}, sync::{RwLock, mpsc::Sender, Mutex, atomic::AtomicUsize}, cell::{RefCell, Cell}, borrow::Borrow,
 };
-use crate::{Pipeline, GlobalInterface, RenderCommand};
+use crate::{Pipeline, RenderCommand, GPUObject};
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -12,7 +12,7 @@ lazy_static! {
 
 thread_local! {
     // The render task sender!
-    pub static RENDER_COMMAND_SENDER: RefCell<Option<Sender<RenderCommand>>> = RefCell::new(None);
+    pub static RENDER_COMMAND_SENDER: RefCell<Option<Sender<crate::PipelineSendData>>> = RefCell::new(None);
     pub static IS_RENDER_THREAD: Cell<bool> = Cell::new(false);
 }
 
@@ -39,9 +39,9 @@ pub mod pipec {
     use assets::CachedObject;
 
     use crate::pipeline::object::*;
-    use crate::{Model, Pipeline, RenderTaskReturn, Renderer, Shader, SubShader, Texture, Material, RenderCommand, COMMAND_COUNT, SubShaderType, RENDER_COMMAND_SENDER, is_render_thread};
+    use crate::{Model, Pipeline, RenderTaskReturn, Renderer, Shader, SubShader, Texture, Material, RenderCommand, COMMAND_COUNT, SubShaderType, RENDER_COMMAND_SENDER, is_render_thread, PipelineSendData};
     pub use crate::{RenderTask, SharedData};
-    pub use crate::pipeline::global_interface::*;
+    use crate::interface::*;
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         crate::pipeline::init_pipeline(glfw, window);
@@ -83,19 +83,23 @@ pub mod pipec {
     // Normal callback task
     pub fn task<F>(task: RenderTask, name: &str, callback: F)
     where
-        F: FnMut(GPUObject) + 'static + Sync + Send,
+        F: Fn(GPUObject) + Send + Sync + 'static,
     {
         // Create the render command
         let command = RenderCommand {
             name: if name.is_empty() { panic!() } else { name.to_string() },
             input_task: task,
         };
+        // Get the current thread ID
+        let thread_id = std::thread::current().id();
+        // Box the callback
+        let boxed_callback = Box::new(callback);
         crate::RENDER_COMMAND_SENDER.with(|x| {
             let sender_ = x.borrow();
             let sender_ = sender_.as_ref();
             let sender = sender_.unwrap();
             // Send the command to the thread
-            sender.send(command).unwrap();
+            sender.send(PipelineSendData(thread_id, command, boxed_callback)).unwrap();
         });
     }
     // Internal task
@@ -103,6 +107,8 @@ pub mod pipec {
         // We must talk to the global interface directly
         todo!()
     }
+    fn get_gpu_object(name: &str) -> Option<GPUObject> { crate::pipeline::interface::get_gpu_object(name)  }
+    pub fn gpu_object_valid(name: &str) -> bool { crate::pipeline::interface::gpu_object_valid(name) }
     // Retrieve these objects from cache
     pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {
         if let GPUObject::SubShader(x) = get_gpu_object(name).unwrap() {
@@ -149,7 +155,7 @@ pub mod pipec {
             } else {
                 let name = format!("crt_sbshdr_{}", subshader.name.clone());
                 task(RenderTask::SubShaderCreate(SharedData::new(subshader)), &name, |_| {});
-                if let GPUObject::SubShader(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }        
+                if let GPUObject::SubShader(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }        
             }
         }
     }
@@ -162,7 +168,7 @@ pub mod pipec {
             } else {
                 let name = format!("crt_shdr_{}", shader.name.clone());
                 task(RenderTask::ShaderCreate(SharedData::new(shader)), &name, |_| {});
-                if let GPUObject::Shader(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }      
+                if let GPUObject::Shader(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }      
             }
         }
     }
@@ -175,7 +181,7 @@ pub mod pipec {
             } else {
                 let name = format!("crt_cmptshdr_{}", shader.name.clone());
                 task(RenderTask::ShaderCreate(SharedData::new(shader)), &name, |_| {});
-                if let GPUObject::ComputeShader(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
+                if let GPUObject::ComputeShader(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
             }
         }
     }
@@ -188,7 +194,7 @@ pub mod pipec {
             } else {
                 let name = format!("crt_txtre_{}", texture.name.clone());
                 task(RenderTask::TextureCreate(SharedData::new(texture)), &name, |_| {});
-                if let GPUObject::Texture(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
+                if let GPUObject::Texture(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
             }
         }
     }
@@ -199,7 +205,7 @@ pub mod pipec {
         } else {
             let name = format!("crt_mdl{}", model.name.clone());
             task(RenderTask::ModelCreate(SharedData::new(model)), &name, |_| {});
-            if let GPUObject::Model(x) = crate::wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
+            if let GPUObject::Model(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
         }
     }
 

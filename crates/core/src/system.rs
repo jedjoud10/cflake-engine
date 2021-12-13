@@ -73,6 +73,8 @@ where
                     },
                     Err(_) => {},
                 }
+                // Check the rendering callback buffer
+                rendering::pipeline::interface::fetch_threadlocal_callbacks();
 
                 // Start of the independent system frame
                 // End of the independent system frame, we must wait until the main thread allows us to continue
