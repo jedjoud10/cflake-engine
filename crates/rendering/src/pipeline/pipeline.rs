@@ -1,7 +1,7 @@
-use glfw::Context;
 use super::object::*;
-use lazy_static::lazy_static;
 use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, SharedData};
+use glfw::Context;
+use lazy_static::lazy_static;
 use std::{
     borrow::BorrowMut,
     collections::HashMap,
@@ -11,7 +11,7 @@ use std::{
     sync::{
         atomic::AtomicPtr,
         mpsc::{Receiver, Sender},
-        Arc, Mutex, RwLock, MutexGuard, Barrier,
+        Arc, Barrier, Mutex, MutexGuard, RwLock,
     },
 };
 
@@ -39,7 +39,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
-    // Barrier so we can wait until the render thread has finished initializing
+                                                                                                       // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
     unsafe {
@@ -52,90 +52,92 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         unsafe impl Send for RenderWrapper {}
         unsafe impl Sync for RenderWrapper {}
         let builder = std::thread::Builder::new().name("RenderThread".to_string());
-        builder.spawn(move || {
-            // Start OpenGL
-            let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
-            let window = &mut *render_wrapper.1.load(std::sync::atomic::Ordering::Relaxed);
-            // Initialize OpenGL
-            println!("Initializing OpenGL...");
-            window.make_current();
-            glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
-            gl::load_with(|s| window.get_proc_address(s) as *const _);
+        builder
+            .spawn(move || {
+                // Start OpenGL
+                let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
+                let window = &mut *render_wrapper.1.load(std::sync::atomic::Ordering::Relaxed);
+                // Initialize OpenGL
+                println!("Initializing OpenGL...");
+                window.make_current();
+                glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
+                gl::load_with(|s| window.get_proc_address(s) as *const _);
 
-            // Set the type of events that we want to listen to
-            window.set_key_polling(true);
-            window.set_cursor_pos_polling(true);
-            window.set_scroll_polling(true);
-            window.set_size_polling(true);
-            glfw.set_swap_interval(glfw::SwapInterval::None);
-            window.make_current();
-            if gl::Viewport::is_loaded() {
-                gl::Viewport(0, 0, 1280, 720);
-                gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-                gl::Enable(gl::DEPTH_TEST);
-                gl::Enable(gl::CULL_FACE);
-                gl::CullFace(gl::BACK);
-                println!("Successfully initialized OpenGL!");
-            } else {
-                /* NON */
-                panic!()
-            }
-            // The render command receiver
-            let threads_to_render = rx;
+                // Set the type of events that we want to listen to
+                window.set_key_polling(true);
+                window.set_cursor_pos_polling(true);
+                window.set_scroll_polling(true);
+                window.set_size_polling(true);
+                glfw.set_swap_interval(glfw::SwapInterval::None);
+                window.make_current();
+                if gl::Viewport::is_loaded() {
+                    gl::Viewport(0, 0, 1280, 720);
+                    gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+                    gl::Enable(gl::DEPTH_TEST);
+                    gl::Enable(gl::CULL_FACE);
+                    gl::CullFace(gl::BACK);
+                    println!("Successfully initialized OpenGL!");
+                } else {
+                    /* NON */
+                    panic!()
+                }
+                // The render command receiver
+                let threads_to_render = rx;
 
-            // Set the pipeline
-            let pipeline = Pipeline {
-                gpu_objects: HashMap::new(),
-                tx_template: tx,
-            };
-            {
-                let mut p = crate::pipeline::pipeline_mut();
-                *p = Some(pipeline);
-            }
-            // This is indeed the render thread
-            crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
-            // Initialize the deferred renderer
-            let mut pipeline_renderer = PipelineRenderer::default();
-            pipeline_renderer.init();
+                // Set the pipeline
+                let pipeline = Pipeline {
+                    gpu_objects: HashMap::new(),
+                    tx_template: tx,
+                };
+                {
+                    let mut p = crate::pipeline::pipeline_mut();
+                    *p = Some(pipeline);
+                }
+                // This is indeed the render thread
+                crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
+                // Initialize the deferred renderer
+                let mut pipeline_renderer = PipelineRenderer::default();
+                pipeline_renderer.init();
 
-            // El camera
-            let mut camera = CameraDataGPUObject {
-                position: veclib::Vector3::ZERO,
-                rotation: veclib::Quaternion::IDENTITY,
-                clip_planes: veclib::Vector2::ZERO,
-                viewm: veclib::Matrix4x4::IDENTITY,
-                projm: veclib::Matrix4x4::IDENTITY,
-            };
+                // El camera
+                let mut camera = CameraDataGPUObject {
+                    position: veclib::Vector3::ZERO,
+                    rotation: veclib::Quaternion::IDENTITY,
+                    clip_planes: veclib::Vector2::ZERO,
+                    viewm: veclib::Matrix4x4::IDENTITY,
+                    projm: veclib::Matrix4x4::IDENTITY,
+                };
 
-            // We must render every frame
-            // Timing stuff
-            let mut last_time: f64 = 0.0;
-            let mut frame_count: u128 = 0;
-            // If the render pipeline and thread are valid
-            let mut valid = true;
-            println!("Successfully created the RenderThread!");
-            barrier_clone.wait();
-            while valid {
-                // Update the delta_time
-                let new_time = glfw.get_time();
-                let delta = new_time - last_time;
-                last_time = new_time;
-                // Run the frame
-                frame(
-                    glfw.borrow_mut(),
-                    window.borrow_mut(),
-                    &threads_to_render,
-                    &mut pipeline_renderer,
-                    &mut camera,
-                    &mut valid,
-                    frame_count,
-                    delta,
-                );
-                frame_count += 1;
-                std::thread::sleep(std::time::Duration::from_millis(40));
-            }
-            println!("Stopping the render thread!");
-        }).unwrap();
+                // We must render every frame
+                // Timing stuff
+                let mut last_time: f64 = 0.0;
+                let mut frame_count: u128 = 0;
+                // If the render pipeline and thread are valid
+                let mut valid = true;
+                println!("Successfully created the RenderThread!");
+                barrier_clone.wait();
+                while valid {
+                    // Update the delta_time
+                    let new_time = glfw.get_time();
+                    let delta = new_time - last_time;
+                    last_time = new_time;
+                    // Run the frame
+                    frame(
+                        glfw.borrow_mut(),
+                        window.borrow_mut(),
+                        &threads_to_render,
+                        &mut pipeline_renderer,
+                        &mut camera,
+                        &mut valid,
+                        frame_count,
+                        delta,
+                    );
+                    frame_count += 1;
+                    std::thread::sleep(std::time::Duration::from_millis(40));
+                }
+                println!("Stopping the render thread!");
+            })
+            .unwrap();
     };
     // Wait for the init message...
     let i = std::time::Instant::now();
@@ -240,9 +242,7 @@ fn command(
             RenderTaskReturn::None
         }
         // Renderer commands
-        RenderTask::RendererAdd(shared_renderer) => {
-            RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer), name)
-        }
+        RenderTask::RendererAdd(shared_renderer) => RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer), name),
         RenderTask::RendererRemove(renderer_id) => {
             Pipeline::remove_renderer(pr, renderer_id);
             RenderTaskReturn::None
@@ -254,14 +254,7 @@ fn command(
 }
 
 // Poll commands that have been sent to us by the main thread
-fn poll_commands(
-    pr: &mut PipelineRenderer,
-    camera: &mut CameraDataGPUObject,
-    rx: &Receiver<PipelineSendData>,
-    valid: &mut bool,
-    window: &mut glfw::Window,
-    glfw: &mut glfw::Glfw,
-) {
+fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<PipelineSendData>, valid: &mut bool, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // We must loop through every command that we receive from the main thread
     for pipeline_data in rx.try_iter() {
         let (thread_id, cmd, callback, waitable) = (pipeline_data.0, pipeline_data.1, pipeline_data.2, pipeline_data.3);
@@ -280,19 +273,19 @@ fn poll_commands(
                     RenderTaskReturn::None => { /* Not valid */ }
                     taskreturn => {
                         match taskreturn {
-                            RenderTaskReturn::None => { /* Not valid */ } ,
-                            RenderTaskReturn::GPUObject(object, name) => /* We *might* have a GPU object */ {
+                            RenderTaskReturn::None => { /* Not valid */ }
+                            RenderTaskReturn::GPUObject(object, name) =>
+                            /* We *might* have a GPU object */
+                            {
                                 match object {
-                                    GPUObject::None => {
-                                        /* Not valid */
-                                    },
+                                    GPUObject::None => { /* Not valid */ }
                                     gpuobject => {
                                         // We have a valid GPU object
                                         // We must somehow find a way to send this to the Interface
                                         super::interface::executed_task(thread_id, name, gpuobject, callback, waitable)
                                     }
                                 }
-                            },
+                            }
                         }
                     }
                 }
@@ -326,10 +319,10 @@ fn frame(
 
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {
-    pub gpu_objects: HashMap<String, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
-    pub tx_template: Sender<PipelineSendData> // A copy of the sender so we can copy it on each thread and make it thread local
+    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
+    pub tx_template: Sender<PipelineSendData>,   // A copy of the sender so we can copy it on each thread and make it thread local
 }
-impl Pipeline {    
+impl Pipeline {
     // Get GPU object using it's specified name
     pub fn get_gpu_object(&self, name: &str) -> Option<&GPUObject> {
         self.gpu_objects.get(name)

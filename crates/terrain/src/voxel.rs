@@ -81,7 +81,7 @@ impl VoxelGenerator {
         self.compute.lock_state();
         // Read back the texture into the data buffer
         let n = pipec::generate_command_name();
-        // Wait for main voxel gen 
+        // Wait for main voxel gen
         pipec::wtask(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()), &n);
         let voxel_pixels = interface::wait_fetch_threadlocal_callbacks_specific(&n);
         let n2 = pipec::generate_command_name();
