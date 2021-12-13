@@ -130,7 +130,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 }
 
 // Commands that can be ran internally
-fn internal_task(task: RenderTask) -> GPUObject {
+pub fn internal_task(task: RenderTask) -> GPUObject {
     // Handle the internal case
     match task {
         // Shaders
