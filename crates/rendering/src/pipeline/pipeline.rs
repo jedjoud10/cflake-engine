@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, pipec, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, SharedData};
+use crate::{basics::*, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, SharedData};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -11,7 +11,7 @@ use std::{
     sync::{
         atomic::AtomicPtr,
         mpsc::{Receiver, Sender},
-        Arc, Barrier, Mutex, MutexGuard, RwLock,
+        Arc, Barrier,
     },
 };
 
@@ -191,7 +191,7 @@ fn command(
     pr: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
     command: RenderCommand,
-    window: &mut glfw::Window,
+    _window: &mut glfw::Window,
     glfw: &mut glfw::Glfw,
 ) -> RenderTaskReturn {
     // Handle the common cases
@@ -752,7 +752,7 @@ impl Pipeline {
         }
         GPUObject::TextureFill(TextureFillGPUObject(pixels, bytecount))
     }
-    pub fn run_compute(compute: ComputeShaderGPUObject, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
+    pub fn run_compute(_compute: ComputeShaderGPUObject, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
         uniforms_group.consume();
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);

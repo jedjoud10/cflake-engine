@@ -39,7 +39,7 @@ impl Shader {
             // Check if this is an include statement
             if line.starts_with("#include ") {
                 // Get the local path of the include file
-                let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace(r#"""#, "");
+                let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace('"', "");
                 let local_path = local_path.trim_start();
                 if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
@@ -55,15 +55,13 @@ impl Shader {
                 }
             }
             // External shader code
-            if self.externalcode.len() > 0 {
-                if line.trim().starts_with("#include_custom") {
-                    // Get the source
-                    let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-                    let source_id = &c[2..(c.len() - 2)];
-                    let source = self.externalcode.get(source_id).unwrap();
-                    let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                    vectors_to_insert.push((i, lines));
-                }
+            if !self.externalcode.is_empty() && line.trim().starts_with("#include_custom") {
+                // Get the source
+                let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
+                let source_id = &c[2..(c.len() - 2)];
+                let source = self.externalcode.get(source_id).unwrap();
+                let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
+                vectors_to_insert.push((i, lines));
             }
         }
         // Add the newly included lines at their respective index

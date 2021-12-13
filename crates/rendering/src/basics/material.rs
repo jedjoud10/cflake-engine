@@ -1,7 +1,7 @@
 use crate::basics::*;
 use crate::pipeline::*;
 
-use assets::Object;
+
 use bitflags::bitflags;
 
 bitflags! {

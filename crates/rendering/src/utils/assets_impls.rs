@@ -35,8 +35,8 @@ impl Asset for Model {
         let lines = string.lines();
         let mut model = Model::default();
         for line in lines {
-            let start = line.split_once(" ").unwrap().0;
-            let other = line.split_once(" ").unwrap().1;
+            let start = line.split_once(' ').unwrap().0;
+            let other = line.split_once(' ').unwrap().1;
             match start {
                 // Vertices
                 "v" => {

@@ -1,6 +1,6 @@
 use crate::{pipec, pipeline::object::*, FrameStats, MaterialFlags, Shader, Texture};
 use crate::{texture::*, DataType, Material, Window};
-use assets::Object;
+
 use glfw::Context;
 use others::SmartList;
 use std::ptr::null;

@@ -1,11 +1,9 @@
-use crate::{GPUObject, RenderCommand, RenderTaskReturn};
+use crate::{GPUObject};
 use lazy_static::lazy_static;
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicBool, Ordering},
-        mpsc::Sender,
-        Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
+        atomic::{AtomicBool, Ordering}, RwLock, RwLockReadGuard, RwLockWriteGuard,
     },
 };
 lazy_static! {
@@ -36,7 +34,7 @@ pub fn executed_task(thread_id: std::thread::ThreadId, name: String, gpuobject: 
     let mut i = interface_mut();
     let new_callback = CallbackData(callback, gpuobject, AtomicBool::new(false), waitable);
     let entry = i.callbacks.entry(thread_id).or_default();
-    entry.insert(name.clone(), new_callback);
+    entry.insert(name, new_callback);
 }
 
 // Fetch the local callbacks and execute them if their corresponding task has been executed
@@ -46,7 +44,7 @@ pub fn fetch_threadlocal_callbacks() {
     // Call all the callbacks in this thread if possible
     match interface.callbacks.get(&thread_id) {
         Some(callbacks) => {
-            for (name, callback_data) in callbacks.iter() {
+            for (_name, callback_data) in callbacks.iter() {
                 // Call all the callbacks in this worker thread
                 if !callback_data.2.load(Ordering::Relaxed) && !callback_data.3 {
                     // This callback was not executed yet
@@ -67,8 +65,8 @@ pub fn fetch_threadlocal_callbacks() {
 pub fn update_render_thread() {
     let mut interface = interface_mut();
     // Delete all the callbacks that have been used
-    for (thread_id, callbacks) in interface.callbacks.iter_mut() {
-        callbacks.retain(|key, callback_data| !callback_data.2.load(Ordering::Relaxed));
+    for (_thread_id, callbacks) in interface.callbacks.iter_mut() {
+        callbacks.retain(|_key, callback_data| !callback_data.2.load(Ordering::Relaxed));
     }
 }
 
@@ -83,7 +81,7 @@ fn fetch_threadlocal_callbacks_specific(name: &str) -> Option<GPUObject> {
                     // Call the callback if possible
                     if callback_data.3 {
                         // This callback was not executed yet
-                        let callback = &callback_data.0;
+                        let _callback = &callback_data.0;
                         let gpuobject = callback_data.1.clone();
                         // Update the atomic bool
                         callback_data.2.fetch_or(true, Ordering::Relaxed);
@@ -111,7 +109,7 @@ pub fn wait_fetch_threadlocal_callbacks_specific(name: &str) -> GPUObject {
     let mut result = None;
     // Loop and wait until we fetch a valid one
     while result.is_none() {
-        match fetch_threadlocal_callbacks_specific(&name) {
+        match fetch_threadlocal_callbacks_specific(name) {
             Some(x) => result = Some(x),
             None => { /* We wait */ }
         }

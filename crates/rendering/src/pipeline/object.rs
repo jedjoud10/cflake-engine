@@ -287,7 +287,7 @@ impl ComputeShaderGPUObject {
     }
     // Lock the state of this compute shader (Immediate task, force run the shader task if it was not polled yet)
     pub fn lock_state(&self) {
-        crate::pipec::ctask(crate::RenderTask::ComputeLock(self.clone()), "", |x| {});
+        crate::pipec::ctask(crate::RenderTask::ComputeLock(self.clone()), "", |_x| {});
     }
 }
 
