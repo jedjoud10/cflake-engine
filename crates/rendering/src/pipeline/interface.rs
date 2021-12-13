@@ -15,7 +15,7 @@ fn interface_mut() -> RwLockWriteGuard<'static, GlobalInterface> {
     GLOBAL_INTERFACE.write().unwrap()
 }
 
-struct CallbackData(pub Box<dyn Fn(GPUObject) + Send + Sync + 'static>, pub GPUObject, pub AtomicBool); 
+struct CallbackData(pub Box<dyn Fn(GPUObject) + Send + Sync + 'static>, pub GPUObject, pub AtomicBool, pub bool); 
 
 // Some global interface that each thread could use to send tasks / do callback shit on
 #[derive(Default)]
@@ -26,11 +26,11 @@ struct GlobalInterface {
 
 
 // We receive a valid GPU object from the pipeline
-pub fn executed_task(thread_id: std::thread::ThreadId, name: String, gpuobject: GPUObject, callback: Box<dyn Fn(GPUObject) + Send + Sync + 'static>) {
+pub fn executed_task(thread_id: std::thread::ThreadId, name: String, gpuobject: GPUObject, callback: Box<dyn Fn(GPUObject) + Send + Sync + 'static>, waitable: bool) {
     let mut i = interface_mut();
-    let new_callback = CallbackData(callback, gpuobject, AtomicBool::new(false));
-    let entry = i.callbacks.entry(thread_id);
-    entry.and_modify(|x| { x.insert(name, new_callback).unwrap(); }).or_default();
+    let new_callback = CallbackData(callback, gpuobject, AtomicBool::new(false), waitable);
+    let entry = i.callbacks.entry(thread_id).or_default();
+    entry.insert(name.clone(), new_callback);
 }
 
 // Fetch the local callbacks and execute them if their corresponding task has been executed
@@ -42,7 +42,7 @@ pub fn fetch_threadlocal_callbacks() {
         Some(callbacks) => { 
             for (name, callback_data) in callbacks.iter() {
                 // Call all the callbacks in this worker thread
-                if !callback_data.2.load(Ordering::Relaxed) {
+                if !callback_data.2.load(Ordering::Relaxed) && !callback_data.3 {
                     // This callback was not executed yet
                     let callback = &callback_data.0;
                     let gpuobject = callback_data.1.clone();
@@ -74,15 +74,14 @@ fn fetch_threadlocal_callbacks_specific(name: &str) -> Option<GPUObject> {
             match callbacks.get(name) {
                 Some(callback_data) => {
                     // Call the callback if possible
-                    if !callback_data.2.load(Ordering::Relaxed) {
+                    if callback_data.3 {
                         // This callback was not executed yet
                         let callback = &callback_data.0;
                         let gpuobject = callback_data.1.clone();
-                        (callback)(gpuobject.clone());
                         // Update the atomic bool
                         callback_data.2.fetch_or(true, Ordering::Relaxed);
                         Some(gpuobject)
-                    } else { /* Already called, don't call it again */ None }
+                    } else { /* This callback is not waitable */ None }
                 },
                 None => { /* Callback with that specific name does not exist */ None },
             }
@@ -97,19 +96,19 @@ pub fn wait_fetch_threadlocal_callbacks_specific(name: &str) -> GPUObject {
     // Loop and wait until we fetch a valid one
     while result.is_none() { match fetch_threadlocal_callbacks_specific(&name) {
         Some(x) => result = Some(x),
-        None => {},
+        None => { /* We wait */ },
     }}
     result.unwrap()
 }
 
 // We must ask the Interface if we have these objects in cache
 pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
-    let pipeline_ = crate::PIPELINE.as_ref().lock().unwrap();
+    let pipeline_ = crate::pipeline();
     let pipeline = pipeline_.as_ref().unwrap();
     pipeline.get_gpu_object(name).cloned()
 }
 pub fn gpu_object_valid(name: &str) -> bool {
-    let pipeline_ = crate::PIPELINE.as_ref().lock().unwrap();
+    let pipeline_ = crate::pipeline();
     let pipeline = pipeline_.as_ref().unwrap();
     pipeline.gpu_object_valid(name)
 }

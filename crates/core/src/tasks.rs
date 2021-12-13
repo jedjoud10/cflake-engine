@@ -4,7 +4,6 @@ use crate::communication::*;
 use crate::system::{IS_MAIN_THREAD, WORKER_THREADS_RECEIVER};
 
 // Some world tasks
-#[derive(Debug)]
 pub enum Task {
     // Entity
     EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup),

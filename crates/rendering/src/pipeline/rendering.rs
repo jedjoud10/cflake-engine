@@ -31,11 +31,11 @@ pub mod window_commands {
                 }
             });
         }
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen), "", |_| {});
+        crate::pipec::ctask(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen), &crate::pipec::generate_command_name(), |_| {});
     }
     // Set vsync
     pub fn set_vsync(vsync: bool) {
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync), "", |_| {});
+        crate::pipec::ctask(crate::pipec::RenderTask::WindowUpdateVSync(vsync), &crate::pipec::generate_command_name(), |_| {});
     }
     // Hide the cursor
     pub fn hide_cursor(window: &mut glfw::Window) {
@@ -136,6 +136,7 @@ fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, 
 impl PipelineRenderer {
     // Init the pipeline renderer
     pub fn init(&mut self) {
+        println!("Initializing the pipeline renderer...");
         self.window = Window::default();
         // Create the quad model
         use crate::basics::Model;
@@ -166,6 +167,7 @@ impl PipelineRenderer {
                     .unwrap(),
             )),
         );
+        println!("Loaded the default material!");
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {

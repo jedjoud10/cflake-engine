@@ -64,7 +64,6 @@ pub fn frame_main_thread() {
 }
 // Send a command query to the world, giving back a command return that can be waited for
 pub fn command(query: CommandQuery) {
-    println!("{:?}", query.task);
     println!("Calling thread {:?}", query.thread_id);
     // Increment the counter
     let id = COUNTER.fetch_add(0, Ordering::Relaxed);

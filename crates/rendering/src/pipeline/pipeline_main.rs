@@ -59,7 +59,6 @@ pub mod pipec {
         );
         // Default material
         let _dm = Material::new("Default material").set_shader(ds);
-        println!("Loaded default shader and default material!");
     }
     // Just setup the sender of commands thread-locally
     pub fn initialize_threadlocal_render_comms() {
@@ -74,14 +73,14 @@ pub mod pipec {
     }
     // Dispose of the render thread and render pipeline
     pub fn dispose_pipeline() {
-        //self.task_immediate(RenderTask::DestroyRenderThread(), "dispose_pipeline".to_string());
+        ctask(RenderTask::DestroyRenderThread, "destroy_render_thread", |_| {});
     }
     // Generate a command name
     pub fn generate_command_name() -> String {
         format!("c_{}", COMMAND_COUNT.fetch_add(1, Ordering::Relaxed))
     }
     // Normal callback task
-    pub fn task<F>(task: RenderTask, name: &str, callback: F)
+    pub fn ctask<F>(task: RenderTask, name: &str, callback: F)
     where
         F: Fn(GPUObject) + Send + Sync + 'static,
     {
@@ -92,6 +91,7 @@ pub mod pipec {
         };
         // Get the current thread ID
         let thread_id = std::thread::current().id();
+        println!("\x1b[35mReceived task '{}' from thread '{}'\x1b[0m", name, std::thread::current().name().unwrap());
         // Box the callback
         let boxed_callback = Box::new(callback);
         crate::RENDER_COMMAND_SENDER.with(|x| {
@@ -99,7 +99,28 @@ pub mod pipec {
             let sender_ = sender_.as_ref();
             let sender = sender_.unwrap();
             // Send the command to the thread
-            sender.send(PipelineSendData(thread_id, command, boxed_callback)).unwrap();
+            sender.send(PipelineSendData(thread_id, command, boxed_callback, false)).unwrap();
+        });
+    }
+    // A waitable task that contains an empty closure
+    pub fn wtask(task: RenderTask, name: &str)
+    {
+        // Create the render command
+        let command = RenderCommand {
+            name: if name.is_empty() { panic!() } else { name.to_string() },
+            input_task: task,
+        };
+        // Get the current thread ID
+        let thread_id = std::thread::current().id();
+        println!("\x1b[35mReceived task '{}' from thread '{}'\x1b[0m", name, std::thread::current().name().unwrap());
+        // Box the callback
+        let boxed_callback = Box::new(|_| {});
+        crate::RENDER_COMMAND_SENDER.with(|x| {
+            let sender_ = x.borrow();
+            let sender_ = sender_.as_ref();
+            let sender = sender_.unwrap();
+            // Send the command to the thread
+            sender.send(PipelineSendData(thread_id, command, boxed_callback, true)).unwrap();
         });
     }
     // Internal task
@@ -154,7 +175,7 @@ pub mod pipec {
                 if let GPUObject::SubShader(x) = crate::pipeline::internal_task(RenderTask::SubShaderCreate(SharedData::new(subshader))) { x } else { panic!() } 
             } else {
                 let name = format!("crt_sbshdr_{}", subshader.name.clone());
-                task(RenderTask::SubShaderCreate(SharedData::new(subshader)), &name, |_| {});
+                wtask(RenderTask::SubShaderCreate(SharedData::new(subshader)), &name);
                 if let GPUObject::SubShader(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }        
             }
         }
@@ -167,7 +188,7 @@ pub mod pipec {
                 if let GPUObject::Shader(x) = crate::pipeline::internal_task(RenderTask::ShaderCreate(SharedData::new(shader))) { x } else { panic!() }  
             } else {
                 let name = format!("crt_shdr_{}", shader.name.clone());
-                task(RenderTask::ShaderCreate(SharedData::new(shader)), &name, |_| {});
+                wtask(RenderTask::ShaderCreate(SharedData::new(shader)), &name);
                 if let GPUObject::Shader(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }      
             }
         }
@@ -180,7 +201,7 @@ pub mod pipec {
                 if let GPUObject::ComputeShader(x) = crate::pipeline::internal_task(RenderTask::ShaderCreate(SharedData::new(shader))) { x } else { panic!() }
             } else {
                 let name = format!("crt_cmptshdr_{}", shader.name.clone());
-                task(RenderTask::ShaderCreate(SharedData::new(shader)), &name, |_| {});
+                wtask(RenderTask::ShaderCreate(SharedData::new(shader)), &name);
                 if let GPUObject::ComputeShader(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
             }
         }
@@ -193,7 +214,7 @@ pub mod pipec {
                 if let GPUObject::Texture(x) = crate::pipeline::internal_task(RenderTask::TextureCreate(SharedData::new(texture))) { x } else { panic!() }
             } else {
                 let name = format!("crt_txtre_{}", texture.name.clone());
-                task(RenderTask::TextureCreate(SharedData::new(texture)), &name, |_| {});
+                wtask(RenderTask::TextureCreate(SharedData::new(texture)), &name);
                 if let GPUObject::Texture(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
             }
         }
@@ -201,10 +222,11 @@ pub mod pipec {
     pub fn model(model: Model) -> ModelGPUObject {
         // (TODO: Implement model caching)
         if is_render_thread() {
+            println!("We are indeed on the render thread");
             if let GPUObject::Model(x) = crate::pipeline::internal_task(RenderTask::ModelCreate(SharedData::new(model))) { x } else { panic!() }
         } else {
             let name = format!("crt_mdl{}", model.name.clone());
-            task(RenderTask::ModelCreate(SharedData::new(model)), &name, |_| {});
+            wtask(RenderTask::ModelCreate(SharedData::new(model)), &name);
             if let GPUObject::Model(x) = wait_fetch_threadlocal_callbacks_specific(&name) { x } else { panic!() }
         }
     }

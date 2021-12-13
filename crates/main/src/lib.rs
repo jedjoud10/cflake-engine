@@ -31,6 +31,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     assets_preload_callback();
     // Hehe multithreaded renering goes BRRRRRRRR
     rendering::pipec::init_pipeline(&mut glfw, &mut window);
+    rendering::pipec::initialize_threadlocal_render_comms();
     // Set the type of events that we want to listen to
     window.set_key_polling(true);
     window.set_cursor_pos_polling(true);
@@ -52,7 +53,6 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         last_time = new_time;
         // Update the world
         core::world::update_world(delta, &mut glfw, &mut window);
-
         // Read the events at the start of the frame
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
@@ -61,6 +61,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     }
     // When the window closes and we exit from the game
     core::world::kill_world();
+    println!("\x1b[31mExiting the engine!\x1b[0m");
 }
 
 // When the window receives a new event

@@ -60,12 +60,14 @@ pub fn new_internal() -> World {
 }
 // Just update the saver loader basically
 pub fn new(author_name: &str, app_name: &str) {
+    println!("Going to create a new SaverLoader");
     let mut w = world_mut();
     w.saver_loader = SaverLoader::new(author_name, app_name);
 }
 // Just create a new saver loader
 // When the world started initializing
 pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    println!("Starting world...");
     // Start the multithreaded shit
     crate::command::initialize_channels_main();
     // Load the default stuff
@@ -157,7 +159,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 }
 // This is the main Update loop, ran on the main thread
 pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
-    println!("MainWorld update");
+    println!("Update world");
     /*
     // Upate the console
     self.update_console();

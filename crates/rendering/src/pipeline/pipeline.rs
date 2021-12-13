@@ -11,21 +11,26 @@ use std::{
     sync::{
         atomic::AtomicPtr,
         mpsc::{Receiver, Sender},
-        Arc, Mutex, RwLock, MutexGuard,
+        Arc, Mutex, RwLock, MutexGuard, Barrier,
     },
 };
 
 lazy_static! {
     // The pipeline that is stored on the render thread
-    pub static ref PIPELINE: Arc<Mutex<Option<Pipeline>>> = Arc::new(Mutex::new(None));
+    pub static ref PIPELINE: Arc<no_deadlocks::RwLock<Option<Pipeline>>> = Arc::new(no_deadlocks::RwLock::new(None));
 }
 
 // The data that will be sent to the pipeline
-pub struct PipelineSendData(pub std::thread::ThreadId, pub RenderCommand, pub Box<dyn Fn(GPUObject) + Send + Sync + 'static>);
+pub struct PipelineSendData(pub std::thread::ThreadId, pub RenderCommand, pub Box<dyn Fn(GPUObject) + Send + Sync + 'static>, pub bool);
 
-// Get a lock to the world
-pub fn pipeline() -> MutexGuard<'static, Option<Pipeline>> {
-    let x = PIPELINE.lock().unwrap();
+// Get an immutable lock of the render pipeline
+pub fn pipeline() -> no_deadlocks::RwLockReadGuard<'static, Option<Pipeline>> {
+    let x = PIPELINE.read().unwrap();
+    x
+}
+
+pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline>> {
+    let x = PIPELINE.write().unwrap();
     x
 }
 
@@ -34,6 +39,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
+    // Barrier so we can wait until the render thread has finished initializing
+    let barrier = Arc::new(Barrier::new(2));
+    let barrier_clone = barrier.clone();
     unsafe {
         // Window and GLFW wrapper
         struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
@@ -43,7 +51,8 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         let render_wrapper = RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window));
         unsafe impl Send for RenderWrapper {}
         unsafe impl Sync for RenderWrapper {}
-        std::thread::spawn(move || {
+        let builder = std::thread::Builder::new().name("RenderThread".to_string());
+        builder.spawn(move || {
             // Start OpenGL
             let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
             let window = &mut *render_wrapper.1.load(std::sync::atomic::Ordering::Relaxed);
@@ -79,8 +88,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
                 gpu_objects: HashMap::new(),
                 tx_template: tx,
             };
-            let mut p = crate::pipeline::pipeline();
-            *p = Some(pipeline);
+            {
+                let mut p = crate::pipeline::pipeline_mut();
+                *p = Some(pipeline);
+            }
             // This is indeed the render thread
             crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
             // Initialize the deferred renderer
@@ -103,7 +114,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
             // If the render pipeline and thread are valid
             let mut valid = true;
             println!("Successfully created the RenderThread!");
-
+            barrier_clone.wait();
             while valid {
                 // Update the delta_time
                 let new_time = glfw.get_time();
@@ -121,15 +132,16 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
                     delta,
                 );
                 frame_count += 1;
+                std::thread::sleep(std::time::Duration::from_millis(40));
             }
             println!("Stopping the render thread!");
-        });
+        }).unwrap();
     };
     // Wait for the init message...
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");
-    println!("Received RenderThread init confirmation! Took {}ms to init RenderThread", i.elapsed().as_millis());
-    println!("Successfully initialized the RenderPipeline!");    
+    barrier.wait();
+    println!("RSuccessfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
 }
 
 // Commands that can be ran internally
@@ -205,7 +217,7 @@ fn command(
             RenderTaskReturn::None
         }
         // Pipeline
-        RenderTask::DestroyRenderThread() => todo!(),
+        RenderTask::DestroyRenderThread => todo!(),
         RenderTask::CameraDataUpdate(shared) => {
             let pos = shared.object.0;
             let rot = shared.object.1;
@@ -252,14 +264,12 @@ fn poll_commands(
 ) {
     // We must loop through every command that we receive from the main thread
     for pipeline_data in rx.try_iter() {
-        let thread_id = pipeline_data.0;
-        let cmd = pipeline_data.1;
-        let callback = pipeline_data.2;
+        let (thread_id, cmd, callback, waitable) = (pipeline_data.0, pipeline_data.1, pipeline_data.2, pipeline_data.3);
         // Check special commands first
         let name = cmd.name.clone();
         match cmd.input_task {
             // Pipeline shit
-            RenderTask::DestroyRenderThread() => {
+            RenderTask::DestroyRenderThread => {
                 // Destroy the render thread
                 *valid = false;
                 break;
@@ -279,7 +289,7 @@ fn poll_commands(
                                     gpuobject => {
                                         // We have a valid GPU object
                                         // We must somehow find a way to send this to the Interface
-                                        super::interface::executed_task(thread_id, name, gpuobject, callback)
+                                        super::interface::executed_task(thread_id, name, gpuobject, callback, waitable)
                                     }
                                 }
                             },
