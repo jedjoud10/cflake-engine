@@ -13,7 +13,7 @@ lazy_static! {
 thread_local! {
     // The render task sender!
     pub static RENDER_COMMAND_SENDER: RefCell<Option<Sender<RenderCommand>>> = RefCell::new(None);
-    pub static MAIN_THREAD: Cell<bool> = Cell::new(false);
+    pub static IS_RENDER_THREAD: Cell<bool> = Cell::new(false);
 }
 
 pub fn rname(prefix: &str) -> String {
@@ -33,13 +33,14 @@ pub mod pipec {
     use assets::CachedObject;
 
     use crate::pipeline::object::*;
-    use crate::{Model, Pipeline, RenderTaskReturn, Renderer, Shader, SubShader, Texture, Material, RenderCommand, COMMAND_COUNT, SubShaderType};
+    use crate::{Model, Pipeline, RenderTaskReturn, Renderer, Shader, SubShader, Texture, Material, RenderCommand, COMMAND_COUNT, SubShaderType, RENDER_COMMAND_SENDER};
     pub use crate::{RenderTask, SharedData};
     pub use crate::pipeline::global_interface::*;
-    // Start the render pipeline by initializing OpenGL on the new render thread
+    // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         crate::pipeline::init_pipeline(glfw, window);
     }
+    // Ran on the main thread
     pub fn start_world() {
         // Default shader
         let ds = shader(
@@ -53,6 +54,17 @@ pub mod pipec {
         // Default material
         let _dm = Material::new("Default material").set_shader(ds);
         println!("Loaded default shader and default material!");
+    }
+    // Just setup the sender of commands thread-locally
+    pub fn initialize_threadlocal_render_comms() {
+        let pipeline = crate::pipeline::pipeline();
+        let tx = pipeline.as_ref().unwrap().tx_template.clone();
+        RENDER_COMMAND_SENDER.with(|sender_refcell | {
+            let mut sender_ = sender_refcell.borrow_mut();
+            let sender = &mut *sender_;
+            *sender = Some(tx);
+        });
+        println!("Initialized the thread local RenderCommand sender!");
     }
     // Dispose of the render thread and render pipeline
     pub fn dispose_pipeline() {

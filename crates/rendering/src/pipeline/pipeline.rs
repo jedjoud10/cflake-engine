@@ -11,13 +11,19 @@ use std::{
     sync::{
         atomic::AtomicPtr,
         mpsc::{Receiver, Sender},
-        Arc, Mutex, RwLock,
+        Arc, Mutex, RwLock, MutexGuard,
     },
 };
 
 lazy_static! {
     // The pipeline that is stored on the render thread
     pub static ref PIPELINE: Arc<Mutex<Option<Pipeline>>> = Arc::new(Mutex::new(None));
+}
+
+// Get a lock to the world
+pub fn pipeline() -> MutexGuard<'static, Option<Pipeline>> {
+    let x = PIPELINE.lock().unwrap();
+    x
 }
 
 // Create the new render thread
@@ -68,9 +74,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
             // Set the pipeline
             let pipeline = Pipeline {
                 gpu_objects: HashMap::new(),
+                tx_template: tx,
             };
-            let mut p = PIPELINE.as_ref().lock().unwrap();
+            let mut p = crate::pipeline::pipeline();
             *p = Some(pipeline);
+            // This is indeed the render thread
+            crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
             // Initialize the deferred renderer
             let mut pipeline_renderer = PipelineRenderer::default();
             pipeline_renderer.init();
@@ -298,6 +307,7 @@ fn frame(
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {
     pub gpu_objects: HashMap<String, GPUObject>,                                   // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
+    pub tx_template: Sender<RenderCommand> // A copy of the sender so we can copy it on each thread and make it thread local
 }
 impl Pipeline {    
     // Get GPU object using it's specified name

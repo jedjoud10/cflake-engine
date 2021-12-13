@@ -18,7 +18,7 @@ pub struct GlobalInterface {
 
 // Fetch the local callbacks and execute them if their corresponding task has been executed
 pub fn fetch_threadlocal_callbacks() {
-
+    
 }
 
 // Fetch the local callbacks and return a GPU object if we fetched one with the same name

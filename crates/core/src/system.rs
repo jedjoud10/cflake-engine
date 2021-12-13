@@ -48,6 +48,8 @@ where
     let handler = builder.spawn(move || {
         // We must initialize the channels
         crate::command::initialize_channels_worker_thread();
+        // Set our render command sender as well
+        rendering::pipec::initialize_threadlocal_render_comms();
         // Create the system on this thread
         SENDER.with(|x| {
             let system = callback();
