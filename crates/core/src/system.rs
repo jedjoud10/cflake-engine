@@ -80,9 +80,8 @@ where
                     // End of the independent system frame, we must wait until the main thread allows us to continue
                     // Check if the system is still running
                     println!("Update system");
-                    //crate::global::main::thread_sync();
+                    crate::global::main::thread_sync();
                 }
-                //crate::global::main::thread_quit_sync();
                 println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());
             });
         })

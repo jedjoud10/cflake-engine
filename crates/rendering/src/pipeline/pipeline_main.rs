@@ -49,7 +49,7 @@ pub mod pipec {
     };
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
-    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, std::sync::Barrier, AtomicBool)>) -> PipelineStartData {
+    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, AtomicBool)>) -> PipelineStartData {
         crate::pipeline::init_pipeline(glfw, window, barriers)
     }
     // Join the pipeline thread and end it all

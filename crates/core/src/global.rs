@@ -165,32 +165,35 @@ pub mod main {
     use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier};
 
     use lazy_static::lazy_static;
-    pub fn new(n: usize) -> (std::sync::Barrier, std::sync::Barrier, AtomicBool) {
-        (Barrier::new(n), Barrier::new(n), AtomicBool::new(false))
+    pub fn new(n: usize) -> (std::sync::Barrier, AtomicBool) {
+        (Barrier::new(n), AtomicBool::new(false))
     }
     lazy_static! {
-        static ref BARRIERS_WORLD: Arc<(std::sync::Barrier, std::sync::Barrier, AtomicBool)> = Arc::new(new(2));
+        static ref BARRIERS_WORLD: Arc<(std::sync::Barrier, AtomicBool)> = Arc::new(new(3));
     }
     // We are destroying the world
     pub fn destroying_world() {
-        BARRIERS_WORLD.as_ref().2.store(false, Ordering::Relaxed);
+        BARRIERS_WORLD.as_ref().1.store(false, Ordering::Relaxed);
     }
     // The world has finalized it's initialization
     pub fn init_finished_world() {
-        BARRIERS_WORLD.as_ref().2.store(true, Ordering::Relaxed);
+        BARRIERS_WORLD.as_ref().1.store(true, Ordering::Relaxed);
     }
     // We have finished the frame for this specific thread, so wait until all the threads synchronise
     pub fn thread_sync() {
         // If the world has been destroyed, we will not block this thread
-        if !BARRIERS_WORLD.as_ref().2.load(Ordering::Relaxed) { return; }
-        println!("THREAD SYNC");
-        let result = (&BARRIERS_WORLD.0).wait();
-    }
-    // This is called when the world is getting destroyed, so we can wait until all the threads exit first
-    pub fn thread_quit_sync() {
-        if !BARRIERS_WORLD.as_ref().2.load(Ordering::Relaxed) { 
-            let result = (&BARRIERS_WORLD.1).wait();
+        if !BARRIERS_WORLD.as_ref().1.load(Ordering::Relaxed) { 
+            println!("NO WAY BOI ON THREAD {:?}", std::thread::current().id());
+            return;
         }
+        println!("WAITING FOR THREAD SYNC ON THREAD {:?}...", std::thread::current().id());
+        let result = (&BARRIERS_WORLD.0).wait();
+        println!("THREAD SYNC ON THREAD {:?}", std::thread::current().id());
+    }
+    pub fn thread_sync_force() {
+        println!("FORCE WAITING FOR THREAD SYNC ON THREAD {:?}...", std::thread::current().id());
+        let result = (&BARRIERS_WORLD.0).wait();
+        println!("FORCE THREAD SYNC ON THREAD {:?}", std::thread::current().id());
     }
     // Clone
-    pub fn thread_barrier_clones() -> Arc<(Barrier, Barrier, AtomicBool)> { BARRIERS_WORLD.clone() }}
+    pub fn thread_barrier_clones() -> Arc<(Barrier, AtomicBool)> { BARRIERS_WORLD.clone() }}

@@ -91,6 +91,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         )
         .unwrap(),
     );
+    
     // Create the white texture
     pipec::texturec(
         assets::cachec::cache(
@@ -155,6 +156,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Apply the config file's data to the rendering window
     window_commands::set_fullscreen(config_file_copy.fullscreen, glfw, window);
     window_commands::set_vsync(config_file_copy.vsync);
+    crate::global::main::init_finished_world();
     println!("Hello world from MainThread! Must call initalization callback!");
 }
 // This is the main Update loop, ran on the main thread
@@ -241,7 +243,7 @@ fn update_console() {
 }
 // When we want to close the application
 pub fn kill_world(pipeline_data: PipelineStartData) {
-    println!("Killing SystemWorkerThreads...");
+    println!("Killing child threads...");
     let mut w = world_mut();
     crate::global::main::destroying_world();
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
@@ -252,17 +254,18 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
         let wtc_tx = receiver.wtc_txs.get(&data.join_handle.thread().id()).unwrap();
         wtc_tx.send(WorkerThreadCommand::StopSystem).unwrap();
     }
+    // Send the destroy message to the pipeline, then make sure all the threads have synced up, since they must execute their last frame
     pipec::dispose_pipeline();
-    println!("Waiting for all the threads to shutdown...");
-    crate::global::main::thread_quit_sync();
+    crate::global::main::thread_sync_force();    
+    // Sync up all the threads for shutdown now
+    println!("Waiting for all the threads to sync for shutdown...");
+    println!("All the threads have synced up for shutdown!");
     
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();
     }
     pipec::join_pipeline(pipeline_data);
-    println!("Kill world!");
-    // Kill the render pipeline
 }
 
 pub fn receive_key_event(_key_scancode: i32, _action_id: i32) {}
