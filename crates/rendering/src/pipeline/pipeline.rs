@@ -35,11 +35,11 @@ pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline
 }
 
 // Create the new render thread
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, main_barrier: Arc<(std::sync::Barrier, std::sync::Barrier)>) {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
-                                                                                                       // Barrier so we can wait until the render thread has finished initializing
+    // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
     unsafe {
@@ -82,7 +82,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
                     panic!()
                 }
                 // The render command receiver
-                let threads_to_render = rx;
+                let sent_tasks_receiver = rx;
 
                 // Set the pipeline
                 let pipeline = Pipeline {
@@ -112,6 +112,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
                 // Timing stuff
                 let mut last_time: f64 = 0.0;
                 let mut frame_count: u128 = 0;
+                let (frame_barrier, quit_barrier) = main_barrier.as_ref();
                 // If the render pipeline and thread are valid
                 let mut valid = true;
                 println!("Successfully created the RenderThread!");
@@ -122,20 +123,24 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
                     let delta = new_time - last_time;
                     last_time = new_time;
                     // Run the frame
-                    frame(
-                        glfw.borrow_mut(),
-                        window.borrow_mut(),
-                        &threads_to_render,
-                        &mut pipeline_renderer,
-                        &mut camera,
-                        &mut valid,
-                        frame_count,
-                        delta,
-                    );
+                    // Poll first
+                    poll_commands(&mut pipeline_renderer, &mut camera, &sent_tasks_receiver, &mut valid, window, glfw);
+                    // Pre-render
+                    pipeline_renderer.pre_render();
+                    // Render
+                    pipeline_renderer.renderer_frame(&camera);
+                    // Post-render
+                    pipeline_renderer.post_render(&camera, window);
+                    // Remove the already called callbacks
+                    super::interface::update_render_thread();
                     frame_count += 1;
                     std::thread::sleep(std::time::Duration::from_millis(40));
+                    // At the end of each frame, we must synchronise with the main thread
+                    let result = frame_barrier.wait();
                 }
                 println!("Stopping the render thread!");
+                // Barrier when we quit the render thread
+                quit_barrier.wait();
             })
             .unwrap();
     };
@@ -293,30 +298,6 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
         }
     }
 }
-
-// The render thread that is continuously being ran
-fn frame(
-    _glfw: &mut glfw::Glfw,
-    window: &mut glfw::Window,
-    rx: &Receiver<PipelineSendData>,
-    pipeline_renderer: &mut PipelineRenderer,
-    camera: &mut CameraDataGPUObject,
-    valid: &mut bool,
-    _frame_count: u128,
-    _delta_time: f64,
-) {
-    // Poll first
-    poll_commands(pipeline_renderer, camera, rx, valid, window, _glfw);
-    // Pre-render
-    pipeline_renderer.pre_render();
-    // Render
-    pipeline_renderer.renderer_frame(camera);
-    // Post-render
-    pipeline_renderer.post_render(camera, window);
-    // Remove the already called callbacks
-    super::interface::update_render_thread();
-}
-
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {
     pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects that where generated on the Rendering Thread and sent back to the main thread

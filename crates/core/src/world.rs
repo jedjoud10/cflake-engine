@@ -203,6 +203,8 @@ pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Win
         rendering_system.disable();
     }
     */
+    // At the end of the frame we will wait until all the threads (SystemWorkerThreads and the RenderThread) finish executing
+    crate::global::main::thread_sync();     
 }
 // Update the console
 fn update_console() {
@@ -241,6 +243,7 @@ fn update_console() {
 pub fn kill_world() {
     println!("Killing SystemWorkerThreads...");
     let mut w = world_mut();
+    crate::global::main::world_destroying();
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
     // Tell the systems to stop
     for data in &systems {
@@ -249,6 +252,7 @@ pub fn kill_world() {
         let wtc_tx = receiver.wtc_txs.get(&data.join_handle.thread().id()).unwrap();
         wtc_tx.send(WorkerThreadCommand::StopSystem).unwrap();
     }
+    crate::global::main::thread_quit_sync();
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();

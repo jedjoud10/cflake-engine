@@ -30,7 +30,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     defaults::preload_default_assets();
     assets_preload_callback();
     // Hehe multithreaded renering goes BRRRRRRRR
-    rendering::pipec::init_pipeline(&mut glfw, &mut window);
+    rendering::pipec::init_pipeline(&mut glfw, &mut window, core::global::main::thread_barrier_clones());
     rendering::pipec::initialize_threadlocal_render_comms();
     // Set the type of events that we want to listen to
     window.set_key_polling(true);

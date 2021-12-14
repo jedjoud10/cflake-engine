@@ -161,4 +161,33 @@ pub mod io {
     }
 }
 // Mains
-pub mod main {}
+pub mod main {
+    use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier};
+
+    use lazy_static::lazy_static;
+    pub fn new(n: usize) -> (std::sync::Barrier, std::sync::Barrier) {
+        (Barrier::new(n), Barrier::new(n))
+    }
+    lazy_static! {
+        static ref SYNC_BARRIERS: Arc<(std::sync::Barrier, std::sync::Barrier)> = Arc::new(new(3));
+        static ref WORLD_VALID: AtomicBool = AtomicBool::new(true);
+    }
+    // We are destroying the world
+    pub fn world_destroying() {
+        WORLD_VALID.store(false, Ordering::Relaxed);
+    }
+    // We have finished the frame for this specific thread, so wait until all the threads synchronise
+    pub fn thread_sync() {
+        // If the world has been destroyed, we will not block this thread
+        if !WORLD_VALID.load(Ordering::Relaxed) { return; }
+        let thread_barrier = &SYNC_BARRIERS.0;
+        let result = thread_barrier.wait();
+    }
+    // This is called when the world is getting destroyed, so we can wait until all the threads exit first
+    pub fn thread_quit_sync() {
+        if !WORLD_VALID.load(Ordering::Relaxed) { 
+            let result = (&SYNC_BARRIERS.1).wait();
+        }
+    }
+    // Clone
+    pub fn thread_barrier_clones() -> Arc<(std::sync::Barrier, std::sync::Barrier)> { SYNC_BARRIERS.clone() }}

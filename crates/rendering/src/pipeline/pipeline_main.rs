@@ -37,6 +37,7 @@ pub mod pipec {
     use assets::CachedObject;
     use std::borrow::{Borrow, BorrowMut};
     
+    use std::sync::Arc;
     use std::sync::atomic::Ordering;
     
 
@@ -48,8 +49,8 @@ pub mod pipec {
     };
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
-    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-        crate::pipeline::init_pipeline(glfw, window);
+    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier: Arc<(std::sync::Barrier, std::sync::Barrier)>) {
+        crate::pipeline::init_pipeline(glfw, window, barrier);
     }
     // Ran on the main thread
     pub fn start_world() {
