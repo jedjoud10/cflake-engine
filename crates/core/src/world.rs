@@ -161,7 +161,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 }
 // This is the main Update loop, ran on the main thread
 pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
-    println!("Update world");
+    println!("Update world {}", _delta * 1000.0);
     /*
     // Upate the console
     self.update_console();
@@ -245,6 +245,10 @@ fn update_console() {
 pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Killing child threads...");
     let mut w = world_mut();
+    crate::global::main::thread_sync();
+    // Must halt the other threads, telling them to wait until we send all of the commands
+
+
     crate::global::main::destroying_world();
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
     // Tell the systems to stop
@@ -256,16 +260,13 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     }
     // Send the destroy message to the pipeline, then make sure all the threads have synced up, since they must execute their last frame
     pipec::dispose_pipeline();
-    crate::global::main::thread_sync_force();    
-    // Sync up all the threads for shutdown now
-    println!("Waiting for all the threads to sync for shutdown...");
-    println!("All the threads have synced up for shutdown!");
-    
+    crate::global::main::thread_sync_quit();    
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();
     }
     pipec::join_pipeline(pipeline_data);
+    println!("Joined up all the child threads, we can safely exit!");
 }
 
 pub fn receive_key_event(_key_scancode: i32, _action_id: i32) {}

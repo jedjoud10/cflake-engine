@@ -162,14 +162,14 @@ pub mod io {
 }
 // Mains
 pub mod main {
-    use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier};
+    use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier, BarrierWaitResult};
 
     use lazy_static::lazy_static;
-    pub fn new(n: usize) -> (std::sync::Barrier, AtomicBool) {
-        (Barrier::new(n), AtomicBool::new(false))
+    pub fn new(n: usize) -> (Barrier, AtomicBool, Barrier) {
+        (Barrier::new(n), AtomicBool::new(false), Barrier::new(n))
     }
     lazy_static! {
-        static ref BARRIERS_WORLD: Arc<(std::sync::Barrier, AtomicBool)> = Arc::new(new(3));
+        static ref BARRIERS_WORLD: Arc<(std::sync::Barrier, AtomicBool, std::sync::Barrier)> = Arc::new(new(3));
     }
     // We are destroying the world
     pub fn destroying_world() {
@@ -183,17 +183,12 @@ pub mod main {
     pub fn thread_sync() {
         // If the world has been destroyed, we will not block this thread
         if !BARRIERS_WORLD.as_ref().1.load(Ordering::Relaxed) { 
-            println!("NO WAY BOI ON THREAD {:?}", std::thread::current().id());
             return;
         }
-        println!("WAITING FOR THREAD SYNC ON THREAD {:?}...", std::thread::current().id());
         let result = (&BARRIERS_WORLD.0).wait();
-        println!("THREAD SYNC ON THREAD {:?}", std::thread::current().id());
     }
-    pub fn thread_sync_force() {
-        println!("FORCE WAITING FOR THREAD SYNC ON THREAD {:?}...", std::thread::current().id());
-        let result = (&BARRIERS_WORLD.0).wait();
-        println!("FORCE THREAD SYNC ON THREAD {:?}", std::thread::current().id());
+    pub fn thread_sync_quit() {
+        let result = (&BARRIERS_WORLD.2).wait();
     }
     // Clone
-    pub fn thread_barrier_clones() -> Arc<(Barrier, AtomicBool)> { BARRIERS_WORLD.clone() }}
+    pub fn thread_barrier_clones() -> Arc<(Barrier, AtomicBool, Barrier)> { BARRIERS_WORLD.clone() }}

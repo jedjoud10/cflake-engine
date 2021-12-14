@@ -35,7 +35,7 @@ pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline
 }
 
 // Create the new render thread
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, AtomicBool)>) -> PipelineStartData {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, AtomicBool, std::sync::Barrier)>) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
@@ -114,12 +114,14 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers:
                 // Timing stuff
                 let mut last_time: f64 = 0.0;
                 let mut frame_count: u128 = 0;
-                let (frame_barrier, world_valid) = barriers.as_ref();
+                let (frame_barrier, world_valid, quit_barrier) = barriers.as_ref();
                 // If the render pipeline and thread are valid
                 let mut valid = true;
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
+                let mut p = 0;
                 while valid {
+                    p = 0;
                     // Update the delta_time
                     let new_time = glfw.get_time();
                     let delta = new_time - last_time;
@@ -136,15 +138,21 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers:
                     // Remove the already called callbacks
                     super::interface::update_render_thread();
                     frame_count += 1;
-                    std::thread::sleep(std::time::Duration::from_millis(40));
                     // The world is valid, we can wait
+                    std::thread::sleep(std::time::Duration::from_millis(40));
+
                     if world_valid.load(Ordering::Relaxed) {
-                        let result = frame_barrier.wait();
+                        // If we are already exiting then do not do anything
+                        if valid {
+                            let result = frame_barrier.wait();
+                            p += 1;
+                        }
                     }
                 }
-                println!("Stopping the render thread!");
+                println!("Stopping the render thread...");
                 // We must wait since all the other threads are also waiting to sync up
-                frame_barrier.wait();
+                quit_barrier.wait();
+                println!("Stopped the render thread!");
             })
             .unwrap();
     };
