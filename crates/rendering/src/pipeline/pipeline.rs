@@ -9,7 +9,7 @@ use std::{
     mem::size_of,
     ptr::null,
     sync::{
-        atomic::AtomicPtr,
+        atomic::{AtomicPtr, AtomicBool, Ordering},
         mpsc::{Receiver, Sender},
         Arc, Barrier,
     },
@@ -35,13 +35,15 @@ pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline
 }
 
 // Create the new render thread
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, main_barrier: Arc<(std::sync::Barrier, std::sync::Barrier)>) {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, std::sync::Barrier, AtomicBool)>) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
     // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
+    let barriers = barriers.clone();
+    let join_handle: std::thread::JoinHandle<()>;
     unsafe {
         // Window and GLFW wrapper
         struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
@@ -52,7 +54,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, main_barr
         unsafe impl Send for RenderWrapper {}
         unsafe impl Sync for RenderWrapper {}
         let builder = std::thread::Builder::new().name("RenderThread".to_string());
-        builder
+        join_handle = builder
             .spawn(move || {
                 // Start OpenGL
                 let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
@@ -112,7 +114,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, main_barr
                 // Timing stuff
                 let mut last_time: f64 = 0.0;
                 let mut frame_count: u128 = 0;
-                let (frame_barrier, quit_barrier) = main_barrier.as_ref();
+                let (frame_barrier, quit_barrier, world_valid) = barriers.as_ref();
                 // If the render pipeline and thread are valid
                 let mut valid = true;
                 println!("Successfully created the RenderThread!");
@@ -136,7 +138,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, main_barr
                     frame_count += 1;
                     std::thread::sleep(std::time::Duration::from_millis(40));
                     // At the end of each frame, we must synchronise with the main thread
-                    let result = frame_barrier.wait();
+                    println!("The rendering system broke");
+                    // The world is valid, we can wait
+                    if world_valid.load(Ordering::Relaxed) {
+                        println!("SYNC RENDER THREAD");
+                        let result = frame_barrier.wait();
+                    }
                 }
                 println!("Stopping the render thread!");
                 // Barrier when we quit the render thread
@@ -149,6 +156,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, main_barr
     println!("Waiting for RenderThread init confirmation...");
     barrier.wait();
     println!("RSuccessfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
+    PipelineStartData { handle: join_handle }
 }
 
 // Commands that can be ran internally
@@ -297,6 +305,10 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
             }
         }
     }
+}
+// Data that will be sent back to the main thread after we start the pipeline thread
+pub struct PipelineStartData {
+    pub handle: std::thread::JoinHandle<()>,
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {

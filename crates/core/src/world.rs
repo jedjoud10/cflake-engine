@@ -240,10 +240,10 @@ fn update_console() {
     */
 }
 // When we want to close the application
-pub fn kill_world() {
+pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Killing SystemWorkerThreads...");
     let mut w = world_mut();
-    crate::global::main::world_destroying();
+    crate::global::main::destroying_world();
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
     // Tell the systems to stop
     for data in &systems {
@@ -252,14 +252,17 @@ pub fn kill_world() {
         let wtc_tx = receiver.wtc_txs.get(&data.join_handle.thread().id()).unwrap();
         wtc_tx.send(WorkerThreadCommand::StopSystem).unwrap();
     }
+    pipec::dispose_pipeline();
+    println!("Waiting for all the threads to shutdown...");
     crate::global::main::thread_quit_sync();
+    
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();
     }
+    pipec::join_pipeline(pipeline_data);
     println!("Kill world!");
     // Kill the render pipeline
-    pipec::dispose_pipeline();
 }
 
 pub fn receive_key_event(_key_scancode: i32, _action_id: i32) {}

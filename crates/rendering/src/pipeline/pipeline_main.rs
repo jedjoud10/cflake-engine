@@ -38,10 +38,10 @@ pub mod pipec {
     use std::borrow::{Borrow, BorrowMut};
     
     use std::sync::Arc;
-    use std::sync::atomic::Ordering;
+    use std::sync::atomic::{Ordering, AtomicBool};
     
 
-    use crate::interface::*;
+    use crate::{interface::*, PipelineStartData};
     use crate::pipeline::object::*;
     use crate::{
         is_render_thread, Material, Model, PipelineSendData, RenderCommand, RenderTaskReturn, Shader, SubShader, Texture, COMMAND_COUNT,
@@ -49,8 +49,12 @@ pub mod pipec {
     };
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
-    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier: Arc<(std::sync::Barrier, std::sync::Barrier)>) {
-        crate::pipeline::init_pipeline(glfw, window, barrier);
+    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, std::sync::Barrier, AtomicBool)>) -> PipelineStartData {
+        crate::pipeline::init_pipeline(glfw, window, barriers)
+    }
+    // Join the pipeline thread and end it all
+    pub fn join_pipeline(pipeline_data: PipelineStartData) {
+        pipeline_data.handle.join().unwrap();
     }
     // Ran on the main thread
     pub fn start_world() {
