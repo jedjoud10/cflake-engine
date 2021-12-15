@@ -163,15 +163,20 @@ pub mod io {
 // Mains
 pub mod main {
     use others::WorldBarrierData;
-    use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier, BarrierWaitResult};
+    use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier, BarrierWaitResult, RwLock, RwLockReadGuard};
     use lazy_static::lazy_static;
     lazy_static! {
-        static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new(3));
+        static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
     }
-
+    // Initialize the world barrier data with the specified amount of threads to wait for
+    pub fn init(n: usize) {
+        let x = BARRIERS_WORLD.as_ref();
+        x.new_update(n);
+    }
     // As ref
     pub fn as_ref() -> &'static WorldBarrierData {
         BARRIERS_WORLD.as_ref()
     }
     // Clone
-    pub fn clone() -> Arc<WorldBarrierData> { BARRIERS_WORLD.clone() }}
+    pub fn clone() -> Arc<WorldBarrierData> { BARRIERS_WORLD.clone() }
+}

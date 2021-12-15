@@ -43,6 +43,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     // Calling the callback
     println!("Calling World Initialization callback");
     defaults::preload_systems();
+    core::global::main::init(3);
     callback();
     let mut last_time: f64 = 0.0;
     core::global::main::as_ref().init_finished_world();

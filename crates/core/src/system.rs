@@ -44,7 +44,7 @@ where
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
     let builder = std::thread::Builder::new().name(format!("SystemWorkerThread '{}'", system_id));
-    let barrier_data = crate::global::main::clone();
+    let barrier_data_ = crate::global::main::clone();    
     let handler = builder
         .spawn(move || {
             // We must initialize the channels
@@ -58,6 +58,7 @@ where
                 let sender = sender_.as_ref().unwrap();
                 let wtc_rx = &sender.wtc_rx;
                 println!("Hello from '{}'!", std::thread::current().name().unwrap());
+                let barrier_data = barrier_data_.clone();
                 // Start the system loop
                 loop {
                     // Check if we have any system commands that must be executed
