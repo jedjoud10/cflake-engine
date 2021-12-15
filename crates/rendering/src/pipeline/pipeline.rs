@@ -35,14 +35,14 @@ pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline
 }
 
 // Create the new render thread
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, AtomicBool, std::sync::Barrier)>) -> PipelineStartData {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
     // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
-    let barriers = barriers.clone();
+    let barrier_data = barrier_data.clone();
     let join_handle: std::thread::JoinHandle<()>;
     unsafe {
         // Window and GLFW wrapper
@@ -114,13 +114,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers:
                 // Timing stuff
                 let mut last_time: f64 = 0.0;
                 let mut frame_count: u128 = 0;
-                let (frame_barrier, world_valid, quit_barrier) = barriers.as_ref();
-                // If the render pipeline and thread are valid
-                let mut valid = true;
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
                 let mut p = 0;
-                while valid {
+                loop {
                     p = 0;
                     // Update the delta_time
                     let new_time = glfw.get_time();
@@ -128,7 +125,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers:
                     last_time = new_time;
                     // Run the frame
                     // Poll first
-                    poll_commands(&mut pipeline_renderer, &mut camera, &sent_tasks_receiver, &mut valid, window, glfw);
+                    poll_commands(&mut pipeline_renderer, &mut camera, &sent_tasks_receiver, window, glfw);
                     // Pre-render
                     pipeline_renderer.pre_render();
                     // Render
@@ -139,19 +136,15 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers:
                     super::interface::update_render_thread();
                     frame_count += 1;
                     // The world is valid, we can wait
-                    std::thread::sleep(std::time::Duration::from_millis(40));
-
-                    if world_valid.load(Ordering::Relaxed) {
-                        // If we are already exiting then do not do anything
-                        if valid {
-                            let result = frame_barrier.wait();
-                            p += 1;
+                    if barrier_data.is_world_valid() {
+                        barrier_data.thread_sync();
+                        if barrier_data.is_world_destroyed() {
+                            println!("Stopping the render thread...");
+                            barrier_data.thread_sync_quit();
+                            break;
                         }
                     }
                 }
-                println!("Stopping the render thread...");
-                // We must wait since all the other threads are also waiting to sync up
-                quit_barrier.wait();
                 println!("Stopped the render thread!");
             })
             .unwrap();
@@ -237,7 +230,6 @@ fn command(
             RenderTaskReturn::None
         }
         // Pipeline
-        RenderTask::DestroyRenderThread => todo!(),
         RenderTask::CameraDataUpdate(shared) => {
             let pos = shared.object.0;
             let rot = shared.object.1;
@@ -272,19 +264,13 @@ fn command(
 }
 
 // Poll commands that have been sent to us by the main thread
-fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<PipelineSendData>, valid: &mut bool, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<PipelineSendData>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // We must loop through every command that we receive from the main thread
     for pipeline_data in rx.try_iter() {
         let (thread_id, cmd, callback, waitable) = (pipeline_data.0, pipeline_data.1, pipeline_data.2, pipeline_data.3);
         // Check special commands first
         let name = cmd.name.clone();
         match cmd.input_task {
-            // Pipeline shit
-            RenderTask::DestroyRenderThread => {
-                // Destroy the render thread
-                *valid = false;
-                break;
-            }
             _ => {
                 // Valid command
                 match command(name.clone(), pr, camera, cmd, window, glfw) {

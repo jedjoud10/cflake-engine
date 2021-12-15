@@ -162,33 +162,16 @@ pub mod io {
 }
 // Mains
 pub mod main {
+    use others::WorldBarrierData;
     use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier, BarrierWaitResult};
-
     use lazy_static::lazy_static;
-    pub fn new(n: usize) -> (Barrier, AtomicBool, Barrier) {
-        (Barrier::new(n), AtomicBool::new(false), Barrier::new(n))
-    }
     lazy_static! {
-        static ref BARRIERS_WORLD: Arc<(std::sync::Barrier, AtomicBool, std::sync::Barrier)> = Arc::new(new(3));
+        static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new(3));
     }
-    // We are destroying the world
-    pub fn destroying_world() {
-        BARRIERS_WORLD.as_ref().1.store(false, Ordering::Relaxed);
-    }
-    // The world has finalized it's initialization
-    pub fn init_finished_world() {
-        BARRIERS_WORLD.as_ref().1.store(true, Ordering::Relaxed);
-    }
-    // We have finished the frame for this specific thread, so wait until all the threads synchronise
-    pub fn thread_sync() {
-        // If the world has been destroyed, we will not block this thread
-        if !BARRIERS_WORLD.as_ref().1.load(Ordering::Relaxed) { 
-            return;
-        }
-        let result = (&BARRIERS_WORLD.0).wait();
-    }
-    pub fn thread_sync_quit() {
-        let result = (&BARRIERS_WORLD.2).wait();
+
+    // As ref
+    pub fn as_ref() -> &'static WorldBarrierData {
+        BARRIERS_WORLD.as_ref()
     }
     // Clone
-    pub fn thread_barrier_clones() -> Arc<(Barrier, AtomicBool, Barrier)> { BARRIERS_WORLD.clone() }}
+    pub fn clone() -> Arc<WorldBarrierData> { BARRIERS_WORLD.clone() }}

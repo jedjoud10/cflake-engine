@@ -156,12 +156,11 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Apply the config file's data to the rendering window
     window_commands::set_fullscreen(config_file_copy.fullscreen, glfw, window);
     window_commands::set_vsync(config_file_copy.vsync);
-    crate::global::main::init_finished_world();
     println!("Hello world from MainThread! Must call initalization callback!");
 }
 // This is the main Update loop, ran on the main thread
 pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
-    println!("Update world {}", _delta * 1000.0);
+    //println!("Update world {}", _delta * 1000.0);
     /*
     // Upate the console
     self.update_console();
@@ -206,7 +205,8 @@ pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Win
     }
     */
     // At the end of the frame we will wait until all the threads (SystemWorkerThreads and the RenderThread) finish executing
-    crate::global::main::thread_sync();     
+    //std::thread::sleep(std::time::Duration::from_millis(40));
+    crate::global::main::as_ref().thread_sync();     
 }
 // Update the console
 fn update_console() {
@@ -245,22 +245,18 @@ fn update_console() {
 pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Killing child threads...");
     let mut w = world_mut();
-    crate::global::main::thread_sync();
-    // Must halt the other threads, telling them to wait until we send all of the commands
+    let barrier_data = crate::global::main::clone();
 
-
-    crate::global::main::destroying_world();
+    // Run their last frame...
+    println!("Loop threads running their last frame...");
+    // Set the AtomicBool
+    barrier_data.destroying_world();
+    barrier_data.thread_sync();
+    println!("Loop threads ran their last frame!");
+    //std::thread::sleep(std::time::Duration::from_secs(1));
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
-    // Tell the systems to stop
-    for data in &systems {
-        let receiver = crate::communication::RECEIVER.lock().unwrap();
-        let receiver = receiver.as_ref().unwrap();
-        let wtc_tx = receiver.wtc_txs.get(&data.join_handle.thread().id()).unwrap();
-        wtc_tx.send(WorkerThreadCommand::StopSystem).unwrap();
-    }
-    // Send the destroy message to the pipeline, then make sure all the threads have synced up, since they must execute their last frame
-    pipec::dispose_pipeline();
-    crate::global::main::thread_sync_quit();    
+    // Tell all the child loop threads to stop
+    barrier_data.thread_sync_quit();
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();

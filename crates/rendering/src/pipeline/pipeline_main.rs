@@ -49,8 +49,8 @@ pub mod pipec {
     };
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
-    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barriers: Arc<(std::sync::Barrier, AtomicBool, std::sync::Barrier)>) -> PipelineStartData {
-        crate::pipeline::init_pipeline(glfw, window, barriers)
+    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {
+        crate::pipeline::init_pipeline(glfw, window, barrier_data)
     }
     // Join the pipeline thread and end it all
     pub fn join_pipeline(pipeline_data: PipelineStartData) {
@@ -80,10 +80,6 @@ pub mod pipec {
             *sender = Some(tx);
         });
         println!("Initialized the thread local RenderCommand sender!");
-    }
-    // Dispose of the render thread and render pipeline
-    pub fn dispose_pipeline() {
-        ctask(RenderTask::DestroyRenderThread, "destroy_render_thread", |_| {});
     }
     // Generate a command name
     pub fn generate_command_name() -> String {

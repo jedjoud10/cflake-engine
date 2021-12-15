@@ -7,7 +7,6 @@ use std::{collections::HashMap, sync::Mutex};
 
 // Some special worker thread commands
 pub enum WorkerThreadCommand {
-    StopSystem, // Completely stop the system before we join the SystemWorkerThread
 }
 
 lazy_static! {
@@ -45,6 +44,7 @@ where
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
     let builder = std::thread::Builder::new().name(format!("SystemWorkerThread '{}'", system_id));
+    let barrier_data = crate::global::main::clone();
     let handler = builder
         .spawn(move || {
             // We must initialize the channels
@@ -64,12 +64,6 @@ where
                     match wtc_rx.try_recv() {
                         Ok(wtc) => {
                             // Execute the worker thread command
-                            match wtc {
-                                WorkerThreadCommand::StopSystem => {
-                                    println!("Shutting down '{}'...", std::thread::current().name().unwrap());
-                                    break;
-                                }
-                            }
                         }
                         Err(_) => {}
                     }
@@ -79,9 +73,16 @@ where
                     // Start of the independent system frame
                     // End of the independent system frame, we must wait until the main thread allows us to continue
                     // Check if the system is still running
-                    crate::global::main::thread_sync();
+                    //std::thread::sleep(std::time::Duration::from_millis(400));
+                    if barrier_data.is_world_valid() {
+                        barrier_data.thread_sync();
+                        if barrier_data.is_world_destroyed() {
+                            barrier_data.thread_sync_quit();
+                            break;
+                        }
+                    }
+
                 }
-                crate::global::main::thread_sync_quit();
                 println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());
             });
         })
