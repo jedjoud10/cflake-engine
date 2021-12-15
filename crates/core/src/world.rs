@@ -264,13 +264,23 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     pipec::join_pipeline(pipeline_data);
     println!("Joined up all the child threads, we can safely exit!");
 }
+// We have received input events from GLFW
+pub fn receive_key_event(key_scancode: i32, action_type: i32) {
+    let mut w = world_mut();
+    w.input_manager.receive_key_event(key_scancode, action_type);
+}
+pub fn receive_mouse_pos_event(x: f64, y: f64) {
+    let mut w = world_mut();
+    w.input_manager.receive_mouse_event(Some((x, y)), None);
+}
+pub fn receive_mouse_scroll_event(scroll: f64) {
+    let mut w = world_mut();
+    w.input_manager.receive_mouse_event(None, Some(scroll));
+}
 
-pub fn receive_key_event(_key_scancode: i32, _action_id: i32) {}
-
-pub fn receive_mouse_pos_event(_x: f64, _y: f64) {}
-pub fn receive_mouse_scroll_event(_scroll: f64) {}
-
-pub fn resize_window_event(_x: u16, _y: u16) {}
+pub fn resize_window_event(_x: u16, _y: u16) {
+    let mut w = world_mut();
+}
 /*
 // When we resize the window
 pub fn resize_window_event(size: (u16, u16)) {

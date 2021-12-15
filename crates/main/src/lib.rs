@@ -43,7 +43,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     // Calling the callback
     println!("Calling World Initialization callback");
     defaults::preload_systems();
-    core::global::main::init(3);
+    core::global::main::init(core::global::ecs::system_counter() + 2);
     callback();
     let mut last_time: f64 = 0.0;
     core::global::main::as_ref().init_finished_world();
@@ -55,7 +55,6 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         last_time = new_time;
         // Update the world
         core::world::update_world(delta, &mut glfw, &mut window);
-        // Read the events at the start of the frame
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             handle_window_event(&mut window, event);
