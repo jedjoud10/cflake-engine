@@ -17,6 +17,7 @@ impl CommandQuery {
     }
 }
 
+
 // Initialize the main channels on the main thread
 pub fn initialize_channels_main() {
     // Create the channels

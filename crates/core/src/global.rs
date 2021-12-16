@@ -2,6 +2,9 @@
 // Commands grouped for each module
 // Entity Component Systems
 pub mod ecs {
+    use crate::callbacks::CallbackSendingData;
+    use crate::callbacks::CallbackType;
+    use crate::callbacks::RefCallback;
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
@@ -25,7 +28,13 @@ pub mod ecs {
     }
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
     pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) {
-        command(CommandQuery::new(Task::EntityAdd(entity, linkings)))
+        command(CommandQuery::new(Task::EntityAdd(entity, linkings, CallbackSendingData::None)))
+    }
+    // Callback counter part
+    pub fn entity_add_callback<F: Fn(&ecs::Entity) + 'static>(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup, callback: F) {
+        let boxed_callback = Box::new(callback);
+        let ref_callback = RefCallback::new(boxed_callback);
+        command(CommandQuery::new(Task::EntityAdd(entity, linkings, CallbackSendingData::ValidCallback(0))))
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
     pub fn entity_remove(entity: &ecs::Entity) {
@@ -58,6 +67,7 @@ pub mod ecs {
         /* #endregion */
         else {
             // At the end of the current frame, run the callback on the main thread (If we are on a worker thread)
+
         }
     }
     // Create a component linking group
