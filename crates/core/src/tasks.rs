@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::command::CommandQuery;
 
 use crate::global::callbacks::LogicSystemCallbackResultData;
-use crate::system::{LogicSystemCommand};
+use crate::system::LogicSystemCommand;
 
 // Some world tasks
 pub enum Task {

@@ -2,10 +2,7 @@
 // Commands grouped for each module
 // Entity Component Systems
 pub mod ecs {
-    
-    
-    
-    
+
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
@@ -147,8 +144,6 @@ pub mod input {
 }
 // User Interface shit
 pub mod ui {
-    
-    
 
     // Add a root the world
     pub fn add_root(_name: &str, _root: ui::Root) {
@@ -178,9 +173,7 @@ pub mod io {
 pub mod main {
     use lazy_static::lazy_static;
     use others::WorldBarrierData;
-    use std::sync::{
-        Arc,
-    };
+    use std::sync::Arc;
     lazy_static! {
         static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
     }
