@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use crate::command::CommandQuery;
-use crate::communication::*;
+
 use crate::global::callbacks::LogicSystemCallbackResultData;
-use crate::system::{LogicSystemCommand, IS_MAIN_THREAD, WORKER_THREADS_RECEIVER};
+use crate::system::{LogicSystemCommand};
 
 // Some world tasks
 pub enum Task {

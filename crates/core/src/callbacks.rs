@@ -12,7 +12,7 @@ thread_local! {
 
 // Execute a specific callback on this thread
 pub fn execute_callback(id: u64, result_data: LogicSystemCallbackResultData) {
-    let mut world = crate::world::world_mut();
+    let world = crate::world::world_mut();
     CALLBACK_MANAGER_BUFFER.with(|cell| {
         let mut callback_manager = cell.borrow_mut();
         match callback_manager.callbacks.remove(&id) {

@@ -52,7 +52,7 @@ where
             rendering::pipec::initialize_threadlocal_render_comms();
             // Create the system on this thread
             SENDER.with(|x| {
-                let system = callback();
+                let _system = callback();
                 let sender_ = x.borrow();
                 let sender = sender_.as_ref().unwrap();
                 let lsc_rx = &sender.lsc_rx;
@@ -99,7 +99,7 @@ where
 // Send a LogicSystemCommand to a specific thread
 pub fn send_lsc(lgc: LogicSystemCommand, thread_id: &std::thread::ThreadId) {
     // Get the sender
-    let mut senders_ = LOGIC_SYSTEMS_COMMAND_SENDER.lock().unwrap();
+    let senders_ = LOGIC_SYSTEMS_COMMAND_SENDER.lock().unwrap();
     let senders = senders_.lsc_txs.as_ref().unwrap();
     let sender = senders.get(thread_id).unwrap();
     // Send the message

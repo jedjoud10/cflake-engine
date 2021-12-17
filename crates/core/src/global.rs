@@ -2,10 +2,10 @@
 // Commands grouped for each module
 // Entity Component Systems
 pub mod ecs {
-    use crate::callbacks::CallbackSendingData;
-    use crate::callbacks::CallbackType;
-    use crate::callbacks::CallbackType::EntityRefCallbacks;
-    use crate::callbacks::RefCallback;
+    
+    
+    
+    
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
@@ -147,11 +147,11 @@ pub mod input {
 }
 // User Interface shit
 pub mod ui {
-    use crate::command::CommandQuery;
-    use crate::tasks::Task;
+    
+    
 
     // Add a root the world
-    pub fn add_root(name: &str, root: ui::Root) {
+    pub fn add_root(_name: &str, _root: ui::Root) {
         /*
         let mut w = crate::world::world_mut();
         command(CommandQuery::new(Task::AddRoot(name.to_string(), root)));
@@ -166,7 +166,7 @@ pub mod io {
         let saver_loader = &mut w.saver_loader;
         saver_loader.create_default("config\\game_config.json", &crate::GameConfig::default());
         // Then load
-        return saver_loader.load("config\\game_config.json");
+        saver_loader.load("config\\game_config.json")
     }
     // Load a copy of the config file
     pub fn load_config_file() -> crate::GameConfig {
@@ -179,8 +179,7 @@ pub mod main {
     use lazy_static::lazy_static;
     use others::WorldBarrierData;
     use std::sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Barrier, BarrierWaitResult, RwLock, RwLockReadGuard,
+        Arc,
     };
     lazy_static! {
         static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());

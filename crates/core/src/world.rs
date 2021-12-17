@@ -1,4 +1,4 @@
-use crate::{custom_world_data::CustomWorldData, system::LogicSystemCommand, GameConfig};
+use crate::{custom_world_data::CustomWorldData, GameConfig};
 use ::rendering::*;
 
 use debug::*;
@@ -7,7 +7,7 @@ use glfw::{self};
 use input::*;
 use io::SaverLoader;
 use others::*;
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use ui::UIManager;
 
 // Global main for purely just low level task management
@@ -279,7 +279,7 @@ pub fn receive_mouse_scroll_event(scroll: f64) {
 }
 
 pub fn resize_window_event(_x: u16, _y: u16) {
-    let mut w = world_mut();
+    let _w = world_mut();
 }
 /*
 // When we resize the window

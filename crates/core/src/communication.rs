@@ -1,7 +1,6 @@
 use crate::{command::CommandQuery, system::LogicSystemCommand};
 use lazy_static::lazy_static;
 use std::{
-    cell::RefCell,
     collections::HashMap,
     sync::{
         atomic::AtomicU64,

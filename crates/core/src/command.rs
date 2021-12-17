@@ -1,4 +1,4 @@
-use crate::callbacks::CallbackType;
+
 // Sending - Receiving
 use crate::communication::*;
 use crate::system::*;
@@ -64,7 +64,7 @@ pub fn initialize_channels_main() {
         template_wtc_tx: wtc_tx,
     });
     // And then the worker thread template values
-    *copy_ = Some(CommunicationChannelsCopied { tx: tx_command, wtc_rx: wtc_rx });
+    *copy_ = Some(CommunicationChannelsCopied { tx: tx_command, wtc_rx });
     // This is indeed the main thread
     IS_MAIN_THREAD.with(|x| x.set(true));
     println!("Initialized the channels on the MainThread");
@@ -90,7 +90,7 @@ pub fn frame_main_thread() {
     let receiver = receiver_.as_ref().unwrap();
     let rx = &receiver.rx;
     let mut world = crate::world::world_mut();
-    for (id, query) in rx.try_recv() {
+    for (_id, query) in rx.try_recv() {
         // Just execute the task
         excecute_query(query, &mut world);
     }
