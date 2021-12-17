@@ -1,4 +1,4 @@
-use crate::{custom_world_data::CustomWorldData, system::WorkerThreadCommand, GameConfig};
+use crate::{custom_world_data::CustomWorldData, system::LogicSystemCommand, GameConfig};
 use ::rendering::*;
 
 use debug::*;

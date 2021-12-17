@@ -22,7 +22,7 @@ impl CommandQuery {
 pub fn initialize_channels_main() {
     // Create the channels
     let (tx_command, rx_command) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
-    let (wtc_tx, wtc_rx) = crossbeam_channel::unbounded::<WorkerThreadCommand>();
+    let (wtc_tx, wtc_rx) = crossbeam_channel::unbounded::<LogicSystemCommand>();
     let mut copy_ = COMMUNICATION_CHANNEL_COPY.lock().unwrap();
     let mut receiver_ = RECEIVER.lock().unwrap();
     // Set the main thread values

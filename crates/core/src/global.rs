@@ -4,7 +4,9 @@
 pub mod ecs {
     use crate::callbacks::CallbackSendingData;
     use crate::callbacks::CallbackType;
+    use crate::callbacks::CallbackType::EntityRefCallbacks;
     use crate::callbacks::RefCallback;
+    use crate::callbacks::add_callback;
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
@@ -33,8 +35,8 @@ pub mod ecs {
     // Callback counter part
     pub fn entity_add_callback<F: Fn(&ecs::Entity) + 'static>(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup, callback: F) {
         let boxed_callback = Box::new(callback);
-        let ref_callback = RefCallback::new(boxed_callback);
-        command(CommandQuery::new(Task::EntityAdd(entity, linkings, CallbackSendingData::ValidCallback(0))))
+        let id = add_callback(EntityRefCallbacks(RefCallback::new(boxed_callback)));
+        command(CommandQuery::new(Task::EntityAdd(entity, linkings, CallbackSendingData::ValidCallback(id))))
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
     pub fn entity_remove(entity: &ecs::Entity) {

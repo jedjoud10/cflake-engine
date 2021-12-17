@@ -10,11 +10,28 @@ thread_local! {
     static CALLBACK_MANAGER_BUFFER: RefCell<CallbackManagerBuffer> = RefCell::new(CallbackManagerBuffer::default());
 }
 
+// Add a callback and return it's specified callback ID
+pub fn add_callback(callback: CallbackType) -> u64 {
+    let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    CALLBACK_MANAGER_BUFFER.with(|x| {
+        let callback_manager = x.borrow_mut();
+        callback_manager.add_callback(id, callback);
+    });
+    id
+}
 
-// Callback manager that contains all the current callbacks
+// The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks 
+// Callback manager that contains all the current callbacks (Thread Local)
 #[derive(Default)]
 pub struct CallbackManagerBuffer {
-    pub callbacks: HashMap<u64, CallbackType>
+    callbacks: HashMap<u64, CallbackType>
+}
+
+impl CallbackManagerBuffer {
+    // Add a callback to this thread local buffer
+    pub fn add_callback(&mut self, id: u64, callback: CallbackType) {
+        self.callbacks.insert(id, callback);
+    }
 }
 
 // The callback type

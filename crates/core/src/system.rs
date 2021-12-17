@@ -5,23 +5,24 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::JoinHandle;
 use std::{collections::HashMap, sync::Mutex};
 
-// Some special worker thread commands
-pub enum WorkerThreadCommand {
+// Some special system commands
+pub enum LogicSystemCommand {
+
 }
 
 lazy_static! {
-    // The sender end of the worker thread commands
-    pub static ref WTCOMMAND_SENDER: Mutex<WorkerThreadCommandSender> = Mutex::new(WorkerThreadCommandSender::default());
+    // The sender end of the logic system commands
+    pub static ref LOGIC_SYSTEMS_COMMAND_SENDER: Mutex<LogicSystemCommandSender> = Mutex::new(LogicSystemCommandSender::default());
 }
 
-// WorkerThreadCommand sender
+// Command sender
 #[derive(Default)]
-pub struct WorkerThreadCommandSender {
-    pub wtc_txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<WorkerThreadCommand>>>,
+pub struct LogicSystemCommandSender {
+    pub wtc_txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<LogicSystemCommand>>>,
 }
-// System command receiver
+// Command receiver
 #[derive(Default)]
-pub struct WorkerThreadsReceiver {}
+pub struct LogicSystemCommandReceiver {}
 
 lazy_static! {
     // The number of systems
@@ -32,7 +33,7 @@ lazy_static! {
 thread_local! {
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
     // The receiving end of the system commands
-    pub static WORKER_THREADS_RECEIVER: RefCell<WorkerThreadsReceiver> = RefCell::new(WorkerThreadsReceiver::default());
+    pub static WORKER_THREADS_RECEIVER: RefCell<LogicSystemCommandReceiver> = RefCell::new(LogicSystemCommandReceiver::default());
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
     pub static SENDER: RefCell<Option<WorldTaskSender>> = RefCell::new(None);
 }
