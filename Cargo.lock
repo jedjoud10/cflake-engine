@@ -132,6 +132,7 @@ dependencies = [
  "input",
  "io",
  "lazy_static",
+ "no_deadlocks",
  "others",
  "rendering",
  "ui",

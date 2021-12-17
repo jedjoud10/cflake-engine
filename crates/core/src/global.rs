@@ -39,7 +39,7 @@ pub mod ecs {
         // Get the corresponding global component ID from the entity
         let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
         // Get the world using it's RwLock
-        let w: RwLockReadGuard<'static, crate::world::World> = crate::world::world();
+        let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
         componentm.get_component::<T>(*global_id).unwrap()
     }
@@ -49,7 +49,7 @@ pub mod ecs {
         let main_thread = crate::system::IS_MAIN_THREAD.with(|x| x.get());
         if main_thread {
             // We are on the main thread, we can get the world as a mut
-            let mut world: RwLockWriteGuard<'static, crate::world::World> = crate::world::world_mut();
+            let mut world = crate::world::world_mut();
             // Get the corresponding global component ID from the entity
             let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
             let componentm = &mut world.ecs_manager.componentm;

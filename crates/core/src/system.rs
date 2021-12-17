@@ -66,9 +66,10 @@ where
                 // Start the system loop
                 let mut entity_ids: Vec<usize> = Vec::new();
                 loop {
+                    println!("System {} loop!", std::thread::current().name().unwrap());
                     let w = crate::world::world();
                     // Get the entities at the start of each frame
-                    let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
+                    //let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
                     // Check the rendering callback buffer
                     rendering::pipeline::interface::fetch_threadlocal_callbacks();
 
@@ -77,10 +78,11 @@ where
                     // Check if the system is still running
                     //std::thread::sleep(std::time::Duration::from_millis(400));
                     // --- Start of the frame ---
-                    system.run_system(&entities);
+                    //system.run_system(&entities);
 
                     // --- End of the frame ---
                     // Check if we have any system commands that must be executed
+                    /*
                     match lsc_rx.try_recv() {
                         Ok(lsc) => {
                             // Execute the logic system command
@@ -102,6 +104,7 @@ where
                         }
                         Err(_) => {}
                     }
+                    */
 
                     // Very very end of the frame
                     if barrier_data.is_world_valid() {

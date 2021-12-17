@@ -7,6 +7,7 @@ use glfw::{self};
 use input::*;
 use io::SaverLoader;
 use others::*;
+//use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use ui::UIManager;
 
@@ -19,12 +20,14 @@ lazy_static! {
 // Get a reference to the world
 pub fn world() -> RwLockReadGuard<'static, World> {
     let x = WORLD.read().unwrap();
+    println!("World on '{}'", std::thread::current().name().unwrap());
     x
 }
 
 // Get a mutable reference to the world
 pub fn world_mut() -> RwLockWriteGuard<'static, World> {
     let x = WORLD.write().unwrap();
+    println!("WorldMut on '{}'", std::thread::current().name().unwrap());
     x
 }
 

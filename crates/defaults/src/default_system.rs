@@ -7,8 +7,11 @@ pub fn update_entity(data: &mut (), entity: &ecs::Entity) {
 }
 
 pub fn system_prefire(data: &mut ()) {
+    println!("System prefireee");
+    /*
     let x = core::global::ecs::entity_add_empty(ecs::Entity::new("Caca"));
     x.with_callback(EntityRefCallbacks(RefCallback::new(|x| { println!("Created entity") })).create())
+    */
 }
 
 // Create the default system
