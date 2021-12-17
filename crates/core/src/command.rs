@@ -80,7 +80,7 @@ pub fn initialize_channels_worker_thread() {
         // We do the cloning
         *sender = Some(WorldTaskSender {
             tx: copy.tx.clone(),
-            wtc_rx: copy.wtc_rx.clone(),
+            lsc_rx: copy.wtc_rx.clone(),
         });
     })
 }
@@ -93,7 +93,7 @@ pub fn frame_main_thread() {
     let mut world = crate::world::world_mut();
     for (id, query) in rx.try_recv() {
         // Just execute the task
-        excecute_task(query.task, query.callback_id, &mut world);
+        excecute_query(query, &mut world);
     }
 }
 // Send a command query to the world, giving back a command return that can be waited for
@@ -107,7 +107,7 @@ fn command(query: CommandQuery) {
         // This is the main thread calling, we don't give a  f u c k
         let mut world = crate::world::world_mut();
         // Execute the task on the main thread
-        excecute_task(query.task, query.callback_id, &mut world);
+        excecute_query(query, &mut world);
     } else {
         // Send the command query
         SENDER.with(|sender| {

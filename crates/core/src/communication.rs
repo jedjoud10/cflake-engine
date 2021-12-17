@@ -27,7 +27,7 @@ pub struct CommunicationChannelsCopied {
 // Some struct that sends tasks to the main thread. This is present on all the worker threads, since there is a 1 : n connection between the main thread and worker threads
 pub struct WorldTaskSender {
     pub tx: Sender<(u64, CommandQuery)>,                          // CommandQuery. WorkerThreads -> MainThread
-    pub wtc_rx: crossbeam_channel::Receiver<LogicSystemCommand>, // WorkerThreadCommand. MainThread -> WorkerThreads
+    pub lsc_rx: crossbeam_channel::Receiver<LogicSystemCommand>, // WorkerThreadCommand. MainThread -> WorkerThreads
 }
 // Main thread
 pub struct WorldTaskReceiver {

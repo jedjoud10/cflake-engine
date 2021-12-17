@@ -11,6 +11,10 @@ pub struct EntityManager {
 }
 
 impl EntityManager {
+    // Get an entity
+    pub fn entity(&self, entity_id: usize) -> &Entity {
+        self.entities.get_element(entity_id).as_ref().unwrap().unwrap()
+    }
     // Add an entity to the manager
     pub fn add_entity(&mut self, mut entity: Entity) -> usize {
         // Set the entity ID

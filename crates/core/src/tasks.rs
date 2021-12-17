@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use crate::command::CommandQuery;
 use crate::communication::*;
-use crate::system::{IS_MAIN_THREAD, WORKER_THREADS_RECEIVER};
+use crate::global::callbacks::LogicSystemCallbackResultData;
+use crate::system::{IS_MAIN_THREAD, WORKER_THREADS_RECEIVER, LogicSystemCommand};
 
 // Some world tasks
 pub enum Task {
@@ -16,8 +18,8 @@ pub enum Task {
 }
 
 // Excecute a specific task and give back it's result
-pub fn excecute_task(t: Task, callback_id: Option<u64>, world: &mut crate::world::World) {
-    match t {
+pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World) {
+    match query.task {
         Task::EntityAdd(mut entity, linkings) => {
             // Add the components first
             let mut hashmap: HashMap<usize, usize> = HashMap::new();
@@ -26,8 +28,17 @@ pub fn excecute_task(t: Task, callback_id: Option<u64>, world: &mut crate::world
                 hashmap.insert(id, new_global_id);
             }
             // Then add the entity
+            let entity_id = entity.entity_id;
             entity.linked_components = hashmap;
             world.ecs_manager.entitym.add_entity(entity);
+
+            // Tell the main callback manager to execute this callback
+            match query.callback_id {
+                Some(id) => {
+                    crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)), &query.thread_id);
+                },
+                None => { /* No callback available */ }
+            }
         }
         Task::EntityRemove(_) => {
             // Remove the entity from the world and dispose of it's components

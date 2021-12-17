@@ -1,4 +1,5 @@
 use crate::communication::{WorldTaskSender, RECEIVER};
+use crate::global::callbacks::LogicSystemCallbackResultData;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -7,27 +8,24 @@ use std::{collections::HashMap, sync::Mutex};
 
 // Some special system commands
 pub enum LogicSystemCommand {
-
+    RunCallback(u64, LogicSystemCallbackResultData)
 }
 
 lazy_static! {
     // The sender end of the logic system commands
-    pub static ref LOGIC_SYSTEMS_COMMAND_SENDER: Mutex<LogicSystemCommandSender> = Mutex::new(LogicSystemCommandSender::default());
+    static ref LOGIC_SYSTEMS_COMMAND_SENDER: Mutex<LogicSystemCommandSender> = Mutex::new(LogicSystemCommandSender::default());
+    // The number of systems
+    pub static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
 }
 
 // Command sender
 #[derive(Default)]
 pub struct LogicSystemCommandSender {
-    pub wtc_txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<LogicSystemCommand>>>,
+    pub lsc_txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<LogicSystemCommand>>>,
 }
 // Command receiver
 #[derive(Default)]
 pub struct LogicSystemCommandReceiver {}
-
-lazy_static! {
-    // The number of systems
-    pub static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
-}
 
 // The system group thread data is local to each system thread
 thread_local! {
@@ -44,7 +42,7 @@ where
     F: FnOnce() -> ecs::System<T> + 'static + Send,
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let builder = std::thread::Builder::new().name(format!("SystemWorkerThread '{}'", system_id));
+    let builder = std::thread::Builder::new().name(format!("LogicSystemThread '{}'", system_id));
     let barrier_data_ = crate::global::main::clone();    
     let handler = builder
         .spawn(move || {
@@ -57,15 +55,18 @@ where
                 let system = callback();
                 let sender_ = x.borrow();
                 let sender = sender_.as_ref().unwrap();
-                let wtc_rx = &sender.wtc_rx;
+                let lsc_rx = &sender.lsc_rx;
                 println!("Hello from '{}'!", std::thread::current().name().unwrap());
                 let barrier_data = barrier_data_.clone();
                 // Start the system loop
                 loop {
                     // Check if we have any system commands that must be executed
-                    match wtc_rx.try_recv() {
-                        Ok(wtc) => {
-                            // Execute the worker thread command
+                    match lsc_rx.try_recv() {
+                        Ok(lsc) => {
+                            // Execute the logic system command
+                            match lsc {
+                                LogicSystemCommand::RunCallback(id, result_data) => crate::callbacks::execute_callback(id, result_data),
+                            }
                         }
                         Err(_) => {}
                     }
@@ -94,4 +95,14 @@ where
     let receiver = receiver_.as_mut().unwrap();
     receiver.wtc_txs.insert(handler.thread().id(), receiver.template_wtc_tx.clone());
     handler
+}
+
+// Send a LogicSystemCommand to a specific thread
+pub fn send_lsc(lgc: LogicSystemCommand, thread_id: &std::thread::ThreadId) {
+    // Get the sender
+    let mut senders_ = LOGIC_SYSTEMS_COMMAND_SENDER.lock().unwrap();
+    let senders = senders_.lsc_txs.as_ref().unwrap();
+    let sender = senders.get(thread_id).unwrap();
+    // Send the message
+    sender.send(lgc).unwrap();
 }
