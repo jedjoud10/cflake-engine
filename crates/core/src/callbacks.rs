@@ -9,17 +9,6 @@ lazy_static! {
 thread_local! {
     static CALLBACK_MANAGER_BUFFER: RefCell<CallbackManagerBuffer> = RefCell::new(CallbackManagerBuffer::default());
 }
-
-// Add a callback and return it's specified callback ID
-pub fn add_callback(callback: CallbackType) -> u64 {
-    let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    CALLBACK_MANAGER_BUFFER.with(|x| {
-        let callback_manager = x.borrow_mut();
-        callback_manager.add_callback(id, callback);
-    });
-    id
-}
-
 // The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks 
 // Callback manager that contains all the current callbacks (Thread Local)
 #[derive(Default)]
@@ -40,6 +29,18 @@ pub enum CallbackType {
     EntityRefCallbacks(RefCallback<ecs::Entity>),
     EntityMutCallbacks(MutCallback<ecs::Entity>),
     ComponentMutCallbacks(MutCallback<Box<dyn ecs::ComponentInternal + Send + Sync>>),
+}
+
+impl CallbackType {
+    // Create the callback and get back it's ID
+    pub fn create(self) -> u64 {
+        let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        CALLBACK_MANAGER_BUFFER.with(|x| {
+            let mut callback_manager = x.borrow_mut();
+            callback_manager.add_callback(id, self);
+        });
+        id
+    }
 }
 
 // The callback sending data that will actually be sent to the main thread using the command

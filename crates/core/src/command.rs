@@ -1,3 +1,4 @@
+use crate::callbacks::CallbackType;
 // Sending - Receiving
 use crate::communication::*;
 use crate::system::*;
@@ -7,16 +8,48 @@ use std::{collections::HashMap, sync::atomic::Ordering};
 // A sent command query
 pub struct CommandQuery {
     pub thread_id: std::thread::ThreadId,
+    pub callback_id: Option<u64>,
     pub task: Task,
 }
 impl CommandQuery {
     // From single
-    pub fn new(task: Task) -> Self {
+    pub fn new(task: Task, callback_id: Option<u64>) -> Self {
         let thread_id = std::thread::current().id();
-        Self { thread_id, task }
+        Self { thread_id, task, callback_id }
     }
 }
 
+// The immediate result for that command query
+pub struct CommandQueryResult {
+    task: Option<Task>
+}
+
+trait Test<T>: Fn(&T) {
+}
+
+impl CommandQueryResult {
+    // Create a new query result from a specific command
+    pub fn new(task: Task) -> Self {
+        Self { task: Some(task) }
+    }
+    // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
+    pub fn with_callback(mut self, callback_id: u64) {
+        // Send the command
+        let task = self.task.take().unwrap();
+        let query = CommandQuery::new(task, Some(callback_id));
+        command(query);
+    }
+}
+
+impl std::ops::Drop for CommandQueryResult {
+    // Custom drop function that actually sends the command, just in case where we did not explicitly specified
+    fn drop(&mut self) {
+        // Send the command
+        let task = self.task.take().unwrap();
+        let query = CommandQuery::new(task, None);
+        command(query);
+    }
+}
 
 // Initialize the main channels on the main thread
 pub fn initialize_channels_main() {
@@ -60,11 +93,11 @@ pub fn frame_main_thread() {
     let mut world = crate::world::world_mut();
     for (id, query) in rx.try_recv() {
         // Just execute the task
-        excecute_task(query.task, &mut world);
+        excecute_task(query.task, query.callback_id, &mut world);
     }
 }
 // Send a command query to the world, giving back a command return that can be waited for
-pub fn command(query: CommandQuery) {
+fn command(query: CommandQuery) {
     println!("Calling thread {:?}", query.thread_id);
     // Increment the counter
     let id = COUNTER.fetch_add(0, Ordering::Relaxed);
@@ -74,7 +107,7 @@ pub fn command(query: CommandQuery) {
         // This is the main thread calling, we don't give a  f u c k
         let mut world = crate::world::world_mut();
         // Execute the task on the main thread
-        excecute_task(query.task, &mut world);
+        excecute_task(query.task, query.callback_id, &mut world);
     } else {
         // Send the command query
         SENDER.with(|sender| {

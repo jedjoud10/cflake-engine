@@ -6,7 +6,6 @@ pub mod ecs {
     use crate::callbacks::CallbackType;
     use crate::callbacks::CallbackType::EntityRefCallbacks;
     use crate::callbacks::RefCallback;
-    use crate::callbacks::add_callback;
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
@@ -24,23 +23,17 @@ pub mod ecs {
         w.ecs_manager.entitym.entities.get_element(entity_id).unwrap().cloned()
     }
     // Add an entity without any linking groups
-    pub fn entity_add_empty(entity: ecs::Entity) {
+    pub fn entity_add_empty(entity: ecs::Entity) -> CommandQueryResult {
         let empty_linkings = ecs::ComponentLinkingGroup::empty();
         entity_add(entity, empty_linkings)
     }
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
-    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) {
-        command(CommandQuery::new(Task::EntityAdd(entity, linkings, CallbackSendingData::None)))
-    }
-    // Callback counter part
-    pub fn entity_add_callback<F: Fn(&ecs::Entity) + 'static>(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup, callback: F) {
-        let boxed_callback = Box::new(callback);
-        let id = add_callback(EntityRefCallbacks(RefCallback::new(boxed_callback)));
-        command(CommandQuery::new(Task::EntityAdd(entity, linkings, CallbackSendingData::ValidCallback(id))))
+    pub fn entity_add(entity: ecs::Entity, linkings: ecs::ComponentLinkingGroup) -> CommandQueryResult {
+        CommandQueryResult::new(Task::EntityAdd(entity, linkings))
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
-    pub fn entity_remove(entity: &ecs::Entity) {
-        command(CommandQuery::new(Task::EntityRemove(entity.entity_id)))
+    pub fn entity_remove(entity: &ecs::Entity) -> CommandQueryResult {
+        CommandQueryResult::new(Task::EntityRemove(entity.entity_id)) 
     }
     /* #endregion */
     /* #region Components */
@@ -154,19 +147,19 @@ pub mod input {
 }
 // User Interface shit
 pub mod ui {
-    use crate::command::{command, CommandQuery};
+    use crate::command::{CommandQuery};
     use crate::tasks::Task;
 
     // Add a root the world
     pub fn add_root(name: &str, root: ui::Root) {
+        /*        
+        let mut w = crate::world::world_mut();
         command(CommandQuery::new(Task::AddRoot(name.to_string(), root)));
+        */
     }
 }
 // IO stuff
 pub mod io {
-    use crate::command::{command, CommandQuery};
-    use crate::tasks::Task;
-
     // Create the default config file
     pub fn create_config_file() -> crate::GameConfig {
         let mut w = crate::world::world_mut();

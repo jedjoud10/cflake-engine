@@ -6,20 +6,19 @@ use crate::system::{IS_MAIN_THREAD, WORKER_THREADS_RECEIVER};
 // Some world tasks
 pub enum Task {
     // Entity
-    EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup, crate::callbacks::CallbackSendingData),
+    EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup),
     EntityRemove(usize),
     // This is only valid if the entity is also valid
     ComponentLinkDirect(usize, usize),
     ComponentUnlinkDirect(usize, usize),
     // UI
-    AddRoot(String, ui::Root),
     SetRootVisibility(bool),
 }
 
 // Excecute a specific task and give back it's result
-pub fn excecute_task(t: Task, world: &mut crate::world::World) {
+pub fn excecute_task(t: Task, callback_id: Option<u64>, world: &mut crate::world::World) {
     match t {
-        Task::EntityAdd(mut entity, linkings, callback_sending_data) => {
+        Task::EntityAdd(mut entity, linkings) => {
             // Add the components first
             let mut hashmap: HashMap<usize, usize> = HashMap::new();
             for (id, boxed_component) in linkings.linked_components {
@@ -35,7 +34,6 @@ pub fn excecute_task(t: Task, world: &mut crate::world::World) {
         }
         Task::ComponentLinkDirect(_, _) => {}
         Task::ComponentUnlinkDirect(_, _) => {}
-        Task::AddRoot(_, _) => {}
         Task::SetRootVisibility(_) => {}
     }
 }
