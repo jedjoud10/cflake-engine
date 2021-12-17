@@ -91,7 +91,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
         )
         .unwrap(),
     );
-    
+
     // Create the white texture
     pipec::texturec(
         assets::cachec::cache(
@@ -206,7 +206,7 @@ pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Win
     */
     // At the end of the frame we will wait until all the threads (SystemWorkerThreads and the RenderThread) finish executing
     //std::thread::sleep(std::time::Duration::from_millis(40));
-    crate::global::main::as_ref().thread_sync();     
+    crate::global::main::as_ref().thread_sync();
 }
 // Update the console
 fn update_console() {

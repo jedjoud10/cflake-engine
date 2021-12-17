@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::command::CommandQuery;
 use crate::communication::*;
 use crate::global::callbacks::LogicSystemCallbackResultData;
-use crate::system::{IS_MAIN_THREAD, WORKER_THREADS_RECEIVER, LogicSystemCommand};
+use crate::system::{LogicSystemCommand, IS_MAIN_THREAD, WORKER_THREADS_RECEIVER};
 
 // Some world tasks
 pub enum Task {
@@ -36,7 +36,7 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World) {
             match query.callback_id {
                 Some(id) => {
                     crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)), &query.thread_id);
-                },
+                }
                 None => { /* No callback available */ }
             }
         }

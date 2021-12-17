@@ -270,7 +270,7 @@ impl InputManager {
         if self.full_sentence.is_some() && action_type == 0 {
             match self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode) {
                 Some(x) => {
-                    let key = x.0.clone();                    
+                    let key = x.0.clone();
                     let mut new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
                     if let Keys::Backspace = key {
                         if new_string.len() > 0 {
@@ -300,7 +300,7 @@ impl InputManager {
                 key_data.0 = KeyStatus::Released;
             }
             _ => {}
-        }        
+        }
     }
     // Binds a key to a specific mapping
     pub fn bind_key(&mut self, key: Keys, map_name: &str, _map_type: MapType) {

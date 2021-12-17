@@ -21,11 +21,10 @@ impl CommandQuery {
 
 // The immediate result for that command query
 pub struct CommandQueryResult {
-    task: Option<Task>
+    task: Option<Task>,
 }
 
-trait Test<T>: Fn(&T) {
-}
+trait Test<T>: Fn(&T) {}
 
 impl CommandQueryResult {
     // Create a new query result from a specific command

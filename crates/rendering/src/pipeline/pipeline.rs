@@ -9,7 +9,7 @@ use std::{
     mem::size_of,
     ptr::null,
     sync::{
-        atomic::{AtomicPtr, AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicPtr, Ordering},
         mpsc::{Receiver, Sender},
         Arc, Barrier,
     },
@@ -39,7 +39,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
-    // Barrier so we can wait until the render thread has finished initializing
+                                                                                                       // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
     let barrier_data = barrier_data.clone();

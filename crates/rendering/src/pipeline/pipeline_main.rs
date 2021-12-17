@@ -1,4 +1,3 @@
-
 use lazy_static::lazy_static;
 use std::{
     cell::{Cell, RefCell},
@@ -36,17 +35,13 @@ pub fn rname(prefix: &str) -> String {
 pub mod pipec {
     use assets::CachedObject;
     use std::borrow::{Borrow, BorrowMut};
-    
-    use std::sync::Arc;
-    use std::sync::atomic::{Ordering, AtomicBool};
-    
 
-    use crate::{interface::*, PipelineStartData};
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+
     use crate::pipeline::object::*;
-    use crate::{
-        is_render_thread, Material, Model, PipelineSendData, RenderCommand, RenderTaskReturn, Shader, SubShader, Texture, COMMAND_COUNT,
-        RENDER_COMMAND_SENDER,
-    };
+    use crate::{interface::*, PipelineStartData};
+    use crate::{is_render_thread, Material, Model, PipelineSendData, RenderCommand, RenderTaskReturn, Shader, SubShader, Texture, COMMAND_COUNT, RENDER_COMMAND_SENDER};
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {

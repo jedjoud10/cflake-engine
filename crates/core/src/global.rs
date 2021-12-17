@@ -9,13 +9,13 @@ pub mod ecs {
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
+    use lazy_static::lazy_static;
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
     use std::sync::{RwLockReadGuard, RwLockWriteGuard};
-    use lazy_static::lazy_static;
     lazy_static! {
         static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
-    }    
+    }
     /* #region Entities */
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
@@ -33,7 +33,7 @@ pub mod ecs {
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
     pub fn entity_remove(entity: &ecs::Entity) -> CommandQueryResult {
-        CommandQueryResult::new(Task::EntityRemove(entity.entity_id)) 
+        CommandQueryResult::new(Task::EntityRemove(entity.entity_id))
     }
     /* #endregion */
     /* #region Components */
@@ -62,7 +62,6 @@ pub mod ecs {
         /* #endregion */
         else {
             // At the end of the current frame, run the callback on the main thread (If we are on a worker thread)
-
         }
     }
     // Create a component linking group
@@ -86,7 +85,9 @@ pub mod ecs {
         w.ecs_manager.systemm.systems.push(system_thread_data);
     }
     // Get the number of valid systems that exist in the world
-    pub fn system_counter() -> usize { SYSTEM_COUNTER.load(Ordering::Relaxed) }
+    pub fn system_counter() -> usize {
+        SYSTEM_COUNTER.load(Ordering::Relaxed)
+    }
     /* #endregion */
 }
 // Input
@@ -146,12 +147,12 @@ pub mod input {
 }
 // User Interface shit
 pub mod ui {
-    use crate::command::{CommandQuery};
+    use crate::command::CommandQuery;
     use crate::tasks::Task;
 
     // Add a root the world
     pub fn add_root(name: &str, root: ui::Root) {
-        /*        
+        /*
         let mut w = crate::world::world_mut();
         command(CommandQuery::new(Task::AddRoot(name.to_string(), root)));
         */
@@ -175,9 +176,12 @@ pub mod io {
 }
 // Mains
 pub mod main {
-    use others::WorldBarrierData;
-    use std::sync::{Arc, atomic::{AtomicBool, Ordering}, Barrier, BarrierWaitResult, RwLock, RwLockReadGuard};
     use lazy_static::lazy_static;
+    use others::WorldBarrierData;
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Barrier, BarrierWaitResult, RwLock, RwLockReadGuard,
+    };
     lazy_static! {
         static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
     }
@@ -191,7 +195,9 @@ pub mod main {
         BARRIERS_WORLD.as_ref()
     }
     // Clone
-    pub fn clone() -> Arc<WorldBarrierData> { BARRIERS_WORLD.clone() }
+    pub fn clone() -> Arc<WorldBarrierData> {
+        BARRIERS_WORLD.clone()
+    }
 }
 
 // Callback shit

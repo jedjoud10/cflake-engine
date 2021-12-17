@@ -8,7 +8,7 @@ use std::{collections::HashMap, sync::Mutex};
 
 // Some special system commands
 pub enum LogicSystemCommand {
-    RunCallback(u64, LogicSystemCallbackResultData)
+    RunCallback(u64, LogicSystemCallbackResultData),
 }
 
 lazy_static! {
@@ -43,7 +43,7 @@ where
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
     let builder = std::thread::Builder::new().name(format!("LogicSystemThread '{}'", system_id));
-    let barrier_data_ = crate::global::main::clone();    
+    let barrier_data_ = crate::global::main::clone();
     let handler = builder
         .spawn(move || {
             // We must initialize the channels
@@ -84,7 +84,6 @@ where
                             break;
                         }
                     }
-
                 }
                 println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());
             });

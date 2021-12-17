@@ -1,5 +1,5 @@
-use std::{cell::RefCell, collections::HashMap, sync::atomic::AtomicU64, borrow::BorrowMut};
 use lazy_static::lazy_static;
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64};
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created
@@ -12,14 +12,14 @@ thread_local! {
 
 // Execute a specific callback on this thread
 pub fn execute_callback(id: u64, result_data: LogicSystemCallbackResultData) {
-    let mut world = crate::world::world_mut(); 
+    let mut world = crate::world::world_mut();
     CALLBACK_MANAGER_BUFFER.with(|cell| {
         let mut callback_manager = cell.borrow_mut();
         match callback_manager.callbacks.remove(&id) {
             Some(callback_type) => {
                 // Run the callback type
                 match callback_type {
-                    CallbackType::None => { /* No callbacks */ },
+                    CallbackType::None => { /* No callbacks */ }
                     CallbackType::EntityRefCallbacks(x) => {
                         let callback = x.callback.as_ref();
                         // Make sure this callback is the EntityRef one
@@ -27,12 +27,12 @@ pub fn execute_callback(id: u64, result_data: LogicSystemCallbackResultData) {
                             let entity = world.ecs_manager.entitym.entity(entity_id);
                             (callback)(entity);
                         }
-                    },
+                    }
                     CallbackType::EntityMutCallbacks(_) => todo!(),
                     CallbackType::ComponentMutCallbacks(_) => todo!(),
                 }
-            },
-            None => { /* H o w */ },
+            }
+            None => { /* H o w */ }
         }
     });
 }
@@ -44,11 +44,11 @@ pub enum LogicSystemCallbackResultData {
     EntityMut(usize),
 }
 
-// The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks 
+// The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
 // Callback manager that contains all the current callbacks (Thread Local)
 #[derive(Default)]
 pub struct CallbackManagerBuffer {
-    callbacks: HashMap<u64, CallbackType>
+    callbacks: HashMap<u64, CallbackType>,
 }
 
 impl CallbackManagerBuffer {
@@ -81,7 +81,7 @@ impl CallbackType {
 // The callback sending data that will actually be sent to the main thread using the command
 pub enum CallbackSendingData {
     None,
-    ValidCallback(u64)
+    ValidCallback(u64),
 }
 
 // A ref callback, always ran at the end of the current system frame
@@ -94,14 +94,20 @@ pub struct MutCallback<T> {
 }
 
 impl<T> RefCallback<T> {
-    pub fn new<F>(c: F) -> Self where F: Fn(&T) + 'static {
+    pub fn new<F>(c: F) -> Self
+    where
+        F: Fn(&T) + 'static,
+    {
         let callback = Box::new(c);
         Self { callback }
     }
 }
 
 impl<T> MutCallback<T> {
-    pub fn new<F>(c: F) -> Self where F: Fn(&mut T) + 'static {
+    pub fn new<F>(c: F) -> Self
+    where
+        F: Fn(&mut T) + 'static,
+    {
         let callback = Box::new(c);
         Self { callback }
     }

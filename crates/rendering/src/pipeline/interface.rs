@@ -1,9 +1,10 @@
-use crate::{GPUObject};
+use crate::GPUObject;
 use lazy_static::lazy_static;
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicBool, Ordering}, RwLock, RwLockReadGuard, RwLockWriteGuard,
+        atomic::{AtomicBool, Ordering},
+        RwLock, RwLockReadGuard, RwLockWriteGuard,
     },
 };
 lazy_static! {
