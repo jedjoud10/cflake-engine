@@ -76,8 +76,9 @@ pub mod ecs {
     {
         // Create a new thread and initialize the system on it
         SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let join_handle = crate::system::create_worker_thread(callback);
-        let system_thread_data = ecs::SystemThreadData::new(join_handle);
+        let mut c_bitfield: usize = 0;
+        let join_handle = crate::system::create_worker_thread(callback, &mut c_bitfield);
+        let system_thread_data = ecs::SystemThreadData::new(join_handle, c_bitfield);
         let mut w = crate::world::world_mut();
         w.ecs_manager.systemm.systems.push(system_thread_data);
     }

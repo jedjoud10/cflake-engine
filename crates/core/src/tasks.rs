@@ -29,8 +29,23 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World) {
             }
             // Then add the entity
             let entity_id = entity.entity_id;
+            let entity_cbitfield = entity.c_bitfield;
             entity.linked_components = hashmap;
             world.ecs_manager.entitym.add_entity(entity);
+
+            // Check if a specified entity fits the criteria to be in a specific system
+            fn is_entity_valid(system_c_bitfield: usize, entity_c_bitfield: usize) -> bool {
+                // Check if the system matches the component ID of the entity
+                let bitfield: usize = system_c_bitfield & !entity_c_bitfield;
+                // If the entity is valid, all the bits would be 0
+                bitfield == 0
+            }
+
+            // Check the systems where this entity might be valid
+            for system in world.ecs_manager.systemm.systems.iter() {
+                let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
+                if valid { crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &query.thread_id); }
+            }
 
             // Tell the main callback manager to execute this callback
             match query.callback_id {
@@ -42,6 +57,8 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World) {
         }
         Task::EntityRemove(_) => {
             // Remove the entity from the world and dispose of it's components
+            // When doing this however, we must wait a whole frame before actually deleting the entity
+            // We must first send the LogicSystemCommand to each system that contains this entity, then we can actually delete the entity the next frame
         }
         Task::ComponentLinkDirect(_, _) => {}
         Task::ComponentUnlinkDirect(_, _) => {}

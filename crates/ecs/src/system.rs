@@ -9,12 +9,13 @@ pub struct SystemManager {
 // Contains some data about the actual system on the worker thread
 pub struct SystemThreadData {
     pub join_handle: std::thread::JoinHandle<()>,
+    pub c_bitfield: usize,
 }
 
 impl SystemThreadData {
     // New
-    pub fn new(join_handle: std::thread::JoinHandle<()>) -> Self {
-        Self { join_handle }
+    pub fn new(join_handle: std::thread::JoinHandle<()>, c_bitfield: usize) -> Self {
+        Self { join_handle, c_bitfield }
     }
 }
 
@@ -35,8 +36,7 @@ where
     T: CustomSystemData,
 {
     custom_data: T,
-    c_bitfield: usize,
-    entities: Vec<usize>,
+    pub c_bitfield: usize,
 
     // Events
     // Control events
@@ -58,7 +58,6 @@ where
         System {
             custom_data: custom_data,
             c_bitfield: 0,
-            entities: Vec::new(),
             system_prefire: None,
             system_postfire: None,
             entity_added: None,
@@ -72,14 +71,7 @@ where
 impl<T> System<T>
 where
     T: CustomSystemData,
-{
-    // Check if a specified entity fits the criteria to be in a specific system
-    fn is_entity_valid(&self, entity: &Entity) -> bool {
-        // Check if the system matches the component ID of the entity
-        let bitfield: usize = self.c_bitfield & !entity.c_bitfield;
-        // If the entity is valid, all the bits would be 0
-        bitfield == 0
-    }
+{    
     // Add a component to this system's component bitfield id
     pub fn link<U: ComponentID>(&mut self) {
         if crate::registry::is_component_registered::<U>() {
@@ -104,8 +96,7 @@ where
         };
     }
     // Add an entity to the current system
-    fn add_entity(&mut self, entity: &Entity) {
-        self.entities.push(entity.entity_id);
+    pub fn add_entity(&mut self, entity: &Entity) {
         // Fire the event
         match self.entity_added {
             Some(entity_added_evn) => entity_added_evn(&mut self.custom_data, entity),
@@ -113,10 +104,7 @@ where
         }
     }
     // Remove an entity from the current system
-    fn remove_entity(&mut self, entity_id: usize, entity: &Entity) {
-        // Search for the entity with the matching entity_id
-        let system_entity_local_id = self.entities.iter().position(|&entity_id_in_vec| entity_id_in_vec == entity_id).unwrap();
-        self.entities.remove(system_entity_local_id);
+    pub fn remove_entity(&mut self, entity: &Entity) {
         // Fire the event
         match self.entity_removed {
             Some(entity_removed_evn) => entity_removed_evn(&mut self.custom_data, entity),
@@ -124,7 +112,7 @@ where
         }
     }
     // Stop the system permanently
-    fn end_system(&mut self, entities: &[Entity]) {
+    pub fn end_system(&mut self, entities: &Vec<&Entity>) {
         match self.entity_removed {
             Some(entity_removed) => {
                 // Fire the entity removed event
@@ -136,7 +124,7 @@ where
         }
     }
     // Run the system for a single iteration
-    fn run_system(&mut self, entities: &[Entity]) {
+    pub fn run_system(&mut self, entities: &Vec<&Entity>) {
         // Pre fire event
         match self.system_prefire {
             Some(system_prefire_event) => system_prefire_event(&mut self.custom_data),
