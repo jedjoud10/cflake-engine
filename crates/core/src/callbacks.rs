@@ -59,13 +59,15 @@ pub struct MutCallback<T> {
 }
 
 impl<T> RefCallback<T> {
-    pub fn new(boxed_callback: Box<dyn Fn(&T)>) -> Self {
-        Self { callback: boxed_callback }
+    pub fn new<F>(c: F) -> Self where F: Fn(&T) + 'static {
+        let callback = Box::new(c);
+        Self { callback }
     }
 }
 
 impl<T> MutCallback<T> {
-    pub fn new(boxed_callback: Box<dyn Fn(&mut T)>) -> Self {
-        Self { callback: boxed_callback }
+    pub fn new<F>(c: F) -> Self where F: Fn(&mut T) + 'static {
+        let callback = Box::new(c);
+        Self { callback }
     }
 }

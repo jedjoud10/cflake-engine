@@ -91,7 +91,6 @@ pub mod ecs {
 }
 // Input
 pub mod input {
-
     // Bind key
     pub fn bind_key(_key: input::Keys, _map_name: &str, _map_type: input::MapType) {}
     // Get the accumulated mouse position
@@ -193,4 +192,9 @@ pub mod main {
     }
     // Clone
     pub fn clone() -> Arc<WorldBarrierData> { BARRIERS_WORLD.clone() }
+}
+
+// Callback shit
+pub mod callbacks {
+    pub use crate::callbacks::*;
 }

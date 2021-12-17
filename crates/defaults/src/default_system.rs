@@ -1,6 +1,13 @@
+use core::global::callbacks::{CallbackType::EntityRefCallbacks, RefCallback};
+
 // Some default events
 pub fn update_entity(data: &mut (), entity: &ecs::Entity) {
     println!("Update the entity {}", entity);
+    let x = core::global::ecs::entity_add_empty(ecs::Entity::new("Caca"));
+    // When we create the new entity, we have a callback for it
+    x.with_callback(EntityRefCallbacks(RefCallback::new(|x| {
+        
+    })).create())
 }
 
 // Create the default system
