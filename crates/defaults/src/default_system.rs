@@ -1,15 +1,16 @@
 use core::global::callbacks::{CallbackType::EntityRefCallbacks, RefCallback};
 
 // Some default events
-pub fn update_entity(data: &mut (), entity: &ecs::Entity) {    
-    println!("Update the entity {}", entity);
-    // When we create the new entity, we have a callback for it
+pub fn update_entity(data: &mut (), entity: &ecs::Entity) {   
 }
 
 pub fn system_prefire(data: &mut ()) {
-    println!("System prefireee");
-    let x = core::global::ecs::entity_add_empty(ecs::Entity::new("Caca"));
-    x.with_callback(EntityRefCallbacks(RefCallback::new(|x| { println!("Created entity") })).create())
+    // Create the linking group
+    let mut linkings = ecs::ComponentLinkingGroup::new();
+    linkings.link_default::<crate::components::Transform>().unwrap();
+    // Add the entity
+    let result = core::global::ecs::entity_add(ecs::Entity::new("Test-Entity"), linkings);
+    result.with_callback(EntityRefCallbacks(RefCallback::new(|x| { })).create());
 }
 
 // Create the default system

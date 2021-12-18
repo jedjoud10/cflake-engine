@@ -169,7 +169,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 // This is the main Update loop, ran on the main thread
 pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
     // Systems are still running their loops...
-    println!("Update world {}", _delta * 1000.0);
+    //println!("Update world {}", _delta * 1000.0);
     crate::global::main::as_ref().thread_sync();
     FRAME.store(false, Ordering::Relaxed);
     // The systems are blocked here
@@ -223,6 +223,11 @@ pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glf
 pub fn update_world_end(world: &mut World) {
     // Run the commands at the end of the frame
     crate::command::frame_main_thread(world);
+    /*
+    println!("Component count: '{}'", world.ecs_manager.componentm.components.count_valid());
+    println!("Entity count: '{}'", world.ecs_manager.entitym.entities.count_valid());
+    println!("System count: '{}'", world.ecs_manager.systemm.systems.len());
+    */
     FRAME.store(true, Ordering::Relaxed);
     crate::global::main::as_ref().thread_sync();
     // The systems are running their loops

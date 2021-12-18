@@ -28,10 +28,14 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                 let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
                 hashmap.insert(id, new_global_id);
             }
-            // Then add the entity
-            let entity_id = entity.entity_id;
-            let entity_cbitfield = entity.c_bitfield;
+            // Set the entity values
+            let entity_id = world.ecs_manager.entitym.entities.get_next_valid_id();
+            let entity_cbitfield = linkings.c_bitfield;
+            
+            entity.entity_id = entity_id;
             entity.linked_components = hashmap;
+            entity.c_bitfield = entity_cbitfield;
+            // Then add the entity
             world.ecs_manager.entitym.add_entity(entity);
 
             // Check if a specified entity fits the criteria to be in a specific system
@@ -45,15 +49,18 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             // Check the systems where this entity might be valid
             for system in world.ecs_manager.systemm.systems.iter() {
                 let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
-                if valid { crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &query.thread_id, receiver); }
+                if valid { crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver); }
             }
 
-            // Tell the main callback manager to execute this callback
-            match query.callback_id {
-                Some(id) => {
-                    crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)), &query.thread_id, receiver);
+            // Only run the callback if we are not on the main thread
+            if !crate::system::IS_MAIN_THREAD.with(|x| x.get()) {
+                // Tell the main callback manager to execute this callback
+                match query.callback_id {
+                    Some(id) => {
+                        crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)), &query.thread_id, receiver);
+                    }
+                    None => { /* No callback available */ }
                 }
-                None => { /* No callback available */ }
             }
         }
         Task::EntityRemove(_) => {

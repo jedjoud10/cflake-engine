@@ -15,17 +15,10 @@ impl Debug for ComponentLinkingGroup {
 
 // Linking methods
 impl ComponentLinkingGroup {
-    pub fn empty() -> Self {
+    pub fn new() -> Self {
         Self {
             linked_components: HashMap::new(),
             c_bitfield: 0,
-        }
-    }
-    // Creete a new component linking group from an entity
-    pub fn new(entity: &Entity) -> Self {
-        Self {
-            linked_components: HashMap::new(),
-            c_bitfield: entity.c_bitfield,
         }
     }
     // Link a component to this entity and automatically set it to the default variable

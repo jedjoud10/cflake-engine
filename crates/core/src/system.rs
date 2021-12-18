@@ -26,7 +26,7 @@ thread_local! {
 }
 
 // Create a worker thread
-pub fn create_worker_thread<F, T: ecs::CustomSystemData>(callback: F, c_bitfield: &mut usize) -> JoinHandle<()>
+pub fn create_worker_thread<F, T: ecs::CustomSystemData>(callback: F) -> (JoinHandle<()>, usize)
 where
     F: FnOnce() -> ecs::System<T> + 'static + Send,
 {
@@ -54,17 +54,25 @@ where
                 let mut entity_ids: Vec<usize> = Vec::new();
                 loop {
                     {
-                        //let w = crate::world::world();
                         // Get the entities at the start of each frame
-                        let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
-                        // Check the rendering callback buffer
-                        rendering::pipeline::interface::fetch_threadlocal_callbacks();
-
+                        let ptrs = {
+                            let w = crate::world::world();
+                            let entities = entity_ids.iter().map(|x| {
+                                let entity = w.ecs_manager.entitym.entity(*x);
+                                let ptr = entity as *const ecs::Entity; 
+                                ptr
+                            }).collect::<Vec<*const ecs::Entity>>();
+                            // Check the rendering callback buffer
+                            rendering::pipeline::interface::fetch_threadlocal_callbacks();      
+                            entities                      
+                        };                
+                        
                         // Start of the independent system frame
                         // End of the independent system frame, we must wait until the main thread allows us to continue
                         // Check if the system is still running
                         // --- Start of the frame ---
-                        system.run_system(entities);
+                        let entities = ptrs.iter().map(|x| unsafe { x.as_ref().unwrap() }).collect::<Vec<&ecs::Entity>>();
+                        system.run_system(&entities);
 
                         // --- End of the frame ---
                         // Check if we have any system commands that must be executed
@@ -72,22 +80,32 @@ where
                             Ok(lsc) => {
                                 // Execute the logic system command
                                 match lsc {
-                                    LogicSystemCommand::RunCallback(id, result_data) => crate::callbacks::execute_callback(id, result_data),
+                                    LogicSystemCommand::RunCallback(id, result_data) => {
+                                        let mut w = crate::world::world_mut();
+                                        let world = &mut *w;
+                                        crate::callbacks::execute_callback(id, result_data, world);
+                                    },
                                     LogicSystemCommand::AddEntityToSystem(entity_id) => { 
-                                        /*
                                         // Add the entity to the current entity list
-                                        let entity = w.ecs_manager.entitym.entity(entity_id);
+                                        let ptr = {
+                                            let w = crate::world::world();
+                                            let entity = w.ecs_manager.entitym.entity(entity_id);
+                                            entity as *const ecs::Entity
+                                        };
                                         entity_ids.push(entity_id);
+                                        let entity = unsafe { ptr.as_ref().unwrap() };
                                         system.add_entity(entity);
-                                        */
                                     },
                                     LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
-                                        /*
                                         // Remove the entity from the current entity list
-                                        entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
-                                        let entity = w.ecs_manager.entitym.entity(entity_id);
+                                        let ptr = {
+                                            let w = crate::world::world();
+                                            entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
+                                            let entity = w.ecs_manager.entitym.entity(entity_id);
+                                            entity as *const ecs::Entity
+                                        };
+                                        let entity = unsafe { ptr.as_ref().unwrap() };
                                         system.remove_entity(entity);
-                                        */
                                     },
                                 }
                             }
@@ -112,12 +130,12 @@ where
         })
         .unwrap();
     // Wait for the worker thread to send us the data back
-    *c_bitfield = rx.recv().unwrap(); 
+    let c_bitfield = rx.recv().unwrap(); 
     // Add the tx
     let mut receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_mut().unwrap();
     receiver.lsc_txs.insert(handler.thread().id(), receiver.template_wtc_tx.clone());
-    handler
+    (handler, c_bitfield)
 }
 
 // Send a LogicSystemCommand to a specific thread

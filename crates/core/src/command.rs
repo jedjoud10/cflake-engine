@@ -97,7 +97,6 @@ pub fn frame_main_thread(world: &mut crate::world::World) {
 }
 // Send a command query to the world, giving back a command return that can be waited for
 fn command(query: CommandQuery) {
-    println!("Calling thread {:?}", query.thread_id);
     // Increment the counter
     let id = COUNTER.fetch_add(0, Ordering::Relaxed);
     // Check if we are running on the main thread

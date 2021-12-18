@@ -21,7 +21,7 @@ pub mod ecs {
     }
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) -> CommandQueryResult {
-        let empty_linkings = ecs::ComponentLinkingGroup::empty();
+        let empty_linkings = ecs::ComponentLinkingGroup::new();
         entity_add(entity, empty_linkings)
     }
     // Add an entity to the world. Let's hope that this doesn't exceed the maximum theoretical number of entities, which is 18,446,744,073,709,551,615
@@ -61,10 +61,6 @@ pub mod ecs {
             // At the end of the current frame, run the callback on the main thread (If we are on a worker thread)
         }
     }
-    // Create a component linking group
-    pub fn component_linking_group(entity: &ecs::Entity) -> ecs::ComponentLinkingGroup {
-        ecs::ComponentLinkingGroup::new(entity)
-    }
     // This is an alternate function that links the component directly, no linking group
     pub fn link_component_direct() {}
     /* #endregion */
@@ -75,9 +71,8 @@ pub mod ecs {
         F: FnOnce() -> ecs::System<T> + 'static + Send,
     {
         // Create a new thread and initialize the system on it
-        SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let mut c_bitfield: usize = 0;
-        let join_handle = crate::system::create_worker_thread(callback, &mut c_bitfield);
+        SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);0;
+        let (join_handle, c_bitfield) = crate::system::create_worker_thread(callback);
         let system_thread_data = ecs::SystemThreadData::new(join_handle, c_bitfield);
         let mut w = crate::world::world_mut();
         w.ecs_manager.systemm.systems.push(system_thread_data);

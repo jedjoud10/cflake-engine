@@ -36,7 +36,7 @@ pub fn get_component_id<T: ComponentID>() -> Result<usize, ECSError> {
         let value = rc[&name];
         Ok(value)
     } else {
-        return Err(ECSError::new(format!("Component {} not registered!", name)));
+        return Err(ECSError::new(format!("Component '{}' not registered!", name)));
     }
 }
 // Checks if a specific component is registered
