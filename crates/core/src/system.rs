@@ -66,58 +66,58 @@ where
                 // Start the system loop
                 let mut entity_ids: Vec<usize> = Vec::new();
                 loop {
-                    println!("System {} loop waiting to start...", std::thread::current().name().unwrap());
-                    let valid = barrier_data.is_world_valid(); 
-                    if valid {
-                        barrier_data.thread_sync_start();
-                    }
                     println!("System {} loop running!", std::thread::current().name().unwrap());
-                    //let w = crate::world::world();
-                    // Get the entities at the start of each frame
-                    //let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
-                    // Check the rendering callback buffer
-                    rendering::pipeline::interface::fetch_threadlocal_callbacks();
+                    {
+                        let w = crate::world::world();
+                        // Get the entities at the start of each frame
+                        //let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
+                        // Check the rendering callback buffer
+                        rendering::pipeline::interface::fetch_threadlocal_callbacks();
 
-                    // Start of the independent system frame
-                    // End of the independent system frame, we must wait until the main thread allows us to continue
-                    // Check if the system is still running
-                    //std::thread::sleep(std::time::Duration::from_millis(400));
-                    // --- Start of the frame ---
-                    //system.run_system(&entities);
+                        // Start of the independent system frame
+                        // End of the independent system frame, we must wait until the main thread allows us to continue
+                        // Check if the system is still running
+                        //std::thread::sleep(std::time::Duration::from_millis(400));
+                        // --- Start of the frame ---
+                        //system.run_system(&entities);
 
-                    // --- End of the frame ---
-                    // Check if we have any system commands that must be executed
-                    /*
-                    match lsc_rx.try_recv() {
-                        Ok(lsc) => {
-                            // Execute the logic system command
-                            match lsc {
-                                LogicSystemCommand::RunCallback(id, result_data) => crate::callbacks::execute_callback(id, result_data),
-                                LogicSystemCommand::AddEntityToSystem(entity_id) => { 
-                                    // Add the entity to the current entity list
-                                    let entity = w.ecs_manager.entitym.entity(entity_id);
-                                    entity_ids.push(entity_id);
-                                    system.add_entity(entity);
-                                },
-                                LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
-                                    // Remove the entity from the current entity list
-                                    entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
-                                    let entity = w.ecs_manager.entitym.entity(entity_id);
-                                    system.remove_entity(entity);
-                                },
+                        // --- End of the frame ---
+                        // Check if we have any system commands that must be executed
+                        /*
+                        match lsc_rx.try_recv() {
+                            Ok(lsc) => {
+                                // Execute the logic system command
+                                match lsc {
+                                    LogicSystemCommand::RunCallback(id, result_data) => crate::callbacks::execute_callback(id, result_data),
+                                    LogicSystemCommand::AddEntityToSystem(entity_id) => { 
+                                        // Add the entity to the current entity list
+                                        let entity = w.ecs_manager.entitym.entity(entity_id);
+                                        entity_ids.push(entity_id);
+                                        system.add_entity(entity);
+                                    },
+                                    LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
+                                        // Remove the entity from the current entity list
+                                        entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
+                                        let entity = w.ecs_manager.entitym.entity(entity_id);
+                                        system.remove_entity(entity);
+                                    },
+                                }
                             }
+                            Err(_) => {}
                         }
-                        Err(_) => {}
+                        */
                     }
-                    */
-
+                    
                     // Very very end of the frame
-                    if valid {
-                        barrier_data.thread_sync_end();
+                    if barrier_data.is_world_valid() {
+                        // First sync
+                        barrier_data.thread_sync();
                         if barrier_data.is_world_destroyed() {
                             barrier_data.thread_sync_quit();
                             break;
                         }
+                        // Second sync
+                        barrier_data.thread_sync();
                     }
                 }
                 println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());

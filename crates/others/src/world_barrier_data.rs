@@ -7,7 +7,6 @@ use std::sync::{
 pub struct WorldBarrierDataInternal {
     // Frame syncing
     pub end_frame_sync_barrier: Barrier,
-    pub start_frame_sync_barrier: Barrier,
     // Quitting
     pub quit_loop_sync_barrier: Barrier,
     // Atomics
@@ -30,7 +29,6 @@ impl WorldBarrierData {
         let mut writer_ = self.internal.write().unwrap();
         let writer = &mut *writer_;
         *writer = Some(WorldBarrierDataInternal {
-            start_frame_sync_barrier: Barrier::new(n),
             end_frame_sync_barrier: Barrier::new(n),
             quit_loop_sync_barrier: Barrier::new(n),
             world_valid: AtomicBool::new(false),
@@ -72,25 +70,18 @@ impl WorldBarrierData {
             None => false,
         }
     }
-    // We just started running a frame
-    pub fn thread_sync_start(&self) {
-        let r = &self.internal.read().unwrap();
-        let start_frame_sync_barrier = &r.as_ref().unwrap().start_frame_sync_barrier;
-        println!("Called ThreadSyncStart on thread {:?}", std::thread::current().id());
-        let result = (start_frame_sync_barrier).wait();
-    }
     // We have finished the frame for this specific thread, so wait until all the threads synchronise
-    pub fn thread_sync_end(&self) {
+    pub fn thread_sync(&self) {
         let r = &self.internal.read().unwrap();
         let end_frame_sync_barrier = &r.as_ref().unwrap().end_frame_sync_barrier;
-        println!("Called ThreadSyncEnd on thread {:?}", std::thread::current().id());
+        println!("Called ThreadSync on thread {:?}", std::thread::current().id());
         let result = (end_frame_sync_barrier).wait();
     }
     // Sync up the quit barrier
     pub fn thread_sync_quit(&self) {
         let r = &self.internal.read().unwrap();
         let end_frame_sync_barrier = &r.as_ref().unwrap().end_frame_sync_barrier;
-        //println!("Called ThreadSyncQuit on thread {:?}", std::thread::current().id());
+        println!("Called ThreadSyncQuit on thread {:?}", std::thread::current().id());
         let result = (end_frame_sync_barrier).wait();
     }
 }

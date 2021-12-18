@@ -117,11 +117,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
                 loop {
-                    // The world is valid, we can wait
-                    let valid = barrier_data.is_world_valid(); 
-                    if valid {
-                        barrier_data.thread_sync_start();
-                    }
                     // Update the delta_time
                     let new_time = glfw.get_time();
                     let delta = new_time - last_time;
@@ -137,15 +132,18 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
                     super::interface::update_render_thread();
-                    frame_count += 1;
+                    frame_count += 1; 
                     // The world is valid, we can wait
-                    if valid {
-                        barrier_data.thread_sync_end();
+                    if barrier_data.is_world_valid() {
+                        // First sync
+                        barrier_data.thread_sync();
                         if barrier_data.is_world_destroyed() {
                             println!("Stopping the render thread...");
                             barrier_data.thread_sync_quit();
                             break;
                         }
+                        // Second sync 
+                        barrier_data.thread_sync();
                     }
                 }
                 println!("Stopped the render thread!");

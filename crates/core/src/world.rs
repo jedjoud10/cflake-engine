@@ -7,8 +7,8 @@ use glfw::{self};
 use input::*;
 use io::SaverLoader;
 use others::*;
-//use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, atomic::{AtomicBool, Ordering}};
+use std::sync::{atomic::{AtomicBool, Ordering}};
+use no_deadlocks::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use ui::UIManager;
 
 // Global main for purely just low level task management
@@ -31,7 +31,8 @@ pub fn world_mut() -> RwLockWriteGuard<'static, World> {
     // Check if we are in the middle of a frame
     if FRAME.load(std::sync::atomic::Ordering::Relaxed) {
         // We are currently running a frame, we cannot get the world mutably
-        panic!("Cannot get the world mutably during a frame!");
+        let bt = backtrace::Backtrace::new();
+        panic!("Cannot get the world mutably during a frame! {:?}", bt);
     }
     println!("Getting WorldMut on '{}'...", std::thread::current().name().unwrap());
     let x = WORLD.write().unwrap();
@@ -170,10 +171,12 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     println!("Hello world from MainThread! Must call initalization callback!");
 }
 // This is the main Update loop, ran on the main thread
-pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
-    crate::global::main::as_ref().thread_sync_start();
-    FRAME.store(true, Ordering::Relaxed);
+pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
+    // Systems are still running their loops...
     println!("Update world {}", _delta * 1000.0);
+    crate::global::main::as_ref().thread_sync();
+    FRAME.store(false, Ordering::Relaxed);
+    // The systems are blocked here
     /*
     // Upate the console
     self.update_console();
@@ -218,10 +221,15 @@ pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Win
     }
     */
     // At the end of the frame we will wait until all the threads (SystemWorkerThreads and the RenderThread) finish executing
-    //std::thread::sleep(std::time::Duration::from_millis(40));
-    crate::global::main::as_ref().thread_sync_end();
-    FRAME.store(false, Ordering::Relaxed);
+    //std::thread::sleep(std::time::Duration::from_millis(400));    
 }
+// Finish the frame, telling the logic systems to wait until they all sync up
+pub fn update_world_end() {
+    FRAME.store(true, Ordering::Relaxed);
+    crate::global::main::as_ref().thread_sync();
+    // The systems are running their loops
+}
+
 // Update the console
 fn update_console() {
     /*
@@ -258,17 +266,17 @@ fn update_console() {
 // When we want to close the application
 pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Killing child threads...");
-    let mut w = world_mut();
     let barrier_data = crate::global::main::clone();
-
+    
     // Run their last frame...
     println!("Loop threads running their last frame...");
     // Set the AtomicBool
     barrier_data.destroying_world();
-    barrier_data.thread_sync_start();
-    barrier_data.thread_sync_end();
+    barrier_data.thread_sync();
     println!("Loop threads ran their last frame!");
     //std::thread::sleep(std::time::Duration::from_secs(1));
+    FRAME.store(false, Ordering::Relaxed);
+    let mut w = world_mut();
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
     // Tell all the child loop threads to stop
     barrier_data.thread_sync_quit();
@@ -280,21 +288,16 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Joined up all the child threads, we can safely exit!");
 }
 // We have received input events from GLFW
-pub fn receive_key_event(key_scancode: i32, action_type: i32) {
-    let mut w = world_mut();
-    w.input_manager.receive_key_event(key_scancode, action_type);
+pub fn receive_key_event(key_scancode: i32, action_type: i32, world: &mut World) {
+    world.input_manager.receive_key_event(key_scancode, action_type);
 }
-pub fn receive_mouse_pos_event(x: f64, y: f64) {
-    let mut w = world_mut();
-    w.input_manager.receive_mouse_event(Some((x, y)), None);
+pub fn receive_mouse_pos_event(x: f64, y: f64, world: &mut World) {
+    world.input_manager.receive_mouse_event(Some((x, y)), None);
 }
-pub fn receive_mouse_scroll_event(scroll: f64) {
-    let mut w = world_mut();
-    w.input_manager.receive_mouse_event(None, Some(scroll));
+pub fn receive_mouse_scroll_event(scroll: f64, world: &mut World) {
+    world.input_manager.receive_mouse_event(None, Some(scroll));
 }
-
-pub fn resize_window_event(_x: u16, _y: u16) {
-    let _w = world_mut();
+pub fn resize_window_event(_x: u16, _y: u16, world: &mut World) {
 }
 /*
 // When we resize the window
