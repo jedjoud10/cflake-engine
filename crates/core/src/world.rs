@@ -8,17 +8,19 @@ use input::*;
 use io::SaverLoader;
 use others::*;
 //use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, atomic::{AtomicBool, Ordering}};
 use ui::UIManager;
 
 // Global main for purely just low level task management
 use lazy_static::lazy_static;
 lazy_static! {
     static ref WORLD: RwLock<World> = RwLock::new(new_internal());
+    static ref FRAME: AtomicBool = AtomicBool::new(false);
 }
 
 // Get a reference to the world
 pub fn world() -> RwLockReadGuard<'static, World> {
+    println!("Getting World on '{}'...", std::thread::current().name().unwrap());
     let x = WORLD.read().unwrap();
     println!("World on '{}'", std::thread::current().name().unwrap());
     x
@@ -26,6 +28,12 @@ pub fn world() -> RwLockReadGuard<'static, World> {
 
 // Get a mutable reference to the world
 pub fn world_mut() -> RwLockWriteGuard<'static, World> {
+    // Check if we are in the middle of a frame
+    if FRAME.load(std::sync::atomic::Ordering::Relaxed) {
+        // We are currently running a frame, we cannot get the world mutably
+        panic!("Cannot get the world mutably during a frame!");
+    }
+    println!("Getting WorldMut on '{}'...", std::thread::current().name().unwrap());
     let x = WORLD.write().unwrap();
     println!("WorldMut on '{}'", std::thread::current().name().unwrap());
     x
@@ -163,7 +171,9 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 }
 // This is the main Update loop, ran on the main thread
 pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
-    //println!("Update world {}", _delta * 1000.0);
+    crate::global::main::as_ref().thread_sync_start();
+    FRAME.store(true, Ordering::Relaxed);
+    println!("Update world {}", _delta * 1000.0);
     /*
     // Upate the console
     self.update_console();
@@ -209,7 +219,8 @@ pub fn update_world(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Win
     */
     // At the end of the frame we will wait until all the threads (SystemWorkerThreads and the RenderThread) finish executing
     //std::thread::sleep(std::time::Duration::from_millis(40));
-    crate::global::main::as_ref().thread_sync();
+    crate::global::main::as_ref().thread_sync_end();
+    FRAME.store(false, Ordering::Relaxed);
 }
 // Update the console
 fn update_console() {
@@ -254,7 +265,8 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Loop threads running their last frame...");
     // Set the AtomicBool
     barrier_data.destroying_world();
-    barrier_data.thread_sync();
+    barrier_data.thread_sync_start();
+    barrier_data.thread_sync_end();
     println!("Loop threads ran their last frame!");
     //std::thread::sleep(std::time::Duration::from_secs(1));
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);

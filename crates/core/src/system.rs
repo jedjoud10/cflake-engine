@@ -66,8 +66,13 @@ where
                 // Start the system loop
                 let mut entity_ids: Vec<usize> = Vec::new();
                 loop {
-                    println!("System {} loop!", std::thread::current().name().unwrap());
-                    let w = crate::world::world();
+                    println!("System {} loop waiting to start...", std::thread::current().name().unwrap());
+                    let valid = barrier_data.is_world_valid(); 
+                    if valid {
+                        barrier_data.thread_sync_start();
+                    }
+                    println!("System {} loop running!", std::thread::current().name().unwrap());
+                    //let w = crate::world::world();
                     // Get the entities at the start of each frame
                     //let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
                     // Check the rendering callback buffer
@@ -107,8 +112,8 @@ where
                     */
 
                     // Very very end of the frame
-                    if barrier_data.is_world_valid() {
-                        barrier_data.thread_sync();
+                    if valid {
+                        barrier_data.thread_sync_end();
                         if barrier_data.is_world_destroyed() {
                             barrier_data.thread_sync_quit();
                             break;

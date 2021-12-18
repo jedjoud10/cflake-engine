@@ -124,6 +124,7 @@ name = "core"
 version = "0.1.0"
 dependencies = [
  "assets",
+ "backtrace",
  "crossbeam-channel",
  "debug",
  "ecs",
