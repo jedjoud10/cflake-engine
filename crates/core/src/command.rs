@@ -45,9 +45,9 @@ impl std::ops::Drop for CommandQueryResult {
             Some(task) => {
                 let query = CommandQuery::new(task, None);
                 command(query);
-            },
-            None => { /* We have called the with_callback function, so the task is empty */ },
-        }        
+            }
+            None => { /* We have called the with_callback function, so the task is empty */ }
+        }
     }
 }
 

@@ -6,9 +6,9 @@ use ecs::*;
 use glfw::{self};
 use input::*;
 use io::SaverLoader;
-use others::*;
-use std::sync::{atomic::{AtomicBool, Ordering}};
 use no_deadlocks::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use others::*;
+use std::sync::atomic::{AtomicBool, Ordering};
 use ui::UIManager;
 
 // Global main for purely just low level task management
@@ -217,7 +217,7 @@ pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glf
     }
     */
     // At the end of the frame we will wait until all the threads (SystemWorkerThreads and the RenderThread) finish executing
-    //std::thread::sleep(std::time::Duration::from_millis(400));    
+    //std::thread::sleep(std::time::Duration::from_millis(400));
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
 pub fn update_world_end(world: &mut World) {
@@ -270,7 +270,7 @@ fn update_console() {
 pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Killing child threads...");
     let barrier_data = crate::global::main::clone();
-    
+
     // Run their last frame...
     println!("Loop threads running their last frame...");
     // Set the AtomicBool
@@ -300,8 +300,7 @@ pub fn receive_mouse_pos_event(x: f64, y: f64, world: &mut World) {
 pub fn receive_mouse_scroll_event(scroll: f64, world: &mut World) {
     world.input_manager.receive_mouse_event(None, Some(scroll));
 }
-pub fn resize_window_event(_x: u16, _y: u16, _world: &mut World) {
-}
+pub fn resize_window_event(_x: u16, _y: u16, _world: &mut World) {}
 /*
 // When we resize the window
 pub fn resize_window_event(size: (u16, u16)) {

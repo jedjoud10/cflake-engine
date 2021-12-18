@@ -3,11 +3,8 @@ use crate::{
     ECSError,
 };
 
-
 use others::SmartList;
-use std::{
-    any::Any,
-};
+use std::any::Any;
 
 // Struct used to get the component ID of specific components, entities, and systems
 pub struct ComponentManager {

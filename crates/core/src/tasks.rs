@@ -31,7 +31,7 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             // Set the entity values
             let entity_id = world.ecs_manager.entitym.entities.get_next_valid_id();
             let entity_cbitfield = linkings.c_bitfield;
-            
+
             entity.entity_id = entity_id;
             entity.linked_components = hashmap;
             entity.c_bitfield = entity_cbitfield;
@@ -49,7 +49,9 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             // Check the systems where this entity might be valid
             for system in world.ecs_manager.systemm.systems.iter() {
                 let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
-                if valid { crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver); }
+                if valid {
+                    crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
+                }
             }
 
             // Only run the callback if we are not on the main thread
@@ -57,7 +59,11 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                 // Tell the main callback manager to execute this callback
                 match query.callback_id {
                     Some(id) => {
-                        crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)), &query.thread_id, receiver);
+                        crate::system::send_lsc(
+                            LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)),
+                            &query.thread_id,
+                            receiver,
+                        );
                     }
                     None => { /* No callback available */ }
                 }

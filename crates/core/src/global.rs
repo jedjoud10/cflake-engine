@@ -9,7 +9,7 @@ pub mod ecs {
     use lazy_static::lazy_static;
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
-    
+
     lazy_static! {
         static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
     }
@@ -71,7 +71,8 @@ pub mod ecs {
         F: FnOnce() -> ecs::System<T> + 'static + Send,
     {
         // Create a new thread and initialize the system on it
-        SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);0;
+        SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
+        0;
         let (join_handle, c_bitfield) = crate::system::create_worker_thread(callback);
         let system_thread_data = ecs::SystemThreadData::new(join_handle, c_bitfield);
         let mut w = crate::world::world_mut();

@@ -2,7 +2,8 @@ use lazy_static::lazy_static;
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicUsize, Ordering}, RwLock,
+        atomic::{AtomicUsize, Ordering},
+        RwLock,
     },
 };
 

@@ -1,8 +1,6 @@
-use crate::{LoadState};
-
-
+use crate::LoadState;
 use others::{Instance, SmartList};
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 // An entity manager that handles entities
 #[derive(Default)]

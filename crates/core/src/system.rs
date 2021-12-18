@@ -1,16 +1,15 @@
-use crate::communication::{WorldTaskSender, RECEIVER, WorldTaskReceiver};
+use crate::communication::{WorldTaskReceiver, WorldTaskSender, RECEIVER};
 use crate::global::callbacks::LogicSystemCallbackResultData;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::JoinHandle;
 
-
 // Some special system commands
 pub enum LogicSystemCommand {
     RunCallback(u64, LogicSystemCallbackResultData),
     AddEntityToSystem(usize),
-    RemoveEntityFromSystem(usize)
+    RemoveEntityFromSystem(usize),
 }
 
 lazy_static! {
@@ -57,16 +56,19 @@ where
                         // Get the entities at the start of each frame
                         let ptrs = {
                             let w = crate::world::world();
-                            let entities = entity_ids.iter().map(|x| {
-                                let entity = w.ecs_manager.entitym.entity(*x);
-                                 
-                                entity as *const ecs::Entity
-                            }).collect::<Vec<*const ecs::Entity>>();
+                            let entities = entity_ids
+                                .iter()
+                                .map(|x| {
+                                    let entity = w.ecs_manager.entitym.entity(*x);
+
+                                    entity as *const ecs::Entity
+                                })
+                                .collect::<Vec<*const ecs::Entity>>();
                             // Check the rendering callback buffer
-                            rendering::pipeline::interface::fetch_threadlocal_callbacks();      
-                            entities                      
-                        };                
-                        
+                            rendering::pipeline::interface::fetch_threadlocal_callbacks();
+                            entities
+                        };
+
                         // Start of the independent system frame
                         // End of the independent system frame, we must wait until the main thread allows us to continue
                         // Check if the system is still running
@@ -84,8 +86,8 @@ where
                                         let mut w = crate::world::world_mut();
                                         let world = &mut *w;
                                         crate::callbacks::execute_callback(id, result_data, world);
-                                    },
-                                    LogicSystemCommand::AddEntityToSystem(entity_id) => { 
+                                    }
+                                    LogicSystemCommand::AddEntityToSystem(entity_id) => {
                                         // Add the entity to the current entity list
                                         let ptr = {
                                             let w = crate::world::world();
@@ -95,7 +97,7 @@ where
                                         entity_ids.push(entity_id);
                                         let entity = unsafe { ptr.as_ref().unwrap() };
                                         system.add_entity(entity);
-                                    },
+                                    }
                                     LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
                                         // Remove the entity from the current entity list
                                         let ptr = {
@@ -106,13 +108,13 @@ where
                                         };
                                         let entity = unsafe { ptr.as_ref().unwrap() };
                                         system.remove_entity(entity);
-                                    },
+                                    }
                                 }
                             }
                             Err(_) => {}
                         }
                     }
-                    
+
                     // Very very end of the frame
                     if barrier_data.is_world_valid() {
                         // First sync
@@ -130,7 +132,7 @@ where
         })
         .unwrap();
     // Wait for the worker thread to send us the data back
-    let c_bitfield = rx.recv().unwrap(); 
+    let c_bitfield = rx.recv().unwrap();
     // Add the tx
     let mut receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_mut().unwrap();

@@ -71,10 +71,9 @@ where
 impl<T> System<T>
 where
     T: CustomSystemData,
-{    
+{
     // Add a component to this system's component bitfield id
     pub fn link<U: ComponentID>(&mut self) {
-        
         if crate::registry::is_component_registered::<U>() {
             // Link the component if it was already registered
             let c = crate::registry::get_component_id::<U>().unwrap();

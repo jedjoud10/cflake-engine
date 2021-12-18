@@ -61,7 +61,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
             let world = &mut *w;
             // Get the GLFW events first
             glfw.poll_events();
-            for (_, event) in glfw::flush_messages(&events) {   
+            for (_, event) in glfw::flush_messages(&events) {
                 match event {
                     glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
                         // Key event
@@ -90,7 +90,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
             // Execute the main thread commands
             core::world::update_world_end(world);
         }
-        /* #endregion */        
+        /* #endregion */
     }
     // When the window closes and we exit from the game
     core::world::kill_world(pipeline_data);

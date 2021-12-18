@@ -132,7 +132,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
                     super::interface::update_render_thread();
-                    frame_count += 1; 
+                    frame_count += 1;
                     // The world is valid, we can wait
                     if barrier_data.is_world_valid() {
                         // First sync
@@ -142,7 +142,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                             barrier_data.thread_sync_quit();
                             break;
                         }
-                        // Second sync 
+                        // Second sync
                         barrier_data.thread_sync();
                     }
                 }
