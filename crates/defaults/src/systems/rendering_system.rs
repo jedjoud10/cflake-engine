@@ -1,14 +1,13 @@
-use core::global::callbacks::{CallbackType::EntityRefCallbacks, RefCallback};
-use ecs::SystemEventType;
+use core::global::{callbacks::{CallbackType::EntityRefCallbacks, RefCallback}, self};
 // An improved multithreaded rendering system
 
 // Add the renderer in the render pipeline renderer
 fn add_entity(data: &mut (), entity: &ecs::Entity) {
     // Get the internal renderer
-    let renderer = core::global::ecs::component::<crate::components::Renderer>(entity);
+    let renderer = global::ecs::component::<crate::components::Renderer>(entity);
     let irenderer = renderer.internal_renderer.clone();
     // Get the transform, and make sure it's matrix is valid
-    let transform = core::global::ecs::component::<crate::components::Transform>(entity);
+    let transform = global::ecs::component::<crate::components::Transform>(entity);
     transform.update_matrix();
     let matrix = transform.matrix;
 
@@ -23,7 +22,7 @@ fn add_entity(data: &mut (), entity: &ecs::Entity) {
 }
 // Remove the renderer from the pipeline renderer
 fn remove_entity(data: &mut (), entity: &ecs::Entity) {
-    let renderer = core::global::ecs::component::<crate::components::Renderer>(entity);
+    let renderer = global::ecs::component::<crate::components::Renderer>(entity);
     let index = renderer.internal_renderer.index;
     let name = rendering::pipec::generate_command_name();
     rendering::pipec::internal_task(rendering::RenderTask::RendererRemove(index), &name);
@@ -33,21 +32,19 @@ fn update_entity(data: &mut (), entity: &ecs::Entity) {}
 // System prefire so we can send the camera data to the render pipeline
 fn system_prefire(data: &mut ()) {
     // Camera data
-    let w = core::world::world();
-    let camera = core::global::ecs::entity(w.custom_data.main_camera_entity_id);
-    let camera = data.entity_manager.get_entity(data.custom_data.main_camera_entity_id).unwrap();
-    let cd = camera.get_component::<components::Camera>(data.component_manager).unwrap();
+    let camera = global::ecs::entity(global::main::world_data().main_camera_entity_id).unwrap();
+    let camera_data = global::ecs::component::<crate::components::Camera>(&camera);
     // Transform data
-    let ct = camera.get_component::<components::Transform>(data.component_manager).unwrap();
-    let pos = ct.position;
-    let rot = ct.rotation;
-    let shared_data = rendering::SharedData::new((pos, rot, cd.clip_planes, cd.projection_matrix));
-    pipec::task(pipec::RenderTask::CameraDataUpdate(shared_data), "update_camera_data", |x| {})
+    let camera_transform = global::ecs::component::<crate::components::Transform>(&camera);
+    let pos = camera_transform.position;
+    let rot = camera_transform.rotation;
+    let shared_data = rendering::SharedData::new((pos, rot, camera_data.clip_planes, camera_data.projection_matrix));
+    rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data), "update_camera_data")
 }
 
 // Create the default system
 pub fn system() {
-    core::global::ecs::add_system(|| {
+    ecs::add_system(|| {
         // Create a system
         let mut system = ecs::System::new(());
         // Link some components to the system

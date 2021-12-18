@@ -103,6 +103,27 @@ pub mod pipec {
             sender.send(PipelineSendData(thread_id, command, boxed_callback, false)).unwrap();
         });
     }
+    // Normal task without callback
+    pub fn task<F>(task: RenderTask, name: &str)
+    {
+        // Create the render command
+        let command = RenderCommand {
+            name: if name.is_empty() { panic!() } else { name.to_string() },
+            input_task: task,
+        };
+        // Get the current thread ID
+        let thread_id = std::thread::current().id();
+        println!("\x1b[35mReceived task '{}' from thread '{}'\x1b[0m", name, std::thread::current().name().unwrap());
+        // Box the callback
+        let boxed_callback = Box::new(callback);
+        crate::RENDER_COMMAND_SENDER.with(|x| {
+            let sender_ = x.borrow();
+            let sender_ = sender_.as_ref();
+            let sender = sender_.unwrap();
+            // Send the command to the thread
+            sender.send(PipelineSendData(thread_id, command, boxed_callback, false)).unwrap();
+        });
+    }
     // A waitable task that contains an empty closure
     pub fn wtask(task: RenderTask, name: &str) {
         // Create the render command
@@ -122,11 +143,6 @@ pub mod pipec {
             // Send the command to the thread
             sender.send(PipelineSendData(thread_id, command, boxed_callback, true)).unwrap();
         });
-    }
-    // Internal task
-    pub fn internal_task(_task: RenderTask, _name: &str) -> Option<RenderTaskReturn> {
-        // We must talk to the global interface directly
-        todo!()
     }
     fn get_gpu_object(name: &str) -> Option<GPUObject> {
         crate::pipeline::interface::get_gpu_object(name)

@@ -7,6 +7,7 @@ pub mod ecs {
     use crate::tasks::*;
     use ecs::Component;
     use lazy_static::lazy_static;
+    use std::sync::RwLockReadGuard;
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
 
@@ -171,6 +172,8 @@ pub mod main {
     use lazy_static::lazy_static;
     use others::WorldBarrierData;
     use std::sync::Arc;
+
+    use crate::custom_world_data::CustomWorldData;
     lazy_static! {
         static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
     }
@@ -186,6 +189,11 @@ pub mod main {
     // Clone
     pub fn clone() -> Arc<WorldBarrierData> {
         BARRIERS_WORLD.clone()
+    }
+    // Get the world custom data
+    pub fn world_data() -> CustomWorldData {
+        let w = crate::world::world();
+        w.custom_data.clone()
     }
 }
 
