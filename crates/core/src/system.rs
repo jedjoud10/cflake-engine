@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::JoinHandle;
-use std::{collections::HashMap, sync::Mutex};
+
 
 // Some special system commands
 pub enum LogicSystemCommand {
@@ -59,8 +59,8 @@ where
                             let w = crate::world::world();
                             let entities = entity_ids.iter().map(|x| {
                                 let entity = w.ecs_manager.entitym.entity(*x);
-                                let ptr = entity as *const ecs::Entity; 
-                                ptr
+                                 
+                                entity as *const ecs::Entity
                             }).collect::<Vec<*const ecs::Entity>>();
                             // Check the rendering callback buffer
                             rendering::pipeline::interface::fetch_threadlocal_callbacks();      

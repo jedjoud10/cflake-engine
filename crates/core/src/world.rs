@@ -300,7 +300,7 @@ pub fn receive_mouse_pos_event(x: f64, y: f64, world: &mut World) {
 pub fn receive_mouse_scroll_event(scroll: f64, world: &mut World) {
     world.input_manager.receive_mouse_event(None, Some(scroll));
 }
-pub fn resize_window_event(_x: u16, _y: u16, world: &mut World) {
+pub fn resize_window_event(_x: u16, _y: u16, _world: &mut World) {
 }
 /*
 // When we resize the window
