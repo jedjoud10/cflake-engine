@@ -23,8 +23,6 @@ pub struct CommandQueryResult {
     task: Option<Task>,
 }
 
-trait Test<T>: Fn(&T) {}
-
 impl CommandQueryResult {
     // Create a new query result from a specific command
     pub fn new(task: Task) -> Self {
@@ -43,9 +41,13 @@ impl std::ops::Drop for CommandQueryResult {
     // Custom drop function that actually sends the command, just in case where we did not explicitly specified
     fn drop(&mut self) {
         // Send the command
-        let task = self.task.take().unwrap();
-        let query = CommandQuery::new(task, None);
-        command(query);
+        match self.task.take() {
+            Some(task) => {
+                let query = CommandQuery::new(task, None);
+                command(query);
+            },
+            None => { /* We have called the with_callback function, so the task is empty */ },
+        }        
     }
 }
 
@@ -59,11 +61,11 @@ pub fn initialize_channels_main() {
     // Set the main thread values
     *receiver_ = Some(WorldTaskReceiver {
         rx: rx_command,
-        wtc_txs: HashMap::new(),
+        lsc_txs: HashMap::new(),
         template_wtc_tx: wtc_tx,
     });
     // And then the worker thread template values
-    *copy_ = Some(CommunicationChannelsCopied { tx: tx_command, wtc_rx });
+    *copy_ = Some(CommunicationChannelsCopied { tx: tx_command, lsc_rx: wtc_rx });
     // This is indeed the main thread
     IS_MAIN_THREAD.with(|x| x.set(true));
     println!("Initialized the channels on the MainThread");
@@ -78,20 +80,19 @@ pub fn initialize_channels_worker_thread() {
         // We do the cloning
         *sender = Some(WorldTaskSender {
             tx: copy.tx.clone(),
-            lsc_rx: copy.wtc_rx.clone(),
+            lsc_rx: copy.lsc_rx.clone(),
         });
     })
 }
 // Frame tick on the main thread. Polls the current tasks and excecutes them. This is called at the end of each logic frame (16ms per frame)
-pub fn frame_main_thread() {
+pub fn frame_main_thread(world: &mut crate::world::World) {
     // Poll each command query
     let receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_ref().unwrap();
     let rx = &receiver.rx;
-    let mut world = crate::world::world_mut();
     for (_id, query) in rx.try_recv() {
         // Just execute the task
-        excecute_query(query, &mut world);
+        excecute_query(query, world, receiver);
     }
 }
 // Send a command query to the world, giving back a command return that can be waited for
@@ -105,7 +106,9 @@ fn command(query: CommandQuery) {
         // This is the main thread calling, we don't give a  f u c k
         let mut world = crate::world::world_mut();
         // Execute the task on the main thread
-        excecute_query(query, &mut world);
+        let receiver_ = RECEIVER.lock().unwrap();
+        let receiver = receiver_.as_ref().unwrap();
+        excecute_query(query, &mut world, receiver);
     } else {
         // Send the command query
         SENDER.with(|sender| {

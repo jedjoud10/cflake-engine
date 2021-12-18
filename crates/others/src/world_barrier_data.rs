@@ -74,14 +74,12 @@ impl WorldBarrierData {
     pub fn thread_sync(&self) {
         let r = &self.internal.read().unwrap();
         let end_frame_sync_barrier = &r.as_ref().unwrap().end_frame_sync_barrier;
-        println!("Called ThreadSync on thread {:?}", std::thread::current().id());
-        let result = (end_frame_sync_barrier).wait();
+        (end_frame_sync_barrier).wait();
     }
     // Sync up the quit barrier
     pub fn thread_sync_quit(&self) {
         let r = &self.internal.read().unwrap();
         let end_frame_sync_barrier = &r.as_ref().unwrap().end_frame_sync_barrier;
-        println!("Called ThreadSyncQuit on thread {:?}", std::thread::current().id());
-        let result = (end_frame_sync_barrier).wait();
+        (end_frame_sync_barrier).wait();
     }
 }

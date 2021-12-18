@@ -55,36 +55,42 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         last_time = new_time;
         // Update the world
         core::world::update_world_start(delta, &mut glfw, &mut window);
-        glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {    
+        /* #region This whole region is dedicated for running stuff on the main thread */
+        {
             let mut w = core::world::world_mut();
             let world = &mut *w;
-            match event {
-                glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
-                    // Key event
-                    let action_id = match action_type {
-                        glfw::Action::Press => 0,
-                        glfw::Action::Release => 1,
-                        glfw::Action::Repeat => 2,
-                    };
-                    // Only accept the scancode of valid keys
-                    if key_scancode > 0 {
-                        core::world::receive_key_event(key_scancode, action_id, world);
+            // Get the GLFW events first
+            glfw.poll_events();
+            for (_, event) in glfw::flush_messages(&events) {   
+                match event {
+                    glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
+                        // Key event
+                        let action_id = match action_type {
+                            glfw::Action::Press => 0,
+                            glfw::Action::Release => 1,
+                            glfw::Action::Repeat => 2,
+                        };
+                        // Only accept the scancode of valid keys
+                        if key_scancode > 0 {
+                            core::world::receive_key_event(key_scancode, action_id, world);
+                        }
+                        if let glfw::Key::Escape = key {
+                            window.set_should_close(true);
+                        }
                     }
-                    if let glfw::Key::Escape = key {
-                        window.set_should_close(true);
+                    glfw::WindowEvent::Size(x, y) => {
+                        // Size
+                        core::world::resize_window_event(x as u16, y as u16, world);
                     }
+                    glfw::WindowEvent::Scroll(_, scroll2) => core::world::receive_mouse_scroll_event(scroll2, world),
+                    glfw::WindowEvent::CursorPos(x, y) => core::world::receive_mouse_pos_event(x, y, world),
+                    _ => {}
                 }
-                glfw::WindowEvent::Size(x, y) => {
-                    // Size
-                    core::world::resize_window_event(x as u16, y as u16, world);
-                }
-                glfw::WindowEvent::Scroll(_, scroll2) => core::world::receive_mouse_scroll_event(scroll2, world),
-                glfw::WindowEvent::CursorPos(x, y) => core::world::receive_mouse_pos_event(x, y, world),
-                _ => {}
             }
+            // Execute the main thread commands
+            core::world::update_world_end(world);
         }
-        core::world::update_world_end();
+        /* #endregion */        
     }
     // When the window closes and we exit from the game
     core::world::kill_world(pipeline_data);

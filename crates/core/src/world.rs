@@ -20,23 +20,19 @@ lazy_static! {
 
 // Get a reference to the world
 pub fn world() -> RwLockReadGuard<'static, World> {
-    println!("Getting World on '{}'...", std::thread::current().name().unwrap());
     let x = WORLD.read().unwrap();
-    println!("World on '{}'", std::thread::current().name().unwrap());
     x
 }
 
 // Get a mutable reference to the world
 pub fn world_mut() -> RwLockWriteGuard<'static, World> {
     // Check if we are in the middle of a frame
-    if FRAME.load(std::sync::atomic::Ordering::Relaxed) {
+    if FRAME.load(std::sync::atomic::Ordering::Relaxed) && crate::system::IS_MAIN_THREAD.with(|x| x.get()) {
         // We are currently running a frame, we cannot get the world mutably
         let bt = backtrace::Backtrace::new();
         panic!("Cannot get the world mutably during a frame! {:?}", bt);
     }
-    println!("Getting WorldMut on '{}'...", std::thread::current().name().unwrap());
     let x = WORLD.write().unwrap();
-    println!("WorldMut on '{}'", std::thread::current().name().unwrap());
     x
 }
 
@@ -224,7 +220,9 @@ pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glf
     //std::thread::sleep(std::time::Duration::from_millis(400));    
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
-pub fn update_world_end() {
+pub fn update_world_end(world: &mut World) {
+    // Run the commands at the end of the frame
+    crate::command::frame_main_thread(world);
     FRAME.store(true, Ordering::Relaxed);
     crate::global::main::as_ref().thread_sync();
     // The systems are running their loops

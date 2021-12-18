@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::command::CommandQuery;
 
+use crate::communication::WorldTaskReceiver;
 use crate::global::callbacks::LogicSystemCallbackResultData;
 use crate::system::LogicSystemCommand;
 
@@ -18,7 +19,7 @@ pub enum Task {
 }
 
 // Excecute a specific task and give back it's result
-pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World) {
+pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, receiver: &WorldTaskReceiver) {
     match query.task {
         Task::EntityAdd(mut entity, linkings) => {
             // Add the components first
@@ -44,13 +45,13 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World) {
             // Check the systems where this entity might be valid
             for system in world.ecs_manager.systemm.systems.iter() {
                 let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
-                if valid { crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &query.thread_id); }
+                if valid { crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &query.thread_id, receiver); }
             }
 
             // Tell the main callback manager to execute this callback
             match query.callback_id {
                 Some(id) => {
-                    crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)), &query.thread_id);
+                    crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)), &query.thread_id, receiver);
                 }
                 None => { /* No callback available */ }
             }

@@ -10,7 +10,7 @@ use std::{
 use crate::{ComponentID, ECSError};
 // Use to keep track of the component IDs
 lazy_static! {
-    static ref NEXT_REGISTERED_COMPONENT_ID: AtomicUsize = AtomicUsize::new(0);
+    static ref NEXT_REGISTERED_COMPONENT_ID: AtomicUsize = AtomicUsize::new(1);
     static ref REGISTERED_COMPONENTS: RwLock<HashMap<String, usize>> = RwLock::new(HashMap::new());
 }
 

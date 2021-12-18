@@ -1,4 +1,4 @@
-use crate::communication::{WorldTaskSender, RECEIVER};
+use crate::communication::{WorldTaskSender, RECEIVER, WorldTaskReceiver};
 use crate::global::callbacks::LogicSystemCallbackResultData;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
@@ -14,26 +14,13 @@ pub enum LogicSystemCommand {
 }
 
 lazy_static! {
-    // The sender end of the logic system commands
-    static ref LOGIC_SYSTEMS_COMMAND_SENDER: Mutex<LogicSystemCommandSender> = Mutex::new(LogicSystemCommandSender::default());
     // The number of systems
     pub static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
 }
 
-// Command sender
-#[derive(Default)]
-pub struct LogicSystemCommandSender {
-    pub lsc_txs: Option<HashMap<std::thread::ThreadId, crossbeam_channel::Sender<LogicSystemCommand>>>,
-}
-// Command receiver
-#[derive(Default)]
-pub struct LogicSystemCommandReceiver {}
-
 // The system group thread data is local to each system thread
 thread_local! {
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
-    // The receiving end of the system commands
-    pub static WORKER_THREADS_RECEIVER: RefCell<LogicSystemCommandReceiver> = RefCell::new(LogicSystemCommandReceiver::default());
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
     pub static SENDER: RefCell<Option<WorldTaskSender>> = RefCell::new(None);
 }
@@ -66,46 +53,46 @@ where
                 // Start the system loop
                 let mut entity_ids: Vec<usize> = Vec::new();
                 loop {
-                    println!("System {} loop running!", std::thread::current().name().unwrap());
                     {
-                        let w = crate::world::world();
+                        //let w = crate::world::world();
                         // Get the entities at the start of each frame
-                        //let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
+                        let entities = entity_ids.iter().map(|x| w.ecs_manager.entitym.entity(*x)).collect();
                         // Check the rendering callback buffer
                         rendering::pipeline::interface::fetch_threadlocal_callbacks();
 
                         // Start of the independent system frame
                         // End of the independent system frame, we must wait until the main thread allows us to continue
                         // Check if the system is still running
-                        //std::thread::sleep(std::time::Duration::from_millis(400));
                         // --- Start of the frame ---
-                        //system.run_system(&entities);
+                        system.run_system(entities);
 
                         // --- End of the frame ---
                         // Check if we have any system commands that must be executed
-                        /*
                         match lsc_rx.try_recv() {
                             Ok(lsc) => {
                                 // Execute the logic system command
                                 match lsc {
                                     LogicSystemCommand::RunCallback(id, result_data) => crate::callbacks::execute_callback(id, result_data),
                                     LogicSystemCommand::AddEntityToSystem(entity_id) => { 
+                                        /*
                                         // Add the entity to the current entity list
                                         let entity = w.ecs_manager.entitym.entity(entity_id);
                                         entity_ids.push(entity_id);
                                         system.add_entity(entity);
+                                        */
                                     },
                                     LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
+                                        /*
                                         // Remove the entity from the current entity list
                                         entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
                                         let entity = w.ecs_manager.entitym.entity(entity_id);
                                         system.remove_entity(entity);
+                                        */
                                     },
                                 }
                             }
                             Err(_) => {}
                         }
-                        */
                     }
                     
                     // Very very end of the frame
@@ -129,15 +116,14 @@ where
     // Add the tx
     let mut receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_mut().unwrap();
-    receiver.wtc_txs.insert(handler.thread().id(), receiver.template_wtc_tx.clone());
+    receiver.lsc_txs.insert(handler.thread().id(), receiver.template_wtc_tx.clone());
     handler
 }
 
 // Send a LogicSystemCommand to a specific thread
-pub fn send_lsc(lgc: LogicSystemCommand, thread_id: &std::thread::ThreadId) {
+pub fn send_lsc(lgc: LogicSystemCommand, thread_id: &std::thread::ThreadId, receiver: &WorldTaskReceiver) {
     // Get the sender
-    let senders_ = LOGIC_SYSTEMS_COMMAND_SENDER.lock().unwrap();
-    let senders = senders_.lsc_txs.as_ref().unwrap();
+    let senders = &receiver.lsc_txs;
     let sender = senders.get(thread_id).unwrap();
     // Send the message
     sender.send(lgc).unwrap();
