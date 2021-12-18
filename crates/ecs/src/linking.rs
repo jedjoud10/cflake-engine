@@ -1,4 +1,4 @@
-use crate::{Component, ComponentID, ComponentInternal, ECSError, Entity};
+use crate::{Component, ComponentID, ComponentInternal, ECSError};
 use std::{collections::HashMap, fmt::Debug};
 
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread

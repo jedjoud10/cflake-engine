@@ -3,12 +3,10 @@ use crate::{
     ECSError,
 };
 
-use super::entity::Entity;
+
 use others::SmartList;
 use std::{
     any::Any,
-    collections::HashMap,
-    sync::{atomic::AtomicUsize, Arc, RwLock},
 };
 
 // Struct used to get the component ID of specific components, entities, and systems
@@ -67,7 +65,7 @@ impl ComponentManager {
     pub fn remove_component(&mut self, global_id: usize) -> Result<(), ECSError> {
         // To remove a specific component just set it's component slot to None
         self.components.remove_element(global_id).unwrap();
-        return Ok(());
+        Ok(())
     }
 }
 // The main component trait

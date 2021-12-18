@@ -1,4 +1,4 @@
-use crate::{ComponentID, ComponentLinkingGroup, ComponentManager, ECSError, Entity, EntityManager};
+use crate::{ComponentID, Entity};
 
 #[derive(Default)]
 // Manages the systems, however each system is in it's own thread (For now at least)
@@ -56,7 +56,7 @@ where
     // Create a new system
     pub fn new(custom_data: T) -> Self {
         System {
-            custom_data: custom_data,
+            custom_data,
             c_bitfield: 0,
             system_prefire: None,
             system_postfire: None,
