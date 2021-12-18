@@ -2,7 +2,7 @@
 pub mod components;
 // Default systems
 pub mod default_system;
-//pub mod systems;
+pub mod systems;
 
 use assets::preload_asset;
 // Pre-load the default assets
