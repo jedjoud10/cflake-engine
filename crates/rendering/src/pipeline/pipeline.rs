@@ -129,8 +129,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                     // Post-render
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
-                    todo!();
-                    //super::interface::update_render_thread();
+                    crate::pipeline::thread_interface::update_render_thread();
                     frame_count += 1;
                     // The world is valid, we can wait
                     if barrier_data.is_world_valid() {

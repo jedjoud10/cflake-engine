@@ -1,7 +1,7 @@
 use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
 use lazy_static::lazy_static;
 use crate::{
-    ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType, IS_RENDER_THREAD, internal_task,
+    ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType, IS_RENDER_THREAD, internal_task, thread_interface,
 };
 
 lazy_static! {
@@ -61,28 +61,23 @@ impl RenderCommandResult {
         command(query);
     }
     // We will wait for the result of this render command query
-    pub fn wait(mut self) -> GPUObject {
-        // Panic if we are on the render thread
+    pub fn wait(mut self) -> GPUObject {        
         if !IS_RENDER_THREAD.with(|x| x.get()) {
             // Send the command, but with a special command ID that we must wait for
-            let command_id = COUNTER.fetch_add(0, Ordering::Relaxed);
+            let command_id = COUNTER.fetch_add(1, Ordering::Relaxed);
             let task = self.task.take().unwrap();
             let query = RenderCommandQuery { task, callback_id: None, waitable_id: Some(command_id) };
             command(query);
             // Now we must wait for this command to execute on the rendering thread
             // PS: This will block the current thread
-            todo!();
-        } else { panic!() }
-    }
-    // We can get the result of this render command result if we have created it on the render thread!
-    pub fn get_result_immediate(mut self) -> GPUObject {
-        // Panic if we are not on the render thread
-        if IS_RENDER_THREAD.with(|x| x.get()) {
+            thread_interface::wait_for_gpuobject(command_id)
+        } else {
+            // If we are on the render thread, we do something different
             // Execute the command internally, so we must invalidate the one stored in self
             let task = self.task.take().unwrap();
             let gpuobject = internal_task(task);
             gpuobject
-        } else { panic!() }
+        }
     }
 }
 

@@ -299,10 +299,10 @@ impl PipelineRenderer {
     pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
         // Update the size of each texture that is bound to the framebuffer
         let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims)).get_result_immediate();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims)).get_result_immediate();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims)).get_result_immediate();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims)).get_result_immediate();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims)).wait();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims)).wait();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims)).wait();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims)).wait();
         unsafe {
             gl::Viewport(0, 0, window_dimensions.x as i32, window_dimensions.y as i32);
         }

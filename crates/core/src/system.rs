@@ -8,6 +8,7 @@ use std::thread::JoinHandle;
 // Some special system commands that are sent from the main thread and received on the worker threads
 pub enum LogicSystemCommand {
     RunCallback(u64, LogicSystemCallbackArguments),
+    RunRenderingCallback(u64, rendering::GPUObject),
     AddEntityToSystem(usize),
     RemoveEntityFromSystem(usize),
 }
@@ -64,9 +65,6 @@ where
                                     entity as *const ecs::Entity
                                 })
                                 .collect::<Vec<*const ecs::Entity>>();
-                            // Check the rendering callback buffer
-                            todo!();
-                            // rendering::pipeline::interface::fetch_threadlocal_callbacks();
                             entities
                         };
 
@@ -87,6 +85,9 @@ where
                                         let mut w = crate::world::world_mut();
                                         let world = &mut *w;
                                         crate::callbacks::execute_callback(id, result_data, world);
+                                    }
+                                    LogicSystemCommand::RunRenderingCallback(id, gpuobject) => {
+
                                     }
                                     LogicSystemCommand::AddEntityToSystem(entity_id) => {
                                         // Add the entity to the current entity list

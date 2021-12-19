@@ -123,7 +123,7 @@ pub mod pipec {
             get_subshader_object(&subshader.name)
         } else {
             let result = task(RenderTask::SubShaderCreate(SharedData::new(subshader)));
-            if let GPUObject::SubShader(x) = result.get_result_immediate() { x } else { panic!() }
+            if let GPUObject::SubShader(x) = result.wait() { x } else { panic!() }
         }
     }
     pub fn shader(shader: Shader) -> ShaderGPUObject {
@@ -131,7 +131,7 @@ pub mod pipec {
             get_shader_object(&shader.name)
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            if let GPUObject::Shader(x) = result.get_result_immediate() { x } else { panic!() }
+            if let GPUObject::Shader(x) = result.wait() { x } else { panic!() }
         }
     }
     pub fn compute_shader(shader: Shader) -> ComputeShaderGPUObject {
@@ -139,7 +139,7 @@ pub mod pipec {
             get_compute_shader_object(&shader.name)
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            if let GPUObject::ComputeShader(x) = result.get_result_immediate() { x } else { panic!() }
+            if let GPUObject::ComputeShader(x) = result.wait() { x } else { panic!() }
         }
     }
     pub fn texture(texture: Texture) -> TextureGPUObject {
@@ -147,13 +147,13 @@ pub mod pipec {
             get_texture_object(&texture.name)
         } else {
             let result = task(RenderTask::TextureCreate(SharedData::new(texture)));
-            if let GPUObject::Texture(x) = result.get_result_immediate() { x } else { panic!() }
+            if let GPUObject::Texture(x) = result.wait() { x } else { panic!() }
         }
     }
     pub fn model(model: Model) -> ModelGPUObject {
         // (TODO: Implement model caching)
         let result = task(RenderTask::ModelCreate(SharedData::new(model)));
-        if let GPUObject::Model(x) = result.get_result_immediate() { x } else { panic!() }
+        if let GPUObject::Model(x) = result.wait() { x } else { panic!() }
     }
 
     // Load or create functions, cached type
