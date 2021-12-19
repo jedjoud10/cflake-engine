@@ -29,7 +29,8 @@ impl WorldBarrierData {
         let mut writer_ = self.internal.write().unwrap();
         let writer = &mut *writer_;
         *writer = Some(WorldBarrierDataInternal {
-            end_frame_sync_barrier: Barrier::new(n),
+            // We don't sync the render loop
+            end_frame_sync_barrier: Barrier::new(n-1),
             quit_loop_sync_barrier: Barrier::new(n),
             world_valid: AtomicBool::new(false),
             world_destroyed: AtomicBool::new(false),

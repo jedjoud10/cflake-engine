@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData};
+use crate::{basics::*, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData, interface};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -86,7 +86,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
 
                 // Set the pipeline
                 let pipeline = Pipeline {
-                    gpu_objects: HashMap::new(),
                     tx_template: tx,
                 };
                 {
@@ -129,19 +128,19 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                     // Post-render
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
-                    crate::pipeline::thread_interface::update_render_thread();
+                    crate::pipeline::interface::update_render_thread();
                     frame_count += 1;
                     // The world is valid, we can wait
                     if barrier_data.is_world_valid() {
                         // First sync
-                        barrier_data.thread_sync();
+                        //barrier_data.thread_sync();
                         if barrier_data.is_world_destroyed() {
                             println!("Stopping the render thread...");
                             barrier_data.thread_sync_quit();
                             break;
                         }
                         // Second sync
-                        barrier_data.thread_sync();
+                        //barrier_data.thread_sync();
                     }
                 }
                 println!("Stopped the render thread!");
@@ -266,14 +265,25 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
     // We must loop through every command that we receive from the main thread
     for render_command_query in rx.try_iter() {
         let callback_id = render_command_query.callback_id.clone();
+        let waitable_id = render_command_query.waitable_id.clone();
+        let execution_id = render_command_query.execution_id.clone();
         // Check special commands first
         // Valid command
         match command(pr, camera, render_command_query, window, glfw) {
             Some(gpuobject) => match gpuobject {
-                GPUObject::None => { /* Not valid */ }
+                GPUObject::None => { /* We do not have a GPU object, though we have executed the task succsessfully */
+                    match execution_id {
+                        Some(execution_id) => {
+                            // We must tell the interface that we have executed this task
+                            interface::received_task_execution_ack(execution_id)
+                        },
+                        None => {},
+                    }
+                }
                 gpuobject => {
                     // We have a valid GPU object
-                    // Notify the pipeline that we have a new gpu object
+                    // Notify the interface that we have a new gpu object
+                    interface::received_new_gpu_object(gpuobject, callback_id, waitable_id);
                 }                
             },
             None => { /* This command does not create a GPU object */ },
@@ -286,18 +296,7 @@ pub struct PipelineStartData {
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {
-    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
     pub tx_template: Sender<RenderCommandQuery>,   // A copy of the sender so we can copy it on each thread and make it thread local
-}
-impl Pipeline {
-    // Get GPU object using it's specified name
-    pub fn get_gpu_object(&self, name: &str) -> Option<&GPUObject> {
-        self.gpu_objects.get(name)
-    }
-    // Check if a GPU object exists
-    pub fn gpu_object_valid(&self, name: &str) -> bool {
-        self.gpu_objects.contains_key(name)
-    }
 }
 // Renderers
 impl Pipeline {

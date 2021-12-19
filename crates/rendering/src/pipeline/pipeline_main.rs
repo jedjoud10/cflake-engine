@@ -7,8 +7,6 @@ use std::{
 };
 
 thread_local! {
-    // The render task sender!
-    pub static RENDER_COMMAND_SENDER: RefCell<Option<Sender<crate::RenderCommandQuery>>> = RefCell::new(None);
     pub static IS_RENDER_THREAD: Cell<bool> = Cell::new(false);
 }
 
@@ -29,8 +27,8 @@ pub mod pipec {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
 
-    use crate::pipeline::object::*;
-    use crate::{Material, Model, RenderCommandQuery, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, PipelineStartData, RenderCommandResult};
+    use crate::pipeline::{object::*, buffer};
+    use crate::{Material, Model, RenderCommandQuery, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, PipelineStartData, RenderCommandResult, interface};
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {
@@ -71,15 +69,11 @@ pub mod pipec {
     }
     // Get a GPU object
     pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
-        let pipeline_ = crate::pipeline();
-        let pipeline = pipeline_.as_ref().unwrap();
-        pipeline.get_gpu_object(name).cloned()
+        interface::get_gpu_object(name)
     }
     // Check if a GPU object is valid
     pub fn gpu_object_valid(name: &str) -> bool {
-        let pipeline_ = crate::pipeline();
-        let pipeline = pipeline_.as_ref().unwrap();
-        pipeline.gpu_object_valid(name)
+        interface::gpu_object_valid(name)
     }
     // Retrieve these objects from cache
     pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {
@@ -123,7 +117,7 @@ pub mod pipec {
             get_subshader_object(&subshader.name)
         } else {
             let result = task(RenderTask::SubShaderCreate(SharedData::new(subshader)));
-            if let GPUObject::SubShader(x) = result.wait() { x } else { panic!() }
+            if let GPUObject::SubShader(x) = result.wait_gpuobject() { x } else { panic!() }
         }
     }
     pub fn shader(shader: Shader) -> ShaderGPUObject {
@@ -131,7 +125,7 @@ pub mod pipec {
             get_shader_object(&shader.name)
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            if let GPUObject::Shader(x) = result.wait() { x } else { panic!() }
+            if let GPUObject::Shader(x) = result.wait_gpuobject() { x } else { panic!() }
         }
     }
     pub fn compute_shader(shader: Shader) -> ComputeShaderGPUObject {
@@ -139,7 +133,7 @@ pub mod pipec {
             get_compute_shader_object(&shader.name)
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            if let GPUObject::ComputeShader(x) = result.wait() { x } else { panic!() }
+            if let GPUObject::ComputeShader(x) = result.wait_gpuobject() { x } else { panic!() }
         }
     }
     pub fn texture(texture: Texture) -> TextureGPUObject {
@@ -147,13 +141,13 @@ pub mod pipec {
             get_texture_object(&texture.name)
         } else {
             let result = task(RenderTask::TextureCreate(SharedData::new(texture)));
-            if let GPUObject::Texture(x) = result.wait() { x } else { panic!() }
+            if let GPUObject::Texture(x) = result.wait_gpuobject() { x } else { panic!() }
         }
     }
     pub fn model(model: Model) -> ModelGPUObject {
         // (TODO: Implement model caching)
         let result = task(RenderTask::ModelCreate(SharedData::new(model)));
-        if let GPUObject::Model(x) = result.wait() { x } else { panic!() }
+        if let GPUObject::Model(x) = result.wait_gpuobject() { x } else { panic!() }
     }
 
     // Load or create functions, cached type

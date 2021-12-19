@@ -1,10 +1,11 @@
-use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
+use std::{sync::{Arc, atomic::{AtomicU64, Ordering}}, cell::RefCell};
 use lazy_static::lazy_static;
 use crate::{
-    ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType, IS_RENDER_THREAD, internal_task, thread_interface,
+    ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType, IS_RENDER_THREAD, internal_task, interface,
 };
 
 lazy_static! {
+    // Counter that increments for Callback ID, Waitable ID, and Execution ID
     static ref COUNTER: AtomicU64 = AtomicU64::new(0);
 }
 
@@ -20,6 +21,11 @@ where
     pub fn new(x: T) -> Self {
         Self { object: Arc::new(x) }
     }
+}
+
+thread_local! {
+    // The render task sender!
+    pub static RENDER_COMMAND_SENDER: RefCell<Option<std::sync::mpsc::Sender<crate::RenderCommandQuery>>> = RefCell::new(None);
 }
 
 // Send a render command to the render thread
@@ -50,27 +56,45 @@ impl RenderCommandResult {
     pub fn send(mut self) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = RenderCommandQuery { task, callback_id: None, waitable_id: None };
+        let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: None };
         command(query);
     }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = RenderCommandQuery { task, callback_id: Some(callback_id), waitable_id: None };
+        let query = RenderCommandQuery { task, callback_id: Some(callback_id), waitable_id: None, execution_id: None };
         command(query);
     }
-    // We will wait for the result of this render command query
-    pub fn wait(mut self) -> GPUObject {        
+    // Simply wait for this command to be executed
+    pub fn wait(mut self) {
         if !IS_RENDER_THREAD.with(|x| x.get()) {
             // Send the command, but with a special command ID that we must wait for
-            let command_id = COUNTER.fetch_add(1, Ordering::Relaxed);
+            let execution_id = COUNTER.fetch_add(1, Ordering::Relaxed);
             let task = self.task.take().unwrap();
-            let query = RenderCommandQuery { task, callback_id: None, waitable_id: Some(command_id) };
+            let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: Some(execution_id) };
             command(query);
             // Now we must wait for this command to execute on the rendering thread
             // PS: This will block the current thread
-            thread_interface::wait_for_gpuobject(command_id)
+            interface::wait_for_execution(execution_id);
+        } else {
+            // If we are on the render thread, we do something different
+            // Execute the command internally, so we must invalidate the one stored in self
+            let task = self.task.take().unwrap();
+            internal_task(task);
+        }
+    }
+    // We will wait for the result of this render command query
+    pub fn wait_gpuobject(mut self) -> GPUObject {        
+        if !IS_RENDER_THREAD.with(|x| x.get()) {
+            // Send the command, but with a special command ID that we must wait for
+            let waitable_id = COUNTER.fetch_add(1, Ordering::Relaxed);
+            let task = self.task.take().unwrap();
+            let query = RenderCommandQuery { task, callback_id: None, waitable_id: Some(waitable_id), execution_id: None };
+            command(query);
+            // Now we must wait for this command to execute on the rendering thread
+            // PS: This will block the current thread
+            interface::wait_for_gpuobject(waitable_id)
         } else {
             // If we are on the render thread, we do something different
             // Execute the command internally, so we must invalidate the one stored in self
@@ -87,7 +111,7 @@ impl std::ops::Drop for RenderCommandResult {
         // Send the command
         match self.task.take() {
             Some(task) => {
-                let query = RenderCommandQuery { task, callback_id: None, waitable_id: None };
+                let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: None };
                 command(query);
             }
             None => { /* We have called a function that invalidates the task */ }
@@ -99,6 +123,7 @@ impl std::ops::Drop for RenderCommandResult {
 pub struct RenderCommandQuery {
     pub callback_id: Option<u64>,
     pub waitable_id: Option<u64>,
+    pub execution_id: Option<u64>,
     pub task: RenderTask,
 }
 // A render task (A specific message passed to the render thread)
