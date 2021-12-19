@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::command::CommandQuery;
 
 use crate::communication::WorldTaskReceiver;
-use crate::global::callbacks::LogicSystemCallbackResultData;
+use crate::global::callbacks::LogicSystemCallbackArguments;
 use crate::system::LogicSystemCommand;
 
 // Some world tasks
@@ -55,12 +55,12 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             }
 
             // Only run the callback if we are not on the main thread
-            if !crate::system::IS_MAIN_THREAD.with(|x| x.get()) {
+            if query.thread_id != std::thread::current().id() {
                 // Tell the main callback manager to execute this callback
                 match query.callback_id {
                     Some(id) => {
                         crate::system::send_lsc(
-                            LogicSystemCommand::RunCallback(id, LogicSystemCallbackResultData::EntityRef(entity_id)),
+                            LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::EntityRef(entity_id)),
                             &query.thread_id,
                             receiver,
                         );

@@ -1,13 +1,13 @@
 use crate::communication::{WorldTaskReceiver, WorldTaskSender, RECEIVER};
-use crate::global::callbacks::LogicSystemCallbackResultData;
+use crate::global::callbacks::LogicSystemCallbackArguments;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::JoinHandle;
 
-// Some special system commands
+// Some special system commands that are sent from the main thread and received on the worker threads
 pub enum LogicSystemCommand {
-    RunCallback(u64, LogicSystemCallbackResultData),
+    RunCallback(u64, LogicSystemCallbackArguments),
     AddEntityToSystem(usize),
     RemoveEntityFromSystem(usize),
 }

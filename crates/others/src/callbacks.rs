@@ -1,39 +1,42 @@
 use lazy_static::lazy_static;
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64};
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64, thread::LocalKey};
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created
 }
 
 // Execute a specific callback on this thread
-pub fn execute_callback<T: Callback, U: CallbackArguments>(id: u64, callback_arguments: U, callback_manager: &mut CallbackManagerBuffer<T>) {
-    let callback = callback_manager.callbacks.remove(&id).unwrap();
-    callback.call(callback_arguments);
+pub fn get_callback<T: Callback>(id: u64, callback_manager: &mut CallbackManagerBuffer<T>) -> T {
+    callback_manager.callbacks.remove(&id).unwrap()
 }
 
-pub trait CallbackArguments {}
-
-// Create a callback ID from self
-pub trait IDCallbackCreate where Self: Sized {
-    // Create the callback and get back it's ID
-    fn create(self) -> u64 {
-        let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        id
-        // Here we must add the callback to the thread local callback manager
-    }
+// Increment the callback counter
+pub fn create_callback_internal<T: Callback>(callback: T, manager: &'static LocalKey<RefCell<CallbackManagerBuffer<T>>>) -> u64 {     
+    let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    manager.with(|x| {
+        let mut manager_ = x.borrow_mut();
+        let manager = &mut *manager_;
+        manager.add_callback(id, callback);
+    });
+    id
 }
 
 // A main callback trait that can be implemented for callbacks stored on the buffer
 pub trait Callback where Self: Sized {
-    // Call this callback
-    fn call<U>(self, callback_arguments: U);
+    // Create the callback and get back it's ID
+    fn create(self) -> u64;
 }
 
 // The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
 // Callback manager that contains all the current callbacks (Thread Local)
-#[derive(Default)]
 pub struct CallbackManagerBuffer<T> where T: Callback {
     callbacks: HashMap<u64, T>,
+}
+
+impl<T> Default for CallbackManagerBuffer<T> where T: Callback {
+    fn default() -> Self {
+        Self { callbacks: HashMap::new() }
+    }
 }
 
 impl<T> CallbackManagerBuffer<T> where T: Callback {
@@ -42,8 +45,6 @@ impl<T> CallbackManagerBuffer<T> where T: Callback {
         self.callbacks.insert(id, callback);
     }
 }
-
-
 
 // A ref callback, always ran at the end of the current system frame
 pub struct RefCallback<T> {
