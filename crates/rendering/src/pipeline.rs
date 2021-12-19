@@ -1,5 +1,4 @@
 mod command;
-pub mod interface;
 pub mod object;
 mod pipeline;
 mod pipeline_main;
