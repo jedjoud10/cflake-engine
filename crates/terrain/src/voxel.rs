@@ -81,12 +81,10 @@ impl VoxelGenerator {
         // Read back the texture into the data buffer
         // Wait for main voxel gen
         let result1 = pipec::task(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()));
-        result1.w
-        let voxel_pixels = interface::wait_fetch_threadlocal_callbacks_specific(&n);
-        let n2 = pipec::generate_command_name();
+        let voxel_pixels = result1.wait();
         // Wait for secondary voxel gen
-        pipec::wtask(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2), &n);
-        let material_pixels = interface::wait_fetch_threadlocal_callbacks_specific(&n2);
+        let result2 = pipec::task(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2));
+        let material_pixels = result2.wait();
         let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
         let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values
