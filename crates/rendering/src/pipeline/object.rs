@@ -283,11 +283,11 @@ impl ComputeShaderGPUObject {
 impl ComputeShaderGPUObject {
     // Compute shader stuff you know (Waitable task)
     pub fn run(&self, x: u16, y: u16, z: u16, uniforms_group: ShaderUniformsGroup) {
-        crate::pipec::ctask(crate::RenderTask::ComputeRun(self.clone(), (x, y, z), uniforms_group), "", |_| {});
+        crate::pipec::task(crate::RenderTask::ComputeRun(self.clone(), (x, y, z), uniforms_group));
     }
     // Lock the state of this compute shader (Immediate task, force run the shader task if it was not polled yet)
     pub fn lock_state(&self) {
-        crate::pipec::ctask(crate::RenderTask::ComputeLock(self.clone()), "", |_x| {});
+        crate::pipec::task(crate::RenderTask::ComputeLock(self.clone()));
     }
 }
 

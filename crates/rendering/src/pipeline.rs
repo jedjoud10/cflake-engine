@@ -2,7 +2,6 @@ mod command;
 pub mod object;
 mod pipeline;
 mod pipeline_main;
-pub mod interface;
 pub mod rendering;
 pub use command::*;
 pub use object::*;

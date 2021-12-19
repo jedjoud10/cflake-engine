@@ -10,14 +10,6 @@ pub struct CommandQuery {
     pub callback_id: Option<u64>,
     pub task: Task,
 }
-impl CommandQuery {
-    // From single
-    pub fn new(task: Task, callback_id: Option<u64>) -> Self {
-        let thread_id = std::thread::current().id();
-        Self { thread_id, task, callback_id }
-    }
-}
-
 // The immediate result for that command query
 pub struct CommandQueryResult {
     task: Option<Task>,
@@ -28,22 +20,29 @@ impl CommandQueryResult {
     pub fn new(task: Task) -> Self {
         Self { task: Some(task) }
     }
+    // Explicitly tell this command query result to send the result immediatly
+    pub fn send(mut self) {
+        // Send the command
+        let task = self.task.take().unwrap();
+        let query = CommandQuery { task, thread_id: std::thread::current().id(), callback_id: None };
+        command(query);
+    }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = CommandQuery::new(task, Some(callback_id));
+        let query = CommandQuery { task, thread_id: std::thread::current().id(), callback_id: Some(callback_id) };
         command(query);
     }
 }
 
 impl std::ops::Drop for CommandQueryResult {
-    // Custom drop function that actually sends the command, just in case where we did not explicitly specified
+    // Custom drop function that actually sends the command, just in case where we did not explicitly do that
     fn drop(&mut self) {
         // Send the command
         match self.task.take() {
             Some(task) => {
-                let query = CommandQuery::new(task, None);
+                let query = CommandQuery { task, thread_id: std::thread::current().id(), callback_id: None };
                 command(query);
             }
             None => { /* We have called the with_callback function, so the task is empty */ }
@@ -54,7 +53,7 @@ impl std::ops::Drop for CommandQueryResult {
 // Initialize the main channels on the main thread
 pub fn initialize_channels_main() {
     // Create the channels
-    let (tx_command, rx_command) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
+    let (tx_command, rx_command) = std::sync::mpsc::channel::<CommandQuery>();
     let (wtc_tx, wtc_rx) = crossbeam_channel::unbounded::<LogicSystemCommand>();
     let mut copy_ = COMMUNICATION_CHANNEL_COPY.lock().unwrap();
     let mut receiver_ = RECEIVER.lock().unwrap();
@@ -90,15 +89,13 @@ pub fn frame_main_thread(world: &mut crate::world::World) {
     let receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_ref().unwrap();
     let rx = &receiver.rx;
-    for (_id, query) in rx.try_recv() {
+    for query in rx.try_recv() {
         // Just execute the task
         excecute_query(query, world, receiver);
     }
 }
-// Send a command query to the world, giving back a command return that can be waited for
+// Send a command query to the world
 fn command(query: CommandQuery) {
-    // Increment the counter
-    let id = COUNTER.fetch_add(0, Ordering::Relaxed);
     // Check if we are running on the main thread
     let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
     if is_main_thread {
@@ -114,7 +111,7 @@ fn command(query: CommandQuery) {
             let sender_ = sender.borrow();
             let sender = sender_.as_ref().unwrap();
             let tx = &sender.tx;
-            tx.send((id, query)).unwrap();
+            tx.send(query).unwrap();
         })
     }
 }

@@ -10,8 +10,6 @@ use std::{
 };
 
 lazy_static! {
-    // A counter for the number of commands issued
-    pub static ref COUNTER: AtomicU64 = AtomicU64::new(0);
     // Receiver of tasks. Is called on the main thread, receives messages from the worker threads
     pub static ref RECEIVER: Mutex<Option<WorldTaskReceiver>> = Mutex::new(None);
     // A copy of the WorldTaskSender, because we will need to copy it for each worker thread
@@ -19,18 +17,18 @@ lazy_static! {
 }
 // A copy of the communication channels for each worker thread
 pub struct CommunicationChannelsCopied {
-    pub tx: Sender<(u64, CommandQuery)>,
+    pub tx: Sender<CommandQuery>,
     pub lsc_rx: crossbeam_channel::Receiver<LogicSystemCommand>,
 }
 
 // Some struct that sends tasks to the main thread. This is present on all the worker threads, since there is a 1 : n connection between the main thread and worker threads
 pub struct WorldTaskSender {
-    pub tx: Sender<(u64, CommandQuery)>,                         // CommandQuery. WorkerThreads -> MainThread
+    pub tx: Sender<CommandQuery>,                         // CommandQuery. WorkerThreads -> MainThread
     pub lsc_rx: crossbeam_channel::Receiver<LogicSystemCommand>, // WorkerThreadCommand. MainThread -> WorkerThreads
 }
 // Main thread
 pub struct WorldTaskReceiver {
-    pub rx: Receiver<(u64, CommandQuery)>,                                                      // CommandQuery. WorkerThreads -> MainThread
+    pub rx: Receiver< CommandQuery>,                                                      // CommandQuery. WorkerThreads -> MainThread
     pub lsc_txs: HashMap<std::thread::ThreadId, crossbeam_channel::Sender<LogicSystemCommand>>, // WaitableTask. MainThread -> WorkerThreads
     // Some template values that will be copied
     pub template_wtc_tx: crossbeam_channel::Sender<LogicSystemCommand>,

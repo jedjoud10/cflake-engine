@@ -65,7 +65,8 @@ where
                                 })
                                 .collect::<Vec<*const ecs::Entity>>();
                             // Check the rendering callback buffer
-                            rendering::pipeline::interface::fetch_threadlocal_callbacks();
+                            todo!();
+                            // rendering::pipeline::interface::fetch_threadlocal_callbacks();
                             entities
                         };
 

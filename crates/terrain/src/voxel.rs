@@ -1,6 +1,5 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
 use rendering::basics::*;
-use rendering::interface;
 use rendering::pipec;
 use rendering::pipeline;
 use rendering::pipeline::object::*;
@@ -80,9 +79,9 @@ impl VoxelGenerator {
         // Read back the compute shader data
         self.compute.lock_state();
         // Read back the texture into the data buffer
-        let n = pipec::generate_command_name();
         // Wait for main voxel gen
-        pipec::wtask(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()), &n);
+        let result1 = pipec::task(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()));
+        result1.w
         let voxel_pixels = interface::wait_fetch_threadlocal_callbacks_specific(&n);
         let n2 = pipec::generate_command_name();
         // Wait for secondary voxel gen
