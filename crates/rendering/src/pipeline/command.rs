@@ -56,14 +56,14 @@ impl RenderCommandResult {
     pub fn send(mut self) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: None };
+        let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: None, thread_id: std::thread::current().id() };
         command(query);
     }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = RenderCommandQuery { task, callback_id: Some(callback_id), waitable_id: None, execution_id: None };
+        let query = RenderCommandQuery { task, callback_id: Some(callback_id), waitable_id: None, execution_id: None, thread_id: std::thread::current().id() };
         command(query);
     }
     // Simply wait for this command to be executed
@@ -72,7 +72,7 @@ impl RenderCommandResult {
             // Send the command, but with a special command ID that we must wait for
             let execution_id = COUNTER.fetch_add(1, Ordering::Relaxed);
             let task = self.task.take().unwrap();
-            let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: Some(execution_id) };
+            let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: Some(execution_id), thread_id: std::thread::current().id() };
             command(query);
             // Now we must wait for this command to execute on the rendering thread
             // PS: This will block the current thread
@@ -90,7 +90,7 @@ impl RenderCommandResult {
             // Send the command, but with a special command ID that we must wait for
             let waitable_id = COUNTER.fetch_add(1, Ordering::Relaxed);
             let task = self.task.take().unwrap();
-            let query = RenderCommandQuery { task, callback_id: None, waitable_id: Some(waitable_id), execution_id: None };
+            let query = RenderCommandQuery { task, callback_id: None, waitable_id: Some(waitable_id), execution_id: None, thread_id: std::thread::current().id() };
             command(query);
             // Now we must wait for this command to execute on the rendering thread
             // PS: This will block the current thread
@@ -111,7 +111,7 @@ impl std::ops::Drop for RenderCommandResult {
         // Send the command
         match self.task.take() {
             Some(task) => {
-                let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: None };
+                let query = RenderCommandQuery { task, callback_id: None, waitable_id: None, execution_id: None, thread_id: std::thread::current().id() };
                 command(query);
             }
             None => { /* We have called a function that invalidates the task */ }
@@ -124,6 +124,7 @@ pub struct RenderCommandQuery {
     pub callback_id: Option<u64>,
     pub waitable_id: Option<u64>,
     pub execution_id: Option<u64>,
+    pub thread_id: std::thread::ThreadId,
     pub task: RenderTask,
 }
 // A render task (A specific message passed to the render thread)

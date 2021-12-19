@@ -88,7 +88,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
                 }
             }
             // Execute the main thread commands
-            core::world::update_world_end(world);
+            core::world::update_world_end(world, &pipeline_data);
         }
         /* #endregion */
     }

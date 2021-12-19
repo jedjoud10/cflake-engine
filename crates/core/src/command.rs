@@ -1,5 +1,8 @@
+use rendering::PipelineStartData;
+
 // Sending - Receiving
 use crate::communication::*;
+use crate::global::callbacks::LogicSystemCallbackArguments;
 use crate::system::*;
 use crate::tasks::*;
 use std::{collections::HashMap, sync::atomic::Ordering};
@@ -84,7 +87,7 @@ pub fn initialize_channels_worker_thread() {
     })
 }
 // Frame tick on the main thread. Polls the current tasks and excecutes them. This is called at the end of each logic frame (16ms per frame)
-pub fn frame_main_thread(world: &mut crate::world::World) {
+pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &PipelineStartData) {
     // Poll each command query
     let receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_ref().unwrap();
@@ -92,6 +95,15 @@ pub fn frame_main_thread(world: &mut crate::world::World) {
     for query in rx.try_recv() {
         // Just execute the task
         excecute_query(query, world, receiver);
+    }
+    // Receive the messages from the Render Thread
+    for render_thread_message in pipeline_start_data.rx.try_iter() {
+        match render_thread_message {
+            rendering::MainThreadMessage::ExecuteCallback(id, gpuobject, thread_id) => {
+                // We must explicitly run the callback
+                crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUObject(gpuobject)), &thread_id, receiver);
+            },
+        }
     }
 }
 // Send a command query to the world

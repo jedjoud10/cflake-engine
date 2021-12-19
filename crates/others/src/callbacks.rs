@@ -55,6 +55,11 @@ pub struct MutCallback<T> {
     pub callback: Box<dyn Fn(&mut T)>,
 }
 
+// An owned callback, always ran at the end of the current system frame
+pub struct OwnedCallback<T> {
+    pub callback: Box<dyn Fn(T)>,
+}
+
 impl<T> RefCallback<T> {
     pub fn new<F>(c: F) -> Self
     where
@@ -69,6 +74,16 @@ impl<T> MutCallback<T> {
     pub fn new<F>(c: F) -> Self
     where
         F: Fn(&mut T) + 'static,
+    {
+        let callback = Box::new(c);
+        Self { callback }
+    }
+}
+
+impl<T> OwnedCallback<T> {
+    pub fn new<F>(c: F) -> Self
+    where
+        F: Fn(T) + 'static,
     {
         let callback = Box::new(c);
         Self { callback }

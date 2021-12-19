@@ -15,6 +15,11 @@ use std::{
     },
 };
 
+// Messages that will be to the main thread 
+pub enum MainThreadMessage {
+    ExecuteCallback(u64, GPUObject, std::thread::ThreadId)
+}
+
 lazy_static! {
     // The pipeline that is stored on the render thread
     pub static ref PIPELINE: Arc<no_deadlocks::RwLock<Option<Pipeline>>> = Arc::new(no_deadlocks::RwLock::new(None));
@@ -35,7 +40,8 @@ pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline
 pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
-    let (tx, rx): (Sender<RenderCommandQuery>, Receiver<RenderCommandQuery>) = std::sync::mpsc::channel(); // Main to render
+    let (tx, rx) = std::sync::mpsc::channel::<RenderCommandQuery>(); // Main to render
+    let (tx2, rx2) = std::sync::mpsc::channel::<MainThreadMessage>(); // Render to main 
 
     // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
@@ -111,6 +117,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                 // Timing stuff
                 let mut last_time: f64 = 0.0;
                 let mut frame_count: u128 = 0;
+                let tx2 = tx2.clone();
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
                 loop {
@@ -128,7 +135,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                     // Post-render
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
-                    crate::pipeline::interface::update_render_thread();
+                    crate::pipeline::interface::update_render_thread(&tx2);
                     frame_count += 1;
                     // The world is valid, we can wait
                     if barrier_data.is_world_valid() {
@@ -152,7 +159,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
     println!("Waiting for RenderThread init confirmation...");
     barrier.wait();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
-    PipelineStartData { handle: join_handle }
+    PipelineStartData { handle: join_handle, rx: rx2 }
 }
 
 // Commands that can be ran internally
@@ -267,6 +274,7 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
         let callback_id = render_command_query.callback_id.clone();
         let waitable_id = render_command_query.waitable_id.clone();
         let execution_id = render_command_query.execution_id.clone();
+        let thread_id = render_command_query.thread_id;
         // Check special commands first
         // Valid command
         match command(pr, camera, render_command_query, window, glfw) {
@@ -283,7 +291,7 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
                 gpuobject => {
                     // We have a valid GPU object
                     // Notify the interface that we have a new gpu object
-                    interface::received_new_gpu_object(gpuobject, callback_id, waitable_id);
+                    interface::received_new_gpu_object(gpuobject, callback_id, waitable_id, thread_id);
                 }                
             },
             None => { /* This command does not create a GPU object */ },
@@ -293,6 +301,7 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
 // Data that will be sent back to the main thread after we start the pipeline thread
 pub struct PipelineStartData {
     pub handle: std::thread::JoinHandle<()>,
+    pub rx: std::sync::mpsc::Receiver<MainThreadMessage>,
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {

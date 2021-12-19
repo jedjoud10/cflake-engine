@@ -1,4 +1,6 @@
-use crate::{GPUObject, pipeline::buffer::GPUObjectBuffer};
+use std::sync::mpsc::Sender;
+
+use crate::{GPUObject, pipeline::buffer::GPUObjectBuffer, MainThreadMessage};
 use lazy_static::lazy_static;
 use no_deadlocks::{RwLock, Mutex};
 
@@ -13,7 +15,7 @@ pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
     let index = buf.names_to_id.get(name);
     match index {
         Some(index) => {
-            let gpuobject = buf.gpuobject.get_element(*index);
+            let gpuobject = buf.gpuobjects.get_element(*index);
             // Flatten
             gpuobject.flatten().cloned()
         },
@@ -29,13 +31,13 @@ pub fn gpu_object_valid(name: &str) -> bool {
 /* #endregion */
 
 // Notify the threads that we have recieved a valid GPU object
-pub fn received_new_gpu_object(gpuobject: GPUObject, callback_id: Option<u64>, waitable_id: Option<u64>) {
+pub fn received_new_gpu_object(gpuobject: GPUObject, callback_id: Option<u64>, waitable_id: Option<u64>, thread_id: std::thread::ThreadId) {
     // Add the GPU object to the current interface buffer
     let mut buf = INTERFACE_BUFFER.lock().unwrap();
     // Always insert the gpu object
-    let index = buf.gpuobject.add_element(gpuobject);
+    let index = buf.gpuobjects.add_element(gpuobject);
     match callback_id {
-        Some(id) => { buf.callback_objects.insert(id, index); },
+        Some(id) => { buf.callback_objects.insert(id, (index, thread_id)); },
         None => { /* We cannot run a callback on this object */ },
     }
     match waitable_id {
@@ -52,11 +54,23 @@ pub fn received_task_execution_ack(execution_id: u64) {
 }
 
 // Update the render thread, and call the callbacks of GPU objects that have been created
-pub fn update_render_thread() {
-}
+pub fn update_render_thread(tx2: &Sender<MainThreadMessage>) {
+    // Send a message to the main thread saying what callbacks we must run
+    let mut buf = INTERFACE_BUFFER.lock().unwrap();
+    let callbacks_objects_indices = std::mem::take(&mut buf.callback_objects);
+    let callback_objects = callbacks_objects_indices
+        .into_iter()
+        .map(|(callback_id, (index, thread_id))| 
+            (callback_id, buf.gpuobjects.get_element(index)
+            .unwrap()
+            .cloned()
+            .unwrap(), thread_id)
+    ).collect::<Vec<(u64, GPUObject, std::thread::ThreadId)>>();
 
-// Update the current thread, checking if we must run any callbacks or not
-pub fn update_thread_worker() {
+    // Now we must all of this to the main thread
+    for (callback_id, gpuobject, thread_id) in callback_objects {
+        tx2.send(MainThreadMessage::ExecuteCallback(callback_id, gpuobject, thread_id)).unwrap();
+    }
 }
 
 // Wait for the result of a specific GPU object, specified with it's special waitable ID
@@ -64,9 +78,9 @@ pub fn wait_for_gpuobject(id: u64) -> GPUObject {
     // Basically an infinite loop waiting until we poll a valid GPU object using the specified ID
     loop {
         let buf = INTERFACE_BUFFER.lock().unwrap();
-        match buf.callback_objects.get(&id) {
+        match buf.waitable_objects.get(&id) {
             Some(&gpuobject_index) => {
-                let gpuobject =  buf.gpuobject.get_element(gpuobject_index).unwrap().unwrap();
+                let gpuobject =  buf.gpuobjects.get_element(gpuobject_index).unwrap().unwrap();
                 // Was able to poll a valid GPU object
                 return gpuobject.clone();
             },

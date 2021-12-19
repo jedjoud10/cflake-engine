@@ -1,10 +1,10 @@
 use lazy_static::lazy_static;
 use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64};
-use others::callbacks::{self, RefCallback, MutCallback};
+use others::callbacks::*;
 
 // Per thread
 thread_local! {
-    static CALLBACK_MANAGER_BUFFER: RefCell<callbacks::CallbackManagerBuffer<CallbackType>> = RefCell::new(callbacks::CallbackManagerBuffer::default());
+    static CALLBACK_MANAGER_BUFFER: RefCell<CallbackManagerBuffer<CallbackType>> = RefCell::new(CallbackManagerBuffer::default());
 }
 
 // Execute a specific callback on this thread
@@ -15,8 +15,15 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
         let callback_manager = &mut *callback_manager_;
         
         // Get the callback
-        let callback = callbacks::get_callback::<CallbackType>(id, callback_manager);
+        let callback = get_callback::<CallbackType>(id, callback_manager);
         match callback {
+            CallbackType::GPUObjectCallback(x) => {
+                let callback = x.callback.as_ref();
+                // Make sure this callback is the GPUObject one
+                if let LogicSystemCallbackArguments::RenderingGPUObject(gpuobject) = arguments {
+                    (callback)(gpuobject);
+                }
+            },
             CallbackType::EntityRefCallbacks(x) => {
                 let callback = x.callback.as_ref();
                 // Make sure this callback is the EntityRef one
@@ -36,24 +43,13 @@ pub enum LogicSystemCallbackArguments {
     // Entity
     EntityRef(usize),
     EntityMut(usize),
-}
-
-// The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
-// Callback manager that contains all the current callbacks (Thread Local)
-#[derive(Default)]
-pub struct CallbackManagerBuffer {
-    callbacks: HashMap<u64, CallbackType>,
-}
-
-impl CallbackManagerBuffer {
-    // Add a callback to this thread local buffer
-    pub fn add_callback(&mut self, id: u64, callback: CallbackType) {
-        self.callbacks.insert(id, callback);
-    }
+    // Rendering
+    RenderingGPUObject(rendering::GPUObject),
 }
 
 // The callback type
 pub enum CallbackType {
+    GPUObjectCallback(OwnedCallback<rendering::GPUObject>),
     EntityRefCallbacks(RefCallback<ecs::Entity>),
     EntityMutCallbacks(MutCallback<ecs::Entity>),
     ComponentMutCallbacks(MutCallback<Box<dyn ecs::ComponentInternal + Send + Sync>>),

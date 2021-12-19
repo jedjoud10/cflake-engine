@@ -220,9 +220,9 @@ pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glf
     //std::thread::sleep(std::time::Duration::from_millis(400));
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
-pub fn update_world_end(world: &mut World) {
+pub fn update_world_end(world: &mut World, pipeline_start_data: &PipelineStartData) {
     // Run the commands at the end of the frame
-    crate::command::frame_main_thread(world);
+    crate::command::frame_main_thread(world, pipeline_start_data);
     /*
     println!("Component count: '{}'", world.ecs_manager.componentm.components.count_valid());
     println!("Entity count: '{}'", world.ecs_manager.entitym.entities.count_valid());
