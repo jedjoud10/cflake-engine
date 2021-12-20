@@ -45,22 +45,12 @@ pub mod ecs {
         componentm.get_component::<T>(*global_id).unwrap()
     }
     // Get a component mutably, since this is going to run at the end of the frame using an FnOnce
-    pub fn component_mut<T: Component + 'static, F: Fn(&'static mut T)>(entity: &ecs::Entity, _callback: F) {
-        /* #region We are on the main thread */
-        let main_thread = crate::system::IS_MAIN_THREAD.with(|x| x.get());
-        if main_thread {
-            // We are on the main thread, we can get the world as a mut
-            let mut world = crate::world::world_mut();
-            // Get the corresponding global component ID from the entity
-            let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
-            let componentm = &mut world.ecs_manager.componentm;
-            let _x = componentm.get_component_mut::<T>(*global_id).unwrap();
-            //callback(x);
-        }
-        /* #endregion */
-        else {
-            // At the end of the current frame, run the callback on the main thread (If we are on a worker thread)
-        }
+    pub fn component_mut(entity: &ecs::Entity, callback_id: u64) {
+        
+    }
+    // Get a component mutably but this time using the entity id
+    pub fn component_mut_entity_id(entity_id: usize, callback_id: u64) {
+        
     }
     // This is an alternate function that links the component directly, no linking group
     pub fn link_component_direct() {}

@@ -1,3 +1,4 @@
+use ecs::stored::{Stored, StoredMut};
 use lazy_static::lazy_static;
 use others::callbacks::*;
 use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64};
@@ -52,7 +53,7 @@ pub enum CallbackType {
     GPUObjectCallback(OwnedCallback<rendering::GPUObject>),
     EntityRefCallbacks(RefCallback<ecs::Entity>),
     EntityMutCallbacks(MutCallback<ecs::Entity>),
-    ComponentMutCallbacks(MutCallback<Box<dyn ecs::ComponentInternal + Send + Sync>>),
+    ComponentMutCallbacks(RefCallback<StoredMut<Box<dyn ecs::ComponentInternal + Send + Sync>>>),
 }
 
 impl others::callbacks::Callback for CallbackType {

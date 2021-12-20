@@ -1,4 +1,7 @@
-use core::global::{callbacks::{CallbackType::EntityRefCallbacks, RefCallback}, self};
+use core::global::{callbacks::{CallbackType::*}, self};
+
+use ecs::{stored::StoredMut, SystemEventType};
+use others::callbacks::{OwnedCallback, Callback, RefCallback};
 // An improved multithreaded rendering system
 
 // Add the renderer in the render pipeline renderer
@@ -8,24 +11,35 @@ fn add_entity(data: &mut (), entity: &ecs::Entity) {
     let irenderer = renderer.internal_renderer.clone();
     // Get the transform, and make sure it's matrix is valid
     let transform = global::ecs::component::<crate::components::Transform>(entity);
-    transform.update_matrix();
+    global::ecs::component_mut(entity, ComponentMutCallbacks(RefCallback::new(move |stored_mut: &StoredMut<Box<dyn ecs::ComponentInternal + Send + Sync>>| {
+        let mut tc_ = stored_mut.cast::<crate::components::Transform>();
+        let tc = &mut *tc_;
+        tc.update_matrix();
+    })).create());
     let matrix = transform.matrix;
-
-    let x = match pipec::task_immediate(pipec::RenderTask::RendererAdd(pipec::SharedData::new((irenderer, matrix))), "").unwrap() {
-        rendering::RenderTaskReturn::None => todo!(),
-        rendering::RenderTaskReturn::GPUObject(x) => match x {
-            rendering::GPUObject::Renderer(x) => x,
-            _ => panic!()
-        },
-    };
-    entity.get_component_mut::<components::Renderer>(data.component_manager).unwrap().internal_renderer.index = x;
+    // Create the shared data
+    let shared_data = rendering::SharedData::new((irenderer, matrix));
+    let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
+    let entity_id = entity.entity_id;
+    result.with_callback(GPUObjectCallback(OwnedCallback::new(move |gpuobject| {
+        // This callback is called when we actually add the renderer
+        match gpuobject {
+            rendering::GPUObject::Renderer(renderer_id) => {
+                // After adding the renderer, we must update the entity's renderer component using another callback
+                global::ecs::component_mut_entity_id(entity_id, ComponentMutCallbacks(RefCallback::new(move |stored_mut: &StoredMut<Box<dyn ecs::ComponentInternal + Send + Sync>> | {
+                    let mut rendererc = stored_mut.cast::<crate::components::Renderer>();
+                    rendererc.internal_renderer.index = renderer_id;
+                })).create());
+            },
+            _ => {}
+        }
+    })).create());
 }
 // Remove the renderer from the pipeline renderer
 fn remove_entity(data: &mut (), entity: &ecs::Entity) {
     let renderer = global::ecs::component::<crate::components::Renderer>(entity);
     let index = renderer.internal_renderer.index;
-    let name = rendering::pipec::generate_command_name();
-    rendering::pipec::internal_task(rendering::RenderTask::RendererRemove(index), &name);
+    rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
 }
 // Send the updated data from the entity to the render pipeline as commands
 fn update_entity(data: &mut (), entity: &ecs::Entity) {}
@@ -39,12 +53,12 @@ fn system_prefire(data: &mut ()) {
     let pos = camera_transform.position;
     let rot = camera_transform.rotation;
     let shared_data = rendering::SharedData::new((pos, rot, camera_data.clip_planes, camera_data.projection_matrix));
-    rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data), "update_camera_data")
+    rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data));
 }
 
 // Create the default system
 pub fn system() {
-    ecs::add_system(|| {
+    core::global::ecs::add_system(|| {
         // Create a system
         let mut system = ecs::System::new(());
         // Link some components to the system
