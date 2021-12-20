@@ -31,8 +31,8 @@ pub mod pipec {
     use crate::{Material, Model, RenderCommandQuery, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, PipelineStartData, RenderCommandResult, interface};
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
-    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {
-        crate::pipeline::init_pipeline(glfw, window, barrier_data)
+    pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
+        crate::pipeline::init_pipeline(glfw, window)
     }
     // Join the pipeline thread and end it all
     pub fn join_pipeline(pipeline_data: PipelineStartData) {

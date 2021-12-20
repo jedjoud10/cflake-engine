@@ -11,9 +11,6 @@ pub fn system_prefire(data: &mut ()) {
     // Add the entity
     let result = core::global::ecs::entity_add(ecs::Entity::new("Test-Entity"), linkings);
     result.with_callback(EntityRefCallbacks(RefCallback::new(|x| { })).create());
-    let shared_data = rendering::SharedData::new(rendering::Model::default());
-    let result = rendering::pipec::task(rendering::RenderTask::ModelCreate(shared_data));
-    result.with_callback(GPUObjectCallback(OwnedCallback::new(|x| { })).create());
 }
 
 // Create the default system

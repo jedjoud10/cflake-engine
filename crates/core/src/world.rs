@@ -169,8 +169,8 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 // This is the main Update loop, ran on the main thread
 pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
     // Systems are still running their loops...
-    //println!("Update world {}", _delta * 1000.0);
-    crate::global::main::as_ref().thread_sync();
+    println!("Update world {}", _delta * 1000.0);
+    others::barrier::as_ref().thread_sync();
     FRAME.store(false, Ordering::Relaxed);
     // The systems are blocked here
     /*
@@ -229,7 +229,7 @@ pub fn update_world_end(world: &mut World, pipeline_start_data: &PipelineStartDa
     println!("System count: '{}'", world.ecs_manager.systemm.systems.len());
     */
     FRAME.store(true, Ordering::Relaxed);
-    crate::global::main::as_ref().thread_sync();
+    others::barrier::as_ref().thread_sync();
     // The systems are running their loops
 }
 
@@ -269,7 +269,7 @@ fn update_console() {
 // When we want to close the application
 pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Killing child threads...");
-    let barrier_data = crate::global::main::clone();
+    let barrier_data = others::barrier::as_ref();
 
     // Run their last frame...
     println!("Loop threads running their last frame...");
@@ -286,7 +286,7 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();
-    }
+    }    
     pipec::join_pipeline(pipeline_data);
     println!("Joined up all the child threads, we can safely exit!");
 }

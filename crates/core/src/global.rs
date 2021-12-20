@@ -170,26 +170,9 @@ pub mod io {
 // Mains
 pub mod main {
     use lazy_static::lazy_static;
-    use others::WorldBarrierData;
     use std::sync::Arc;
 
     use crate::custom_world_data::CustomWorldData;
-    lazy_static! {
-        static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
-    }
-    // Initialize the world barrier data with the specified amount of threads to wait for
-    pub fn init(n: usize) {
-        let x = BARRIERS_WORLD.as_ref();
-        x.new_update(n);
-    }
-    // As ref
-    pub fn as_ref() -> &'static WorldBarrierData {
-        BARRIERS_WORLD.as_ref()
-    }
-    // Clone
-    pub fn clone() -> Arc<WorldBarrierData> {
-        BARRIERS_WORLD.clone()
-    }
     // Get the world custom data
     pub fn world_data() -> CustomWorldData {
         let w = crate::world::world();

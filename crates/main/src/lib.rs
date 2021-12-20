@@ -30,7 +30,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     defaults::preload_default_assets();
     assets_preload_callback();
     // Hehe multithreaded renering goes BRRRRRRRR
-    let pipeline_data = rendering::pipec::init_pipeline(&mut glfw, &mut window, core::global::main::clone());
+    let pipeline_data = rendering::pipec::init_pipeline(&mut glfw, &mut window);
     rendering::pipec::initialize_threadlocal_render_comms();
     // Set the type of events that we want to listen to
     window.set_key_polling(true);
@@ -43,10 +43,10 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     // Calling the callback
     println!("Calling World Initialization callback");
     defaults::preload_systems();
-    core::global::main::init(core::global::ecs::system_counter() + 2);
+    others::barrier::init(core::global::ecs::system_counter() + 2);
     callback();
     let mut last_time: f64 = 0.0;
-    core::global::main::as_ref().init_finished_world();
+    others::barrier::as_ref().init_finished_world();
 
     while !window.should_close() {
         // Update the delta_time

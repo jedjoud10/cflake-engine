@@ -37,7 +37,7 @@ pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline
 }
 
 // Create the new render thread
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx) = std::sync::mpsc::channel::<RenderCommandQuery>(); // Main to render
@@ -46,7 +46,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
     // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
-    let barrier_data = barrier_data.clone();
     let join_handle: std::thread::JoinHandle<()>;
     unsafe {
         // Window and GLFW wrapper
@@ -121,6 +120,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
                 loop {
+                    println!("Render thread");
                     // Update the delta_time
                     let new_time = glfw.get_time();
                     let delta = new_time - last_time;
@@ -138,6 +138,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                     crate::pipeline::interface::update_render_thread(&tx2);
                     frame_count += 1;
                     // The world is valid, we can wait
+                    let barrier_data = others::barrier::as_ref();
                     if barrier_data.is_world_valid() {
                         // First sync
                         //barrier_data.thread_sync();
@@ -209,6 +210,7 @@ fn command(
     _window: &mut glfw::Window,
     glfw: &mut glfw::Glfw,
 ) -> Option<GPUObject> {
+    println!("Executing command coming from thread {:?}", command.thread_id);
     // Handle the common cases
     match command.task {
         // Window tasks
@@ -281,17 +283,16 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
             Some(gpuobject) => match gpuobject {
                 GPUObject::None => { /* We do not have a GPU object, though we have executed the task succsessfully */
                     match execution_id {
-                        Some(execution_id) => {
-                            // We must tell the interface that we have executed this task
-                            interface::received_task_execution_ack(execution_id)
-                        },
+                        Some(execution_id) => interface::received_task_execution_ack(execution_id),
                         None => {},
                     }
                 }
                 gpuobject => {
                     // We have a valid GPU object
-                    // Notify the interface that we have a new gpu object
-                    interface::received_new_gpu_object(gpuobject, callback_id, waitable_id, thread_id);
+                    match execution_id {
+                        Some(execution_id) => interface::received_task_execution_ack(execution_id),                        
+                        None => interface::received_new_gpu_object(gpuobject, callback_id, waitable_id, thread_id), // Notify the interface that we have a new gpu object
+                    }                    
                 }                
             },
             None => { /* This command does not create a GPU object */ },

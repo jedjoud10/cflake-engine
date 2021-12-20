@@ -31,7 +31,6 @@ where
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
     let builder = std::thread::Builder::new().name(format!("LogicSystemThread '{}'", system_id));
-    let barrier_data_ = crate::global::main::clone();
     let (tx, rx) = std::sync::mpsc::channel::<usize>();
     let handler = builder
         .spawn(move || {
@@ -48,11 +47,12 @@ where
                 let sender = sender_.as_ref().unwrap();
                 let lsc_rx = &sender.lsc_rx;
                 println!("Hello from '{}'!", std::thread::current().name().unwrap());
-                let barrier_data = barrier_data_.clone();
+                let barrier_data = others::barrier::as_ref();
                 // Start the system loop
                 let mut entity_ids: Vec<usize> = Vec::new();
                 loop {
                     {
+                        println!("Run system!");
                         // Get the entities at the start of each frame
                         let ptrs = {
                             let w = crate::world::world();

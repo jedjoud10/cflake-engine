@@ -86,6 +86,12 @@ pub fn wait_for_gpuobject(id: u64) -> GPUObject {
             },
             None => {},
         }        
+
+        // Check if we have quit the render loop, because if we did, this will never exit and we must manually exit
+        let barrier_data = others::barrier::as_ref();
+        if barrier_data.is_world_destroyed() {
+            return GPUObject::None;
+        }
     }
 }
 
@@ -97,6 +103,12 @@ pub fn wait_for_execution(id: u64) {
         if buf.executed_tasks.contains(&id) {
             // We have executed this task, we can exit
             return;
-        }        
+        }  
+        
+        // Check if we have quit the render loop, because if we did, this will never exit and we must manually exit
+        let barrier_data = others::barrier::as_ref();
+        if barrier_data.is_world_destroyed() {
+            return;
+        }
     }
 }

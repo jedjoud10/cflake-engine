@@ -1,7 +1,21 @@
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Barrier, Condvar, RwLock,
+    Barrier, Condvar, RwLock, Arc,
 };
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
+}
+// Initialize the world barrier data with the specified amount of threads to wait for
+pub fn init(n: usize) {
+    let x = BARRIERS_WORLD.as_ref();
+    x.new_update(n);
+}
+// As ref
+pub fn as_ref() -> &'static WorldBarrierData {
+    BARRIERS_WORLD.as_ref()
+}
 
 // Internal
 pub struct WorldBarrierDataInternal {
@@ -80,7 +94,7 @@ impl WorldBarrierData {
     // Sync up the quit barrier
     pub fn thread_sync_quit(&self) {
         let r = &self.internal.read().unwrap();
-        let end_frame_sync_barrier = &r.as_ref().unwrap().end_frame_sync_barrier;
-        (end_frame_sync_barrier).wait();
+        let quit_loop_sync_barrier = &r.as_ref().unwrap().quit_loop_sync_barrier;
+        (quit_loop_sync_barrier).wait();
     }
 }
