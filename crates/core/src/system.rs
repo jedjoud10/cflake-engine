@@ -52,7 +52,6 @@ where
                 let mut entity_ids: Vec<usize> = Vec::new();
                 loop {
                     {
-                        println!("Run system!");
                         // Get the entities at the start of each frame
                         let ptrs = {
                             let w = crate::world::world();

@@ -5,13 +5,13 @@ use lazy_static::lazy_static;
 use no_deadlocks::{Mutex, RwLock};
 
 lazy_static! {
-    static ref INTERFACE_BUFFER: Mutex<GPUObjectBuffer> = Mutex::new(GPUObjectBuffer::default());
+    static ref INTERFACE_BUFFER: RwLock<GPUObjectBuffer> = RwLock::new(GPUObjectBuffer::default());
 }
 
 /* #region Get GPU objects using their waitable ID or their name */
 // Get GPU object using it's specified name
 pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
-    let buf = INTERFACE_BUFFER.lock().unwrap();
+    let buf = INTERFACE_BUFFER.read().unwrap();
     let index = buf.names_to_id.get(name);
     match index {
         Some(index) => {
@@ -24,7 +24,7 @@ pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
 }
 // Check if a GPU object exists
 pub fn gpu_object_valid(name: &str) -> bool {
-    let buf = INTERFACE_BUFFER.lock().unwrap();
+    let buf = INTERFACE_BUFFER.read().unwrap();
     buf.names_to_id.contains_key(name)
 }
 /* #endregion */
@@ -32,7 +32,7 @@ pub fn gpu_object_valid(name: &str) -> bool {
 // Notify the threads that we have recieved a valid GPU object
 pub fn received_new_gpu_object(gpuobject: GPUObject, callback_id: Option<u64>, waitable_id: Option<u64>, thread_id: std::thread::ThreadId) {
     // Add the GPU object to the current interface buffer
-    let mut buf = INTERFACE_BUFFER.lock().unwrap();
+    let mut buf = INTERFACE_BUFFER.write().unwrap();
     // Always insert the gpu object
     let index = buf.gpuobjects.add_element(gpuobject);
     match callback_id {
@@ -52,14 +52,14 @@ pub fn received_new_gpu_object(gpuobject: GPUObject, callback_id: Option<u64>, w
 // We have received confirmation that we have executed a specific task
 pub fn received_task_execution_ack(execution_id: u64) {
     // Add the GPU object to the current interface buffer
-    let mut buf = INTERFACE_BUFFER.lock().unwrap();
+    let mut buf = INTERFACE_BUFFER.write().unwrap();
     buf.executed_tasks.insert(execution_id);
 }
 
 // Update the render thread, and call the callbacks of GPU objects that have been created
 pub fn update_render_thread(tx2: &Sender<MainThreadMessage>) {
     // Send a message to the main thread saying what callbacks we must run
-    let mut buf = INTERFACE_BUFFER.lock().unwrap();
+    let mut buf = INTERFACE_BUFFER.write().unwrap();
     let callbacks_objects_indices = std::mem::take(&mut buf.callback_objects);
     let callback_objects = callbacks_objects_indices
         .into_iter()
@@ -76,7 +76,7 @@ pub fn update_render_thread(tx2: &Sender<MainThreadMessage>) {
 pub fn wait_for_gpuobject(id: u64) -> GPUObject {
     // Basically an infinite loop waiting until we poll a valid GPU object using the specified ID
     loop {
-        let buf = INTERFACE_BUFFER.lock().unwrap();
+        let buf = INTERFACE_BUFFER.read().unwrap();
         match buf.waitable_objects.get(&id) {
             Some(&gpuobject_index) => {
                 let gpuobject = buf.gpuobjects.get_element(gpuobject_index).unwrap().unwrap();
@@ -98,7 +98,7 @@ pub fn wait_for_gpuobject(id: u64) -> GPUObject {
 pub fn wait_for_execution(id: u64) {
     // Basically an infinite loop waiting until we poll a valid GPU object using the specified ID
     loop {
-        let buf = INTERFACE_BUFFER.lock().unwrap();
+        let buf = INTERFACE_BUFFER.read().unwrap();
         if buf.executed_tasks.contains(&id) {
             // We have executed this task, we can exit
             return;

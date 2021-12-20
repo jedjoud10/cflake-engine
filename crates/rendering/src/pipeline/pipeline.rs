@@ -118,7 +118,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
                 loop {
-                    println!("Render thread");
                     // Update the delta_time
                     let new_time = glfw.get_time();
                     let delta = new_time - last_time;
@@ -202,7 +201,6 @@ pub fn internal_task(task: RenderTask) -> GPUObject {
 
 // Run a command on the Render Thread
 fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<GPUObject> {
-    println!("Executing command coming from thread {:?}", command.thread_id);
     // Handle the common cases
     match command.task {
         // Window tasks
