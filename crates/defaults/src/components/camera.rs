@@ -15,11 +15,16 @@ pub struct Camera {
 impl Camera {
     // Create a new camera with a specified FOV and clip planes
     pub fn new(fov: f32, clipn: f32, clipf: f32) -> Self {
-        Self {
+        let mut camera = Self {
+            view_matrix: veclib::Matrix4x4::IDENTITY,
+            projection_matrix: veclib::Matrix4x4::IDENTITY,
+            aspect_ratio: rendering::WINDOW_SIZE.x as f32 / rendering::WINDOW_SIZE.y as f32,
+            frustum: math::Frustum::default(),
             horizontal_fov: fov,
             clip_planes: veclib::Vector2::new(clipn, clipf),
-            ..Self::default()
-        }
+        };
+        camera.update_projection_matrix();
+        camera
     }
     // Update the aspect ratio of this camera
     pub fn update_aspect_ratio(&mut self, dims: veclib::Vector2<u16>) {
@@ -58,14 +63,7 @@ impl Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        Self {
-            view_matrix: veclib::Matrix4x4::IDENTITY,
-            projection_matrix: veclib::Matrix4x4::IDENTITY,
-            horizontal_fov: 90.0,
-            aspect_ratio: rendering::WINDOW_SIZE.x as f32 / rendering::WINDOW_SIZE.y as f32,
-            clip_planes: veclib::Vector2::new(0.3, 4000.0),
-            frustum: math::Frustum::default(),
-        }
+        Self::new(90.0, 0.3, 4000.0)
     }
 }
 

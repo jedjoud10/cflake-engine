@@ -1,8 +1,4 @@
-use main::assets::*;
 use main::defaults::components;
-use main::ecs::*;
-use main::others::Instance;
-use main::rendering::*;
 use main::*;
 fn main() {
     // Load up the engine
@@ -22,6 +18,12 @@ pub fn world_initialized() {
     // Add the camera
     let main_camera_entity_id = core::global::ecs::entity_add(ecs::Entity::new("Default Camera"), linkings).immediate_result().entity_id().unwrap();
     core::global::main::world_data_mut(|data| { data.main_camera_entity_id = main_camera_entity_id });
+
+    let mut linkings = ecs::ComponentLinkingGroup::new();
+    linkings.link(crate::components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, -10.0))).unwrap();
+    let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\sphere.mdl3d").unwrap());
+    linkings.link(crate::components::Renderer::default().set_model(model)).unwrap();
+    core::global::ecs::entity_add(ecs::Entity::new("Cube"), linkings);
     
     /*
     // ----Load the default systems----

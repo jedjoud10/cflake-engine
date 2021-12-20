@@ -17,7 +17,6 @@ fn add_entity(data: &mut (), entity: &ecs::Entity) {
     // Create the shared data
     let shared_data = rendering::SharedData::new((irenderer, matrix));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
-    let entity_id = entity.entity_id;
     /*
     result.with_callback(GPUObjectCallback(OwnedCallback::new(move |gpuobject| {
         // This callback is called when we actually add the renderer

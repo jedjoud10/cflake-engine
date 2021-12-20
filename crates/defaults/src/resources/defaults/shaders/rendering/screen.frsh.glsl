@@ -23,7 +23,6 @@ void main() {
 	vec2 uvs = uv_coordinates;
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
 	color = vec3(uv_coordinates, 0);
-	/*
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
@@ -74,6 +73,7 @@ void main() {
 			float y = (resolution.y - (uvs.y * resolution.y)) / 200;
 			color = texture(frame_stats, vec2(x, y)).rgb;
 		}		
+		*/
 	} else if (debug_view == 1) {
 		color = normal;
 	} else if (debug_view == 2) {
@@ -83,5 +83,5 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-	*/
+	//color = final_color;
 }

@@ -2,9 +2,14 @@ use ecs::{Component, ComponentID, ComponentInternal};
 use rendering::{GPUObject, Material, ModelGPUObject, RendererFlags};
 
 // Wrapper
-#[derive(Default)]
 pub struct Renderer {
     pub internal_renderer: rendering::Renderer,
+}
+
+impl Default for Renderer {
+    fn default() -> Self {
+        Self { internal_renderer: Default::default() }
+    }
 }
 
 impl Renderer {
