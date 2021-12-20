@@ -37,9 +37,7 @@ fn add_entity(data: &mut (), entity: &ecs::Entity) {
         }
     })).create());
     */
-
     let gpuobject = result.wait_gpuobject();
-    println!("WAITING");
     // This callback is called when we actually add the renderer
     match gpuobject {
         rendering::GPUObject::Renderer(renderer_id) => {
@@ -47,6 +45,7 @@ fn add_entity(data: &mut (), entity: &ecs::Entity) {
             global::ecs::world_mut(WorldMut(MutCallback::new(move |world| {
                 let mut r = global::ecs::componentw_mut::<crate::components::Renderer>(renderer_global_id, world);
                 r.internal_renderer.index = Some(renderer_id);
+                println!("Updated the entity's internal renderer index!");
                 // Also update the transform since we're at it
                 let mut t_ = global::ecs::componentw_mut::<crate::components::Transform>(transform_global_id, world);
                 let t = &mut *t_;
@@ -89,9 +88,9 @@ pub fn system() {
         system.link::<crate::components::Transform>();
         // And link the events
         system.event(SystemEventType::EntityAdded(add_entity));
-        system.event(SystemEventType::EntityUpdate(update_entity));
+        //system.event(SystemEventType::EntityUpdate(update_entity));
         system.event(SystemEventType::EntityRemoved(remove_entity));
-        system.event(SystemEventType::SystemPrefire(system_prefire));
+        //system.event(SystemEventType::SystemPrefire(system_prefire));
         // Return the newly made system
         system
     });

@@ -35,23 +35,37 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                     (callback)(entity);
                 }
             }
+            CallbackType::WorldMut(x) => { /* This is not where we execute MutCallback<World> */ },
+        }
+    });
+}
+// Execute the world mut callback
+pub fn execute_world_mut_callback(id: u64, world: &mut crate::world::World) {
+    CALLBACK_MANAGER_BUFFER.with(|mutex| {
+        let mut callback_manager_ = mutex.lock().unwrap();
+        let callback_manager = &mut *callback_manager_;
+
+        // Get the world mut callback
+        let callback = get_callback::<CallbackType>(id, callback_manager);
+        match callback {
             CallbackType::WorldMut(x) => {
                 let callback = x.callback.as_ref();
                 (callback)(world);
             },
+            _ => {}
         }
     });
 }
 
 // The data that will be sent back to the logic system from the main thread
 pub enum LogicSystemCallbackArguments {
-    None,
     // Entity
     EntityRef(usize),
     EntityMut(usize),
     // Rendering
     RenderingGPUObject(rendering::GPUObject),
 }
+
 
 // The callback type
 pub enum CallbackType {

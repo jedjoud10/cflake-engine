@@ -75,8 +75,8 @@ pub mod ecs {
     }
     // World mut callback because we cannot get the world mutably in the middle of a frame (Well we can but we totally should not since that defeats the point of multithreading)
     pub fn world_mut(callback_id: u64) {
-        let command_query_result = CommandQueryResult::new(Task::WorldMut);
-        command_query_result.with_callback(callback_id);
+        // Add the callack to the thread local world mut callback IDs
+        crate::system::add_worldmutcallback_id(callback_id);
     }
     /* #endregion */
 }

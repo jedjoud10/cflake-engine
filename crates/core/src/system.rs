@@ -22,6 +22,7 @@ thread_local! {
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
     pub static SENDER: RefCell<Option<WorldTaskSender>> = RefCell::new(None);
+    static WORLDMUT_CALLBACK_IDS: RefCell<Vec<u64>> = RefCell::new(Vec::new());
 }
 
 // Create a worker thread
@@ -110,6 +111,17 @@ where
                             }
                             Err(_) => {}
                         }
+                        // Now we can run the MutCallback<World> that we have created during the frame
+                        WORLDMUT_CALLBACK_IDS.with(|cell| {
+                            let mut callbacks_ = cell.borrow_mut();
+                            let callbacks = &mut *callbacks_;
+                            let cleared_callbacks = std::mem::take(callbacks);
+                            let mut w = crate::world::world_mut();
+                            let world = &mut *w;
+                            for id in cleared_callbacks {
+                                crate::callbacks::execute_world_mut_callback(id, world);
+                            }
+                        })
                     }
 
                     // Very very end of the frame
@@ -135,6 +147,15 @@ where
     let receiver = receiver_.as_mut().unwrap();
     receiver.lsc_txs.insert(handler.thread().id(), receiver.template_wtc_tx.clone());
     (handler, c_bitfield)
+}
+
+// Add a world mut callback ID to the thread local vector
+pub fn add_worldmutcallback_id(id: u64) {
+    WORLDMUT_CALLBACK_IDS.with(|cell| {
+        let mut callbacks_ = cell.borrow_mut();
+        let callbacks = &mut *callbacks_;
+        callbacks.push(id);
+    })
 }
 
 // Send a LogicSystemCommand to a specific thread
