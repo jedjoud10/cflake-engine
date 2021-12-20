@@ -1,5 +1,6 @@
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::LogicSystemCallbackArguments;
+use ecs::CustomSystemData;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::sync::{Arc, Mutex, mpsc::{Sender}};
@@ -7,7 +8,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::JoinHandle;
 
 // Some special system commands that are sent from the main thread and received on the worker threads
+#[derive(Clone)]
 pub enum LogicSystemCommand {
+    StartSystemLoop,
     RunCallback(u64, LogicSystemCallbackArguments),
     AddEntityToSystem(usize),
     RemoveEntityFromSystem(usize),
@@ -56,8 +59,19 @@ where
                 // Start the system loop
                 let mut entity_ids: Vec<usize> = Vec::new();
                 tx_cbitfield.send(system.c_bitfield).unwrap();
+                let mut pre_loop_buffer: Vec<LogicSystemCommand> = Vec::new();
+                // Wait for the message allowing us to start the loop
+                'ack: loop {
+                    match lsc_rx.try_recv() {                                
+                        Ok(x) => match x {
+                            LogicSystemCommand::StartSystemLoop => { break 'ack; },
+                            x => { pre_loop_buffer.push(x); },
+                        },
+                        Err(x) => {},
+                    };
+                }
                 loop {
-                    {
+                    {   
                         let i = std::time::Instant::now();
                         // Get the entities at the start of each frame
                         let ptrs = {
@@ -82,42 +96,24 @@ where
                         
 
                         // --- End of the frame ---
+                        // Check the start buffer first since it has priority
+                        if pre_loop_buffer.len() > 0 {
+                            let taken = std::mem::take(&mut pre_loop_buffer);
+                            for x in taken {
+                                // Execute the logic system command
+                                logic_system_command(x, &mut entity_ids, &mut system);
+                            }
+                        }
                         // Check if we have any system commands that must be executed
                         match lsc_rx.try_recv() {
                             Ok(lsc) => {
                                 // Execute the logic system command
-                                match lsc {
-                                    LogicSystemCommand::RunCallback(id, result_data) => {
-                                        let mut w = crate::world::world_mut();
-                                        let world = &mut *w;
-                                        crate::callbacks::execute_callback(id, result_data, world);
-                                    }
-                                    LogicSystemCommand::AddEntityToSystem(entity_id) => {
-                                        // Add the entity to the current entity list
-                                        let ptr = {
-                                            let w = crate::world::world();
-                                            let entity = w.ecs_manager.entitym.entity(entity_id);
-                                            entity as *const ecs::Entity
-                                        };
-                                        entity_ids.push(entity_id);
-                                        let entity = unsafe { ptr.as_ref().unwrap() };
-                                        system.add_entity(entity);
-                                    }
-                                    LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
-                                        // Remove the entity from the current entity list
-                                        let ptr = {
-                                            let w = crate::world::world();
-                                            entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
-                                            let entity = w.ecs_manager.entitym.entity(entity_id);
-                                            entity as *const ecs::Entity
-                                        };
-                                        let entity = unsafe { ptr.as_ref().unwrap() };
-                                        system.remove_entity(entity);
-                                    }
-                                }
+                                logic_system_command(lsc, &mut entity_ids, &mut system);
                             }
                             Err(_) => {}
                         }
+                        
+
                         // Now we can run the MutCallback<World> that we have created during the frame
                         WORLDMUT_CALLBACK_IDS.with(|cell| {
                             let mut callbacks_ = cell.borrow_mut();
@@ -159,6 +155,40 @@ where
     (handler, c_bitfield)
 }
 
+// Execute a logic system command
+fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<usize>, system: &mut ecs::System<T>) {
+    match lsc {
+        LogicSystemCommand::RunCallback(id, result_data) => {
+            let mut w = crate::world::world_mut();
+            let world = &mut *w;
+            crate::callbacks::execute_callback(id, result_data, world);
+        }
+        LogicSystemCommand::AddEntityToSystem(entity_id) => {
+            // Add the entity to the current entity list
+            let ptr = {
+                let w = crate::world::world();
+                let entity = w.ecs_manager.entitym.entity(entity_id);
+                entity as *const ecs::Entity
+            };
+            entity_ids.push(entity_id);
+            let entity = unsafe { ptr.as_ref().unwrap() };
+            system.add_entity(entity);
+        }
+        LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
+            // Remove the entity from the current entity list
+            let ptr = {
+                let w = crate::world::world();
+                entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
+                let entity = w.ecs_manager.entitym.entity(entity_id);
+                entity as *const ecs::Entity
+            };
+            let entity = unsafe { ptr.as_ref().unwrap() };
+            system.remove_entity(entity);
+        }
+        LogicSystemCommand::StartSystemLoop => { /* How the fuck */ },
+    }
+}
+
 // Add a world mut callback ID to the thread local vector
 pub fn add_worldmutcallback_id(id: u64) {
     WORLDMUT_CALLBACK_IDS.with(|cell| {
@@ -175,4 +205,13 @@ pub fn send_lsc(lgc: LogicSystemCommand, thread_id: &std::thread::ThreadId, rece
     let sender = senders.get(thread_id).unwrap();
     // Send the message
     sender.send(lgc).unwrap();
+}
+// Send a LogicSystemCommand to all the threads
+pub fn send_lsc_all(lgc: LogicSystemCommand, receiver: &WorldTaskReceiver) {
+    // Get the senders
+    let senders = &receiver.lsc_txs;
+    for (h, sender) in senders {        
+        // Send the message
+        sender.send(lgc.clone()).unwrap();
+    }
 }

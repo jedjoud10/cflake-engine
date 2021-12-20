@@ -18,8 +18,24 @@ pub enum Task {
     SetRootVisibility(bool),
 }
 
+// This is some immediate result that is given after we execute a query command on the main thread
+pub enum ImmediateTaskResult {
+    None,
+    EntityAdd(usize)
+}
+
+impl ImmediateTaskResult {
+    // Get the Entity ID in case we have executed something that returns an entity ID
+    pub fn entity_id(self) -> Option<usize> {
+        match self {
+            ImmediateTaskResult::None => None,
+            ImmediateTaskResult::EntityAdd(id) => Some(id),
+        }
+    }
+}
+
 // Excecute a specific task and give back it's result
-pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, receiver: &WorldTaskReceiver) {
+pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, receiver: &WorldTaskReceiver) -> ImmediateTaskResult {
     match query.task {
         Task::EntityAdd(mut entity, linkings) => {
             // Add the components first
@@ -68,14 +84,16 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                     None => { /* No callback available */ }
                 }
             }
+            ImmediateTaskResult::EntityAdd(entity_id)
         }
         Task::EntityRemove(_) => {
             // Remove the entity from the world and dispose of it's components
             // When doing this however, we must wait a whole frame before actually deleting the entity
             // We must first send the LogicSystemCommand to each system that contains this entity, then we can actually delete the entity the next frame
+            ImmediateTaskResult::None
         }
-        Task::ComponentLinkDirect(_, _) => {}
-        Task::ComponentUnlinkDirect(_, _) => {}
-        Task::SetRootVisibility(_) => {}
+        Task::ComponentLinkDirect(_, _) => { ImmediateTaskResult::None }
+        Task::ComponentUnlinkDirect(_, _) => { ImmediateTaskResult::None }
+        Task::SetRootVisibility(_) => { ImmediateTaskResult::None }
     }
 }

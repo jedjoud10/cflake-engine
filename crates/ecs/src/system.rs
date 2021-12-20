@@ -74,14 +74,8 @@ where
 {
     // Add a component to this system's component bitfield id
     pub fn link<U: ComponentID>(&mut self) {
-        if crate::registry::is_component_registered::<U>() {
-            // Link the component if it was already registered
-            let c = crate::registry::get_component_id::<U>().unwrap();
-            self.c_bitfield |= c;
-        } else {
-            // Link the component if it was not registered yet
-            self.c_bitfield |= crate::registry::register_component::<U>();
-        }
+        let c = crate::registry::get_component_id::<U>();
+        self.c_bitfield |= c;
     }
     // Attach the a specific system event
     pub fn event(&mut self, event: SystemEventType<T>) {

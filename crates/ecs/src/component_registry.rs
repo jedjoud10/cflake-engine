@@ -28,15 +28,13 @@ pub fn register_component<T: ComponentID>() -> usize {
     component_id
 }
 // Get the bitfield ID of a specific component
-pub fn get_component_id<T: ComponentID>() -> Result<usize, ECSError> {
-    let name: String = T::get_component_name();
-    let rc = REGISTERED_COMPONENTS.read().unwrap();
-    // It found the component, so just return it's id
-    if rc.contains_key(&name) {
-        let value = rc[&name];
-        Ok(value)
+pub fn get_component_id<T: ComponentID>() -> usize {
+    if is_component_registered::<T>() {
+        let rc = REGISTERED_COMPONENTS.read().unwrap();
+        let value = rc[&T::get_component_name()];
+        value
     } else {
-        return Err(ECSError::new(format!("Component '{}' not registered!", name)));
+        register_component::<T>()
     }
 }
 // Checks if a specific component is registered

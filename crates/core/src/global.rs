@@ -166,11 +166,22 @@ pub mod main {
     use lazy_static::lazy_static;
     use std::sync::Arc;
 
-    use crate::custom_world_data::CustomWorldData;
+    use crate::{custom_world_data::CustomWorldData, communication::RECEIVER};
     // Get the world custom data
     pub fn world_data() -> CustomWorldData {
         let w = crate::world::world();
         w.custom_data.clone()
+    }
+    pub fn world_data_mut<F: FnOnce(&mut CustomWorldData)>(f: F) {
+        let mut w = crate::world::world_mut();
+        let custom_data = &mut w.custom_data;
+        (f)(custom_data);
+    }
+    // Send a message to all the Logic Systems, telling them to start their loops and to clear their starting buffer
+    pub fn start_system_loops() {
+        let receiver_ = RECEIVER.lock().unwrap();
+        let receiver = receiver_.as_ref().unwrap();
+        crate::system::send_lsc_all(crate::system::LogicSystemCommand::StartSystemLoop, receiver);
     }
 }
 

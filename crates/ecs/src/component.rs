@@ -81,7 +81,7 @@ where
     fn get_component_name() -> String;
     // Wrappers
     fn get_component_id() -> usize {
-        crate::registry::get_component_id::<Self>().unwrap()
+        crate::registry::get_component_id::<Self>()
     }
     fn is_registered() -> bool {
         crate::registry::is_component_registered::<Self>()

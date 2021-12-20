@@ -45,6 +45,17 @@ impl CommandQueryResult {
         };
         command(query);
     }
+    // Get the immediate result of this query result if we have called it on the main thread
+    pub fn immediate_result(mut self) -> ImmediateTaskResult {
+        // Send the command
+        let task = self.task.take().unwrap();
+        let query = CommandQuery {
+            task,
+            thread_id: std::thread::current().id(),
+            callback_id: None,
+        };
+        command(query).unwrap()
+    }
 }
 
 impl std::ops::Drop for CommandQueryResult {
@@ -119,7 +130,7 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
     }
 }
 // Send a command query to the world
-fn command(query: CommandQuery) {
+fn command(query: CommandQuery) -> Option<ImmediateTaskResult> {
     // Check if we are running on the main thread
     let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
     if is_main_thread {
@@ -128,13 +139,14 @@ fn command(query: CommandQuery) {
         // Execute the task on the main thread
         let receiver_ = RECEIVER.lock().unwrap();
         let receiver = receiver_.as_ref().unwrap();
-        excecute_query(query, &mut world, receiver);
+        Some(excecute_query(query, &mut world, receiver))
     } else {
         // Send the command query
         SENDER.with(|sender| {
             let sender_ = sender.borrow();
             let tx = sender_.as_ref().unwrap();
             tx.send(query).unwrap();
-        })
+        });
+        None
     }
 }

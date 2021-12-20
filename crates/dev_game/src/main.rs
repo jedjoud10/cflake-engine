@@ -12,6 +12,17 @@ pub fn assets_preload() {
     // -----Pre-load the game assets here-----
 }
 pub fn world_initialized() {
+    // ----Load the entities----
+    
+    // Create the default camera
+    let mut linkings = ecs::ComponentLinkingGroup::new();
+    linkings.link_default::<crate::components::Transform>().unwrap();
+    linkings.link_default::<crate::components::Physics>().unwrap();
+    linkings.link_default::<crate::components::Camera>().unwrap();
+    // Add the camera
+    let main_camera_entity_id = core::global::ecs::entity_add(ecs::Entity::new("Default Camera"), linkings).immediate_result().entity_id().unwrap();
+    core::global::main::world_data_mut(|data| { data.main_camera_entity_id = main_camera_entity_id });
+    
     /*
     // ----Load the default systems----
     // Create the custom data
@@ -25,7 +36,6 @@ pub fn world_initialized() {
         custom_data: &mut world.custom_data,
         instance_manager: &mut world.instance_manager,
     };
-    // ----Load the entities----
     // Create a camera entity
 
     let mut camera = Entity::new("Default Camera");

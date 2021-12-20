@@ -54,7 +54,6 @@ pub mod pipec {
     }
     // Just setup the sender of commands thread-locally
     pub fn initialize_threadlocal_render_comms() {
-        let pipeline = crate::pipeline::pipeline();
         let tx = crate::pipeline::TX_TEMPLATE.lock().unwrap().as_ref().unwrap().clone();
         RENDER_COMMAND_SENDER.with(|sender_refcell| {
             let mut sender_ = sender_refcell.borrow_mut();

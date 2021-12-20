@@ -65,17 +65,15 @@ fn remove_entity(data: &mut (), entity: &ecs::Entity) {
 fn update_entity(data: &mut (), entity: &ecs::Entity) {}
 // System prefire so we can send the camera data to the render pipeline
 fn system_prefire(data: &mut ()) {
-    /*
     // Camera data
     let camera = global::ecs::entity(global::main::world_data().main_camera_entity_id).unwrap();
-    let camera_data = global::ecs::component::<crate::components::Camera>(&camera);
+    let camera_data = global::ecs::component::<crate::components::Camera>(&camera).unwrap();
     // Transform data
-    let camera_transform = global::ecs::component::<crate::components::Transform>(&camera);
+    let camera_transform = global::ecs::component::<crate::components::Transform>(&camera).unwrap();
     let pos = camera_transform.position;
     let rot = camera_transform.rotation;
     let shared_data = rendering::SharedData::new((pos, rot, camera_data.clip_planes, camera_data.projection_matrix));
     rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data));
-    */
 }
 
 // Create the default system

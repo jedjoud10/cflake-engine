@@ -32,7 +32,7 @@ impl ComponentLinkingGroup {
     }
     // Link a component to this entity and also link it's default component dependencies if they are not linked yet
     pub fn link<T: Component + 'static>(&mut self, default_state: T) -> Result<(), ECSError> {
-        let component_id = crate::registry::get_component_id::<T>()?;
+        let component_id = crate::registry::get_component_id::<T>();
         // Check if we have the component linked on this entity
         if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(component_id) {
             // Add the local component to our hashmap

@@ -58,6 +58,7 @@ pub fn execute_world_mut_callback(id: u64, world: &mut crate::world::World) {
 }
 
 // The data that will be sent back to the logic system from the main thread
+#[derive(Clone)]
 pub enum LogicSystemCallbackArguments {
     // Entity
     EntityRef(usize),

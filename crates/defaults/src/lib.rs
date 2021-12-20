@@ -53,12 +53,4 @@ pub fn preload_default_assets() {
 pub fn preload_systems() {
     default_system::system();
     systems::rendering_system::system();
-
-    let mut linkings = ecs::ComponentLinkingGroup::new();
-    ecs::registry::register_component::<crate::components::Physics>();
-    linkings.link_default::<crate::components::Transform>().unwrap();
-    linkings.link_default::<crate::components::Renderer>().unwrap();
-    linkings.link_default::<crate::components::Physics>().unwrap();
-    // Add the entity
-    let result = core::global::ecs::entity_add(ecs::Entity::new("Test-Entity"), linkings);
 }

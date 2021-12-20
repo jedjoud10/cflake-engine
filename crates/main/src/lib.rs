@@ -45,6 +45,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     defaults::preload_systems();
     others::barrier::init(core::global::ecs::system_counter() + 2);
     callback();
+    core::global::main::start_system_loops();
     let mut last_time: f64 = 0.0;
     others::barrier::as_ref().init_finished_world();
 
