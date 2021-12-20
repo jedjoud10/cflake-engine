@@ -7,9 +7,9 @@ pub mod ecs {
     use crate::tasks::*;
     use ecs::Component;
     use lazy_static::lazy_static;
-    use std::sync::RwLockReadGuard;
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
+    use std::sync::RwLockReadGuard;
 
     lazy_static! {
         static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);

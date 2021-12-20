@@ -27,14 +27,22 @@ impl CommandQueryResult {
     pub fn send(mut self) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = CommandQuery { task, thread_id: std::thread::current().id(), callback_id: None };
+        let query = CommandQuery {
+            task,
+            thread_id: std::thread::current().id(),
+            callback_id: None,
+        };
         command(query);
     }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = CommandQuery { task, thread_id: std::thread::current().id(), callback_id: Some(callback_id) };
+        let query = CommandQuery {
+            task,
+            thread_id: std::thread::current().id(),
+            callback_id: Some(callback_id),
+        };
         command(query);
     }
 }
@@ -45,7 +53,11 @@ impl std::ops::Drop for CommandQueryResult {
         // Send the command
         match self.task.take() {
             Some(task) => {
-                let query = CommandQuery { task, thread_id: std::thread::current().id(), callback_id: None };
+                let query = CommandQuery {
+                    task,
+                    thread_id: std::thread::current().id(),
+                    callback_id: None,
+                };
                 command(query);
             }
             None => { /* We have called the with_callback function, so the task is empty */ }
@@ -101,8 +113,12 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
         match render_thread_message {
             rendering::MainThreadMessage::ExecuteCallback(id, gpuobject, thread_id) => {
                 // We must explicitly run the callback
-                crate::system::send_lsc(LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUObject(gpuobject)), &thread_id, receiver);
-            },
+                crate::system::send_lsc(
+                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUObject(gpuobject)),
+                    &thread_id,
+                    receiver,
+                );
+            }
         }
     }
 }

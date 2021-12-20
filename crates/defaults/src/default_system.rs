@@ -1,4 +1,4 @@
-use core::global::callbacks::{CallbackType::*};
+use core::global::callbacks::CallbackType::*;
 use others::callbacks::*;
 
 // Some default events
@@ -10,7 +10,7 @@ pub fn system_prefire(data: &mut ()) {
     linkings.link_default::<crate::components::Transform>().unwrap();
     // Add the entity
     let result = core::global::ecs::entity_add(ecs::Entity::new("Test-Entity"), linkings);
-    result.with_callback(EntityRefCallbacks(RefCallback::new(|x| { })).create());
+    result.with_callback(EntityRefCallbacks(RefCallback::new(|x| {})).create());
 }
 
 // Create the default system

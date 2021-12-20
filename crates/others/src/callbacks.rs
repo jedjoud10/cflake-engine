@@ -11,7 +11,7 @@ pub fn get_callback<T: Callback>(id: u64, callback_manager: &mut CallbackManager
 }
 
 // Increment the callback counter
-pub fn create_callback_internal<T: Callback>(callback: T, manager: &'static LocalKey<RefCell<CallbackManagerBuffer<T>>>) -> u64 {     
+pub fn create_callback_internal<T: Callback>(callback: T, manager: &'static LocalKey<RefCell<CallbackManagerBuffer<T>>>) -> u64 {
     let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     manager.with(|x| {
         let mut manager_ = x.borrow_mut();
@@ -22,24 +22,36 @@ pub fn create_callback_internal<T: Callback>(callback: T, manager: &'static Loca
 }
 
 // A main callback trait that can be implemented for callbacks stored on the buffer
-pub trait Callback where Self: Sized {
+pub trait Callback
+where
+    Self: Sized,
+{
     // Create the callback and get back it's ID
     fn create(self) -> u64;
 }
 
 // The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
 // Callback manager that contains all the current callbacks (Thread Local)
-pub struct CallbackManagerBuffer<T> where T: Callback {
+pub struct CallbackManagerBuffer<T>
+where
+    T: Callback,
+{
     callbacks: HashMap<u64, T>,
 }
 
-impl<T> Default for CallbackManagerBuffer<T> where T: Callback {
+impl<T> Default for CallbackManagerBuffer<T>
+where
+    T: Callback,
+{
     fn default() -> Self {
         Self { callbacks: HashMap::new() }
     }
 }
 
-impl<T> CallbackManagerBuffer<T> where T: Callback {
+impl<T> CallbackManagerBuffer<T>
+where
+    T: Callback,
+{
     // Add a callback to this thread local buffer
     pub fn add_callback(&mut self, id: u64, callback: T) {
         self.callbacks.insert(id, callback);

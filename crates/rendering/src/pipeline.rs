@@ -1,9 +1,9 @@
+mod buffer;
 mod command;
+pub mod interface;
 pub mod object;
 mod pipeline;
 mod pipeline_main;
-mod buffer;
-pub mod interface;
 pub mod rendering;
 pub use command::*;
 pub use object::*;

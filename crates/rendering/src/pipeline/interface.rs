@@ -1,8 +1,8 @@
 use std::sync::mpsc::Sender;
 
-use crate::{GPUObject, pipeline::buffer::GPUObjectBuffer, MainThreadMessage};
+use crate::{pipeline::buffer::GPUObjectBuffer, GPUObject, MainThreadMessage};
 use lazy_static::lazy_static;
-use no_deadlocks::{RwLock, Mutex};
+use no_deadlocks::{Mutex, RwLock};
 
 lazy_static! {
     static ref INTERFACE_BUFFER: Mutex<GPUObjectBuffer> = Mutex::new(GPUObjectBuffer::default());
@@ -18,10 +18,9 @@ pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
             let gpuobject = buf.gpuobjects.get_element(*index);
             // Flatten
             gpuobject.flatten().cloned()
-        },
+        }
         None => None,
     }
-    
 }
 // Check if a GPU object exists
 pub fn gpu_object_valid(name: &str) -> bool {
@@ -37,13 +36,17 @@ pub fn received_new_gpu_object(gpuobject: GPUObject, callback_id: Option<u64>, w
     // Always insert the gpu object
     let index = buf.gpuobjects.add_element(gpuobject);
     match callback_id {
-        Some(id) => { buf.callback_objects.insert(id, (index, thread_id)); },
-        None => { /* We cannot run a callback on this object */ },
+        Some(id) => {
+            buf.callback_objects.insert(id, (index, thread_id));
+        }
+        None => { /* We cannot run a callback on this object */ }
     }
     match waitable_id {
-        Some(id) => { buf.waitable_objects.insert(id, index); },
-        None => { /* We cannot run the un-wait function on the threads awaiting this object */ },
-    }    
+        Some(id) => {
+            buf.waitable_objects.insert(id, index);
+        }
+        None => { /* We cannot run the un-wait function on the threads awaiting this object */ }
+    }
 }
 
 // We have received confirmation that we have executed a specific task
@@ -60,12 +63,8 @@ pub fn update_render_thread(tx2: &Sender<MainThreadMessage>) {
     let callbacks_objects_indices = std::mem::take(&mut buf.callback_objects);
     let callback_objects = callbacks_objects_indices
         .into_iter()
-        .map(|(callback_id, (index, thread_id))| 
-            (callback_id, buf.gpuobjects.get_element(index)
-            .unwrap()
-            .cloned()
-            .unwrap(), thread_id)
-    ).collect::<Vec<(u64, GPUObject, std::thread::ThreadId)>>();
+        .map(|(callback_id, (index, thread_id))| (callback_id, buf.gpuobjects.get_element(index).unwrap().cloned().unwrap(), thread_id))
+        .collect::<Vec<(u64, GPUObject, std::thread::ThreadId)>>();
 
     // Now we must all of this to the main thread
     for (callback_id, gpuobject, thread_id) in callback_objects {
@@ -80,12 +79,12 @@ pub fn wait_for_gpuobject(id: u64) -> GPUObject {
         let buf = INTERFACE_BUFFER.lock().unwrap();
         match buf.waitable_objects.get(&id) {
             Some(&gpuobject_index) => {
-                let gpuobject =  buf.gpuobjects.get_element(gpuobject_index).unwrap().unwrap();
+                let gpuobject = buf.gpuobjects.get_element(gpuobject_index).unwrap().unwrap();
                 // Was able to poll a valid GPU object
                 return gpuobject.clone();
-            },
-            None => {},
-        }        
+            }
+            None => {}
+        }
 
         // Check if we have quit the render loop, because if we did, this will never exit and we must manually exit
         let barrier_data = others::barrier::as_ref();
@@ -103,8 +102,8 @@ pub fn wait_for_execution(id: u64) {
         if buf.executed_tasks.contains(&id) {
             // We have executed this task, we can exit
             return;
-        }  
-        
+        }
+
         // Check if we have quit the render loop, because if we did, this will never exit and we must manually exit
         let barrier_data = others::barrier::as_ref();
         if barrier_data.is_world_destroyed() {

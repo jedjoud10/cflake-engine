@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData, interface};
+use crate::{basics::*, interface, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -15,9 +15,9 @@ use std::{
     },
 };
 
-// Messages that will be to the main thread 
+// Messages that will be to the main thread
 pub enum MainThreadMessage {
-    ExecuteCallback(u64, GPUObject, std::thread::ThreadId)
+    ExecuteCallback(u64, GPUObject, std::thread::ThreadId),
 }
 
 lazy_static! {
@@ -41,7 +41,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx) = std::sync::mpsc::channel::<RenderCommandQuery>(); // Main to render
-    let (tx2, rx2) = std::sync::mpsc::channel::<MainThreadMessage>(); // Render to main 
+    let (tx2, rx2) = std::sync::mpsc::channel::<MainThreadMessage>(); // Render to main
 
     // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
@@ -90,9 +90,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let sent_tasks_receiver = rx;
 
                 // Set the pipeline
-                let pipeline = Pipeline {
-                    tx_template: tx,
-                };
+                let pipeline = Pipeline { tx_template: tx };
                 {
                     let mut p = crate::pipeline::pipeline_mut();
                     *p = Some(pipeline);
@@ -203,13 +201,7 @@ pub fn internal_task(task: RenderTask) -> GPUObject {
 }
 
 // Run a command on the Render Thread
-fn command(
-    pr: &mut PipelineRenderer,
-    camera: &mut CameraDataGPUObject,
-    command: RenderCommandQuery,
-    _window: &mut glfw::Window,
-    glfw: &mut glfw::Glfw,
-) -> Option<GPUObject> {
+fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<GPUObject> {
     println!("Executing command coming from thread {:?}", command.thread_id);
     // Handle the common cases
     match command.task {
@@ -281,21 +273,22 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
         // Valid command
         match command(pr, camera, render_command_query, window, glfw) {
             Some(gpuobject) => match gpuobject {
-                GPUObject::None => { /* We do not have a GPU object, though we have executed the task succsessfully */
+                GPUObject::None => {
+                    /* We do not have a GPU object, though we have executed the task succsessfully */
                     match execution_id {
                         Some(execution_id) => interface::received_task_execution_ack(execution_id),
-                        None => {},
+                        None => {}
                     }
                 }
                 gpuobject => {
                     // We have a valid GPU object
                     match execution_id {
-                        Some(execution_id) => interface::received_task_execution_ack(execution_id),                        
+                        Some(execution_id) => interface::received_task_execution_ack(execution_id),
                         None => interface::received_new_gpu_object(gpuobject, callback_id, waitable_id, thread_id), // Notify the interface that we have a new gpu object
-                    }                    
-                }                
+                    }
+                }
             },
-            None => { /* This command does not create a GPU object */ },
+            None => { /* This command does not create a GPU object */ }
         }
     }
 }
@@ -306,7 +299,7 @@ pub struct PipelineStartData {
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {
-    pub tx_template: Sender<RenderCommandQuery>,   // A copy of the sender so we can copy it on each thread and make it thread local
+    pub tx_template: Sender<RenderCommandQuery>, // A copy of the sender so we can copy it on each thread and make it thread local
 }
 // Renderers
 impl Pipeline {

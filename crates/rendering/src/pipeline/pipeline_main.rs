@@ -27,8 +27,8 @@ pub mod pipec {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
 
-    use crate::pipeline::{object::*, buffer};
-    use crate::{Material, Model, RenderCommandQuery, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, PipelineStartData, RenderCommandResult, interface};
+    use crate::pipeline::{buffer, object::*};
+    use crate::{interface, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER};
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
@@ -117,7 +117,11 @@ pub mod pipec {
             get_subshader_object(&subshader.name)
         } else {
             let result = task(RenderTask::SubShaderCreate(SharedData::new(subshader)));
-            if let GPUObject::SubShader(x) = result.wait_gpuobject() { x } else { panic!() }
+            if let GPUObject::SubShader(x) = result.wait_gpuobject() {
+                x
+            } else {
+                panic!()
+            }
         }
     }
     pub fn shader(shader: Shader) -> ShaderGPUObject {
@@ -125,7 +129,11 @@ pub mod pipec {
             get_shader_object(&shader.name)
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            if let GPUObject::Shader(x) = result.wait_gpuobject() { x } else { panic!() }
+            if let GPUObject::Shader(x) = result.wait_gpuobject() {
+                x
+            } else {
+                panic!()
+            }
         }
     }
     pub fn compute_shader(shader: Shader) -> ComputeShaderGPUObject {
@@ -133,7 +141,11 @@ pub mod pipec {
             get_compute_shader_object(&shader.name)
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            if let GPUObject::ComputeShader(x) = result.wait_gpuobject() { x } else { panic!() }
+            if let GPUObject::ComputeShader(x) = result.wait_gpuobject() {
+                x
+            } else {
+                panic!()
+            }
         }
     }
     pub fn texture(texture: Texture) -> TextureGPUObject {
@@ -141,13 +153,21 @@ pub mod pipec {
             get_texture_object(&texture.name)
         } else {
             let result = task(RenderTask::TextureCreate(SharedData::new(texture)));
-            if let GPUObject::Texture(x) = result.wait_gpuobject() { x } else { panic!() }
+            if let GPUObject::Texture(x) = result.wait_gpuobject() {
+                x
+            } else {
+                panic!()
+            }
         }
     }
     pub fn model(model: Model) -> ModelGPUObject {
         // (TODO: Implement model caching)
         let result = task(RenderTask::ModelCreate(SharedData::new(model)));
-        if let GPUObject::Model(x) = result.wait_gpuobject() { x } else { panic!() }
+        if let GPUObject::Model(x) = result.wait_gpuobject() {
+            x
+        } else {
+            panic!()
+        }
     }
 
     // Load or create functions, cached type

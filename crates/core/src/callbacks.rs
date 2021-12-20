@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64};
 use others::callbacks::*;
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64};
 
 // Per thread
 thread_local! {
@@ -13,7 +13,7 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
     CALLBACK_MANAGER_BUFFER.with(|cell| {
         let mut callback_manager_ = cell.borrow_mut();
         let callback_manager = &mut *callback_manager_;
-        
+
         // Get the callback
         let callback = get_callback::<CallbackType>(id, callback_manager);
         match callback {
@@ -23,7 +23,7 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                 if let LogicSystemCallbackArguments::RenderingGPUObject(gpuobject) = arguments {
                     (callback)(gpuobject);
                 }
-            },
+            }
             CallbackType::EntityRefCallbacks(x) => {
                 let callback = x.callback.as_ref();
                 // Make sure this callback is the EntityRef one
@@ -31,7 +31,7 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                     let entity = world.ecs_manager.entitym.entity(entity_id);
                     (callback)(entity);
                 }
-            },
+            }
             CallbackType::EntityMutCallbacks(_) => todo!(),
             CallbackType::ComponentMutCallbacks(_) => todo!(),
         }

@@ -84,7 +84,7 @@ where
                                         let mut w = crate::world::world_mut();
                                         let world = &mut *w;
                                         crate::callbacks::execute_callback(id, result_data, world);
-                                    },
+                                    }
                                     LogicSystemCommand::AddEntityToSystem(entity_id) => {
                                         // Add the entity to the current entity list
                                         let ptr = {
@@ -95,7 +95,7 @@ where
                                         entity_ids.push(entity_id);
                                         let entity = unsafe { ptr.as_ref().unwrap() };
                                         system.add_entity(entity);
-                                    },
+                                    }
                                     LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
                                         // Remove the entity from the current entity list
                                         let ptr = {
@@ -106,7 +106,7 @@ where
                                         };
                                         let entity = unsafe { ptr.as_ref().unwrap() };
                                         system.remove_entity(entity);
-                                    },
+                                    }
                                 }
                             }
                             Err(_) => {}

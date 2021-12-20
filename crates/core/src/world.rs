@@ -286,7 +286,7 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();
-    }    
+    }
     pipec::join_pipeline(pipeline_data);
     println!("Joined up all the child threads, we can safely exit!");
 }
