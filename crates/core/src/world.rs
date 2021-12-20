@@ -6,7 +6,7 @@ use ecs::*;
 use glfw::{self};
 use input::*;
 use io::SaverLoader;
-use no_deadlocks::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use others::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use ui::UIManager;
@@ -169,7 +169,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 // This is the main Update loop, ran on the main thread
 pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
     // Systems are still running their loops...
-    println!("Update world {}", _delta * 1000.0);
+    println!("Update world in {:.2}ms", _delta * 1000.0);
     others::barrier::as_ref().thread_sync();
     FRAME.store(false, Ordering::Relaxed);
     // The systems are blocked here

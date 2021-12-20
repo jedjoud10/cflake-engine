@@ -36,23 +36,23 @@ pub mod ecs {
     /* #endregion */
     /* #region Components */
     // Get a component
-    pub fn component<'a, T: Component + 'static>(entity: &ecs::Entity) -> ecs::stored::Stored<T> {
+    pub fn component<'a, T: Component + 'static>(entity: &ecs::Entity) -> Option<ecs::stored::Stored<T>> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
+        let global_id = entity.linked_components.get(&T::get_component_id())?;
         // Get the world using it's RwLock
         let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
-        componentm.get_component::<T>(*global_id).unwrap()
+        componentm.get_component::<T>(*global_id).ok()
     }
     // Get a component using the world and the component global ID
-    pub fn componentw<'a, T: Component + 'static>(global_id: usize, world: &crate::world::World) -> ecs::stored::Stored<T> {
+    pub fn componentw<'a, T: Component + 'static>(global_id: usize, world: &crate::world::World) -> Option<ecs::stored::Stored<T>> {
         let componentm = &world.ecs_manager.componentm;
-        componentm.get_component::<T>(global_id).unwrap()
+        componentm.get_component::<T>(global_id).ok()
     }
     // Get a mutable component using the mutable world
-    pub fn componentw_mut<'a, T: Component + 'static>(global_id: usize, world: &mut crate::world::World) -> ecs::stored::StoredMut<T> {
+    pub fn componentw_mut<'a, T: Component + 'static>(global_id: usize, world: &mut crate::world::World) -> Option<ecs::stored::StoredMut<T>> {
         let componentm = &mut world.ecs_manager.componentm;
-        componentm.get_component_mut::<T>(global_id).unwrap()
+        componentm.get_component_mut::<T>(global_id).ok()
     }
     /* #endregion */
     /* #region Systems */
@@ -63,7 +63,6 @@ pub mod ecs {
     {
         // Create a new thread and initialize the system on it
         SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
-        0;
         let (join_handle, c_bitfield) = crate::system::create_worker_thread(callback);
         let system_thread_data = ecs::SystemThreadData::new(join_handle, c_bitfield);
         let mut w = crate::world::world_mut();

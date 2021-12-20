@@ -34,7 +34,6 @@ name = "assets"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
- "no_deadlocks",
  "veclib",
 ]
 

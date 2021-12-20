@@ -11,7 +11,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         mpsc::{Receiver, Sender},
-        Arc, Barrier,
+        Arc, Barrier, RwLock, RwLockWriteGuard, RwLockReadGuard, Mutex,
     },
 };
 
@@ -22,16 +22,17 @@ pub enum MainThreadMessage {
 
 lazy_static! {
     // The pipeline that is stored on the render thread
-    pub static ref PIPELINE: Arc<no_deadlocks::RwLock<Option<Pipeline>>> = Arc::new(no_deadlocks::RwLock::new(None));
+    pub static ref PIPELINE: Arc<RwLock<Option<Pipeline>>> = Arc::new(RwLock::new(None));
+    pub static ref TX_TEMPLATE: Mutex<Option<Sender<RenderCommandQuery>>> = Mutex::new(None);
 }
 
 // Get an immutable lock of the render pipeline
-pub fn pipeline() -> no_deadlocks::RwLockReadGuard<'static, Option<Pipeline>> {
+pub fn pipeline() -> RwLockReadGuard<'static, Option<Pipeline>> {
     let x = PIPELINE.read().unwrap();
     x
 }
 
-pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline>> {
+pub fn pipeline_mut() -> RwLockWriteGuard<'static, Option<Pipeline>> {
     let x = PIPELINE.write().unwrap();
     x
 }
@@ -42,7 +43,11 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
     let (tx, rx) = std::sync::mpsc::channel::<RenderCommandQuery>(); // Main to render
     let (tx2, rx2) = std::sync::mpsc::channel::<MainThreadMessage>(); // Render to main
-
+    {
+        let mut template_ = TX_TEMPLATE.lock().unwrap();
+        let template = &mut *template_;
+        *template = Some(tx);
+    }
     // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
@@ -90,7 +95,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let sent_tasks_receiver = rx;
 
                 // Set the pipeline
-                let pipeline = Pipeline { tx_template: tx };
+                let pipeline = Pipeline{};
                 {
                     let mut p = crate::pipeline::pipeline_mut();
                     *p = Some(pipeline);
@@ -137,15 +142,11 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     // The world is valid, we can wait
                     let barrier_data = others::barrier::as_ref();
                     if barrier_data.is_world_valid() {
-                        // First sync
-                        //barrier_data.thread_sync();
                         if barrier_data.is_world_destroyed() {
                             println!("Stopping the render thread...");
                             barrier_data.thread_sync_quit();
                             break;
                         }
-                        // Second sync
-                        //barrier_data.thread_sync();
                     }
                 }
                 println!("Stopped the render thread!");
@@ -297,7 +298,6 @@ pub struct PipelineStartData {
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {
-    pub tx_template: Sender<RenderCommandQuery>, // A copy of the sender so we can copy it on each thread and make it thread local
 }
 // Renderers
 impl Pipeline {

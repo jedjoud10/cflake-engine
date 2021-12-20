@@ -1,8 +1,7 @@
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Sender, RwLock};
 
 use crate::{pipeline::buffer::GPUObjectBuffer, GPUObject, MainThreadMessage};
 use lazy_static::lazy_static;
-use no_deadlocks::{Mutex, RwLock};
 
 lazy_static! {
     static ref INTERFACE_BUFFER: RwLock<GPUObjectBuffer> = RwLock::new(GPUObjectBuffer::default());
