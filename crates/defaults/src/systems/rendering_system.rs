@@ -1,7 +1,7 @@
-use core::global::{callbacks::{CallbackType::*}, self};
+use core::global::{self, callbacks::CallbackType::*};
 
 use ecs::{stored::StoredMut, SystemEventType};
-use others::callbacks::{OwnedCallback, Callback, RefCallback, MutCallback};
+use others::callbacks::{Callback, MutCallback, OwnedCallback, RefCallback};
 // An improved multithreaded rendering system
 
 // Add the renderer in the render pipeline renderer
@@ -41,16 +41,19 @@ fn add_entity(data: &mut (), entity: &ecs::Entity) {
     match gpuobject {
         rendering::GPUObject::Renderer(renderer_id) => {
             // After adding the renderer, we must update the entity's renderer component using another callback
-            global::ecs::world_mut(WorldMut(MutCallback::new(move |world| {
-                let mut r = global::ecs::componentw_mut::<crate::components::Renderer>(renderer_global_id, world).unwrap();
-                r.internal_renderer.index = Some(renderer_id);
-                println!("Updated the entity's internal renderer index!");
-                // Also update the transform since we're at it
-                let mut t_ = global::ecs::componentw_mut::<crate::components::Transform>(transform_global_id, world).unwrap();
-                let t = &mut *t_;
-                t.update_matrix();
-            })).create());
-        },
+            global::ecs::world_mut(
+                WorldMut(MutCallback::new(move |world| {
+                    let mut r = global::ecs::componentw_mut::<crate::components::Renderer>(renderer_global_id, world).unwrap();
+                    r.internal_renderer.index = Some(renderer_id);
+                    println!("Updated the entity's internal renderer index!");
+                    // Also update the transform since we're at it
+                    let mut t_ = global::ecs::componentw_mut::<crate::components::Transform>(transform_global_id, world).unwrap();
+                    let t = &mut *t_;
+                    t.update_matrix();
+                }))
+                .create(),
+            );
+        }
         _ => {}
     }
 }

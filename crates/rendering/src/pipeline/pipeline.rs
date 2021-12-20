@@ -11,7 +11,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         mpsc::{Receiver, Sender},
-        Arc, Barrier, RwLock, RwLockWriteGuard, RwLockReadGuard, Mutex,
+        Arc, Barrier, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
     },
 };
 
@@ -95,7 +95,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let sent_tasks_receiver = rx;
 
                 // Set the pipeline
-                let pipeline = Pipeline{};
+                let pipeline = Pipeline {};
                 {
                     let mut p = crate::pipeline::pipeline_mut();
                     *p = Some(pipeline);
@@ -297,8 +297,7 @@ pub struct PipelineStartData {
     pub rx: std::sync::mpsc::Receiver<MainThreadMessage>,
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
-pub struct Pipeline {
-}
+pub struct Pipeline {}
 // Renderers
 impl Pipeline {
     // Add the renderer to the renderer (lol I need better name)

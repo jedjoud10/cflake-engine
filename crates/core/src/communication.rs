@@ -15,6 +15,6 @@ lazy_static! {
 }
 // Main thread
 pub struct WorldTaskReceiver {
-    pub rx: Receiver<CommandQuery>,                                                             // CommandQuery. WorkerThreads -> MainThread
+    pub rx: Receiver<CommandQuery>,                                          // CommandQuery. WorkerThreads -> MainThread
     pub lsc_txs: HashMap<std::thread::ThreadId, Sender<LogicSystemCommand>>, // WaitableTask. MainThread -> WorkerThreads
 }

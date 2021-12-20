@@ -1,5 +1,11 @@
 use lazy_static::lazy_static;
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::{atomic::AtomicU64, Mutex}, thread::LocalKey};
+use std::{
+    borrow::BorrowMut,
+    cell::RefCell,
+    collections::HashMap,
+    sync::{atomic::AtomicU64, Mutex},
+    thread::LocalKey,
+};
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created

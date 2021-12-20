@@ -6,9 +6,9 @@ use ecs::*;
 use glfw::{self};
 use input::*;
 use io::SaverLoader;
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use others::*;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use ui::UIManager;
 
 // Global main for purely just low level task management

@@ -21,7 +21,7 @@ pub enum Task {
 // This is some immediate result that is given after we execute a query command on the main thread
 pub enum ImmediateTaskResult {
     None,
-    EntityAdd(usize)
+    EntityAdd(usize),
 }
 
 impl ImmediateTaskResult {
@@ -92,8 +92,8 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             // We must first send the LogicSystemCommand to each system that contains this entity, then we can actually delete the entity the next frame
             ImmediateTaskResult::None
         }
-        Task::ComponentLinkDirect(_, _) => { ImmediateTaskResult::None }
-        Task::ComponentUnlinkDirect(_, _) => { ImmediateTaskResult::None }
-        Task::SetRootVisibility(_) => { ImmediateTaskResult::None }
+        Task::ComponentLinkDirect(_, _) => ImmediateTaskResult::None,
+        Task::ComponentUnlinkDirect(_, _) => ImmediateTaskResult::None,
+        Task::SetRootVisibility(_) => ImmediateTaskResult::None,
     }
 }

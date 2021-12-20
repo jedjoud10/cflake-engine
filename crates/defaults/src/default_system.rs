@@ -4,8 +4,7 @@ use others::callbacks::*;
 // Some default events
 pub fn update_entity(data: &mut (), entity: &ecs::Entity) {}
 
-pub fn system_prefire(data: &mut ()) {
-}
+pub fn system_prefire(data: &mut ()) {}
 
 // Create the default system
 pub fn system() {

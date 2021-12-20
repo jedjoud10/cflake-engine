@@ -166,7 +166,7 @@ pub mod main {
     use lazy_static::lazy_static;
     use std::sync::Arc;
 
-    use crate::{custom_world_data::CustomWorldData, communication::RECEIVER};
+    use crate::{communication::RECEIVER, custom_world_data::CustomWorldData};
     // Get the world custom data
     pub fn world_data() -> CustomWorldData {
         let w = crate::world::world();

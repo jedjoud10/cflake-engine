@@ -11,7 +11,10 @@ where
 
 impl<T> Stored<T> {
     pub fn new(reference: &T, global_id: usize) -> Self {
-        Self { ptr: reference as *const T, global_id }
+        Self {
+            ptr: reference as *const T,
+            global_id,
+        }
     }
 }
 
@@ -23,7 +26,7 @@ impl Stored<Box<dyn ComponentInternal + Send + Sync>> {
         Stored::new(t, self.global_id)
     }
 }
- 
+
 impl<T> std::ops::Deref for Stored<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
@@ -41,7 +44,10 @@ where
 
 impl<T> StoredMut<T> {
     pub fn new_mut(reference_mut: &mut T, global_id: usize) -> Self {
-        Self { ptr_mut: reference_mut as *mut T, global_id }
+        Self {
+            ptr_mut: reference_mut as *mut T,
+            global_id,
+        }
     }
 }
 

@@ -1,7 +1,12 @@
 use ecs::stored::{Stored, StoredMut};
 use lazy_static::lazy_static;
 use others::callbacks::*;
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::{atomic::AtomicU64, Mutex}};
+use std::{
+    borrow::BorrowMut,
+    cell::RefCell,
+    collections::HashMap,
+    sync::{atomic::AtomicU64, Mutex},
+};
 
 use crate::world::World;
 
@@ -35,7 +40,7 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                     (callback)(entity);
                 }
             }
-            CallbackType::WorldMut(x) => { /* This is not where we execute MutCallback<World> */ },
+            CallbackType::WorldMut(x) => { /* This is not where we execute MutCallback<World> */ }
         }
     });
 }
@@ -51,7 +56,7 @@ pub fn execute_world_mut_callback(id: u64, world: &mut crate::world::World) {
             CallbackType::WorldMut(x) => {
                 let callback = x.callback.as_ref();
                 (callback)(world);
-            },
+            }
             _ => {}
         }
     });
@@ -66,7 +71,6 @@ pub enum LogicSystemCallbackArguments {
     // Rendering
     RenderingGPUObject(rendering::GPUObject),
 }
-
 
 // The callback type
 pub enum CallbackType {

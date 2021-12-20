@@ -8,7 +8,9 @@ pub struct Renderer {
 
 impl Default for Renderer {
     fn default() -> Self {
-        Self { internal_renderer: Default::default() }
+        Self {
+            internal_renderer: Default::default(),
+        }
     }
 }
 

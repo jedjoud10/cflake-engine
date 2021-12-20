@@ -3,8 +3,8 @@ use crate::global::callbacks::LogicSystemCallbackArguments;
 use ecs::CustomSystemData;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
-use std::sync::{Arc, Mutex, mpsc::{Sender}};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{mpsc::Sender, Arc, Mutex};
 use std::thread::JoinHandle;
 
 // Some special system commands that are sent from the main thread and received on the worker threads
@@ -62,16 +62,20 @@ where
                 let mut pre_loop_buffer: Vec<LogicSystemCommand> = Vec::new();
                 // Wait for the message allowing us to start the loop
                 'ack: loop {
-                    match lsc_rx.try_recv() {                                
+                    match lsc_rx.try_recv() {
                         Ok(x) => match x {
-                            LogicSystemCommand::StartSystemLoop => { break 'ack; },
-                            x => { pre_loop_buffer.push(x); },
+                            LogicSystemCommand::StartSystemLoop => {
+                                break 'ack;
+                            }
+                            x => {
+                                pre_loop_buffer.push(x);
+                            }
                         },
-                        Err(x) => {},
+                        Err(x) => {}
                     };
                 }
                 loop {
-                    {   
+                    {
                         let i = std::time::Instant::now();
                         // Get the entities at the start of each frame
                         let ptrs = {
@@ -93,7 +97,6 @@ where
                         // --- Start of the frame ---
                         let entities = ptrs.iter().map(|x| unsafe { x.as_ref().unwrap() }).collect::<Vec<&ecs::Entity>>();
                         system.run_system(&entities);
-                        
 
                         // --- End of the frame ---
                         // Check the start buffer first since it has priority
@@ -112,7 +115,6 @@ where
                             }
                             Err(_) => {}
                         }
-                        
 
                         // Now we can run the MutCallback<World> that we have created during the frame
                         WORLDMUT_CALLBACK_IDS.with(|cell| {
@@ -185,7 +187,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             let entity = unsafe { ptr.as_ref().unwrap() };
             system.remove_entity(entity);
         }
-        LogicSystemCommand::StartSystemLoop => { /* How the fuck */ },
+        LogicSystemCommand::StartSystemLoop => { /* How the fuck */ }
     }
 }
 
@@ -210,7 +212,7 @@ pub fn send_lsc(lgc: LogicSystemCommand, thread_id: &std::thread::ThreadId, rece
 pub fn send_lsc_all(lgc: LogicSystemCommand, receiver: &WorldTaskReceiver) {
     // Get the senders
     let senders = &receiver.lsc_txs;
-    for (h, sender) in senders {        
+    for (h, sender) in senders {
         // Send the message
         sender.send(lgc.clone()).unwrap();
     }
