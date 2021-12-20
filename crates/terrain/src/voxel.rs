@@ -1,6 +1,5 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
 use rendering::basics::*;
-use rendering::interface;
 use rendering::pipec;
 use rendering::pipeline;
 use rendering::pipeline::object::*;
@@ -80,14 +79,12 @@ impl VoxelGenerator {
         // Read back the compute shader data
         self.compute.lock_state();
         // Read back the texture into the data buffer
-        let n = pipec::generate_command_name();
         // Wait for main voxel gen
-        pipec::wtask(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()), &n);
-        let voxel_pixels = interface::wait_fetch_threadlocal_callbacks_specific(&n);
-        let n2 = pipec::generate_command_name();
+        let result1 = pipec::task(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()));
+        let voxel_pixels = result1.wait_gpuobject();
         // Wait for secondary voxel gen
-        pipec::wtask(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2), &n);
-        let material_pixels = interface::wait_fetch_threadlocal_callbacks_specific(&n2);
+        let result2 = pipec::task(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2));
+        let material_pixels = result2.wait_gpuobject();
         let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
         let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values

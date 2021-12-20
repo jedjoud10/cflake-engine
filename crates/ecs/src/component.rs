@@ -25,16 +25,16 @@ impl ComponentManager {
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentInternal + 'static>(linked_component: &'a dyn ComponentInternal) -> Result<Stored<T>, ECSError> {
+    fn cast_component<'a, T: ComponentInternal + 'static>(linked_component: &'a dyn ComponentInternal, global_id: usize) -> Result<Stored<T>, ECSError> {
         let component_any: &dyn Any = linked_component.as_any();
         let reference = component_any.downcast_ref::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
-        Ok(Stored::new(reference))
+        Ok(Stored::new(reference, global_id))
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal) -> Result<StoredMut<T>, ECSError> {
+    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal, global_id: usize) -> Result<StoredMut<T>, ECSError> {
         let component_any: &mut dyn Any = boxed_component.as_any_mut();
         let reference_mut = component_any.downcast_mut::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
-        Ok(StoredMut::new_mut(reference_mut))
+        Ok(StoredMut::new_mut(reference_mut, global_id))
     }
     // Get a reference to a specific linked component
     pub fn get_component<'a, T: Component + 'static>(&'a self, global_id: usize) -> Result<Stored<T>, ECSError> {
@@ -45,7 +45,7 @@ impl ComponentManager {
             .get_element(global_id)
             .unwrap()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component::<T>(linked_component.as_ref())?;
+        let component = Self::cast_component::<T>(linked_component.as_ref(), global_id)?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
@@ -55,7 +55,7 @@ impl ComponentManager {
             .get_element_mut(global_id)
             .unwrap()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component_mut::<T>(linked_component.as_mut())?;
+        let component = Self::cast_component_mut::<T>(linked_component.as_mut(), global_id)?;
         Ok(component)
     }
     // Remove a specified component from the list

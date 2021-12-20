@@ -1,3 +1,4 @@
+mod buffer;
 mod command;
 pub mod interface;
 pub mod object;

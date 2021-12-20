@@ -7,9 +7,9 @@ pub mod ecs {
     use crate::tasks::*;
     use ecs::Component;
     use lazy_static::lazy_static;
-    use std::sync::RwLockReadGuard;
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
+    use std::sync::RwLockReadGuard;
 
     lazy_static! {
         static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -18,7 +18,7 @@ pub mod ecs {
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
         let w = crate::world::world();
-        w.ecs_manager.entitym.entities.get_element(entity_id).unwrap().cloned()
+        w.ecs_manager.entitym.entities.get_element(entity_id).flatten().cloned()
     }
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) -> CommandQueryResult {
@@ -36,34 +36,24 @@ pub mod ecs {
     /* #endregion */
     /* #region Components */
     // Get a component
-    pub fn component<'a, T: Component + 'static>(entity: &ecs::Entity) -> ecs::stored::Stored<T> {
+    pub fn component<'a, T: Component + 'static>(entity: &ecs::Entity) -> Option<ecs::stored::Stored<T>> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
+        let global_id = entity.linked_components.get(&T::get_component_id())?;
         // Get the world using it's RwLock
         let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
-        componentm.get_component::<T>(*global_id).unwrap()
+        componentm.get_component::<T>(*global_id).ok()
     }
-    // Get a component mutably, since this is going to run at the end of the frame using an FnOnce
-    pub fn component_mut<T: Component + 'static, F: Fn(&'static mut T)>(entity: &ecs::Entity, _callback: F) {
-        /* #region We are on the main thread */
-        let main_thread = crate::system::IS_MAIN_THREAD.with(|x| x.get());
-        if main_thread {
-            // We are on the main thread, we can get the world as a mut
-            let mut world = crate::world::world_mut();
-            // Get the corresponding global component ID from the entity
-            let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
-            let componentm = &mut world.ecs_manager.componentm;
-            let _x = componentm.get_component_mut::<T>(*global_id).unwrap();
-            //callback(x);
-        }
-        /* #endregion */
-        else {
-            // At the end of the current frame, run the callback on the main thread (If we are on a worker thread)
-        }
+    // Get a component using the world and the component global ID
+    pub fn componentw<'a, T: Component + 'static>(global_id: usize, world: &crate::world::World) -> Option<ecs::stored::Stored<T>> {
+        let componentm = &world.ecs_manager.componentm;
+        componentm.get_component::<T>(global_id).ok()
     }
-    // This is an alternate function that links the component directly, no linking group
-    pub fn link_component_direct() {}
+    // Get a mutable component using the mutable world
+    pub fn componentw_mut<'a, T: Component + 'static>(global_id: usize, world: &mut crate::world::World) -> Option<ecs::stored::StoredMut<T>> {
+        let componentm = &mut world.ecs_manager.componentm;
+        componentm.get_component_mut::<T>(global_id).ok()
+    }
     /* #endregion */
     /* #region Systems */
     // Add the system on the main thread
@@ -73,7 +63,6 @@ pub mod ecs {
     {
         // Create a new thread and initialize the system on it
         SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
-        0;
         let (join_handle, c_bitfield) = crate::system::create_worker_thread(callback);
         let system_thread_data = ecs::SystemThreadData::new(join_handle, c_bitfield);
         let mut w = crate::world::world_mut();
@@ -82,6 +71,11 @@ pub mod ecs {
     // Get the number of valid systems that exist in the world
     pub fn system_counter() -> usize {
         SYSTEM_COUNTER.load(Ordering::Relaxed)
+    }
+    // World mut callback because we cannot get the world mutably in the middle of a frame (Well we can but we totally should not since that defeats the point of multithreading)
+    pub fn world_mut(callback_id: u64) {
+        // Add the callack to the thread local world mut callback IDs
+        crate::system::add_worldmutcallback_id(callback_id);
     }
     /* #endregion */
 }
@@ -170,26 +164,9 @@ pub mod io {
 // Mains
 pub mod main {
     use lazy_static::lazy_static;
-    use others::WorldBarrierData;
     use std::sync::Arc;
 
     use crate::custom_world_data::CustomWorldData;
-    lazy_static! {
-        static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
-    }
-    // Initialize the world barrier data with the specified amount of threads to wait for
-    pub fn init(n: usize) {
-        let x = BARRIERS_WORLD.as_ref();
-        x.new_update(n);
-    }
-    // As ref
-    pub fn as_ref() -> &'static WorldBarrierData {
-        BARRIERS_WORLD.as_ref()
-    }
-    // Clone
-    pub fn clone() -> Arc<WorldBarrierData> {
-        BARRIERS_WORLD.clone()
-    }
     // Get the world custom data
     pub fn world_data() -> CustomWorldData {
         let w = crate::world::world();

@@ -1,5 +1,8 @@
+use rendering::PipelineStartData;
+
 // Sending - Receiving
 use crate::communication::*;
+use crate::global::callbacks::LogicSystemCallbackArguments;
 use crate::system::*;
 use crate::tasks::*;
 use std::{collections::HashMap, sync::atomic::Ordering};
@@ -10,14 +13,6 @@ pub struct CommandQuery {
     pub callback_id: Option<u64>,
     pub task: Task,
 }
-impl CommandQuery {
-    // From single
-    pub fn new(task: Task, callback_id: Option<u64>) -> Self {
-        let thread_id = std::thread::current().id();
-        Self { thread_id, task, callback_id }
-    }
-}
-
 // The immediate result for that command query
 pub struct CommandQueryResult {
     task: Option<Task>,
@@ -28,22 +23,41 @@ impl CommandQueryResult {
     pub fn new(task: Task) -> Self {
         Self { task: Some(task) }
     }
+    // Explicitly tell this command query result to send the result immediatly
+    pub fn send(mut self) {
+        // Send the command
+        let task = self.task.take().unwrap();
+        let query = CommandQuery {
+            task,
+            thread_id: std::thread::current().id(),
+            callback_id: None,
+        };
+        command(query);
+    }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
         // Send the command
         let task = self.task.take().unwrap();
-        let query = CommandQuery::new(task, Some(callback_id));
+        let query = CommandQuery {
+            task,
+            thread_id: std::thread::current().id(),
+            callback_id: Some(callback_id),
+        };
         command(query);
     }
 }
 
 impl std::ops::Drop for CommandQueryResult {
-    // Custom drop function that actually sends the command, just in case where we did not explicitly specified
+    // Custom drop function that actually sends the command, just in case where we did not explicitly do that
     fn drop(&mut self) {
         // Send the command
         match self.task.take() {
             Some(task) => {
-                let query = CommandQuery::new(task, None);
+                let query = CommandQuery {
+                    task,
+                    thread_id: std::thread::current().id(),
+                    callback_id: None,
+                };
                 command(query);
             }
             None => { /* We have called the with_callback function, so the task is empty */ }
@@ -54,18 +68,17 @@ impl std::ops::Drop for CommandQueryResult {
 // Initialize the main channels on the main thread
 pub fn initialize_channels_main() {
     // Create the channels
-    let (tx_command, rx_command) = std::sync::mpsc::channel::<(u64, CommandQuery)>();
-    let (wtc_tx, wtc_rx) = crossbeam_channel::unbounded::<LogicSystemCommand>();
-    let mut copy_ = COMMUNICATION_CHANNEL_COPY.lock().unwrap();
+    let (tx_command, rx_command) = std::sync::mpsc::channel::<CommandQuery>();
     let mut receiver_ = RECEIVER.lock().unwrap();
     // Set the main thread values
     *receiver_ = Some(WorldTaskReceiver {
         rx: rx_command,
         lsc_txs: HashMap::new(),
-        template_wtc_tx: wtc_tx,
     });
     // And then the worker thread template values
-    *copy_ = Some(CommunicationChannelsCopied { tx: tx_command, lsc_rx: wtc_rx });
+    let mut sender_copy_ = crate::system::SENDER_COPY.as_ref().lock().unwrap();
+    let sender_copy = &mut *sender_copy_;
+    *sender_copy = Some(tx_command);
     // This is indeed the main thread
     IS_MAIN_THREAD.with(|x| x.set(true));
     println!("Initialized the channels on the MainThread");
@@ -75,30 +88,38 @@ pub fn initialize_channels_worker_thread() {
     crate::system::SENDER.with(|x| {
         let mut sender_ = x.borrow_mut();
         let sender = &mut *sender_;
-        let copy_ = COMMUNICATION_CHANNEL_COPY.lock().unwrap();
-        let copy = copy_.as_ref().unwrap();
+        let mut sender_copy_ = crate::system::SENDER_COPY.as_ref().lock().unwrap();
+        let sender_copy = sender_copy_.as_ref().unwrap();
         // We do the cloning
-        *sender = Some(WorldTaskSender {
-            tx: copy.tx.clone(),
-            lsc_rx: copy.lsc_rx.clone(),
-        });
+        *sender = Some(sender_copy.clone());
     })
 }
 // Frame tick on the main thread. Polls the current tasks and excecutes them. This is called at the end of each logic frame (16ms per frame)
-pub fn frame_main_thread(world: &mut crate::world::World) {
+pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &PipelineStartData) {
     // Poll each command query
     let receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_ref().unwrap();
     let rx = &receiver.rx;
-    for (_id, query) in rx.try_recv() {
+    for query in rx.try_recv() {
         // Just execute the task
         excecute_query(query, world, receiver);
     }
+    // Receive the messages from the Render Thread
+    for render_thread_message in pipeline_start_data.rx.try_iter() {
+        match render_thread_message {
+            rendering::MainThreadMessage::ExecuteCallback(id, gpuobject, thread_id) => {
+                // We must explicitly run the callback
+                crate::system::send_lsc(
+                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUObject(gpuobject)),
+                    &thread_id,
+                    receiver,
+                );
+            }
+        }
+    }
 }
-// Send a command query to the world, giving back a command return that can be waited for
+// Send a command query to the world
 fn command(query: CommandQuery) {
-    // Increment the counter
-    let id = COUNTER.fetch_add(0, Ordering::Relaxed);
     // Check if we are running on the main thread
     let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
     if is_main_thread {
@@ -112,9 +133,8 @@ fn command(query: CommandQuery) {
         // Send the command query
         SENDER.with(|sender| {
             let sender_ = sender.borrow();
-            let sender = sender_.as_ref().unwrap();
-            let tx = &sender.tx;
-            tx.send((id, query)).unwrap();
+            let tx = sender_.as_ref().unwrap();
+            tx.send(query).unwrap();
         })
     }
 }

@@ -31,11 +31,11 @@ pub mod window_commands {
                 }
             });
         }
-        crate::pipec::ctask(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen), &crate::pipec::generate_command_name(), |_| {});
+        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen));
     }
     // Set vsync
     pub fn set_vsync(vsync: bool) {
-        crate::pipec::ctask(crate::pipec::RenderTask::WindowUpdateVSync(vsync), &crate::pipec::generate_command_name(), |_| {});
+        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync));
     }
     // Hide the cursor
     pub fn hide_cursor(window: &mut glfw::Window) {
@@ -299,10 +299,10 @@ impl PipelineRenderer {
     pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
         // Update the size of each texture that is bound to the framebuffer
         let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
-        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims), "resize_deferred_renderer_diffuse_tex").unwrap();
-        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims), "resize_deferred_renderer_depth_tex").unwrap();
-        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims), "resize_deferred_renderer_normals_tex").unwrap();
-        pipec::internal_task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims), "resize_deferred_renderer_position_tex").unwrap();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims)).wait();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims)).wait();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims)).wait();
+        pipec::task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims)).wait();
         unsafe {
             gl::Viewport(0, 0, window_dimensions.x as i32, window_dimensions.y as i32);
         }

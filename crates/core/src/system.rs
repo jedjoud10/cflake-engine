@@ -1,13 +1,14 @@
-use crate::communication::{WorldTaskReceiver, WorldTaskSender, RECEIVER};
-use crate::global::callbacks::LogicSystemCallbackResultData;
+use crate::communication::{WorldTaskReceiver, RECEIVER};
+use crate::global::callbacks::LogicSystemCallbackArguments;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
+use std::sync::{Arc, Mutex, mpsc::{Sender}};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::JoinHandle;
 
-// Some special system commands
+// Some special system commands that are sent from the main thread and received on the worker threads
 pub enum LogicSystemCommand {
-    RunCallback(u64, LogicSystemCallbackResultData),
+    RunCallback(u64, LogicSystemCallbackArguments),
     AddEntityToSystem(usize),
     RemoveEntityFromSystem(usize),
 }
@@ -15,13 +16,16 @@ pub enum LogicSystemCommand {
 lazy_static! {
     // The number of systems
     pub static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
+    // A copy of the task Sender
+    pub static ref SENDER_COPY: Arc<Mutex<Option<Sender<crate::command::CommandQuery>>>> = Arc::new(Mutex::new(None));
 }
 
 // The system group thread data is local to each system thread
 thread_local! {
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
-    pub static SENDER: RefCell<Option<WorldTaskSender>> = RefCell::new(None);
+    pub static SENDER: RefCell<Option<Sender<crate::command::CommandQuery>>> = RefCell::new(None);
+    static WORLDMUT_CALLBACK_IDS: RefCell<Vec<u64>> = RefCell::new(Vec::new());
 }
 
 // Create a worker thread
@@ -31,8 +35,9 @@ where
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
     let builder = std::thread::Builder::new().name(format!("LogicSystemThread '{}'", system_id));
-    let barrier_data_ = crate::global::main::clone();
-    let (tx, rx) = std::sync::mpsc::channel::<usize>();
+    let (tx_cbitfield, rx_cbitfield) = std::sync::mpsc::channel::<usize>();
+    // Simple one way channel (MainThread -> Worker Thread)
+    let (tx, rx) = std::sync::mpsc::channel::<LogicSystemCommand>();
     let handler = builder
         .spawn(move || {
             // We must initialize the channels
@@ -43,16 +48,17 @@ where
             SENDER.with(|x| {
                 let mut system = callback();
                 // Send the data about this system to the main thread
-                tx.send(system.c_bitfield).unwrap();
                 let sender_ = x.borrow();
                 let sender = sender_.as_ref().unwrap();
-                let lsc_rx = &sender.lsc_rx;
+                let lsc_rx = rx;
                 println!("Hello from '{}'!", std::thread::current().name().unwrap());
-                let barrier_data = barrier_data_.clone();
+                let barrier_data = others::barrier::as_ref();
                 // Start the system loop
                 let mut entity_ids: Vec<usize> = Vec::new();
+                tx_cbitfield.send(system.c_bitfield).unwrap();
                 loop {
                     {
+                        let i = std::time::Instant::now();
                         // Get the entities at the start of each frame
                         let ptrs = {
                             let w = crate::world::world();
@@ -64,8 +70,6 @@ where
                                     entity as *const ecs::Entity
                                 })
                                 .collect::<Vec<*const ecs::Entity>>();
-                            // Check the rendering callback buffer
-                            rendering::pipeline::interface::fetch_threadlocal_callbacks();
                             entities
                         };
 
@@ -75,6 +79,7 @@ where
                         // --- Start of the frame ---
                         let entities = ptrs.iter().map(|x| unsafe { x.as_ref().unwrap() }).collect::<Vec<&ecs::Entity>>();
                         system.run_system(&entities);
+                        
 
                         // --- End of the frame ---
                         // Check if we have any system commands that must be executed
@@ -113,6 +118,20 @@ where
                             }
                             Err(_) => {}
                         }
+                        // Now we can run the MutCallback<World> that we have created during the frame
+                        WORLDMUT_CALLBACK_IDS.with(|cell| {
+                            let mut callbacks_ = cell.borrow_mut();
+                            let callbacks = &mut *callbacks_;
+                            // No need to waste trying to get world mut in this case
+                            if callbacks.len() > 0 {
+                                let cleared_callbacks = std::mem::take(callbacks);
+                                let mut w = crate::world::world_mut();
+                                let world = &mut *w;
+                                for id in cleared_callbacks {
+                                    crate::callbacks::execute_world_mut_callback(id, world);
+                                }
+                            }
+                        });
                     }
 
                     // Very very end of the frame
@@ -132,12 +151,21 @@ where
         })
         .unwrap();
     // Wait for the worker thread to send us the data back
-    let c_bitfield = rx.recv().unwrap();
+    let c_bitfield = rx_cbitfield.recv().unwrap();
     // Add the tx
     let mut receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_mut().unwrap();
-    receiver.lsc_txs.insert(handler.thread().id(), receiver.template_wtc_tx.clone());
+    receiver.lsc_txs.insert(handler.thread().id(), tx);
     (handler, c_bitfield)
+}
+
+// Add a world mut callback ID to the thread local vector
+pub fn add_worldmutcallback_id(id: u64) {
+    WORLDMUT_CALLBACK_IDS.with(|cell| {
+        let mut callbacks_ = cell.borrow_mut();
+        let callbacks = &mut *callbacks_;
+        callbacks.push(id);
+    })
 }
 
 // Send a LogicSystemCommand to a specific thread

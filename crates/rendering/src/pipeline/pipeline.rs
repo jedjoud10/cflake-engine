@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, rendering::PipelineRenderer, RenderCommand, RenderTask, RenderTaskReturn, SharedData};
+use crate::{basics::*, interface, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -11,38 +11,46 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         mpsc::{Receiver, Sender},
-        Arc, Barrier,
+        Arc, Barrier, RwLock, RwLockWriteGuard, RwLockReadGuard, Mutex,
     },
 };
 
-lazy_static! {
-    // The pipeline that is stored on the render thread
-    pub static ref PIPELINE: Arc<no_deadlocks::RwLock<Option<Pipeline>>> = Arc::new(no_deadlocks::RwLock::new(None));
+// Messages that will be to the main thread
+pub enum MainThreadMessage {
+    ExecuteCallback(u64, GPUObject, std::thread::ThreadId),
 }
 
-// The data that will be sent to the pipeline
-pub struct PipelineSendData(pub std::thread::ThreadId, pub RenderCommand, pub Box<dyn Fn(GPUObject) + Send + Sync + 'static>, pub bool);
+lazy_static! {
+    // The pipeline that is stored on the render thread
+    pub static ref PIPELINE: Arc<RwLock<Option<Pipeline>>> = Arc::new(RwLock::new(None));
+    pub static ref TX_TEMPLATE: Mutex<Option<Sender<RenderCommandQuery>>> = Mutex::new(None);
+}
 
 // Get an immutable lock of the render pipeline
-pub fn pipeline() -> no_deadlocks::RwLockReadGuard<'static, Option<Pipeline>> {
+pub fn pipeline() -> RwLockReadGuard<'static, Option<Pipeline>> {
     let x = PIPELINE.read().unwrap();
     x
 }
 
-pub fn pipeline_mut() -> no_deadlocks::RwLockWriteGuard<'static, Option<Pipeline>> {
+pub fn pipeline_mut() -> RwLockWriteGuard<'static, Option<Pipeline>> {
     let x = PIPELINE.write().unwrap();
     x
 }
 
 // Create the new render thread
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_data: Arc<others::WorldBarrierData>) -> PipelineStartData {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel (WorkerThreads/MainThread  => Render Thread)
-    let (tx, rx): (Sender<PipelineSendData>, Receiver<PipelineSendData>) = std::sync::mpsc::channel(); // Main to render
-                                                                                                       // Barrier so we can wait until the render thread has finished initializing
+    let (tx, rx) = std::sync::mpsc::channel::<RenderCommandQuery>(); // Main to render
+    let (tx2, rx2) = std::sync::mpsc::channel::<MainThreadMessage>(); // Render to main
+    {
+        let mut template_ = TX_TEMPLATE.lock().unwrap();
+        let template = &mut *template_;
+        *template = Some(tx);
+    }
+    // Barrier so we can wait until the render thread has finished initializing
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
-    let barrier_data = barrier_data.clone();
     let join_handle: std::thread::JoinHandle<()>;
     unsafe {
         // Window and GLFW wrapper
@@ -87,10 +95,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                 let sent_tasks_receiver = rx;
 
                 // Set the pipeline
-                let pipeline = Pipeline {
-                    gpu_objects: HashMap::new(),
-                    tx_template: tx,
-                };
+                let pipeline = Pipeline{};
                 {
                     let mut p = crate::pipeline::pipeline_mut();
                     *p = Some(pipeline);
@@ -114,6 +119,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                 // Timing stuff
                 let mut last_time: f64 = 0.0;
                 let mut frame_count: u128 = 0;
+                let tx2 = tx2.clone();
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
                 loop {
@@ -131,19 +137,16 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
                     // Post-render
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
-                    super::interface::update_render_thread();
+                    crate::pipeline::interface::update_render_thread(&tx2);
                     frame_count += 1;
                     // The world is valid, we can wait
+                    let barrier_data = others::barrier::as_ref();
                     if barrier_data.is_world_valid() {
-                        // First sync
-                        barrier_data.thread_sync();
                         if barrier_data.is_world_destroyed() {
                             println!("Stopping the render thread...");
                             barrier_data.thread_sync_quit();
                             break;
                         }
-                        // Second sync
-                        barrier_data.thread_sync();
                     }
                 }
                 println!("Stopped the render thread!");
@@ -155,7 +158,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window, barrier_d
     println!("Waiting for RenderThread init confirmation...");
     barrier.wait();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
-    PipelineStartData { handle: join_handle }
+    PipelineStartData { handle: join_handle, rx: rx2 }
 }
 
 // Commands that can be ran internally
@@ -198,20 +201,13 @@ pub fn internal_task(task: RenderTask) -> GPUObject {
 }
 
 // Run a command on the Render Thread
-fn command(
-    name: String,
-    pr: &mut PipelineRenderer,
-    camera: &mut CameraDataGPUObject,
-    command: RenderCommand,
-    _window: &mut glfw::Window,
-    glfw: &mut glfw::Glfw,
-) -> RenderTaskReturn {
+fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<GPUObject> {
     // Handle the common cases
-    match command.input_task {
+    match command.task {
         // Window tasks
         RenderTask::WindowUpdateFullscreen(fullscreen) => {
             pr.window.fullscreen = fullscreen;
-            RenderTaskReturn::None
+            None
         }
         RenderTask::WindowUpdateVSync(vsync) => {
             pr.window.vsync = vsync;
@@ -223,12 +219,12 @@ fn command(
                 // Disable VSync
                 glfw.set_swap_interval(glfw::SwapInterval::None);
             }
-            RenderTaskReturn::None
+            None
         }
         RenderTask::WindowUpdateSize(size) => {
             pr.window.dimensions = size;
             pr.update_window_dimensions(size);
-            RenderTaskReturn::None
+            None
         }
         // Pipeline
         RenderTask::CameraDataUpdate(shared) => {
@@ -250,72 +246,58 @@ fn command(
                 viewm,
                 projm,
             };
-            RenderTaskReturn::None
+            None
         }
         // Renderer commands
-        RenderTask::RendererAdd(shared_renderer) => RenderTaskReturn::GPUObject(Pipeline::add_renderer(pr, shared_renderer), name),
+        RenderTask::RendererAdd(shared_renderer) => Some(Pipeline::add_renderer(pr, shared_renderer)),
         RenderTask::RendererRemove(renderer_id) => {
             Pipeline::remove_renderer(pr, renderer_id);
-            RenderTaskReturn::None
+            None
         }
         RenderTask::RendererUpdateTransform(_renderer, _transform) => todo!(),
         // Internal cases
-        x => RenderTaskReturn::GPUObject(internal_task(x), name),
+        x => Some(internal_task(x)),
     }
 }
 
-// Poll commands that have been sent to us by the main thread
-fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<PipelineSendData>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+// Poll commands that have been sent to us by the worker threads OR the main thread
+fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // We must loop through every command that we receive from the main thread
-    for pipeline_data in rx.try_iter() {
-        let (thread_id, cmd, callback, waitable) = (pipeline_data.0, pipeline_data.1, pipeline_data.2, pipeline_data.3);
+    for render_command_query in rx.try_iter() {
+        let callback_id = render_command_query.callback_id.clone();
+        let waitable_id = render_command_query.waitable_id.clone();
+        let execution_id = render_command_query.execution_id.clone();
+        let thread_id = render_command_query.thread_id;
         // Check special commands first
-        let name = cmd.name.clone();
-        match cmd.input_task {
-            _ => {
-                // Valid command
-                match command(name.clone(), pr, camera, cmd, window, glfw) {
-                    RenderTaskReturn::None => { /* Not valid */ }
-                    taskreturn => {
-                        match taskreturn {
-                            RenderTaskReturn::None => { /* Not valid */ }
-                            RenderTaskReturn::GPUObject(object, name) =>
-                            /* We *might* have a GPU object */
-                            {
-                                match object {
-                                    GPUObject::None => { /* Not valid */ }
-                                    gpuobject => {
-                                        // We have a valid GPU object
-                                        // We must somehow find a way to send this to the Interface
-                                        super::interface::executed_task(thread_id, name, gpuobject, callback, waitable)
-                                    }
-                                }
-                            }
-                        }
+        // Valid command
+        match command(pr, camera, render_command_query, window, glfw) {
+            Some(gpuobject) => match gpuobject {
+                GPUObject::None => {
+                    /* We do not have a GPU object, though we have executed the task succsessfully */
+                    match execution_id {
+                        Some(execution_id) => interface::received_task_execution_ack(execution_id),
+                        None => {}
                     }
                 }
-            }
+                gpuobject => {
+                    // We have a valid GPU object
+                    match execution_id {
+                        Some(execution_id) => interface::received_task_execution_ack(execution_id),
+                        None => interface::received_new_gpu_object(gpuobject, callback_id, waitable_id, thread_id), // Notify the interface that we have a new gpu object
+                    }
+                }
+            },
+            None => { /* This command does not create a GPU object */ }
         }
     }
 }
 // Data that will be sent back to the main thread after we start the pipeline thread
 pub struct PipelineStartData {
     pub handle: std::thread::JoinHandle<()>,
+    pub rx: std::sync::mpsc::Receiver<MainThreadMessage>,
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
 pub struct Pipeline {
-    pub gpu_objects: HashMap<String, GPUObject>, // The GPU objects that where generated on the Rendering Thread and sent back to the main thread
-    pub tx_template: Sender<PipelineSendData>,   // A copy of the sender so we can copy it on each thread and make it thread local
-}
-impl Pipeline {
-    // Get GPU object using it's specified name
-    pub fn get_gpu_object(&self, name: &str) -> Option<&GPUObject> {
-        self.gpu_objects.get(name)
-    }
-    // Check if a GPU object exists
-    pub fn gpu_object_valid(&self, name: &str) -> bool {
-        self.gpu_objects.contains_key(name)
-    }
 }
 // Renderers
 impl Pipeline {

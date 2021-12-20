@@ -1,7 +1,21 @@
+use lazy_static::lazy_static;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Barrier, Condvar, RwLock,
+    Arc, Barrier, Condvar, RwLock,
 };
+
+lazy_static! {
+    static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
+}
+// Initialize the world barrier data with the specified amount of threads to wait for
+pub fn init(n: usize) {
+    let x = BARRIERS_WORLD.as_ref();
+    x.new_update(n);
+}
+// As ref
+pub fn as_ref() -> &'static WorldBarrierData {
+    BARRIERS_WORLD.as_ref()
+}
 
 // Internal
 pub struct WorldBarrierDataInternal {
@@ -29,7 +43,8 @@ impl WorldBarrierData {
         let mut writer_ = self.internal.write().unwrap();
         let writer = &mut *writer_;
         *writer = Some(WorldBarrierDataInternal {
-            end_frame_sync_barrier: Barrier::new(n),
+            // We don't sync the render loop
+            end_frame_sync_barrier: Barrier::new(n - 1),
             quit_loop_sync_barrier: Barrier::new(n),
             world_valid: AtomicBool::new(false),
             world_destroyed: AtomicBool::new(false),
@@ -79,7 +94,7 @@ impl WorldBarrierData {
     // Sync up the quit barrier
     pub fn thread_sync_quit(&self) {
         let r = &self.internal.read().unwrap();
-        let end_frame_sync_barrier = &r.as_ref().unwrap().end_frame_sync_barrier;
-        (end_frame_sync_barrier).wait();
+        let quit_loop_sync_barrier = &r.as_ref().unwrap().quit_loop_sync_barrier;
+        (quit_loop_sync_barrier).wait();
     }
 }
