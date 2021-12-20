@@ -16,6 +16,8 @@ pub enum Task {
     ComponentUnlinkDirect(usize, usize),
     // UI
     SetRootVisibility(bool),
+    // World
+    WorldMut,
 }
 
 // Excecute a specific task and give back it's result
@@ -77,5 +79,21 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
         Task::ComponentLinkDirect(_, _) => {}
         Task::ComponentUnlinkDirect(_, _) => {}
         Task::SetRootVisibility(_) => {}
+        Task::WorldMut => {
+            // Only run the callback if we are not on the main thread
+            if query.thread_id != std::thread::current().id() {
+                // Tell the main callback manager to execute this callback
+                match query.callback_id {
+                    Some(id) => {
+                        crate::system::send_lsc(
+                            LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::None),
+                            &query.thread_id,
+                            receiver,
+                        );
+                    }
+                    None => { /* No callback available */ }
+                }
+            }
+        },
     }
 }

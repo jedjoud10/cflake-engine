@@ -1,18 +1,20 @@
 use ecs::stored::{Stored, StoredMut};
 use lazy_static::lazy_static;
 use others::callbacks::*;
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64};
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::{atomic::AtomicU64, Mutex}};
+
+use crate::world::World;
 
 // Per thread
 thread_local! {
-    static CALLBACK_MANAGER_BUFFER: RefCell<CallbackManagerBuffer<CallbackType>> = RefCell::new(CallbackManagerBuffer::default());
+    static CALLBACK_MANAGER_BUFFER: Mutex<CallbackManagerBuffer<CallbackType>> = Mutex::new(CallbackManagerBuffer::default());
 }
 
 // Execute a specific callback on this thread
 pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world: &mut crate::world::World) {
     // Get the callback arguments from teh result data
-    CALLBACK_MANAGER_BUFFER.with(|cell| {
-        let mut callback_manager_ = cell.borrow_mut();
+    CALLBACK_MANAGER_BUFFER.with(|mutex| {
+        let mut callback_manager_ = mutex.lock().unwrap();
         let callback_manager = &mut *callback_manager_;
 
         // Get the callback
@@ -33,14 +35,17 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                     (callback)(entity);
                 }
             }
-            CallbackType::EntityMutCallbacks(_) => todo!(),
-            CallbackType::ComponentMutCallbacks(_) => todo!(),
+            CallbackType::WorldMut(x) => {
+                let callback = x.callback.as_ref();
+                (callback)(world);
+            },
         }
     });
 }
 
 // The data that will be sent back to the logic system from the main thread
 pub enum LogicSystemCallbackArguments {
+    None,
     // Entity
     EntityRef(usize),
     EntityMut(usize),
@@ -52,8 +57,7 @@ pub enum LogicSystemCallbackArguments {
 pub enum CallbackType {
     GPUObjectCallback(OwnedCallback<rendering::GPUObject>),
     EntityRefCallbacks(RefCallback<ecs::Entity>),
-    EntityMutCallbacks(MutCallback<ecs::Entity>),
-    ComponentMutCallbacks(RefCallback<StoredMut<Box<dyn ecs::ComponentInternal + Send + Sync>>>),
+    WorldMut(MutCallback<World>),
 }
 
 impl others::callbacks::Callback for CallbackType {

@@ -18,7 +18,7 @@ pub mod ecs {
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
         let w = crate::world::world();
-        w.ecs_manager.entitym.entities.get_element(entity_id).unwrap().cloned()
+        w.ecs_manager.entitym.entities.get_element(entity_id).flatten().cloned()
     }
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) -> CommandQueryResult {
@@ -44,16 +44,16 @@ pub mod ecs {
         let componentm = &w.ecs_manager.componentm;
         componentm.get_component::<T>(*global_id).unwrap()
     }
-    // Get a component mutably, since this is going to run at the end of the frame using an FnOnce
-    pub fn component_mut(entity: &ecs::Entity, callback_id: u64) {
-        
+    // Get a component using the world and the component global ID
+    pub fn componentw<'a, T: Component + 'static>(global_id: usize, world: &crate::world::World) -> ecs::stored::Stored<T> {
+        let componentm = &world.ecs_manager.componentm;
+        componentm.get_component::<T>(global_id).unwrap()
     }
-    // Get a component mutably but this time using the entity id
-    pub fn component_mut_entity_id(entity_id: usize, callback_id: u64) {
-        
+    // Get a mutable component using the mutable world
+    pub fn componentw_mut<'a, T: Component + 'static>(global_id: usize, world: &mut crate::world::World) -> ecs::stored::StoredMut<T> {
+        let componentm = &mut world.ecs_manager.componentm;
+        componentm.get_component_mut::<T>(global_id).unwrap()
     }
-    // This is an alternate function that links the component directly, no linking group
-    pub fn link_component_direct() {}
     /* #endregion */
     /* #region Systems */
     // Add the system on the main thread
@@ -72,6 +72,11 @@ pub mod ecs {
     // Get the number of valid systems that exist in the world
     pub fn system_counter() -> usize {
         SYSTEM_COUNTER.load(Ordering::Relaxed)
+    }
+    // World mut callback because we cannot get the world mutably in the middle of a frame (Well we can but we totally should not since that defeats the point of multithreading)
+    pub fn world_mut(callback_id: u64) {
+        let command_query_result = CommandQueryResult::new(Task::WorldMut);
+        command_query_result.with_callback(callback_id);
     }
     /* #endregion */
 }

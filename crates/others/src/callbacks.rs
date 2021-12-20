@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::atomic::AtomicU64, thread::LocalKey};
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, sync::{atomic::AtomicU64, Mutex}, thread::LocalKey};
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created
@@ -11,10 +11,10 @@ pub fn get_callback<T: Callback>(id: u64, callback_manager: &mut CallbackManager
 }
 
 // Increment the callback counter
-pub fn create_callback_internal<T: Callback>(callback: T, manager: &'static LocalKey<RefCell<CallbackManagerBuffer<T>>>) -> u64 {
+pub fn create_callback_internal<T: Callback>(callback: T, manager: &'static LocalKey<Mutex<CallbackManagerBuffer<T>>>) -> u64 {
     let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     manager.with(|x| {
-        let mut manager_ = x.borrow_mut();
+        let mut manager_ = x.lock().unwrap();
         let manager = &mut *manager_;
         manager.add_callback(id, callback);
     });
