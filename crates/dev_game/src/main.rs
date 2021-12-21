@@ -7,9 +7,7 @@ fn main() {
 pub fn assets_preload() {
     // -----Pre-load the game assets here-----
 }
-pub fn load_systems() {
-    
-}
+pub fn load_systems() {}
 pub fn load_entities() {
     // ----Load the entities----
 

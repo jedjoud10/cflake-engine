@@ -46,16 +46,13 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
     defaults::preload_systems();
     load_systems();
     // Get the system thread_ids
-    let thread_ids = 
-        core::world::world()
-        .ecs_manager.systemm.systems
+    let thread_ids = core::world::world()
+        .ecs_manager
+        .systemm
+        .systems
         .iter()
-        .map(|x| x
-            .join_handle
-            .thread()
-            .id()
-            .clone())
-    .collect::<Vec<ThreadId>>();
+        .map(|x| x.join_handle.thread().id().clone())
+        .collect::<Vec<ThreadId>>();
     others::barrier::init(thread_ids.clone());
     load_entities();
     core::global::main::start_system_loops();

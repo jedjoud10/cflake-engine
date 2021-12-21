@@ -94,9 +94,9 @@ where
                         entities
                     };
 
-                    // Run the system         
+                    // Run the system
                     let entities = ptrs.into_iter().map(|x| unsafe { &*x }).collect::<Vec<&ecs::Entity>>();
-                    system.run_system(&entities);                   
+                    system.run_system(&entities);
 
                     // --- End of the frame ---
                     // Check the start buffer first since it has priority
@@ -115,7 +115,6 @@ where
                         }
                         Err(_) => {}
                     }
-                
 
                     // Very very end of the frame
                     if barrier_data.is_world_valid() {
@@ -139,8 +138,8 @@ where
                             }
                         });
                         // Tell the main thread we have finished executing thread local callbacks
-                        others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);                    
-                    }                    
+                        others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
+                    }
                 }
                 println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());
             });

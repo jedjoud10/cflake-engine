@@ -1,6 +1,6 @@
 use core::global::{self, callbacks::CallbackType::*};
 
-use ecs::{SystemEventType};
+use ecs::SystemEventType;
 use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 // An improved multithreaded rendering system
 

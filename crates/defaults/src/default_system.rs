@@ -22,7 +22,6 @@ pub fn system() {
     });
 }
 
-
 // Some default events
 pub fn entity_update2(data: &mut (), entity: &ecs::Entity) {
     /*

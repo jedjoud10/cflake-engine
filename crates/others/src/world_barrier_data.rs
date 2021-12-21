@@ -1,8 +1,12 @@
 use lazy_static::lazy_static;
-use std::{sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Barrier, Condvar, RwLock,
-}, collections::HashMap, thread::ThreadId};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Barrier, Condvar, RwLock,
+    },
+    thread::ThreadId,
+};
 
 lazy_static! {
     static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
