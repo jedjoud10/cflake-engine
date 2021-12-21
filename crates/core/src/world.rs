@@ -167,9 +167,9 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     println!("Hello world from MainThread! Must call initalization callback!");
 }
 // This is the main Update loop, ran on the main thread
-pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
+pub fn update_world_start(delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
     // Systems are still running their loops...
-    println!("Update world in {:.2}ms", _delta * 1000.0);
+    println!("Update world in {:.2}ms", delta * 1000.0);
     others::barrier::as_ref().thread_sync();
     FRAME.store(false, Ordering::Relaxed);
     // The systems are blocked here
@@ -220,9 +220,12 @@ pub fn update_world_start(_delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glf
     //std::thread::sleep(std::time::Duration::from_millis(400));
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
-pub fn update_world_end(world: &mut World, pipeline_start_data: &PipelineStartData) {
+pub fn update_world_end(delta: f64, world: &mut World, pipeline_start_data: &PipelineStartData) {
     // Run the commands at the end of the frame
     crate::command::frame_main_thread(world, pipeline_start_data);
+    world.input_manager.late_update(delta as f32);
+    world.time_manager.elapsed = world.time_manager.elapsed + delta;
+    world.time_manager.delta_time = delta; 
     /*
     println!("Component count: '{}'", world.ecs_manager.componentm.components.count_valid());
     println!("Entity count: '{}'", world.ecs_manager.entitym.entities.count_valid());

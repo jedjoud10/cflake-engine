@@ -20,14 +20,15 @@ pub fn world_initialized() {
         .entity_id()
         .unwrap();
     core::global::main::world_data_mut(|data| data.main_camera_entity_id = main_camera_entity_id);
-
-    let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings
-        .link(crate::components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, -10.0)))
-        .unwrap();
     let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\sphere.mdl3d").unwrap());
-    linkings.link(crate::components::Renderer::default().set_model(model)).unwrap();
-    core::global::ecs::entity_add(ecs::Entity::new("Cube"), linkings);
+    for x in 0..30 {
+        let mut linkings = ecs::ComponentLinkingGroup::new();
+        linkings
+            .link(crate::components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, x as f32)))
+            .unwrap();
+        linkings.link(crate::components::Renderer::default().set_model(model.clone()).set_material(rendering::Material::new("Test"))).unwrap();
+        core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
+    }   
 
     /*
     // ----Load the default systems----

@@ -61,7 +61,16 @@ fn entity_removed(data: &mut (), entity: &ecs::Entity) {
     rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
 }
 // Send the updated data from the entity to the render pipeline as commands
-fn entity_update(data: &mut (), entity: &ecs::Entity) {}
+fn entity_update(data: &mut (), entity: &ecs::Entity) {
+    let renderer = core::global::ecs::component::<crate::components::Renderer>(entity).unwrap();
+    let transform = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
+    match renderer.internal_renderer.index {
+        Some(index) => {
+            rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(index, rendering::SharedData::new(transform.matrix)));
+        },
+        None => {},
+    }
+}
 // System prefire so we can send the camera data to the render pipeline
 fn system_prefire(data: &mut ()) {
     // Camera data

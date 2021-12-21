@@ -129,7 +129,7 @@ impl RenderCommandResult {
             // If we are on the render thread, we do something different
             // Execute the command internally, so we must invalidate the one stored in self
             let task = self.task.take().unwrap();
-            let gpuobject = internal_task(task);
+            let (gpuobject, name) = internal_task(task);
             gpuobject
         }
     }
@@ -183,7 +183,7 @@ pub enum RenderTask {
     // Renderer
     RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
     RendererRemove(usize),
-    RendererUpdateTransform(RendererGPUObject, SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector3<f32>)>),
+    RendererUpdateTransform(usize, SharedData<veclib::Matrix4x4<f32>>),
     // Window settings
     WindowUpdateSize(veclib::Vector2<u16>),
     WindowUpdateVSync(bool),

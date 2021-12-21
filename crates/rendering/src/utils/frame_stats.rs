@@ -26,12 +26,11 @@ impl FrameStats {
         );
     }
     // Run the compute shader and update the texture
-    pub fn update_texture(&mut self, time: &others::Time, mut entities: Vec<bool>) {
+    pub fn update_texture(&mut self, elapsed: f32, mut entities: Vec<bool>) {
         // Don't forget to use it
         let mut group = self.compute.new_uniform_group();
         group.set_i2d("image_stats", self.texture, TextureShaderAccessType::ReadWrite);
-        group.set_f32("time", time.elapsed as f32);
-        group.set_f32("fps", time.fps as f32);
+        group.set_f32("time", elapsed as f32);
         // Limit the number of entities to 131072
         entities.resize(512, false);
         let _vec = entities.iter().map(|x| if *x { 255 } else { 0 }).collect::<Vec<u8>>();

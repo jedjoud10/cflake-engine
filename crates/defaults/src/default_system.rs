@@ -2,7 +2,14 @@ use core::global::callbacks::CallbackType::*;
 use others::callbacks::*;
 
 // Some default events
-pub fn entity_update(data: &mut (), entity: &ecs::Entity) {}
+pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
+    core::global::ecs::entity_mut(entity, LocalEntityMut(MutCallback::new(|entity: &mut ecs::Entity| {
+        let x = entity.entity_id as f32 * 1.0;
+        let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
+        transform.position += veclib::Vector3::X * x * core::global::timings::delta() as f32; 
+        transform.update_matrix();
+    })).create());
+}
 
 pub fn system_prefire(data: &mut ()) {}
 

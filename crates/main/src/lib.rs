@@ -43,6 +43,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     // Calling the callback
     println!("Calling World Initialization callback");
     defaults::preload_systems();
+    println!("{}", core::global::ecs::system_counter());
     others::barrier::init(core::global::ecs::system_counter() + 2);
     callback();
     core::global::main::start_system_loops();
@@ -54,6 +55,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         let new_time = glfw.get_time();
         let delta = new_time - last_time;
         last_time = new_time;
+        let i = std::time::Instant::now();
         // Update the world
         core::world::update_world_start(delta, &mut glfw, &mut window);
         /* #region This whole region is dedicated for running stuff on the main thread */
@@ -88,8 +90,10 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
                     _ => {}
                 }
             }
+            // Wait until we satisfy the fps
+            std::thread::sleep(std::time::Duration::from_millis(3).saturating_sub(i.elapsed()));
             // Execute the main thread commands
-            core::world::update_world_end(world, &pipeline_data);
+            core::world::update_world_end(delta, world, &pipeline_data);
         }
         /* #endregion */
     }

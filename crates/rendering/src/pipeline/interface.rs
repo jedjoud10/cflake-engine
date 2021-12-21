@@ -29,11 +29,16 @@ pub fn gpu_object_valid(name: &str) -> bool {
 /* #endregion */
 
 // Notify the threads that we have recieved a valid GPU object
-pub fn received_new_gpu_object(gpuobject: GPUObject, callback_id: Option<u64>, waitable_id: Option<u64>, thread_id: std::thread::ThreadId) {
+pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>, callback_id: Option<u64>, waitable_id: Option<u64>, thread_id: std::thread::ThreadId) {
     // Add the GPU object to the current interface buffer
     let mut buf = INTERFACE_BUFFER.write().unwrap();
     // Always insert the gpu object
     let index = buf.gpuobjects.add_element(gpuobject);
+    // If we have a name add it
+    match name {
+        Some(name) => { buf.names_to_id.insert(name, index); },
+        None => {},
+    }
     match callback_id {
         Some(id) => {
             buf.callback_objects.insert(id, (index, thread_id));

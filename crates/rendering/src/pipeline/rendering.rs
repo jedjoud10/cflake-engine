@@ -287,14 +287,18 @@ impl PipelineRenderer {
         }
     }
     // Renderers
-    // Add a renderer
     pub fn add_renderer(&mut self, renderer: RendererGPUObject) -> usize {
         self.renderers.add_element(renderer)
     }
-    // Remove a renderer
     pub fn remove_renderer(&mut self, renderer_id: usize) {
         self.renderers.remove_element(renderer_id);
     }
+    pub fn update_renderer(&mut self, renderer_id: usize, matrix: crate::SharedData<veclib::Matrix4x4<f32>>) {
+        let renderer = self.renderers.get_element_mut(renderer_id).flatten().unwrap();
+        let matrix = matrix.object.as_ref();
+        renderer.2 = matrix.clone();
+    }
+
     // Update window
     pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
         // Update the size of each texture that is bound to the framebuffer

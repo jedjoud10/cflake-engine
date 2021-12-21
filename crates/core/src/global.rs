@@ -50,21 +50,21 @@ pub mod ecs {
     // Get a stored component
     fn component_stored<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<Stored<'a, T>> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id())?;
+        let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
         // Get the world using it's RwLock
         let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
-        let component = componentm.get_component::<T>(*global_id).ok()?;
+        let component = componentm.get_component::<T>(*global_id).unwrap();
         Some(Stored::new(component, global_id))
     }
     // Get a stored mutable component
     fn component_stored_mut<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<StoredMut<'a, T>> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id())?;
+        let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
         // Get the world using it's RwLock
         let mut w = crate::world::world_mut();
         let componentm = &mut w.ecs_manager.componentm;
-        let component = componentm.get_component_mut::<T>(*global_id).ok()?;
+        let component = componentm.get_component_mut::<T>(*global_id).ok().unwrap();
         Some(StoredMut::new(component, global_id))
     }
     // Get a component
@@ -100,7 +100,10 @@ pub mod ecs {
 // Input
 pub mod input {
     // Bind key
-    pub fn bind_key(_key: input::Keys, _map_name: &str, _map_type: input::MapType) {}
+    pub fn bind_key(key: input::Keys, map_name: &str, map_type: input::MapType) {
+        let mut w = crate::world::world_mut();
+        w.input_manager.bind_key(key, map_name, map_type);
+    }
     // Get the accumulated mouse position
     pub fn mouse_pos() -> (i32, i32) {
         let w = crate::world::world();
@@ -112,7 +115,10 @@ pub mod input {
         w.input_manager.get_accumulated_mouse_scroll()
     }
     // Start registering the keys as a sentence
-    pub fn start_keys_reg() {}
+    pub fn start_keys_reg() {
+        let mut w = crate::world::world_mut();
+        w.input_manager.start_keys_reg();
+    }
     // Check if the key registering is active
     pub fn keys_reg_active() -> bool {
         let w = crate::world::world();
