@@ -14,4 +14,8 @@ impl PhysicsObject {
         // Update linear then angular physics
         self.linear.update(position, delta);
     }
+    // Update the physic object's velocity
+    pub fn set_velocity(&mut self, vel: veclib::Vector3<f32>) {
+        self.linear.velocity = vel;
+    }
 }

@@ -22,8 +22,15 @@ pub mod ecs {
         w.ecs_manager.entitym.entities.get_element(entity_id).flatten().cloned()
     }
     // Entity mut callback. We run this callback at the end of the frame with a world_mut environment 
-    pub fn entity_mut(entity: &ecs::Entity, callback: u64) {
+    pub fn entity_mut(entity: &ecs::Entity, callback_id: u64) {
         // Create a local callback
+        let local_callback_arguments = crate::callbacks::LocalCallbackArguments::EntityMut(entity.entity_id);
+        crate::system::add_local_callback(callback_id);
+        crate::callbacks::CALLBACK_MANAGER_BUFFER.with(|x| {
+            let mut manager_ = x.lock().unwrap();
+            let manager = &mut *manager_;
+            manager.add_local_callback_arguments(callback_id, local_callback_arguments);
+        });        
     }
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) -> CommandQueryResult {
@@ -45,7 +52,7 @@ pub mod ecs {
         // Get the corresponding global component ID from the entity
         let global_id = entity.linked_components.get(&T::get_component_id())?;
         // Get the world using it's RwLock
-        let mut w = crate::world::world();
+        let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
         let component = componentm.get_component::<T>(*global_id).ok()?;
         Some(Stored::new(component, global_id))

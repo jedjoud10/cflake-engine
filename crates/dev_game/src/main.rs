@@ -13,7 +13,6 @@ pub fn world_initialized() {
     // Create the default camera
     let mut linkings = ecs::ComponentLinkingGroup::new();
     linkings.link_default::<crate::components::Transform>().unwrap();
-    linkings.link_default::<crate::components::Physics>().unwrap();
     linkings.link_default::<crate::components::Camera>().unwrap();
     // Add the camera
     let main_camera_entity_id = core::global::ecs::entity_add(ecs::Entity::new("Default Camera"), linkings)

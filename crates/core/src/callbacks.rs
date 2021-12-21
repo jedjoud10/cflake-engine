@@ -1,12 +1,9 @@
 use lazy_static::lazy_static;
 use others::callbacks::*;
 use std::{
-    borrow::BorrowMut,
-    cell::RefCell,
     collections::HashMap,
-    sync::{atomic::AtomicU64, Mutex}, thread::LocalKey,
+    sync::{atomic::AtomicU64, Mutex},
 };
-use crate::world::World;
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created
@@ -43,16 +40,15 @@ impl CallbackManagerBuffer
     pub fn add_callback(&mut self, id: u64, callback: CallbackType) {
         self.callbacks.insert(id, callback);
     }
-    // Add a local callback to this thread local buffer
-    pub fn add_local_callback(&mut self, id: u64, callback: CallbackType, local_callback_arguments: LocalCallbackArguments) {
-        self.add_callback(id, callback);
-        self.local_callback_arguments.insert(id, local_callback_arguments);
+    // Add the local callback arguments for a specific callback
+    pub fn add_local_callback_arguments(&mut self, id: u64, callback_arguments: LocalCallbackArguments) {
+        self.local_callback_arguments.insert(id, callback_arguments);
     }
 }
 
 // Per thread
 thread_local! {
-    static CALLBACK_MANAGER_BUFFER: Mutex<CallbackManagerBuffer> = Mutex::new(CallbackManagerBuffer::default());
+    pub static CALLBACK_MANAGER_BUFFER: Mutex<CallbackManagerBuffer> = Mutex::new(CallbackManagerBuffer::default());
 }
 
 // Execute a specific callback on this thread

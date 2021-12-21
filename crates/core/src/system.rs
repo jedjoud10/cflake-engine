@@ -188,8 +188,8 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
     }
 }
 
-// Add a world mut callback ID to the thread local vector
-pub fn add_worldmutcallback_id(id: u64) {
+// Add a local callback ID to the thread local buffer
+pub fn add_local_callback(id: u64) {
     LOCAL_CALLBACK_IDS.with(|cell| {
         let mut callbacks_ = cell.borrow_mut();
         let callbacks = &mut *callbacks_;
