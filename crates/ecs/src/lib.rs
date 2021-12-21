@@ -8,7 +8,6 @@ mod error;
 mod linking;
 mod load_state;
 mod macros;
-pub mod stored;
 mod system;
 pub use component::*;
 pub use component_registry as registry;

@@ -1,5 +1,4 @@
 use core::global::callbacks::CallbackType::LocalEntityMut;
-use ecs::stored::*;
 use others::callbacks::{MutCallback, NullCallback};
 // Update the entities
 pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
