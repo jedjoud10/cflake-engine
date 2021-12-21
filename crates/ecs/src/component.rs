@@ -1,5 +1,4 @@
 use crate::{
-    stored::{Stored, StoredMut},
     ECSError,
 };
 
@@ -25,19 +24,19 @@ impl ComponentManager {
         Ok(global_id)
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentInternal + 'static>(linked_component: &'a dyn ComponentInternal, global_id: usize) -> Result<Stored<T>, ECSError> {
+    fn cast_component<'a, T: ComponentInternal + 'static>(linked_component: &'a dyn ComponentInternal, global_id: usize) -> Result<&T, ECSError> {
         let component_any: &dyn Any = linked_component.as_any();
         let reference = component_any.downcast_ref::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
-        Ok(Stored::new(reference, global_id))
+        Ok(reference)
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal, global_id: usize) -> Result<StoredMut<T>, ECSError> {
+    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal, global_id: usize) -> Result<&mut T, ECSError> {
         let component_any: &mut dyn Any = boxed_component.as_any_mut();
         let reference_mut = component_any.downcast_mut::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
-        Ok(StoredMut::new_mut(reference_mut, global_id))
+        Ok(reference_mut)
     }
     // Get a reference to a specific linked component
-    pub fn get_component<'a, T: Component + 'static>(&'a self, global_id: usize) -> Result<Stored<T>, ECSError> {
+    pub fn get_component<'a, T: Component + 'static>(&'a self, global_id: usize) -> Result<&T, ECSError> {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self
@@ -49,7 +48,7 @@ impl ComponentManager {
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_component_mut<'a, T: Component + 'static>(&'a mut self, global_id: usize) -> Result<StoredMut<T>, ECSError> {
+    pub fn get_component_mut<'a, T: Component + 'static>(&'a mut self, global_id: usize) -> Result<&mut T, ECSError> {
         let linked_component = self
             .components
             .get_element_mut(global_id)

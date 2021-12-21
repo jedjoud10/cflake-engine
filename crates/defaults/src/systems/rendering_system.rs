@@ -7,10 +7,10 @@ use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 // Add the renderer in the render pipeline renderer
 fn entity_added(data: &mut (), entity: &ecs::Entity) {
     // Get the internal renderer
-    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
+    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap().get(entity);
     let irenderer = renderer.internal_renderer.clone();
     // Get the transform, and make sure it's matrix is valid
-    let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
+    let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap().get(entity);
     let matrix = transform.matrix;
     // Create the shared data
     let shared_data = rendering::SharedData::new((irenderer, matrix));
@@ -41,11 +41,11 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
             // After adding the renderer, we must update the entity's renderer component using another callback
             global::ecs::entity_mut(entity,
                 LocalEntityMut(MutCallback::new(move |entity| {
-                    let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
+                    let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap().get_mut(entity);
                     r.internal_renderer.index = Some(renderer_id);
                     println!("Updated the entity's internal renderer index!");
                     // Also update the transform since we're at it
-                    let mut t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
+                    let mut t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap().get_mut(entity);
                     let t = &mut *t_;
                     t.update_matrix();
                 })).create(),
@@ -56,7 +56,7 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
 }
 // Remove the renderer from the pipeline renderer
 fn entity_removed(data: &mut (), entity: &ecs::Entity) {
-    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
+    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap().get(entity);
     let index = renderer.internal_renderer.index.unwrap();
     rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
 }
@@ -66,9 +66,9 @@ fn entity_update(data: &mut (), entity: &ecs::Entity) {}
 fn system_prefire(data: &mut ()) {
     // Camera data
     let camera = global::ecs::entity(global::main::world_data().main_camera_entity_id).unwrap();
-    let camera_data = global::ecs::component::<crate::components::Camera>(&camera).unwrap();
+    let camera_data = global::ecs::component::<crate::components::Camera>(&camera).unwrap().get(&camera);
     // Transform data
-    let camera_transform = global::ecs::component::<crate::components::Transform>(&camera).unwrap();
+    let camera_transform = global::ecs::component::<crate::components::Transform>(&camera).unwrap().get(&camera);
     let pos = camera_transform.position;
     let rot = camera_transform.rotation;
     let shared_data = rendering::SharedData::new((pos, rot, camera_data.clip_planes, camera_data.projection_matrix));

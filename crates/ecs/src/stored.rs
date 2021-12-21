@@ -1,23 +1,29 @@
-use crate::ComponentInternal;
+use std::marker::PhantomData;
+
+use crate::{Component, Entity};
 
 // I don't want to use Box<T>
-pub struct Stored<T>
+pub struct Stored<'a, T>
 where
-    T: Sized,
+    T: Sized + Component,
 {
+    pub global_id: &'a usize,
     pub ptr: *const T,
-    pub global_id: usize,
+    marker: PhantomData<&'a T>,
 }
 
-impl<T> Stored<T> {
-    pub fn new(reference: &T, global_id: usize) -> Self {
+impl<'a, T> Stored<'a, T> 
+where
+    T: Sized + Component {
+    pub fn new(component: &T, global_id: &'a usize) -> Self {
         Self {
-            ptr: reference as *const T,
             global_id,
+            ptr: component as *const T,
+            marker: PhantomData,
         }
     }
 }
-
+/*
 impl Stored<Box<dyn ComponentInternal + Send + Sync>> {
     // Cast the stored self pointer to the component T
     pub fn cast<U: ComponentInternal + Send + Sync + 'static>(&self) -> Stored<U> {
@@ -26,49 +32,52 @@ impl Stored<Box<dyn ComponentInternal + Send + Sync>> {
         Stored::new(t, self.global_id)
     }
 }
+*/
 
-impl<T> std::ops::Deref for Stored<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*self.ptr }
+impl<'a, T> Stored<'a, T> where T: Sized + Component + 'static {
+    pub fn get(&self, entity: &'a Entity) -> &'a T {
+        let component_ptr = unsafe { &*self.ptr };
+        component_ptr
     }
 }
 
-pub struct StoredMut<T>
+pub struct StoredMut<'a, T>
 where
-    T: Sized,
+    T: Sized + Component,
 {
-    pub ptr_mut: *mut T,
-    pub global_id: usize,
+    pub global_id: &'a usize,
+    pub ptr: *mut T,
+    marker: PhantomData<&'a mut T>,
 }
 
-impl<T> StoredMut<T> {
-    pub fn new_mut(reference_mut: &mut T, global_id: usize) -> Self {
+impl<'a, T> StoredMut<'a, T> 
+where
+    T: Sized + Component {
+    pub fn new(component: &mut T, global_id: &'a usize) -> Self {
         Self {
-            ptr_mut: reference_mut as *mut T,
             global_id,
+            ptr: component as *mut T,
+            marker: PhantomData,
         }
     }
 }
-
-impl StoredMut<Box<dyn ComponentInternal + Send + Sync>> {
+/*
+impl Stored<Box<dyn ComponentInternal + Send + Sync>> {
     // Cast the stored self pointer to the component T
-    pub fn cast<U: ComponentInternal + Send + Sync + 'static>(&self) -> StoredMut<U> {
-        let boxed = unsafe { &mut *self.ptr_mut };
-        let t = boxed.as_mut().as_any_mut().downcast_mut::<U>().unwrap();
-        StoredMut::new_mut(t, self.global_id)
+    pub fn cast<U: ComponentInternal + Send + Sync + 'static>(&self) -> Stored<U> {
+        let boxed = unsafe { &*self.ptr };
+        let t = boxed.as_ref().as_any().downcast_ref::<U>().unwrap();
+        Stored::new(t, self.global_id)
     }
 }
+*/
 
-impl<T> std::ops::Deref for StoredMut<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*self.ptr_mut }
-    }
-}
-
-impl<T> std::ops::DerefMut for StoredMut<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *self.ptr_mut }
+impl<'a, T> StoredMut<'a, T> 
+where 
+    T: Sized + Component + 'static {
+    
+    pub fn get_mut(&self, entity: &'a Entity) -> &'a mut T {
+        let component_ptr = unsafe { &mut *self.ptr };
+        component_ptr
     }
 }
