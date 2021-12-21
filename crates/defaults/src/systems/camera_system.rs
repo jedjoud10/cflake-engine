@@ -52,27 +52,34 @@ fn entity_update(data: &mut (), entity: &ecs::Entity) {
     let new_rotation = new_rotation_;
     let new_position = position + velocity * delta;
     // We can now update the camera rotation and position
-    core::global::ecs::entity_mut(entity, LocalEntityMut(MutCallback::new(move |entity| {
-        // Update the transform object
-        let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
-        transform.position = new_position;
-        transform.rotation = new_rotation;
-        let camera = core::global::ecs::component_mut::<crate::components::Camera>(entity).unwrap();
-        // And don't forget to update the camera matrices
-        camera.update_view_matrix(new_position, new_rotation);
-        if !core::global::input::map_toggled("cull_update") {
-            camera.update_frustum_culling_matrix();
-        }
-    })).create());
-    
+    core::global::ecs::entity_mut(
+        entity,
+        LocalEntityMut(MutCallback::new(move |entity| {
+            // Update the transform object
+            let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
+            transform.position = new_position;
+            transform.rotation = new_rotation;
+            let camera = core::global::ecs::component_mut::<crate::components::Camera>(entity).unwrap();
+            // And don't forget to update the camera matrices
+            camera.update_view_matrix(new_position, new_rotation);
+            if !core::global::input::map_toggled("cull_update") {
+                camera.update_frustum_culling_matrix();
+            }
+        }))
+        .create(),
+    );
 }
 fn entity_added(data: &mut (), entity: &ecs::Entity) {
     // Initialize the camera
-    core::global::ecs::entity_mut(entity, LocalEntityMut(MutCallback::new(|entity| {
-        // We can now update the camera
-        let camera = core::global::ecs::component_mut::<crate::components::Camera>(entity).unwrap();
-        camera.update_projection_matrix();
-    })).create());
+    core::global::ecs::entity_mut(
+        entity,
+        LocalEntityMut(MutCallback::new(|entity| {
+            // We can now update the camera
+            let camera = core::global::ecs::component_mut::<crate::components::Camera>(entity).unwrap();
+            camera.update_projection_matrix();
+        }))
+        .create(),
+    );
 }
 
 // Create the default system

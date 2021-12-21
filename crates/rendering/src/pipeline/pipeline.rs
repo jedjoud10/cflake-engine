@@ -201,7 +201,13 @@ pub fn internal_task(task: RenderTask) -> (GPUObject, Option<String>) {
 }
 
 // Run a command on the Render Thread
-fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<(GPUObject, Option<String>)> {
+fn command(
+    pr: &mut PipelineRenderer,
+    camera: &mut CameraDataGPUObject,
+    command: RenderCommandQuery,
+    _window: &mut glfw::Window,
+    glfw: &mut glfw::Glfw,
+) -> Option<(GPUObject, Option<String>)> {
     // Handle the common cases
     match command.task {
         // Window tasks
@@ -257,7 +263,7 @@ fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command:
         RenderTask::RendererUpdateTransform(renderer_id, matrix) => {
             Pipeline::update_renderer(pr, renderer_id, matrix);
             None
-        },
+        }
         // Internal cases
         x => Some(internal_task(x)),
     }
@@ -402,13 +408,16 @@ impl Pipeline {
             for subshader_program in shader.linked_subshaders_programs.iter() {
                 gl::DetachShader(program, subshader_program.1);
             }
-            (if !compute_shader {
-                // Normal shader
-                GPUObject::Shader(ShaderGPUObject(program))
-            } else {
-                // Compute shader
-                GPUObject::ComputeShader(ComputeShaderGPUObject(program))
-            }, Some(shader.name.clone()))
+            (
+                if !compute_shader {
+                    // Normal shader
+                    GPUObject::Shader(ShaderGPUObject(program))
+                } else {
+                    // Compute shader
+                    GPUObject::ComputeShader(ComputeShaderGPUObject(program))
+                },
+                Some(shader.name.clone()),
+            )
         }
     }
     pub fn create_model(model: SharedData<Model>) -> GPUObject {

@@ -28,7 +28,7 @@ pub fn world_initialized() {
             .unwrap();
         //linkings.link(crate::components::Renderer::default().set_model(model.clone()).set_material(rendering::Material::new("Test"))).unwrap();
         core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
-    }   
+    }
 
     /*
     // ----Load the default systems----

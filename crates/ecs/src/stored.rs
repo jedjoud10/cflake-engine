@@ -11,9 +11,10 @@ where
     marker: PhantomData<&'a T>,
 }
 
-impl<'a, T> Stored<'a, T> 
+impl<'a, T> Stored<'a, T>
 where
-    T: Sized + Component {
+    T: Sized + Component,
+{
     pub fn new(component: &T) -> Self {
         Self {
             ptr: component as *const T,
@@ -22,7 +23,10 @@ where
     }
 }
 
-impl<'a, T> Stored<'a, T> where T: Sized + Component + 'static {
+impl<'a, T> Stored<'a, T>
+where
+    T: Sized + Component + 'static,
+{
     pub fn get(&self, entity: &'a Entity) -> &'a T {
         let component_ptr = unsafe { &*self.ptr };
         component_ptr
@@ -37,9 +41,10 @@ where
     marker: PhantomData<&'a mut T>,
 }
 
-impl<'a, T> StoredMut<'a, T> 
+impl<'a, T> StoredMut<'a, T>
 where
-    T: Sized + Component {
+    T: Sized + Component,
+{
     pub fn new(component: &mut T) -> Self {
         Self {
             ptr: component as *mut T,
@@ -48,10 +53,10 @@ where
     }
 }
 
-impl<'a, T> StoredMut<'a, T> 
-where 
-    T: Sized + Component + 'static {
-    
+impl<'a, T> StoredMut<'a, T>
+where
+    T: Sized + Component + 'static,
+{
     pub fn get_mut(&self, entity: &'a Entity) -> &'a mut T {
         let component_ptr = unsafe { &mut *self.ptr };
         component_ptr

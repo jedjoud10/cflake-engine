@@ -36,8 +36,10 @@ pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>, callb
     let index = buf.gpuobjects.add_element(gpuobject);
     // If we have a name add it
     match name {
-        Some(name) => { buf.names_to_id.insert(name, index); },
-        None => {},
+        Some(name) => {
+            buf.names_to_id.insert(name, index);
+        }
+        None => {}
     }
     match callback_id {
         Some(id) => {

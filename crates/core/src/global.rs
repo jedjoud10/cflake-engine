@@ -4,8 +4,8 @@
 pub mod ecs {
 
     use crate::command::*;
-    use ecs::stored::*;
     use crate::tasks::*;
+    use ecs::stored::*;
     use ecs::Component;
     use lazy_static::lazy_static;
     use std::sync::atomic::AtomicUsize;
@@ -21,7 +21,7 @@ pub mod ecs {
         let w = crate::world::world();
         w.ecs_manager.entitym.entities.get_element(entity_id).flatten().cloned()
     }
-    // Entity mut callback. We run this callback at the end of the frame with a world_mut environment 
+    // Entity mut callback. We run this callback at the end of the frame with a world_mut environment
     pub fn entity_mut(entity: &ecs::Entity, callback_id: u64) {
         // Create a local callback
         let local_callback_arguments = crate::callbacks::LocalCallbackArguments::EntityMut(entity.entity_id);
@@ -30,7 +30,7 @@ pub mod ecs {
             let mut manager_ = x.lock().unwrap();
             let manager = &mut *manager_;
             manager.add_local_callback_arguments(callback_id, local_callback_arguments);
-        });        
+        });
     }
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) -> CommandQueryResult {
@@ -50,7 +50,10 @@ pub mod ecs {
     // Get a stored component
     fn component_stored<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Result<Stored<'a, T>, ecs::ECSError> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id()).ok_or(ecs::ECSError::new_str("Could not get linked componet on entity"))?;
+        let global_id = entity
+            .linked_components
+            .get(&T::get_component_id())
+            .ok_or(ecs::ECSError::new_str("Could not get linked componet on entity"))?;
         // Get the world using it's RwLock
         let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
@@ -60,7 +63,10 @@ pub mod ecs {
     // Get a stored mutable component
     fn component_stored_mut<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Result<StoredMut<'a, T>, ecs::ECSError> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id()).ok_or(ecs::ECSError::new_str("Could not get linked componet on entity"))?;
+        let global_id = entity
+            .linked_components
+            .get(&T::get_component_id())
+            .ok_or(ecs::ECSError::new_str("Could not get linked componet on entity"))?;
         // Get the world using it's RwLock
         let mut w = crate::world::world_mut();
         let componentm = &mut w.ecs_manager.componentm;
@@ -72,7 +78,7 @@ pub mod ecs {
         let stored = component_stored::<T>(entity)?;
         Ok(stored.get(entity))
     }
-    // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback 
+    // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback
     pub fn component_mut<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Result<&'a mut T, ecs::ECSError> {
         let stored = component_stored_mut::<T>(entity)?;
         Ok(stored.get_mut(entity))
@@ -94,7 +100,7 @@ pub mod ecs {
     // Get the number of valid systems that exist in the world
     pub fn system_counter() -> usize {
         SYSTEM_COUNTER.load(Ordering::Relaxed)
-    }  
+    }
     /* #endregion */
 }
 // Input

@@ -21,21 +21,21 @@ pub fn get_local_callback(id: u64, callback_manager: &mut CallbackManagerBuffer)
 }
 // The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
 // Callback manager that contains all the current callbacks (Thread Local)
-pub struct CallbackManagerBuffer
-{
+pub struct CallbackManagerBuffer {
     callbacks: HashMap<u64, CallbackType>,
     local_callback_arguments: HashMap<u64, LocalCallbackArguments>,
 }
 
-impl Default for CallbackManagerBuffer
-{
+impl Default for CallbackManagerBuffer {
     fn default() -> Self {
-        Self { callbacks: HashMap::new(), local_callback_arguments: HashMap::new() }
+        Self {
+            callbacks: HashMap::new(),
+            local_callback_arguments: HashMap::new(),
+        }
     }
 }
 
-impl CallbackManagerBuffer
-{
+impl CallbackManagerBuffer {
     // Add a callback to this thread local buffer
     pub fn add_callback(&mut self, id: u64, callback: CallbackType) {
         self.callbacks.insert(id, callback);
@@ -77,8 +77,7 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                 }
             }
             /* #region Local callbacks */
-            CallbackType::LocalEntityMut(_) => {}
-            /* #endregion */
+            CallbackType::LocalEntityMut(_) => {} /* #endregion */
         }
     });
 }
@@ -95,7 +94,7 @@ pub fn execute_local_callback(id: u64) {
                 // Get the local callback arguments that are necessary
                 if let LocalCallbackArguments::EntityMut(entity_id) = arguments {
                     // Get the mut entity
-                    let callback = entity_callback.callback.as_ref();                            
+                    let callback = entity_callback.callback.as_ref();
                     let mut cloned_entity = {
                         let w = crate::world::world();
                         w.ecs_manager.entitym.entity(entity_id).clone()
@@ -105,8 +104,8 @@ pub fn execute_local_callback(id: u64) {
                     let mut w = crate::world::world_mut();
                     let entity = w.ecs_manager.entitym.entity_mut(entity_id);
                     *entity = cloned_entity;
-                } 
-            },   
+                }
+            }
             _ => {}
         }
     });

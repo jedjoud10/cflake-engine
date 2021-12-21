@@ -92,10 +92,9 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
                     glfw::WindowEvent::CursorPos(x, y) => core::world::receive_mouse_pos_event(x, y, world),
                     _ => {}
                 }
-            }            
+            }
             //std::thread::sleep(std::time::Duration::from_millis(16).saturating_sub(i.elapsed()));
         }
-        
     }
     // When the window closes and we exit from the game
     core::world::kill_world(pipeline_data);

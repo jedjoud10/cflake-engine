@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use itertools::Itertools;
+use std::collections::HashMap;
 
 use crate::command::CommandQuery;
 use crate::communication::WorldTaskReceiver;

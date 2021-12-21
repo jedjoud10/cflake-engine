@@ -39,7 +39,8 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
     match gpuobject {
         rendering::GPUObject::Renderer(renderer_id) => {
             // After adding the renderer, we must update the entity's renderer component using another callback
-            global::ecs::entity_mut(entity,
+            global::ecs::entity_mut(
+                entity,
                 LocalEntityMut(MutCallback::new(move |entity| {
                     let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
                     r.internal_renderer.index = Some(renderer_id);
@@ -48,7 +49,8 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
                     let mut t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
                     let t = &mut *t_;
                     t.update_matrix();
-                })).create(),
+                }))
+                .create(),
             );
         }
         _ => {}
@@ -67,8 +69,8 @@ fn entity_update(data: &mut (), entity: &ecs::Entity) {
     match renderer.internal_renderer.index {
         Some(index) => {
             rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(index, rendering::SharedData::new(transform.matrix)));
-        },
-        None => {},
+        }
+        None => {}
     }
 }
 // System prefire so we can send the camera data to the render pipeline

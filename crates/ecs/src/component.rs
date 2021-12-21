@@ -1,6 +1,4 @@
-use crate::{
-    ECSError,
-};
+use crate::ECSError;
 
 use others::SmartList;
 use std::any::Any;
@@ -41,7 +39,8 @@ impl ComponentManager {
         // entity_id * 16 + local_component_id
         let linked_component = self
             .components
-            .get_element(global_id).flatten()
+            .get_element(global_id)
+            .flatten()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
         let component = Self::cast_component::<T>(linked_component.as_ref(), global_id)?;
         Ok(component)
@@ -50,7 +49,8 @@ impl ComponentManager {
     pub fn get_component_mut<'a, T: Component + 'static>(&'a mut self, global_id: usize) -> Result<&mut T, ECSError> {
         let linked_component = self
             .components
-            .get_element_mut(global_id).flatten()
+            .get_element_mut(global_id)
+            .flatten()
             .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
         let component = Self::cast_component_mut::<T>(linked_component.as_mut(), global_id)?;
         Ok(component)

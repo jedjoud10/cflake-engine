@@ -360,7 +360,7 @@ impl InputManager {
         // Make sure that mapping actually exists
         if self.bindings.contains_key(&name.to_string()) {
             let key_scancode = self.bindings.get(&name.to_string()).unwrap();
-            if self.keys.contains_key(key_scancode) {                
+            if self.keys.contains_key(key_scancode) {
                 match self.keys.get(key_scancode).unwrap().0 {
                     KeyStatus::Held(held_seconds) => (true, held_seconds),
                     _ => (false, 0.0),

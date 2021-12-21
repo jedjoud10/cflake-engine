@@ -171,7 +171,7 @@ pub fn update_world_start_barrier(delta: f64) {
     println!("Update world in {:.2}ms", delta * 1000.0);
     others::barrier::as_ref().thread_sync();
     FRAME.store(true, Ordering::Relaxed);
-    // The systems are running, we cannot do anything main thread related 
+    // The systems are running, we cannot do anything main thread related
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
 pub fn update_world_end_barrier(delta: f64) {
@@ -180,12 +180,12 @@ pub fn update_world_end_barrier(delta: f64) {
     // The sytems started halting, we can do stuff on the main thread
 }
 // Update main thread stuff
-pub fn update_main_thread_stuff(delta: f64, world: &mut World, pipeline_start_data: &PipelineStartData) {    
+pub fn update_main_thread_stuff(delta: f64, world: &mut World, pipeline_start_data: &PipelineStartData) {
     // Run the commands at the end of the frame
     crate::command::frame_main_thread(world, pipeline_start_data);
     world.input_manager.late_update(delta as f32);
     world.time_manager.elapsed = world.time_manager.elapsed + delta;
-    world.time_manager.delta_time = delta; 
+    world.time_manager.delta_time = delta;
 }
 
 // Update the console
