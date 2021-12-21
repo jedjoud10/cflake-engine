@@ -23,16 +23,6 @@ where
         }
     }
 }
-/*
-impl Stored<Box<dyn ComponentInternal + Send + Sync>> {
-    // Cast the stored self pointer to the component T
-    pub fn cast<U: ComponentInternal + Send + Sync + 'static>(&self) -> Stored<U> {
-        let boxed = unsafe { &*self.ptr };
-        let t = boxed.as_ref().as_any().downcast_ref::<U>().unwrap();
-        Stored::new(t, self.global_id)
-    }
-}
-*/
 
 impl<'a, T> Stored<'a, T> where T: Sized + Component + 'static {
     pub fn get(&self, entity: &'a Entity) -> &'a T {
@@ -61,16 +51,6 @@ where
         }
     }
 }
-/*
-impl Stored<Box<dyn ComponentInternal + Send + Sync>> {
-    // Cast the stored self pointer to the component T
-    pub fn cast<U: ComponentInternal + Send + Sync + 'static>(&self) -> Stored<U> {
-        let boxed = unsafe { &*self.ptr };
-        let t = boxed.as_ref().as_any().downcast_ref::<U>().unwrap();
-        Stored::new(t, self.global_id)
-    }
-}
-*/
 
 impl<'a, T> StoredMut<'a, T> 
 where 
