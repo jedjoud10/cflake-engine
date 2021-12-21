@@ -26,7 +26,7 @@ pub fn world_initialized() {
         linkings
             .link(crate::components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, x as f32)))
             .unwrap();
-        linkings.link(crate::components::Renderer::default().set_model(model.clone()).set_material(rendering::Material::new("Test"))).unwrap();
+        //linkings.link(crate::components::Renderer::default().set_model(model.clone()).set_material(rendering::Material::new("Test"))).unwrap();
         core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
     }   
 

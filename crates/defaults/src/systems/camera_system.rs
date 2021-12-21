@@ -6,6 +6,7 @@ use others::callbacks::MutCallback;
 
 // Events
 fn entity_update(data: &mut (), entity: &ecs::Entity) {
+    //println!("{}", entity.name);
     // Rotate the camera around
     let mouse_pos = core::global::input::mouse_pos();
     const SENSIVITY: f32 = 0.001;

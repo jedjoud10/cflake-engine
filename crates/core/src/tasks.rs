@@ -1,7 +1,7 @@
 use std::collections::HashMap;
+use itertools::Itertools;
 
 use crate::command::CommandQuery;
-
 use crate::communication::WorldTaskReceiver;
 use crate::global::callbacks::LogicSystemCallbackArguments;
 use crate::system::LogicSystemCommand;
@@ -37,10 +37,10 @@ impl ImmediateTaskResult {
 // Excecute a specific task and give back it's result
 pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, receiver: &WorldTaskReceiver) -> ImmediateTaskResult {
     match query.task {
-        Task::EntityAdd(mut entity, linkings) => {
+        Task::EntityAdd(mut entity, mut linkings) => {
             // Add the components first
             let mut hashmap: HashMap<usize, usize> = HashMap::new();
-            for (id, boxed_component) in linkings.linked_components {
+            for (id, boxed_component) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
                 let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
                 hashmap.insert(id, new_global_id);
             }
@@ -51,6 +51,7 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             entity.entity_id = entity_id;
             entity.linked_components = hashmap;
             entity.c_bitfield = entity_cbitfield;
+            dbg!(&entity);
             // Then add the entity
             world.ecs_manager.entitym.add_entity(entity);
 

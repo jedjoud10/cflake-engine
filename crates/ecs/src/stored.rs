@@ -7,7 +7,6 @@ pub struct Stored<'a, T>
 where
     T: Sized + Component,
 {
-    pub global_id: &'a usize,
     pub ptr: *const T,
     marker: PhantomData<&'a T>,
 }
@@ -15,9 +14,8 @@ where
 impl<'a, T> Stored<'a, T> 
 where
     T: Sized + Component {
-    pub fn new(component: &T, global_id: &'a usize) -> Self {
+    pub fn new(component: &T) -> Self {
         Self {
-            global_id,
             ptr: component as *const T,
             marker: PhantomData,
         }
@@ -35,7 +33,6 @@ pub struct StoredMut<'a, T>
 where
     T: Sized + Component,
 {
-    pub global_id: &'a usize,
     pub ptr: *mut T,
     marker: PhantomData<&'a mut T>,
 }
@@ -43,9 +40,8 @@ where
 impl<'a, T> StoredMut<'a, T> 
 where
     T: Sized + Component {
-    pub fn new(component: &mut T, global_id: &'a usize) -> Self {
+    pub fn new(component: &mut T) -> Self {
         Self {
-            global_id,
             ptr: component as *mut T,
             marker: PhantomData,
         }

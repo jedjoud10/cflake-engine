@@ -57,11 +57,14 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         last_time = new_time;
         let i = std::time::Instant::now();
         // Update the world
-        core::world::update_world_start(delta, &mut glfw, &mut window);
-        /* #region This whole region is dedicated for running stuff on the main thread */
+        core::world::update_world_start_barrier(delta);
+        // The systems are running, we cannot do anything
+        core::world::update_world_end_barrier(delta);
+        // We can do stuff on the main thread
         {
             let mut w = core::world::world_mut();
             let world = &mut *w;
+            core::world::update_main_thread_stuff(delta, world, &pipeline_data);
             // Get the GLFW events first
             glfw.poll_events();
             for (_, event) in glfw::flush_messages(&events) {
@@ -89,13 +92,10 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
                     glfw::WindowEvent::CursorPos(x, y) => core::world::receive_mouse_pos_event(x, y, world),
                     _ => {}
                 }
-            }
-            // Wait until we satisfy the fps
-            std::thread::sleep(std::time::Duration::from_millis(3).saturating_sub(i.elapsed()));
-            // Execute the main thread commands
-            core::world::update_world_end(delta, world, &pipeline_data);
+            }            
+            //std::thread::sleep(std::time::Duration::from_millis(16).saturating_sub(i.elapsed()));
         }
-        /* #endregion */
+        
     }
     // When the window closes and we exit from the game
     core::world::kill_world(pipeline_data);

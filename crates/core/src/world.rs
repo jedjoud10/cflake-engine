@@ -27,10 +27,9 @@ pub fn world() -> RwLockReadGuard<'static, World> {
 // Get a mutable reference to the world
 pub fn world_mut() -> RwLockWriteGuard<'static, World> {
     // Check if we are in the middle of a frame
-    if FRAME.load(std::sync::atomic::Ordering::Relaxed) && crate::system::IS_MAIN_THREAD.with(|x| x.get()) {
+    if FRAME.load(std::sync::atomic::Ordering::Relaxed) {
         // We are currently running a frame, we cannot get the world mutably
-        let bt = backtrace::Backtrace::new();
-        panic!("Cannot get the world mutably during a frame! {:?}", bt);
+        panic!("Cannot get the world mutably during a frame!");
     }
     let x = WORLD.write().unwrap();
     x
@@ -167,73 +166,26 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     println!("Hello world from MainThread! Must call initalization callback!");
 }
 // This is the main Update loop, ran on the main thread
-pub fn update_world_start(delta: f64, _glfw: &mut glfw::Glfw, _window: &mut glfw::Window) {
-    // Systems are still running their loops...
+pub fn update_world_start_barrier(delta: f64) {
+    // Systems are halting, tell them to continue their next frame
     println!("Update world in {:.2}ms", delta * 1000.0);
     others::barrier::as_ref().thread_sync();
-    FRAME.store(false, Ordering::Relaxed);
-    // The systems are blocked here
-    /*
-    // Upate the console
-    self.update_console();
-
-    // Update the system
-    self.system_manager.update_systems(&mut data);
-
-    // Update the inputs
-    self.input_manager.late_update(self.time_manager.delta_time as f32);
-
-    // Update entity manager
-    self.update_entity_manager();
-
-    // Update the default UI
-    let root = self.ui_manager.get_default_root_mut();
-    let fps_text = &format!("FPS: {}", self.time_manager.average_fps.round());
-    root.get_element_mut(1).update_text(fps_text, 40.0);
-    let entity_text = &format!("#Entities: {}", self.entity_manager.entities.count_valid());
-    root.get_element_mut(2).update_text(entity_text, 40.0);
-
-    // Update the time
-    self.time_manager.delta_time = delta;
-    self.time_manager.seconds_since_game_start += delta;
-    self.time_manager.frame_count += 1;
-    // Update the FPS
-    self.time_manager.fps = 1.0 / self.time_manager.delta_time;
-    self.time_manager.update_average_fps();
-
-    // Check for default mapping events
-    if self.debug.console.listen_command("quit").is_some() {
-        self.kill_world();
-    }
-    // Toggle the fullscreen
-    if self.debug.console.listen_command("toggle-fullscreen").is_some() {
-        self.custom_data.fullscreen = !self.custom_data.fullscreen;
-        window_commands::set_fullscreen(self.custom_data.fullscreen, glfw, window);
-    }
-    // Toggle the rendering
-    if self.debug.console.listen_command("toggle-render").is_some() {
-        let rendering_system = self.system_manager.get_system_mut(0).unwrap();
-        rendering_system.disable();
-    }
-    */
-    // At the end of the frame we will wait until all the threads (SystemWorkerThreads and the RenderThread) finish executing
-    //std::thread::sleep(std::time::Duration::from_millis(400));
+    FRAME.store(true, Ordering::Relaxed);
+    // The systems are running, we cannot do anything main thread related 
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
-pub fn update_world_end(delta: f64, world: &mut World, pipeline_start_data: &PipelineStartData) {
+pub fn update_world_end_barrier(delta: f64) {
+    FRAME.store(false, Ordering::Relaxed);
+    others::barrier::as_ref().thread_sync();
+    // The sytems started halting, we can do stuff on the main thread
+}
+// Update main thread stuff
+pub fn update_main_thread_stuff(delta: f64, world: &mut World, pipeline_start_data: &PipelineStartData) {    
     // Run the commands at the end of the frame
     crate::command::frame_main_thread(world, pipeline_start_data);
     world.input_manager.late_update(delta as f32);
     world.time_manager.elapsed = world.time_manager.elapsed + delta;
     world.time_manager.delta_time = delta; 
-    /*
-    println!("Component count: '{}'", world.ecs_manager.componentm.components.count_valid());
-    println!("Entity count: '{}'", world.ecs_manager.entitym.entities.count_valid());
-    println!("System count: '{}'", world.ecs_manager.systemm.systems.len());
-    */
-    FRAME.store(true, Ordering::Relaxed);
-    others::barrier::as_ref().thread_sync();
-    // The systems are running their loops
 }
 
 // Update the console

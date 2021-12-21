@@ -50,22 +50,22 @@ pub mod ecs {
     // Get a stored component
     fn component_stored<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<Stored<'a, T>> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
+        let global_id = entity.linked_components.get(&T::get_component_id())?;
         // Get the world using it's RwLock
         let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
-        let component = componentm.get_component::<T>(*global_id).unwrap();
-        Some(Stored::new(component, global_id))
+        let component = componentm.get_component::<T>(*global_id).ok()?;
+        Some(Stored::new(component))
     }
     // Get a stored mutable component
     fn component_stored_mut<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<StoredMut<'a, T>> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id()).unwrap();
+        let global_id = entity.linked_components.get(&T::get_component_id())?;
         // Get the world using it's RwLock
         let mut w = crate::world::world_mut();
         let componentm = &mut w.ecs_manager.componentm;
-        let component = componentm.get_component_mut::<T>(*global_id).ok().unwrap();
-        Some(StoredMut::new(component, global_id))
+        let component = componentm.get_component_mut::<T>(*global_id).ok()?;
+        Some(StoredMut::new(component))
     }
     // Get a component
     pub fn component<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<&'a T> {
