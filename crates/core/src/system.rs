@@ -28,7 +28,7 @@ thread_local! {
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
     pub static SENDER: RefCell<Option<Sender<crate::command::CommandQuery>>> = RefCell::new(None);
-    static WORLDMUT_CALLBACK_IDS: RefCell<Vec<u64>> = RefCell::new(Vec::new());
+    static LOCAL_CALLBACK_IDS: RefCell<Vec<u64>> = RefCell::new(Vec::new());
 }
 
 // Create a worker thread
@@ -116,17 +116,14 @@ where
                             Err(_) => {}
                         }
 
-                        // Now we can run the MutCallback<World> that we have created during the frame
-                        WORLDMUT_CALLBACK_IDS.with(|cell| {
+                        // Now we can run the local callbacks
+                        LOCAL_CALLBACK_IDS.with(|cell| {
                             let mut callbacks_ = cell.borrow_mut();
                             let callbacks = &mut *callbacks_;
-                            // No need to waste trying to get world mut in this case
                             if callbacks.len() > 0 {
                                 let cleared_callbacks = std::mem::take(callbacks);
-                                let mut w = crate::world::world_mut();
-                                let world = &mut *w;
                                 for id in cleared_callbacks {
-                                    crate::callbacks::execute_world_mut_callback(id, world);
+                                    crate::callbacks::execute_local_callback(id);
                                 }
                             }
                         });
@@ -193,7 +190,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
 
 // Add a world mut callback ID to the thread local vector
 pub fn add_worldmutcallback_id(id: u64) {
-    WORLDMUT_CALLBACK_IDS.with(|cell| {
+    LOCAL_CALLBACK_IDS.with(|cell| {
         let mut callbacks_ = cell.borrow_mut();
         let callbacks = &mut *callbacks_;
         callbacks.push(id);

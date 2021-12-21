@@ -2,7 +2,7 @@ use core::global::callbacks::CallbackType::*;
 use others::callbacks::*;
 
 // Some default events
-pub fn update_entity(data: &mut (), entity: &ecs::Entity) {}
+pub fn entity_update(data: &mut (), entity: &ecs::Entity) {}
 
 pub fn system_prefire(data: &mut ()) {}
 
@@ -14,7 +14,7 @@ pub fn system() {
         // Link some components to the system
         system.link::<crate::components::Transform>();
         // And link the events
-        system.event(ecs::SystemEventType::EntityUpdate(update_entity));
+        system.event(ecs::SystemEventType::EntityUpdate(entity_update));
         system.event(ecs::SystemEventType::SystemPrefire(system_prefire));
         // Return the newly made system
         system

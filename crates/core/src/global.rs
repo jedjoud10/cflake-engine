@@ -20,6 +20,10 @@ pub mod ecs {
         let w = crate::world::world();
         w.ecs_manager.entitym.entities.get_element(entity_id).flatten().cloned()
     }
+    // Entity mut callback. We run this callback at the end of the frame with a world_mut environment 
+    pub fn entity_mut(entity: &ecs::Entity, callback: u64) {
+        // Create a local callback
+    }
     // Add an entity without any linking groups
     pub fn entity_add_empty(entity: ecs::Entity) -> CommandQueryResult {
         let empty_linkings = ecs::ComponentLinkingGroup::new();
@@ -44,15 +48,14 @@ pub mod ecs {
         let componentm = &w.ecs_manager.componentm;
         componentm.get_component::<T>(*global_id).ok()
     }
-    // Get a component using the world and the component global ID
-    pub fn componentw<'a, T: Component + 'static>(global_id: usize, world: &crate::world::World) -> Option<ecs::stored::Stored<T>> {
-        let componentm = &world.ecs_manager.componentm;
-        componentm.get_component::<T>(global_id).ok()
-    }
-    // Get a mutable component using the mutable world
-    pub fn componentw_mut<'a, T: Component + 'static>(global_id: usize, world: &mut crate::world::World) -> Option<ecs::stored::StoredMut<T>> {
-        let componentm = &mut world.ecs_manager.componentm;
-        componentm.get_component_mut::<T>(global_id).ok()
+    // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback 
+    pub fn component_mut<'a, T: Component + 'static>(entity: &ecs::Entity) -> Option<ecs::stored::StoredMut<T>> {
+        // Get the corresponding global component ID from the entity
+        let global_id = entity.linked_components.get(&T::get_component_id())?;
+        // Get the world using it's RwLock
+        let mut w = crate::world::world_mut();
+        let componentm = &mut w.ecs_manager.componentm;
+        componentm.get_component_mut::<T>(*global_id).ok()
     }
     /* #endregion */
     /* #region Systems */
@@ -71,12 +74,7 @@ pub mod ecs {
     // Get the number of valid systems that exist in the world
     pub fn system_counter() -> usize {
         SYSTEM_COUNTER.load(Ordering::Relaxed)
-    }
-    // World mut callback because we cannot get the world mutably in the middle of a frame (Well we can but we totally should not since that defeats the point of multithreading)
-    pub fn world_mut(callback_id: u64) {
-        // Add the callack to the thread local world mut callback IDs
-        crate::system::add_worldmutcallback_id(callback_id);
-    }
+    }  
     /* #endregion */
 }
 // Input

@@ -11,7 +11,11 @@ pub struct EntityManager {
 impl EntityManager {
     // Get an entity
     pub fn entity(&self, entity_id: usize) -> &Entity {
-        self.entities.get_element(entity_id).as_ref().unwrap().unwrap()
+        self.entities.get_element(entity_id).flatten().unwrap()
+    }
+    // Get an entity mutably
+    pub fn entity_mut(&mut self, entity_id: usize) -> &mut Entity {
+        self.entities.get_element_mut(entity_id).flatten().unwrap()
     }
     // Add an entity to the manager
     pub fn add_entity(&mut self, mut entity: Entity) -> usize {
