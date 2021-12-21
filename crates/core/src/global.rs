@@ -48,34 +48,34 @@ pub mod ecs {
     /* #endregion */
     /* #region Components */
     // Get a stored component
-    fn component_stored<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<Stored<'a, T>> {
+    fn component_stored<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Result<Stored<'a, T>, ecs::ECSError> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id())?;
+        let global_id = entity.linked_components.get(&T::get_component_id()).ok_or(ecs::ECSError::new_str("Could not get linked componet on entity"))?;
         // Get the world using it's RwLock
         let w = crate::world::world();
         let componentm = &w.ecs_manager.componentm;
-        let component = componentm.get_component::<T>(*global_id).ok()?;
-        Some(Stored::new(component))
+        let component = componentm.get_component::<T>(*global_id)?;
+        Ok(Stored::new(component))
     }
     // Get a stored mutable component
-    fn component_stored_mut<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<StoredMut<'a, T>> {
+    fn component_stored_mut<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Result<StoredMut<'a, T>, ecs::ECSError> {
         // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id())?;
+        let global_id = entity.linked_components.get(&T::get_component_id()).ok_or(ecs::ECSError::new_str("Could not get linked componet on entity"))?;
         // Get the world using it's RwLock
         let mut w = crate::world::world_mut();
         let componentm = &mut w.ecs_manager.componentm;
-        let component = componentm.get_component_mut::<T>(*global_id).ok()?;
-        Some(StoredMut::new(component))
+        let component = componentm.get_component_mut::<T>(*global_id)?;
+        Ok(StoredMut::new(component))
     }
     // Get a component
-    pub fn component<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<&'a T> {
+    pub fn component<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Result<&'a T, ecs::ECSError> {
         let stored = component_stored::<T>(entity)?;
-        Some(stored.get(entity))
+        Ok(stored.get(entity))
     }
     // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback 
-    pub fn component_mut<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Option<&'a mut T> {
+    pub fn component_mut<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Result<&'a mut T, ecs::ECSError> {
         let stored = component_stored_mut::<T>(entity)?;
-        Some(stored.get_mut(entity))
+        Ok(stored.get_mut(entity))
     }
     /* #endregion */
     /* #region Systems */
