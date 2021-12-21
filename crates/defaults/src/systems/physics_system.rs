@@ -6,16 +6,16 @@ pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
     // Update the physics
     core::global::ecs::entity_mut(entity, LocalEntityMut(MutCallback::new(|entity| {
         // Get the transform position and rotation
-        let transform = core::global::ecs::component_mut2::<crate::components::Transform>(entity).unwrap();
-        let (position, rotation) = (&mut transform.position, &mut transform.rotation);
-        let physics = core::global::ecs::component_mut2::<crate::components::Physics>(entity).unwrap();
+        let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
+        let (mut position, mut rotation) = (transform.position,  transform.rotation);
+        let physics = core::global::ecs::component_mut::<crate::components::Physics>(entity).unwrap();
         let physics_object = &mut physics.object;
         // Apply the physics step on the position and rotation
-        //physics_object.update(&mut position, &mut rotation, core);
-        let transform = core::global::ecs::component_mut2::<crate::components::Transform>(entity).unwrap();
+        physics_object.update(&mut position, &mut rotation, core::global::timings::delta() as f32);
+        let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
         // Update the new position and rotation in the transform
-        transform.position = *position;
-        transform.rotation = *rotation;
+        transform.position = position;
+        transform.rotation = rotation;
     })).create()); 
 }
 

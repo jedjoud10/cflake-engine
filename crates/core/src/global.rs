@@ -40,37 +40,35 @@ pub mod ecs {
     }
     /* #endregion */
     /* #region Components */
-    // Get a component
-    pub fn component<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<Stored<'a, T>> {
+    // Get a stored component
+    fn component_stored<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<Stored<'a, T>> {
         // Get the corresponding global component ID from the entity
         let global_id = entity.linked_components.get(&T::get_component_id())?;
         // Get the world using it's RwLock
-        let mut w = crate::world::world_mut();
-        let componentm = &mut w.ecs_manager.componentm;
+        let mut w = crate::world::world();
+        let componentm = &w.ecs_manager.componentm;
         let component = componentm.get_component::<T>(*global_id).ok()?;
         Some(Stored::new(component, global_id))
     }
-    // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback 
-    pub fn component_mut<T: Component + 'static>(entity: &ecs::Entity) -> Option<StoredMut<T>> {
+    // Get a stored mutable component
+    fn component_stored_mut<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<StoredMut<'a, T>> {
         // Get the corresponding global component ID from the entity
         let global_id = entity.linked_components.get(&T::get_component_id())?;
         // Get the world using it's RwLock
         let mut w = crate::world::world_mut();
         let componentm = &mut w.ecs_manager.componentm;
-        let component_mut = componentm.get_component_mut(*global_id).ok()?;
-        Some(StoredMut::new(component_mut, global_id))
+        let component = componentm.get_component_mut::<T>(*global_id).ok()?;
+        Some(StoredMut::new(component, global_id))
     }
-    pub fn component_mut2<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Option<&'a mut T> {
-        let x = component_mut(entity)?;
-        Some(x.get_mut(entity))
-        /*
-        // Get the corresponding global component ID from the entity
-        let global_id = entity.linked_components.get(&T::get_component_id())?;
-        // Get the world using it's RwLock
-        let mut w = crate::world::world_mut();
-        let componentm = &mut w.ecs_manager.componentm;
-        componentm.get_component_mut::<T>(*global_id).ok()
-        */
+    // Get a component
+    pub fn component<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Option<&'a T> {
+        let stored = component_stored::<T>(entity)?;
+        Some(stored.get(entity))
+    }
+    // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback 
+    pub fn component_mut<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Option<&'a mut T> {
+        let stored = component_stored_mut::<T>(entity)?;
+        Some(stored.get_mut(entity))
     }
     /* #endregion */
     /* #region Systems */
@@ -197,8 +195,21 @@ pub mod main {
         crate::system::send_lsc_all(crate::system::LogicSystemCommand::StartSystemLoop, receiver);
     }
 }
-
 // Callback shit
 pub mod callbacks {
     pub use crate::callbacks::*;
+}
+
+// Timings
+pub mod timings {
+    // Get the delta time
+    pub fn delta() -> f64 {
+        let w = crate::world::world();
+        w.time_manager.delta_time
+    }
+    // Get the elapsed time since the start of the game
+    pub fn elapsed() -> f64 {
+        let w = crate::world::world();
+        w.time_manager.elapsed
+    }
 }

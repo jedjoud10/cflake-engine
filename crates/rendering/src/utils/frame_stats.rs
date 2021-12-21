@@ -30,7 +30,7 @@ impl FrameStats {
         // Don't forget to use it
         let mut group = self.compute.new_uniform_group();
         group.set_i2d("image_stats", self.texture, TextureShaderAccessType::ReadWrite);
-        group.set_f32("time", time.seconds_since_game_start as f32);
+        group.set_f32("time", time.elapsed as f32);
         group.set_f32("fps", time.fps as f32);
         // Limit the number of entities to 131072
         entities.resize(512, false);
