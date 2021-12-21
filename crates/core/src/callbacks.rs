@@ -99,6 +99,7 @@ pub fn execute_local_callback(id: u64) {
                         let w = crate::world::world();
                         w.ecs_manager.entitym.entity(entity_id).clone()
                     };
+                    // We must NOT have world() or world_mut() locked when executing these types of callbacks
                     (callback)(&mut cloned_entity);
                     // Update the value in the world
                     let mut w = crate::world::world_mut();

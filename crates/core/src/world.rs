@@ -9,6 +9,7 @@ use io::SaverLoader;
 use others::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::thread::ThreadId;
 use ui::UIManager;
 
 // Global main for purely just low level task management
@@ -17,6 +18,12 @@ lazy_static! {
     static ref WORLD: RwLock<World> = RwLock::new(new_internal());
     static ref FRAME: AtomicBool = AtomicBool::new(false);
 }
+
+// Check if we are currently running a frame
+pub fn check_frame() -> bool {
+    FRAME.load(Ordering::Relaxed)
+}
+
 
 // Get a reference to the world
 pub fn world() -> RwLockReadGuard<'static, World> {
@@ -174,10 +181,18 @@ pub fn update_world_start_barrier(delta: f64) {
     // The systems are running, we cannot do anything main thread related
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
-pub fn update_world_end_barrier(delta: f64) {
+pub fn update_world_end_barrier(delta: f64, thread_ids: &Vec<ThreadId>) {
     FRAME.store(false, Ordering::Relaxed);
-    others::barrier::as_ref().thread_sync();
+    // --- SYSTEM FRAME END HERE ---
+    // We will tell the systems to execute their local callbacks
+    for thread_id in thread_ids{
+        others::barrier::as_ref().thread_sync_local_callbacks(thread_id);
+        // Wait until the special block finish
+        others::barrier::as_ref().thread_sync_local_callbacks(thread_id);
+        // --- THE SYSTEM FRAME LOOP ENDS, IT GOES BACK TO THE TOP OF THE LOOP ---
+    } 
     // The sytems started halting, we can do stuff on the main thread
+
 }
 // Update main thread stuff
 pub fn update_main_thread_stuff(delta: f64, world: &mut World, pipeline_start_data: &PipelineStartData) {
@@ -230,14 +245,14 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Loop threads running their last frame...");
     // Set the AtomicBool
     barrier_data.destroying_world();
-    barrier_data.thread_sync();
-    println!("Loop threads ran their last frame!");
-    //std::thread::sleep(std::time::Duration::from_secs(1));
     FRAME.store(false, Ordering::Relaxed);
+    barrier_data.thread_sync();
+    barrier_data.thread_sync_quit();
+    println!("Loop threads ran their last frame!");
+    
     let mut w = world_mut();
     let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
-    // Tell all the child loop threads to stop
-    barrier_data.thread_sync_quit();
+    // Tell all the child loop threads to stop    
     // Then we join them
     for data in systems {
         data.join_handle.join().unwrap();

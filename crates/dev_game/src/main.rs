@@ -2,12 +2,15 @@ use main::defaults::components;
 use main::*;
 fn main() {
     // Load up the engine
-    main::start("DevJed", "DevGame", assets_preload, world_initialized);
+    main::start("DevJed", "DevGame", assets_preload, load_entities, load_systems);
 }
 pub fn assets_preload() {
     // -----Pre-load the game assets here-----
 }
-pub fn world_initialized() {
+pub fn load_systems() {
+    
+}
+pub fn load_entities() {
     // ----Load the entities----
 
     // Create the default camera

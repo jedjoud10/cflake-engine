@@ -1,16 +1,16 @@
 use lazy_static::lazy_static;
-use std::sync::{
+use std::{sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Barrier, Condvar, RwLock,
-};
+}, collections::HashMap, thread::ThreadId};
 
 lazy_static! {
     static ref BARRIERS_WORLD: Arc<WorldBarrierData> = Arc::new(WorldBarrierData::new_uninit());
 }
 // Initialize the world barrier data with the specified amount of threads to wait for
-pub fn init(n: usize) {
+pub fn init(thread_ids: Vec<ThreadId>) {
     let x = BARRIERS_WORLD.as_ref();
-    x.new_update(n);
+    x.new_update(thread_ids);
 }
 // As ref
 pub fn as_ref() -> &'static WorldBarrierData {
@@ -20,7 +20,8 @@ pub fn as_ref() -> &'static WorldBarrierData {
 // Internal
 pub struct WorldBarrierDataInternal {
     // Frame syncing
-    pub end_frame_sync_barrier: Barrier,
+    pub frame_sync_barrier: Barrier,
+    pub special_frame_sync_barriers: HashMap<ThreadId, Barrier>,
     // Quitting
     pub quit_loop_sync_barrier: Barrier,
     // Atomics
@@ -39,13 +40,14 @@ impl WorldBarrierData {
         Self { internal: RwLock::new(None) }
     }
     // New (Though we don't make a new RwLock)
-    pub fn new_update(&self, n: usize) {
+    pub fn new_update(&self, thread_ids: Vec<ThreadId>) {
         let mut writer_ = self.internal.write().unwrap();
         let writer = &mut *writer_;
+        let len = thread_ids.len();
         *writer = Some(WorldBarrierDataInternal {
-            // We don't sync the render loop
-            end_frame_sync_barrier: Barrier::new(n - 1),
-            quit_loop_sync_barrier: Barrier::new(n),
+            frame_sync_barrier: Barrier::new(len + 1),
+            special_frame_sync_barriers: thread_ids.into_iter().map(|x| (x, Barrier::new(2))).collect::<HashMap<ThreadId, Barrier>>(),
+            quit_loop_sync_barrier: Barrier::new(len + 2),
             world_valid: AtomicBool::new(false),
             world_destroyed: AtomicBool::new(false),
         });
@@ -85,11 +87,17 @@ impl WorldBarrierData {
             None => false,
         }
     }
-    // We have finished the frame for this specific thread, so wait until all the threads synchronise
+    // This is called at the start of the main thread frame, we wait until all the systems have synched up, so we can run all of them in parallel
     pub fn thread_sync(&self) {
         let r = &self.internal.read().unwrap();
-        let end_frame_sync_barrier = &r.as_ref().unwrap().end_frame_sync_barrier;
-        (end_frame_sync_barrier).wait();
+        let frame_sync_barrier = &r.as_ref().unwrap().frame_sync_barrier;
+        (frame_sync_barrier).wait();
+    }
+    // Sync up the main thread with this thread, at the end of the frame, so that system can access world_mut
+    pub fn thread_sync_local_callbacks(&self, thread_id: &ThreadId) {
+        let r = &self.internal.read().unwrap();
+        let special_frame_sync_barriers = r.as_ref().unwrap().special_frame_sync_barriers.get(thread_id).unwrap();
+        (special_frame_sync_barriers).wait();
     }
     // Sync up the quit barrier
     pub fn thread_sync_quit(&self) {

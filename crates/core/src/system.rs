@@ -75,48 +75,59 @@ where
                     };
                 }
                 loop {
-                    {
-                        let i = std::time::Instant::now();
-                        // Get the entities at the start of each frame
-                        let ptrs = {
-                            let w = crate::world::world();
-                            let entities = entity_ids
-                                .iter()
-                                .map(|x| {
-                                    let entity = w.ecs_manager.entitym.entity(*x);
+                    // Wait for the start of the sync at the start of the frame
+                    barrier_data.thread_sync();
+                    // --- START OF THE SYSTEM FRAME ---
+                    let i = std::time::Instant::now();
+                    // Get the entities at the start of each frame
+                    let ptrs = {
+                        let w = crate::world::world();
+                        // We must use unsafe code because if we don't we're going to execute run_system while having the world already borrowed,
+                        // and RwLocks are not re-entrant so that will cause a deadlock
+                        let entities = entity_ids
+                            .iter()
+                            .map(|x| {
+                                let entity = w.ecs_manager.entitym.entity(*x);
+                                entity as *const ecs::Entity
+                            })
+                            .collect::<Vec<*const ecs::Entity>>();
+                        entities
+                    };
 
-                                    entity as *const ecs::Entity
-                                })
-                                .collect::<Vec<*const ecs::Entity>>();
-                            entities
-                        };
+                    // Run the system         
+                    let entities = ptrs.into_iter().map(|x| unsafe { &*x }).collect::<Vec<&ecs::Entity>>();
+                    system.run_system(&entities);                   
 
-                        // Start of the independent system frame
-                        // End of the independent system frame, we must wait until the main thread allows us to continue
-                        // Check if the system is still running
-                        // --- Start of the frame ---
-                        let entities = ptrs.iter().map(|x| unsafe { x.as_ref().unwrap() }).collect::<Vec<&ecs::Entity>>();
-                        system.run_system(&entities);
-
-                        // --- End of the frame ---
-                        // Check the start buffer first since it has priority
-                        if pre_loop_buffer.len() > 0 {
-                            let taken = std::mem::take(&mut pre_loop_buffer);
-                            for x in taken {
-                                // Execute the logic system command
-                                logic_system_command(x, &mut entity_ids, &mut system);
-                            }
+                    // --- End of the frame ---
+                    // Check the start buffer first since it has priority
+                    if pre_loop_buffer.len() > 0 {
+                        let taken = std::mem::take(&mut pre_loop_buffer);
+                        for x in taken {
+                            // Execute the logic system command
+                            logic_system_command(x, &mut entity_ids, &mut system);
                         }
-                        // Check if we have any system commands that must be executed
-                        match lsc_rx.try_recv() {
-                            Ok(lsc) => {
-                                // Execute the logic system command
-                                logic_system_command(lsc, &mut entity_ids, &mut system);
-                            }
-                            Err(_) => {}
+                    }
+                    // Check if we have any system commands that must be executed
+                    match lsc_rx.try_recv() {
+                        Ok(lsc) => {
+                            // Execute the logic system command
+                            logic_system_command(lsc, &mut entity_ids, &mut system);
                         }
+                        Err(_) => {}
+                    }
+                
 
-                        // Now we can run the local callbacks
+                    // Very very end of the frame
+                    if barrier_data.is_world_valid() {
+                        let thread_id = std::thread::current().id();
+                        // Check if the world got yeeted
+                        if barrier_data.is_world_destroyed() {
+                            barrier_data.thread_sync_quit();
+                            break;
+                        }
+                        // Wait until the main world gives us permission to continue
+                        others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
+                        // We got permission, we can run the local callbacks
                         LOCAL_CALLBACK_IDS.with(|cell| {
                             let mut callbacks_ = cell.borrow_mut();
                             let callbacks = &mut *callbacks_;
@@ -127,19 +138,9 @@ where
                                 }
                             }
                         });
-                    }
-
-                    // Very very end of the frame
-                    if barrier_data.is_world_valid() {
-                        // First sync
-                        barrier_data.thread_sync();
-                        if barrier_data.is_world_destroyed() {
-                            barrier_data.thread_sync_quit();
-                            break;
-                        }
-                        // Second sync
-                        barrier_data.thread_sync();
-                    }
+                        // Tell the main thread we have finished executing thread local callbacks
+                        others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);                    
+                    }                    
                 }
                 println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());
             });

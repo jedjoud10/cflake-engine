@@ -5,6 +5,7 @@ extern crate glfw;
 
 // World
 pub use core;
+use std::thread::ThreadId;
 
 // Re-Export
 pub use assets;
@@ -21,7 +22,7 @@ pub use ui;
 pub use veclib;
 
 // Load up the OpenGL window and such
-pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), callback: fn()) {
+pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), load_entities: fn(), load_systems: fn()) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
         .create_window(rendering::WINDOW_SIZE.x as u32, rendering::WINDOW_SIZE.y as u32, app_name, glfw::WindowMode::Windowed)
@@ -43,9 +44,20 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
     // Calling the callback
     println!("Calling World Initialization callback");
     defaults::preload_systems();
-    println!("{}", core::global::ecs::system_counter());
-    others::barrier::init(core::global::ecs::system_counter() + 2);
-    callback();
+    load_systems();
+    // Get the system thread_ids
+    let thread_ids = 
+        core::world::world()
+        .ecs_manager.systemm.systems
+        .iter()
+        .map(|x| x
+            .join_handle
+            .thread()
+            .id()
+            .clone())
+    .collect::<Vec<ThreadId>>();
+    others::barrier::init(thread_ids.clone());
+    load_entities();
     core::global::main::start_system_loops();
     let mut last_time: f64 = 0.0;
     others::barrier::as_ref().init_finished_world();
@@ -59,7 +71,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), c
         // Update the world
         core::world::update_world_start_barrier(delta);
         // The systems are running, we cannot do anything
-        core::world::update_world_end_barrier(delta);
+        core::world::update_world_end_barrier(delta, &thread_ids);
         // We can do stuff on the main thread
         {
             let mut w = core::world::world_mut();
