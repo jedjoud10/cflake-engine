@@ -3,34 +3,28 @@ use others::callbacks::*;
 use std::{
     collections::HashMap,
     sync::{atomic::AtomicU64, Mutex},
+    cell::RefCell,
 };
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created
 }
 
-// Get a specific callback on this thread
-pub fn get_callback(id: u64, callback_manager: &mut CallbackManagerBuffer) -> CallbackType {
-    callback_manager.callbacks.remove(&id).unwrap()
-}
-// Get a specific local callback on this thread
-pub fn get_local_callback(id: u64, callback_manager: &mut CallbackManagerBuffer) -> (CallbackType, LocalCallbackArguments) {
-    let callback = callback_manager.callbacks.remove(&id).unwrap();
-    let args = callback_manager.local_callback_arguments.remove(&id).unwrap();
-    (callback, args)
+thread_local! {    
+    static CALLBACK_MANAGER_BUFFER: RefCell<CallbackManagerBuffer> = RefCell::new(CallbackManagerBuffer::default());
 }
 // The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
 // Callback manager that contains all the current callbacks (Thread Local)
 pub struct CallbackManagerBuffer {
     callbacks: HashMap<u64, CallbackType>,
-    local_callback_arguments: HashMap<u64, LocalCallbackArguments>,
+    buffered_executions: Vec<(u64, LogicSystemCallbackArguments)>,
 }
 
 impl Default for CallbackManagerBuffer {
     fn default() -> Self {
         Self {
             callbacks: HashMap::new(),
-            local_callback_arguments: HashMap::new(),
+            buffered_executions: Vec::new()
         }
     }
 }
@@ -40,74 +34,65 @@ impl CallbackManagerBuffer {
     pub fn add_callback(&mut self, id: u64, callback: CallbackType) {
         self.callbacks.insert(id, callback);
     }
-    // Add the local callback arguments for a specific callback
-    pub fn add_local_callback_arguments(&mut self, id: u64, callback_arguments: LocalCallbackArguments) {
-        self.local_callback_arguments.insert(id, callback_arguments);
-    }
 }
 
-// Per thread
-thread_local! {
-    pub static CALLBACK_MANAGER_BUFFER: Mutex<CallbackManagerBuffer> = Mutex::new(CallbackManagerBuffer::default());
+// Buffer the execution of a certain callback
+pub fn buffer_callback_execution(id: u64, arguments: LogicSystemCallbackArguments) {
+    CALLBACK_MANAGER_BUFFER.with(|cell| {
+        let mut cell = cell.borrow_mut();
+        // Buffer the callback ID and the callback arguments
+        cell.buffered_executions.push((id, arguments));
+    })
 }
 
-// Execute a specific callback on this thread
-pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world: &mut crate::world::World) {
-    // Get the callback arguments from teh result data
-    CALLBACK_MANAGER_BUFFER.with(|mutex| {
-        let mut callback_manager_ = mutex.lock().unwrap();
-        let callback_manager = &mut *callback_manager_;
-
-        // Get the callback
-        let callback = get_callback(id, callback_manager);
-        match callback {
-            CallbackType::GPUObjectCallback(x) => {
-                let callback = x.callback.as_ref();
-                // Make sure this callback is the GPUObject one
-                if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
-                    (callback)(args);
+// Execute all the local callbacks
+pub fn execute_local_callbacks() {
+    CALLBACK_MANAGER_BUFFER.with(|cell| {
+        let mut cell = cell.borrow_mut();
+        // We must now empty the buffered executions and actually run the callbacks
+        if cell.buffered_executions.len() > 0 {
+            let cleared_callbacks = std::mem::take(&mut cell.buffered_executions);
+            for (id, arguments) in cleared_callbacks {
+                let callback = cell.callbacks.get(&id).unwrap();
+                // Execute the local callbacks
+                match callback {
+                    CallbackType::GPUObjectCallback(x) => {
+                        let callback = x.callback.as_ref();
+                        // Make sure this callback is the GPUObject one
+                        if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
+                            (callback)(args);
+                        }
+                    }
+                    CallbackType::EntityCreatedCallback(x) => {
+                        let callback = x.callback.as_ref();
+                        // Make sure this callback is the EntityRef one
+                        if let LogicSystemCallbackArguments::EntityRef(entity_id) = arguments {
+                            let mut cloned_entity = {
+                                let w = crate::world::world();
+                                w.ecs_manager.entitym.entity(entity_id).clone()
+                            };
+                            (callback)(&cloned_entity);
+                        }
+                    }
+                    CallbackType::LocalEntityMut(entity_callback) => {
+                        // Get the local callback arguments that are necessary
+                        if let LogicSystemCallbackArguments::EntityMut(entity_id) = arguments {
+                            // Get the mut entity
+                            let callback = entity_callback.callback.as_ref();
+                            let mut cloned_entity = {
+                                let w = crate::world::world();
+                                w.ecs_manager.entitym.entity(entity_id).clone()
+                            };
+                            // We must NOT have world() or world_mut() locked when executing these types of callbacks
+                            (callback)(&mut cloned_entity);
+                            // Update the value in the world
+                            let mut w = crate::world::world_mut();
+                            let entity = w.ecs_manager.entitym.entity_mut(entity_id);
+                            *entity = cloned_entity;
+                        }
+                    }
                 }
             }
-            CallbackType::EntityCreatedCallback(x) => {
-                let callback = x.callback.as_ref();
-                // Make sure this callback is the EntityRef one
-                if let LogicSystemCallbackArguments::EntityRef(entity_id) = arguments {
-                    let entity = world.ecs_manager.entitym.entity(entity_id);
-                    (callback)(entity);
-                }
-            }
-            /* #region Local callbacks */
-            CallbackType::LocalEntityMut(_) => {} /* #endregion */
-        }
-    });
-}
-// Execute a local callback
-pub fn execute_local_callback(id: u64) {
-    CALLBACK_MANAGER_BUFFER.with(|mutex| {
-        let mut callback_manager_ = mutex.lock().unwrap();
-        let callback_manager = &mut *callback_manager_;
-
-        // Get the world mut callback
-        let (callback, arguments) = get_local_callback(id, callback_manager);
-        match callback {
-            CallbackType::LocalEntityMut(entity_callback) => {
-                // Get the local callback arguments that are necessary
-                if let LocalCallbackArguments::EntityMut(entity_id) = arguments {
-                    // Get the mut entity
-                    let callback = entity_callback.callback.as_ref();
-                    let mut cloned_entity = {
-                        let w = crate::world::world();
-                        w.ecs_manager.entitym.entity(entity_id).clone()
-                    };
-                    // We must NOT have world() or world_mut() locked when executing these types of callbacks
-                    (callback)(&mut cloned_entity);
-                    // Update the value in the world
-                    let mut w = crate::world::world_mut();
-                    let entity = w.ecs_manager.entitym.entity_mut(entity_id);
-                    *entity = cloned_entity;
-                }
-            }
-            _ => {}
         }
     });
 }
@@ -117,13 +102,9 @@ pub fn execute_local_callback(id: u64) {
 pub enum LogicSystemCallbackArguments {
     // Entity
     EntityRef(usize),
+    EntityMut(usize),
     // Rendering
     RenderingGPUObject((rendering::GPUObject, rendering::GPUObjectID)),
-}
-
-// Arguments used when calling the local callbacks
-pub enum LocalCallbackArguments {
-    EntityMut(usize),
 }
 
 // The callback type
@@ -137,8 +118,8 @@ impl CallbackType {
     // Turn this callback into a callback ID after adding it to thread local callback manager buffer
     pub fn create(self) -> u64 {
         let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        CALLBACK_MANAGER_BUFFER.with(|x| {
-            let mut manager_ = x.lock().unwrap();
+        CALLBACK_MANAGER_BUFFER.with(|cell| {
+            let mut manager_ = cell.borrow_mut();
             let manager = &mut *manager_;
             manager.add_callback(id, self);
         });

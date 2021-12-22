@@ -28,7 +28,6 @@ thread_local! {
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
     pub static SENDER: RefCell<Option<Sender<crate::command::CommandQuery>>> = RefCell::new(None);
-    static LOCAL_CALLBACK_IDS: RefCell<Vec<u64>> = RefCell::new(Vec::new());
 }
 
 // Create a worker thread
@@ -128,16 +127,7 @@ where
                         // Wait until the main world gives us permission to continue
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                         // We got permission, we can run the local callbacks
-                        LOCAL_CALLBACK_IDS.with(|cell| {
-                            let mut callbacks_ = cell.borrow_mut();
-                            let callbacks = &mut *callbacks_;
-                            if callbacks.len() > 0 {
-                                let cleared_callbacks = std::mem::take(callbacks);
-                                for id in cleared_callbacks {
-                                    crate::callbacks::execute_local_callback(id);
-                                }
-                            }
-                        });
+                        crate::callbacks::execute_local_callbacks();
                         // Tell the main thread we have finished executing thread local callbacks
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                     }
@@ -160,10 +150,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
     match lsc {
         LogicSystemCommand::RunCallback(id, result_data) => {
             // We will run this when we run the local callbacks!
-
-            let mut w = crate::world::world_mut();
-            let world = &mut *w;
-            crate::callbacks::execute_callback(id, result_data, world);
+            crate::callbacks::buffer_callback_execution(id, result_data);
         }
         LogicSystemCommand::AddEntityToSystem(entity_id) => {
             // Add the entity to the current entity list
@@ -189,15 +176,6 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
         }
         LogicSystemCommand::StartSystemLoop => { /* How the fuck */ }
     }
-}
-
-// Add a local callback ID to the thread local buffer
-pub fn add_local_callback(id: u64) {
-    LOCAL_CALLBACK_IDS.with(|cell| {
-        let mut callbacks_ = cell.borrow_mut();
-        let callbacks = &mut *callbacks_;
-        callbacks.push(id);
-    })
 }
 
 // Send a LogicSystemCommand to a specific thread
