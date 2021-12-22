@@ -1,10 +1,10 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
-use rendering::GPUObjectID;
 use rendering::basics::*;
 use rendering::pipec;
 use rendering::pipeline;
 use rendering::pipeline::object::*;
 use rendering::utils::*;
+use rendering::GPUObjectID;
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {

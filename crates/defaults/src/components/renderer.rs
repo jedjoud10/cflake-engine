@@ -1,5 +1,5 @@
 use ecs::{Component, ComponentID, ComponentInternal};
-use rendering::{GPUObject, Material, ModelGPUObject, RendererFlags, RendererGPUObject, GPUObjectID};
+use rendering::{GPUObject, GPUObjectID, Material, ModelGPUObject, RendererFlags, RendererGPUObject};
 
 // Wrapper
 pub struct Renderer {

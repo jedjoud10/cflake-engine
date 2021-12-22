@@ -86,7 +86,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Load the default stuff
     crate::local::input::create_key_cache();
     crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);
-    crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);   
+    crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);
 
     // Create some default UI that prints some default info to the screen
     let mut root = ui::Root::new(1);

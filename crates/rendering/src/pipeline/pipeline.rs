@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, interface, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData, GPUObjectID};
+use crate::{basics::*, interface, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -217,34 +217,46 @@ pub fn internal_task(task: RenderTask) -> Option<GPUObjectID> {
         RenderTask::ShaderUniformGroup(_shared_uniformgroup) => todo!(),
         // Textures
         RenderTask::TextureCreate(shared_texture) => Some(Pipeline::generate_texture(shared_texture)),
-        RenderTask::TextureUpdateSize(texture, ttype) => { Pipeline::update_texture_size(texture, ttype); None }
-        RenderTask::TextureUpdateData(texture, bytes) => { Pipeline::update_texture_data(texture, bytes); None }
+        RenderTask::TextureUpdateSize(texture, ttype) => {
+            Pipeline::update_texture_size(texture, ttype);
+            None
+        }
+        RenderTask::TextureUpdateData(texture, bytes) => {
+            Pipeline::update_texture_data(texture, bytes);
+            None
+        }
         RenderTask::TextureFillArray(texture, bytecount) => Some(Pipeline::texture_fill_array(texture, bytecount)),
         // Model
         RenderTask::ModelCreate(shared_model) => Some(Pipeline::create_model(shared_model)),
-        RenderTask::ModelDispose(gpumodel) => { Pipeline::dispose_model(gpumodel); None }
+        RenderTask::ModelDispose(gpumodel) => {
+            Pipeline::dispose_model(gpumodel);
+            None
+        }
         // Material
-        RenderTask::MaterialCreate(material) => { Some(Pipeline::create_material(material)) },
+        RenderTask::MaterialCreate(material) => Some(Pipeline::create_material(material)),
         // Compute
-        RenderTask::ComputeRun(compute, axii, uniforms_group) => { Pipeline::run_compute(compute, axii, uniforms_group); None }
-        RenderTask::ComputeLock(compute) => { Pipeline::lock_compute(compute); None }
+        RenderTask::ComputeRun(compute, axii, uniforms_group) => {
+            Pipeline::run_compute(compute, axii, uniforms_group);
+            None
+        }
+        RenderTask::ComputeLock(compute) => {
+            Pipeline::lock_compute(compute);
+            None
+        }
         // Others
-        _ => None
+        _ => None,
     }
 }
 
 // Run a command on the Render Thread
-fn command(
-    pr: &mut PipelineRenderer,
-    camera: &mut CameraDataGPUObject,
-    command: RenderCommandQuery,
-    _window: &mut glfw::Window,
-    glfw: &mut glfw::Glfw,
-) -> Option<GPUObjectID> {
+fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<GPUObjectID> {
     // Handle the common cases
     match command.task {
         // Window tasks
-        RenderTask::WindowUpdateFullscreen(fullscreen) => { pr.window.fullscreen = fullscreen; None }
+        RenderTask::WindowUpdateFullscreen(fullscreen) => {
+            pr.window.fullscreen = fullscreen;
+            None
+        }
         RenderTask::WindowUpdateVSync(vsync) => {
             pr.window.vsync = vsync;
             // We need an OpenGL context to do this shit
@@ -283,8 +295,14 @@ fn command(
         }
         // Renderer commands
         RenderTask::RendererAdd(shared_renderer) => Some(Pipeline::add_renderer(pr, shared_renderer)),
-        RenderTask::RendererRemove(renderer_id) => { Pipeline::remove_renderer(pr, renderer_id); None }
-        RenderTask::RendererUpdateTransform(renderer_id, matrix) => { Pipeline::update_renderer(renderer_id, matrix); None }
+        RenderTask::RendererRemove(renderer_id) => {
+            Pipeline::remove_renderer(pr, renderer_id);
+            None
+        }
+        RenderTask::RendererUpdateTransform(renderer_id, matrix) => {
+            Pipeline::update_renderer(renderer_id, matrix);
+            None
+        }
         // Internal cases
         x => internal_task(x),
     }
@@ -345,7 +363,7 @@ impl Pipeline {
     }
     // Update a renderer's model matrix
     fn update_renderer(renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
-        interface::update_gpu_object(renderer_id, |gpuobject| { 
+        interface::update_gpu_object(renderer_id, |gpuobject| {
             if let GPUObject::Renderer(renderer) = gpuobject {
                 renderer.2 = matrix.get();
             }
@@ -446,7 +464,7 @@ impl Pipeline {
     }
     pub fn create_model(model: SharedData<Model>) -> GPUObjectID {
         let model = model.get();
-        let mut gpu_data = ModelGPUObject { 
+        let mut gpu_data = ModelGPUObject {
             vertex_buf: 0,
             normal_buf: 0,
             uv_buf: 0,
@@ -454,7 +472,7 @@ impl Pipeline {
             color_buf: 0,
             vertex_array_object: 0,
             element_buffer_object: 0,
-            element_count: 0
+            element_count: 0,
         };
         unsafe {
             // Create the VAO
@@ -558,7 +576,7 @@ impl Pipeline {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
-        gpu_data.element_count = model.triangles.len();        
+        gpu_data.element_count = model.triangles.len();
         // Add the gpu object
         let gpuobject = GPUObject::Model(gpu_data);
         interface::received_new_gpu_object(gpuobject, None)

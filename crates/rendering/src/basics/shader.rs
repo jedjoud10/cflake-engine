@@ -1,7 +1,7 @@
 use super::SubShader;
-use crate::{pipec, interface, GPUObjectID, SubShaderType};
 use crate::utils::RenderingError;
 use crate::SubShaderGPUObject;
+use crate::{interface, pipec, GPUObjectID, SubShaderType};
 use assets::Object;
 use std::collections::{HashMap, HashSet};
 // A shader that contains two sub shaders that are compiled independently
@@ -130,12 +130,14 @@ impl Shader {
         }
         // Check if this is a compute shader or not
         self.is_compute = {
-            let x= self.linked_subshaders_programs.first().unwrap().to_subshader().unwrap();
+            let x = self.linked_subshaders_programs.first().unwrap().to_subshader().unwrap();
             if let SubShaderType::Compute = x.0 {
                 true
-            } else { false }
+            } else {
+                false
+            }
         };
-        
+
         Ok(self)
     }
     // Load some external code that can be loading using specific include points

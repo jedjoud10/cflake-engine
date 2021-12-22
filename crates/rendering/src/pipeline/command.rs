@@ -1,6 +1,6 @@
 use crate::{
-    interface, internal_task, ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture,
-    TextureGPUObject, TextureType, IS_RENDER_THREAD, Material, GPUObjectID,
+    interface, internal_task, ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader,
+    Texture, TextureGPUObject, TextureType, IS_RENDER_THREAD,
 };
 use lazy_static::lazy_static;
 use std::{
@@ -28,7 +28,9 @@ where
     pub fn new(x: T) -> Self {
         Self { object: x }
     }
-    pub fn get(self) -> T { self.object }
+    pub fn get(self) -> T {
+        self.object
+    }
 }
 
 thread_local! {

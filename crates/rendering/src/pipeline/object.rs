@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform, GPUObjectID};
+use crate::{GPUObjectID, MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform};
 
 // Cooler objects
 #[derive(Clone)]
@@ -40,7 +40,7 @@ pub struct MaterialGPUObject(pub GPUObjectID, pub ShaderUniformsGroup, pub Mater
 pub struct RendererGPUObject(pub GPUObjectID, pub GPUObjectID, pub veclib::Matrix4x4<f32>);
 
 pub mod uniform_setters {
-    use crate::{TextureGPUObject, TextureShaderAccessType, GPUObjectID};
+    use crate::{GPUObjectID, TextureGPUObject, TextureShaderAccessType};
     use std::ffi::CString;
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
@@ -159,12 +159,36 @@ fn run_shader_uniform_group(shader: u32, group: &ShaderUniformsGroup) {
                 Uniform::Vec3I32(x) => set_vec3i32(index, x),
                 Uniform::Vec4I32(x) => set_vec4i32(index, x),
                 Uniform::Mat44F32(x) => set_mat44(index, x),
-                Uniform::Texture1D(x, y) => if x.is_valid() { set_t1d(index, x, y) },
-                Uniform::Texture2D(x, y) => if x.is_valid() { set_t2d(index, x, y) },
-                Uniform::Texture3D(x, y) => if x.is_valid() { set_t3d(index, x, y) },
-                Uniform::Texture2DArray(x, y) => if x.is_valid() { set_t2da(index, x, y) },
-                Uniform::Image2D(x, y) => if x.is_valid() { set_i2d(index, x, y) },
-                Uniform::Image3D(x, y) => if x.is_valid() { set_i3d(index, x, y) },
+                Uniform::Texture1D(x, y) => {
+                    if x.is_valid() {
+                        set_t1d(index, x, y)
+                    }
+                }
+                Uniform::Texture2D(x, y) => {
+                    if x.is_valid() {
+                        set_t2d(index, x, y)
+                    }
+                }
+                Uniform::Texture3D(x, y) => {
+                    if x.is_valid() {
+                        set_t3d(index, x, y)
+                    }
+                }
+                Uniform::Texture2DArray(x, y) => {
+                    if x.is_valid() {
+                        set_t2da(index, x, y)
+                    }
+                }
+                Uniform::Image2D(x, y) => {
+                    if x.is_valid() {
+                        set_i2d(index, x, y)
+                    }
+                }
+                Uniform::Image3D(x, y) => {
+                    if x.is_valid() {
+                        set_i3d(index, x, y)
+                    }
+                }
                 Uniform::Bool(_x) => todo!(),
             }
         }
@@ -210,7 +234,7 @@ impl ShaderUniformsGroup {
         self.uniforms.insert(name.to_string(), Uniform::I32(value));
     }
     // Set a 3D image
-    pub fn set_i3d(&mut self, name: &str, texture: GPUObjectID, access_type: TextureShaderAccessType) {        
+    pub fn set_i3d(&mut self, name: &str, texture: GPUObjectID, access_type: TextureShaderAccessType) {
         self.uniforms.insert(name.to_string(), Uniform::Image3D(texture, access_type));
     }
     // Set a matrix 4x4 f32
@@ -303,7 +327,7 @@ impl ComputeShaderGPUObject {
 // Some identifiers that we will use to communicate from the Render Thread -> Main Thread
 #[derive(Clone)]
 pub enum GPUObject {
-    None,                                  // This value was not initalized yet
+    None, // This value was not initalized yet
     Model(ModelGPUObject),
     Material(MaterialGPUObject),
     SubShader(SubShaderGPUObject),

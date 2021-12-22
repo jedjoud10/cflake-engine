@@ -1,5 +1,5 @@
 use crate::{pipec, pipeline::object::*, FrameStats, MaterialFlags, Shader, Texture};
-use crate::{texture::*, DataType, Material, Window, GPUObjectID};
+use crate::{texture::*, DataType, GPUObjectID, Material, Window};
 
 use glfw::Context;
 use others::SmartList;
@@ -47,21 +47,21 @@ pub mod window_commands {
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
-    framebuffer: u32,                        // The master frame buffer
-    diffuse_texture: GPUObjectID,       // Diffuse texture, can also store HDR values
-    normals_texture: GPUObjectID,       // World Normals texture
-    position_texture: GPUObjectID,      // World Positions texture
-    depth_texture: GPUObjectID,         // Depth texture
-    debug_view: u16,                         // OUr currenty debug view mode
-    wireframe: bool,                         // Are we rendering in wireframe or not
-    quad_model: GPUObjectID,              // The current screen quad model that we are using
-    screen_shader: GPUObjectID,          // The current screen quad shader that we are using
-    sky_texture: GPUObjectID,           // The sky gradient texture
-    wireframe_shader: GPUObjectID,       // The current wireframe shader
-    frame_stats: FrameStats,                 // Some frame stats
-    pub window: Window,                      // Window
-    pub default_material: Option<GPUObjectID>,  // Self explanatory
-    renderer_ids: HashSet<usize> // IDs of Renderer GPU Objects
+    framebuffer: u32,                          // The master frame buffer
+    diffuse_texture: GPUObjectID,              // Diffuse texture, can also store HDR values
+    normals_texture: GPUObjectID,              // World Normals texture
+    position_texture: GPUObjectID,             // World Positions texture
+    depth_texture: GPUObjectID,                // Depth texture
+    debug_view: u16,                           // OUr currenty debug view mode
+    wireframe: bool,                           // Are we rendering in wireframe or not
+    quad_model: GPUObjectID,                   // The current screen quad model that we are using
+    screen_shader: GPUObjectID,                // The current screen quad shader that we are using
+    sky_texture: GPUObjectID,                  // The sky gradient texture
+    wireframe_shader: GPUObjectID,             // The current wireframe shader
+    frame_stats: FrameStats,                   // Some frame stats
+    pub window: Window,                        // Window
+    pub default_material: Option<GPUObjectID>, // Self explanatory
+    renderer_ids: HashSet<usize>,              // IDs of Renderer GPU Objects
 }
 
 // Render debug primitives
@@ -82,10 +82,13 @@ pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, dm: &M
             // If we do not have a shader assigned, use the default material's shader
             shader = match user_material.0.to_shader() {
                 Some(shader) => shader,
-                None => { /* We do not have a valid user set shader, use the default one */ dm.0.to_shader().unwrap() },
+                None => {
+                    /* We do not have a valid user set shader, use the default one */
+                    dm.0.to_shader().unwrap()
+                }
             };
-            user_material            
-        },
+            user_material
+        }
         None => dm,
     };
     let model = (renderer.0).to_model().unwrap();

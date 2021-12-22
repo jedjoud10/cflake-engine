@@ -1,6 +1,9 @@
 use std::sync::{mpsc::Sender, RwLock};
 
-use crate::{pipeline::buffer::GPUObjectBuffer, GPUObject, MainThreadMessage, GPUObjectID, TextureGPUObject, ShaderGPUObject, ModelGPUObject, MaterialGPUObject, SubShaderGPUObject, ComputeShaderGPUObject, TextureFillGPUObject, RendererGPUObject};
+use crate::{
+    pipeline::buffer::GPUObjectBuffer, ComputeShaderGPUObject, GPUObject, GPUObjectID, MainThreadMessage, MaterialGPUObject, ModelGPUObject, RendererGPUObject, ShaderGPUObject,
+    SubShaderGPUObject, TextureFillGPUObject, TextureGPUObject,
+};
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -61,10 +64,9 @@ pub fn gpu_object_valid(id: &GPUObjectID) -> bool {
             None => false,
         },
         None => false,
-    }   
+    }
 }
 /* #endregion */
-
 
 // Notify the threads that we have recieved a valid GPU object
 pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>) -> GPUObjectID {
@@ -83,8 +85,8 @@ pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>) -> GP
 }
 
 // Additional data given to the interface after we add a GPU object
-pub fn received_new_gpu_object_additional(gpuobject_id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>, waitable_id: Option<u64>) {   
-    let mut buf = INTERFACE_BUFFER.write().unwrap(); 
+pub fn received_new_gpu_object_additional(gpuobject_id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>, waitable_id: Option<u64>) {
+    let mut buf = INTERFACE_BUFFER.write().unwrap();
     let index = gpuobject_id.index.unwrap();
     match callback_id {
         Some((id, thread_id)) => {
@@ -107,7 +109,10 @@ pub fn remove_gpu_object(gpuobject_id: GPUObjectID) {
 }
 
 // Update a GPU object using a callback
-pub fn update_gpu_object<F>(gpuobject_id: GPUObjectID, f: F) where F: FnOnce(&mut GPUObject) {
+pub fn update_gpu_object<F>(gpuobject_id: GPUObjectID, f: F)
+where
+    F: FnOnce(&mut GPUObject),
+{
     let mut buf = INTERFACE_BUFFER.write().unwrap();
     let x = buf.gpuobjects.get_element_mut(gpuobject_id.index.unwrap()).flatten().unwrap();
     f(x);
@@ -127,11 +132,13 @@ pub fn update_render_thread(tx2: &Sender<MainThreadMessage>) {
     let callbacks_objects_indices = std::mem::take(&mut buf.callback_objects);
     let callback_objects = callbacks_objects_indices
         .into_iter()
-        .map(|(callback_id, (index, thread_id))| 
-            (callback_id,
-            (buf.gpuobjects.get_element(index).unwrap().cloned().unwrap(),
-            GPUObjectID { index: Some(index) },),
-            thread_id))
+        .map(|(callback_id, (index, thread_id))| {
+            (
+                callback_id,
+                (buf.gpuobjects.get_element(index).unwrap().cloned().unwrap(), GPUObjectID { index: Some(index) }),
+                thread_id,
+            )
+        })
         .collect::<Vec<(u64, (GPUObject, GPUObjectID), std::thread::ThreadId)>>();
 
     // Now we must all of this to the main thread

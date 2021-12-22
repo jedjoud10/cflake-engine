@@ -2,8 +2,7 @@ use core::global::callbacks::CallbackType::*;
 use others::callbacks::*;
 
 // Some default events
-pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
-}
+pub fn entity_update(data: &mut (), entity: &ecs::Entity) {}
 
 // Create the default system
 pub fn system() {

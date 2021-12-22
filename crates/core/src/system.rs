@@ -117,7 +117,7 @@ where
                     }
 
                     // Very very end of the frame
-                    if barrier_data.is_world_valid() {                        
+                    if barrier_data.is_world_valid() {
                         let thread_id = std::thread::current().id();
                         // Check if the world got yeeted
                         if barrier_data.is_world_destroyed() {
@@ -160,7 +160,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
     match lsc {
         LogicSystemCommand::RunCallback(id, result_data) => {
             // We will run this when we run the local callbacks!
-            
+
             let mut w = crate::world::world_mut();
             let world = &mut *w;
             crate::callbacks::execute_callback(id, result_data, world);

@@ -1,5 +1,5 @@
 use crate::pipeline::object::*;
-use crate::{TextureShaderAccessType, GPUObjectID};
+use crate::{GPUObjectID, TextureShaderAccessType};
 
 // Some default uniforms that we will set
 #[derive(Clone)]

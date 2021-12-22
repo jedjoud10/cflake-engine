@@ -77,8 +77,7 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                 }
             }
             /* #region Local callbacks */
-            CallbackType::LocalEntityMut(_) => {}
-            /* #endregion */
+            CallbackType::LocalEntityMut(_) => {} /* #endregion */
         }
     });
 }

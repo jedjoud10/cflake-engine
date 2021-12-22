@@ -1,5 +1,5 @@
 use super::Material;
-use crate::{ModelGPUObject, MaterialGPUObject, GPUObjectID};
+use crate::{GPUObjectID, MaterialGPUObject, ModelGPUObject};
 
 use bitflags::bitflags;
 // Yup
@@ -13,10 +13,10 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 #[derive(Clone)]
 pub struct Renderer {
-    pub index: Option<GPUObjectID>, // The ID of this renderer in the pipeline
-    pub model: Option<GPUObjectID>, // The model GPU of this renderer
-    pub material: Option<GPUObjectID>,    // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
-    pub flags: RendererFlags,  // Flags
+    pub index: Option<GPUObjectID>,    // The ID of this renderer in the pipeline
+    pub model: Option<GPUObjectID>,    // The model GPU of this renderer
+    pub material: Option<GPUObjectID>, // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
+    pub flags: RendererFlags,          // Flags
 }
 
 impl Default for Renderer {
