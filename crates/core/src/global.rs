@@ -17,9 +17,9 @@ pub mod ecs {
         w.ecs_manager.entitym.entities.get_element(entity_id).flatten().cloned()
     }
     // Entity mut callback. We run this callback at the end of the frame with a world_mut environment
-    pub fn entity_mut(entity: &ecs::Entity, callback_id: u64) {
+    pub fn entity_mut(entity_id: usize, callback_id: u64) {
         // Create a local callback
-        let args = crate::callbacks::LogicSystemCallbackArguments::EntityMut(entity.entity_id);
+        let args = crate::callbacks::LogicSystemCallbackArguments::EntityMut(entity_id);
         crate::callbacks::buffer_callback_execution(callback_id, args);
     }
     // Add an entity without any linking groups

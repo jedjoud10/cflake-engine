@@ -15,6 +15,22 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
     // Create the shared data
     let shared_data = rendering::SharedData::new((irenderer, matrix));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
+    let entity_id = entity.entity_id;
+    result.with_callback(GPUObjectCallback(OwnedCallback::new(move |(_, id)| {
+        global::ecs::entity_mut(
+            entity_id,
+            LocalEntityMut(MutCallback::new(move |entity| {
+                let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
+                r.internal_renderer.index = Some(id);
+                println!("Updated the entity's internal renderer index!");
+                // Also update the transform since we're at it
+                let t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
+                let t = &mut *t_;
+                t.update_matrix();
+            }))
+            .create(),
+        );
+    })).create());    
     /*
     result.with_callback();
     // After adding the renderer, we must update the entity's renderer component using another callback

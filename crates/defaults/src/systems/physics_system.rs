@@ -3,8 +3,9 @@ use others::callbacks::{MutCallback, NullCallback};
 // Update the entities
 pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
     // Update the physics
+    let entity_id = entity.entity_id;
     core::global::ecs::entity_mut(
-        entity,
+        entity_id,
         LocalEntityMut(MutCallback::new(|entity| {
             // Get the transform position and rotation
             let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();

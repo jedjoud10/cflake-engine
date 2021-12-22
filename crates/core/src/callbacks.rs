@@ -47,54 +47,61 @@ pub fn buffer_callback_execution(id: u64, arguments: LogicSystemCallbackArgument
 
 // Execute all the local callbacks
 pub fn execute_local_callbacks() {
+    // Aaoaoao
+    let mut callbacks: Vec<(CallbackType, LogicSystemCallbackArguments)> = Vec::new();
     CALLBACK_MANAGER_BUFFER.with(|cell| {
         let mut cell = cell.borrow_mut();
-        // We must now empty the buffered executions and actually run the callbacks
+        // We must now empty the buffered executions
         if cell.buffered_executions.len() > 0 {
             let cleared_callbacks = std::mem::take(&mut cell.buffered_executions);
             for (id, arguments) in cleared_callbacks {
-                let callback = cell.callbacks.get(&id).unwrap();
-                // Execute the local callbacks
-                match callback {
-                    CallbackType::GPUObjectCallback(x) => {
-                        let callback = x.callback.as_ref();
-                        // Make sure this callback is the GPUObject one
-                        if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
-                            (callback)(args);
-                        }
-                    }
-                    CallbackType::EntityCreatedCallback(x) => {
-                        let callback = x.callback.as_ref();
-                        // Make sure this callback is the EntityRef one
-                        if let LogicSystemCallbackArguments::EntityRef(entity_id) = arguments {
-                            let mut cloned_entity = {
-                                let w = crate::world::world();
-                                w.ecs_manager.entitym.entity(entity_id).clone()
-                            };
-                            (callback)(&cloned_entity);
-                        }
-                    }
-                    CallbackType::LocalEntityMut(entity_callback) => {
-                        // Get the local callback arguments that are necessary
-                        if let LogicSystemCallbackArguments::EntityMut(entity_id) = arguments {
-                            // Get the mut entity
-                            let callback = entity_callback.callback.as_ref();
-                            let mut cloned_entity = {
-                                let w = crate::world::world();
-                                w.ecs_manager.entitym.entity(entity_id).clone()
-                            };
-                            // We must NOT have world() or world_mut() locked when executing these types of callbacks
-                            (callback)(&mut cloned_entity);
-                            // Update the value in the world
-                            let mut w = crate::world::world_mut();
-                            let entity = w.ecs_manager.entitym.entity_mut(entity_id);
-                            *entity = cloned_entity;
-                        }
-                    }
-                }
+                let callback = cell.callbacks.remove(&id).unwrap();
+                callbacks.push((callback, arguments));
             }
         }
     });
+
+    // Now we must execute the callbacks
+    for (callback, arguments) in callbacks {
+        // Execute the local callbacks
+        match callback {
+            CallbackType::GPUObjectCallback(x) => {
+                let callback = x.callback.as_ref();
+                // Make sure this callback is the GPUObject one
+                if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
+                    (callback)(args);
+                }
+            }
+            CallbackType::EntityCreatedCallback(x) => {
+                let callback = x.callback.as_ref();
+                // Make sure this callback is the EntityRef one
+                if let LogicSystemCallbackArguments::EntityRef(entity_id) = arguments {
+                    let mut cloned_entity = {
+                        let w = crate::world::world();
+                        w.ecs_manager.entitym.entity(entity_id).clone()
+                    };
+                    (callback)(&cloned_entity);
+                }
+            }
+            CallbackType::LocalEntityMut(entity_callback) => {
+                // Get the local callback arguments that are necessary
+                if let LogicSystemCallbackArguments::EntityMut(entity_id) = arguments {
+                    // Get the mut entity
+                    let callback = entity_callback.callback.as_ref();
+                    let mut cloned_entity = {
+                        let w = crate::world::world();
+                        w.ecs_manager.entitym.entity(entity_id).clone()
+                    };
+                    // We must NOT have world() or world_mut() locked when executing these types of callbacks
+                    (callback)(&mut cloned_entity);
+                    // Update the value in the world
+                    let mut w = crate::world::world_mut();
+                    let entity = w.ecs_manager.entitym.entity_mut(entity_id);
+                    *entity = cloned_entity;
+                }
+            }
+        }
+    }
 }
 
 // The data that will be sent back to the logic system from the main thread

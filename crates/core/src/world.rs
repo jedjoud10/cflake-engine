@@ -130,7 +130,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 // This is the main Update loop, ran on the main thread
 pub fn update_world_start_barrier(delta: f64) {
     // Systems are halting, tell them to continue their next frame
-    println!("Update world in {:.2}ms", delta * 1000.0);
+    //println!("Update world in {:.2}ms", delta * 1000.0);
     others::barrier::as_ref().thread_sync();
     FRAME.store(true, Ordering::Relaxed);
     // The systems are running, we cannot do anything main thread related
