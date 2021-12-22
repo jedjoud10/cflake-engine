@@ -2,9 +2,22 @@ use std::collections::HashMap;
 
 use crate::{GPUObjectID, MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform};
 
+
+pub trait GPUObjectIdentifiable {
+    // Get the GPU object ID of the current GPU object
+    fn get_id(&self) -> GPUObjectID;
+}
+
+macro_rules! impl_id {
+    ($x:ty) => {
+        impl GPUObjectIdentifiable for $x { fn get_id(&self) -> GPUObjectID { self.id }  }
+    };
+}
+
 // Cooler objects
 #[derive(Clone)]
 pub struct ModelGPUObject {
+    id: GPUObjectID,
     pub vertex_buf: u32,
     pub normal_buf: u32,
     pub uv_buf: u32,
@@ -14,30 +27,73 @@ pub struct ModelGPUObject {
     pub element_buffer_object: u32,
     pub element_count: usize,
 }
+impl_id!(ModelGPUObject);
+#[derive(Clone)]
+pub struct SubShaderGPUObject {
+    id: GPUObjectID,
+    pub subshader_type: SubShaderType,
+    pub program_id: u32,
+}
+impl_id!(SubShaderGPUObject);
 
 #[derive(Clone)]
-pub struct SubShaderGPUObject(pub SubShaderType, pub u32);
+pub struct ShaderGPUObject {
+    id: GPUObjectID,
+    pub program_id: u32,
+}
+impl_id!(ShaderGPUObject);
+
 #[derive(Clone)]
-pub struct ShaderGPUObject(pub u32);
-#[derive(Clone)]
-pub struct ComputeShaderGPUObject(pub u32);
+pub struct ComputeShaderGPUObject {
+    id: GPUObjectID,
+    pub program_id: u32,
+}
+impl_id!(ComputeShaderGPUObject);
+
 #[derive(Clone, Copy)]
-pub struct TextureGPUObject(pub u32, pub (i32, u32, u32), pub TextureType);
+pub struct TextureGPUObject {
+    id: GPUObjectID,
+    pub texture_id: u32,
+    pub ifd: (i32, u32, u32),
+    pub _type: TextureType,
+}
+impl_id!(TextureGPUObject);
+
 #[derive(Clone)]
-pub struct TextureFillGPUObject(pub Vec<u8>, pub usize);
+pub struct TextureFillGPUObject {
+    id: GPUObjectID,
+    pub pixels: Vec<u8>,
+    pub u: usize,
+}
+impl_id!(TextureFillGPUObject);
+
 #[derive(Clone)]
 // TODO: Add this as an actual GPU object lel
 pub struct CameraDataGPUObject {
+    id: GPUObjectID, 
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
     pub clip_planes: veclib::Vector2<f32>,
     pub viewm: veclib::Matrix4x4<f32>,
     pub projm: veclib::Matrix4x4<f32>,
 }
+impl_id!(CameraDataGPUObject);
+
 #[derive(Clone)]
-pub struct MaterialGPUObject(pub GPUObjectID, pub ShaderUniformsGroup, pub MaterialFlags);
+pub struct MaterialGPUObject {
+    id: GPUObjectID,
+    pub uniforms: ShaderUniformsGroup,
+    pub flags: MaterialFlags 
+}
+impl_id!(MaterialGPUObject);
+
 #[derive(Clone)]
-pub struct RendererGPUObject(pub GPUObjectID, pub GPUObjectID, pub veclib::Matrix4x4<f32>);
+pub struct RendererGPUObject {
+    id: GPUObjectID,
+    pub model_id: GPUObjectID,
+    pub material_id: GPUObjectID,
+    pub matrix: veclib::Matrix4x4<f32>,
+}
 
 pub mod uniform_setters {
     use crate::{GPUObjectID, TextureGPUObject, TextureShaderAccessType};
