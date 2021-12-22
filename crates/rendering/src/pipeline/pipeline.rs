@@ -311,7 +311,9 @@ fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command:
 // Poll commands that have been sent to us by the worker threads OR the main thread
 fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // We must loop through every command that we receive from the main thread
+    let mut i = 0;
     for render_command_query in rx.try_iter() {
+        i+=1;
         let callback_id = render_command_query.callback_id.clone();
         let waitable_id = render_command_query.waitable_id.clone();
         let execution_id = render_command_query.execution_id.clone();
@@ -334,6 +336,7 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
             None => { /* This command does not create a GPU object */ }
         }
     }
+    println!("Executed {} Render Commands", i);
 }
 // Data that will be sent back to the main thread after we start the pipeline thread
 pub struct PipelineStartData {

@@ -23,7 +23,7 @@ fn entity_update(data: &mut (), entity: &ecs::Entity) {
 
     // Custom speed
     let original_speed = 1.0 + core::global::input::mouse_scroll() * 0.4;
-    let speed = original_speed.abs().powf(2.0) * original_speed.signum();
+    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1000.0;
 
     // Actually update the velocity
     let delta = core::global::timings::delta() as f32;
@@ -52,9 +52,8 @@ fn entity_update(data: &mut (), entity: &ecs::Entity) {
     let new_rotation = new_rotation_;
     let new_position = position + velocity * delta;
     // We can now update the camera rotation and position
-    let entity_id = entity.entity_id;
     core::global::ecs::entity_mut(
-        entity_id,
+        entity.entity_id,
         LocalEntityMut(MutCallback::new(move |entity| {
             // Update the transform object
             let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();

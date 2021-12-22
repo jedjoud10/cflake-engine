@@ -22,11 +22,12 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
             LocalEntityMut(MutCallback::new(move |entity| {
                 let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
                 r.internal_renderer.index = Some(id);
-                println!("Updated the entity's internal renderer index!");
                 // Also update the transform since we're at it
+                /*
                 let t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
                 let t = &mut *t_;
                 t.update_matrix();
+                */
             }))
             .create(),
         );

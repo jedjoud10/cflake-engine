@@ -37,7 +37,7 @@ impl ImmediateTaskResult {
 // Excecute a specific task and give back it's result
 pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, receiver: &WorldTaskReceiver) -> ImmediateTaskResult {
     match query.task {
-        Task::EntityAdd(mut entity, mut linkings) => {
+        Task::EntityAdd(mut entity, linkings) => {
             // Add the components first
             let mut hashmap: HashMap<usize, usize> = HashMap::new();
             for (id, boxed_component) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
@@ -51,7 +51,6 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             entity.entity_id = entity_id;
             entity.linked_components = hashmap;
             entity.c_bitfield = entity_cbitfield;
-            dbg!(&entity);
             // Then add the entity
             world.ecs_manager.entitym.add_entity(entity);
 

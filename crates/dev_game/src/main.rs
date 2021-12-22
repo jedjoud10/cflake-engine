@@ -23,15 +23,16 @@ pub fn load_entities() {
         .unwrap();
     core::global::main::world_data_mut(|data| data.main_camera_entity_id = main_camera_entity_id);
     let material = rendering::pipec::material(rendering::Material::new("Test"));
-    let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\sphere.mdl3d").unwrap());
-    for x in 0..100 {
+    let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap());
+    for x in 0..10000 {
         let mut linkings = ecs::ComponentLinkingGroup::new();
         linkings
             .link(crate::components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, x as f32)))
             .unwrap();
         linkings
-            .link(crate::components::Renderer::default().set_model(model.clone()).set_material(material))
+            .link(crate::components::Renderer::default().set_model(model).set_material(material))
             .unwrap();
+        
         core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
     }
 

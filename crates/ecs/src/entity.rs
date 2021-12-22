@@ -19,7 +19,6 @@ impl EntityManager {
     }
     // Add an entity to the manager
     pub fn add_entity(&mut self, mut entity: Entity) -> usize {
-        println!("Add entity {}", entity);
         // Set the entity ID
         let next_id = self.entities.get_next_valid_id();
         entity.entity_id = next_id;
