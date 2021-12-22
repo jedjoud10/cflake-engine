@@ -22,7 +22,7 @@ pub fn load_entities() {
         .unwrap();
     core::global::main::world_data_mut(|data| data.main_camera_entity_id = main_camera_entity_id);
     let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\sphere.mdl3d").unwrap());
-    let material = rendering::Material::new("Test");
+    let material = rendering::pipec::material(rendering::Material::new("Test"));
     for x in 0..300 {
         let mut linkings = ecs::ComponentLinkingGroup::new();
         linkings

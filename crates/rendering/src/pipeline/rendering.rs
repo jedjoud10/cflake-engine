@@ -3,6 +3,7 @@ use crate::{texture::*, DataType, Material, Window, GPUObjectID};
 
 use glfw::Context;
 use others::SmartList;
+use std::collections::HashSet;
 use std::ptr::null;
 
 // These should be ran on the main thread btw
@@ -60,6 +61,7 @@ pub struct PipelineRenderer {
     frame_stats: FrameStats,                 // Some frame stats
     pub window: Window,                      // Window
     pub default_material: Option<Material>,  // Self explanatory
+    renderer_ids: HashSet<GPUObjectID> // IDs of GPURendererObjects
 }
 
 // Render debug primitives
@@ -72,15 +74,15 @@ pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &Came
 
 // Render a renderer normally
 pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject) {
-    let _shader = &(renderer.1).0;
-    let material = &renderer.1;
-    let model = &renderer.0;
+    let shader = (renderer.1).to_shader().unwrap();
+    let material = (renderer.1).to_material().unwrap();
+    let model = (renderer.0).to_model().unwrap();
     let model_matrix = &renderer.2;
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     // Pass the MVP and the model matrix to the shader
     let mut group = material.1.clone();
-    group.with_shader(_shader);
+    group.with_shader(shader);
     group.set_mat44("mvp_matrix", mvp_matrix);
     group.set_mat44("model_matrix", *model_matrix);
     group.set_mat44("view_matrix", camera.viewm);
@@ -103,13 +105,14 @@ pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject) {
 }
 
 // Render a renderer using wireframe
-fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, ws: &ShaderGPUObject) {
-    let _shader = &(renderer.1).0;
-    let _material = &renderer.1;
-    let model = &renderer.0;
+fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, ws: &GPUObjectID) {
+    let shader = (renderer.1).to_shader().unwrap();
+    let material = (renderer.1).to_material().unwrap();
+    let model = (renderer.0).to_model().unwrap();
     let model_matrix = &renderer.2;
+    let ws = ws.to_shader().unwrap();
     let mut group = ws.new_uniform_group();
-    group.with_shader(_shader);
+    group.with_shader(shader);
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     group.set_mat44("mvp_matrix", mvp_matrix);
@@ -169,7 +172,9 @@ impl PipelineRenderer {
         println!("Loaded the default material!");
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
-        fn bind_attachement(attachement: u32, texture: &TextureGPUObject) {
+        fn bind_attachement(attachement: u32, texture: &GPUObjectID) {
+            // Get the textures from the GPUObjectID
+            let texture = texture.to_texture().unwrap();
             unsafe {
                 // Default target, no multisamplind
                 let target: u32 = gl::TEXTURE_2D;
@@ -232,6 +237,13 @@ impl PipelineRenderer {
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
+    // Renderers
+    pub fn add_renderer(&mut self, renderer: GPUObjectID) {
+        self.renderer_ids.insert(renderer);
+    }
+    pub fn remove_renderer(&mut self, renderer_id: &GPUObjectID) {
+        self.renderer_ids.remove(renderer_id);
+    }
     // Pre-render event
     pub fn pre_render(&mut self) {
         unsafe {
@@ -240,8 +252,8 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, camera: &CameraDataGPUObject, renderers: &SmartList<RendererGPUObject>) {
-        for renderer in renderers.elements.iter().filter_map(|x| x.as_ref()) {
+    pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
+        for renderer in self.renderer_ids.iter().map(|x| x.to_renderer().unwrap()) {
             // Should we render in wireframe or not?
             if self.wireframe {
                 render_wireframe(renderer, camera, &self.wireframe_shader);
@@ -256,7 +268,8 @@ impl PipelineRenderer {
         //self.frame_stats.update_texture(data.time_manager, &data.entity_manager.entities);
         let dimensions = self.window.dimensions;
         // Render the screen QUAD
-        let mut group = self.screen_shader.new_uniform_group();
+        let screen_shader = self.screen_shader.to_shader().unwrap();
+        let mut group = screen_shader.new_uniform_group();
         group.set_vec2i32("resolution", dimensions.into());
         group.set_vec2f32("nf_planes", camera.clip_planes);
         group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
@@ -275,12 +288,13 @@ impl PipelineRenderer {
         group.consume();
 
         // Render the screen quad
+        let quad_model = self.quad_model.to_model().unwrap();
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(self.quad_model.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.quad_model.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, self.quad_model.element_count as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(quad_model.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_model.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, quad_model.element_count as i32, gl::UNSIGNED_INT, null());
             gl::BindVertexArray(0);
             window.swap_buffers();
         }

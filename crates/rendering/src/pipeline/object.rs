@@ -26,6 +26,7 @@ pub struct TextureGPUObject(pub u32, pub (i32, u32, u32), pub TextureType);
 #[derive(Clone)]
 pub struct TextureFillGPUObject(pub Vec<u8>, pub usize);
 #[derive(Clone)]
+// TODO: Add this as an actual GPU object lel
 pub struct CameraDataGPUObject {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
@@ -39,7 +40,7 @@ pub struct MaterialGPUObject(pub GPUObjectID, pub ShaderUniformsGroup, pub Mater
 pub struct RendererGPUObject(pub GPUObjectID, pub GPUObjectID, pub veclib::Matrix4x4<f32>);
 
 pub mod uniform_setters {
-    use crate::{TextureGPUObject, TextureShaderAccessType};
+    use crate::{TextureGPUObject, TextureShaderAccessType, GPUObjectID};
     use std::ffi::CString;
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
@@ -51,7 +52,8 @@ pub mod uniform_setters {
         gl::Uniform1f(index, *value);
     }
     // Set a 2D image
-    pub unsafe fn set_i2d(index: i32, texture: &TextureGPUObject, access_type: &TextureShaderAccessType) {
+    pub unsafe fn set_i2d(index: i32, texture: &GPUObjectID, access_type: &TextureShaderAccessType) {
+        let texture = texture.to_texture().unwrap();
         // Converstion from wrapper to actual opengl values
         let new_access_type: u32;
         match access_type {
@@ -68,7 +70,8 @@ pub mod uniform_setters {
         gl::Uniform1i(index, *value);
     }
     // Set a 3D image
-    pub unsafe fn set_i3d(index: i32, texture: &TextureGPUObject, access_type: &TextureShaderAccessType) {
+    pub unsafe fn set_i3d(index: i32, texture: &GPUObjectID, access_type: &TextureShaderAccessType) {
+        let texture = texture.to_texture().unwrap();
         // Converstion from wrapper to actual opengl values
         let new_access_type: u32;
         match access_type {
@@ -86,25 +89,29 @@ pub mod uniform_setters {
         gl::UniformMatrix4fv(index, 1, gl::FALSE, ptr);
     }
     // Set a 1D texture
-    pub unsafe fn set_t1d(index: i32, texture: &TextureGPUObject, active_texture_id: &u32) {
+    pub unsafe fn set_t1d(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
+        let texture = texture.to_texture().unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_1D, texture.0);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a 2D texture
-    pub unsafe fn set_t2d(index: i32, texture: &TextureGPUObject, active_texture_id: &u32) {
+    pub unsafe fn set_t2d(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
+        let texture = texture.to_texture().unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_2D, texture.0);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a texture2d array
-    pub unsafe fn set_t2da(index: i32, texture: &TextureGPUObject, active_texture_id: &u32) {
+    pub unsafe fn set_t2da(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
+        let texture = texture.to_texture().unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.0);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a 3D texture
-    pub unsafe fn set_t3d(index: i32, texture: &TextureGPUObject, active_texture_id: &u32) {
+    pub unsafe fn set_t3d(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
+        let texture = texture.to_texture().unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_3D, texture.0);
         gl::Uniform1i(index, *active_texture_id as i32);
@@ -152,12 +159,12 @@ fn run_shader_uniform_group(shader: u32, group: &ShaderUniformsGroup) {
                 Uniform::Vec3I32(x) => set_vec3i32(index, x),
                 Uniform::Vec4I32(x) => set_vec4i32(index, x),
                 Uniform::Mat44F32(x) => set_mat44(index, x),
-                Uniform::Texture1D(x, y) => set_t1d(index, x, y),
-                Uniform::Texture2D(x, y) => set_t2d(index, x, y),
-                Uniform::Texture3D(x, y) => set_t3d(index, x, y),
-                Uniform::Texture2DArray(x, y) => set_t2da(index, x, y),
-                Uniform::Image2D(x, y) => set_i2d(index, x, y),
-                Uniform::Image3D(x, y) => set_i3d(index, x, y),
+                Uniform::Texture1D(x, y) => if x.is_valid() { set_t1d(index, x, y) },
+                Uniform::Texture2D(x, y) => if x.is_valid() { set_t2d(index, x, y) },
+                Uniform::Texture3D(x, y) => if x.is_valid() { set_t3d(index, x, y) },
+                Uniform::Texture2DArray(x, y) => if x.is_valid() { set_t2da(index, x, y) },
+                Uniform::Image2D(x, y) => if x.is_valid() { set_i2d(index, x, y) },
+                Uniform::Image3D(x, y) => if x.is_valid() { set_i3d(index, x, y) },
                 Uniform::Bool(_x) => todo!(),
             }
         }
@@ -195,7 +202,7 @@ impl ShaderUniformsGroup {
         self.uniforms.insert(name.to_string(), Uniform::F32(value));
     }
     // Set a 2D image
-    pub fn set_i2d(&mut self, name: &str, texture: TextureGPUObject, access_type: TextureShaderAccessType) {
+    pub fn set_i2d(&mut self, name: &str, texture: GPUObjectID, access_type: TextureShaderAccessType) {
         self.uniforms.insert(name.to_string(), Uniform::Image2D(texture, access_type));
     }
     // Set a i32
@@ -203,7 +210,7 @@ impl ShaderUniformsGroup {
         self.uniforms.insert(name.to_string(), Uniform::I32(value));
     }
     // Set a 3D image
-    pub fn set_i3d(&mut self, name: &str, texture: TextureGPUObject, access_type: TextureShaderAccessType) {
+    pub fn set_i3d(&mut self, name: &str, texture: GPUObjectID, access_type: TextureShaderAccessType) {        
         self.uniforms.insert(name.to_string(), Uniform::Image3D(texture, access_type));
     }
     // Set a matrix 4x4 f32
@@ -211,19 +218,19 @@ impl ShaderUniformsGroup {
         self.uniforms.insert(name.to_string(), Uniform::Mat44F32(matrix));
     }
     // Set a 1D texture
-    pub fn set_t1d(&mut self, name: &str, texture: TextureGPUObject, active_texture_id: u32) {
+    pub fn set_t1d(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
         self.uniforms.insert(name.to_string(), Uniform::Texture1D(texture, active_texture_id));
     }
     // Set a 2D texture
-    pub fn set_t2d(&mut self, name: &str, texture: TextureGPUObject, active_texture_id: u32) {
+    pub fn set_t2d(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
         self.uniforms.insert(name.to_string(), Uniform::Texture2D(texture, active_texture_id));
     }
     // Set a texture2d array
-    pub fn set_t2da(&mut self, name: &str, texture: TextureGPUObject, active_texture_id: u32) {
+    pub fn set_t2da(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
         self.uniforms.insert(name.to_string(), Uniform::Texture2DArray(texture, active_texture_id));
     }
     // Set a 3D texture
-    pub fn set_t3d(&mut self, name: &str, texture: TextureGPUObject, active_texture_id: u32) {
+    pub fn set_t3d(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
         self.uniforms.insert(name.to_string(), Uniform::Texture3D(texture, active_texture_id));
     }
     // Set a vec2 f32 uniform

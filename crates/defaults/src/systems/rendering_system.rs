@@ -34,27 +34,21 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
         }
     })).create());
     */
-    let gpuobject = result.wait_gpuobject();
-    // This callback is called when we actually add the renderer
-    match gpuobject {
-        rendering::GPUObject::Renderer(renderer_id) => {
-            // After adding the renderer, we must update the entity's renderer component using another callback
-            global::ecs::entity_mut(
-                entity,
-                LocalEntityMut(MutCallback::new(move |entity| {
-                    let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
-                    r.internal_renderer.index = Some(renderer_id);
-                    println!("Updated the entity's internal renderer index!");
-                    // Also update the transform since we're at it
-                    let mut t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
-                    let t = &mut *t_;
-                    t.update_matrix();
-                }))
-                .create(),
-            );
-        }
-        _ => {}
-    }
+    let gpuobject_id = result.wait_gpuobject_id();
+    // After adding the renderer, we must update the entity's renderer component using another callback
+    global::ecs::entity_mut(
+        entity,
+        LocalEntityMut(MutCallback::new(move |entity| {
+            let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
+            r.internal_renderer.index = Some(gpuobject_id);
+            println!("Updated the entity's internal renderer index!");
+            // Also update the transform since we're at it
+            let mut t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
+            let t = &mut *t_;
+            t.update_matrix();
+        }))
+        .create(),
+    );
 }
 // Remove the renderer from the pipeline renderer
 fn entity_removed(data: &mut (), entity: &ecs::Entity) {

@@ -16,18 +16,19 @@ lazy_static! {
     static ref COUNTER: AtomicU64 = AtomicU64::new(0);
 }
 
-// A shared GPU object that was sent to the render thread, and that can be returned back to the main thread at some point
-pub struct SharedData<T: Default + Sync> {
-    pub object: Arc<T>,
+// A shared GPU object that was sent to the render thread
+pub struct SharedData<T: Default + Send> {
+    object: T,
 }
 
 impl<T> SharedData<T>
 where
-    T: Default + Sync,
+    T: Default + Send,
 {
     pub fn new(x: T) -> Self {
-        Self { object: Arc::new(x) }
+        Self { object: x }
     }
+    pub fn get(self) -> T { self.object }
 }
 
 thread_local! {
@@ -126,15 +127,13 @@ impl RenderCommandResult {
             // PS: This will block the current thread
             let x = interface::wait_for_gpuobject_id(waitable_id);
             let id = x.unwrap();
-            let gpuobject = interface::get_gpu_object(&id).unwrap();
-            gpuobject
+            interface::get_gpu_object(&id).cloned().unwrap()
         } else {
             // If we are on the render thread, we do something different
             // Execute the command internally, so we must invalidate the one stored in self
             let task = self.task.take().unwrap();
             let id = internal_task(task).unwrap();
-            let gpuobject = interface::get_gpu_object(&id).unwrap();
-            gpuobject
+            interface::get_gpu_object(&id).cloned().unwrap()
         }
     }
     // We will wait for thes result of this render command query as a GPUObject ID

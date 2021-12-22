@@ -1,4 +1,5 @@
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
+use rendering::GPUObjectID;
 use rendering::basics::*;
 use rendering::pipec;
 use rendering::pipeline;
@@ -17,16 +18,16 @@ pub struct Voxel {
 #[derive(Default)]
 pub struct VoxelGenerator {
     // The compute shader's name used for voxel generation
-    pub compute: ComputeShaderGPUObject,
+    pub compute: GPUObjectID,
     // The 3D texture used for voxel generation, only stores the density in a 16 bit value
-    pub voxel_texture: TextureGPUObject,
+    pub voxel_texture: GPUObjectID,
     // The 3D texture used to store MaterialID, BiomeID, Hardness and Smoothness
-    pub material_texture: TextureGPUObject,
+    pub material_texture: GPUObjectID,
 }
 
 impl VoxelGenerator {
     // New
-    pub fn new(compute: ComputeShaderGPUObject) -> Self {
+    pub fn new(compute: GPUObjectID) -> Self {
         Self { compute, ..Self::default() }
     }
     // Generate the voxel texture
@@ -59,7 +60,8 @@ impl VoxelGenerator {
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
         // First pass
-        let mut group = self.compute.new_uniform_group();
+        let compute = self.compute.to_compute_shader().unwrap();
+        let mut group = compute.new_uniform_group();
         group.set_i3d("voxel_image", self.voxel_texture, TextureShaderAccessType::WriteOnly);
         group.set_i3d("material_image", self.material_texture, TextureShaderAccessType::WriteOnly);
         group.set_i32("chunk_size", ((MAIN_CHUNK_SIZE + 2) as i32));
@@ -67,7 +69,7 @@ impl VoxelGenerator {
         group.set_i32("node_size", size as i32);
         group.set_i32("depth", depth as i32);
         // Dispatch the compute shader, don't read back the data immediatly
-        self.compute.run(
+        compute.run(
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
             (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
@@ -77,7 +79,8 @@ impl VoxelGenerator {
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
         // Read back the compute shader data
-        self.compute.lock_state();
+        let compute = self.compute.to_compute_shader().unwrap();
+        compute.lock_state();
         // Read back the texture into the data buffer
         // Wait for main voxel gen
         let result1 = pipec::task(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()));

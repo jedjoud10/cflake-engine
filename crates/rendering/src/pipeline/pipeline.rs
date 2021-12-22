@@ -133,7 +133,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     // Pre-render
                     pipeline_renderer.pre_render();
                     // Render
-                    pipeline_renderer.renderer_frame(&camera, renderers);
+                    pipeline_renderer.renderer_frame(&camera);
                     // Post-render
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
@@ -216,10 +216,7 @@ fn command(
         }
         // Pipeline
         RenderTask::CameraDataUpdate(shared) => {
-            let pos = shared.object.0;
-            let rot = shared.object.1;
-            let clip_planes = shared.object.2;
-            let projm = shared.object.3;
+            let (pos, rot, clip_planes, projm) = shared.get();
             // Calculate the view matrix using the position and rotation
             let viewm = {
                 let rm = veclib::Matrix4x4::from_quaternion(&rot);
@@ -253,6 +250,10 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
         let waitable_id = render_command_query.waitable_id.clone();
         let execution_id = render_command_query.execution_id.clone();
         let thread_id = render_command_query.thread_id;
+        let callback_id = match callback_id {
+            Some(x) => Some((x, thread_id)),
+            None => None,
+        };
         // Check special commands first
         // Valid command
         match command(pr, camera, render_command_query, window, glfw) {
@@ -261,7 +262,7 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
                 // We have a valid GPU object
                 match execution_id {
                     Some(execution_id) => interface::received_task_execution_ack(execution_id),
-                    None => interface::received_new_gpu_object(gpuobject, name, callback_id, waitable_id, thread_id), // Notify the interface that we have a new gpu object
+                    None => interface::received_new_gpu_object_additional(gpuobject_id, callback_id, waitable_id), // Notify the interface that we have a new gpu object
                 }
             }
             None => { /* This command does not create a GPU object */ }
@@ -279,13 +280,11 @@ pub struct Pipeline {}
 impl Pipeline {
     // Add the renderer to the renderer (lol I need better name)
     pub fn add_renderer(renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
-        let matrix = &renderer.object.1;
-        let renderer = &renderer.object.0;
-
+        let (renderer, matrix) = renderer.get();
         let material = renderer.material.unwrap();
         let model = renderer.model.clone().unwrap();
-        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject(model, material, *matrix));
-        interface::received_new_gpu_object(renderer_gpuobject, None, None, None)
+        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject(model, material, matrix));
+        interface::received_new_gpu_object(renderer_gpuobject, None)
     }
     // Remove the renderer using it's renderer ID
     pub fn remove_renderer(renderer_id: GPUObjectID) {
@@ -295,7 +294,7 @@ impl Pipeline {
     fn update_renderer(renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
         interface::update_gpu_object(renderer_id, |gpuobject| { 
             if let GPUObject::Renderer(renderer) = gpuobject {
-                renderer.2 = matrix.object.as_ref().clone();
+                renderer.2 = matrix.get();
             }
         });
     }
@@ -305,7 +304,7 @@ impl Pipeline {
 impl Pipeline {
     pub fn create_compile_subshader(subshader: SharedData<SubShader>) -> GPUObjectID {
         let shader_type: u32;
-        let subshader = subshader.object.as_ref();
+        let subshader = subshader.get();
         match subshader.subshader_type {
             SubShaderType::Vertex => shader_type = gl::VERTEX_SHADER,
             SubShaderType::Fragment => shader_type = gl::FRAGMENT_SHADER,
@@ -343,12 +342,13 @@ impl Pipeline {
         }
     }
     pub fn create_compile_shader(shader: SharedData<Shader>) -> GPUObjectID {
-        let shader = shader.object.as_ref();
+        let shader = shader.get();
         unsafe {
             let program = gl::CreateProgram();
 
             // Attach the shaders
-            for subshader_program in shader.linked_subshaders_programs.iter() {
+            for subshader_program_ in shader.linked_subshaders_programs.iter() {
+                let subshader_program = subshader_program_.to_subshader().unwrap();
                 gl::AttachShader(program, subshader_program.1);
             }
 
@@ -374,12 +374,10 @@ impl Pipeline {
                 panic!();
             }
             // Check if this a compute shader
-            let compute_shader: bool = match shader.linked_subshaders_programs.get(0).unwrap().0 {
-                SubShaderType::Compute => true,
-                _ => false,
-            };
+            let compute_shader = shader.is_compute;
             // Detach shaders
-            for subshader_program in shader.linked_subshaders_programs.iter() {
+            for subshader_program_ in shader.linked_subshaders_programs.iter() {
+                let subshader_program = subshader_program_.to_subshader().unwrap();
                 gl::DetachShader(program, subshader_program.1);
             }
             let gpuobject = if !compute_shader {
@@ -394,7 +392,7 @@ impl Pipeline {
         }
     }
     pub fn create_model(model: SharedData<Model>) -> GPUObjectID {
-        let model = model.object.as_ref();
+        let model = model.get();
         let mut gpu_data = ModelGPUObject { 
             vertex_buf: 0,
             normal_buf: 0,
@@ -528,7 +526,7 @@ impl Pipeline {
     }
     pub fn generate_texture(texture: SharedData<Texture>) -> GPUObjectID {
         let mut pointer: *const c_void = null();
-        let texture = texture.object.as_ref();
+        let texture = texture.get();
         if !texture.bytes.is_empty() {
             pointer = texture.bytes.as_ptr() as *const c_void;
         }

@@ -22,16 +22,36 @@ pub fn get_named_gpu_object(name: &str) -> Option<GPUObject> {
     }
 }
 // Get a GPU object using it's GPUObjectID
-pub fn get_gpu_object(id: &GPUObjectID) -> Option<GPUObject> {
+pub fn get_gpu_object<'a>(id: &'a GPUObjectID) -> Option<&GPUObject> {
     let buf = INTERFACE_BUFFER.read().unwrap();
     let gpuobject = buf.gpuobjects.get_element(id.index?);
     // Flatten
-    gpuobject.flatten().cloned()
+    let x = gpuobject.flatten()?;
+    let ptr = x as *const GPUObject;
+    // Gonna document later why this is totally safe and how it *should* not cause a mem corruption or UB
+    Some(unsafe { &*ptr })
+}
+// Get the GPUObjectID from a name
+pub fn get_id_named(name: &str) -> Option<GPUObjectID> {
+    let buf = INTERFACE_BUFFER.read().unwrap();
+    let x = buf.names_to_id.get(name)?;
+    Some(GPUObjectID { index: Some(*x) })
 }
 // Check if a GPU object name is valid
 pub fn gpu_object_name_valid(name: &str) -> bool {
     let buf = INTERFACE_BUFFER.read().unwrap();
     buf.names_to_id.contains_key(name)
+}
+// Check if a GPU object is valid
+pub fn gpu_object_valid(id: &GPUObjectID) -> bool {
+    let buf = INTERFACE_BUFFER.read().unwrap();
+    match id.index {
+        Some(index) => match buf.gpuobjects.get_element(index).flatten() {
+            Some(_) => true,
+            None => false,
+        },
+        None => false,
+    }   
 }
 /* #endregion */
 

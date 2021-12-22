@@ -82,7 +82,7 @@ impl Material {
         self
     }
     // Set the main shader
-    pub fn set_shader(mut self, shader: ShaderGPUObject) -> Self {
+    pub fn set_shader(mut self, shader: GPUObjectID) -> Self {
         self.shader = Some(shader);
         self
     }

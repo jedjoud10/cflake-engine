@@ -1,5 +1,5 @@
 use crate::pipeline::object::*;
-use crate::TextureShaderAccessType;
+use crate::{TextureShaderAccessType, GPUObjectID};
 
 // Some default uniforms that we will set
 #[derive(Clone)]
@@ -17,13 +17,13 @@ pub enum Uniform {
     Vec4I32(veclib::Vector4<i32>),
     Mat44F32(veclib::Matrix4x4<f32>),
     // Others
-    Texture1D(TextureGPUObject, u32),
-    Texture2D(TextureGPUObject, u32),
-    Texture3D(TextureGPUObject, u32),
-    Texture2DArray(TextureGPUObject, u32),
+    Texture1D(GPUObjectID, u32),
+    Texture2D(GPUObjectID, u32),
+    Texture3D(GPUObjectID, u32),
+    Texture2DArray(GPUObjectID, u32),
     // Compute sheit
-    Image2D(TextureGPUObject, TextureShaderAccessType),
-    Image3D(TextureGPUObject, TextureShaderAccessType),
+    Image2D(GPUObjectID, TextureShaderAccessType),
+    Image3D(GPUObjectID, TextureShaderAccessType),
 }
 
 // Simple main OpenGL types

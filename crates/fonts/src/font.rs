@@ -10,7 +10,7 @@ pub struct Font {
     pub name: String,
     pub atlas_dimensions: veclib::Vector2<u16>,
     pub texture_pixels: Vec<u8>,
-    pub texture: TextureGPUObject,
+    pub texture: GPUObjectID,
     pub chars: Vec<FontChar>,
     pub font_options: FontOptions,
 }
