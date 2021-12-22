@@ -117,13 +117,14 @@ where
                     }
 
                     // Very very end of the frame
-                    if barrier_data.is_world_valid() {
+                    if barrier_data.is_world_valid() {                        
                         let thread_id = std::thread::current().id();
                         // Check if the world got yeeted
                         if barrier_data.is_world_destroyed() {
                             barrier_data.thread_sync_quit();
                             break;
                         }
+                        others::barrier::as_ref().thread_sync();
                         // Wait until the main world gives us permission to continue
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                         // We got permission, we can run the local callbacks

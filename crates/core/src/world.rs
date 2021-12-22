@@ -183,6 +183,8 @@ pub fn update_world_start_barrier(delta: f64) {
 pub fn update_world_end_barrier(delta: f64, thread_ids: &Vec<ThreadId>) {
     FRAME.store(false, Ordering::Relaxed);
     // --- SYSTEM FRAME END HERE ---
+    // Sync the end of the system frame
+    others::barrier::as_ref().thread_sync();
     // We will tell the systems to execute their local callbacks
     for thread_id in thread_ids {
         others::barrier::as_ref().thread_sync_local_callbacks(thread_id);
