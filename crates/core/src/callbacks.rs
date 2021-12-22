@@ -120,7 +120,6 @@ pub enum LogicSystemCallbackArguments {
     EntityRef(usize),
     // Rendering
     RenderingGPUObject((rendering::GPUObject, rendering::GPUObjectID)),
-    RenderingGPUObjectID(rendering::GPUObjectID),
 }
 
 // Arguments used when calling the local callbacks

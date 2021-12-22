@@ -159,6 +159,8 @@ where
 fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<usize>, system: &mut ecs::System<T>) {
     match lsc {
         LogicSystemCommand::RunCallback(id, result_data) => {
+            // We will run this when we run the local callbacks!
+            
             let mut w = crate::world::world_mut();
             let world = &mut *w;
             crate::callbacks::execute_callback(id, result_data, world);
