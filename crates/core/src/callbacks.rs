@@ -64,8 +64,8 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
             CallbackType::GPUObjectCallback(x) => {
                 let callback = x.callback.as_ref();
                 // Make sure this callback is the GPUObject one
-                if let LogicSystemCallbackArguments::RenderingGPUObject(gpuobject) = arguments {
-                    (callback)(gpuobject);
+                if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
+                    (callback)(args);
                 }
             }
             CallbackType::EntityCreatedCallback(x) => {
@@ -77,7 +77,8 @@ pub fn execute_callback(id: u64, arguments: LogicSystemCallbackArguments, world:
                 }
             }
             /* #region Local callbacks */
-            CallbackType::LocalEntityMut(_) => {} /* #endregion */
+            CallbackType::LocalEntityMut(_) => {}
+            /* #endregion */
         }
     });
 }
@@ -118,7 +119,8 @@ pub enum LogicSystemCallbackArguments {
     // Entity
     EntityRef(usize),
     // Rendering
-    RenderingGPUObject(rendering::GPUObject),
+    RenderingGPUObject((rendering::GPUObject, rendering::GPUObjectID)),
+    RenderingGPUObjectID(rendering::GPUObjectID),
 }
 
 // Arguments used when calling the local callbacks
@@ -128,7 +130,7 @@ pub enum LocalCallbackArguments {
 
 // The callback type
 pub enum CallbackType {
-    GPUObjectCallback(OwnedCallback<rendering::GPUObject>),
+    GPUObjectCallback(OwnedCallback<(rendering::GPUObject, rendering::GPUObjectID)>),
     EntityCreatedCallback(RefCallback<ecs::Entity>),
     LocalEntityMut(MutCallback<ecs::Entity>),
 }

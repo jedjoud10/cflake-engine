@@ -31,6 +31,16 @@ pub fn get_gpu_object<'a>(id: &'a GPUObjectID) -> Option<&GPUObject> {
     // Gonna document later why this is totally safe and how it *should* not cause a mem corruption or UB
     Some(unsafe { &*ptr })
 }
+// Get a GPU object using a ref usize
+pub fn get_gpu_object_usize<'a>(id: &'a usize) -> Option<&GPUObject> {
+    let buf = INTERFACE_BUFFER.read().unwrap();
+    let gpuobject = buf.gpuobjects.get_element(*id);
+    // Flatten
+    let x = gpuobject.flatten()?;
+    let ptr = x as *const GPUObject;
+    // Gonna document later why this is totally safe and how it *should* not cause a mem corruption or UB
+    Some(unsafe { &*ptr })
+}
 // Get the GPUObjectID from a name
 pub fn get_id_named(name: &str) -> Option<GPUObjectID> {
     let buf = INTERFACE_BUFFER.read().unwrap();
@@ -117,12 +127,16 @@ pub fn update_render_thread(tx2: &Sender<MainThreadMessage>) {
     let callbacks_objects_indices = std::mem::take(&mut buf.callback_objects);
     let callback_objects = callbacks_objects_indices
         .into_iter()
-        .map(|(callback_id, (index, thread_id))| (callback_id, buf.gpuobjects.get_element(index).unwrap().cloned().unwrap(), thread_id))
-        .collect::<Vec<(u64, GPUObject, std::thread::ThreadId)>>();
+        .map(|(callback_id, (index, thread_id))| 
+            (callback_id,
+            (buf.gpuobjects.get_element(index).unwrap().cloned().unwrap(),
+            GPUObjectID { index: Some(index) },),
+            thread_id))
+        .collect::<Vec<(u64, (GPUObject, GPUObjectID), std::thread::ThreadId)>>();
 
     // Now we must all of this to the main thread
-    for (callback_id, gpuobject, thread_id) in callback_objects {
-        tx2.send(MainThreadMessage::ExecuteCallback(callback_id, gpuobject, thread_id)).unwrap();
+    for (callback_id, args, thread_id) in callback_objects {
+        tx2.send(MainThreadMessage::ExecuteCallback(callback_id, args, thread_id)).unwrap();
     }
 }
 

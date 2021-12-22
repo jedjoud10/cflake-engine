@@ -118,10 +118,10 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
     // Receive the messages from the Render Thread
     for render_thread_message in pipeline_start_data.rx.try_iter() {
         match render_thread_message {
-            rendering::MainThreadMessage::ExecuteCallback(id, gpuobject, thread_id) => {
+            rendering::MainThreadMessage::ExecuteCallback(id, args, thread_id) => {
                 // We must explicitly run the callback
                 crate::system::send_lsc(
-                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUObject(gpuobject)),
+                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUObject(args)),
                     &thread_id,
                     receiver,
                 );

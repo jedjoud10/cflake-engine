@@ -17,7 +17,7 @@ use std::{
 
 // Messages that will be to the main thread
 pub enum MainThreadMessage {
-    ExecuteCallback(u64, GPUObject, std::thread::ThreadId),
+    ExecuteCallback(u64, (GPUObject, GPUObjectID), std::thread::ThreadId),
 }
 
 lazy_static! {
@@ -35,6 +35,51 @@ pub fn pipeline() -> RwLockReadGuard<'static, Option<Pipeline>> {
 pub fn pipeline_mut() -> RwLockWriteGuard<'static, Option<Pipeline>> {
     let x = PIPELINE.write().unwrap();
     x
+}
+
+// Load the default rendering things
+fn load_defaults() {
+    crate::pipec::texturec(assets::cachec::acache_l("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap());
+    // Create the black texture
+    crate::pipec::texturec(
+        assets::cachec::cache(
+            "black",
+            Texture::default()
+                .set_dimensions(TextureType::Texture2D(1, 1))
+                .set_filter(TextureFilter::Linear)
+                .enable_mipmaps()
+                .set_name("black")
+                .set_bytes(vec![0, 0, 0, 255]),
+        )
+        .unwrap(),
+    );
+
+    // Create the white texture
+    crate::pipec::texturec(
+        assets::cachec::cache(
+            "white",
+            Texture::default()
+                .set_dimensions(TextureType::Texture2D(1, 1))
+                .set_filter(TextureFilter::Linear)
+                .enable_mipmaps()
+                .set_name("white")
+                .set_bytes(vec![255, 255, 255, 255]),
+        )
+        .unwrap(),
+    );
+    // Create the default normals texture
+    crate::pipec::texturec(
+        assets::cachec::cache(
+            "default_normals",
+            Texture::default()
+                .set_dimensions(TextureType::Texture2D(1, 1))
+                .set_filter(TextureFilter::Linear)
+                .enable_mipmaps()
+                .set_name("default_normals")
+                .set_bytes(vec![127, 128, 255, 255]),
+        )
+        .unwrap(),
+    );
 }
 
 // Create the new render thread
@@ -104,6 +149,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
                 // Initialize the deferred renderer
                 let mut pipeline_renderer = PipelineRenderer::default();
+                load_defaults();
                 pipeline_renderer.init();
 
                 // El camera
@@ -177,11 +223,13 @@ pub fn internal_task(task: RenderTask) -> Option<GPUObjectID> {
         // Model
         RenderTask::ModelCreate(shared_model) => Some(Pipeline::create_model(shared_model)),
         RenderTask::ModelDispose(gpumodel) => { Pipeline::dispose_model(gpumodel); None }
+        // Material
+        RenderTask::MaterialCreate(material) => { Some(Pipeline::create_material(material)) },
         // Compute
         RenderTask::ComputeRun(compute, axii, uniforms_group) => { Pipeline::run_compute(compute, axii, uniforms_group); None }
         RenderTask::ComputeLock(compute) => { Pipeline::lock_compute(compute); None }
         // Others
-        _ => None,
+        _ => None
     }
 }
 
@@ -234,8 +282,8 @@ fn command(
             None
         }
         // Renderer commands
-        RenderTask::RendererAdd(shared_renderer) => Some(Pipeline::add_renderer(shared_renderer)),
-        RenderTask::RendererRemove(renderer_id) => { Pipeline::remove_renderer(renderer_id); None }
+        RenderTask::RendererAdd(shared_renderer) => Some(Pipeline::add_renderer(pr, shared_renderer)),
+        RenderTask::RendererRemove(renderer_id) => { Pipeline::remove_renderer(pr, renderer_id); None }
         RenderTask::RendererUpdateTransform(renderer_id, matrix) => { Pipeline::update_renderer(renderer_id, matrix); None }
         // Internal cases
         x => internal_task(x),
@@ -279,15 +327,20 @@ pub struct Pipeline {}
 // Renderers
 impl Pipeline {
     // Add the renderer to the renderer (lol I need better name)
-    pub fn add_renderer(renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
+    pub fn add_renderer(pr: &mut PipelineRenderer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
         let (renderer, matrix) = renderer.get();
         let material = renderer.material.unwrap();
         let model = renderer.model.clone().unwrap();
         let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject(model, material, matrix));
-        interface::received_new_gpu_object(renderer_gpuobject, None)
+        let id = interface::received_new_gpu_object(renderer_gpuobject, None);
+        // Add the renderer in the Pipeline Renderer
+        pr.add_renderer(id.index.unwrap());
+        id
     }
     // Remove the renderer using it's renderer ID
-    pub fn remove_renderer(renderer_id: GPUObjectID) {
+    pub fn remove_renderer(pr: &mut PipelineRenderer, renderer_id: GPUObjectID) {
+        // Remove first
+        pr.remove_renderer(&renderer_id.index.unwrap());
         interface::remove_gpu_object(renderer_id);
     }
     // Update a renderer's model matrix
@@ -735,9 +788,9 @@ impl Pipeline {
             gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
         }
     }
-    pub fn create_material(material: Material, default_material: &Material) -> GPUObjectID {
-        let default_shader = default_material.shader.as_ref().unwrap().clone();
-        let gpuobject = GPUObject::Material(MaterialGPUObject(material.shader.unwrap_or(default_shader), material.uniforms, material.flags));
+    pub fn create_material(material: SharedData<Material>) -> GPUObjectID {
+        let material = material.get();
+        let gpuobject = GPUObject::Material(MaterialGPUObject(material.shader.unwrap_or(GPUObjectID::None), material.uniforms, material.flags));
         interface::received_new_gpu_object(gpuobject, Some(material.material_name.clone()))
     }
 }

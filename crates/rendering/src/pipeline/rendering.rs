@@ -60,22 +60,34 @@ pub struct PipelineRenderer {
     wireframe_shader: GPUObjectID,       // The current wireframe shader
     frame_stats: FrameStats,                 // Some frame stats
     pub window: Window,                      // Window
-    pub default_material: Option<Material>,  // Self explanatory
-    renderer_ids: HashSet<GPUObjectID> // IDs of GPURendererObjects
+    pub default_material: Option<GPUObjectID>,  // Self explanatory
+    renderer_ids: HashSet<usize> // IDs of Renderer GPU Objects
 }
 
 // Render debug primitives
-pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &CameraDataGPUObject) {
+pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
     let _vp_m = camera.projm * camera.viewm;
     for primitive in &primitives {
-        render(primitive, camera);
+        render(primitive, camera, dm);
     }
 }
 
 // Render a renderer normally
-pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject) {
-    let shader = (renderer.1).to_shader().unwrap();
-    let material = (renderer.1).to_material().unwrap();
+pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
+    let material = (renderer.1).to_material();
+    let mut shader = dm.0.to_shader().unwrap();
+    // If we do not have a material assigned, use the default material
+    let material = match material {
+        Some(user_material) => {
+            // If we do not have a shader assigned, use the default material's shader
+            shader = match user_material.0.to_shader() {
+                Some(shader) => shader,
+                None => { /* We do not have a valid user set shader, use the default one */ dm.0.to_shader().unwrap() },
+            };
+            user_material            
+        },
+        None => dm,
+    };
     let model = (renderer.0).to_model().unwrap();
     let model_matrix = &renderer.2;
     // Calculate the mvp matrix
@@ -162,13 +174,15 @@ impl PipelineRenderer {
                 .unwrap(),
         );
         // Create a default material
-        self.default_material = Some(
-            Material::default().set_shader(pipec::shader(
+        self.default_material = Some(pipec::material(
+            Material::new("Default Material").set_shader(pipec::shader(
                 Shader::default()
                     .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
                     .unwrap(),
             )),
-        );
+        ));
+        let y = self.default_material.as_ref().unwrap().to_material().unwrap();
+        let x = y.0.to_shader().unwrap();
         println!("Loaded the default material!");
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
@@ -238,11 +252,11 @@ impl PipelineRenderer {
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
     // Renderers
-    pub fn add_renderer(&mut self, renderer: GPUObjectID) {
-        self.renderer_ids.insert(renderer);
+    pub fn add_renderer(&mut self, renderer_id_usize: usize) {
+        self.renderer_ids.insert(renderer_id_usize);
     }
-    pub fn remove_renderer(&mut self, renderer_id: &GPUObjectID) {
-        self.renderer_ids.remove(renderer_id);
+    pub fn remove_renderer(&mut self, renderer_id_usize: &usize) {
+        self.renderer_ids.remove(renderer_id_usize);
     }
     // Pre-render event
     pub fn pre_render(&mut self) {
@@ -253,12 +267,13 @@ impl PipelineRenderer {
     }
     // Called each frame, for each renderer that is valid in the pipeline
     pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
-        for renderer in self.renderer_ids.iter().map(|x| x.to_renderer().unwrap()) {
+        let material = self.default_material.as_ref().unwrap().to_material().unwrap();
+        for renderer in self.renderer_ids.iter().map(|x| GPUObjectID::usize_to_renderer(x).unwrap()) {
             // Should we render in wireframe or not?
             if self.wireframe {
                 render_wireframe(renderer, camera, &self.wireframe_shader);
             } else {
-                render(renderer, camera);
+                render(renderer, camera, material);
             }
         }
     }

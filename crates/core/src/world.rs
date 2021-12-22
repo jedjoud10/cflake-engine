@@ -86,51 +86,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Load the default stuff
     crate::local::input::create_key_cache();
     crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);
-    crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);
-
-    // Load the default objects for the CacheManagers
-    // Load the missing texture
-    pipec::texturec(assets::cachec::acache_l("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap());
-    // Create the black texture
-    pipec::texturec(
-        assets::cachec::cache(
-            "black",
-            Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("black")
-                .set_bytes(vec![0, 0, 0, 255]),
-        )
-        .unwrap(),
-    );
-
-    // Create the white texture
-    pipec::texturec(
-        assets::cachec::cache(
-            "white",
-            Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("white")
-                .set_bytes(vec![255, 255, 255, 255]),
-        )
-        .unwrap(),
-    );
-    // Create the default normals texture
-    pipec::texturec(
-        assets::cachec::cache(
-            "default_normals",
-            Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("default_normals")
-                .set_bytes(vec![127, 128, 255, 255]),
-        )
-        .unwrap(),
-    );
+    crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);   
 
     // Create some default UI that prints some default info to the screen
     let mut root = ui::Root::new(1);

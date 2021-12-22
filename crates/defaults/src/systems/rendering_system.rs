@@ -16,25 +16,7 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
     let shared_data = rendering::SharedData::new((irenderer, matrix));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
     /*
-    result.with_callback(GPUObjectCallback(OwnedCallback::new(move |gpuobject| {
-        // This callback is called when we actually add the renderer
-        match gpuobject {
-            rendering::GPUObject::Renderer(renderer_id) => {
-                // After adding the renderer, we must update the entity's renderer component using another callback
-                global::ecs::world_mut(WorldMut(MutCallback::new(move |world| {
-                    let mut r = global::ecs::componentw_mut::<crate::components::Renderer>(renderer_global_id, world);
-                    r.internal_renderer.index = Some(renderer_id);
-                    // Also update the transform since we're at it
-                    let mut t_ = global::ecs::componentw_mut::<crate::components::Transform>(transform_global_id, world);
-                    let t = &mut *t_;
-                    t.update_matrix();
-                })).create());
-            },
-            _ => {}
-        }
-    })).create());
-    */
-    let gpuobject_id = result.with_callback();
+    result.with_callback();
     // After adding the renderer, we must update the entity's renderer component using another callback
     global::ecs::entity_mut(
         entity,
@@ -49,6 +31,7 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
         }))
         .create(),
     );
+    */
 }
 // Remove the renderer from the pipeline renderer
 fn entity_removed(data: &mut (), entity: &ecs::Entity) {
