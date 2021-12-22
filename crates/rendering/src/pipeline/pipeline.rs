@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, interface, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData};
+use crate::{basics::*, interface, rendering::PipelineRenderer, RenderCommandQuery, RenderTask, SharedData, GPUObjectID};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -133,7 +133,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     // Pre-render
                     pipeline_renderer.pre_render();
                     // Render
-                    pipeline_renderer.renderer_frame(&camera);
+                    pipeline_renderer.renderer_frame(&camera, renderers);
                     // Post-render
                     pipeline_renderer.post_render(&camera, window);
                     // Remove the already called callbacks
@@ -162,41 +162,26 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 }
 
 // Commands that can be ran internally
-pub fn internal_task(task: RenderTask) -> (GPUObject, Option<String>) {
+pub fn internal_task(task: RenderTask) -> Option<GPUObjectID> {
     // Handle the internal case
     match task {
         // Shaders
-        RenderTask::SubShaderCreate(shared_shader) => Pipeline::create_compile_subshader(shared_shader),
-        RenderTask::ShaderCreate(shared_shader) => Pipeline::create_compile_shader(shared_shader),
+        RenderTask::SubShaderCreate(shared_shader) => Some(Pipeline::create_compile_subshader(shared_shader)),
+        RenderTask::ShaderCreate(shared_shader) => Some(Pipeline::create_compile_shader(shared_shader)),
         RenderTask::ShaderUniformGroup(_shared_uniformgroup) => todo!(),
         // Textures
-        RenderTask::TextureCreate(shared_texture) => Pipeline::generate_texture(shared_texture),
-        RenderTask::TextureUpdateSize(texture, ttype) => {
-            Pipeline::update_texture_size(texture, ttype);
-            (GPUObject::None, None)
-        }
-        RenderTask::TextureUpdateData(texture, bytes) => {
-            Pipeline::update_texture_data(texture, bytes);
-            (GPUObject::None, None)
-        }
-        RenderTask::TextureFillArray(texture, bytecount) => (Pipeline::texture_fill_array(texture, bytecount), None),
+        RenderTask::TextureCreate(shared_texture) => Some(Pipeline::generate_texture(shared_texture)),
+        RenderTask::TextureUpdateSize(texture, ttype) => { Pipeline::update_texture_size(texture, ttype); None }
+        RenderTask::TextureUpdateData(texture, bytes) => { Pipeline::update_texture_data(texture, bytes); None }
+        RenderTask::TextureFillArray(texture, bytecount) => Some(Pipeline::texture_fill_array(texture, bytecount)),
         // Model
-        RenderTask::ModelCreate(shared_model) => (Pipeline::create_model(shared_model), None),
-        RenderTask::ModelDispose(gpumodel) => {
-            Pipeline::dispose_model(gpumodel);
-            (GPUObject::None, None)
-        }
+        RenderTask::ModelCreate(shared_model) => Some(Pipeline::create_model(shared_model)),
+        RenderTask::ModelDispose(gpumodel) => { Pipeline::dispose_model(gpumodel); None }
         // Compute
-        RenderTask::ComputeRun(compute, axii, uniforms_group) => {
-            Pipeline::run_compute(compute, axii, uniforms_group);
-            (GPUObject::None, None)
-        }
-        RenderTask::ComputeLock(compute) => {
-            Pipeline::lock_compute(compute);
-            (GPUObject::None, None)
-        }
+        RenderTask::ComputeRun(compute, axii, uniforms_group) => { Pipeline::run_compute(compute, axii, uniforms_group); None }
+        RenderTask::ComputeLock(compute) => { Pipeline::lock_compute(compute); None }
         // Others
-        _ => (GPUObject::None, None),
+        _ => None,
     }
 }
 
@@ -207,14 +192,11 @@ fn command(
     command: RenderCommandQuery,
     _window: &mut glfw::Window,
     glfw: &mut glfw::Glfw,
-) -> Option<(GPUObject, Option<String>)> {
+) -> Option<GPUObjectID> {
     // Handle the common cases
     match command.task {
         // Window tasks
-        RenderTask::WindowUpdateFullscreen(fullscreen) => {
-            pr.window.fullscreen = fullscreen;
-            None
-        }
+        RenderTask::WindowUpdateFullscreen(fullscreen) => { pr.window.fullscreen = fullscreen; None }
         RenderTask::WindowUpdateVSync(vsync) => {
             pr.window.vsync = vsync;
             // We need an OpenGL context to do this shit
@@ -255,17 +237,11 @@ fn command(
             None
         }
         // Renderer commands
-        RenderTask::RendererAdd(shared_renderer) => Some((Pipeline::add_renderer(pr, shared_renderer), None)),
-        RenderTask::RendererRemove(renderer_id) => {
-            Pipeline::remove_renderer(pr, renderer_id);
-            None
-        }
-        RenderTask::RendererUpdateTransform(renderer_id, matrix) => {
-            Pipeline::update_renderer(pr, renderer_id, matrix);
-            None
-        }
+        RenderTask::RendererAdd(shared_renderer) => Some(Pipeline::add_renderer(shared_renderer)),
+        RenderTask::RendererRemove(renderer_id) => { Pipeline::remove_renderer(renderer_id); None }
+        RenderTask::RendererUpdateTransform(renderer_id, matrix) => { Pipeline::update_renderer(renderer_id, matrix); None }
         // Internal cases
-        x => Some(internal_task(x)),
+        x => internal_task(x),
     }
 }
 
@@ -280,22 +256,14 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
         // Check special commands first
         // Valid command
         match command(pr, camera, render_command_query, window, glfw) {
-            Some((gpuobject, name)) => match gpuobject {
-                GPUObject::None => {
-                    /* We do not have a GPU object, though we have executed the task succsessfully */
-                    match execution_id {
-                        Some(execution_id) => interface::received_task_execution_ack(execution_id),
-                        None => {}
-                    }
+            Some(gpuobject_id) => {
+                // We already added the GPUObject and it's possible name to the interface, now we must add the option callback_id and option waitable_id
+                // We have a valid GPU object
+                match execution_id {
+                    Some(execution_id) => interface::received_task_execution_ack(execution_id),
+                    None => interface::received_new_gpu_object(gpuobject, name, callback_id, waitable_id, thread_id), // Notify the interface that we have a new gpu object
                 }
-                gpuobject => {
-                    // We have a valid GPU object
-                    match execution_id {
-                        Some(execution_id) => interface::received_task_execution_ack(execution_id),
-                        None => interface::received_new_gpu_object(gpuobject, name, callback_id, waitable_id, thread_id), // Notify the interface that we have a new gpu object
-                    }
-                }
-            },
+            }
             None => { /* This command does not create a GPU object */ }
         }
     }
@@ -310,28 +278,32 @@ pub struct Pipeline {}
 // Renderers
 impl Pipeline {
     // Add the renderer to the renderer (lol I need better name)
-    pub fn add_renderer(pr: &mut PipelineRenderer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObject {
+    pub fn add_renderer(renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
         let matrix = &renderer.object.1;
         let renderer = &renderer.object.0;
-        let model = renderer.model.clone();
-        let material = Self::create_material(renderer.material.clone(), pr.default_material.as_ref().unwrap());
-        let renderer_gpuobject = RendererGPUObject(model, material, *matrix);
-        let x = pr.add_renderer(renderer_gpuobject);
-        GPUObject::Renderer(x)
+
+        let material = renderer.material.unwrap();
+        let model = renderer.model.clone().unwrap();
+        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject(model, material, *matrix));
+        interface::received_new_gpu_object(renderer_gpuobject, None, None, None)
     }
     // Remove the renderer using it's renderer ID
-    pub fn remove_renderer(pr: &mut PipelineRenderer, renderer_id: usize) {
-        pr.remove_renderer(renderer_id);
+    pub fn remove_renderer(renderer_id: GPUObjectID) {
+        interface::remove_gpu_object(renderer_id);
     }
     // Update a renderer's model matrix
-    fn update_renderer(pr: &mut PipelineRenderer, renderer_id: usize, matrix: SharedData<veclib::Matrix4x4<f32>>) {
-        pr.update_renderer(renderer_id, matrix);
+    fn update_renderer(renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
+        interface::update_gpu_object(renderer_id, |gpuobject| { 
+            if let GPUObject::Renderer(renderer) = gpuobject {
+                renderer.2 = matrix.object.as_ref().clone();
+            }
+        });
     }
 }
 
 // The actual OpenGL tasks that are run on the render thread
 impl Pipeline {
-    pub fn create_compile_subshader(subshader: SharedData<SubShader>) -> (GPUObject, Option<String>) {
+    pub fn create_compile_subshader(subshader: SharedData<SubShader>) -> GPUObjectID {
         let shader_type: u32;
         let subshader = subshader.object.as_ref();
         match subshader.subshader_type {
@@ -365,10 +337,12 @@ impl Pipeline {
             }
 
             println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", subshader.name);
-            (GPUObject::SubShader(SubShaderGPUObject(subshader.subshader_type, program)), Some(subshader.name.clone()))
+            // Add the gpu object
+            let gpuobject = GPUObject::SubShader(SubShaderGPUObject(subshader.subshader_type, program));
+            interface::received_new_gpu_object(gpuobject, Some(subshader.name.clone()))
         }
     }
-    pub fn create_compile_shader(shader: SharedData<Shader>) -> (GPUObject, Option<String>) {
+    pub fn create_compile_shader(shader: SharedData<Shader>) -> GPUObjectID {
         let shader = shader.object.as_ref();
         unsafe {
             let program = gl::CreateProgram();
@@ -408,21 +382,29 @@ impl Pipeline {
             for subshader_program in shader.linked_subshaders_programs.iter() {
                 gl::DetachShader(program, subshader_program.1);
             }
-            (
-                if !compute_shader {
-                    // Normal shader
-                    GPUObject::Shader(ShaderGPUObject(program))
-                } else {
-                    // Compute shader
-                    GPUObject::ComputeShader(ComputeShaderGPUObject(program))
-                },
-                Some(shader.name.clone()),
-            )
+            let gpuobject = if !compute_shader {
+                // Normal shader
+                GPUObject::Shader(ShaderGPUObject(program))
+            } else {
+                // Compute shader
+                GPUObject::ComputeShader(ComputeShaderGPUObject(program))
+            };
+            // Add the gpu object
+            interface::received_new_gpu_object(gpuobject, Some(shader.name.clone()))
         }
     }
-    pub fn create_model(model: SharedData<Model>) -> GPUObject {
+    pub fn create_model(model: SharedData<Model>) -> GPUObjectID {
         let model = model.object.as_ref();
-        let mut gpu_data = ModelGPUObject::default();
+        let mut gpu_data = ModelGPUObject { 
+            vertex_buf: 0,
+            normal_buf: 0,
+            uv_buf: 0,
+            tangent_buf: 0,
+            color_buf: 0,
+            vertex_array_object: 0,
+            element_buffer_object: 0,
+            element_count: 0
+        };
         unsafe {
             // Create the VAO
             gl::GenVertexArrays(1, &mut gpu_data.vertex_array_object);
@@ -525,8 +507,10 @@ impl Pipeline {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
-        gpu_data.element_count = model.triangles.len();
-        GPUObject::Model(gpu_data)
+        gpu_data.element_count = model.triangles.len();        
+        // Add the gpu object
+        let gpuobject = GPUObject::Model(gpu_data);
+        interface::received_new_gpu_object(gpuobject, None)
     }
     pub fn dispose_model(mut model: ModelGPUObject) {
         unsafe {
@@ -542,7 +526,7 @@ impl Pipeline {
             gl::DeleteVertexArrays(1, &mut model.vertex_array_object);
         }
     }
-    pub fn generate_texture(texture: SharedData<Texture>) -> (GPUObject, Option<String>) {
+    pub fn generate_texture(texture: SharedData<Texture>) -> GPUObjectID {
         let mut pointer: *const c_void = null();
         let texture = texture.object.as_ref();
         if !texture.bytes.is_empty() {
@@ -642,9 +626,12 @@ impl Pipeline {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
         }
         println!("RenderThread: Succsesfully generated texture {}", texture.name);
-        (GPUObject::Texture(TextureGPUObject(id, ifd, texture.ttype)), Some(texture.name.clone()))
+        let gpuobject = GPUObject::Texture(TextureGPUObject(id, ifd, texture.ttype));
+        interface::received_new_gpu_object(gpuobject, Some(texture.name.clone()))
     }
-    pub fn update_texture_size(texture: TextureGPUObject, ttype: TextureType) {
+    pub fn update_texture_size(texture: GPUObjectID, ttype: TextureType) {
+        // Get the GPU texture object
+        let texture = texture.to_texture().unwrap();
         // Check if the current dimension type matches up with the new one
         let ifd = texture.1;
         // This is a normal texture getting resized
@@ -666,7 +653,8 @@ impl Pipeline {
             }
         }
     }
-    pub fn update_texture_data(texture: TextureGPUObject, bytes: Vec<u8>) {
+    pub fn update_texture_data(texture: GPUObjectID, bytes: Vec<u8>) {
+        let texture = texture.to_texture().unwrap();
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
@@ -704,7 +692,8 @@ impl Pipeline {
             }
         }
     }
-    pub fn texture_fill_array(texture: TextureGPUObject, bytecount: usize) -> GPUObject {
+    pub fn texture_fill_array(texture: GPUObjectID, bytecount: usize) -> GPUObjectID {
+        let texture = texture.to_texture().unwrap();
         // Get the length of the vector
         let length: usize = match texture.2 {
             TextureType::Texture1D(x) => (x as usize),
@@ -732,7 +721,8 @@ impl Pipeline {
             let (_internal_format, format, data_type) = texture.1;
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
-        GPUObject::TextureFill(TextureFillGPUObject(pixels, bytecount))
+        let gpuobject = GPUObject::TextureFill(TextureFillGPUObject(pixels, bytecount));
+        interface::received_new_gpu_object(gpuobject, None)
     }
     pub fn run_compute(_compute: ComputeShaderGPUObject, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
         uniforms_group.consume();
@@ -747,8 +737,9 @@ impl Pipeline {
             gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
         }
     }
-    pub fn create_material(material: Material, default_material: &Material) -> MaterialGPUObject {
+    pub fn create_material(material: Material, default_material: &Material) -> GPUObjectID {
         let default_shader = default_material.shader.as_ref().unwrap().clone();
-        MaterialGPUObject(material.shader.unwrap_or(default_shader), material.uniforms, material.flags)
+        let gpuobject = GPUObject::Material(MaterialGPUObject(material.shader.unwrap_or(default_shader), material.uniforms, material.flags));
+        interface::received_new_gpu_object(gpuobject, Some(material.material_name.clone()))
     }
 }

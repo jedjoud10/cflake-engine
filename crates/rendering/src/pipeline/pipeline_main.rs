@@ -28,7 +28,7 @@ pub mod pipec {
     use std::sync::Arc;
 
     use crate::pipeline::{buffer, object::*};
-    use crate::{interface, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER};
+    use crate::{interface, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, GPUObjectID};
     pub use crate::{RenderTask, SharedData};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
@@ -67,53 +67,23 @@ pub mod pipec {
         RenderCommandResult::new(task)
     }
     // Get a GPU object
-    pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
-        interface::get_gpu_object(name)
+    pub fn get_gpu_object(id: &GPUObjectID) -> Option<GPUObject> {
+        interface::get_gpu_object(id)
     }
-    // Check if a GPU object is valid
-    pub fn gpu_object_valid(name: &str) -> bool {
-        interface::gpu_object_valid(name)
+    // Get a named GPU object
+    pub fn get_named_gpu_object(name: &str) -> Option<GPUObject> {
+        interface::get_named_gpu_object(name)
     }
-    // Retrieve these objects from cache
-    pub fn get_subshader_object(name: &str) -> SubShaderGPUObject {
-        if let GPUObject::SubShader(x) = get_gpu_object(name).unwrap() {
-            x
-        } else {
-            panic!()
-        }
-    }
-    pub fn get_shader_object(name: &str) -> ShaderGPUObject {
-        if let GPUObject::Shader(x) = get_gpu_object(name).unwrap() {
-            x
-        } else {
-            panic!()
-        }
-    }
-    pub fn get_compute_shader_object(name: &str) -> ComputeShaderGPUObject {
-        if let GPUObject::ComputeShader(x) = get_gpu_object(name).unwrap() {
-            x
-        } else {
-            panic!()
-        }
-    }
-    pub fn get_model_object(name: &str) -> ModelGPUObject {
-        if let GPUObject::Model(x) = get_gpu_object(name).unwrap() {
-            x
-        } else {
-            panic!()
-        }
-    }
-    pub fn get_texture_object(name: &str) -> TextureGPUObject {
-        if let GPUObject::Texture(x) = get_gpu_object(name).unwrap() {
-            x
-        } else {
-            panic!()
-        }
+    // Check if a GPU object name is valid
+    pub fn gpu_object_name_valid(name: &str) -> bool {
+        interface::gpu_object_name_valid(name)
     }
     // Load or create functions
     pub fn subshader(subshader: SubShader) -> SubShaderGPUObject {
-        if gpu_object_valid(&subshader.name) {
-            get_subshader_object(&subshader.name)
+        if gpu_object_name_valid(&subshader.name) {
+            if let GPUObject::SubShader(x) = get_named_gpu_object(&subshader.name).unwrap() {
+                x
+            } else { panic!() }
         } else {
             let result = task(RenderTask::SubShaderCreate(SharedData::new(subshader)));
             if let GPUObject::SubShader(x) = result.wait_gpuobject() {
@@ -124,8 +94,10 @@ pub mod pipec {
         }
     }
     pub fn shader(shader: Shader) -> ShaderGPUObject {
-        if gpu_object_valid(&shader.name) {
-            get_shader_object(&shader.name)
+        if gpu_object_name_valid(&shader.name) {
+            if let GPUObject::Shader(x) = get_named_gpu_object(&shader.name).unwrap() {
+                x
+            } else { panic!() }
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
             if let GPUObject::Shader(x) = result.wait_gpuobject() {
@@ -136,8 +108,10 @@ pub mod pipec {
         }
     }
     pub fn compute_shader(shader: Shader) -> ComputeShaderGPUObject {
-        if gpu_object_valid(&shader.name) {
-            get_compute_shader_object(&shader.name)
+        if gpu_object_name_valid(&shader.name) {
+            if let GPUObject::ComputeShader(x) = get_named_gpu_object(&shader.name).unwrap() {
+                x
+            } else { panic!() }
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
             if let GPUObject::ComputeShader(x) = result.wait_gpuobject() {
@@ -148,8 +122,10 @@ pub mod pipec {
         }
     }
     pub fn texture(texture: Texture) -> TextureGPUObject {
-        if gpu_object_valid(&texture.name) {
-            get_texture_object(&texture.name)
+        if gpu_object_name_valid(&texture.name) {
+            if let GPUObject::Texture(x) = get_named_gpu_object(&texture.name).unwrap() {
+                x
+            } else { panic!() }
         } else {
             let result = task(RenderTask::TextureCreate(SharedData::new(texture)));
             if let GPUObject::Texture(x) = result.wait_gpuobject() {
@@ -171,16 +147,20 @@ pub mod pipec {
 
     // Load or create functions, cached type
     pub fn texturec(texturec: CachedObject<Texture>) -> TextureGPUObject {
-        if gpu_object_valid(&texturec.arc.name) {
-            get_texture_object(&texturec.arc.name)
+        if gpu_object_name_valid(&texturec.arc.name) {
+            if let GPUObject::Texture(x) = get_named_gpu_object(&texturec.arc.name).unwrap() {
+                x
+            } else { panic!() }
         } else {
             let t = texturec.arc.as_ref().clone();
             texture(t)
         }
     }
     pub fn shaderc(shaderc: CachedObject<Shader>) -> ShaderGPUObject {
-        if gpu_object_valid(&shaderc.arc.name) {
-            get_shader_object(&shaderc.arc.name)
+        if gpu_object_name_valid(&shaderc.arc.name) {
+            if let GPUObject::Shader(x) = get_named_gpu_object(&shaderc.arc.name).unwrap() {
+                x
+            } else { panic!() }
         } else {
             let s = shaderc.arc.as_ref().clone();
             shader(s)

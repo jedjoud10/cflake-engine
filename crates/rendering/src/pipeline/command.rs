@@ -1,6 +1,6 @@
 use crate::{
     interface, internal_task, ComputeShaderGPUObject, GPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader, Texture,
-    TextureGPUObject, TextureType, IS_RENDER_THREAD,
+    TextureGPUObject, TextureType, IS_RENDER_THREAD, Material, GPUObjectID,
 };
 use lazy_static::lazy_static;
 use std::{
@@ -124,13 +124,43 @@ impl RenderCommandResult {
             command(query);
             // Now we must wait for this command to execute on the rendering thread
             // PS: This will block the current thread
-            interface::wait_for_gpuobject(waitable_id)
+            let x = interface::wait_for_gpuobject_id(waitable_id);
+            let id = x.unwrap();
+            let gpuobject = interface::get_gpu_object(&id).unwrap();
+            gpuobject
         } else {
             // If we are on the render thread, we do something different
             // Execute the command internally, so we must invalidate the one stored in self
             let task = self.task.take().unwrap();
-            let (gpuobject, name) = internal_task(task);
+            let id = internal_task(task).unwrap();
+            let gpuobject = interface::get_gpu_object(&id).unwrap();
             gpuobject
+        }
+    }
+    // We will wait for thes result of this render command query as a GPUObject ID
+    pub fn wait_gpuobject_id(mut self) -> GPUObjectID {
+        if !IS_RENDER_THREAD.with(|x| x.get()) {
+            // Send the command, but with a special command ID that we must wait for
+            let waitable_id = COUNTER.fetch_add(1, Ordering::Relaxed);
+            let task = self.task.take().unwrap();
+            let query = RenderCommandQuery {
+                task,
+                callback_id: None,
+                waitable_id: Some(waitable_id),
+                execution_id: None,
+                thread_id: std::thread::current().id(),
+            };
+            command(query);
+            // Now we must wait for this command to execute on the rendering thread
+            // PS: This will block the current thread
+            let x = interface::wait_for_gpuobject_id(waitable_id);
+            x.unwrap()
+        } else {
+            // If we are on the render thread, we do something different
+            // Execute the command internally, so we must invalidate the one stored in self
+            let task = self.task.take().unwrap();
+            let gpuobject = internal_task(task);
+            gpuobject.unwrap()
         }
     }
 }
@@ -171,9 +201,9 @@ pub enum RenderTask {
     ShaderUniformGroup(SharedData<ShaderUniformsGroup>),
     // Textures
     TextureCreate(SharedData<Texture>),
-    TextureUpdateSize(TextureGPUObject, TextureType),
-    TextureUpdateData(TextureGPUObject, Vec<u8>),
-    TextureFillArray(TextureGPUObject, usize),
+    TextureUpdateSize(GPUObjectID, TextureType),
+    TextureUpdateData(GPUObjectID, Vec<u8>),
+    TextureFillArray(GPUObjectID, usize),
     // Model
     ModelCreate(SharedData<Model>),
     ModelDispose(ModelGPUObject),
@@ -182,8 +212,11 @@ pub enum RenderTask {
     ComputeLock(ComputeShaderGPUObject),
     // Renderer
     RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
-    RendererRemove(usize),
-    RendererUpdateTransform(usize, SharedData<veclib::Matrix4x4<f32>>),
+    RendererRemove(GPUObjectID),
+    RendererUpdateTransform(GPUObjectID, SharedData<veclib::Matrix4x4<f32>>),
+    // Material
+    MaterialCreate(SharedData<Material>),
+    MaterialUpdateUniforms(GPUObjectID, SharedData<ShaderUniformsGroup>),
     // Window settings
     WindowUpdateSize(veclib::Vector2<u16>),
     WindowUpdateVSync(bool),

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform};
+use crate::{MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform, GPUObjectID};
 
 // Cooler objects
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct ModelGPUObject {
     pub vertex_buf: u32,
     pub normal_buf: u32,
@@ -15,17 +15,17 @@ pub struct ModelGPUObject {
     pub element_count: usize,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct SubShaderGPUObject(pub SubShaderType, pub u32);
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct ShaderGPUObject(pub u32);
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct ComputeShaderGPUObject(pub u32);
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct TextureGPUObject(pub u32, pub (i32, u32, u32), pub TextureType);
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct TextureFillGPUObject(pub Vec<u8>, pub usize);
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct CameraDataGPUObject {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
@@ -33,10 +33,10 @@ pub struct CameraDataGPUObject {
     pub viewm: veclib::Matrix4x4<f32>,
     pub projm: veclib::Matrix4x4<f32>,
 }
-#[derive(Default)]
-pub struct MaterialGPUObject(pub ShaderGPUObject, pub ShaderUniformsGroup, pub MaterialFlags);
-#[derive(Default)]
-pub struct RendererGPUObject(pub ModelGPUObject, pub MaterialGPUObject, pub veclib::Matrix4x4<f32>);
+#[derive(Clone)]
+pub struct MaterialGPUObject(pub GPUObjectID, pub ShaderUniformsGroup, pub MaterialFlags);
+#[derive(Clone)]
+pub struct RendererGPUObject(pub GPUObjectID, pub GPUObjectID, pub veclib::Matrix4x4<f32>);
 
 pub mod uniform_setters {
     use crate::{TextureGPUObject, TextureShaderAccessType};
@@ -297,13 +297,14 @@ impl ComputeShaderGPUObject {
 #[derive(Clone)]
 pub enum GPUObject {
     None,                                  // This value was not initalized yet
-    Model(ModelGPUObject),                 // The VAO ID
-    SubShader(SubShaderGPUObject),         // The subshader program ID
-    Shader(ShaderGPUObject),               // The shader program ID
+    Model(ModelGPUObject),
+    Material(MaterialGPUObject),
+    SubShader(SubShaderGPUObject),
+    Shader(ShaderGPUObject),
     ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions
-    Texture(TextureGPUObject),             // The texture ID
-    TextureFill(TextureFillGPUObject),     // Texture fill ID
-    Renderer(usize),                       // The renderer ID
+    Texture(TextureGPUObject),
+    TextureFill(TextureFillGPUObject),
+    Renderer(RendererGPUObject),
 }
 
 impl Default for GPUObject {

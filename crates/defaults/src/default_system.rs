@@ -3,11 +3,6 @@ use others::callbacks::*;
 
 // Some default events
 pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
-    let x = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
-    core::global::ecs::entity_mut(entity, LocalEntityMut(MutCallback::new(|entity| {
-        let comp = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
-        comp.position -= veclib::Vector3::X;
-    })).create())
 }
 
 // Create the default system

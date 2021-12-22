@@ -1,5 +1,5 @@
 use super::SubShader;
-use crate::pipec;
+use crate::{pipec, interface};
 use crate::utils::RenderingError;
 use crate::SubShaderGPUObject;
 use assets::Object;
@@ -89,8 +89,9 @@ impl Shader {
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached (In the object cacher) and check if it's cached in the pipeline as well
-            if assets::cachec::cached(subshader_path) && pipec::gpu_object_valid(subshader_path) {
-                let subshader = pipec::get_subshader_object(subshader_path);
+            if assets::cachec::cached(subshader_path) && pipec::gpu_object_name_valid(subshader_path) {
+                let gpuobject = interface::get_named_gpu_object(subshader_path).unwrap();
+                let subshader = interface::to_subshader(gpuobject).unwrap();
                 self.linked_subshaders_programs.push(subshader);
             } else {
                 // It was not cached, so we need to cache it

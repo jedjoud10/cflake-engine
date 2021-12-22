@@ -18,7 +18,7 @@ impl Default for MaterialFlags {
 #[derive(Clone)]
 pub struct Material {
     // Rendering stuff
-    pub shader: Option<ShaderGPUObject>,
+    pub shader: Option<GPUObjectID>,
     pub material_name: String,
     pub flags: MaterialFlags,
     pub uniforms: ShaderUniformsGroup,

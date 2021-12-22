@@ -22,12 +22,13 @@ pub fn load_entities() {
         .unwrap();
     core::global::main::world_data_mut(|data| data.main_camera_entity_id = main_camera_entity_id);
     let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\sphere.mdl3d").unwrap());
+    let material = rendering::Material::new("Test");
     for x in 0..300 {
         let mut linkings = ecs::ComponentLinkingGroup::new();
         linkings
             .link(crate::components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, x as f32)))
             .unwrap();
-        //linkings.link(crate::components::Renderer::default().set_model(model.clone()).set_material(rendering::Material::new("Test"))).unwrap();
+        linkings.link(crate::components::Renderer::default().set_model(model.clone()).set_material(material)).unwrap();
         core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
     }
 

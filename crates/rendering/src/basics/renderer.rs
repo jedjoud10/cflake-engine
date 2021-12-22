@@ -1,5 +1,5 @@
 use super::Material;
-use crate::ModelGPUObject;
+use crate::{ModelGPUObject, MaterialGPUObject, GPUObjectID};
 
 use bitflags::bitflags;
 // Yup
@@ -13,10 +13,9 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 #[derive(Clone)]
 pub struct Renderer {
-    pub index: Option<usize>, // The ID of this renderer in the pipeline
-    pub visible: bool,
-    pub model: ModelGPUObject, // The model GPU of this renderer
-    pub material: Material,    // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
+    pub index: Option<GPUObjectID>, // The ID of this renderer in the pipeline
+    pub model: Option<GPUObjectID>, // The model GPU of this renderer
+    pub material: Option<GPUObjectID>,    // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
     pub flags: RendererFlags,  // Flags
 }
 
@@ -24,9 +23,8 @@ impl Default for Renderer {
     fn default() -> Self {
         Self {
             index: None,
-            visible: true,
-            model: ModelGPUObject::default(),
-            material: Material::default(),
+            model: None,
+            material: None,
             flags: RendererFlags::DEFAULT,
         }
     }
@@ -35,8 +33,8 @@ impl Default for Renderer {
 // Everything related to the creation of a renderer
 impl Renderer {
     // Set a model
-    pub fn set_model(mut self, model: ModelGPUObject) -> Self {
-        self.model = model;
+    pub fn set_model(mut self, model: GPUObjectID) -> Self {
+        self.model = Some(model);
         self
     }
     // Enable / disable the wireframe rendering for this entity
@@ -49,13 +47,8 @@ impl Renderer {
         self
     }
     // With a specific material
-    pub fn set_material(mut self, material: Material) -> Self {
-        self.material = material;
-        self
-    }
-    // Set visible
-    pub fn set_visible(mut self, visible: bool) -> Self {
-        self.visible = visible;
+    pub fn set_material(mut self, material: GPUObjectID) -> Self {
+        self.material = Some(material);
         self
     }
 }

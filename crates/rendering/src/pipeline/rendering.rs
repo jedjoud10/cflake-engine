@@ -1,5 +1,5 @@
 use crate::{pipec, pipeline::object::*, FrameStats, MaterialFlags, Shader, Texture};
-use crate::{texture::*, DataType, Material, Window};
+use crate::{texture::*, DataType, Material, Window, GPUObjectID};
 
 use glfw::Context;
 use others::SmartList;
@@ -47,18 +47,17 @@ pub mod window_commands {
 #[derive(Default)]
 pub struct PipelineRenderer {
     framebuffer: u32,                        // The master frame buffer
-    diffuse_texture: TextureGPUObject,       // Diffuse texture, can also store HDR values
-    normals_texture: TextureGPUObject,       // World Normals texture
-    position_texture: TextureGPUObject,      // World Positions texture
-    depth_texture: TextureGPUObject,         // Depth texture
+    diffuse_texture: GPUObjectID,       // Diffuse texture, can also store HDR values
+    normals_texture: GPUObjectID,       // World Normals texture
+    position_texture: GPUObjectID,      // World Positions texture
+    depth_texture: GPUObjectID,         // Depth texture
     debug_view: u16,                         // OUr currenty debug view mode
     wireframe: bool,                         // Are we rendering in wireframe or not
-    quad_model: ModelGPUObject,              // The current screen quad model that we are using
-    screen_shader: ShaderGPUObject,          // The current screen quad shader that we are using
-    sky_texture: TextureGPUObject,           // The sky gradient texture
-    wireframe_shader: ShaderGPUObject,       // The current wireframe shader
+    quad_model: GPUObjectID,              // The current screen quad model that we are using
+    screen_shader: GPUObjectID,          // The current screen quad shader that we are using
+    sky_texture: GPUObjectID,           // The sky gradient texture
+    wireframe_shader: GPUObjectID,       // The current wireframe shader
     frame_stats: FrameStats,                 // Some frame stats
-    renderers: SmartList<RendererGPUObject>, // The collection of valid renderers (Can include renderers that are culled out or invisible)
     pub window: Window,                      // Window
     pub default_material: Option<Material>,  // Self explanatory
 }
@@ -241,8 +240,8 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
-        for renderer in self.renderers.elements.iter().filter_map(|x| x.as_ref()) {
+    pub fn renderer_frame(&self, camera: &CameraDataGPUObject, renderers: &SmartList<RendererGPUObject>) {
+        for renderer in renderers.elements.iter().filter_map(|x| x.as_ref()) {
             // Should we render in wireframe or not?
             if self.wireframe {
                 render_wireframe(renderer, camera, &self.wireframe_shader);
@@ -286,19 +285,6 @@ impl PipelineRenderer {
             window.swap_buffers();
         }
     }
-    // Renderers
-    pub fn add_renderer(&mut self, renderer: RendererGPUObject) -> usize {
-        self.renderers.add_element(renderer)
-    }
-    pub fn remove_renderer(&mut self, renderer_id: usize) {
-        self.renderers.remove_element(renderer_id);
-    }
-    pub fn update_renderer(&mut self, renderer_id: usize, matrix: crate::SharedData<veclib::Matrix4x4<f32>>) {
-        let renderer = self.renderers.get_element_mut(renderer_id).flatten().unwrap();
-        let matrix = matrix.object.as_ref();
-        renderer.2 = matrix.clone();
-    }
-
     // Update window
     pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
         // Update the size of each texture that is bound to the framebuffer

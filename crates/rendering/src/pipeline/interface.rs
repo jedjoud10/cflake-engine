@@ -1,15 +1,15 @@
 use std::sync::{mpsc::Sender, RwLock};
 
-use crate::{pipeline::buffer::GPUObjectBuffer, GPUObject, MainThreadMessage};
+use crate::{pipeline::buffer::GPUObjectBuffer, GPUObject, MainThreadMessage, GPUObjectID, TextureGPUObject, ShaderGPUObject, ModelGPUObject, MaterialGPUObject, SubShaderGPUObject, ComputeShaderGPUObject, TextureFillGPUObject, RendererGPUObject};
 use lazy_static::lazy_static;
 
 lazy_static! {
     static ref INTERFACE_BUFFER: RwLock<GPUObjectBuffer> = RwLock::new(GPUObjectBuffer::default());
 }
 
-/* #region Get GPU objects using their waitable ID or their name */
+/* #region Get GPU objects using their GPUObjectID or their name */
 // Get GPU object using it's specified name
-pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
+pub fn get_named_gpu_object(name: &str) -> Option<GPUObject> {
     let buf = INTERFACE_BUFFER.read().unwrap();
     let index = buf.names_to_id.get(name);
     match index {
@@ -21,15 +21,23 @@ pub fn get_gpu_object(name: &str) -> Option<GPUObject> {
         None => None,
     }
 }
-// Check if a GPU object exists
-pub fn gpu_object_valid(name: &str) -> bool {
+// Get a GPU object using it's GPUObjectID
+pub fn get_gpu_object(id: &GPUObjectID) -> Option<GPUObject> {
+    let buf = INTERFACE_BUFFER.read().unwrap();
+    let gpuobject = buf.gpuobjects.get_element(id.index?);
+    // Flatten
+    gpuobject.flatten().cloned()
+}
+// Check if a GPU object name is valid
+pub fn gpu_object_name_valid(name: &str) -> bool {
     let buf = INTERFACE_BUFFER.read().unwrap();
     buf.names_to_id.contains_key(name)
 }
 /* #endregion */
 
+
 // Notify the threads that we have recieved a valid GPU object
-pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>, callback_id: Option<u64>, waitable_id: Option<u64>, thread_id: std::thread::ThreadId) {
+pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>) -> GPUObjectID {
     // Add the GPU object to the current interface buffer
     let mut buf = INTERFACE_BUFFER.write().unwrap();
     // Always insert the gpu object
@@ -41,8 +49,15 @@ pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>, callb
         }
         None => {}
     }
+    GPUObjectID { index: Some(index) }
+}
+
+// Additional data given to the interface after we add a GPU object
+pub fn received_new_gpu_object_additional(gpuobject_id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>, waitable_id: Option<u64>) {   
+    let mut buf = INTERFACE_BUFFER.write().unwrap(); 
+    let index = gpuobject_id.index.unwrap();
     match callback_id {
-        Some(id) => {
+        Some((id, thread_id)) => {
             buf.callback_objects.insert(id, (index, thread_id));
         }
         None => { /* We cannot run a callback on this object */ }
@@ -53,6 +68,19 @@ pub fn received_new_gpu_object(gpuobject: GPUObject, name: Option<String>, callb
         }
         None => { /* We cannot run the un-wait function on the threads awaiting this object */ }
     }
+}
+
+// Remove a GPU object from the interface buffer
+pub fn remove_gpu_object(gpuobject_id: GPUObjectID) {
+    let mut buf = INTERFACE_BUFFER.write().unwrap();
+    buf.gpuobjects.remove_element(gpuobject_id.index.unwrap());
+}
+
+// Update a GPU object using a callback
+pub fn update_gpu_object<F>(gpuobject_id: GPUObjectID, f: F) where F: FnOnce(&mut GPUObject) {
+    let mut buf = INTERFACE_BUFFER.write().unwrap();
+    let x = buf.gpuobjects.get_element_mut(gpuobject_id.index.unwrap()).flatten().unwrap();
+    f(x);
 }
 
 // We have received confirmation that we have executed a specific task
@@ -79,15 +107,13 @@ pub fn update_render_thread(tx2: &Sender<MainThreadMessage>) {
 }
 
 // Wait for the result of a specific GPU object, specified with it's special waitable ID
-pub fn wait_for_gpuobject(id: u64) -> GPUObject {
+pub fn wait_for_gpuobject_id(id: u64) -> Option<GPUObjectID> {
     // Basically an infinite loop waiting until we poll a valid GPU object using the specified ID
     loop {
         let buf = INTERFACE_BUFFER.read().unwrap();
         match buf.waitable_objects.get(&id) {
             Some(&gpuobject_index) => {
-                let gpuobject = buf.gpuobjects.get_element(gpuobject_index).unwrap().unwrap();
-                // Was able to poll a valid GPU object
-                return gpuobject.clone();
+                return Some(GPUObjectID { index: Some(gpuobject_index) });
             }
             None => {}
         }
@@ -95,7 +121,7 @@ pub fn wait_for_gpuobject(id: u64) -> GPUObject {
         // Check if we have quit the render loop, because if we did, this will never exit and we must manually exit
         let barrier_data = others::barrier::as_ref();
         if barrier_data.is_world_destroyed() {
-            return GPUObject::None;
+            return None;
         }
     }
 }
