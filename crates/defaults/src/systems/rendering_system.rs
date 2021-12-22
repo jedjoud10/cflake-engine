@@ -34,7 +34,7 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
         }
     })).create());
     */
-    let gpuobject_id = result.wait_gpuobject_id();
+    let gpuobject_id = result.with_callback();
     // After adding the renderer, we must update the entity's renderer component using another callback
     global::ecs::entity_mut(
         entity,
