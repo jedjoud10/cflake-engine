@@ -35,7 +35,7 @@ pub fn get_gpu_object<'a>(id: &'a GPUObjectID) -> Option<&GPUObject> {
     Some(unsafe { &*ptr })
 }
 // Get a GPU object using a ref usize
-pub fn get_gpu_object_usize<'a>(id: &'a usize) -> Option<&GPUObject> {
+pub fn get_gpu_object_usize<'a>(id: &'a usize) -> Option<&'a GPUObject> {
     let buf = INTERFACE_BUFFER.read().unwrap();
     let gpuobject = buf.gpuobjects.get_element(*id);
     // Flatten
@@ -43,6 +43,21 @@ pub fn get_gpu_object_usize<'a>(id: &'a usize) -> Option<&GPUObject> {
     let ptr = x as *const GPUObject;
     // Gonna document later why this is totally safe and how it *should* not cause a mem corruption or UB
     Some(unsafe { &*ptr })
+}
+// Get multiple GPU object using a ref usize
+pub fn get_gpu_object_usize_batch<'a, I>(ids: I) -> Option<Vec<&'a GPUObject>> 
+where
+    I: Iterator<Item = &'a usize>{
+    let buf = INTERFACE_BUFFER.read().unwrap();
+    let mut gpuobjects = Vec::new();
+    for x in ids {
+        // Flatten
+        let gpuobject = buf.gpuobjects.get_element(*x).flatten()?;
+        // Gonna document later why this is totally safe and how it *should* not cause a mem corruption or UB
+        let ptr = gpuobject as *const GPUObject;
+        gpuobjects.push(unsafe { &*ptr });
+    }    
+    Some(gpuobjects)
 }
 // Get the GPUObjectID from a name
 pub fn get_id_named(name: &str) -> Option<GPUObjectID> {

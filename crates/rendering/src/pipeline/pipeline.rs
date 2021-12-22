@@ -168,8 +168,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let tx2 = tx2.clone();
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
+                
                 loop {
                     // Update the delta_time
+                    
                     let new_time = glfw.get_time();
                     let delta = new_time - last_time;
                     last_time = new_time;
@@ -194,6 +196,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                             break;
                         }
                     }
+                    
                 }
                 println!("Stopped the render thread!");
             })
@@ -333,10 +336,14 @@ fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx
                     None => interface::received_new_gpu_object_additional(gpuobject_id, callback_id, waitable_id), // Notify the interface that we have a new gpu object
                 }
             }
-            None => { /* This command does not create a GPU object */ }
+            None => {
+                if let Option::Some(x) = execution_id {
+                    interface::received_task_execution_ack(x);
+                }
+            }
         }
     }
-    println!("Executed {} Render Commands", i);
+    //println!("Executed {} Render Commands", i);
 }
 // Data that will be sent back to the main thread after we start the pipeline thread
 pub struct PipelineStartData {

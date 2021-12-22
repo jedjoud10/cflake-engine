@@ -271,13 +271,17 @@ impl PipelineRenderer {
     // Called each frame, for each renderer that is valid in the pipeline
     pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
         let material = self.default_material.as_ref().unwrap().to_material().unwrap();
-        for renderer in self.renderer_ids.iter().map(|x| GPUObjectID::usize_to_renderer(x).unwrap()) {
-            // Should we render in wireframe or not?
-            if self.wireframe {
-                render_wireframe(renderer, camera, &self.wireframe_shader);
-            } else {
-                render(renderer, camera, material);
-            }
+        let i = std::time::Instant::now();
+        let renderers = crate::interface::get_gpu_object_usize_batch(self.renderer_ids.iter()).unwrap();        
+        for renderer_ in renderers {
+            if let GPUObject::Renderer(renderer) = renderer_ {
+                // Should we render in wireframe or not?
+                if self.wireframe {
+                    render_wireframe(renderer, camera, &self.wireframe_shader);
+                } else {
+                    render(renderer, camera, material);
+                }
+            }            
         }
     }
     // Post-render event
