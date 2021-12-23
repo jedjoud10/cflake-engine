@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, interface, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer};
+use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -207,15 +207,15 @@ pub fn internal_task(pipeline: &mut Pipeline, task: RenderTask) -> Option<GPUObj
         RenderTask::ShaderUniformGroup(_shared_uniformgroup) => todo!(),
         // Textures
         RenderTask::TextureCreate(shared_texture) => Some(pipeline.generate_texture(shared_texture)),
-        RenderTask::TextureUpdateSize(texture, ttype) => {
-            pipeline.update_texture_size(texture, ttype);
+        RenderTask::TextureUpdateSize(id, ttype) => {
+            pipeline.update_texture_size(id, ttype);
             None
         }
-        RenderTask::TextureUpdateData(texture, bytes) => {
-            pipeline.update_texture_data(texture, bytes);
+        RenderTask::TextureUpdateData(id, bytes) => {
+            pipeline.update_texture_data(id, bytes);
             None
         }
-        RenderTask::TextureFillArray(texture, bytecount) => Some(pipeline.texture_fill_array(texture, bytecount)),
+        RenderTask::TextureFillArray(id, bytecount) => Some(pipeline.texture_fill_array(id, bytecount)),
         // Model
         RenderTask::ModelCreate(shared_model) => Some(pipeline.create_model(shared_model)),
         RenderTask::ModelDispose(gpumodel) => {
@@ -225,12 +225,12 @@ pub fn internal_task(pipeline: &mut Pipeline, task: RenderTask) -> Option<GPUObj
         // Material
         RenderTask::MaterialCreate(material) => Some(pipeline.create_material(material)),
         // Compute
-        RenderTask::ComputeRun(compute, axii, uniforms_group) => {
-            pipeline.run_compute(compute, axii, uniforms_group);
+        RenderTask::ComputeRun(id, axii, uniforms_group) => {
+            pipeline.run_compute(id, axii, uniforms_group);
             None
         }
-        RenderTask::ComputeLock(compute) => {
-            pipeline.lock_compute(compute);
+        RenderTask::ComputeLock(id) => {
+            pipeline.lock_compute(id);
             None
         }
         // Others
@@ -290,11 +290,11 @@ fn command(pipeline: &mut Pipeline, camera: &mut CameraDataGPUObject, command: R
             None
         }
         RenderTask::RendererUpdateTransform(renderer_id, matrix) => {
-            pipeline.update_renderer(matrix);
+            pipeline.update_renderer(renderer_id, matrix);
             None
         }
         // Internal cases
-        x => internal_task(x, buf),
+        x => internal_task(pipeline, x),
     }
 }
 
@@ -314,18 +314,18 @@ fn poll_commands(pipeline: &mut Pipeline, camera: &mut CameraDataGPUObject, rx: 
         };
         // Check special commands first
         // Valid command
-        match command(pr, camera, render_command_query, window, glfw) {
+        match command(pipeline, camera, render_command_query, window, glfw) {
             Some(gpuobject_id) => {
                 // We already added the GPUObject and it's possible name to the interface, now we must add the option callback_id and option waitable_id
                 // We have a valid GPU object
                 match execution_id {
-                    Some(execution_id) => interface::received_task_execution_ack(execution_id),
-                    None => interface::received_new_gpu_object_additional(gpuobject_id, callback_id, waitable_id), // Notify the interface that we have a new gpu object
+                    Some(execution_id) => pipeline.buf.received_task_execution_ack(execution_id),
+                    None => pipeline.buf.received_new_gpuobject_additional(gpuobject_id, callback_id, waitable_id), // Notify the interface that we have a new gpu object
                 }
             }
             None => {
-                if let Option::Some(x) = execution_id {
-                    interface::received_task_execution_ack(x);
+                if let Option::Some(execution_id) = execution_id {
+                    pipeline.buf.received_task_execution_ack(execution_id);
                 }
             }
         }
@@ -354,7 +354,7 @@ impl Pipeline {
             material_id,
             matrix,
         });
-        let id = interface::received_new_gpu_object(renderer_gpuobject, None);
+        let id = self.buf.add_gpuobject(renderer_gpuobject, None);
         // Add the renderer in the Pipeline Renderer
         self.renderer.add_renderer(id.index.unwrap());
         id
@@ -367,7 +367,7 @@ impl Pipeline {
     }
     // Update a renderer's model matrix
     fn update_renderer(&mut self, renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
-        if let GPUObject::Renderer(renderer) = self.buf.get_gpuobject(&renderer_id) {
+        if let GPUObject::Renderer(renderer) = self.buf.get_gpuobject(&renderer_id).unwrap() {
             renderer.matrix = matrix.get();
         }
     }
@@ -423,7 +423,7 @@ impl Pipeline {
             let program = gl::CreateProgram();
 
             // Attach the shaders
-            for subshader_program_ in shader.linked_subshaders_programs.iter() {
+            for subshader_program_ in shader.linked_subshaders.iter() {
                 let subshader_program = subshader_program_.to_subshader().unwrap();
                 gl::AttachShader(program, subshader_program.1);
             }
@@ -716,9 +716,9 @@ impl Pipeline {
         });
         self.buf.add_gpuobject(gpuobject, Some(texture.name.clone()))
     }
-    pub fn update_texture_size(&mut self, id: &GPUObjectID, ttype: TextureType) {
+    pub fn update_texture_size(&mut self, id: GPUObjectID, ttype: TextureType) {
         // Get the GPU texture object
-        let texture = if let GPUObject::Texture(x) = self.buf.get_gpuobject(id).unwrap() {
+        let texture = if let GPUObject::Texture(x) = self.buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
         // Check if the current dimension type matches up with the new one
@@ -742,8 +742,8 @@ impl Pipeline {
             }
         }
     }
-    pub fn update_texture_data(&mut self, id: &GPUObjectID, bytes: Vec<u8>) {
-        let texture = if let GPUObject::Texture(x) = self.buf.get_gpuobject(id).unwrap() {
+    pub fn update_texture_data(&mut self, id: GPUObjectID, bytes: Vec<u8>) {
+        let texture = if let GPUObject::Texture(x) = self.buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
         let mut pointer: *const c_void = null();
@@ -783,12 +783,12 @@ impl Pipeline {
             }
         }
     }
-    pub fn texture_fill_array(&mut self, id: &GPUObjectID, bytecount: usize) -> GPUObjectID {
-        let texture = if let GPUObject::Texture(x) = self.buf.get_gpuobject(id).unwrap() {
+    pub fn texture_fill_array(&mut self, id: GPUObjectID, bytecount: usize) -> GPUObjectID {
+        let texture = if let GPUObject::Texture(x) = self.buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
         // Get the length of the vector
-        let length: usize = match texture.2 {
+        let length: usize = match texture.ttype {
             TextureType::Texture1D(x) => (x as usize),
             TextureType::Texture2D(x, y) => (x as usize * y as usize),
             TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
@@ -800,7 +800,7 @@ impl Pipeline {
         // Create the vector
         let mut pixels: Vec<u8> = vec![0; byte_length];
 
-        let tex_type = match texture.2 {
+        let tex_type = match texture.ttype {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
@@ -810,8 +810,8 @@ impl Pipeline {
         // Actually read the pixels
         unsafe {
             // Bind the buffer before reading
-            gl::BindTexture(tex_type, texture.0);
-            let (_internal_format, format, data_type) = texture.1;
+            gl::BindTexture(tex_type, texture.texture_id);
+            let (_internal_format, format, data_type) = texture.ifd;
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         let gpuobject = GPUObject::TextureFill(TextureFillGPUObject {
@@ -820,14 +820,14 @@ impl Pipeline {
         });
         self.buf.add_gpuobject(gpuobject, None)
     }
-    pub fn run_compute(&mut self, id: &GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
-        uniforms_group.consume();
+    pub fn run_compute(&mut self, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
+        uniforms_group.consume(&mut self.buf);
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
         }
     }
-    pub fn lock_compute(&mut self, id: &GPUObjectID) {
-        let compute = if let GPUObject::ComputeShader(x) = self.buf.get_gpuobject(id).unwrap() {
+    pub fn lock_compute(&mut self, id: GPUObjectID) {
+        let compute = if let GPUObject::ComputeShader(x) = self.buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
         unsafe {
@@ -839,9 +839,10 @@ impl Pipeline {
     pub fn create_material(&mut self, material: SharedData<Material>) -> GPUObjectID {
         let material = material.get();
         let gpuobject = GPUObject::Material(MaterialGPUObject {
-            uniforms: material.uniforms,material.shader.unwrap_or(GPUObjectID::None), , 
+            shader: material.shader,
+            uniforms: material.uniforms,
             flags: material.flags,
         });
-        interface::received_new_gpu_object(gpuobject, Some(material.material_name.clone()))
+        self.buf.add_gpuobject(gpuobject, Some(material.material_name.clone()))
     }
 }

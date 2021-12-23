@@ -1,5 +1,5 @@
 use crate::{
-    interface, internal_task, ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader,
+    internal_task, ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader,
     Texture, TextureGPUObject, TextureType, IS_RENDER_THREAD,
 };
 use lazy_static::lazy_static;
@@ -162,8 +162,8 @@ pub enum RenderTask {
     ModelCreate(SharedData<Model>),
     ModelDispose(GPUObjectID),
     // Compute
-    ComputeRun(ComputeShaderGPUObject, (u16, u16, u16), ShaderUniformsGroup),
-    ComputeLock(ComputeShaderGPUObject),
+    ComputeRun(GPUObjectID, (u16, u16, u16), ShaderUniformsGroup),
+    ComputeLock(GPUObjectID),
     // Renderer
     RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
     RendererRemove(GPUObjectID),

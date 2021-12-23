@@ -28,8 +28,9 @@ pub mod pipec {
     use std::sync::Arc;
 
     use crate::pipeline::{buffer, object::*};
-    use crate::{interface, GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER};
+    use crate::{GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER};
     pub use crate::{RenderTask, SharedData};
+    pub use super::super::others as others;
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
         crate::pipeline::init_pipeline(glfw, window)
@@ -65,22 +66,6 @@ pub mod pipec {
     // Send a task to the render thread, returning a Command
     pub fn task(task: RenderTask) -> RenderCommandResult {
         RenderCommandResult::new(task)
-    }
-    // Get a GPU object
-    pub fn get_gpu_object<'a>(id: &'a GPUObjectID) -> Option<&'a GPUObject> {
-        interface::get_gpu_object(id)
-    }
-    // Get a named GPU object
-    pub fn get_named_gpu_object(name: &str) -> Option<GPUObject> {
-        interface::get_named_gpu_object(name)
-    }
-    // Get a GPUObjectID from a name
-    pub fn get_id_named(name: &str) -> Option<GPUObjectID> {
-        interface::get_id_named(name)
-    }
-    // Check if a GPU object name is valid
-    pub fn gpu_object_name_valid(name: &str) -> bool {
-        interface::gpu_object_name_valid(name)
     }
     // Load or create functions
     pub fn subshader(subshader: SubShader) -> GPUObjectID {

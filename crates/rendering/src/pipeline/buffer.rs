@@ -17,7 +17,7 @@ pub struct PipelineBuffer {
 
 impl PipelineBuffer {
     // Send messages to the main thread telling it what callbacks we must execute
-    pub fn execute_callbacks(&mut self, tx2: Sender<MainThreadMessage>) {
+    pub fn execute_callbacks(&mut self, tx2: &Sender<MainThreadMessage>) {
         // Send a message to the main thread saying what callbacks we must run
         let callbacks_objects_indices = std::mem::take(&mut self.callback_objects);
         let callback_objects = callbacks_objects_indices
@@ -49,6 +49,10 @@ impl PipelineBuffer {
         }
         GPUObjectID { index: Some(index) }
     }
+    // Remove a GPU object from the buffer
+    pub fn remove_gpuobject(&mut self, id: GPUObjectID) {
+        self.gpuobjects.remove_element(id.index).unwrap();
+    }
     // Add some additional data like callback ID or waitable ID to the GPU object
     pub fn received_new_gpuobject_additional(&mut self, id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>, waitable_id: Option<u64>) {
         let index = id.index.unwrap();
@@ -65,6 +69,11 @@ impl PipelineBuffer {
             None => { /* We cannot run the un-wait function on the threads awaiting this object */ }
         }
     }
+    // We have received confirmation that we have executed a specific task
+    pub fn received_task_execution_ack(&mut self, execution_id: u64) {
+        // Add the GPU object to the current interface buffer
+        self.executed_tasks.insert(execution_id);
+    }    
     // Get the GPUObjectID from a name
     pub fn get_id_named(&self, name: &str) -> Option<GPUObjectID> {
         let x = self.names_to_id.get(name)?;

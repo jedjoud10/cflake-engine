@@ -61,7 +61,6 @@ pub struct PipelineRenderer {
     frame_stats: FrameStats,                   // Some frame stats
     pub window: Window,                        // Window
     pub default_material: Option<GPUObjectID>, // Self explanatory
-    renderer_ids: HashSet<usize>,              // IDs of Renderer GPU Objects
 }
 
 // Render debug primitives
@@ -255,13 +254,6 @@ impl PipelineRenderer {
         println!("Successfully initialized the RenderPipeline Renderer!");
         self
     }
-    // Renderers
-    pub fn add_renderer(&mut self, renderer_id_usize: usize) {
-        self.renderer_ids.insert(renderer_id_usize);
-    }
-    pub fn remove_renderer(&mut self, renderer_id_usize: &usize) {
-        self.renderer_ids.remove(renderer_id_usize);
-    }
     // Pre-render event
     pub fn pre_render(&mut self) {
         unsafe {
@@ -270,19 +262,16 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, camera: &CameraDataGPUObject) {
+    pub fn renderer_frame(&self, renderers: &Vec<RendererGPUObject>, camera: &CameraDataGPUObject) {
         let material = self.default_material.as_ref().unwrap().to_material().unwrap();
-        let i = std::time::Instant::now();
-        let renderers = crate::interface::get_gpu_object_usize_batch(self.renderer_ids.iter()).unwrap();        
-        for renderer_ in renderers {
-            if let GPUObject::Renderer(renderer) = renderer_ {
-                // Should we render in wireframe or not?
-                if self.wireframe {
-                    render_wireframe(renderer, camera, &self.wireframe_shader);
-                } else {
-                    render(renderer, camera, material);
-                }
-            }            
+        let i = std::time::Instant::now();     
+        for renderer in renderers {
+            // Should we render in wireframe or not?
+            if self.wireframe {
+                render_wireframe(renderer, camera, &self.wireframe_shader);
+            } else {
+                render(renderer, camera, material);
+            }          
         }
     }
     // Post-render event

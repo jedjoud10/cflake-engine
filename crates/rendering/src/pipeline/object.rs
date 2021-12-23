@@ -1,6 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ffi::CString};
 
 use crate::{GPUObjectID, MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform};
+
+use super::buffer::PipelineBuffer;
 
 
 pub trait GPUObjectIdentifiable {
@@ -20,6 +22,7 @@ pub struct ModelGPUObject {
     pub element_buffer_object: u32,
     pub element_count: usize,
 }
+#[derive(Clone)]
 pub struct SubShaderGPUObject {
     pub subshader_type: SubShaderType,
     pub program: u32,
@@ -56,7 +59,7 @@ pub struct CameraDataGPUObject {
 }
 #[derive(Clone)]
 pub struct MaterialGPUObject {
-    pub shader: GPUObjectID,
+    pub shader: Option<GPUObjectID>,
     pub uniforms: ShaderUniformsGroup,
     pub flags: MaterialFlags 
 }
@@ -72,9 +75,6 @@ pub mod uniform_setters {
     use std::ffi::CString;
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
-    pub fn get_uniform_location(shader: u32, name: &str) -> i32 {
-        unsafe { gl::GetUniformLocation(shader, CString::new(name).unwrap().as_ptr()) }
-    }
     // Set a f32 uniform
     pub unsafe fn set_f32(index: i32, value: &f32) {
         gl::Uniform1f(index, *value);
@@ -169,60 +169,6 @@ pub mod uniform_setters {
         gl::Uniform4i(index, vec[0], vec[1], vec[2], vec[3]);
     }
 }
-
-// Run the shader uniforms of a specific shader
-fn run_shader_uniform_group(shader: u32, group: &ShaderUniformsGroup) {
-    // Set the default/custom uniforms
-    use uniform_setters::*;
-    for uniform in group.uniforms.iter() {
-        let index = get_uniform_location(shader, uniform.0.as_str());
-        unsafe {
-            match &uniform.1 {
-                Uniform::F32(x) => set_f32(index, x),
-                Uniform::I32(x) => set_i32(index, x),
-                Uniform::Vec2F32(x) => set_vec2f32(index, x),
-                Uniform::Vec3F32(x) => set_vec3f32(index, x),
-                Uniform::Vec4F32(x) => set_vec4f32(index, x),
-                Uniform::Vec2I32(x) => set_vec2i32(index, x),
-                Uniform::Vec3I32(x) => set_vec3i32(index, x),
-                Uniform::Vec4I32(x) => set_vec4i32(index, x),
-                Uniform::Mat44F32(x) => set_mat44(index, x),
-                Uniform::Texture1D(x, y) => {
-                    if x.is_valid() {
-                        set_t1d(index, x, y)
-                    }
-                }
-                Uniform::Texture2D(x, y) => {
-                    if x.is_valid() {
-                        set_t2d(index, x, y)
-                    }
-                }
-                Uniform::Texture3D(x, y) => {
-                    if x.is_valid() {
-                        set_t3d(index, x, y)
-                    }
-                }
-                Uniform::Texture2DArray(x, y) => {
-                    if x.is_valid() {
-                        set_t2da(index, x, y)
-                    }
-                }
-                Uniform::Image2D(x, y) => {
-                    if x.is_valid() {
-                        set_i2d(index, x, y)
-                    }
-                }
-                Uniform::Image3D(x, y) => {
-                    if x.is_valid() {
-                        set_i3d(index, x, y)
-                    }
-                }
-                Uniform::Bool(_x) => todo!(),
-            }
-        }
-    }
-}
-
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
 #[derive(Default, Clone)]
 pub struct ShaderUniformsGroup {
@@ -240,10 +186,6 @@ impl ShaderUniformsGroup {
             x.insert(a.0, a.1);
         }
         Self { shader, uniforms: x }
-    }
-    // With shader
-    pub fn with_shader(&mut self, shader: &ShaderGPUObject) {
-        self.shader = shader.0;
     }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
@@ -309,13 +251,35 @@ impl ShaderUniformsGroup {
     pub fn set_vec4i32(&mut self, name: &str, vec: veclib::Vector4<i32>) {
         self.uniforms.insert(name.to_string(), Uniform::Vec4I32(vec));
     }
-    // Does the same thing as the "send" function above, but this time this assumes that we are already in the render thread
-    // So we only need to consume the current uniform group and use the shader
-    pub fn consume(self) {
+    // Bind the shader and set the uniforms
+    pub fn consume(self, pipeline_buffer: &mut PipelineBuffer) {
         unsafe {
             gl::UseProgram(self.shader);
         }
-        run_shader_uniform_group(self.shader, &self);
+        use super::uniform_setters::*;
+        for (name, uniform) in self.uniforms.iter() {
+            let index = unsafe { gl::GetUniformLocation(self.shader, CString::new(name.clone()).unwrap().as_ptr()) };
+            unsafe {
+                match &uniform {
+                    Uniform::F32(x) => set_f32(index, x),
+                    Uniform::I32(x) => set_i32(index, x),
+                    Uniform::Vec2F32(x) => set_vec2f32(index, x),
+                    Uniform::Vec3F32(x) => set_vec3f32(index, x),
+                    Uniform::Vec4F32(x) => set_vec4f32(index, x),
+                    Uniform::Vec2I32(x) => set_vec2i32(index, x),
+                    Uniform::Vec3I32(x) => set_vec3i32(index, x),
+                    Uniform::Vec4I32(x) => set_vec4i32(index, x),
+                    Uniform::Mat44F32(x) => set_mat44(index, x),
+                    Uniform::Texture1D(x, y) => set_t1d(pipeline_buffer, index, x, y),
+                    Uniform::Texture2D(x, y) => set_t2d(pipeline_buffer, index, x, y),
+                    Uniform::Texture3D(x, y) => set_t3d(pipeline_buffer, index, x, y),
+                    Uniform::Texture2DArray(x, y) => set_t2da(pipeline_buffer, index, x, y),
+                    Uniform::Image2D(x, y) => set_i2d(pipeline_buffer, index, x, y),
+                    Uniform::Image3D(x, y) => set_i3d(pipeline_buffer, index, x, y),
+                    Uniform::Bool(_x) => todo!(),
+                }
+            }
+        }
     }
 }
 
@@ -323,7 +287,7 @@ impl ShaderGPUObject {
     // Get a new uniform group
     pub fn new_uniform_group(&self) -> ShaderUniformsGroup {
         ShaderUniformsGroup {
-            shader: self.0,
+            shader: self.program,
             uniforms: HashMap::new(),
         }
     }
@@ -333,7 +297,7 @@ impl ComputeShaderGPUObject {
     // Get a new uniform group
     pub fn new_uniform_group(&self) -> ShaderUniformsGroup {
         ShaderUniformsGroup {
-            shader: self.0,
+            shader: self.program,
             uniforms: HashMap::new(),
         }
     }

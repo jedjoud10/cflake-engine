@@ -1,10 +1,10 @@
 mod buffer;
 mod command;
 mod identifier;
-pub mod interface;
 pub mod object;
 mod pipeline;
 mod pipeline_main;
+pub mod others;
 pub mod rendering;
 pub use command::*;
 pub use identifier::*;

@@ -9,19 +9,17 @@ use std::collections::{HashMap, HashSet};
 pub struct Shader {
     pub name: String,
     pub source: String,
-    pub is_compute: bool,
     externalcode: HashMap<String, String>,
-    pub linked_subshaders_programs: Vec<GPUObjectID>,
+    pub linked_subshaders: Vec<GPUObjectID>,
 }
 
 impl Default for Shader {
     fn default() -> Self {
         Self {
             name: String::new(),
-            is_compute: false,
             source: String::new(),
             externalcode: HashMap::new(),
-            linked_subshaders_programs: Vec::new(),
+            linked_subshaders: Vec::new(),
         }
     }
 }
@@ -91,9 +89,9 @@ impl Shader {
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached (In the object cacher) and check if it's cached in the pipeline as well
-            if assets::cachec::cached(subshader_path) && pipec::gpu_object_name_valid(subshader_path) {
-                let id = interface::get_id_named(subshader_path).unwrap();
-                self.linked_subshaders_programs.push(id);
+            if assets::cachec::cached(subshader_path) && pipec::others::gpu_object_name_valid(subshader_path) {
+                let id = pipec::others::get_id_named(subshader_path).unwrap();
+                self.linked_subshaders.push(id);
             } else {
                 // It was not cached, so we need to cache it
                 let mut subshader: SubShader = assets::assetc::dload(subshader_path).map_err(|_| RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
@@ -124,20 +122,10 @@ impl Shader {
                     .join("\n");
 
                 // Cache it, and link it
-                self.linked_subshaders_programs.push(pipec::subshader(subshader.clone()));
+                self.linked_subshaders.push(pipec::subshader(subshader.clone()));
                 let _rc_subshader = assets::cachec::cache_l(subshader_path, subshader).unwrap();
             }
         }
-        // Check if this is a compute shader or not
-        self.is_compute = {
-            let x = self.linked_subshaders_programs.first().unwrap().to_subshader().unwrap();
-            if let SubShaderType::Compute = x.0 {
-                true
-            } else {
-                false
-            }
-        };
-
         Ok(self)
     }
     // Load some external code that can be loading using specific include points
