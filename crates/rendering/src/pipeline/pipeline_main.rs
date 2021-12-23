@@ -69,32 +69,32 @@ pub mod pipec {
     }
     // Load or create functions
     pub fn subshader(subshader: SubShader) -> GPUObjectID {
-        if gpu_object_name_valid(&subshader.name) {
-            get_id_named(&subshader.name).unwrap()
+        if others::gpuobject_name_valid(&subshader.name) {
+            others::get_id(&subshader.name).unwrap()
         } else {
             let result = task(RenderTask::SubShaderCreate(SharedData::new(subshader)));
             result.wait_gpuobject_id()
         }
     }
     pub fn shader(shader: Shader) -> GPUObjectID {
-        if gpu_object_name_valid(&shader.name) {
-            get_id_named(&shader.name).unwrap()
+        if others::gpuobject_name_valid(&shader.name) {
+            others::get_id(&shader.name).unwrap()
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
             result.wait_gpuobject_id()
         }
     }
     pub fn compute_shader(shader: Shader) -> GPUObjectID {
-        if gpu_object_name_valid(&shader.name) {
-            get_id_named(&shader.name).unwrap()
+        if others::gpuobject_name_valid(&shader.name) {
+            others::get_id(&shader.name).unwrap()
         } else {
             let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
             result.wait_gpuobject_id()
         }
     }
     pub fn texture(texture: Texture) -> GPUObjectID {
-        if gpu_object_name_valid(&texture.name) {
-            get_id_named(&texture.name).unwrap()
+        if others::gpuobject_name_valid(&texture.name) {
+            others::get_id(&texture.name).unwrap()
         } else {
             let result = task(RenderTask::TextureCreate(SharedData::new(texture)));
             result.wait_gpuobject_id()
@@ -106,8 +106,8 @@ pub mod pipec {
         result.wait_gpuobject_id()
     }
     pub fn material(material: Material) -> GPUObjectID {
-        if gpu_object_name_valid(&material.material_name) {
-            get_id_named(&material.material_name).unwrap()
+        if others::gpuobject_name_valid(&material.material_name) {
+            others::get_id(&material.material_name).unwrap()
         } else {
             let result = task(RenderTask::MaterialCreate(SharedData::new(material)));
             result.wait_gpuobject_id()
@@ -115,16 +115,16 @@ pub mod pipec {
     }
     // Load or create functions, cached type
     pub fn texturec(texturec: CachedObject<Texture>) -> GPUObjectID {
-        if gpu_object_name_valid(&texturec.arc.as_ref().name) {
-            get_id_named(&texturec.arc.as_ref().name).unwrap()
+        if others::gpuobject_name_valid(&texturec.arc.as_ref().name) {
+            others::get_id(&texturec.arc.as_ref().name).unwrap()
         } else {
             let t = texturec.arc.as_ref().clone();
             texture(t)
         }
     }
     pub fn shaderc(shaderc: CachedObject<Shader>) -> GPUObjectID {
-        if gpu_object_name_valid(&shaderc.arc.as_ref().name) {
-            get_id_named(&shaderc.arc.as_ref().name).unwrap()
+        if others::gpuobject_name_valid(&shaderc.arc.as_ref().name) {
+            others::get_id(&shaderc.arc.as_ref().name).unwrap()
         } else {
             let s = shaderc.arc.as_ref().clone();
             shader(s)
@@ -137,7 +137,7 @@ pub mod pipec {
     {
         // Convert the bytes into a vector of vectors
         let (bytes, _) = match gpuobject {
-            GPUObject::TextureFill(x) => (x.0, x.1),
+            GPUObject::TextureFill(x) => (x.bytes, x.bytecount),
             _ => panic!(),
         };
         // Unsafe

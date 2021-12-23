@@ -1,5 +1,5 @@
 use others::SmartList;
-use std::{collections::{HashMap, HashSet}, sync::mpsc::Sender};
+use std::{collections::{HashMap, HashSet}, sync::{mpsc::Sender, Mutex}};
 
 use crate::{GPUObject, GPUObjectID, MainThreadMessage};
 
@@ -44,6 +44,8 @@ impl PipelineBuffer {
         match name {
             Some(name) => {
                 self.names_to_id.insert(name, index);
+                let x = GLOBAL_BUFFER.lock().unwrap();
+                x.names_to_id.insert(name, index);
             }
             None => {}
         }
@@ -51,7 +53,7 @@ impl PipelineBuffer {
     }
     // Remove a GPU object from the buffer
     pub fn remove_gpuobject(&mut self, id: GPUObjectID) {
-        self.gpuobjects.remove_element(id.index).unwrap();
+        self.gpuobjects.remove_element(id.index.unwrap()).unwrap();
     }
     // Add some additional data like callback ID or waitable ID to the GPU object
     pub fn received_new_gpuobject_additional(&mut self, id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>, waitable_id: Option<u64>) {
@@ -74,25 +76,6 @@ impl PipelineBuffer {
         // Add the GPU object to the current interface buffer
         self.executed_tasks.insert(execution_id);
     }    
-    // Get the GPUObjectID from a name
-    pub fn get_id_named(&self, name: &str) -> Option<GPUObjectID> {
-        let x = self.names_to_id.get(name)?;
-        Some(GPUObjectID { index: Some(*x) })
-    }
-    // Check if a GPU object name is valid
-    pub fn gpuobject_name_valid(&self, name: &str) -> bool {
-        self.names_to_id.contains_key(name)
-    }
-    // Check if a GPU object is valid
-    pub fn gpuobject_valid(&self, id: &GPUObjectID) -> bool {
-        match id.index {
-            Some(index) => match self.gpuobjects.get_element(index).flatten() {
-                Some(_) => true,
-                None => false,
-            },
-            None => false,
-        }
-    }
     // Get a GPU using it's name
     pub fn get_named_gpuobject(&self, name: &str) -> Option<GPUObject> {
         let index = self.names_to_id.get(name);
@@ -123,5 +106,27 @@ impl PipelineBuffer {
         I: Iterator<Item = &'a usize>{
         let mut gpuobjects = ids.map(|x| self.gpuobjects.get_element(*x).flatten().unwrap()).collect::<Vec<&GPUObject>>();
         Some(gpuobjects)
+    }
+}
+use lazy_static::lazy_static;
+lazy_static! {
+   pub(crate) static ref GLOBAL_BUFFER: Mutex<GlobalBuffer> = Mutex::new(GlobalBuffer::default());
+}
+
+// A global buffer that will be accessible by each worker thread
+#[derive(Default)]
+pub struct GlobalBuffer {
+    pub names_to_id: HashMap<String, usize>,
+}
+
+impl GlobalBuffer {
+    // Get if a GPU object name is present in the global buffer
+    pub fn gpuobject_name_valid(&self, name: &str) -> bool {
+        self.names_to_id.contains_key(name)
+    }
+    // Get the ID of a GPU object name from within the buffer
+    pub fn get_id(&self, name: &str) -> Option<GPUObjectID> {
+        let index = self.names_to_id.get(name)?;
+        Some(GPUObjectID { index: Some(*index) })
     }
 }

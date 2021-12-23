@@ -45,8 +45,8 @@ pub struct TextureGPUObject {
 }
 #[derive(Clone)]
 pub struct TextureFillGPUObject {
-    pub pixels: Vec<u8>,
-    pub bytecount: usize,
+    pub bytes: Vec<u8>,
+    pub bytecount_per_pixel: usize,
 }
 #[derive(Clone)]
 // TODO: Add this as an actual GPU object lel
@@ -300,19 +300,6 @@ impl ComputeShaderGPUObject {
             shader: self.program,
             uniforms: HashMap::new(),
         }
-    }
-}
-
-impl ComputeShaderGPUObject {
-    // Compute shader stuff you know (Waitable task)
-    pub fn run(&self, x: u16, y: u16, z: u16, uniforms_group: ShaderUniformsGroup) {
-        let result = crate::pipec::task(crate::RenderTask::ComputeRun(self.clone(), (x, y, z), uniforms_group));
-        result.wait();
-    }
-    // Lock the state of this compute shader (Immediate task, force run the shader task if it was not polled yet)
-    pub fn lock_state(&self) {
-        let result = crate::pipec::task(crate::RenderTask::ComputeLock(self.clone()));
-        result.wait();
     }
 }
 

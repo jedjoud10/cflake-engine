@@ -1,7 +1,7 @@
 use super::SubShader;
 use crate::utils::RenderingError;
 use crate::SubShaderGPUObject;
-use crate::{interface, pipec, GPUObjectID, SubShaderType};
+use crate::{pipec, GPUObjectID, SubShaderType};
 use assets::Object;
 use std::collections::{HashMap, HashSet};
 // A shader that contains two sub shaders that are compiled independently
@@ -89,8 +89,8 @@ impl Shader {
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
             // Check if we even have the subshader cached (In the object cacher) and check if it's cached in the pipeline as well
-            if assets::cachec::cached(subshader_path) && pipec::others::gpu_object_name_valid(subshader_path) {
-                let id = pipec::others::get_id_named(subshader_path).unwrap();
+            if assets::cachec::cached(subshader_path) && pipec::others::gpuobject_name_valid(subshader_path) {
+                let id = pipec::others::get_id(subshader_path).unwrap();
                 self.linked_subshaders.push(id);
             } else {
                 // It was not cached, so we need to cache it

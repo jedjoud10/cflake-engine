@@ -6,6 +6,8 @@ use others::SmartList;
 use std::collections::HashSet;
 use std::ptr::null;
 
+use super::buffer::PipelineBuffer;
+
 // These should be ran on the main thread btw
 pub mod window_commands {
     // Set fullscreen
@@ -255,15 +257,14 @@ impl PipelineRenderer {
         self
     }
     // Pre-render event
-    pub fn pre_render(&mut self) {
+    pub fn pre_render(&self) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, renderers: &Vec<RendererGPUObject>, camera: &CameraDataGPUObject) {
-        let material = self.default_material.as_ref().unwrap().to_material().unwrap();
+    pub fn renderer_frame(&self, buffer: &PipelineBuffer, renderers: Vec<&RendererGPUObject>, camera: &CameraDataGPUObject) {
         let i = std::time::Instant::now();     
         for renderer in renderers {
             // Should we render in wireframe or not?

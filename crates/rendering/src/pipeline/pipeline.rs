@@ -2,6 +2,7 @@ use super::object::*;
 use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer};
 use glfw::Context;
 use lazy_static::lazy_static;
+use others::SmartList;
 use std::{
     borrow::BorrowMut,
     collections::HashMap,
@@ -131,6 +132,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let pipeline = Pipeline {
                     buf: PipelineBuffer::default(),
                     renderer: PipelineRenderer::default().init(),
+                    renderers: SmartList::default(),
                 };
                 // This is indeed the render thread
                 crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
@@ -163,10 +165,20 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     poll_commands(&mut pipeline, &mut camera, &sent_tasks_receiver, window, glfw);
                     // --- Rendering ---
                     // Pre-render
-                    let renderer = &mut pipeline.renderer;
+                    let renderer = &pipeline.renderer;
+                    let renderers = pipeline.renderers.elements.iter().filter_map(|id| {
+                        match id {
+                            Some(id) => {
+                                if let GPUObject::Renderer(x) = pipeline.buf.get_gpuobject(id).unwrap() {
+                                   Some(x) 
+                                } else { None }
+                            },
+                            None => None,
+                        }
+                    }).collect::<Vec<&RendererGPUObject>>();
                     renderer.pre_render();
                     // Render
-                    renderer.renderer_frame(&camera);
+                    renderer.renderer_frame(renderers, &camera);
                     // Post-render
                     renderer.post_render(&camera, window);
 
@@ -341,6 +353,7 @@ pub struct PipelineStartData {
 pub struct Pipeline {
     pub buf: PipelineBuffer, // Pipeline buffer containing all the GPU objects and their corresponding names
     pub renderer: PipelineRenderer, // Renderer that actually does the OpenGL rendering
+    pub renderers: SmartList<GPUObjectID>, // Renderers that we must render
 }
 // Renderers
 impl Pipeline {
@@ -355,15 +368,15 @@ impl Pipeline {
             matrix,
         });
         let id = self.buf.add_gpuobject(renderer_gpuobject, None);
-        // Add the renderer in the Pipeline Renderer
-        self.renderer.add_renderer(id.index.unwrap());
+        self.renderers.add_element(id);
         id
     }
     // Remove the renderer using it's renderer ID
     pub fn remove_renderer(&mut self, renderer_id: GPUObjectID) {
         // Remove first
-        self.renderer.remove_renderer(&renderer_id.index.unwrap());
+        let id = renderer_id.index.unwrap();
         self.buf.remove_gpuobject(renderer_id);
+        self.renderers.remove_element(id);
     }
     // Update a renderer's model matrix
     fn update_renderer(&mut self, renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
@@ -783,7 +796,7 @@ impl Pipeline {
             }
         }
     }
-    pub fn texture_fill_array(&mut self, id: GPUObjectID, bytecount: usize) -> GPUObjectID {
+    pub fn texture_fill_array(&mut self, id: GPUObjectID, bytecount_per_pixel: usize) -> GPUObjectID {
         let texture = if let GPUObject::Texture(x) = self.buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
@@ -795,7 +808,7 @@ impl Pipeline {
             TextureType::TextureArray(_, _, _) => todo!(),
         };
         // Get the byte size
-        let byte_length = bytecount * length;
+        let byte_length = bytecount_per_pixel * length;
 
         // Create the vector
         let mut pixels: Vec<u8> = vec![0; byte_length];
@@ -815,8 +828,8 @@ impl Pipeline {
             gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
         }
         let gpuobject = GPUObject::TextureFill(TextureFillGPUObject {
-            pixels,
-            bytecount,
+            bytes: pixels,
+            bytecount_per_pixel,
         });
         self.buf.add_gpuobject(gpuobject, None)
     }
