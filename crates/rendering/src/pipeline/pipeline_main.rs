@@ -137,7 +137,7 @@ pub mod pipec {
     {
         // Convert the bytes into a vector of vectors
         let (bytes, _) = match gpuobject {
-            GPUObject::TextureFill(x) => (x.bytes, x.bytecount),
+            GPUObject::TextureFill(x) => (x.bytes, x.bytecount_per_pixel),
             _ => panic!(),
         };
         // Unsafe
@@ -152,7 +152,7 @@ pub mod pipec {
     {
         // Convert the bytes into a vector of vectors
         let (bytes, _) = match gpuobject {
-            GPUObject::TextureFill(x) => (x.0, x.1),
+            GPUObject::TextureFill(x) => (x.bytes, x.bytecount_per_pixel),
             _ => panic!(),
         };
         // Unsafe

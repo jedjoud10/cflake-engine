@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use others::SmartList;
 use std::{
     borrow::BorrowMut,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
@@ -132,7 +132,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let pipeline = Pipeline {
                     buf: PipelineBuffer::default(),
                     renderer: PipelineRenderer::default().init(),
-                    renderers: SmartList::default(),
+                    renderers: HashSet::default(),
                 };
                 // This is indeed the render thread
                 crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
@@ -166,19 +166,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     // --- Rendering ---
                     // Pre-render
                     let renderer = &pipeline.renderer;
-                    let renderers = pipeline.renderers.elements.iter().filter_map(|id| {
-                        match id {
-                            Some(id) => {
-                                if let GPUObject::Renderer(x) = pipeline.buf.get_gpuobject(id).unwrap() {
-                                   Some(x) 
-                                } else { None }
-                            },
-                            None => None,
-                        }
-                    }).collect::<Vec<&RendererGPUObject>>();
                     renderer.pre_render();
                     // Render
-                    renderer.renderer_frame(renderers, &camera);
+                    renderer.renderer_frame(&pipeline.buf, &pipeline.renderers, &camera);
                     // Post-render
                     renderer.post_render(&camera, window);
 
@@ -353,7 +343,7 @@ pub struct PipelineStartData {
 pub struct Pipeline {
     pub buf: PipelineBuffer, // Pipeline buffer containing all the GPU objects and their corresponding names
     pub renderer: PipelineRenderer, // Renderer that actually does the OpenGL rendering
-    pub renderers: SmartList<GPUObjectID>, // Renderers that we must render
+    pub renderers: HashSet<GPUObjectID>, // Renderers that we must render
 }
 // Renderers
 impl Pipeline {
@@ -368,15 +358,14 @@ impl Pipeline {
             matrix,
         });
         let id = self.buf.add_gpuobject(renderer_gpuobject, None);
-        self.renderers.add_element(id);
+        self.renderers.insert(id);
         id
     }
     // Remove the renderer using it's renderer ID
     pub fn remove_renderer(&mut self, renderer_id: GPUObjectID) {
         // Remove first
-        let id = renderer_id.index.unwrap();
-        self.buf.remove_gpuobject(renderer_id);
-        self.renderers.remove_element(id);
+        self.buf.remove_gpuobject(renderer_id.clone());
+        self.renderers.remove(&renderer_id);
     }
     // Update a renderer's model matrix
     fn update_renderer(&mut self, renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
@@ -436,9 +425,12 @@ impl Pipeline {
             let program = gl::CreateProgram();
 
             // Attach the shaders
-            for subshader_program_ in shader.linked_subshaders.iter() {
-                let subshader_program = subshader_program_.to_subshader().unwrap();
-                gl::AttachShader(program, subshader_program.1);
+            let buf = &self.buf;
+            let subshaders: Vec<&SubShaderGPUObject> = Vec::new();
+            for subshader_id in shader.linked_subshaders.iter() {
+                let subshader = buf.as_subshader(subshader_id).unwrap();
+                gl::AttachShader(program, subshader.program);
+                subshaders.push(subshader);
             }
 
             // Finalize the shader and stuff
@@ -463,11 +455,10 @@ impl Pipeline {
                 panic!();
             }
             // Check if this a compute shader
-            let compute_shader = shader.is_compute;
+            let compute_shader = if let SubShaderType::Compute = subshaders.first().unwrap().subshader_type { true } else { false };
             // Detach shaders
-            for subshader_program_ in shader.linked_subshaders_programs.iter() {
-                let subshader_program = subshader_program_.to_subshader().unwrap();
-                gl::DetachShader(program, subshader_program.1);
+            for subshader in subshaders {
+                gl::DetachShader(program, subshader.program);
             }
             let gpuobject = if !compute_shader {
                 // Normal shader

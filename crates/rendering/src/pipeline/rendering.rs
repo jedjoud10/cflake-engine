@@ -67,15 +67,17 @@ pub struct PipelineRenderer {
 
 // Render debug primitives
 pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
+    /*
     let _vp_m = camera.projm * camera.viewm;
     for primitive in &primitives {
         render(primitive, camera, dm);
     }
+    */
 }
 
 // Render a renderer normally
-pub fn render(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
-    let material = (renderer.1).to_material();
+pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
+    let material = buf.as_material(&renderer.material_id);
     let mut shader = dm.0.to_shader().unwrap();
     // If we do not have a material assigned, use the default material
     let material = match material {
@@ -264,9 +266,10 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, buffer: &PipelineBuffer, renderers: Vec<&RendererGPUObject>, camera: &CameraDataGPUObject) {
-        let i = std::time::Instant::now();     
-        for renderer in renderers {
+    pub fn renderer_frame(&self, buffer: &PipelineBuffer, renderers: &HashSet<GPUObjectID>, camera: &CameraDataGPUObject) {
+        let i = std::time::Instant::now();   
+        let material = buffer.as_material(self.default_material.as_ref().unwrap()).unwrap();
+        for renderer in renderers.iter().map(|x| buffer.as_renderer(x).unwrap()) {
             // Should we render in wireframe or not?
             if self.wireframe {
                 render_wireframe(renderer, camera, &self.wireframe_shader);

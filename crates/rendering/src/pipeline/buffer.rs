@@ -1,7 +1,7 @@
 use others::SmartList;
 use std::{collections::{HashMap, HashSet}, sync::{mpsc::Sender, Mutex}};
 
-use crate::{GPUObject, GPUObjectID, MainThreadMessage};
+use crate::{GPUObject, GPUObjectID, MainThreadMessage, ModelGPUObject, MaterialGPUObject, SubShaderGPUObject, ShaderGPUObject, ComputeShaderGPUObject, TextureGPUObject, TextureFillGPUObject, RendererGPUObject};
 
 // A simple Buffer containing the GPU objects that have been generated on the pipeline thread
 #[derive(Default)]
@@ -108,6 +108,59 @@ impl PipelineBuffer {
         Some(gpuobjects)
     }
 }
+
+// Conversions
+impl PipelineBuffer {
+    pub fn as_model(&self, id: &GPUObjectID) -> Option<&ModelGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::Model(x) = object {
+            Some(x)
+        } else { None }
+    }
+    pub fn as_material(&self, id: &GPUObjectID) -> Option<&MaterialGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::Material(x) = object {
+            Some(x)
+        } else { None }
+    }
+    pub fn as_subshader(&self, id: &GPUObjectID) -> Option<&SubShaderGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::SubShader(x) = object {
+            Some(x)
+        } else { None }
+    }
+    pub fn as_shader(&self, id: &GPUObjectID) -> Option<&ShaderGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::Shader(x) = object {
+            Some(x)
+        } else { None }
+    }
+    pub fn as_compute_shader(&self, id: &GPUObjectID) -> Option<&ComputeShaderGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::ComputeShader(x) = object {
+            Some(x)
+        } else { None }
+    }
+    pub fn as_texture(&self, id: &GPUObjectID) -> Option<&TextureGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::Texture(x) = object {
+            Some(x)
+        } else { None }
+    }
+    pub fn as_texture_fill(&self, id: &GPUObjectID) -> Option<&TextureFillGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::TextureFill(x) = object {
+            Some(x)
+        } else { None }
+    }
+    pub fn as_renderer(&self, id: &GPUObjectID) -> Option<&RendererGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::Renderer(x) = object {
+            Some(x)
+        } else { None }
+    }
+}
+
 use lazy_static::lazy_static;
 lazy_static! {
    pub(crate) static ref GLOBAL_BUFFER: Mutex<GlobalBuffer> = Mutex::new(GlobalBuffer::default());
