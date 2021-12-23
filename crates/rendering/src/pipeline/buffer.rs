@@ -1,7 +1,7 @@
 use others::SmartList;
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, sync::mpsc::Sender};
 
-use crate::{GPUObject, GPUObjectID};
+use crate::{GPUObject, GPUObjectID, MainThreadMessage};
 
 // A simple Buffer containing the GPU objects that have been generated on the pipeline thread
 #[derive(Default)]
@@ -16,6 +16,26 @@ pub struct PipelineBuffer {
 }
 
 impl PipelineBuffer {
+    // Send messages to the main thread telling it what callbacks we must execute
+    pub fn execute_callbacks(&mut self, tx2: Sender<MainThreadMessage>) {
+        // Send a message to the main thread saying what callbacks we must run
+        let callbacks_objects_indices = std::mem::take(&mut self.callback_objects);
+        let callback_objects = callbacks_objects_indices
+        .into_iter()
+        .map(|(callback_id, (index, thread_id))| {
+            (
+                callback_id,
+                (self.get_gpuobject_usize(&index).unwrap().clone(), GPUObjectID { index: Some(index) }),
+                thread_id,
+            )
+        })
+        .collect::<Vec<(u64, (GPUObject, GPUObjectID), std::thread::ThreadId)>>();
+        
+        // Now we must all of this to the main thread
+        for (callback_id, args, thread_id) in callback_objects {
+            tx2.send(MainThreadMessage::ExecuteCallback(callback_id, args, thread_id)).unwrap();
+        }
+    }
     // Add a GPU object to the buffer, returning it's GPUObjectID
     pub fn add_gpuobject(&mut self, gpuobject: GPUObject, name: Option<String>) -> GPUObjectID {
         // Insert the gpu object
@@ -30,7 +50,7 @@ impl PipelineBuffer {
         GPUObjectID { index: Some(index) }
     }
     // Add some additional data like callback ID or waitable ID to the GPU object
-    pub fn received_new_gpu_object_additional(&mut self, id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>, waitable_id: Option<u64>) {
+    pub fn received_new_gpuobject_additional(&mut self, id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>, waitable_id: Option<u64>) {
         let index = id.index.unwrap();
         match callback_id {
             Some((id, thread_id)) => {
@@ -51,11 +71,11 @@ impl PipelineBuffer {
         Some(GPUObjectID { index: Some(*x) })
     }
     // Check if a GPU object name is valid
-    pub fn gpu_object_name_valid(&self, name: &str) -> bool {
+    pub fn gpuobject_name_valid(&self, name: &str) -> bool {
         self.names_to_id.contains_key(name)
     }
     // Check if a GPU object is valid
-    pub fn gpu_object_valid(&self, id: &GPUObjectID) -> bool {
+    pub fn gpuobject_valid(&self, id: &GPUObjectID) -> bool {
         match id.index {
             Some(index) => match self.gpuobjects.get_element(index).flatten() {
                 Some(_) => true,
@@ -65,7 +85,7 @@ impl PipelineBuffer {
         }
     }
     // Get a GPU using it's name
-    pub fn get_named_gpu_object(&self, name: &str) -> Option<GPUObject> {
+    pub fn get_named_gpuobject(&self, name: &str) -> Option<GPUObject> {
         let index = self.names_to_id.get(name);
         match index {
             Some(index) => {
@@ -77,11 +97,15 @@ impl PipelineBuffer {
         }
     }
     // Get a GPU object using it's GPUObjectID
-    pub fn get_gpu_object(&self, id: &GPUObjectID) -> Option<&GPUObject> {
+    pub fn get_gpuobject(&self, id: &GPUObjectID) -> Option<&GPUObject> {
         self.gpuobjects.get_element(id.index?)?
     }
+    // Get a mutable GPU object using it's GPUObjectId
+    pub fn get_gpuobject_mut(&mut self, id: &GPUObjectID) -> Option<&mut GPUObject> {
+        self.gpuobjects.get_element_mut(id.index?)?
+    }
     // Get a GPU object using a ref usize
-    pub fn get_gpu_object_usize(&self, index: &usize) -> Option<&GPUObject> {
+    pub fn get_gpuobject_usize(&self, index: &usize) -> Option<&GPUObject> {
         self.gpuobjects.get_element(*index)?
     }
     // Get multiple GPU object using a ref usize

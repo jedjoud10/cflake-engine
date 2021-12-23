@@ -38,12 +38,12 @@ pub struct ComputeShaderGPUObject {
 pub struct TextureGPUObject {
     pub texture_id: u32,
     pub ifd: (i32, u32, u32),
-    pub _type: TextureType,
+    pub ttype: TextureType,
 }
 #[derive(Clone)]
 pub struct TextureFillGPUObject {
     pub pixels: Vec<u8>,
-    pub u: usize,
+    pub bytecount: usize,
 }
 #[derive(Clone)]
 // TODO: Add this as an actual GPU object lel
@@ -56,6 +56,7 @@ pub struct CameraDataGPUObject {
 }
 #[derive(Clone)]
 pub struct MaterialGPUObject {
+    pub shader: GPUObjectID,
     pub uniforms: ShaderUniformsGroup,
     pub flags: MaterialFlags 
 }
@@ -67,7 +68,7 @@ pub struct RendererGPUObject {
 }
 
 pub mod uniform_setters {
-    use crate::{GPUObjectID, TextureGPUObject, TextureShaderAccessType};
+    use crate::{GPUObjectID, TextureGPUObject, TextureShaderAccessType, pipeline::buffer::PipelineBuffer, GPUObject};
     use std::ffi::CString;
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
@@ -79,8 +80,8 @@ pub mod uniform_setters {
         gl::Uniform1f(index, *value);
     }
     // Set a 2D image
-    pub unsafe fn set_i2d(index: i32, texture: &GPUObjectID, access_type: &TextureShaderAccessType) {
-        let texture = texture.to_texture().unwrap();
+    pub unsafe fn set_i2d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, access_type: &TextureShaderAccessType) {
+        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
         // Converstion from wrapper to actual opengl values
         let new_access_type: u32;
         match access_type {
@@ -89,16 +90,16 @@ pub mod uniform_setters {
             TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
         };
         let unit = index as u32;
-        gl::BindTexture(gl::TEXTURE_2D, texture.0);
-        gl::BindImageTexture(unit, texture.0, 0, gl::FALSE, 0, new_access_type, (texture.1).0 as u32);
+        gl::BindTexture(gl::TEXTURE_2D, texture.texture_id);
+        gl::BindImageTexture(unit, texture.texture_id, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
     }
     // Set a i32
     pub unsafe fn set_i32(index: i32, value: &i32) {
         gl::Uniform1i(index, *value);
     }
     // Set a 3D image
-    pub unsafe fn set_i3d(index: i32, texture: &GPUObjectID, access_type: &TextureShaderAccessType) {
-        let texture = texture.to_texture().unwrap();
+    pub unsafe fn set_i3d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, access_type: &TextureShaderAccessType) {
+        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
         // Converstion from wrapper to actual opengl values
         let new_access_type: u32;
         match access_type {
@@ -107,8 +108,8 @@ pub mod uniform_setters {
             TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
         };
         let unit = index as u32;
-        gl::BindTexture(gl::TEXTURE_3D, texture.0);
-        gl::BindImageTexture(unit, texture.0, 0, gl::FALSE, 0, new_access_type, (texture.1).0 as u32);
+        gl::BindTexture(gl::TEXTURE_3D, texture.texture_id);
+        gl::BindImageTexture(unit, texture.texture_id, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
     }
     // Set a matrix 4x4 f32
     pub unsafe fn set_mat44(index: i32, matrix: &veclib::Matrix4x4<f32>) {
@@ -116,31 +117,31 @@ pub mod uniform_setters {
         gl::UniformMatrix4fv(index, 1, gl::FALSE, ptr);
     }
     // Set a 1D texture
-    pub unsafe fn set_t1d(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
-        let texture = texture.to_texture().unwrap();
+    pub unsafe fn set_t1d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
+        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
         gl::ActiveTexture(active_texture_id + 33984);
-        gl::BindTexture(gl::TEXTURE_1D, texture.0);
+        gl::BindTexture(gl::TEXTURE_1D, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a 2D texture
-    pub unsafe fn set_t2d(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
-        let texture = texture.to_texture().unwrap();
+    pub unsafe fn set_t2d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
+        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
         gl::ActiveTexture(active_texture_id + 33984);
-        gl::BindTexture(gl::TEXTURE_2D, texture.0);
+        gl::BindTexture(gl::TEXTURE_2D, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a texture2d array
-    pub unsafe fn set_t2da(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
-        let texture = texture.to_texture().unwrap();
+    pub unsafe fn set_t2da(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
+        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
         gl::ActiveTexture(active_texture_id + 33984);
-        gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.0);
+        gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a 3D texture
-    pub unsafe fn set_t3d(index: i32, texture: &GPUObjectID, active_texture_id: &u32) {
-        let texture = texture.to_texture().unwrap();
+    pub unsafe fn set_t3d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
+        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
         gl::ActiveTexture(active_texture_id + 33984);
-        gl::BindTexture(gl::TEXTURE_3D, texture.0);
+        gl::BindTexture(gl::TEXTURE_3D, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a vec2 f32 uniform
