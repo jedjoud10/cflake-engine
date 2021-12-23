@@ -152,7 +152,7 @@ fn render_wireframe(renderer: &RendererGPUObject, camera: &CameraDataGPUObject, 
 
 impl PipelineRenderer {
     // Init the pipeline renderer
-    pub fn init(&mut self) {
+    pub fn init(mut self) -> Self {
         println!("Initializing the pipeline renderer...");
         self.window = Window::default();
         // Create the quad model
@@ -253,6 +253,7 @@ impl PipelineRenderer {
         );
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
+        self
     }
     // Renderers
     pub fn add_renderer(&mut self, renderer_id_usize: usize) {

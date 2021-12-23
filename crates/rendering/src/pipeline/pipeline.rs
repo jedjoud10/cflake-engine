@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, interface, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData};
+use crate::{basics::*, interface, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer};
 use glfw::Context;
 use lazy_static::lazy_static;
 use std::{
@@ -21,20 +21,8 @@ pub enum MainThreadMessage {
 }
 
 lazy_static! {
-    // The pipeline that is stored on the render thread
-    pub static ref PIPELINE: Arc<RwLock<Option<Pipeline>>> = Arc::new(RwLock::new(None));
+    // Template render command query sender that we can copy over the multiple task threads
     pub static ref TX_TEMPLATE: Mutex<Option<Sender<RenderCommandQuery>>> = Mutex::new(None);
-}
-
-// Get an immutable lock of the render pipeline
-pub fn pipeline() -> RwLockReadGuard<'static, Option<Pipeline>> {
-    let x = PIPELINE.read().unwrap();
-    x
-}
-
-pub fn pipeline_mut() -> RwLockWriteGuard<'static, Option<Pipeline>> {
-    let x = PIPELINE.write().unwrap();
-    x
 }
 
 // Load the default rendering things
@@ -80,6 +68,28 @@ fn load_defaults() {
         )
         .unwrap(),
     );
+}
+
+// Execute the callbacks
+fn execute_callbacks(pipeline: &mut Pipeline, tx2: &Sender<MainThreadMessage>) {
+    // Send a message to the main thread saying what callbacks we must run
+    let buf = &mut pipeline.buf;
+    let callbacks_objects_indices = std::mem::take(&mut buf.callback_objects);
+    let callback_objects = callbacks_objects_indices
+        .into_iter()
+        .map(|(callback_id, (index, thread_id))| {
+            (
+                callback_id,
+                (buf.gpuobjects.get_element(index).unwrap().cloned().unwrap(), GPUObjectID { index: Some(index) }),
+                thread_id,
+            )
+        })
+        .collect::<Vec<(u64, (GPUObject, GPUObjectID), std::thread::ThreadId)>>();
+
+    // Now we must all of this to the main thread
+    for (callback_id, args, thread_id) in callback_objects {
+        tx2.send(MainThreadMessage::ExecuteCallback(callback_id, args, thread_id)).unwrap();
+    }
 }
 
 // Create the new render thread
@@ -140,17 +150,13 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let sent_tasks_receiver = rx;
 
                 // Set the pipeline
-                let pipeline = Pipeline {};
-                {
-                    let mut p = crate::pipeline::pipeline_mut();
-                    *p = Some(pipeline);
-                }
+                let pipeline = Pipeline {
+                    buf: PipelineBuffer::default(),
+                    renderer: PipelineRenderer::default().init(),
+                };
                 // This is indeed the render thread
                 crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
-                // Initialize the deferred renderer
-                let mut pipeline_renderer = PipelineRenderer::default();
                 load_defaults();
-                pipeline_renderer.init();
 
                 // El camera
                 let mut camera = CameraDataGPUObject {
@@ -170,22 +176,22 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 barrier_clone.wait();
                 
                 loop {
-                    // Update the delta_time
-                    
+                    // Update the delta_time                    
                     let new_time = glfw.get_time();
                     let delta = new_time - last_time;
                     last_time = new_time;
                     // Run the frame
                     // Poll first
-                    poll_commands(&mut pipeline_renderer, &mut camera, &sent_tasks_receiver, window, glfw);
+                    poll_commands(&mut pipeline, &mut camera, &sent_tasks_receiver, window, glfw);
                     // Pre-render
                     pipeline_renderer.pre_render();
                     // Render
                     pipeline_renderer.renderer_frame(&camera);
                     // Post-render
                     pipeline_renderer.post_render(&camera, window);
-                    // Remove the already called callbacks
-                    crate::pipeline::interface::update_render_thread(&tx2);
+                    // Run the callbacks
+                    execute_callbacks(&mut pipeline, &tx2);
+
                     frame_count += 1;
                     // The world is valid, we can wait
                     let barrier_data = others::barrier::as_ref();
@@ -211,39 +217,39 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 }
 
 // Commands that can be ran internally
-pub fn internal_task(task: RenderTask) -> Option<GPUObjectID> {
+pub fn internal_task(pipeline: &mut Pipeline, task: RenderTask) -> Option<GPUObjectID> {
     // Handle the internal case
     match task {
         // Shaders
-        RenderTask::SubShaderCreate(shared_shader) => Some(Pipeline::create_compile_subshader(shared_shader)),
-        RenderTask::ShaderCreate(shared_shader) => Some(Pipeline::create_compile_shader(shared_shader)),
+        RenderTask::SubShaderCreate(shared_shader) => Some(pipeline.create_compile_subshader(shared_shader)),
+        RenderTask::ShaderCreate(shared_shader) => Some(pipeline.create_compile_shader(shared_shader)),
         RenderTask::ShaderUniformGroup(_shared_uniformgroup) => todo!(),
         // Textures
-        RenderTask::TextureCreate(shared_texture) => Some(Pipeline::generate_texture(shared_texture)),
+        RenderTask::TextureCreate(shared_texture) => Some(pipeline.generate_texture(shared_texture)),
         RenderTask::TextureUpdateSize(texture, ttype) => {
-            Pipeline::update_texture_size(texture, ttype);
+            pipeline.update_texture_size(texture, ttype);
             None
         }
         RenderTask::TextureUpdateData(texture, bytes) => {
-            Pipeline::update_texture_data(texture, bytes);
+            pipeline.update_texture_data(texture, bytes);
             None
         }
-        RenderTask::TextureFillArray(texture, bytecount) => Some(Pipeline::texture_fill_array(texture, bytecount)),
+        RenderTask::TextureFillArray(texture, bytecount) => Some(pipeline.texture_fill_array(texture, bytecount)),
         // Model
-        RenderTask::ModelCreate(shared_model) => Some(Pipeline::create_model(shared_model)),
+        RenderTask::ModelCreate(shared_model) => Some(pipeline.create_model(shared_model)),
         RenderTask::ModelDispose(gpumodel) => {
-            Pipeline::dispose_model(gpumodel);
+            pipeline.dispose_model(gpumodel);
             None
         }
         // Material
-        RenderTask::MaterialCreate(material) => Some(Pipeline::create_material(material)),
+        RenderTask::MaterialCreate(material) => Some(pipeline.create_material(material)),
         // Compute
         RenderTask::ComputeRun(compute, axii, uniforms_group) => {
-            Pipeline::run_compute(compute, axii, uniforms_group);
+            pipeline.run_compute(compute, axii, uniforms_group);
             None
         }
         RenderTask::ComputeLock(compute) => {
-            Pipeline::lock_compute(compute);
+            pipeline.lock_compute(compute);
             None
         }
         // Others
@@ -252,16 +258,16 @@ pub fn internal_task(task: RenderTask) -> Option<GPUObjectID> {
 }
 
 // Run a command on the Render Thread
-fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<GPUObjectID> {
+fn command(pipeline: &mut Pipeline, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<GPUObjectID> {
     // Handle the common cases
     match command.task {
         // Window tasks
         RenderTask::WindowUpdateFullscreen(fullscreen) => {
-            pr.window.fullscreen = fullscreen;
+            pipeline.renderer.window.fullscreen = fullscreen;
             None
         }
         RenderTask::WindowUpdateVSync(vsync) => {
-            pr.window.vsync = vsync;
+            pipeline.renderer.window.vsync = vsync;
             // We need an OpenGL context to do this shit
             if vsync {
                 // Enable VSync
@@ -273,8 +279,8 @@ fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command:
             None
         }
         RenderTask::WindowUpdateSize(size) => {
-            pr.window.dimensions = size;
-            pr.update_window_dimensions(size);
+            pipeline.renderer.window.dimensions = size;
+            pipeline.renderer.update_window_dimensions(size);
             None
         }
         // Pipeline
@@ -297,22 +303,22 @@ fn command(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command:
             None
         }
         // Renderer commands
-        RenderTask::RendererAdd(shared_renderer) => Some(Pipeline::add_renderer(pr, shared_renderer)),
+        RenderTask::RendererAdd(shared_renderer) => Some(pipeline.add_renderer(shared_renderer)),
         RenderTask::RendererRemove(renderer_id) => {
-            Pipeline::remove_renderer(pr, renderer_id);
+            pipeline.remove_renderer(renderer_id);
             None
         }
         RenderTask::RendererUpdateTransform(renderer_id, matrix) => {
-            Pipeline::update_renderer(renderer_id, matrix);
+            pipeline.update_renderer(matrix);
             None
         }
         // Internal cases
-        x => internal_task(x),
+        x => internal_task(x, buf),
     }
 }
 
 // Poll commands that have been sent to us by the worker threads OR the main thread
-fn poll_commands(pr: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+fn poll_commands(pipeline: &mut Pipeline, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // We must loop through every command that we receive from the main thread
     let mut i = 0;
     for render_command_query in rx.try_iter() {
@@ -351,39 +357,44 @@ pub struct PipelineStartData {
     pub rx: std::sync::mpsc::Receiver<MainThreadMessage>,
 }
 // Render pipeline. Contains everything related to rendering. This is also ran on a separate thread
-pub struct Pipeline {}
+pub struct Pipeline {
+    pub buf: PipelineBuffer, // Pipeline buffer containing all the GPU objects and their corresponding names
+    pub renderer: PipelineRenderer, // Renderer that actually does the OpenGL rendering
+}
 // Renderers
 impl Pipeline {
     // Add the renderer to the renderer (lol I need better name)
-    pub fn add_renderer(pr: &mut PipelineRenderer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
+    pub fn add_renderer(&mut self, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
         let (renderer, matrix) = renderer.get();
-        let material = renderer.material.unwrap();
-        let model = renderer.model.clone().unwrap();
-        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject(model, material, matrix));
+        let material_id = renderer.material.unwrap();
+        let model_id = renderer.model.clone().unwrap();
+        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject {
+            model_id,
+            material_id,
+            matrix,
+        });
         let id = interface::received_new_gpu_object(renderer_gpuobject, None);
         // Add the renderer in the Pipeline Renderer
-        pr.add_renderer(id.index.unwrap());
+        self.renderer.add_renderer(id.index.unwrap());
         id
     }
     // Remove the renderer using it's renderer ID
-    pub fn remove_renderer(pr: &mut PipelineRenderer, renderer_id: GPUObjectID) {
+    pub fn remove_renderer(&mut self, renderer_id: GPUObjectID) {
         // Remove first
-        pr.remove_renderer(&renderer_id.index.unwrap());
-        interface::remove_gpu_object(renderer_id);
+        self.renderer.remove_renderer(&renderer_id.index.unwrap());
+        self.buf.remove_gpuobject(renderer_id);
     }
     // Update a renderer's model matrix
-    fn update_renderer(renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
-        interface::update_gpu_object(renderer_id, |gpuobject| {
-            if let GPUObject::Renderer(renderer) = gpuobject {
-                renderer.2 = matrix.get();
-            }
-        });
+    fn update_renderer(&mut self, renderer_id: GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
+        if let GPUObject::Renderer(renderer) = self.buf.get_gpuobject(&renderer_id) {
+            renderer.matrix = matrix.get();
+        }
     }
 }
 
 // The actual OpenGL tasks that are run on the render thread
 impl Pipeline {
-    pub fn create_compile_subshader(subshader: SharedData<SubShader>) -> GPUObjectID {
+    pub fn create_compile_subshader(&mut self, subshader: SharedData<SubShader>) -> GPUObjectID {
         let shader_type: u32;
         let subshader = subshader.get();
         match subshader.subshader_type {
@@ -418,11 +429,14 @@ impl Pipeline {
 
             println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", subshader.name);
             // Add the gpu object
-            let gpuobject = GPUObject::SubShader(SubShaderGPUObject(subshader.subshader_type, program));
-            interface::received_new_gpu_object(gpuobject, Some(subshader.name.clone()))
+            let gpuobject = GPUObject::SubShader(SubShaderGPUObject {
+                subshader_type: subshader.subshader_type,
+                program,
+            });
+            self.buf.received_new_gpu_object(gpuobject, Some(subshader.name.clone()))
         }
     }
-    pub fn create_compile_shader(shader: SharedData<Shader>) -> GPUObjectID {
+    pub fn create_compile_shader(&mut self, shader: SharedData<Shader>) -> GPUObjectID {
         let shader = shader.get();
         unsafe {
             let program = gl::CreateProgram();
@@ -463,16 +477,20 @@ impl Pipeline {
             }
             let gpuobject = if !compute_shader {
                 // Normal shader
-                GPUObject::Shader(ShaderGPUObject(program))
+                GPUObject::Shader(ShaderGPUObject {
+                    program,
+                })
             } else {
                 // Compute shader
-                GPUObject::ComputeShader(ComputeShaderGPUObject(program))
+                GPUObject::ComputeShader(ComputeShaderGPUObject {
+                    program,
+                })
             };
             // Add the gpu object
             interface::received_new_gpu_object(gpuobject, Some(shader.name.clone()))
         }
     }
-    pub fn create_model(model: SharedData<Model>) -> GPUObjectID {
+    pub fn create_model(&mut self, model: SharedData<Model>) -> GPUObjectID {
         let model = model.get();
         let mut gpu_data = ModelGPUObject {
             vertex_buf: 0,
@@ -591,7 +609,7 @@ impl Pipeline {
         let gpuobject = GPUObject::Model(gpu_data);
         interface::received_new_gpu_object(gpuobject, None)
     }
-    pub fn dispose_model(mut model: ModelGPUObject) {
+    pub fn dispose_model(&mut self, id: GPUObjectID) {
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut model.vertex_buf);

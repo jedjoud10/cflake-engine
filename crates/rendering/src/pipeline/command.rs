@@ -92,23 +92,9 @@ impl RenderCommandResult {
         if !IS_RENDER_THREAD.with(|x| x.get()) {
             // Send the command, but with a special command ID that we must wait for
             let execution_id = COUNTER.fetch_add(1, Ordering::Relaxed);
-            let task = self.task.take().unwrap();
-            let query = RenderCommandQuery {
-                task,
-                callback_id: None,
-                waitable_id: None,
-                execution_id: Some(execution_id),
-                thread_id: std::thread::current().id(),
-            };
-            command(query);
-            // Now we must wait for this command to execute on the rendering thread
-            // PS: This will block the current thread
-            interface::wait_for_execution(execution_id);
+            todo!()
         } else {
-            // If we are on the render thread, we do something different
-            // Execute the command internally, so we must invalidate the one stored in self
-            let task = self.task.take().unwrap();
-            internal_task(task);
+            panic!();
         }
     }
     // We will wait for the result of this render command query
@@ -116,26 +102,9 @@ impl RenderCommandResult {
         if !IS_RENDER_THREAD.with(|x| x.get()) {
             // Send the command, but with a special command ID that we must wait for
             let waitable_id = COUNTER.fetch_add(1, Ordering::Relaxed);
-            let task = self.task.take().unwrap();
-            let query = RenderCommandQuery {
-                task,
-                callback_id: None,
-                waitable_id: Some(waitable_id),
-                execution_id: None,
-                thread_id: std::thread::current().id(),
-            };
-            command(query);
-            // Now we must wait for this command to execute on the rendering thread
-            // PS: This will block the current thread
-            let x = interface::wait_for_gpuobject_id(waitable_id);
-            let id = x.unwrap();
-            interface::get_gpu_object(&id).cloned().unwrap()
+            todo!()
         } else {
-            // If we are on the render thread, we do something different
-            // Execute the command internally, so we must invalidate the one stored in self
-            let task = self.task.take().unwrap();
-            let id = internal_task(task).unwrap();
-            interface::get_gpu_object(&id).cloned().unwrap()
+            panic!();
         }
     }
     // We will wait for thes result of this render command query as a GPUObject ID
@@ -143,25 +112,9 @@ impl RenderCommandResult {
         if !IS_RENDER_THREAD.with(|x| x.get()) {
             // Send the command, but with a special command ID that we must wait for
             let waitable_id = COUNTER.fetch_add(1, Ordering::Relaxed);
-            let task = self.task.take().unwrap();
-            let query = RenderCommandQuery {
-                task,
-                callback_id: None,
-                waitable_id: Some(waitable_id),
-                execution_id: None,
-                thread_id: std::thread::current().id(),
-            };
-            command(query);
-            // Now we must wait for this command to execute on the rendering thread
-            // PS: This will block the current thread
-            let x = interface::wait_for_gpuobject_id(waitable_id);
-            x.unwrap()
+            todo!()
         } else {
-            // If we are on the render thread, we do something different
-            // Execute the command internally, so we must invalidate the one stored in self
-            let task = self.task.take().unwrap();
-            let gpuobject = internal_task(task);
-            gpuobject.unwrap()
+            panic!();
         }
     }
 }
@@ -207,7 +160,7 @@ pub enum RenderTask {
     TextureFillArray(GPUObjectID, usize),
     // Model
     ModelCreate(SharedData<Model>),
-    ModelDispose(ModelGPUObject),
+    ModelDispose(GPUObjectID),
     // Compute
     ComputeRun(ComputeShaderGPUObject, (u16, u16, u16), ShaderUniformsGroup),
     ComputeLock(ComputeShaderGPUObject),
