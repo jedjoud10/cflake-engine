@@ -72,6 +72,7 @@ impl RenderCommandQueryResult {
     }
     // Explicitly tell this command query result to send the result immediatly
     pub fn send(mut self) {
+        if is_render_thread() { panic!() }
         // Send the command
         let task = self.task.take().unwrap();
         let command_id = increment_command_id();
@@ -85,6 +86,7 @@ impl RenderCommandQueryResult {
     }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
+        if is_render_thread() { panic!() }
         // Send the command
         let task = self.task.take().unwrap();
         let command_id = increment_command_id();
@@ -130,7 +132,8 @@ impl RenderCommandQueryResult {
     }
 
     // Wait for the creation of a GPU object, but internally
-    pub fn wait_id_internal(mut self, buf: &mut PipelineBuffer) -> GPUObjectID {
+    pub fn wait_internal(mut self, buf: &mut PipelineBuffer) -> GPUObjectID {
+        if !is_render_thread() { panic!() }
         // Execute the task
         let task = self.task.take().unwrap();
         let id = internal_task(buf, task);
@@ -141,20 +144,22 @@ impl RenderCommandQueryResult {
 impl std::ops::Drop for RenderCommandQueryResult {
     // Custom drop function that actually sends the command, just in case where we did not explicitly do that
     fn drop(&mut self) {
-        // Send the command
-        match self.task.take() {
-            Some(task) => {
-                let command_id = increment_command_id();
-                let query = RenderCommandQuery {
-                    task,
-                    callback_id: None,
-                    command_id,
-                    thread_id: std::thread::current().id(),
-                };
-                command(query);
+        if !is_render_thread() {
+            // Send the command
+            match self.task.take() {
+                Some(task) => {
+                    let command_id = increment_command_id();
+                    let query = RenderCommandQuery {
+                        task,
+                        callback_id: None,
+                        command_id,
+                        thread_id: std::thread::current().id(),
+                    };
+                    command(query);
+                }
+                None => { /* We have called a function that invalidates the task */ }
             }
-            None => { /* We have called a function that invalidates the task */ }
-        }
+        }        
     }
 }
 
