@@ -7,8 +7,13 @@ use std::{
 };
 
 thread_local! {
-    pub static IS_RENDER_THREAD: Cell<bool> = Cell::new(false);
+    pub(crate) static IS_RENDER_THREAD: Cell<bool> = Cell::new(false);
 }
+// Check if we are on the render thread
+pub fn is_render_thread() -> bool {
+    IS_RENDER_THREAD.with(|x| x.get())
+}
+
 
 // Generate a random name using the current system time and a prefix
 pub fn rname(prefix: &str) -> String {
@@ -28,7 +33,7 @@ pub mod pipec {
     use std::sync::Arc;
 
     use crate::pipeline::{buffer, object::*};
-    use crate::{GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER};
+    use crate::{GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandQueryResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, is_render_thread};
     pub use crate::{RenderTask, SharedData};
     pub use super::super::others as others;
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
@@ -38,20 +43,6 @@ pub mod pipec {
     // Join the pipeline thread and end it all
     pub fn join_pipeline(pipeline_data: PipelineStartData) {
         pipeline_data.handle.join().unwrap();
-    }
-    // Ran on the main thread
-    pub fn start_world() {
-        // Default shader
-        let ds = shader(
-            Shader::default()
-                .load_shader(vec![
-                    "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",
-                    "defaults\\shaders\\rendering\\screen.frsh.glsl",
-                ])
-                .unwrap(),
-        );
-        // Default material
-        let _dm = Material::new("Default material").set_shader(ds);
     }
     // Just setup the sender of commands thread-locally
     pub fn initialize_threadlocal_render_comms() {
@@ -64,99 +55,74 @@ pub mod pipec {
         println!("Initialized the thread local RenderCommand sender!");
     }
     // Send a task to the render thread, returning a Command
-    pub fn task(task: RenderTask) -> RenderCommandResult {
-        RenderCommandResult::new(task)
+    pub fn task(task: RenderTask) -> RenderCommandQueryResult {
+        RenderCommandQueryResult::new(task)
     }
     // Load or create functions
-    pub fn subshader(subshader: SubShader) -> GPUObjectID {
-        if others::gpuobject_name_valid(&subshader.name) {
-            others::get_id(&subshader.name).unwrap()
-        } else {
-            let result = task(RenderTask::SubShaderCreate(SharedData::new(subshader)));
-            result.wait_gpuobject_id()
+    pub fn subshader(subshader: SubShader) -> RenderCommandQueryResult {
+        match others::get_id(&subshader.name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::SubShaderCreate(SharedData::new(subshader))),
+        } 
+    }
+    pub fn shader(shader: Shader) -> RenderCommandQueryResult {
+        match others::get_id(&shader.name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::ShaderCreate(SharedData::new(shader))),
+        } 
+    }
+    pub fn compute_shader(shader: Shader) -> RenderCommandQueryResult {
+        match others::get_id(&shader.name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::ShaderCreate(SharedData::new(shader))),
         }
     }
-    pub fn shader(shader: Shader) -> GPUObjectID {
-        if others::gpuobject_name_valid(&shader.name) {
-            others::get_id(&shader.name).unwrap()
-        } else {
-            let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            result.wait_gpuobject_id()
+    pub fn texture(texture: Texture) -> RenderCommandQueryResult {
+        match others::get_id(&texture.name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::TextureCreate(SharedData::new(texture))),
         }
     }
-    pub fn compute_shader(shader: Shader) -> GPUObjectID {
-        if others::gpuobject_name_valid(&shader.name) {
-            others::get_id(&shader.name).unwrap()
-        } else {
-            let result = task(RenderTask::ShaderCreate(SharedData::new(shader)));
-            result.wait_gpuobject_id()
-        }
-    }
-    pub fn texture(texture: Texture) -> GPUObjectID {
-        if others::gpuobject_name_valid(&texture.name) {
-            others::get_id(&texture.name).unwrap()
-        } else {
-            let result = task(RenderTask::TextureCreate(SharedData::new(texture)));
-            result.wait_gpuobject_id()
-        }
-    }
-    pub fn model(model: Model) -> GPUObjectID {
+    pub fn model(model: Model) -> RenderCommandQueryResult {
         // (TODO: Implement model caching)
-        let result = task(RenderTask::ModelCreate(SharedData::new(model)));
-        result.wait_gpuobject_id()
+        task(RenderTask::ModelCreate(SharedData::new(model)))
     }
-    pub fn material(material: Material) -> GPUObjectID {
-        if others::gpuobject_name_valid(&material.material_name) {
-            others::get_id(&material.material_name).unwrap()
-        } else {
-            let result = task(RenderTask::MaterialCreate(SharedData::new(material)));
-            result.wait_gpuobject_id()
+    pub fn material(material: Material) -> RenderCommandQueryResult {
+        match others::get_id(&material.material_name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::MaterialCreate(SharedData::new(material))),
         }
     }
     // Load or create functions, cached type
-    pub fn texturec(texturec: CachedObject<Texture>) -> GPUObjectID {
-        if others::gpuobject_name_valid(&texturec.arc.as_ref().name) {
-            others::get_id(&texturec.arc.as_ref().name).unwrap()
-        } else {
-            let t = texturec.arc.as_ref().clone();
-            texture(t)
+    pub fn texturec(texturec: CachedObject<Texture>) -> RenderCommandQueryResult {        
+        match others::get_id(&texturec.arc.as_ref().name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::TextureCreate(SharedData::new(texturec.arc.as_ref().clone()))),
         }
     }
-    pub fn shaderc(shaderc: CachedObject<Shader>) -> GPUObjectID {
-        if others::gpuobject_name_valid(&shaderc.arc.as_ref().name) {
-            others::get_id(&shaderc.arc.as_ref().name).unwrap()
-        } else {
-            let s = shaderc.arc.as_ref().clone();
-            shader(s)
+    pub fn shaderc(shaderc: CachedObject<Shader>) -> RenderCommandQueryResult {
+        match others::get_id(&shaderc.arc.as_ref().name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::ShaderCreate(SharedData::new(shaderc.arc.as_ref().clone()))),
         }
     }
     // Read the data from an array that was filled using a texture
-    pub fn convert_native<T>(gpuobject: GPUObject) -> Vec<T>
+    pub fn convert_native<T>(vec: Vec<u8>) -> Vec<T>
     where
         T: Default + Clone + Sized,
     {
-        // Convert the bytes into a vector of vectors
-        let (bytes, _) = match gpuobject {
-            GPUObject::TextureFill(x) => (x.bytes, x.bytecount_per_pixel),
-            _ => panic!(),
-        };
         // Unsafe
-        let t = bytes.chunks_exact(std::mem::size_of::<T>()).map(|x| unsafe { std::ptr::read::<T>(x.as_ptr() as *const _) });
+        let t = vec.chunks_exact(std::mem::size_of::<T>()).map(|x| unsafe { std::ptr::read::<T>(x.as_ptr() as *const _) });
         let pixels: Vec<T> = t.collect();
         pixels
     }
-    pub fn convert_native_veclib<T, U>(gpuobject: GPUObject) -> Vec<T>
+    pub fn convert_native_veclib<T, U>(vec: Vec<u8>) -> Vec<T>
     where
         T: veclib::Vector<U> + Default + Clone,
         U: veclib::DefaultStates,
     {
-        // Convert the bytes into a vector of vectors
-        let (bytes, _) = match gpuobject {
-            GPUObject::TextureFill(x) => (x.bytes, x.bytecount_per_pixel),
-            _ => panic!(),
-        };
         // Unsafe
-        let t = bytes.chunks_exact(std::mem::size_of::<T>()).map(|x| unsafe { std::ptr::read::<T>(x.as_ptr() as *const _) });
+        let t = vec.chunks_exact(std::mem::size_of::<T>()).map(|x| unsafe { std::ptr::read::<T>(x.as_ptr() as *const _) });
         let pixels: Vec<T> = t.collect();
         pixels
     }

@@ -1,3 +1,7 @@
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::atomic::AtomicPtr;
+
 use crate::{utils, ISOLINE, MAIN_CHUNK_SIZE};
 use rendering::basics::*;
 use rendering::pipec;
@@ -44,7 +48,7 @@ impl VoxelGenerator {
                 .set_data_type(DataType::Float32)
                 .set_filter(TextureFilter::Nearest)
                 .set_wrapping_mode(TextureWrapping::ClampToBorder),
-        );
+        ).wait();
         self.material_texture = pipec::texture(
             Texture::default()
                 .set_dimensions(TextureType::Texture3D(
@@ -55,39 +59,37 @@ impl VoxelGenerator {
                 .set_format(TextureFormat::RG8R)
                 .set_filter(TextureFilter::Nearest)
                 .set_wrapping_mode(TextureWrapping::ClampToBorder),
-        );
+        ).wait();
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
         // First pass
-        let compute = self.compute.to_compute_shader().unwrap();
-        let mut group = compute.new_uniform_group();
-        group.set_i3d("voxel_image", self.voxel_texture, TextureShaderAccessType::WriteOnly);
-        group.set_i3d("material_image", self.material_texture, TextureShaderAccessType::WriteOnly);
-        group.set_i32("chunk_size", ((MAIN_CHUNK_SIZE + 2) as i32));
+        let mut group = ShaderUniformsGroup::new();
+        group.set_i3d("voxel_image", &self.voxel_texture, TextureShaderAccessType::WriteOnly);
+        group.set_i3d("material_image", &self.material_texture, TextureShaderAccessType::WriteOnly);
+        group.set_i32("chunk_size", (MAIN_CHUNK_SIZE + 2) as i32);
         group.set_vec3f32("node_pos", veclib::Vector3::<f32>::from(position));
         group.set_i32("node_size", size as i32);
         group.set_i32("depth", depth as i32);
         // Dispatch the compute shader, don't read back the data immediatly
-        compute.run(
-            (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
-            (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
-            (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
-            group,
-        );
+        let x = ((MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
+        (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
+        (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,);
+        let result = pipec::task(pipec::RenderTask::ComputeRun(self.compute, x, group));
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
         // Read back the compute shader data
-        let compute = self.compute.to_compute_shader().unwrap();
-        compute.lock_state();
+        pipec::task(pipec::RenderTask::ComputeLock(self.compute)).wait_execution();
         // Read back the texture into the data buffer
         // Wait for main voxel gen
-        let result1 = pipec::task(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>()));
-        let voxel_pixels = result1.wait_gpuobject();
+        let mut voxel_pixels: Vec<u8> = Vec::new();
+        let result1 = pipec::task(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>(), Arc::new(AtomicPtr::new(&mut voxel_pixels))));
+        result1.wait_execution();
         // Wait for secondary voxel gen
-        let result2 = pipec::task(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2));
-        let material_pixels = result2.wait_gpuobject();
+        let mut material_pixels: Vec<u8> = Vec::new();
+        let result2 = pipec::task(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2, Arc::new(AtomicPtr::new(&mut material_pixels))));
+        result2.wait_execution();
         let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
         let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values

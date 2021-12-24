@@ -122,7 +122,7 @@ impl Shader {
                     .join("\n");
 
                 // Cache it, and link it
-                self.linked_subshaders.push(pipec::subshader(subshader.clone()));
+                self.linked_subshaders.push(pipec::subshader(subshader.clone()).wait());
                 let _rc_subshader = assets::cachec::cache_l(subshader_path, subshader).unwrap();
             }
         }

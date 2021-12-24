@@ -22,8 +22,8 @@ pub fn load_entities() {
         .entity_id()
         .unwrap();
     core::global::main::world_data_mut(|data| data.main_camera_entity_id = main_camera_entity_id);
-    let material = rendering::pipec::material(rendering::Material::new("Test"));
-    let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap());
+    let material = rendering::pipec::material(rendering::Material::new("Test")).wait();
+    let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap()).wait();
     for x in 0..10000 {
         let mut linkings = ecs::ComponentLinkingGroup::new();
         linkings

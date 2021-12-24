@@ -32,7 +32,7 @@ impl Default for Material {
             shader: None,
             material_name: String::new(),
             flags: MaterialFlags::empty(),
-            uniforms: ShaderUniformsGroup::default(),
+            uniforms: ShaderUniformsGroup::new(),
             visible: true,
         };
         material
@@ -46,10 +46,10 @@ impl Material {
         material.material_name = material_name.to_string();
         material
             .uniforms
-            .set_t2d("diffuse_tex", pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
+            .set_t2d("diffuse_tex", &pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()).wait(), 0);
         material
             .uniforms
-            .set_t2d("normals_tex", pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
+            .set_t2d("normals_tex", &pipec::texturec(assets::cachec::load("default_normals").unwrap()).wait(), 1);
         material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
         material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
         material.uniforms.set_f32("normals_strength", 1.0);
@@ -64,8 +64,8 @@ impl Material {
                 Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
             )
             .unwrap(),
-        );
-        self.uniforms.set_t2d("diffuse_tex", texture, 0);
+        ).wait();
+        self.uniforms.set_t2d("diffuse_tex", &texture, 0);
         self
     }
     // Load the normal texture
@@ -77,8 +77,8 @@ impl Material {
                 Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
             )
             .unwrap(),
-        );
-        self.uniforms.set_t2d("normals_tex", texture, 1);
+        ).wait();
+        self.uniforms.set_t2d("normals_tex", &texture, 1);
         self
     }
     // Set the main shader

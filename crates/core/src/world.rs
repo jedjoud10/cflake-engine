@@ -6,7 +6,7 @@ use ecs::*;
 use glfw::{self};
 use input::*;
 use io::SaverLoader;
-use others::*;
+use ::others::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::thread::ThreadId;
@@ -49,7 +49,7 @@ pub struct World {
 
     // Miscs
     pub debug: MainDebug,
-    pub instance_manager: others::InstanceManager,
+    pub instance_manager: InstanceManager,
     pub custom_data: CustomWorldData,
     pub time_manager: Time,
     pub saver_loader: SaverLoader,
@@ -131,7 +131,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 pub fn update_world_start_barrier(delta: f64) {
     // Systems are halting, tell them to continue their next frame
     //println!("Update world in {:.2}ms", delta * 1000.0);
-    others::barrier::as_ref().thread_sync();
+    barrier::as_ref().thread_sync();
     FRAME.store(true, Ordering::Relaxed);
     // The systems are running, we cannot do anything main thread related
 }
@@ -140,12 +140,12 @@ pub fn update_world_end_barrier(delta: f64, thread_ids: &Vec<ThreadId>) {
     FRAME.store(false, Ordering::Relaxed);
     // --- SYSTEM FRAME END HERE ---
     // Sync the end of the system frame
-    others::barrier::as_ref().thread_sync();
+    barrier::as_ref().thread_sync();
     // We will tell the systems to execute their local callbacks
     for thread_id in thread_ids {
-        others::barrier::as_ref().thread_sync_local_callbacks(thread_id);
+        barrier::as_ref().thread_sync_local_callbacks(thread_id);
         // Wait until the special block finish
-        others::barrier::as_ref().thread_sync_local_callbacks(thread_id);
+        barrier::as_ref().thread_sync_local_callbacks(thread_id);
         // --- THE SYSTEM FRAME LOOP ENDS, IT GOES BACK TO THE TOP OF THE LOOP ---
     }
     // The sytems started halting, we can do stuff on the main thread
@@ -195,7 +195,7 @@ fn update_console() {
 // When we want to close the application
 pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Killing child threads...");
-    let barrier_data = others::barrier::as_ref();
+    let barrier_data = barrier::as_ref();
 
     // Run their last frame...
     println!("Loop threads running their last frame...");

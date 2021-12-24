@@ -44,11 +44,6 @@ pub struct TextureGPUObject {
     pub ttype: TextureType,
 }
 #[derive(Clone)]
-pub struct TextureFillGPUObject {
-    pub bytes: Vec<u8>,
-    pub bytecount_per_pixel: usize,
-}
-#[derive(Clone)]
 // TODO: Add this as an actual GPU object lel
 pub struct CameraDataGPUObject {
     pub position: veclib::Vector3<f32>,
@@ -81,7 +76,7 @@ pub mod uniform_setters {
     }
     // Set a 2D image
     pub unsafe fn set_i2d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, access_type: &TextureShaderAccessType) {
-        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
+        let texture = pipeline_buffer.as_texture(id).unwrap();
         // Converstion from wrapper to actual opengl values
         let new_access_type: u32;
         match access_type {
@@ -99,7 +94,7 @@ pub mod uniform_setters {
     }
     // Set a 3D image
     pub unsafe fn set_i3d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, access_type: &TextureShaderAccessType) {
-        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
+        let texture = pipeline_buffer.as_texture(id).unwrap();
         // Converstion from wrapper to actual opengl values
         let new_access_type: u32;
         match access_type {
@@ -118,28 +113,28 @@ pub mod uniform_setters {
     }
     // Set a 1D texture
     pub unsafe fn set_t1d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
-        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
+        let texture = pipeline_buffer.as_texture(id).unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_1D, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a 2D texture
     pub unsafe fn set_t2d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
-        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
+        let texture = pipeline_buffer.as_texture(id).unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_2D, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a texture2d array
     pub unsafe fn set_t2da(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
-        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
+        let texture = pipeline_buffer.as_texture(id).unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
     }
     // Set a 3D texture
     pub unsafe fn set_t3d(pipeline_buffer: &PipelineBuffer, index: i32, id: &GPUObjectID, active_texture_id: &u32) {
-        let texture = if let GPUObject::Texture(x) = pipeline_buffer.get_gpuobject(id).unwrap() { x } else { panic!() };
+        let texture = pipeline_buffer.as_texture(id).unwrap();
         gl::ActiveTexture(active_texture_id + 33984);
         gl::BindTexture(gl::TEXTURE_3D, texture.texture_id);
         gl::Uniform1i(index, *active_texture_id as i32);
@@ -170,9 +165,9 @@ pub mod uniform_setters {
     }
 }
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct ShaderUniformsGroup {
-    pub shader: u32,
+    pub shader: Option<u32>,
     pub uniforms: HashMap<String, Uniform>,
 }
 
@@ -185,7 +180,7 @@ impl ShaderUniformsGroup {
         for a in y {
             x.insert(a.0, a.1);
         }
-        Self { shader, uniforms: x }
+        Self { shader: Some(shader), uniforms: x }
     }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
@@ -196,36 +191,36 @@ impl ShaderUniformsGroup {
         self.uniforms.insert(name.to_string(), Uniform::F32(value));
     }
     // Set a 2D image
-    pub fn set_i2d(&mut self, name: &str, texture: GPUObjectID, access_type: TextureShaderAccessType) {
-        self.uniforms.insert(name.to_string(), Uniform::Image2D(texture, access_type));
+    pub fn set_i2d(&mut self, name: &str, texture: &GPUObjectID, access_type: TextureShaderAccessType) {
+        self.uniforms.insert(name.to_string(), Uniform::Image2D(texture.clone(), access_type));
     }
     // Set a i32
     pub fn set_i32(&mut self, name: &str, value: i32) {
         self.uniforms.insert(name.to_string(), Uniform::I32(value));
     }
     // Set a 3D image
-    pub fn set_i3d(&mut self, name: &str, texture: GPUObjectID, access_type: TextureShaderAccessType) {
-        self.uniforms.insert(name.to_string(), Uniform::Image3D(texture, access_type));
+    pub fn set_i3d(&mut self, name: &str, texture: &GPUObjectID, access_type: TextureShaderAccessType) {
+        self.uniforms.insert(name.to_string(), Uniform::Image3D(texture.clone(), access_type));
     }
     // Set a matrix 4x4 f32
     pub fn set_mat44(&mut self, name: &str, matrix: veclib::Matrix4x4<f32>) {
         self.uniforms.insert(name.to_string(), Uniform::Mat44F32(matrix));
     }
     // Set a 1D texture
-    pub fn set_t1d(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
-        self.uniforms.insert(name.to_string(), Uniform::Texture1D(texture, active_texture_id));
+    pub fn set_t1d(&mut self, name: &str, texture: &GPUObjectID, active_texture_id: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::Texture1D(texture.clone(), active_texture_id));
     }
     // Set a 2D texture
-    pub fn set_t2d(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
-        self.uniforms.insert(name.to_string(), Uniform::Texture2D(texture, active_texture_id));
+    pub fn set_t2d(&mut self, name: &str, texture: &GPUObjectID, active_texture_id: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::Texture2D(texture.clone(), active_texture_id));
     }
     // Set a texture2d array
-    pub fn set_t2da(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
-        self.uniforms.insert(name.to_string(), Uniform::Texture2DArray(texture, active_texture_id));
+    pub fn set_t2da(&mut self, name: &str, texture: &GPUObjectID, active_texture_id: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::Texture2DArray(texture.clone(), active_texture_id));
     }
     // Set a 3D texture
-    pub fn set_t3d(&mut self, name: &str, texture: GPUObjectID, active_texture_id: u32) {
-        self.uniforms.insert(name.to_string(), Uniform::Texture3D(texture, active_texture_id));
+    pub fn set_t3d(&mut self, name: &str, texture: &GPUObjectID, active_texture_id: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::Texture3D(texture.clone(), active_texture_id));
     }
     // Set a vec2 f32 uniform
     pub fn set_vec2f32(&mut self, name: &str, vec: veclib::Vector2<f32>) {
@@ -251,14 +246,26 @@ impl ShaderUniformsGroup {
     pub fn set_vec4i32(&mut self, name: &str, vec: veclib::Vector4<i32>) {
         self.uniforms.insert(name.to_string(), Uniform::Vec4I32(vec));
     }
+    // Create self
+    pub fn new() -> Self {
+        Self {
+            shader: None,
+            uniforms: HashMap::default(),
+        }
+    }
+    // Update the shader of this uniform group
+    pub fn update_shader(&mut self, shader: &ShaderGPUObject) {
+        self.shader = Some(shader.program);
+    }
     // Bind the shader and set the uniforms
-    pub fn consume(self, pipeline_buffer: &mut PipelineBuffer) {
+    pub fn consume(self, buf: &PipelineBuffer) {
+        let program_id = self.shader.unwrap();
         unsafe {
-            gl::UseProgram(self.shader);
+            gl::UseProgram(program_id);
         }
         use super::uniform_setters::*;
         for (name, uniform) in self.uniforms.iter() {
-            let index = unsafe { gl::GetUniformLocation(self.shader, CString::new(name.clone()).unwrap().as_ptr()) };
+            let index = unsafe { gl::GetUniformLocation(program_id, CString::new(name.clone()).unwrap().as_ptr()) };
             unsafe {
                 match &uniform {
                     Uniform::F32(x) => set_f32(index, x),
@@ -270,39 +277,18 @@ impl ShaderUniformsGroup {
                     Uniform::Vec3I32(x) => set_vec3i32(index, x),
                     Uniform::Vec4I32(x) => set_vec4i32(index, x),
                     Uniform::Mat44F32(x) => set_mat44(index, x),
-                    Uniform::Texture1D(x, y) => set_t1d(pipeline_buffer, index, x, y),
-                    Uniform::Texture2D(x, y) => set_t2d(pipeline_buffer, index, x, y),
-                    Uniform::Texture3D(x, y) => set_t3d(pipeline_buffer, index, x, y),
-                    Uniform::Texture2DArray(x, y) => set_t2da(pipeline_buffer, index, x, y),
-                    Uniform::Image2D(x, y) => set_i2d(pipeline_buffer, index, x, y),
-                    Uniform::Image3D(x, y) => set_i3d(pipeline_buffer, index, x, y),
+                    Uniform::Texture1D(x, y) => set_t1d(buf, index, x, y),
+                    Uniform::Texture2D(x, y) => set_t2d(buf, index, x, y),
+                    Uniform::Texture3D(x, y) => set_t3d(buf, index, x, y),
+                    Uniform::Texture2DArray(x, y) => set_t2da(buf, index, x, y),
+                    Uniform::Image2D(x, y) => set_i2d(buf, index, x, y),
+                    Uniform::Image3D(x, y) => set_i3d(buf, index, x, y),
                     Uniform::Bool(_x) => todo!(),
                 }
             }
         }
     }
 }
-
-impl ShaderGPUObject {
-    // Get a new uniform group
-    pub fn new_uniform_group(&self) -> ShaderUniformsGroup {
-        ShaderUniformsGroup {
-            shader: self.program,
-            uniforms: HashMap::new(),
-        }
-    }
-}
-
-impl ComputeShaderGPUObject {
-    // Get a new uniform group
-    pub fn new_uniform_group(&self) -> ShaderUniformsGroup {
-        ShaderUniformsGroup {
-            shader: self.program,
-            uniforms: HashMap::new(),
-        }
-    }
-}
-
 // Some identifiers that we will use to communicate from the Render Thread -> Main Thread
 #[derive(Clone)]
 pub enum GPUObject {
@@ -313,7 +299,6 @@ pub enum GPUObject {
     Shader(ShaderGPUObject),
     ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions
     Texture(TextureGPUObject),
-    TextureFill(TextureFillGPUObject),
     Renderer(RendererGPUObject),
 }
 

@@ -55,7 +55,7 @@ impl Font {
                 .set_filter(TextureFilter::Linear)
                 .set_format(TextureFormat::R16R)
                 .set_bytes(self.texture_pixels.clone()),
-        );
+        ).wait();
     }
     // Turn some text into an array of font chars
     pub fn convert_text_to_font_chars(&self, text: &str) -> Vec<&FontChar> {
