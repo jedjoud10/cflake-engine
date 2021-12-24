@@ -13,7 +13,7 @@ use std::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         mpsc::{Receiver, Sender},
         Arc, Barrier, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
-    },
+    }, cell::RefCell,
 };
 
 // Messages that will be to the main thread
@@ -24,6 +24,9 @@ pub enum MainThreadMessage {
 lazy_static! {
     // Template render command query sender that we can copy over the multiple task threads
     pub static ref TX_TEMPLATE: Mutex<Option<Sender<RenderCommandQuery>>> = Mutex::new(None);
+
+    // This might be in a mutex, but we never share it around the threads. This is only a static because I don't want to manually implement internal functions for internal render thread commands
+    pub(crate) static ref BUFFER: no_deadlocks::Mutex<PipelineBuffer> = no_deadlocks::Mutex::new(PipelineBuffer::default());
 }
 
 // Load the default rendering things
@@ -129,12 +132,11 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let sent_tasks_receiver = rx;
 
                 // Create the pipeline
-                let mut pipeline_buffer = PipelineBuffer::default();
                 let mut pipeline_renderer = PipelineRenderer::default();
-                pipeline_renderer.init(&mut pipeline_buffer);
                 // This is indeed the render thread
                 crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
                 load_defaults();
+                pipeline_renderer.init();
 
                 // El camera
                 let mut camera = CameraDataGPUObject {
@@ -160,6 +162,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     last_time = new_time;
                     // Run the frame
                     // Poll first
+                    let mut pipeline_buffer = BUFFER.lock().unwrap();
                     poll_commands(&mut pipeline_buffer, &mut pipeline_renderer, &mut camera, &sent_tasks_receiver, window, glfw);
                     // --- Rendering ---
                     // Pre-render

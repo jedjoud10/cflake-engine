@@ -48,7 +48,7 @@ impl VoxelGenerator {
                 .set_data_type(DataType::Float32)
                 .set_filter(TextureFilter::Nearest)
                 .set_wrapping_mode(TextureWrapping::ClampToBorder),
-        ).wait();
+        );
         self.material_texture = pipec::texture(
             Texture::default()
                 .set_dimensions(TextureType::Texture3D(
@@ -59,7 +59,7 @@ impl VoxelGenerator {
                 .set_format(TextureFormat::RG8R)
                 .set_filter(TextureFilter::Nearest)
                 .set_wrapping_mode(TextureWrapping::ClampToBorder),
-        ).wait();
+        );
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {

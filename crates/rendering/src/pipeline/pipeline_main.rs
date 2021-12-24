@@ -30,8 +30,9 @@ pub mod pipec {
     use std::borrow::{Borrow, BorrowMut};
 
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::Arc;
+    use std::sync::{Arc, MutexGuard};
 
+    use crate::pipeline::buffer::PipelineBuffer;
     use crate::pipeline::{buffer, object::*};
     use crate::{GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandQueryResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, is_render_thread};
     pub use crate::{RenderTask, SharedData};
@@ -54,57 +55,64 @@ pub mod pipec {
         });
         println!("Initialized the thread local RenderCommand sender!");
     }
+    // Execute a RenderCommandQueryResult. This runs it internally if we are on the render thread.
+    fn execute(rs: RenderCommandQueryResult) -> GPUObjectID {
+        if is_render_thread() {
+            let mut buf = crate::pipeline::pipeline::BUFFER.lock().unwrap();
+            rs.wait_internal(&mut buf)
+        } else { rs.wait() }
+    }
     // Send a task to the render thread, returning a Command
     pub fn task(task: RenderTask) -> RenderCommandQueryResult {
         RenderCommandQueryResult::new(task)
     }
     // Load or create functions
-    pub fn subshader(subshader: SubShader) -> RenderCommandQueryResult {
-        match others::get_id(&subshader.name) {
+    pub fn subshader(subshader: SubShader) -> GPUObjectID {
+        execute(match others::get_id(&subshader.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::SubShaderCreate(SharedData::new(subshader))),
-        } 
+        })
     }
-    pub fn shader(shader: Shader) -> RenderCommandQueryResult {
-        match others::get_id(&shader.name) {
+    pub fn shader(shader: Shader) -> GPUObjectID {
+        execute(match others::get_id(&shader.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::ShaderCreate(SharedData::new(shader))),
-        } 
+        })
     }
-    pub fn compute_shader(shader: Shader) -> RenderCommandQueryResult {
-        match others::get_id(&shader.name) {
+    pub fn compute_shader(shader: Shader) -> GPUObjectID {
+        execute(match others::get_id(&shader.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::ShaderCreate(SharedData::new(shader))),
-        }
+        })
     }
-    pub fn texture(texture: Texture) -> RenderCommandQueryResult {
-        match others::get_id(&texture.name) {
+    pub fn texture(texture: Texture) -> GPUObjectID {
+        execute(match others::get_id(&texture.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::TextureCreate(SharedData::new(texture))),
-        }
+        })
     }
-    pub fn model(model: Model) -> RenderCommandQueryResult {
+    pub fn model(model: Model) -> GPUObjectID {
         // (TODO: Implement model caching)
-        task(RenderTask::ModelCreate(SharedData::new(model)))
+        execute(task(RenderTask::ModelCreate(SharedData::new(model))))
     }
-    pub fn material(material: Material) -> RenderCommandQueryResult {
-        match others::get_id(&material.material_name) {
+    pub fn material(material: Material) -> GPUObjectID {
+        execute(match others::get_id(&material.material_name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::MaterialCreate(SharedData::new(material))),
-        }
+        })
     }
     // Load or create functions, cached type
-    pub fn texturec(texturec: CachedObject<Texture>) -> RenderCommandQueryResult {        
-        match others::get_id(&texturec.arc.as_ref().name) {
+    pub fn texturec(texturec: CachedObject<Texture>) -> GPUObjectID {        
+        execute(match others::get_id(&texturec.arc.as_ref().name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::TextureCreate(SharedData::new(texturec.arc.as_ref().clone()))),
-        }
+        })
     }
-    pub fn shaderc(shaderc: CachedObject<Shader>) -> RenderCommandQueryResult {
-        match others::get_id(&shaderc.arc.as_ref().name) {
+    pub fn shaderc(shaderc: CachedObject<Shader>) -> GPUObjectID {
+        execute(match others::get_id(&shaderc.arc.as_ref().name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::ShaderCreate(SharedData::new(shaderc.arc.as_ref().clone()))),
-        }
+        })
     }
     // Read the data from an array that was filled using a texture
     pub fn convert_native<T>(vec: Vec<u8>) -> Vec<T>

@@ -154,7 +154,7 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
 
 impl PipelineRenderer {
     // Init the pipeline renderer
-    pub fn init(&mut self, buf: &mut PipelineBuffer) {
+    pub fn init(&mut self) {
         println!("Initializing the pipeline renderer...");
         self.window = Window::default();
         // Create the quad model
@@ -169,7 +169,7 @@ impl PipelineRenderer {
             triangles: vec![0, 1, 2, 0, 3, 1],
             ..Model::default()
         };
-        self.quad_model = pipec::model(quad).wait_id_internal(buf);
+        self.quad_model = pipec::model(quad);
         self.screen_shader = pipec::shader(
             Shader::default()
                 .load_shader(vec![
@@ -177,14 +177,14 @@ impl PipelineRenderer {
                     "defaults\\shaders\\rendering\\screen.frsh.glsl",
                 ])
                 .unwrap(),
-        ).wait_id_internal(buf);
+        );
         // Create a default material
         self.default_material = Some(pipec::material(Material::new("Default Material").set_shader(pipec::shader(
                 Shader::default()
                     .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
                     .unwrap(),
-                ).wait_id_internal(buf))
-            ).wait_id_internal(buf)
+                ))
+            )
         );
         println!("Loaded the default material!");
         /* #region Deferred renderer init */
@@ -195,29 +195,31 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(self.window.dimensions.x, self.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F)).wait_id_internal(buf);
+            self.diffuse_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
             // Create the normals render texture
-            self.normals_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS)).wait_id_internal(buf);
+            self.normals_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS));
             // Create the position render texture
-            self.position_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F)).wait_id_internal(buf);
+            self.position_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
             // Create the depth render texture
             self.depth_texture = pipec::texture(
                 Texture::default()
                     .set_dimensions(dims)
                     .set_format(TextureFormat::DepthComponent32)
                     .set_data_type(DataType::Float32),
-            ).wait_id_internal(buf);
+            );
 
             // Now bind the attachememnts
-            let bind_attachement = |attachement: u32, texture: &GPUObjectID| {
+            fn bind_attachement(attachement: u32, texture: &GPUObjectID) {
                 // Get the textures from the GPUObjectID
+                let buf = crate::BUFFER.lock().unwrap();
                 let texture = buf.as_texture(texture).unwrap();
                 // Default target, no multisamplind
                 let target: u32 = gl::TEXTURE_2D;
-                gl::BindTexture(target, texture.texture_id);
-                gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.texture_id, 0);
-                
-            };
+                unsafe {
+                    gl::BindTexture(target, texture.texture_id);
+                    gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.texture_id, 0);
+                }
+            }
             bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
             bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
             bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
@@ -243,14 +245,14 @@ impl PipelineRenderer {
                 Texture::default().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge),
             )
             .unwrap(),
-        ).wait_id_internal(buf);
+        );
 
         // Load the wireframe shader
         self.wireframe_shader = pipec::shader(
             Shader::default()
                 .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"])
                 .unwrap(),
-        ).wait_id_internal(buf);
+        );
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
     }

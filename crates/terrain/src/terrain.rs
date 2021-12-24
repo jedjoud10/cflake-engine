@@ -40,7 +40,7 @@ impl Terrain {
                 .load_externalcode("voxel_interpreter", string)
                 .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER])
                 .unwrap(),
-        ).wait();
+        );
 
         // Finally, create self
         Self {
