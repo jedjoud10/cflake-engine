@@ -77,8 +77,7 @@ fn system_prefire(data: &mut ()) {
     let pos = camera_transform.position;
     let rot = camera_transform.rotation;
     let shared_data = rendering::SharedData::new((pos, rot, camera_data.clip_planes, camera_data.projection_matrix));
-    let t = rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data));
-    //t.wait();
+    rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data));
 }
 
 // Create the default system

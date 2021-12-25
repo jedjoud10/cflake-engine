@@ -364,6 +364,7 @@ mod object_creation {
     // Update a renderer's model matrix
     pub fn update_renderer(buf: &mut PipelineBuffer, renderer_id: &GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
         let renderer = buf.as_renderer_mut(renderer_id).unwrap();
+        renderer.matrix = matrix.get();
     }
     pub fn create_compile_subshader(buf: &mut PipelineBuffer, subshader: SharedData<SubShader>) -> GPUObjectID {
         let shader_type: u32;
