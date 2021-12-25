@@ -1,5 +1,8 @@
+use ecs::SystemThreadData;
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::atomic::AtomicU8;
 
 use crate::command::CommandQuery;
 use crate::communication::WorldTaskReceiver;
@@ -11,6 +14,7 @@ pub enum Task {
     // Entity
     EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup),
     EntityRemove(usize),
+    EntityRemovedDecrementCounter(usize),
     // This is only valid if the entity is also valid
     ComponentLinkDirect(usize, usize),
     ComponentUnlinkDirect(usize, usize),
@@ -88,15 +92,23 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             ImmediateTaskResult::EntityAdd(entity_id)
         }
         Task::EntityRemove(entity_id) => {
+            // Check if we even have the entity in the first place
+            if !world.ecs_manager.entitym.is_entity_valid(entity_id) { return ImmediateTaskResult::None; }
             // Run the Entity Remove event on the systems
-            let entity = world.ecs_manager.entitym.entity(entity_id);
+            let entity = world.ecs_manager.entitym.entity(entity_id);           
 
             // Check the systems where this entity might be valid
-            for system in world.ecs_manager.systemm.systems.iter() {
-                let valid = is_entity_valid(system.c_bitfield, entity.c_bitfield);
-                if valid {
-                    crate::system::send_lsc(LogicSystemCommand::RemoveEntityFromSystem(entity_id), &system.join_handle.thread().id(), receiver);
-                }
+            let valid_systems: Vec<&SystemThreadData> = world.ecs_manager
+                .systemm.systems
+                .iter()
+                .filter(|system| 
+                    is_entity_valid(system.c_bitfield, entity.c_bitfield)
+                )
+            .collect::<Vec<&SystemThreadData>>();
+            let count = valid_systems.len() as u8;
+            // Send the command to each system
+            for system in valid_systems {
+                crate::system::send_lsc(LogicSystemCommand::RemoveEntityFromSystem(entity_id), &system.join_handle.thread().id(), receiver);
             }
 
             // Only run the callback if we are not on the main thread
@@ -115,25 +127,31 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             }
 
             // Now, we must wait until the next frame to actually delete the entity and it's components
-            world.ecs_manager.entitym.entities_to_delete.insert(entity_id);
+            world.ecs_manager.entitym.entities_to_delete.insert(entity_id, count);
 
             ImmediateTaskResult::None
         }
         Task::ComponentLinkDirect(_, _) => ImmediateTaskResult::None,
         Task::ComponentUnlinkDirect(_, _) => ImmediateTaskResult::None,
         Task::SetRootVisibility(_) => ImmediateTaskResult::None,
-    }
-}
+        Task::EntityRemovedDecrementCounter(entity_id) => {
+            let counter = {
+                // One of the systems has safely removed the entity from it's list, so we must decrement the counter
+                let counter = world.ecs_manager.entitym.entities_to_delete.get_mut(&entity_id).unwrap();
+                *counter -= 1;
+                *counter
+            };
+            // If the counter has reached 0, we can safely remove the entity
+            if counter == 0 {
+                // Delete the entity and it's corresponding components
+                world.ecs_manager.entitym.entities_to_delete.remove(&entity_id);
+                let entity = world.ecs_manager.entitym.remove_entity(entity_id);
+                for (component_id, global_id) in entity.linked_components {
+                    world.ecs_manager.componentm.remove_component(global_id).unwrap();
+                }
+            }
 
-// Execute some stuff related to the main thread, on the main thread
-pub fn execute_main_thread(world: &mut crate::world::World, receiver: &WorldTaskReceiver) {    
-    // Actually delete the entities that must be deleted
-    let taken = std::mem::take(&mut world.ecs_manager.entitym.entities_to_delete);
-    for entity_id in taken {
-        // Delete the entity and it's corresponding components
-        let entity = world.ecs_manager.entitym.remove_entity(entity_id);
-        for (component_id, global_id) in entity.linked_components {
-            world.ecs_manager.componentm.remove_component(global_id).unwrap();
-        }
+            ImmediateTaskResult::None
+        },
     }
 }

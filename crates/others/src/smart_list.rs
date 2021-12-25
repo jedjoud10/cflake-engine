@@ -55,13 +55,13 @@ impl<T> SmartList<T> {
         // Remove the element
         self.elements.push(None);
         let element = self.elements.swap_remove(element_id);
-        self.size_in_bytes -= std::mem::size_of_val(element.as_ref().unwrap());
+        self.size_in_bytes -= std::mem::size_of_val(element.as_ref()?);
         return element;
     }
     // Get a mutable reference to a stored element
     pub fn get_element_mut(&mut self, element_id: usize) -> Option<Option<&mut T>> {
         if element_id < self.elements.len() {
-            let element = self.elements.get_mut(element_id).unwrap().as_mut();
+            let element = self.elements.get_mut(element_id)?.as_mut();
             return Some(element);
         } else {
             return None;
@@ -70,7 +70,7 @@ impl<T> SmartList<T> {
     // Get an entity using it's entity id
     pub fn get_element(&self, element_id: usize) -> Option<Option<&T>> {
         if element_id < self.elements.len() {
-            let element = self.elements.get(element_id).unwrap().as_ref();
+            let element = self.elements.get(element_id)?.as_ref();
             return Some(element);
         } else {
             return None;

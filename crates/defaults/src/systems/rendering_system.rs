@@ -30,6 +30,7 @@ fn entity_added(data: &mut SystemData<()>, entity: &ecs::Entity) {
 fn entity_removed(data: &mut SystemData<()>, entity: &ecs::Entity) {
     let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let index = renderer.internal_renderer.index.unwrap();
+    println!("{} {}", entity.entity_id, index.index);
     rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
 }
 // Send the updated data from the entity to the render pipeline as commands

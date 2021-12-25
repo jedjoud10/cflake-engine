@@ -1,10 +1,11 @@
 use crate::communication::{WorldTaskReceiver, RECEIVER};
-use crate::global::callbacks::LogicSystemCallbackArguments;
+use crate::global::callbacks::{LogicSystemCallbackArguments, CallbackType};
 use ecs::{CustomSystemData, SystemData};
 use lazy_static::lazy_static;
+use others::callbacks::MutCallback;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use std::sync::atomic::{AtomicUsize, Ordering, AtomicPtr};
+use std::sync::atomic::{AtomicUsize, Ordering, AtomicPtr, AtomicU8};
 use std::sync::{mpsc::Sender, Arc, Mutex};
 use std::thread::JoinHandle;
 
@@ -19,7 +20,7 @@ pub enum LogicSystemCommand {
 
 lazy_static! {
     // The number of systems
-    pub static ref SYSTEM_COUNTER: AtomicUsize = AtomicUsize::new(0);
+    pub static ref SYSTEM_COUNTER: AtomicU8 = AtomicU8::new(0);
     // A copy of the task Sender
     pub static ref SENDER_COPY: Arc<Mutex<Option<Sender<crate::command::CommandQuery>>>> = Arc::new(Mutex::new(None));
 }
@@ -177,6 +178,8 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             };
             let entity = unsafe { ptr.as_ref().unwrap() };
             system.remove_entity(shared, entity);
+            // The main thread does not know that we have deleted the entity from this entity, so we must decrement the counter       
+            crate::command::CommandQueryResult::new(crate::tasks::Task::EntityRemovedDecrementCounter(entity_id)).send();
         }
         LogicSystemCommand::StartSystemLoop => { /* How the fuck */ }
     }

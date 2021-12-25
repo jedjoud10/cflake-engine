@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use others::callbacks::*;
 use std::{
     collections::HashMap,
-    sync::{atomic::AtomicU64, Mutex},
+    sync::{atomic::{AtomicU64, AtomicU8, Ordering}, Mutex, Arc},
     cell::RefCell,
 };
 use ecs::SystemData;

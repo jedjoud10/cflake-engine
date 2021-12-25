@@ -1,12 +1,12 @@
 use crate::LoadState;
 use others::{Instance, SmartList};
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, sync::{atomic::AtomicU8, Arc}};
 
 // An entity manager that handles entities
 #[derive(Default)]
 pub struct EntityManager {
     pub entities: SmartList<Entity>,
-    pub entities_to_delete: HashSet<usize>,
+    pub entities_to_delete: HashMap<usize, u8>,
 }
 
 impl EntityManager {
@@ -28,6 +28,10 @@ impl EntityManager {
     // Remove an entity from the manager, and return it's value
     pub fn remove_entity(&mut self, entity_id: usize) -> Entity {
         self.entities.remove_element(entity_id).unwrap()
+    }
+    // Check if an entity is valid
+    pub fn is_entity_valid(&self, entity_id: usize) -> bool {
+        self.entities.get_element(entity_id).flatten().is_some() && !self.entities_to_delete.contains_key(&entity_id)
     }
 }
 
