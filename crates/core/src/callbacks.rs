@@ -16,7 +16,7 @@ thread_local! {
 // The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
 // Callback manager that contains all the current callbacks (Thread Local)
 pub struct CallbackManagerBuffer {
-    callbacks: HashMap<u64, CallbackType>,
+    callbacks: HashMap<u64, CallbackType<'a>>,
     buffered_executions: Vec<(u64, LogicSystemCallbackArguments)>,
 }
 
@@ -46,7 +46,7 @@ pub fn buffer_callback_execution(id: u64, arguments: LogicSystemCallbackArgument
 }
 
 // Execute all the local callbacks
-pub fn execute_local_callbacks() {
+pub fn execute_local_callbacks<T: ecs::CustomSystemData>(system_data: &mut T) {
     // Aaoaoao
     let mut callbacks: Vec<(CallbackType, LogicSystemCallbackArguments)> = Vec::new();
     CALLBACK_MANAGER_BUFFER.with(|cell| {
@@ -69,7 +69,7 @@ pub fn execute_local_callbacks() {
                 let callback = x.callback.as_ref();
                 // Make sure this callback is the GPUObject one
                 if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
-                    (callback)(args);
+                    (callback)(args, system_data);
                 }
             }
             CallbackType::EntityCreatedCallback(x) => {
@@ -80,7 +80,7 @@ pub fn execute_local_callbacks() {
                         let w = crate::world::world();
                         w.ecs_manager.entitym.entity(entity_id).clone()
                     };
-                    (callback)(&cloned_entity);
+                    (callback)(&cloned_entity, system_data);
                 }
             }
             CallbackType::LocalEntityMut(entity_callback) => {
@@ -93,7 +93,7 @@ pub fn execute_local_callbacks() {
                         w.ecs_manager.entitym.entity(entity_id).clone()
                     };
                     // We must NOT have world() or world_mut() locked when executing these types of callbacks
-                    (callback)(&mut cloned_entity);
+                    (callback)(&mut cloned_entity, system_data);
                     // Update the value in the world
                     let mut w = crate::world::world_mut();
                     let entity = w.ecs_manager.entitym.entity_mut(entity_id);
@@ -115,13 +115,13 @@ pub enum LogicSystemCallbackArguments {
 }
 
 // The callback type
-pub enum CallbackType {
-    GPUObjectCallback(OwnedCallback<(rendering::GPUObject, rendering::GPUObjectID)>),
-    EntityCreatedCallback(RefCallback<ecs::Entity>),
-    LocalEntityMut(MutCallback<ecs::Entity>),
+pub enum CallbackType<'a> {
+    GPUObjectCallback(OwnedCallback<(rendering::GPUObject, rendering::GPUObjectID), &'a mut dyn ecs::CustomSystemData>),
+    EntityCreatedCallback(RefCallback<ecs::Entity, &'a mut dyn ecs::CustomSystemData>),
+    LocalEntityMut(MutCallback<ecs::Entity, &'a mut dyn ecs::CustomSystemData>),
 }
 
-impl CallbackType {
+impl<'a> CallbackType<'a> {
     // Turn this callback into a callback ID after adding it to thread local callback manager buffer
     pub fn create(self) -> u64 {
         let id = CALLBACK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
