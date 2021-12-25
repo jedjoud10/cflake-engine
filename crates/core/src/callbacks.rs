@@ -5,7 +5,7 @@ use std::{
     sync::{atomic::AtomicU64, Mutex},
     cell::RefCell,
 };
-use ecs::SharedCustomSystemData;
+use ecs::SystemData;
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created

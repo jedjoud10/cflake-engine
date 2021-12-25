@@ -1,6 +1,6 @@
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::LogicSystemCallbackArguments;
-use ecs::{CustomSystemData, SharedCustomSystemData};
+use ecs::{CustomSystemData, SystemData};
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -76,7 +76,7 @@ where
                 }
                 // Create the shared data
                 let mut data = system.starting_custom_data_state.take().unwrap(); 
-                let mut shared = SharedCustomSystemData::new(&mut data);
+                let mut shared = SystemData::new(&mut data);
                 loop {
                     // Wait for the start of the sync at the start of the frame
                     barrier_data.thread_sync();
@@ -150,7 +150,7 @@ where
 }
 
 // Execute a logic system command
-fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<usize>, system: &mut ecs::System<T>, shared: &mut SharedCustomSystemData<T>) {
+fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<usize>, system: &mut ecs::System<T>, shared: &mut SystemData<T>) {
     match lsc {
         LogicSystemCommand::RunCallback(id, result_data) => {
             // We will run this when we run the local callbacks!
