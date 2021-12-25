@@ -105,7 +105,7 @@ pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &Camer
     group.set_mat44("model_matrix", *model_matrix);
     group.set_mat44("view_matrix", camera.viewm);
     group.set_vec3f32("view_pos", camera.position);
-    group.consume(buf);
+    group.consume(buf).unwrap();
 
     unsafe {
         // Enable / Disable vertex culling for double sided materials
@@ -135,7 +135,7 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
     group.set_mat44("mvp_matrix", mvp_matrix);
     group.set_mat44("model_matrix", *model_matrix);
     group.set_mat44("view_matrix", camera.viewm);
-    group.consume(buf);
+    group.consume(buf).unwrap();
     unsafe {
         // Set the wireframe rendering
         gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -300,7 +300,7 @@ impl PipelineRenderer {
         group.set_vec3f32("camera_pos", camera.position);
         group.set_i32("debug_view", 0);
         //group.set_t2d("frame_stats", self.frame_stats.texture, 5);
-        group.consume(buf);
+        group.consume(buf).unwrap();
 
         // Render the screen quad
         let quad_model = buf.as_model(&self.quad_model).unwrap();

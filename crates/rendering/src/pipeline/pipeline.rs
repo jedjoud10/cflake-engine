@@ -410,6 +410,7 @@ mod object_creation {
     }
     pub fn create_compile_shader(buf: &mut PipelineBuffer, shader: SharedData<Shader>) -> GPUObjectID {
         let shader = shader.get();
+        println!("\x1b[33mCompiling & Creating Shader {}...\x1b[0m", shader.name);
         unsafe {
             let program = gl::CreateProgram();
 
@@ -460,6 +461,7 @@ mod object_creation {
                 })
             };
             // Add the gpu object
+            println!("\x1b[32mShader {} compiled and created succsessfully! ComputeShader: {}\x1b[0m", shader.name, compute_shader);
             buf.add_gpuobject(gpuobject, Some(shader.name.clone()))
         }
     }
@@ -814,7 +816,8 @@ mod object_creation {
         }
     }
     pub fn run_compute(buf: &mut PipelineBuffer, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
-        uniforms_group.consume(buf);
+        println!("{:?} {:?}", uniforms_group.shader_id, uniforms_group.shader);
+        uniforms_group.consume(buf).unwrap();
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
         }

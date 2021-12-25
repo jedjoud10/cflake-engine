@@ -99,7 +99,53 @@ fn system_prefire(terrain: &mut SystemData<Terrain>) {
 pub fn system() {
     core::global::ecs::add_system(|| {
         // Create a system
-        let mut system = ecs::System::new(Terrain::default());
+
+        // The terrain shader
+        let terrain_shader = pipec::shader(
+            rendering::Shader::default()
+                .load_shader(vec![
+                    "defaults\\shaders\\rendering\\default.vrsh.glsl",
+                    "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl",
+                ])
+                .unwrap(),
+        );
+        // Material
+        let mut material = rendering::Material::new("Terrain material").set_shader(terrain_shader);
+        // Create the diffuse texture array
+        let texture = pipec::texturec(
+            assets::cachec::cache_l(
+                "terrain_diffuse_texture",
+                rendering::Texture::create_texturearray(vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"], 256, 256)
+                    .apply_texture_load_options(None)
+                    .enable_mipmaps(),
+            )
+            .unwrap(),
+        );
+        // Create the normalmap texture array
+        let texture2 = pipec::texturec(
+            assets::cachec::cache_l(
+                "terrain_normal_map_texture",
+                rendering::Texture::create_texturearray(vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"], 256, 256)
+                    .apply_texture_load_options(None)
+                    .enable_mipmaps(),
+            )
+            .unwrap(),
+        );
+        let group = &mut material.uniforms;
+        group.set_f32("normals_strength", 2.0);
+        group.set_vec2f32("uv_scale", veclib::Vector2::ONE * 0.7);
+        group.set_t2da("diffuse_textures", &texture, 0);
+        group.set_t2da("normals_textures", &texture2, 1);
+        group.set_i32("material_id", 0);
+        let material = pipec::material(material);
+
+        let settings = terrain::TerrainSettings {
+            octree_depth: 8,
+            material,
+            voxel_generator_interpreter: terrain::interpreter::Interpreter::new_pregenerated(),
+        };
+
+        let mut system = ecs::System::new(Terrain::new(settings));
         // Link some components to the system
         system.link::<crate::components::Chunk>();
         // And link the events

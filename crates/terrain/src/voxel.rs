@@ -65,6 +65,7 @@ impl VoxelGenerator {
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
         // First pass
         let mut group = ShaderUniformsGroup::new();
+        group.update_shader_id(&self.compute);
         group.set_i3d("voxel_image", &self.voxel_texture, TextureShaderAccessType::WriteOnly);
         group.set_i3d("material_image", &self.material_texture, TextureShaderAccessType::WriteOnly);
         group.set_i32("chunk_size", (MAIN_CHUNK_SIZE + 2) as i32);
@@ -76,6 +77,7 @@ impl VoxelGenerator {
         (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,
         (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,);
         let result = pipec::task(pipec::RenderTask::ComputeRun(self.compute, x, group));
+        result.wait_execution();
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {

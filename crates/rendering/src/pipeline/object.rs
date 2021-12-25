@@ -168,6 +168,7 @@ pub mod uniform_setters {
 #[derive(Clone)]
 pub struct ShaderUniformsGroup {
     pub shader: Option<u32>,
+    pub shader_id: Option<GPUObjectID>,
     pub uniforms: HashMap<String, Uniform>,
 }
 
@@ -180,7 +181,7 @@ impl ShaderUniformsGroup {
         for a in y {
             x.insert(a.0, a.1);
         }
-        Self { shader: Some(shader), uniforms: x }
+        Self { shader: Some(shader), shader_id: None, uniforms: x }
     }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
@@ -250,6 +251,7 @@ impl ShaderUniformsGroup {
     pub fn new() -> Self {
         Self {
             shader: None,
+            shader_id: None,
             uniforms: HashMap::default(),
         }
     }
@@ -257,15 +259,32 @@ impl ShaderUniformsGroup {
     pub fn update_shader(&mut self, shader: &ShaderGPUObject) {
         self.shader = Some(shader.program);
     }
+    pub fn update_shader_id(&mut self, shader_id: &GPUObjectID) {
+        self.shader_id = Some(shader_id.clone());
+    }
     // Bind the shader and set the uniforms
-    pub fn consume(self, buf: &PipelineBuffer) {
-        let program_id = self.shader.unwrap();
+    pub fn consume(self, buf: &PipelineBuffer) -> Option<()> {
+        // Get the shader program ID
+        let program_id = match self.shader {
+            Some(x) => x,
+            None => match self.shader_id {
+                Some(id) => {
+                    // Might be either a compute or a normal shader
+                    if let Option::Some(x) = buf.as_shader(&id) {
+                        x.program
+                    } else if let Option::Some(x) = buf.as_compute_shader(&id) {
+                        x.program
+                    } else { panic!(); return None; }
+                },
+                None => { panic!(); return None; },
+            },
+        };
         unsafe {
             gl::UseProgram(program_id);
         }
         use super::uniform_setters::*;
         for (name, uniform) in self.uniforms.iter() {
-            let index = unsafe { gl::GetUniformLocation(program_id, CString::new(name.clone()).unwrap().as_ptr()) };
+            let index = unsafe { gl::GetUniformLocation(program_id, CString::new(name.clone()).ok()?.as_ptr()) };
             unsafe {
                 match &uniform {
                     Uniform::F32(x) => set_f32(index, x),
@@ -287,6 +306,7 @@ impl ShaderUniformsGroup {
                 }
             }
         }
+        Some(())
     }
 }
 // Some identifiers that we will use to communicate from the Render Thread -> Main Thread
