@@ -111,6 +111,8 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
     let receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_ref().unwrap();
     let rx = &receiver.rx;
+    // Smol execution
+    execute_main_thread(world, receiver);
     for query in rx.try_recv() {
         // Just execute the task
         excecute_query(query, world, receiver);
