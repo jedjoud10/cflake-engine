@@ -70,7 +70,7 @@ pub mod ecs {
     /* #endregion */
     /* #region Systems */
     // Add the system on the main thread
-    pub fn add_system<T: ecs::CustomSystemData, F>(callback: F)
+    pub fn add_system<T: ecs::CustomSystemData + 'static, F>(callback: F)
     where
         F: FnOnce() -> ecs::System<T> + 'static + Send,
     {

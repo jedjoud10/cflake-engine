@@ -1,7 +1,6 @@
 use core::FrameID;
 
 // Transforms components
-use ecs::{Component, ComponentID, ComponentInternal};
 // The transform component
 pub struct Transform {
     pub position: veclib::Vector3<f32>,

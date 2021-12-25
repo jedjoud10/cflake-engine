@@ -31,7 +31,7 @@ thread_local! {
 }
 
 // Create a worker thread
-pub fn create_worker_thread<F, T: ecs::CustomSystemData>(callback: F) -> (JoinHandle<()>, usize)
+pub fn create_worker_thread<F, T: ecs::CustomSystemData + 'static>(callback: F) -> (JoinHandle<()>, usize)
 where
     F: FnOnce() -> ecs::System<T> + 'static + Send,
 {
@@ -127,7 +127,8 @@ where
                         // Wait until the main world gives us permission to continue
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                         // We got permission, we can run the local callbacks
-                        crate::callbacks::execute_local_callbacks();
+                        let system_data = &mut system.custom_data;
+                        crate::callbacks::execute_local_callbacks(system_data);
                         // Tell the main thread we have finished executing thread local callbacks
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                     }

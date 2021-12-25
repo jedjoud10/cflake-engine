@@ -1,6 +1,4 @@
 use core::FrameID;
-
-use ecs::{Component, ComponentID, ComponentInternal};
 use rendering::{GPUObject, GPUObjectID, Material, ModelGPUObject, RendererFlags, RendererGPUObject};
 
 // Wrapper

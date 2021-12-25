@@ -2,6 +2,7 @@
 #[macro_export]
 macro_rules! impl_component {
     ($t: ty) => {
+        use $crate::{ComponentInternal, ComponentID, Component};
         // Main traits implemented
         impl ComponentInternal for $t {
             fn as_any(&self) -> &dyn std::any::Any {
@@ -19,3 +20,13 @@ macro_rules! impl_component {
         impl Component for $t {}
     };
 }
+#[macro_export]
+macro_rules! impl_systemdata {
+    ($t:ty) => {
+        use $crate::CustomSystemData;
+        impl CustomSystemData for $t {
+        }
+    };
+}
+
+impl_systemdata!(());

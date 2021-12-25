@@ -34,7 +34,7 @@ pub fn load_entities() {
         .unwrap();
         
     core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
-
+    /*
     for x in 0..2000 {
         let mut linkings = ecs::ComponentLinkingGroup::new();
         linkings
@@ -46,6 +46,7 @@ pub fn load_entities() {
         
         core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
     }
+    */
 
     /*
     // ----Load the default systems----

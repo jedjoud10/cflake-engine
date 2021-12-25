@@ -1,4 +1,3 @@
-use ecs::{Component, ComponentID, ComponentInternal};
 use physics::PhysicsObject;
 
 // A physics component

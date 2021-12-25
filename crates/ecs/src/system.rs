@@ -1,4 +1,6 @@
-use crate::{ComponentID, Entity};
+use std::any::Any;
+
+use crate::{ComponentID, Entity, impl_systemdata};
 
 #[derive(Default)]
 // Manages the systems, however each system is in it's own thread (For now at least)
@@ -35,7 +37,7 @@ pub struct System<T>
 where
     T: CustomSystemData,
 {
-    custom_data: T,
+    pub custom_data: T,
     pub c_bitfield: usize,
 
     // Events
@@ -146,5 +148,3 @@ where
 
 // Trait for custom system data
 pub trait CustomSystemData {}
-
-impl CustomSystemData for () {}

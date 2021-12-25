@@ -23,7 +23,7 @@ impl CommandQueryResult {
     pub fn new(task: Task) -> Self {
         Self { task: Some(task) }
     }
-    // Explicitly tell this command query result to send the result immediatly
+    // Explicitly tell this command query result to send the result immediately
     pub fn send(mut self) {
         // Send the command
         let task = self.task.take().unwrap();

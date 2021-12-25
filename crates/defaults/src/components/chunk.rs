@@ -1,4 +1,3 @@
-use ecs::{Component, ComponentID, ComponentInternal};
 use terrain::ChunkCoords;
 
 // A component that will be added to well... chunks
