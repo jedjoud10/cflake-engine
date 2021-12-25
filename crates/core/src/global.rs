@@ -210,4 +210,9 @@ pub mod timings {
         let w = crate::world::world();
         w.time_manager.elapsed
     }
+    // Get the frame count
+    pub fn frame_count() -> u64 {
+        let w = crate::world::world();
+        w.time_manager.frame_count
+    }
 }

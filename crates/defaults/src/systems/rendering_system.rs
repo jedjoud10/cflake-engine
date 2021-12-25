@@ -11,9 +11,8 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
     let irenderer = renderer.internal_renderer.clone();
     // Get the transform, and make sure it's matrix is valid
     let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
-    let matrix = transform.matrix;
     // Create the shared data
-    let shared_data = rendering::SharedData::new((irenderer, matrix));
+    let shared_data = rendering::SharedData::new((irenderer, transform.calculate_matrix()));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
     let entity_id = entity.entity_id;
     result.with_callback(GPUObjectCallback(OwnedCallback::new(move |(_, id)| {
@@ -22,33 +21,10 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
             LocalEntityMut(MutCallback::new(move |entity| {
                 let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
                 r.internal_renderer.index = Some(id);
-                // Also update the transform since we're at it
-                /*
-                let t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
-                let t = &mut *t_;
-                t.update_matrix();
-                */
             }))
             .create(),
         );
-    })).create());    
-    /*
-    result.with_callback();
-    // After adding the renderer, we must update the entity's renderer component using another callback
-    global::ecs::entity_mut(
-        entity,
-        LocalEntityMut(MutCallback::new(move |entity| {
-            let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
-            r.internal_renderer.index = Some(gpuobject_id);
-            println!("Updated the entity's internal renderer index!");
-            // Also update the transform since we're at it
-            let mut t_ = global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
-            let t = &mut *t_;
-            t.update_matrix();
-        }))
-        .create(),
-    );
-    */
+    })).create());   
 }
 // Remove the renderer from the pipeline renderer
 fn entity_removed(data: &mut (), entity: &ecs::Entity) {
@@ -60,11 +36,14 @@ fn entity_removed(data: &mut (), entity: &ecs::Entity) {
 fn entity_update(data: &mut (), entity: &ecs::Entity) {
     let renderer = core::global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let transform = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
-    match renderer.internal_renderer.index {
-        Some(index) => {
-            rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(index, rendering::SharedData::new(transform.matrix)));
+    // Only update the transform if we need to 
+    if transform.update_frame_id != renderer.update_frame_id {
+        match renderer.internal_renderer.index {
+            Some(index) => {
+                rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(index, rendering::SharedData::new(transform.calculate_matrix())));
+            }
+            None => {}
         }
-        None => {}
     }
 }
 // System prefire so we can send the camera data to the render pipeline

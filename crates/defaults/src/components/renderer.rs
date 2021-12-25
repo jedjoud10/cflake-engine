@@ -1,15 +1,22 @@
+use core::FrameID;
+
 use ecs::{Component, ComponentID, ComponentInternal};
 use rendering::{GPUObject, GPUObjectID, Material, ModelGPUObject, RendererFlags, RendererGPUObject};
 
 // Wrapper
 pub struct Renderer {
-    pub internal_renderer: rendering::Renderer,
+    pub internal_renderer: rendering::Renderer, // The internal renderer that we will pass to the render thread when creating this component
+    
+    pub matrix: veclib::Matrix4x4<f32>, // The model matrix of this renderer
+    pub update_frame_id: FrameID,
 }
 
 impl Default for Renderer {
     fn default() -> Self {
         Self {
-            internal_renderer: Default::default(),
+            internal_renderer: rendering::Renderer::default(),
+            matrix: veclib::Matrix4x4::default(),
+            update_frame_id: FrameID::default(),
         }
     }
 }

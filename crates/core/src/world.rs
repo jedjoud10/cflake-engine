@@ -157,6 +157,7 @@ pub fn update_main_thread_stuff(delta: f64, world: &mut World, pipeline_start_da
     world.input_manager.late_update(delta as f32);
     world.time_manager.elapsed = world.time_manager.elapsed + delta;
     world.time_manager.delta_time = delta;
+    world.time_manager.frame_count += 1;
 }
 
 // Update the console

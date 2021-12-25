@@ -1,3 +1,5 @@
+use core::FrameID;
+
 // Transforms components
 use ecs::{Component, ComponentID, ComponentInternal};
 // The transform component
@@ -5,7 +7,7 @@ pub struct Transform {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
     pub scale: veclib::Vector3<f32>,
-    pub matrix: veclib::Matrix4x4<f32>,
+    pub update_frame_id: FrameID, 
 }
 
 // Default transform
@@ -15,7 +17,7 @@ impl Default for Transform {
             position: veclib::Vector3::ZERO,
             rotation: veclib::Quaternion::IDENTITY,
             scale: veclib::Vector3::ONE,
-            matrix: veclib::Matrix4x4::IDENTITY,
+            update_frame_id: FrameID::default(),
         }
     }
 }
@@ -37,20 +39,18 @@ impl Transform {
         self.scale = scale;
         self
     }
-
     // Get the forward vector from this transform
     pub fn get_forward_vector(&self) -> veclib::Vector3<f32> {
         return self.rotation.mul_point(-veclib::Vector3::Z);
     }
 }
 
-// Update the transform matrix
 impl Transform {
-    // Calculate the matrix and save it
-    pub fn update_matrix(&mut self) {
-        self.matrix = veclib::Matrix4x4::<f32>::from_translation(self.position)
-            * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation)
-            * veclib::Matrix4x4::<f32>::from_scale(self.scale);
+    // Calculate the matrix and return it
+    pub fn calculate_matrix(&self) -> veclib::Matrix4x4<f32> {
+        veclib::Matrix4x4::<f32>::from_translation(self.position)
+        * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation)
+        * veclib::Matrix4x4::<f32>::from_scale(self.scale)        
     }
 }
 
