@@ -41,7 +41,6 @@ impl Terrain {
                 .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER])
                 .unwrap(),
         );
-        panic!();
 
         // Finally, create self
         Self {

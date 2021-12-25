@@ -781,6 +781,7 @@ mod object_creation {
         let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
+        dbg!(texture.ttype);
         // Get the length of the vector
         let length: usize = match texture.ttype {
             TextureType::Texture1D(x) => (x as usize),
@@ -792,6 +793,7 @@ mod object_creation {
         let byte_length = bytecount_per_pixel * length;
 
         // Create the vector
+        println!("{}", length);
         let mut pixels: Vec<u8> = vec![0; byte_length];
 
         let tex_type = match texture.ttype {

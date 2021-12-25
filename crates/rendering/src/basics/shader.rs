@@ -84,7 +84,7 @@ impl Shader {
     // Creates a shader from multiple subshader files
     pub fn load_shader(mut self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
         // Create the shader name
-        self.name = subshader_paths.join("__");
+        self.name = format!("shader_{}", subshader_paths.join("__"));
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
