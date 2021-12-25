@@ -24,6 +24,17 @@ pub fn load_entities() {
     core::global::main::world_data_mut(|data| data.main_camera_entity_id = main_camera_entity_id);
     let material = rendering::pipec::material(rendering::Material::new("Test"));
     let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap());
+
+    let mut linkings = ecs::ComponentLinkingGroup::new();
+    linkings
+        .link_default::<crate::components::Transform>()
+        .unwrap();
+    linkings
+        .link(crate::components::Renderer::default().set_model(model).set_material(material))
+        .unwrap();
+        
+    core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
+    /*
     for x in 0..10000 {
         let mut linkings = ecs::ComponentLinkingGroup::new();
         linkings
@@ -35,6 +46,7 @@ pub fn load_entities() {
         
         core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
     }
+    */
 
     /*
     // ----Load the default systems----

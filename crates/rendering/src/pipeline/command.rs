@@ -103,16 +103,21 @@ impl RenderCommandQueryResult {
         // Panic if we are on the render thread
         if is_render_thread() { panic!() }
         // Send the command, and wait for it's return value
-        let command_id = increment_command_id();
-        let task = self.task.take().unwrap();
-        let query = RenderCommandQuery {
-            task,
-            callback_id: None,
-            command_id,
-            thread_id: std::thread::current().id(),
-        };
-        command(query);
-        crate::others::wait_id(command_id)
+        match self.id {
+            Some(x) => x,
+            None => {
+                let command_id = increment_command_id();
+                let task = self.task.take().unwrap();
+                let query = RenderCommandQuery {
+                    task,
+                    callback_id: None,
+                    command_id,
+                    thread_id: std::thread::current().id(),
+                };
+                command(query);
+                crate::others::wait_id(command_id)
+            },
+        }        
     }
     // Wait till we have executed the command on the render thread
     pub fn wait_execution(mut self) {
@@ -134,10 +139,15 @@ impl RenderCommandQueryResult {
     // Wait for the creation of a GPU object, but internally
     pub fn wait_internal(mut self, buf: &mut PipelineBuffer) -> GPUObjectID {
         if !is_render_thread() { panic!() }
-        // Execute the task
-        let task = self.task.take().unwrap();
-        let id = internal_task(buf, task);
-        id.unwrap()
+        match self.id {
+            Some(x) => x,
+            None => {
+                // Execute the task
+                let task = self.task.take().unwrap();
+                let id = internal_task(buf, task);
+                id.unwrap()
+            }
+        }        
     }
 }
 

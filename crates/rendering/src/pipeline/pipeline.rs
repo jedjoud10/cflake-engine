@@ -184,8 +184,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                             barrier_data.thread_sync_quit();
                             break;
                         }
-                    }
-                    
+                    }             
                 }
                 println!("Stopped the render thread!");
             })
