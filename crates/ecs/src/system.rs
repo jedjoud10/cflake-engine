@@ -150,9 +150,14 @@ where
 pub trait CustomSystemData {}
 
 // Some custom system data that can be copied whenever we create a callback
-#[derive(Clone)]
 pub struct SystemData<T> where T: CustomSystemData {
     pub ptr: Rc<*mut T>
+}
+
+impl<T> Clone for SystemData<T> where T: CustomSystemData {
+    fn clone(&self) -> Self {
+        Self { ptr: self.ptr.clone() }
+    }
 }
 
 impl<T> SystemData<T> where T: CustomSystemData {

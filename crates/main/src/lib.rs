@@ -61,11 +61,12 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
 
     while !window.should_close() {
         // Update the delta_time
+        
         let new_time = glfw.get_time();
         let delta = new_time - last_time;
         last_time = new_time;
-        let i = std::time::Instant::now();
         // Update the world
+        let i = std::time::Instant::now();
         core::world::update_world_start_barrier(delta);
         // The systems are running, we cannot do anything
         core::world::update_world_end_barrier(delta, &thread_ids);
@@ -76,6 +77,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
             core::world::update_main_thread_stuff(delta, world, &pipeline_data);
             // Get the GLFW events first
             glfw.poll_events();
+            
             for (_, event) in glfw::flush_messages(&events) {
                 match event {
                     glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
@@ -102,8 +104,9 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
                     _ => {}
                 }
             }
-            //std::thread::sleep(std::time::Duration::from_millis(16).saturating_sub(i.elapsed()));
+            //std::thread::sleep(std::time::Duration::from_millis(1));
         }
+        
     }
     // When the window closes and we exit from the game
     core::world::kill_world(pipeline_data);

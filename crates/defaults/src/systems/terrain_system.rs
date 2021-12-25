@@ -8,7 +8,7 @@ use ecs::*;
 use math::octrees::*;
 
 // Whenever the terrain system updates
-fn system_prefire(terrain: &mut Terrain) {
+fn system_prefire(terrain: &mut SystemData<Terrain>) {
     // Timing
     let t = Instant::now();
     // Get the camera location
@@ -53,15 +53,15 @@ fn system_prefire(terrain: &mut Terrain) {
     }
 
     // Update the chunk manager
+    let cloned = terrain.clone();
+    let terrain = &mut **terrain;
     match terrain.chunk_manager.update(&mut terrain.voxel_generator, core::global::timings::frame_count()) {
         Some((added_chunks, removed_chunks)) => {
-            let mut added_chunk_entities_ids: Vec<(usize, ChunkCoords)> = Vec::new();
-            let i = std::time::Instant::now();
             // Add the entities to the entity manager
             for (coords, tmodel) in added_chunks {
                 // Add the entity
                 let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
-                let mut entity = Entity::new(name.as_str());
+                let entity = Entity::new(name.as_str());
 
                 // Create the chunk component
                 let chunk = Chunk { coords: coords.clone() };
@@ -72,34 +72,23 @@ fn system_prefire(terrain: &mut Terrain) {
                 // Transform
                 linkings
                     .link::<crate::components::Transform>(crate::components::Transform::default()
-                        .with_position(coords.position)
+                        .with_position(coords.position.into())
                         .with_scale(veclib::Vector3::new((coords.size / octree_size) as f32, (coords.size / octree_size) as f32, (coords.size / octree_size) as f32))
                     ).unwrap();
                 // Turn the model into a GPU model
                 let model = pipec::model(tmodel.model);
                 let renderer = crate::components::Renderer::default().set_material(material.clone()).set_wireframe(true).set_model(model);
-                linkings.link::<crate::components::Renderer>(renderer).unwrap();
-                // Create the AABB
-                core::global::ecs::entity_add(entity, linkings).with_callback(CallbackType::EntityCreatedCallback(RefCallback::new(|x| {
-                    
-                })));
-                
-                added_chunk_entities_ids.push((entity_id, coords.clone()));
+                linkings.link::<crate::components::Renderer>(renderer).unwrap();                
+                let cloned = cloned.clone();
+                core::global::ecs::entity_add(entity, linkings).with_callback(CallbackType::EntityCreatedCallback(RefCallback::new(move |entity: &ecs::Entity| {
+                    let mut terrain = cloned.clone();
+                    // Add the chunk entity to the terrain
+                    terrain.chunk_manager.add_chunk_entity(&coords, entity.entity_id);
+                })).create());
             }
-            let x = i.elapsed().as_millis();
-            if x != 0 {
-                println!("Elapsed: {}", x);
-            }
-            // Reassign
-            let td = components.get_component_mut::<components::TerrainData>(data.component_manager).unwrap();
-            let terrain = &mut td.terrain;
-            for (entity_id, coords) in added_chunk_entities_ids {
-                terrain.chunk_manager.add_chunk_entity(&coords, entity_id);
-            }
-
+            // Remove the entities
             for entity_id in removed_chunks {
-                // Removal the entity from the world
-                data.entity_manager.remove_entity_s(entity_id).unwrap();
+                core::global::ecs::entity_remove(entity_id);
             }
         }
         None => {}

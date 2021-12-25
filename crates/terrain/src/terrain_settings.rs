@@ -1,9 +1,9 @@
-use rendering::basics::Material;
+use rendering::{basics::Material, GPUObjectID};
 
 // Terrain settings
 pub struct TerrainSettings {
     pub octree_depth: u8,
-    pub material: Material,
+    pub material: GPUObjectID,
 
     // Interpreter used to translate the Rust code into GLSL code and compile it at runtime
     pub voxel_generator_interpreter: terrain_interpreter::Interpreter,
@@ -13,7 +13,7 @@ impl Default for TerrainSettings {
     fn default() -> Self {
         Self {
             octree_depth: 8,
-            material: Material::default(),
+            material: GPUObjectID::default(),
             voxel_generator_interpreter: terrain_interpreter::Interpreter::new_pregenerated(),
         }
     }

@@ -26,7 +26,7 @@ lazy_static! {
     pub static ref TX_TEMPLATE: Mutex<Option<Sender<RenderCommandQuery>>> = Mutex::new(None);
 
     // This might be in a mutex, but we never share it around the threads. This is only a static because I don't want to manually implement internal functions for internal render thread commands
-    pub(crate) static ref BUFFER: no_deadlocks::Mutex<PipelineBuffer> = no_deadlocks::Mutex::new(PipelineBuffer::default());
+    pub(crate) static ref BUFFER: Mutex<PipelineBuffer> = Mutex::new(PipelineBuffer::default());
 }
 
 // Load the default rendering things

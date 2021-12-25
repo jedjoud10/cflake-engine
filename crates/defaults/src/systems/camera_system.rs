@@ -23,10 +23,10 @@ fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
 
     // Custom speed
     let original_speed = 1.0 + core::global::input::mouse_scroll() * 0.4;
-    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1000.0;
+    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0;
 
     // Actually update the velocity
-    let delta = core::global::timings::delta() as f32;
+    let delta = /* core::global::timings::delta() as f32 */ 0.0086;
     // Forward and backward
     if core::global::input::map_held("camera_forward").0 {
         velocity += -forward * delta * speed;

@@ -32,8 +32,8 @@ pub mod ecs {
         CommandQueryResult::new(Task::EntityAdd(entity, linkings))
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
-    pub fn entity_remove(entity: &ecs::Entity) -> CommandQueryResult {
-        CommandQueryResult::new(Task::EntityRemove(entity.entity_id))
+    pub fn entity_remove(entity_id: usize) -> CommandQueryResult {
+        CommandQueryResult::new(Task::EntityRemove(entity_id))
     }
     /* #endregion */
     /* #region Components */
