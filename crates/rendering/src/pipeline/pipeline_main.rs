@@ -93,7 +93,10 @@ pub mod pipec {
     }
     pub fn model(model: Model) -> GPUObjectID {
         // (TODO: Implement model caching)
-        execute(task(RenderTask::ModelCreate(SharedData::new(model))))
+        execute(match others::get_id(&model.name) {
+            Some(id) => RenderCommandQueryResult::new_id(id),
+            None => task(RenderTask::ModelCreate(SharedData::new(model))),
+        })
     }
     pub fn material(material: Material) -> GPUObjectID {
         execute(match others::get_id(&material.material_name) {

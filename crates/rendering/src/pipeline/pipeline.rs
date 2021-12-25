@@ -580,7 +580,7 @@ mod object_creation {
         gpu_data.element_count = model.triangles.len();
         // Add the gpu object
         let gpuobject = GPUObject::Model(gpu_data);
-        buf.add_gpuobject(gpuobject, None)
+        buf.add_gpuobject(gpuobject, Some(model.name))
     }
     pub fn dispose_model(buf: &mut PipelineBuffer, id: GPUObjectID) {
         // Get the model GPU object first

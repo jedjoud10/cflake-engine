@@ -31,9 +31,10 @@ impl Asset for Model {
     where
         Self: Sized,
     {
-        let string = String::from_utf8(data.bytes.clone()).unwrap();
+        let string = data.read_string();
         let lines = string.lines();
         let mut model = Model::default();
+        model.name = data.name.clone();
         for line in lines {
             let start = line.split_once(' ').unwrap().0;
             let other = line.split_once(' ').unwrap().1;

@@ -93,7 +93,7 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
         }
         Task::EntityRemove(entity_id) => {
             // Check if we even have the entity in the first place
-            if !world.ecs_manager.entitym.is_entity_valid(entity_id) { return ImmediateTaskResult::None; }
+            if !world.ecs_manager.entitym.is_entity_valid(entity_id) { return ImmediateTaskResult::None;  }
             // Run the Entity Remove event on the systems
             let entity = world.ecs_manager.entitym.entity(entity_id);           
 
