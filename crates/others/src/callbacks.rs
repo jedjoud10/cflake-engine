@@ -8,56 +8,56 @@ use std::{
 };
 
 // A ref callback, always ran at the end of the current system frame
-pub struct RefCallback<T, D> {
-    pub callback: Box<dyn Fn(&T, D)>,
+pub struct RefCallback<T> {
+    pub callback: Box<dyn Fn(&T)>,
 }
 // A mutable callback that mutates that value passed. Always ran at the end of the world thread frame
-pub struct MutCallback<T, D> {
-    pub callback: Box<dyn Fn(&mut T, D)>,
+pub struct MutCallback<T> {
+    pub callback: Box<dyn Fn(&mut T)>,
 }
 // An owned callback, always ran at the end of the current system frame
-pub struct OwnedCallback<T, D> {
-    pub callback: Box<dyn Fn(T, D)>,
+pub struct OwnedCallback<T> {
+    pub callback: Box<dyn Fn(T)>,
 }
 // A callback that just executes, but it doesn't have any data to pass around
-pub struct NullCallback<D> {
-    pub callback: Box<dyn Fn(D)>,
+pub struct NullCallback {
+    pub callback: Box<dyn Fn()>,
 }
 
-impl<T, D> RefCallback<T, D> {
+impl<T> RefCallback<T> {
     pub fn new<F>(c: F) -> Self
     where
-        F: Fn(&T, D) + 'static,
+        F: Fn(&T) + 'static,
     {
         let callback = Box::new(c);
         Self { callback }
     }
 }
 
-impl<T, D> MutCallback<T, D> {
+impl<T> MutCallback<T> {
     pub fn new<F>(c: F) -> Self
     where
-        F: Fn(&mut T, D) + 'static,
+        F: Fn(&mut T) + 'static,
     {
         let callback = Box::new(c);
         Self { callback }
     }
 }
 
-impl<T, D> OwnedCallback<T, D> {
+impl<T> OwnedCallback<T> {
     pub fn new<F>(c: F) -> Self
     where
-        F: Fn(T, D) + 'static,
+        F: Fn(T) + 'static,
     {
         let callback = Box::new(c);
         Self { callback }
     }
 }
 
-impl<D> NullCallback<D> {
+impl NullCallback {
     pub fn new<F>(c: F) -> Self
     where
-        F: Fn(D) + 'static,
+        F: Fn() + 'static,
     {
         let callback = Box::new(c);
         Self { callback }

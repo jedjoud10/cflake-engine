@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, sync::{Arc, atomic::{AtomicPtr, Ordering}}};
 
 use crate::{ComponentID, Entity, impl_systemdata};
 
@@ -22,14 +22,14 @@ impl SystemThreadData {
 }
 
 // A system event enum
-pub enum SystemEventType<T> {
+pub enum SystemEventType<T> where T: CustomSystemData {
     // Control events
-    SystemPrefire(fn(&mut T)),
-    SystemPostfire(fn(&mut T)),
+    SystemPrefire(fn(&mut SharedCustomSystemData<T>)),
+    SystemPostfire(fn(&mut SharedCustomSystemData<T>)),
     // Entity events
-    EntityAdded(fn(&mut T, &Entity)),
-    EntityRemoved(fn(&mut T, &Entity)),
-    EntityUpdate(fn(&mut T, &Entity)),
+    EntityAdded(fn(&mut SharedCustomSystemData<T>, &Entity)),
+    EntityRemoved(fn(&mut SharedCustomSystemData<T>, &Entity)),
+    EntityUpdate(fn(&mut SharedCustomSystemData<T>, &Entity)),
 }
 
 // A system, stored on the stack, but it's SystemData is a trait object
@@ -37,17 +37,17 @@ pub struct System<T>
 where
     T: CustomSystemData,
 {
-    pub custom_data: T,
+    pub starting_custom_data_state: Option<T>, // The starting state of the custom system data. This will not be given to the system events
     pub c_bitfield: usize,
 
     // Events
     // Control events
-    system_prefire: Option<fn(&mut T)>,
-    system_postfire: Option<fn(&mut T)>,
+    system_prefire: Option<fn(&mut SharedCustomSystemData<T>)>,
+    system_postfire: Option<fn(&mut SharedCustomSystemData<T>)>,
     // Entity events
-    entity_added: Option<fn(&mut T, &Entity)>,
-    entity_removed: Option<fn(&mut T, &Entity)>,
-    entity_update: Option<fn(&mut T, &Entity)>,
+    entity_added: Option<fn(&mut SharedCustomSystemData<T>, &Entity)>,
+    entity_removed: Option<fn(&mut SharedCustomSystemData<T>, &Entity)>,
+    entity_update: Option<fn(&mut SharedCustomSystemData<T>, &Entity)>,
 }
 
 // Initialization of the system
@@ -58,7 +58,7 @@ where
     // Create a new system
     pub fn new(custom_data: T) -> Self {
         System {
-            custom_data,
+            starting_custom_data_state: Some(custom_data),
             c_bitfield: 0,
             system_prefire: None,
             system_postfire: None,
@@ -92,38 +92,38 @@ where
         };
     }
     // Add an entity to the current system
-    pub fn add_entity(&mut self, entity: &Entity) {
+    pub fn add_entity(&mut self, shared: &mut SharedCustomSystemData<T>, entity: &Entity) {
         // Fire the event
         match self.entity_added {
-            Some(entity_added_evn) => entity_added_evn(&mut self.custom_data, entity),
+            Some(entity_added_evn) => entity_added_evn(shared, entity),
             None => {}
         }
     }
     // Remove an entity from the current system
-    pub fn remove_entity(&mut self, entity: &Entity) {
+    pub fn remove_entity(&mut self, shared: &mut SharedCustomSystemData<T>, entity: &Entity) {
         // Fire the event
         match self.entity_removed {
-            Some(entity_removed_evn) => entity_removed_evn(&mut self.custom_data, entity),
+            Some(entity_removed_evn) => entity_removed_evn(shared, entity),
             None => {}
         }
     }
     // Stop the system permanently
-    pub fn end_system(&mut self, entities: &Vec<&Entity>) {
+    pub fn end_system(&mut self, shared: &mut SharedCustomSystemData<T>, entities: &Vec<&Entity>) {
         match self.entity_removed {
             Some(entity_removed) => {
                 // Fire the entity removed event
                 for entity in entities.iter() {
-                    entity_removed(&mut self.custom_data, entity);
+                    entity_removed(shared, entity);
                 }
             }
             None => {}
         }
     }
     // Run the system for a single iteration
-    pub fn run_system(&mut self, entities: &Vec<&Entity>) {
+    pub fn run_system(&mut self, shared: &mut SharedCustomSystemData<T>, entities: &Vec<&Entity>) {
         // Pre fire event
         match self.system_prefire {
-            Some(system_prefire_event) => system_prefire_event(&mut self.custom_data),
+            Some(system_prefire_event) => system_prefire_event(shared),
             None => {}
         }
 
@@ -132,7 +132,7 @@ where
             Some(entity_update) => {
                 // Loop over all the entities and fire the event
                 for entity in entities.iter() {
-                    entity_update(&mut self.custom_data, entity);
+                    entity_update(shared, entity);
                 }
             }
             None => {}
@@ -140,7 +140,7 @@ where
 
         // Post fire event
         match self.system_postfire {
-            Some(system_postfire) => system_postfire(&mut self.custom_data),
+            Some(system_postfire) => system_postfire(shared),
             None => {}
         }
     }
@@ -148,3 +148,34 @@ where
 
 // Trait for custom system data
 pub trait CustomSystemData {}
+
+// Some shared custom system data that can be copied whenever we create a callback
+#[derive(Clone)]
+pub struct SharedCustomSystemData<T> where T: CustomSystemData {
+    pub ptr: Arc<AtomicPtr<T>>
+}
+
+impl<T> SharedCustomSystemData<T> where T: CustomSystemData {
+    // New
+    pub fn new(t: &mut T) -> Self {
+        Self {
+            ptr: Arc::new(AtomicPtr::new(t))
+        }
+    }
+}
+
+impl<T> std::ops::Deref for SharedCustomSystemData<T> where T: CustomSystemData {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        let ptr = self.ptr.as_ref().load(Ordering::Relaxed);
+        unsafe { ptr.as_ref().unwrap() }
+    }
+}
+
+impl<T> std::ops::DerefMut for SharedCustomSystemData<T> where T: CustomSystemData {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        let ptr = self.ptr.as_ref().load(Ordering::Relaxed);
+        unsafe { ptr.as_mut().unwrap() }
+    }
+}

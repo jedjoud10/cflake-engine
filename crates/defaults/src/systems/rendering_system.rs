@@ -1,11 +1,11 @@
 use core::global::{self, callbacks::CallbackType::*};
 
-use ecs::SystemEventType;
+use ecs::{SystemEventType, SharedCustomSystemData};
 use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 // An improved multithreaded rendering system
 
 // Add the renderer in the render pipeline renderer
-fn entity_added(data: &mut (), entity: &ecs::Entity) {
+fn entity_added(data: &mut SharedCustomSystemData<()>, entity: &ecs::Entity) {
     // Get the internal renderer
     let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let irenderer = renderer.internal_renderer.clone();
@@ -27,13 +27,13 @@ fn entity_added(data: &mut (), entity: &ecs::Entity) {
     })).create());   
 }
 // Remove the renderer from the pipeline renderer
-fn entity_removed(data: &mut (), entity: &ecs::Entity) {
+fn entity_removed(data: &mut SharedCustomSystemData<()>, entity: &ecs::Entity) {
     let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let index = renderer.internal_renderer.index.unwrap();
     rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
 }
 // Send the updated data from the entity to the render pipeline as commands
-fn entity_update(data: &mut (), entity: &ecs::Entity) {
+fn entity_update(data: &mut SharedCustomSystemData<()>, entity: &ecs::Entity) {
     let renderer = core::global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let transform = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
     // Only update the transform if we need to 
@@ -47,7 +47,7 @@ fn entity_update(data: &mut (), entity: &ecs::Entity) {
     }
 }
 // System prefire so we can send the camera data to the render pipeline
-fn system_prefire(data: &mut ()) {
+fn system_prefire(data: &mut SharedCustomSystemData<()>) {
     // Camera data
     let camera = global::ecs::entity(global::main::world_data().main_camera_entity_id).unwrap();
     let camera_data = global::ecs::component::<crate::components::Camera>(&camera).unwrap();

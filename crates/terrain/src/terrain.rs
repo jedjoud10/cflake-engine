@@ -17,6 +17,7 @@ pub struct Terrain {
     // CSG Tree
     pub csgtree: CSGTree,
 }
+ecs::impl_systemdata!(Terrain);
 
 impl Terrain {
     // Check if a an already existing node could be subdivided even more

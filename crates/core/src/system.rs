@@ -1,9 +1,10 @@
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::LogicSystemCallbackArguments;
-use ecs::CustomSystemData;
+use ecs::{CustomSystemData, SharedCustomSystemData};
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::rc::Rc;
+use std::sync::atomic::{AtomicUsize, Ordering, AtomicPtr};
 use std::sync::{mpsc::Sender, Arc, Mutex};
 use std::thread::JoinHandle;
 
@@ -73,6 +74,9 @@ where
                         Err(x) => {}
                     };
                 }
+                // Create the shared data
+                let mut data = system.starting_custom_data_state.take().unwrap(); 
+                let mut shared = SharedCustomSystemData::new(&mut data);
                 loop {
                     // Wait for the start of the sync at the start of the frame
                     barrier_data.thread_sync();
@@ -95,7 +99,7 @@ where
 
                     // Run the system
                     let entities = ptrs.into_iter().map(|x| unsafe { &*x }).collect::<Vec<&ecs::Entity>>();
-                    system.run_system(&entities);
+                    system.run_system(&mut shared, &entities);
 
                     // --- End of the frame ---
                     // Check the start buffer first since it has priority
@@ -103,14 +107,14 @@ where
                         let taken = std::mem::take(&mut pre_loop_buffer);
                         for x in taken {
                             // Execute the logic system command
-                            logic_system_command(x, &mut entity_ids, &mut system);
+                            logic_system_command(x, &mut entity_ids, &mut system, &mut shared);
                         }
                     }
                     // Check if we have any system commands that must be executed
                     match lsc_rx.try_recv() {
                         Ok(lsc) => {
                             // Execute the logic system command
-                            logic_system_command(lsc, &mut entity_ids, &mut system);
+                            logic_system_command(lsc, &mut entity_ids, &mut system, &mut shared);
                         }
                         Err(_) => {}
                     }
@@ -127,8 +131,7 @@ where
                         // Wait until the main world gives us permission to continue
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                         // We got permission, we can run the local callbacks
-                        let system_data = &mut system.custom_data;
-                        crate::callbacks::execute_local_callbacks(system_data);
+                        crate::callbacks::execute_local_callbacks();
                         // Tell the main thread we have finished executing thread local callbacks
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                     }
@@ -147,7 +150,7 @@ where
 }
 
 // Execute a logic system command
-fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<usize>, system: &mut ecs::System<T>) {
+fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<usize>, system: &mut ecs::System<T>, shared: &mut SharedCustomSystemData<T>) {
     match lsc {
         LogicSystemCommand::RunCallback(id, result_data) => {
             // We will run this when we run the local callbacks!
@@ -162,7 +165,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             };
             entity_ids.push(entity_id);
             let entity = unsafe { ptr.as_ref().unwrap() };
-            system.add_entity(entity);
+            system.add_entity(shared, entity);
         }
         LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
             // Remove the entity from the current entity list
@@ -173,7 +176,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
                 entity as *const ecs::Entity
             };
             let entity = unsafe { ptr.as_ref().unwrap() };
-            system.remove_entity(entity);
+            system.remove_entity(shared, entity);
         }
         LogicSystemCommand::StartSystemLoop => { /* How the fuck */ }
     }

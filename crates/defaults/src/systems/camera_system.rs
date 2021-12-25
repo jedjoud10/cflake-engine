@@ -1,11 +1,11 @@
 use core::global::callbacks::CallbackType::LocalEntityMut;
 
-use ecs::SystemEventType;
+use ecs::{SystemEventType, SharedCustomSystemData};
 use input::{Keys, MapType};
 use others::callbacks::MutCallback;
 
 // Events
-fn entity_update(data: &mut (), entity: &ecs::Entity) {
+fn entity_update(data: &mut SharedCustomSystemData<()>, entity: &ecs::Entity) {
     //println!("{}", entity.name);
     // Rotate the camera around
     let mouse_pos = core::global::input::mouse_pos();
@@ -69,7 +69,7 @@ fn entity_update(data: &mut (), entity: &ecs::Entity) {
         .create(),
     );
 }
-fn entity_added(data: &mut (), entity: &ecs::Entity) {
+fn entity_added(data: &mut SharedCustomSystemData<()>, entity: &ecs::Entity) {
     // Initialize the camera
     let entity_id = entity.entity_id;
     core::global::ecs::entity_mut(

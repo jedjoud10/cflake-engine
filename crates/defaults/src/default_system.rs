@@ -1,8 +1,9 @@
 use core::{global::callbacks::CallbackType::*, FrameID};
+use ecs::SharedCustomSystemData;
 use others::callbacks::*;
 
 // Some default events
-pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
+pub fn entity_update(data: &mut SharedCustomSystemData<()>, entity: &ecs::Entity) {
     core::global::ecs::entity_mut(entity.entity_id, LocalEntityMut(MutCallback::new(|entity| {
         let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
         transform.position += veclib::Vector3::X * 0.0001;

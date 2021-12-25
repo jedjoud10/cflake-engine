@@ -6,7 +6,6 @@ use terrain::{ChunkCoords, TerrainStats, Terrain};
 use crate::components::Chunk;
 use ecs::*;
 use math::octrees::*;
-ecs::impl_systemdata!(terrain::Terrain);
 
 // Whenever the terrain system updates
 fn system_prefire(terrain: &mut Terrain) {

@@ -1,7 +1,8 @@
 use core::global::callbacks::CallbackType::LocalEntityMut;
+use ecs::SharedCustomSystemData;
 use others::callbacks::{MutCallback, NullCallback};
 // Update the entities
-pub fn entity_update(data: &mut (), entity: &ecs::Entity) {
+pub fn entity_update(data: &mut SharedCustomSystemData<()>, entity: &ecs::Entity) {
     // Update the physics
     core::global::ecs::entity_mut(
         entity.entity_id,
