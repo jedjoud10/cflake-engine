@@ -67,17 +67,17 @@ pub fn execute_local_callbacks() {
         // Execute the local callbacks
         match callback {
             CallbackType::GPUObjectCallback(x) => {
-                let callback = x.callback.as_ref();
+                let callback = x.callback;
                 // Make sure this callback is the GPUObject one
                 if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
                     (callback)(args);
                 }
             }
             CallbackType::EntityCreatedCallback(x) => {
-                let callback = x.callback.as_ref();
+                let callback = x.callback;
                 // Make sure this callback is the EntityRef one
                 if let LogicSystemCallbackArguments::EntityRef(entity_id) = arguments {
-                    let mut cloned_entity = {
+                    let cloned_entity = {
                         let w = crate::world::world();
                         w.ecs_manager.entitym.entity(entity_id).clone()
                     };
@@ -88,7 +88,7 @@ pub fn execute_local_callbacks() {
                 // Get the local callback arguments that are necessary
                 if let LogicSystemCallbackArguments::EntityMut(entity_id) = arguments {
                     // Get the mut entity
-                    let callback = entity_callback.callback.as_ref();
+                    let callback = entity_callback.callback;
                     let mut cloned_entity = {
                         let w = crate::world::world();
                         w.ecs_manager.entitym.entity(entity_id).clone()

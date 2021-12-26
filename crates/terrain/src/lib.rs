@@ -5,7 +5,7 @@ mod model;
 mod params;
 mod tables;
 mod terrain_stats;
-mod utils;
+pub mod utils;
 mod voxel;
 mod chunk;
 

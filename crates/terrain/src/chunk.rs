@@ -1,6 +1,6 @@
 use math::octrees::OctreeNode;
 
-use crate::{TModel};
+use crate::{TModel, VoxelData};
 
 // The data that will be used to store the position/scale of the chunk
 #[derive(Default, Clone, Copy, Debug)]
@@ -44,7 +44,7 @@ impl std::hash::Hash for ChunkCoords {
 #[derive(Default)]
 pub struct Chunk {
     pub coords: ChunkCoords,
-    pub generated: bool,
+    pub generated: Option<VoxelData>,
     pub tmodel: TModel
 }
 
@@ -56,7 +56,7 @@ impl Chunk {
     pub fn new(coords: ChunkCoords) -> Self {        
         Self {
             coords,
-            generated: false,
+            generated: None,
             tmodel: TModel {
                 model: None,
                 skirts_model: None,

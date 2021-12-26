@@ -59,10 +59,9 @@ fn create_chunk_entity(coords: ChunkCoords, octree_size: u64, data: &mut SystemD
     // Add the entity
     let result = core::global::ecs::entity_add(entity, linkings);
     // Callback to run after the entity is added into the world
-    let data = data.clone();
+    let mut data = data.clone();
     result.with_callback(core::global::callbacks::CallbackType::EntityCreatedCallback(others::callbacks::RefCallback::new(move |entity: &ecs::Entity| {
         // Add the chunk to our total chunks
-        let data = &mut *data.clone();
         data.chunks.insert(coords, entity.entity_id);
     })).create());
 }
