@@ -274,9 +274,9 @@ impl ShaderUniformsGroup {
                         x.program
                     } else if let Option::Some(x) = buf.as_compute_shader(&id) {
                         x.program
-                    } else { panic!(); return None; }
+                    } else { return None; }
                 },
-                None => { panic!(); return None; },
+                None => { return None; },
             },
         };
         unsafe {

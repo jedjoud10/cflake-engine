@@ -22,7 +22,7 @@ impl PipelineBuffer {
         .map(|(callback_id, (index, thread_id))| {
             (
                 callback_id,
-                (self.get_gpuobject_usize(&index).unwrap().clone(), GPUObjectID { index }),
+                (self.get_gpuobject_usize(&index).unwrap().clone(), GPUObjectID { index: Some(index) }),
                 thread_id,
             )
         })
@@ -37,7 +37,7 @@ impl PipelineBuffer {
     pub fn add_gpuobject(&mut self, gpuobject: GPUObject, name: Option<String>) -> GPUObjectID {
         // Insert the gpu object
         let index = self.gpuobjects.add_element(gpuobject);
-        let id = GPUObjectID { index };
+        let id = GPUObjectID { index: Some(index) };
         // If we have a name add it
         match name {
             Some(name) => {
@@ -50,11 +50,11 @@ impl PipelineBuffer {
     }
     // Remove a GPU object from the buffer
     pub fn remove_gpuobject(&mut self, id: GPUObjectID) {
-        self.gpuobjects.remove_element(id.index).unwrap();
+        self.gpuobjects.remove_element(id.index.unwrap()).unwrap();
     }
     // Add some additional data like callback ID or waitable ID to the GPU object
     pub fn received_new_gpuobject_additional(&mut self, id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>) {
-        let index = id.index;
+        let index = id.index.unwrap();
         match callback_id {
             Some((id, thread_id)) => {
                 self.callback_objects.insert(id, (index, thread_id));
@@ -76,11 +76,11 @@ impl PipelineBuffer {
     }
     // Get a GPU object using it's GPUObjectID
     pub fn get_gpuobject(&self, id: &GPUObjectID) -> Option<&GPUObject> {
-        self.gpuobjects.get_element(id.index)?
+        self.gpuobjects.get_element(id.index?)?
     }
     // Get a mutable GPU object using it's GPUObjectId
     pub fn get_gpuobject_mut(&mut self, id: &GPUObjectID) -> Option<&mut GPUObject> {
-        self.gpuobjects.get_element_mut(id.index)?
+        self.gpuobjects.get_element_mut(id.index?)?
     }
     // Get a GPU object using a ref usize
     pub fn get_gpuobject_usize(&self, index: &usize) -> Option<&GPUObject> {

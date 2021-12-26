@@ -32,12 +32,9 @@ pub struct VoxelGenerator {
 impl VoxelGenerator {
     // New
     pub fn new(compute: GPUObjectID) -> Self {
-        Self { compute, ..Self::default() }
-    }
-    // Generate the voxel texture
-    pub fn setup_voxel_generator(&mut self) {
+        let mut vg = Self { compute, ..Self::default() };
         // Create the voxel texture
-        self.voxel_texture = pipec::texture(
+        vg.voxel_texture = pipec::texture(
             Texture::default()
                 .set_dimensions(TextureType::Texture3D(
                     (MAIN_CHUNK_SIZE + 2) as u16,
@@ -49,7 +46,7 @@ impl VoxelGenerator {
                 .set_filter(TextureFilter::Nearest)
                 .set_wrapping_mode(TextureWrapping::ClampToBorder),
         );
-        self.material_texture = pipec::texture(
+        vg.material_texture = pipec::texture(
             Texture::default()
                 .set_dimensions(TextureType::Texture3D(
                     (MAIN_CHUNK_SIZE + 2) as u16,
@@ -60,6 +57,7 @@ impl VoxelGenerator {
                 .set_filter(TextureFilter::Nearest)
                 .set_wrapping_mode(TextureWrapping::ClampToBorder),
         );
+        vg
     }
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
@@ -78,38 +76,29 @@ impl VoxelGenerator {
         (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1,);
         let result = pipec::task(pipec::RenderTask::ComputeRun(self.compute, x, group));
         result.wait_execution();
-        println!("Start voxel generation");
     }
     // Read back the data from the compute shader
     pub fn generate_voxels_end(&mut self, _size: u64, _depth: u8, _position: veclib::Vector3<i64>) -> Option<Box<[Voxel]>> {
         // Read back the compute shader data
-        println!("End voxel generation");
         pipec::task(pipec::RenderTask::ComputeLock(self.compute)).wait_execution();
         // Read back the texture into the data buffer
         // Wait for main voxel gen
-        /*
         let mut voxel_pixels: Vec<u8> = Vec::new();
         let result1 = pipec::task(pipeline::RenderTask::TextureFillArray(self.voxel_texture, std::mem::size_of::<f32>(), Arc::new(AtomicPtr::new(&mut voxel_pixels))));
         result1.wait_execution();
-        println!("Texture fill array 1");
-        */
         // Wait for secondary voxel gen
         let mut material_pixels: Vec<u8> = Vec::new();
         let result2 = pipec::task(pipeline::RenderTask::TextureFillArray(self.material_texture, std::mem::size_of::<u8>() * 2, Arc::new(AtomicPtr::new(&mut material_pixels))));
-        println!("Texture fill array 2");
         result2.wait_execution();
-        println!("Converting...");
-        //let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
-        //let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
+        let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
+        let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
         // Keep track of the min and max values
         let mut min = f32::MAX;
         let mut max = f32::MIN;
         // Turn the pixels into the data
         let mut local_data: Box<[(f32, u8, u8)]> = vec![(0.0, 0, 0); (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)].into_boxed_slice();
         let mut data: Box<[Voxel]> = vec![Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)].into_boxed_slice();
-        for (i) in 0..(34*34*34) {
-            /*
-            let density = *pixel;
+        for (i, density) in voxel_pixels.into_iter().enumerate() {
             let material = material_pixels[i];
             // Keep the min and max
             min = min.min(density);
@@ -117,9 +106,6 @@ impl VoxelGenerator {
             // Create the simplified voxel
             let simplified_voxel_tuple = (density, material.x, material.y);
             local_data[i] = simplified_voxel_tuple;
-            */
-            let simplified_voxel_tuple = (-0.2, 0, 0);
-            local_data[i as usize] = simplified_voxel_tuple;
             
         }
         // Flatten using the custom size of MAIN_CHUNK_SIZE+2

@@ -38,13 +38,7 @@ fn system_prefire(terrain: &mut SystemData<Terrain>) {
                 for octree_node in removed {
                     let chunk_coords = ChunkCoords::new(&octree_node);
                     // Remove the chunk from the chunk manager
-                    match terrain.chunk_manager.remove_chunk(&chunk_coords) {
-                        Some(_) => {
-                            // Get the entity id
-                            terrain.chunk_manager.remove_chunk_entity(&chunk_coords);
-                        }
-                        None => {}
-                    }
+                    terrain.chunk_manager.remove_chunk(&chunk_coords);
                 }
             }
             None => { /* Nothing happened */ }
@@ -146,6 +140,7 @@ pub fn system() {
         };
 
         let mut system = ecs::System::new(Terrain::new(settings));
+        
         // Link some components to the system
         system.link::<crate::components::Chunk>();
         // And link the events

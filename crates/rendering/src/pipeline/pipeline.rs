@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer};
+use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer, others::RESULT};
 use glfw::Context;
 use lazy_static::lazy_static;
 use others::SmartList;
@@ -305,7 +305,9 @@ fn command(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &m
 // Poll commands that have been sent to us by the worker threads OR the main thread
 fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // We must loop through every command that we receive from the main thread
-    let mut i = 0;
+    let mut i = 0;    
+    let mut lock = RESULT.lock().unwrap();
+    let lock = &mut *lock;
     for render_command_query in rx.try_iter() {
         i+=1;
         let command_id = render_command_query.command_id;
@@ -322,10 +324,10 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
                 // We already added the GPUObject and it's possible name to the interface, now we must add the option callback_id and option waitable_id
                 // We have a valid GPU object
                 buf.received_new_gpuobject_additional(id.clone(), callback_id);
-                crate::others::executed_command(command_id, Some(id.clone()));
+                crate::others::executed_command(command_id, Some(id.clone()), lock);
             }
             None => {
-                crate::others::executed_command(command_id, None);
+                crate::others::executed_command(command_id, None, lock);
             }
         }
     }
@@ -781,7 +783,6 @@ mod object_creation {
         let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
-        dbg!(texture.ttype);
         // Get the length of the vector
         let length: usize = match texture.ttype {
             TextureType::Texture1D(x) => (x as usize),
@@ -793,7 +794,6 @@ mod object_creation {
         let byte_length = bytecount_per_pixel * length;
 
         // Create the vector
-        println!("{}", length);
         let mut pixels: Vec<u8> = vec![0; byte_length];
 
         let tex_type = match texture.ttype {
@@ -818,7 +818,6 @@ mod object_creation {
         }
     }
     pub fn run_compute(buf: &mut PipelineBuffer, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
-        println!("{:?} {:?}", uniforms_group.shader_id, uniforms_group.shader);
         uniforms_group.consume(buf).unwrap();
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);

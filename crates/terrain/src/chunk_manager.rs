@@ -17,14 +17,9 @@ pub struct ChunkManager {
     // The last frame chunk voxels where generated
     pub last_frame_voxels_generated: u64,
     pub voxels_generating: bool,
-    pub model_generating: bool,
-    // Channel for communication between the mesher thread and the main thread
-    pub rx: Option<mpsc::Receiver<TModel>>,
     // Camera location and forward vector
     pub camera_location: veclib::Vector3<f32>,
     pub camera_forward_vector: veclib::Vector3<f32>,
-    // The chunk entityies that are waiting for the chunks to finish generating until they can mass-add to the entity manager
-    pub pending_chunks: Vec<(ChunkCoords, TModel)>,
 }
 
 // Chunk manager. This is how each chunk entity is created
@@ -41,24 +36,18 @@ impl ChunkManager {
         self.chunks_to_generate.push(coords);
     }
     // Remove a chunk
-    pub fn remove_chunk(&mut self, coords: &ChunkCoords) -> Option<()> {
+    pub fn remove_chunk(&mut self, coords: &ChunkCoords) {
         if self.chunks.contains(&coords.center) {
             // Only remove the chunk if it exists in the first place
             self.chunks.remove(&coords.center);
-            Some(())
-        } else {
-            None
+            // Check if we even have the chunk entity in the first place
+            let id = self.entities.remove(&coords.center).unwrap();
+            self.entities_to_remove.insert(coords.center, id);
         }
     }
     // Add a chunk entity
     pub fn add_chunk_entity(&mut self, coords: &ChunkCoords, entity_id: usize) {
         self.entities.insert(coords.center, entity_id);
-    }
-    // Remove a chunk entity
-    pub fn remove_chunk_entity(&mut self, coords: &ChunkCoords) {
-        // Check if we even have the chunk entity in the first place
-        let id = self.entities.remove(&coords.center).unwrap();
-        self.entities_to_remove.insert(coords.center, id);
     }
     // The priority function
     pub fn priority_function(a: &ChunkCoords, camera_forward_vector: &veclib::Vector3<f32>, camera_position: &veclib::Vector3<f32>) -> f32 {
@@ -72,6 +61,7 @@ impl ChunkManager {
     // Update the chunk manager
     pub fn update(&mut self, voxel_generator: &mut VoxelGenerator, frame_count: u64) -> Option<(Vec<(ChunkCoords, TModel)>, Vec<usize>)> {
         // Sort the chunks to generate
+        
         if !self.voxels_generating {
             // Sort the added nodes using a priority system
             let camera_position = self.camera_location;
@@ -92,7 +82,7 @@ impl ChunkManager {
                 let chunk_coords = coord.clone();
 
                 // Decide between generating the chunk or start the generation of the voxel data
-                if self.voxels_generating && (self.last_frame_voxels_generated + crate::FRAME_THRESHOLD) < frame_count && !self.model_generating {
+                if self.voxels_generating && (self.last_frame_voxels_generated + crate::FRAME_THRESHOLD) < frame_count {
                     // The voxels are generating, so wait until we reached a satisfactory frame count
                     // We reached the limit, read the compute buffer
                     self.voxels_generating = false;
@@ -102,23 +92,18 @@ impl ChunkManager {
                     match voxel_generator.generate_voxels_end(chunk_coords.size, chunk_coords.depth, chunk_coords.position) {
                         Some(voxels) => {
                             // We have a surface, create the model
-                            self.model_generating = true;
-                            // Set the channel
-                            let (tx, rx) = mpsc::channel();
-                            self.rx = Some(rx);
-                            thread::spawn(move || {
-                                let model = mesher::generate_model(&voxels, chunk_coords, true);
-                                tx.send(model).unwrap();
-                            });
+                            // Valid TModel
+                            let tmodel = mesher::generate_model(&voxels, chunk_coords, true);
+                            final_chunk = Some(tmodel);
                         }
                         None => {
-                            /* We don't have a surface */
-                            self.chunks_to_generate.remove(0);
+                            /* We don't have a surface */                            
                         }
                     }
+                    self.chunks_to_generate.remove(0);
                 } else {
                     // Uh oh
-                    if !self.voxels_generating && !self.model_generating {
+                    if !self.voxels_generating {
                         // The voxels didn't start generation yet, so start it
                         voxel_generator.generate_voxels_start(chunk_coords.size, chunk_coords.depth, chunk_coords.position);
                         self.voxels_generating = true;
@@ -128,42 +113,12 @@ impl ChunkManager {
             }
             None => {}
         }
-
-        // We are currently generating the model in another thread, so we must try to read it back
-        if self.model_generating {
-            match self.rx.as_ref() {
-                Some(rx) => {
-                    // Try reading
-                    match rx.try_recv() {
-                        Ok(tmodel) => {
-                            // Valid TModel
-                            final_chunk = Some(tmodel);
-                            self.model_generating = false;
-                            self.chunks_to_generate.remove(0);
-                        }
-                        Err(_) => {}
-                    }
-                }
-                None => { /* Uh oh */ }
-            }
-        }
-
-        // The system was flawed...
-        match final_chunk {
-            Some(tmodel) => {
-                self.chunks.insert(tmodel.coords.center);
-                self.pending_chunks.push((tmodel.coords, tmodel));
-            }
-            None => {}
-        }
-
-        // Remove the entities after all the new ones got generated
-        if self.chunks_to_generate.is_empty() {
-            let entities_to_remove = self.entities_to_remove.iter().map(|x| *x.1).collect();
-            self.entities_to_remove.clear();
-            let yoinked = std::mem::take(&mut self.pending_chunks);
-            return Some((yoinked, entities_to_remove));
-        }
-        None
+        // Simply add the new generated chunk, and remove the chunks that must be removed
+        let new_chunk: Vec<(ChunkCoords, TModel)> = match final_chunk {
+            Some(x) => vec![(x.coords.clone(), x)],
+            None => Vec::new(),
+        };
+        let entities_to_remove = self.entities_to_remove.iter().map(|x| *x.1).collect();  
+        Some((new_chunk, entities_to_remove))
     }
 }
