@@ -32,20 +32,13 @@ impl Terrain {
         // Create a new octree
         let internal_octree = Octree::new(settings.octree_depth, (MAIN_CHUNK_SIZE) as u64);
         let octree = AdvancedOctree::new(internal_octree, Self::can_node_subdivide_twin);
-
-        // Load the compute shader
+        // Finalize the interpreter
         let (string, csgtree) = settings.voxel_generator_interpreter.finalize().unwrap();
-        let compute = pipec::compute_shader(
-            Shader::default()
-                .load_externalcode("voxel_interpreter", string)
-                .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER])
-                .unwrap(),
-        );
 
         // Finally, create self
         Self {
             octree,
-            voxel_generator: VoxelGenerator::new(compute),
+            voxel_generator: VoxelGenerator::new(string),
             chunk_manager: ChunkManager::default(),
             csgtree: csgtree,
             settings,

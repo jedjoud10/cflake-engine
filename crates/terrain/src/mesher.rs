@@ -135,8 +135,8 @@ pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation:
         transform_y_local,
     );
     TModel {
-        model: model,
-        skirts_model: skirts_model,
+        model: Some(model),
+        skirts_model: Some(skirts_model),
         coords: coords,
     }
 }
