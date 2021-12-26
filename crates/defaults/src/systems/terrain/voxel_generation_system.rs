@@ -1,7 +1,6 @@
+use core::global::callbacks::CallbackType;
 use ecs::SystemData;
-use rendering::GPUObjectID;
-use terrain::{ChunkCoords, VoxelData};
-
+use others::callbacks::MutCallback;
 use super::VoxelGenerationSystem;
 ecs::impl_systemdata!(VoxelGenerationSystem);
 
@@ -16,6 +15,19 @@ pub fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
 
 // Check if the current Chunk has gotten it's voxel data generated
 pub fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
+    let chunk_coords = &core::global::ecs::component::<terrain::Chunk>(entity).unwrap().coords;
+    // Check if we generated the voxel data for this chunk
+    if let Option::Some(voxel_data) = data.generated_voxel_data(chunk_coords) {
+        // We did generate the voxel data for this chunk, so update it
+        let vd = voxel_data;
+        let c = terrain::Chunk::default();
+        core::global::ecs::entity_mut(entity.entity_id, CallbackType::LocalEntityMut(MutCallback::new(|entity| {
+            // Update the chunk component
+            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
+            let y = c;
+            chunk.generated = Some(vd);
+        })).create());
+    }
 }
 
 // When a chunk gets added, we tell the voxel generator to buffer the voxel generation for that chunk
