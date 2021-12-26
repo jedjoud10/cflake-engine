@@ -52,6 +52,9 @@ pub fn preload_default_assets() {
 // Pre-load the default systems
 pub fn preload_systems() {
     //default_system::system();
+    let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
+    let (string, csgtree) = interpreter.finalize().unwrap();
+    systems::chunk_system::system(4, csgtree, rendering::pipec::material(rendering::Material::new("a")));
     systems::rendering_system::system();
     systems::physics_system::system();
     systems::camera_system::system();

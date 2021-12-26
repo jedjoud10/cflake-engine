@@ -24,6 +24,21 @@ impl ChunkCoords {
     }
 }
 
+// Equality tests
+impl PartialEq for ChunkCoords {
+    fn eq(&self, other: &Self) -> bool {
+        self.center == other.center && self.depth == other.depth
+    }
+}
+impl Eq for ChunkCoords {
+}
+impl std::hash::Hash for ChunkCoords {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.center.hash(state);
+        // We will also hash the depth for good measure
+        self.depth.hash(state);
+    }
+}
 
 // A component that will be added to well... chunks
 #[derive(Default)]
@@ -37,8 +52,8 @@ pub struct Chunk {
 ecs::impl_component!(Chunk);
 
 impl Chunk {
-    // When this chunk is created, we must tell the voxel generator to generate the voxel data
-    pub fn new(coords: ChunkCoords, voxel_generator: &mut VoxelGenerator) -> Self {        
+    // New
+    pub fn new(coords: ChunkCoords) -> Self {        
         Self {
             coords,
             generated: false,
@@ -48,6 +63,7 @@ impl Chunk {
                 coords,
             },
         }
+        // When this chunk is created, we must tell the voxel generator to generate the voxel data
         // Tell the voxel generator that it must generated the model for this specific Chunk
     }
 }

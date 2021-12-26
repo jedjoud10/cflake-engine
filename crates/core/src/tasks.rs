@@ -47,7 +47,10 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
         // Check if the system matches the component ID of the entity
         let bitfield: usize = system_c_bitfield & !entity_c_bitfield;
         // If the entity is valid, all the bits would be 0
-        bitfield == 0
+        let entity_valid = bitfield == 0;
+        // If the systems has no components to it, we must not link the entity
+        let system_valid = system_c_bitfield != 0;
+        entity_valid && system_valid
     }
     match query.task {
         Task::EntityAdd(mut entity, linkings) => {

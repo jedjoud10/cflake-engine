@@ -1,39 +1,57 @@
 use core::global::{self, callbacks::CallbackType::*};
+use std::collections::{HashMap, HashSet};
 
 use ecs::{SystemEventType, SystemData};
 use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 // An improved multithreaded rendering system
+#[derive(Default)]
+struct RenderingSystem {
+    pub invalid_renderers: HashSet<usize> // Renderers that tried to add their renderer in the pipeline, but could not since they have no valid model 
+}
+ecs::impl_systemdata!(RenderingSystem);
 
-// Add the renderer in the render pipeline renderer
-fn entity_added(data: &mut SystemData<()>, entity: &ecs::Entity) {
-    // Get the internal renderer
-    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
-    let irenderer = renderer.internal_renderer.clone();
-    // Get the transform, and make sure it's matrix is valid
-    let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
+// Create a renderer from an entity
+fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: usize, irenderer: &rendering::Renderer, transform: &crate::components::Transform) {
     // Create the shared data
-    let shared_data = rendering::SharedData::new((irenderer, transform.calculate_matrix()));
+    let data = data.clone();
+    let shared_data = rendering::SharedData::new((irenderer.clone(), transform.calculate_matrix()));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
-    let entity_id = entity.entity_id;
     result.with_callback(GPUObjectCallback(OwnedCallback::new(move |(_, id)| {
         global::ecs::entity_mut(
             entity_id,
             LocalEntityMut(MutCallback::new(move |entity| {
                 let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
+                // Update the entity's renderer
                 r.internal_renderer.index = Some(id);
             }))
             .create(),
         );
-    })).create());   
+    })).create());  
+}
+
+// Add the renderer in the render pipeline renderer
+fn entity_added(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
+    // Get the internal renderer
+    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
+    let irenderer = &renderer.internal_renderer;
+    // Get the transform, and make sure it's matrix is valid
+    let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
+    // If the renderer contains an empty model, do not add the renderer
+    if irenderer.model.is_none() { 
+        data.invalid_renderers.insert(entity.entity_id);
+        return;
+    }
+    // Create the renderer
+    create_renderer(data, entity.entity_id, irenderer, transform);     
 }
 // Remove the renderer from the pipeline renderer
-fn entity_removed(data: &mut SystemData<()>, entity: &ecs::Entity) {
+fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let index = renderer.internal_renderer.index.unwrap();
     rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
 }
 // Send the updated data from the entity to the render pipeline as commands
-fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
+fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     let renderer = core::global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let transform = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
     // Only update the transform if we need to 
@@ -45,9 +63,22 @@ fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
             None => {}
         }
     }
+
+    // Check if the entity's renderer model has been created, in case it was an invalid renderer
+    if renderer.internal_renderer.model.is_some() && data.invalid_renderers.contains(&entity.entity_id) {
+        // We can create the renderer for this newly valited entity
+        // Get the internal renderer
+        let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
+        let irenderer = &renderer.internal_renderer;
+        // Get the transform, and make sure it's matrix is valid
+        let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
+        create_renderer(data, entity.entity_id, irenderer, transform); 
+        // Remove the invalidation
+        data.invalid_renderers.remove(&entity.entity_id);        
+    }
 }
 // System prefire so we can send the camera data to the render pipeline
-fn system_prefire(data: &mut SystemData<()>) {
+fn system_prefire(data: &mut SystemData<RenderingSystem>) {
     // Camera data
     let camera = global::ecs::entity(global::main::world_data().main_camera_entity_id).unwrap();
     let camera_data = global::ecs::component::<crate::components::Camera>(&camera).unwrap();
@@ -61,7 +92,7 @@ fn system_prefire(data: &mut SystemData<()>) {
 
 // Create the default system
 pub fn system() {
-    core::global::ecs::add_system((), || {
+    core::global::ecs::add_system(RenderingSystem::default(), || {
         // Create a system
         let mut system = ecs::System::new();
         // Link some components to the system
