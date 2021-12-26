@@ -1,6 +1,6 @@
 use math::octrees::OctreeNode;
 
-use crate::{TModel, VoxelGenerator};
+use crate::{TModel};
 
 // The data that will be used to store the position/scale of the chunk
 #[derive(Default, Clone, Copy, Debug)]
@@ -63,7 +63,5 @@ impl Chunk {
                 coords,
             },
         }
-        // When this chunk is created, we must tell the voxel generator to generate the voxel data
-        // Tell the voxel generator that it must generated the model for this specific Chunk
     }
 }

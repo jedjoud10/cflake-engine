@@ -48,7 +48,10 @@ fn entity_added(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
 fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let index = renderer.internal_renderer.index.unwrap();
-    rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
+    // If the renderer was still invalid, no need to delete it
+    if !data.invalid_renderers.contains(&entity.entity_id) {
+        rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
+    }
 }
 // Send the updated data from the entity to the render pipeline as commands
 fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {

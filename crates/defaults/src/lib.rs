@@ -54,7 +54,8 @@ pub fn preload_systems() {
     //default_system::system();
     let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
     let (string, csgtree) = interpreter.finalize().unwrap();
-    systems::chunk_system::system(4, csgtree, rendering::pipec::material(rendering::Material::new("a")));
+    systems::terrain::chunk_system::system(4, csgtree, rendering::pipec::material(rendering::Material::new("a")));
+    systems::terrain::voxel_generation_system::system(string);
     systems::rendering_system::system();
     systems::physics_system::system();
     systems::camera_system::system();

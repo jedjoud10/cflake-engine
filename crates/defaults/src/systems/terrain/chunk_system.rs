@@ -1,17 +1,7 @@
-use std::collections::HashMap;
-
 use ecs::SystemData;
 use math::octrees::OctreeNode;
 use terrain::ChunkCoords;
-
-// System data
-#[derive(Default)]
-pub struct ChunkSystem {
-    pub octree: math::octrees::AdvancedOctree, // An advanced octree, so we can actually create the chunks
-    pub material: rendering::GPUObjectID, // The Chunks' terrain material
-    pub csgtree: math::csg::CSGTree, // The CSG tree that will be used for massive optimizations
-    pub chunks: HashMap<ChunkCoords, usize>, // The chunks that were added into the world
-}
+use super::ChunkSystem;
 ecs::impl_systemdata!(ChunkSystem);
 
 pub fn system_prefire(data: &mut SystemData<ChunkSystem>) {

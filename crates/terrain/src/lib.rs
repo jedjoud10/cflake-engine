@@ -8,9 +8,7 @@ mod terrain_stats;
 mod utils;
 mod voxel;
 mod chunk;
-mod voxel_generator;
 
-pub use voxel_generator::*;
 pub use chunk::*;
 pub use detail_manager::*;
 pub use model::*;
