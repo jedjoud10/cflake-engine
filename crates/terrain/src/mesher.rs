@@ -2,6 +2,7 @@ use crate::ChunkCoords;
 use crate::TModel;
 use crate::ISOLINE;
 use crate::MAIN_CHUNK_SIZE;
+use crate::VoxelData;
 
 use super::tables::*;
 use super::Voxel;
@@ -18,8 +19,8 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation: bool) -> TModel {
-    let mut duplicate_vertices: HashMap<(u32, u32, u32, u8), u32> = HashMap::new();
+pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool) -> TModel {
+    let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
     let i = Instant::now();
     // Loop over every voxel
@@ -78,11 +79,10 @@ pub fn generate_model(voxels: &Box<[Voxel]>, coords: ChunkCoords, interpolation:
                         let normal: veclib::Vector3<f32> = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value.clamp(0.0, 1.0));
 
                         // The edge tuple used to identify this vertex
-                        let edge_tuple: (u32, u32, u32, u8) = (
+                        let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
                             2 * y as u32 + vert1.y as u32 + vert2.y as u32,
                             2 * z as u32 + vert1.z as u32 + vert2.z as u32,
-                            lv.shader_id,
                         );
 
                         // Check if this vertex was already added
@@ -149,7 +149,7 @@ pub struct SkirtVertex {
 
 // Generate a whole skirt using a specific
 pub fn calculate_skirt(
-    voxels: &Box<[Voxel]>,
+    voxels: &VoxelData,
     interpolation: bool,
     flip: bool,
     density_offset: [usize; 4],
@@ -178,7 +178,7 @@ pub fn calculate_marching_square_case(
     i: usize,
     x: usize,
     y: usize,
-    voxels: &Box<[Voxel]>,
+    voxels: &VoxelData,
     interpolation: bool,
     density_offset: [usize; 4],
 ) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4])> {

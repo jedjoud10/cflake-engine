@@ -85,9 +85,9 @@ fn entity_added(data: &mut SystemData<()>, entity: &ecs::Entity) {
 
 // Create the default system
 pub fn system() {
-    core::global::ecs::add_system(|| {
+    core::global::ecs::add_system((), || {
         // Create a system
-        let mut system = ecs::System::new(());
+        let mut system = ecs::System::new();
         // Link the components
         system.link::<crate::components::Camera>();
         system.link::<crate::components::Transform>();

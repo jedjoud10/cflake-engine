@@ -50,17 +50,18 @@ impl VoxelGenerator {
             compute,
             voxel_texture,
             material_texture,
+            pending_generation: Vec::new()
         }
     }
     // We must generate the voxel data for this specific chunk, but not immediately. We must buffer it
     pub fn generate_voxel_data(chunk_coords: ChunkCoords) {
 
     } 
-
+    /*
     // Update the last frame variable and dispatch the compute shader
     pub fn generate_voxels_start(&mut self, size: u64, depth: u8, position: veclib::Vector3<i64>) {
         // First pass
-        let mut group = ShaderUniformsGroup::new();
+        let mut group = rendering::ShaderUniformsGroup::new();
         group.update_shader_id(&self.compute);
         group.set_i3d("voxel_image", &self.voxel_texture, TextureShaderAccessType::WriteOnly);
         group.set_i3d("material_image", &self.material_texture, TextureShaderAccessType::WriteOnly);
@@ -140,4 +141,5 @@ impl VoxelGenerator {
             None
         }
     }
+    */
 }

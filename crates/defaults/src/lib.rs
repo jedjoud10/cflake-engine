@@ -52,8 +52,8 @@ pub fn preload_default_assets() {
 // Pre-load the default systems
 pub fn preload_systems() {
     //default_system::system();
-    systems::terrain_system::system();
     systems::rendering_system::system();
     systems::physics_system::system();
     systems::camera_system::system();
 }
+

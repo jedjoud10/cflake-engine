@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 // Just a simple voxel
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
@@ -10,3 +12,16 @@ pub struct VoxelData {
     pub voxels: Box<[Voxel]>
 }
 
+impl Index<usize> for VoxelData {
+    type Output = Voxel;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.voxels.get(index).unwrap()
+    }
+}
+
+impl IndexMut<usize> for VoxelData {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.voxels.get_mut(index).unwrap()
+    }
+}

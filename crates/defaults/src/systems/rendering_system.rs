@@ -61,9 +61,9 @@ fn system_prefire(data: &mut SystemData<()>) {
 
 // Create the default system
 pub fn system() {
-    core::global::ecs::add_system(|| {
+    core::global::ecs::add_system((), || {
         // Create a system
-        let mut system = ecs::System::new(());
+        let mut system = ecs::System::new();
         // Link some components to the system
         system.link::<crate::components::Renderer>();
         system.link::<crate::components::Transform>();

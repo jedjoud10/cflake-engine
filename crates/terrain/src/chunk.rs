@@ -49,6 +49,5 @@ impl Chunk {
             },
         }
         // Tell the voxel generator that it must generated the model for this specific Chunk
-        voxel_generator.generater
     }
 }

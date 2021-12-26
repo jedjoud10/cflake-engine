@@ -70,12 +70,13 @@ pub mod ecs {
     /* #endregion */
     /* #region Systems */
     // Add the system on the main thread
-    pub fn add_system<T: ecs::CustomSystemData + 'static, F>(callback: F)
+    pub fn add_system<T: ecs::CustomSystemData + 'static, F>(default_state: T, callback: F)
     where
         F: FnOnce() -> ecs::System<T> + 'static + Send,
+        T: Sync + Send
     {
         // Create a new thread and initialize the system on it
-        let (join_handle, c_bitfield) = crate::system::create_worker_thread(callback);
+        let (join_handle, c_bitfield) = crate::system::create_worker_thread(default_state, callback);
         let system_thread_data = ecs::SystemThreadData::new(join_handle, c_bitfield);
         let mut w = crate::world::world_mut();
         w.ecs_manager.systemm.systems.push(system_thread_data);

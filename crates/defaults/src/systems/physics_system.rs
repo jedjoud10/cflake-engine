@@ -25,9 +25,9 @@ pub fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
 
 // Create the physics system
 pub fn system() {
-    core::global::ecs::add_system(|| {
+    core::global::ecs::add_system((), || {
         // Create a system
-        let mut system = ecs::System::new(());
+        let mut system = ecs::System::new();
         // Link some components to the system
         system.link::<crate::components::Transform>();
         system.link::<crate::components::Physics>();

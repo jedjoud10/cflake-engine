@@ -37,7 +37,6 @@ pub struct System<T>
 where
     T: CustomSystemData,
 {
-    pub starting_custom_data_state: Option<T>, // The starting state of the custom system data. This will not be given to the system events
     pub c_bitfield: usize,
 
     // Events
@@ -56,9 +55,8 @@ where
     T: CustomSystemData,
 {
     // Create a new system
-    pub fn new(custom_data: T) -> Self {
+    pub fn new() -> Self {
         System {
-            starting_custom_data_state: Some(custom_data),
             c_bitfield: 0,
             system_prefire: None,
             system_postfire: None,

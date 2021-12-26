@@ -33,9 +33,10 @@ thread_local! {
 }
 
 // Create a worker thread
-pub fn create_worker_thread<F, T: ecs::CustomSystemData + 'static>(callback: F) -> (JoinHandle<()>, usize)
+pub fn create_worker_thread<F, T: ecs::CustomSystemData + 'static>(default_state: T, callback: F) -> (JoinHandle<()>, usize)
 where
     F: FnOnce() -> ecs::System<T> + 'static + Send,
+    T: Sync + Send,
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
     let builder = std::thread::Builder::new().name(format!("LogicSystemThread '{}'", system_id));
@@ -76,7 +77,7 @@ where
                     };
                 }
                 // Create the shared data
-                let mut data = system.starting_custom_data_state.take().unwrap(); 
+                let mut data = default_state; 
                 let mut shared = SystemData::new(&mut data);
                 loop {
                     // Wait for the start of the sync at the start of the frame
