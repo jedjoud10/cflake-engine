@@ -7,7 +7,7 @@ use crate::{GPUObject, GPUObjectID, MainThreadMessage, ModelGPUObject, MaterialG
 #[derive(Default)]
 pub struct PipelineBuffer {
     pub gpuobjects: SmartList<GPUObject>,                               // GPU objects
-    pub callback_objects: HashMap<u64, (usize, std::thread::ThreadId)>, // Callback ID to GPUObject index
+    pub callback_objects: HashMap<u64, (Option<usize>, std::thread::ThreadId)>, // Callback ID to option GPUObject index
     pub names_to_id: HashMap<String, usize>,                            // Names to GPUObject index
     pub renderers: HashSet<GPUObjectID>,                                   // Renderers
 }
@@ -17,20 +17,34 @@ impl PipelineBuffer {
     pub fn execute_callbacks(&mut self, tx2: &Sender<MainThreadMessage>) {
         // Send a message to the main thread saying what callbacks we must run
         let callbacks_objects_indices = std::mem::take(&mut self.callback_objects);
-        let callback_objects = callbacks_objects_indices
-        .into_iter()
-        .map(|(callback_id, (index, thread_id))| {
-            (
-                callback_id,
-                (self.get_gpuobject_usize(&index).unwrap().clone(), GPUObjectID { index: Some(index) }),
-                thread_id,
-            )
-        })
-        .collect::<Vec<(u64, (GPUObject, GPUObjectID), std::thread::ThreadId)>>();
+        // Callbacks that return a valid GPU object
+        let gpuobjects_callbacks = callbacks_objects_indices.iter().filter_map(|(&callback_id, (index, thread_id))| {
+            match index {
+                Some(index) => Some((
+                    callback_id,
+                    (self.get_gpuobject_usize(index).unwrap().clone(), GPUObjectID { index: Some(*index) }),
+                    thread_id.clone(),
+                )),
+                None => None,
+            }            
+        }).collect::<Vec<(u64, (GPUObject, GPUObjectID), std::thread::ThreadId)>>();
+        // Callbacks that are just here for executions
+        let execution_callbacks = callbacks_objects_indices.iter().filter_map(|(&callback_id, (index, thread_id))| {
+            match index {
+                Some(_) => None,
+                None => Some((
+                    callback_id,
+                    thread_id.clone(),
+                )),
+            }            
+        }).collect::<Vec<(u64, std::thread::ThreadId)>>();
         
-        // Now we must all of this to the main thread
-        for (callback_id, args, thread_id) in callback_objects {
-            tx2.send(MainThreadMessage::ExecuteCallback(callback_id, args, thread_id)).unwrap();
+        // Now we must send all of this to the main thread
+        for (callback_id, args, thread_id) in gpuobjects_callbacks {
+            tx2.send(MainThreadMessage::ExecuteGPUObjectCallback(callback_id, args, thread_id)).unwrap();
+        }
+        for (callback_id, thread_id) in execution_callbacks {
+            tx2.send(MainThreadMessage::ExecuteExecutionCallback(callback_id, thread_id)).unwrap();
         }
     }
     // Add a GPU object to the buffer, returning it's GPUObjectID
@@ -53,11 +67,10 @@ impl PipelineBuffer {
         self.gpuobjects.remove_element(id.index.unwrap()).unwrap();
     }
     // Add some additional data like callback ID or waitable ID to the GPU object
-    pub fn received_new_gpuobject_additional(&mut self, id: GPUObjectID, callback_id: Option<(u64, std::thread::ThreadId)>) {
-        let index = id.index.unwrap();
+    pub fn received_new_gpuobject_additional(&mut self, gpuobject_id: Option<GPUObjectID>, callback_id: Option<(u64, std::thread::ThreadId)>) {        
         match callback_id {
             Some((id, thread_id)) => {
-                self.callback_objects.insert(id, (index, thread_id));
+                self.callback_objects.insert(id, (gpuobject_id.map(|x| x.index.unwrap()), thread_id));
             }
             None => { /* We cannot run a callback on this object */ }
         }

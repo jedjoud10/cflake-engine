@@ -196,7 +196,6 @@ pub enum RenderTask {
     ModelDispose(GPUObjectID),
     // Compute
     ComputeRun(GPUObjectID, (u16, u16, u16), ShaderUniformsGroup),
-    ComputeLock(GPUObjectID),
     // Renderer
     RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
     RendererRemove(GPUObjectID),

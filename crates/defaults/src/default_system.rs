@@ -1,4 +1,7 @@
+use core::global::callbacks::CallbackType;
+
 use ecs::SystemData;
+use others::callbacks::{NullCallback, OwnedCallback};
 
 // Some default events
 pub fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {

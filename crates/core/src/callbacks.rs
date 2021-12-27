@@ -56,8 +56,11 @@ pub fn execute_local_callbacks() {
         if cell.buffered_executions.len() > 0 {
             let cleared_callbacks = std::mem::take(&mut cell.buffered_executions);
             for (id, arguments) in cleared_callbacks {
-                let callback = cell.callbacks.remove(&id).unwrap();
-                callbacks.push((callback, arguments));
+                let callback = cell.callbacks.remove(&id);
+                // We might've gotten the signal to run a callback that we do not have
+                if let Option::Some(callback) = callback {
+                    callbacks.push((callback, arguments));
+                }
             }
         }
     });
@@ -72,6 +75,10 @@ pub fn execute_local_callbacks() {
                 if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
                     (callback)(args);
                 }
+            }
+            CallbackType::GPUCommandExecution(x) => {
+                let callback = x.callback;
+                (callback)();
             }
             CallbackType::EntityCreatedCallback(x) => {
                 let callback = x.callback;
@@ -113,11 +120,13 @@ pub enum LogicSystemCallbackArguments {
     EntityMut(usize),
     // Rendering
     RenderingGPUObject((rendering::GPUObject, rendering::GPUObjectID)),
+    RenderingGPUExecution,
 }
 
 // The callback type
 pub enum CallbackType {
     GPUObjectCallback(OwnedCallback<(rendering::GPUObject, rendering::GPUObjectID)>),
+    GPUCommandExecution(NullCallback),
     EntityCreatedCallback(RefCallback<ecs::Entity>),
     LocalEntityMut(MutCallback<ecs::Entity>),
 }

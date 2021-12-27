@@ -1,6 +1,6 @@
 use core::global::callbacks::CallbackType;
 use ecs::SystemData;
-use others::callbacks::{MutCallback, OwnedCallback};
+use others::callbacks::{MutCallback, OwnedCallback, NullCallback};
 use rendering::{TextureShaderAccessType, pipec, RenderTask};
 use terrain::{MAIN_CHUNK_SIZE, Voxel, ISOLINE, VoxelData};
 use super::VoxelGenerationSystem;
@@ -30,7 +30,7 @@ pub fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         let result = pipec::task(pipec::RenderTask::ComputeRun(data.compute, indices, group));
         // Callback data that we will pass
         let mut data = data.clone();
-        result.with_callback(CallbackType::GPUObjectCallback(OwnedCallback::new(move |(_, _)| {            
+        result.with_callback(CallbackType::GPUCommandExecution(NullCallback::new(move || {            
             // This callback is executed when the compute shader finishes it's execution. 
             // We can safely read back from the textures now
             // Wait for main voxel gen

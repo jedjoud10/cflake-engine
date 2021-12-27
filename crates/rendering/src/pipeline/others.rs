@@ -49,7 +49,6 @@ pub fn get_id(name: &str) -> Option<GPUObjectID> {
     let buf = GLOBAL_BUFFER.lock().unwrap();
     buf.get_id(name)
 }
-
 // Wait for the creation of a GPU object using a command ID
 pub fn wait_id(command_id: u64) -> GPUObjectID {
     loop {

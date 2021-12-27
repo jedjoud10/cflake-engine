@@ -1,5 +1,5 @@
 use super::object::*;
-use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer, others::RESULT};
+use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer, others::{RESULT, CommandExecutionResults}};
 use glfw::Context;
 use lazy_static::lazy_static;
 use others::SmartList;
@@ -18,7 +18,8 @@ use std::{
 
 // Messages that will be to the main thread
 pub enum MainThreadMessage {
-    ExecuteCallback(u64, (GPUObject, GPUObjectID), std::thread::ThreadId),
+    ExecuteGPUObjectCallback(u64, (GPUObject, GPUObjectID), std::thread::ThreadId),
+    ExecuteExecutionCallback(u64, std::thread::ThreadId),
 }
 
 lazy_static! {
@@ -233,19 +234,15 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> Option<GPUOb
             object_creation::run_compute(buf, id, axii, uniforms_group);
             None
         }
-        RenderTask::ComputeLock(id) => {
-            object_creation::lock_compute(buf, id);
-            None
-        }
         // Others
         _ => None,
     }
 }
 
 // Run a command on the Render Thread
-fn command(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) -> Option<GPUObjectID> {
+fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // Handle the common cases
-    match command.task {
+    let command_result = match command.task {
         // Window tasks
         RenderTask::WindowUpdateFullscreen(fullscreen) => {
             renderer.window.fullscreen = fullscreen;
@@ -299,7 +296,18 @@ fn command(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &m
         }
         // Internal cases
         x => internal_task(buf, x),
-    }
+    };
+    // Extract
+    let command_id = command.command_id;
+    let callback_id = command.callback_id.clone();
+    let thread_id = command.thread_id;
+    let callback_id = match callback_id {
+        Some(x) => Some((x, thread_id)),
+        None => None,
+    };
+
+    buf.received_new_gpuobject_additional(command_result.clone(), callback_id);
+    crate::others::executed_command(command_id, command_result, lock);
 }
 
 // Poll commands that have been sent to us by the worker threads OR the main thread
@@ -309,27 +317,10 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
     let mut lock = RESULT.lock().unwrap();
     let lock = &mut *lock;
     for render_command_query in rx.try_iter() {
-        i+=1;
-        let command_id = render_command_query.command_id;
-        let callback_id = render_command_query.callback_id.clone();
-        let thread_id = render_command_query.thread_id;
-        let callback_id = match callback_id {
-            Some(x) => Some((x, thread_id)),
-            None => None,
-        };
+        i+=1;        
         // Check special commands first
         // Valid command
-        match command(buf, renderer, camera, render_command_query, window, glfw) {
-            Some(id) => {
-                // We already added the GPUObject and it's possible name to the interface, now we must add the option callback_id and option waitable_id
-                // We have a valid GPU object
-                buf.received_new_gpuobject_additional(id.clone(), callback_id);
-                crate::others::executed_command(command_id, Some(id.clone()), lock);
-            }
-            None => {
-                crate::others::executed_command(command_id, None, lock);
-            }
-        }
+        command(lock, buf, renderer, camera, render_command_query, window, glfw);
     }
     //println!("Executed {} Render Commands", i);
 }
