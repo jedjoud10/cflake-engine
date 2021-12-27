@@ -1,4 +1,4 @@
-use super::object::*;
+use super::{object::*, async_command_data::AsyncGPUCommandData};
 use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer, others::{RESULT, CommandExecutionResults}};
 use glfw::Context;
 use lazy_static::lazy_static;
@@ -200,53 +200,49 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 }
 
 // Commands that can be ran internally
-pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> Option<GPUObjectID> {
+pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUObjectID>, Option<AsyncGPUCommandData>) {
     // Handle the internal case
     match task {
         // Shaders
-        RenderTask::SubShaderCreate(shared_shader) => Some(object_creation::create_compile_subshader(buf, shared_shader)),
-        RenderTask::ShaderCreate(shared_shader) => Some(object_creation::create_compile_shader(buf, shared_shader)),
-        RenderTask::ShaderUniformGroup(_shared_uniformgroup) => todo!(),
+        RenderTask::SubShaderCreate(shared_shader) => (Some(object_creation::create_compile_subshader(buf, shared_shader)), None),
+        RenderTask::ShaderCreate(shared_shader) => (Some(object_creation::create_compile_shader(buf, shared_shader)), None),
         // Textures
-        RenderTask::TextureCreate(shared_texture) => Some(object_creation::generate_texture(buf, shared_texture)),
+        RenderTask::TextureCreate(shared_texture) => (Some(object_creation::generate_texture(buf, shared_texture)), None),
         RenderTask::TextureUpdateSize(id, ttype) => {
             object_creation::update_texture_size(buf, id, ttype);
-            None
+            (None, None)
         }
         RenderTask::TextureUpdateData(id, bytes) => {
             object_creation::update_texture_data(buf, id, bytes);
-            None
+            (None, None)
         }
         RenderTask::TextureFillArray(id, bytecount_per_pixel, return_bytes) =>  {
             object_creation::texture_fill_array(buf, id, bytecount_per_pixel, return_bytes);
-            None
+            (None, None)
         }
         // Model
-        RenderTask::ModelCreate(shared_model) => Some(object_creation::create_model(buf, shared_model)),
+        RenderTask::ModelCreate(shared_model) => (Some(object_creation::create_model(buf, shared_model)), None),
         RenderTask::ModelDispose(gpumodel) => {
             object_creation::dispose_model(buf, gpumodel);
-            None
+            (None, None)
         }
         // Material
-        RenderTask::MaterialCreate(material) => Some(object_creation::create_material(buf, material)),
+        RenderTask::MaterialCreate(material) => (Some(object_creation::create_material(buf, material)), None),
         // Compute
-        RenderTask::ComputeRun(id, axii, uniforms_group) => {
-            object_creation::run_compute(buf, id, axii, uniforms_group);
-            None
-        }
+        RenderTask::ComputeRun(id, axii, uniforms_group) => (None, Some(object_creation::run_compute(buf, id, axii, uniforms_group))),
         // Others
-        _ => None,
+        _ => (None, None),
     }
 }
 
 // Run a command on the Render Thread
 fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // Handle the common cases
-    let command_result = match command.task {
+    let (command_result, async_command_data) = match command.task {
         // Window tasks
         RenderTask::WindowUpdateFullscreen(fullscreen) => {
             renderer.window.fullscreen = fullscreen;
-            None
+            (None, None)
         }
         RenderTask::WindowUpdateVSync(vsync) => {
             renderer.window.vsync = vsync;
@@ -258,12 +254,12 @@ fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, rendere
                 // Disable VSync
                 glfw.set_swap_interval(glfw::SwapInterval::None);
             }
-            None
+            (None, None)
         }
         RenderTask::WindowUpdateSize(size) => {
             renderer.window.dimensions = size;
             renderer.update_window_dimensions(size);
-            None
+            (None, None)
         }
         // Pipeline
         RenderTask::CameraDataUpdate(shared) => {
@@ -282,17 +278,17 @@ fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, rendere
                 viewm,
                 projm,
             };
-            None
+            (None, None)
         }
         // Renderer commands
         RenderTask::RendererAdd(shared_renderer) => Some(object_creation::add_renderer(buf, shared_renderer)),
         RenderTask::RendererRemove(renderer_id) => {
             object_creation::remove_renderer(buf, &renderer_id);
-            None
+            (None, None)
         }
         RenderTask::RendererUpdateTransform(renderer_id, matrix) => {
             object_creation::update_renderer(buf, &renderer_id, matrix);
-            None
+            (None, None)
         }
         // Internal cases
         x => internal_task(buf, x),
@@ -305,9 +301,15 @@ fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, rendere
         Some(x) => Some((x, thread_id)),
         None => None,
     };
-
-    buf.received_new_gpuobject_additional(command_result.clone(), callback_id);
-    crate::others::executed_command(command_id, command_result, lock);
+    // If this is an async GPU task (Like running a compute shader) we will not call the callbacks
+    if let Option::Some(x) = async_command_data {
+        // We must buffer the async command data, so we can poll it and check if it was executed later
+        buf.add_async_gpu_command_data(x);
+    } else {
+        // This is not an async GPU task, we can buffer the callbacks directly
+        buf.received_new_gpuobject_additional(command_result.clone(), callback_id);
+        crate::others::executed_command(command_id, command_result, lock);    
+    }
 }
 
 // Poll commands that have been sent to us by the worker threads OR the main thread
@@ -324,6 +326,16 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
     }
     //println!("Executed {} Render Commands", i);
 }
+
+// Check if any of the async GPU commands have finished executing
+fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
+    for async_gpu_command_data in buf.async_gpu_command_datas {
+        // Check if the OpenGL command was executed
+        if async_gpu_command_data.has_executed() {
+
+        }
+    }
+}
 // Data that will be sent back to the main thread after we start the pipeline thread
 pub struct PipelineStartData {
     pub handle: std::thread::JoinHandle<()>,
@@ -333,7 +345,7 @@ pub struct PipelineStartData {
 mod object_creation {
     use std::{ffi::{CString, c_void}, ptr::null, mem::size_of, sync::{atomic::{AtomicPtr, Ordering}, Mutex, Arc}};
 
-    use crate::{Renderer, SharedData, GPUObjectID, RendererGPUObject, GPUObject, pipeline::buffer::PipelineBuffer, SubShader, SubShaderType, SubShaderGPUObject, Shader, ComputeShaderGPUObject, ShaderGPUObject, Model, ModelGPUObject, Texture, TextureType, TextureFilter, TextureFlags, TextureWrapping, TextureGPUObject, ShaderUniformsGroup, Material, MaterialGPUObject};
+    use crate::{Renderer, SharedData, GPUObjectID, RendererGPUObject, GPUObject, pipeline::{buffer::PipelineBuffer, async_command_data::AsyncGPUCommandData}, SubShader, SubShaderType, SubShaderGPUObject, Shader, ComputeShaderGPUObject, ShaderGPUObject, Model, ModelGPUObject, Texture, TextureType, TextureFilter, TextureFlags, TextureWrapping, TextureGPUObject, ShaderUniformsGroup, Material, MaterialGPUObject};
     // Add the renderer to the renderer (lol I need better name)
     pub fn add_renderer(buf: &mut PipelineBuffer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
         let (renderer, matrix) = renderer.get();
@@ -808,21 +820,15 @@ mod object_creation {
             *new_bytes = pixels;
         }
     }
-    pub fn run_compute(buf: &mut PipelineBuffer, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) {
+    pub fn run_compute(buf: &mut PipelineBuffer, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) -> AsyncGPUCommandData {
+        unsafe { gl::Flush(); }
+        // Dispatch the compute shader for execution
         uniforms_group.consume(buf).unwrap();
-        unsafe {
+        let sync = unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-        }
-    }
-    pub fn lock_compute(buf: &mut PipelineBuffer, id: GPUObjectID) {
-        let compute = if let GPUObject::ComputeShader(x) = buf.get_gpuobject(&id).unwrap() {
-            x
-        } else { panic!() };
-        unsafe {
-            // Remember to use the shader first
-            gl::UseProgram(compute.program);
-            gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        }
+            gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0)
+        };
+        AsyncGPUCommandData::new(sync)
     }
     pub fn create_material(buf: &mut PipelineBuffer, material: SharedData<Material>) -> GPUObjectID {
         let material = material.get();

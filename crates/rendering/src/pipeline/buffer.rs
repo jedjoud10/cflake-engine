@@ -3,6 +3,8 @@ use std::{collections::{HashMap, HashSet}, sync::{mpsc::Sender, Mutex}};
 
 use crate::{GPUObject, GPUObjectID, MainThreadMessage, ModelGPUObject, MaterialGPUObject, SubShaderGPUObject, ShaderGPUObject, ComputeShaderGPUObject, TextureGPUObject, RendererGPUObject};
 
+use super::async_command_data::AsyncGPUCommandData;
+
 // A simple Buffer containing the GPU objects that have been generated on the pipeline thread
 #[derive(Default)]
 pub struct PipelineBuffer {
@@ -10,6 +12,7 @@ pub struct PipelineBuffer {
     pub callback_objects: HashMap<u64, (Option<usize>, std::thread::ThreadId)>, // Callback ID to option GPUObject index
     pub names_to_id: HashMap<String, usize>,                            // Names to GPUObject index
     pub renderers: HashSet<GPUObjectID>,                                   // Renderers
+    pub async_gpu_command_datas: Vec<AsyncGPUCommandData>, // Some sync data that will be polled each frame
 }
 
 impl PipelineBuffer {
@@ -61,6 +64,10 @@ impl PipelineBuffer {
             None => {}
         }
         id
+    }
+    // Add the data for an async OpenGL command
+    pub fn add_async_gpu_command_data(&mut self, x: AsyncGPUCommandData) {
+        self.async_gpu_command_datas.push(x);
     }
     // Remove a GPU object from the buffer
     pub fn remove_gpuobject(&mut self, id: GPUObjectID) {

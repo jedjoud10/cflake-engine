@@ -4,6 +4,7 @@ mod identifier;
 pub mod object;
 mod pipeline;
 mod pipeline_main;
+mod async_command_data;
 pub mod others;
 pub mod rendering;
 pub use command::*;

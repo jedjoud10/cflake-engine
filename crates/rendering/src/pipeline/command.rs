@@ -185,7 +185,6 @@ pub enum RenderTask {
     // Shader stuff
     SubShaderCreate(SharedData<SubShader>),
     ShaderCreate(SharedData<Shader>),
-    ShaderUniformGroup(SharedData<ShaderUniformsGroup>),
     // Textures
     TextureCreate(SharedData<Texture>),
     TextureUpdateSize(GPUObjectID, TextureType),
