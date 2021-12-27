@@ -303,8 +303,9 @@ fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, rendere
         None => None,
     };
     // If this is an async GPU task (Like running a compute shader) we will not call the callbacks
-    if let Option::Some(x) = async_command_data {
+    if let Option::Some(mut x) = async_command_data {
         // We must buffer the async command data, so we can poll it and check if it was executed later
+        x.additional_command_data((command_id, callback_id));
         buf.add_async_gpu_command_data(x);
     } else {
         // This is not an async GPU task, we can buffer the callbacks directly
@@ -839,7 +840,10 @@ mod object_creation {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
             gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0)
         };
-        AsyncGPUCommandData::new(sync)
+        fn callback(id: GPUObjectID, buf: &mut PipelineBuffer) {
+            
+        }
+        AsyncGPUCommandData::new(sync, Some(id), callback)
     }
     pub fn create_material(buf: &mut PipelineBuffer, material: SharedData<Material>) -> GPUObjectID {
         let material = material.get();

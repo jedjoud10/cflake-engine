@@ -8,9 +8,10 @@ ecs::impl_systemdata!(VoxelGenerationSystem);
 
 // Get the first pending chunk, and tell the voxel generator to generate it's voxel data if it is allowed to
 pub fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
-    if !data.generating {
+    if !data.generating && data.pending_chunks.len() > 0 {
         // We can run the voxel generation logic
         let chunk_coords = data.pending_chunks.remove(0);
+        println!("Started voxel generation for Chunk {}", chunk_coords.center);
         // Set the state
         data.generating = true;
 
@@ -30,7 +31,10 @@ pub fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         let result = pipec::task(pipec::RenderTask::ComputeRun(data.compute, indices, group));
         // Callback data that we will pass
         let mut data = data.clone();
-        result.with_callback(CallbackType::GPUCommandExecution(NullCallback::new(move || {            
+        let i = std::time::Instant::now();
+        result.with_callback(CallbackType::GPUCommandExecution(NullCallback::new(move || { 
+            println!("Took {}ms for the compute shader to run!", i.elapsed().as_millis());
+            let i = std::time::Instant::now();
             // This callback is executed when the compute shader finishes it's execution. 
             // We can safely read back from the textures now
             // Wait for main voxel gen
@@ -87,6 +91,7 @@ pub fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
             }
             // Tell the main system data that we finished the voxel generation for this specific chunk
             data.result = Some((chunk_coords, voxel_data));
+            println!("Took {}ms for the voxel data creation", i.elapsed().as_millis());
         })).create());
     }
 }
