@@ -145,7 +145,8 @@ impl RenderCommandQueryResult {
                 // Execute the task
                 let task = self.task.take().unwrap();
                 let id = internal_task(buf, task);
-                id.unwrap()
+                let gpuobject = id.0.unwrap();
+                gpuobject
             }
         }        
     }

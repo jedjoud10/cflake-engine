@@ -165,6 +165,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     // Poll first
                     let mut pipeline_buffer = BUFFER.lock().unwrap();
                     poll_commands(&mut pipeline_buffer, &mut pipeline_renderer, &mut camera, &sent_tasks_receiver, window, glfw);
+                    poll_async_gpu_commands(&mut pipeline_buffer);
                     // --- Rendering ---
                     // Pre-render
                     pipeline_renderer.pre_render();
@@ -281,7 +282,7 @@ fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, rendere
             (None, None)
         }
         // Renderer commands
-        RenderTask::RendererAdd(shared_renderer) => Some(object_creation::add_renderer(buf, shared_renderer)),
+        RenderTask::RendererAdd(shared_renderer) => (Some(object_creation::add_renderer(buf, shared_renderer)), None),
         RenderTask::RendererRemove(renderer_id) => {
             object_creation::remove_renderer(buf, &renderer_id);
             (None, None)
@@ -329,11 +330,21 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
 
 // Check if any of the async GPU commands have finished executing
 fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
-    for async_gpu_command_data in buf.async_gpu_command_datas {
+    let mut datas: Vec<(u64, Option<(u64, std::thread::ThreadId)>)> = Vec::new();
+    buf.async_gpu_command_datas.retain(|async_gpu_command_data| {
         // Check if the OpenGL command was executed
         if async_gpu_command_data.has_executed() {
-
-        }
+            // The OpenGL command did executed, so we must tell signal the threads to run their callbacks
+            let x = async_gpu_command_data.command_data.unwrap();
+            datas.push(x);             
+            false
+        } else { true }
+    });
+    // Inform the other thread
+    let mut lock = RESULT.lock().unwrap();
+    for (command_id, callback_id) in datas {
+        buf.received_new_gpuobject_additional(None, callback_id);
+        crate::others::executed_command(command_id, None, &mut *lock);   
     }
 }
 // Data that will be sent back to the main thread after we start the pipeline thread

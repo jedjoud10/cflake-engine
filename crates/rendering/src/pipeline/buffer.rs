@@ -15,6 +15,8 @@ pub struct PipelineBuffer {
     pub async_gpu_command_datas: Vec<AsyncGPUCommandData>, // Some sync data that will be polled each frame
 }
 
+unsafe impl Send for PipelineBuffer {}
+
 impl PipelineBuffer {
     // Send messages to the main thread telling it what callbacks we must execute
     pub fn execute_callbacks(&mut self, tx2: &Sender<MainThreadMessage>) {

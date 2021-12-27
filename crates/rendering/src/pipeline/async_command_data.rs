@@ -1,4 +1,3 @@
-#[derive(Default)]
 pub struct AsyncGPUCommandData {    
     pub sync: *const gl::types::__GLsync, // The OpenGL fence sync
     pub command_data: Option<(u64, Option<(u64, std::thread::ThreadId)>)>,
@@ -9,7 +8,7 @@ impl AsyncGPUCommandData {
     pub fn new(sync: *const gl::types::__GLsync) -> Self {
         Self {
             sync,
-            ..AsyncGPUCommandData::default()
+            command_data: None,
         }
     }
     // Check if the corresponding GPU data of the fence has executed on the GPU
