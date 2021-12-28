@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use ecs::SystemData;
 use math::octrees::OctreeNode;
 use others::callbacks::MutCallback;
-use terrain::ChunkCoords;
+use terrain::{ChunkCoords, ChunkState};
 use super::MesherSystem;
 ecs::impl_systemdata!(MesherSystem);
 
@@ -13,7 +13,7 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
     // Get the chunk component and check for valid Voxel Data
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
     // If this chunk is not a pending chunk, then we cannot generate it's model
-    if data.pending_chunks.contains(&chunk.coords) && chunk.generated {
+    if data.pending_chunks.contains(&chunk.coords) && chunk.state == ChunkState::ValidVoxelData {
         if let Option::Some(voxel_data) = &chunk.voxel_data {
             // If the voxel data is valid, create the model for this chunk
             let tmodel = terrain::mesher::generate_model(&voxel_data, chunk.coords, true);
@@ -28,10 +28,19 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material) ;
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
             data.pending_chunks.remove(&chunk.coords);
-            core::global::ecs::link_components(entity.entity_id, linkings);
+            core::global::ecs::link_components(entity.entity_id, linkings);            
         } else {
             // We generated the voxel data, but there was no surface, so no need to create the model
         }
+
+        // Even though we might not have a model, we must validate the Chunk's state
+        core::global::ecs::entity_mut(entity.entity_id, CallbackType::LocalEntityMut(MutCallback::new(|entity| {
+            // Update the chunk state
+            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
+            chunk.state = ChunkState::PendingModelGeneration;
+            chunk.state = ChunkState::ValidModelData;
+            chunk.state = ChunkState::Valid;
+        })).create());
     }    
 }
 

@@ -2,7 +2,7 @@ use core::global::callbacks::CallbackType;
 use ecs::SystemData;
 use others::callbacks::{MutCallback, OwnedCallback, NullCallback};
 use rendering::{TextureShaderAccessType, pipec, RenderTask};
-use terrain::{MAIN_CHUNK_SIZE, Voxel, ISOLINE, VoxelData};
+use terrain::{MAIN_CHUNK_SIZE, Voxel, ISOLINE, VoxelData, ChunkState};
 use super::VoxelGenerationSystem;
 ecs::impl_systemdata!(VoxelGenerationSystem);
 
@@ -120,7 +120,7 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
             // Update the chunk component
             let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
             chunk.voxel_data = voxel_data;
-            chunk.generated = true;
+            chunk.state = ChunkState::ValidVoxelData;
         })).create());
     }
 }
@@ -129,6 +129,11 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
 fn entity_added(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
     let chunk_coords = core::global::ecs::component::<terrain::Chunk>(entity).unwrap().coords.clone();
     data.pending_chunks.push(chunk_coords);
+    core::global::ecs::entity_mut(entity.entity_id, CallbackType::LocalEntityMut(MutCallback::new(|entity| {
+        // Update the chunk state
+        let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
+        chunk.state = ChunkState::PendingVoxelGeneration;
+    })).create());
 }
 
 // When a chunk gets removed, we tell the voxel generator to stop generating the chunk's voxel data, if it is
