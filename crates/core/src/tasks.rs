@@ -44,6 +44,10 @@ impl ImmediateTaskResult {
 pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, receiver: &WorldTaskReceiver) -> ImmediateTaskResult {
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(system_c_bitfield: usize, entity_c_bitfield: usize) -> bool {
+        // Component Bitfield Test
+        // entity:  100001 -> 011110
+        // system1: 001001 -> 001001 -> 001000 -> INVALID
+        // system2: 100000 -> 100010 -> 000010 -> VALID
         // Check if the system matches the component ID of the entity
         let bitfield: usize = system_c_bitfield & !entity_c_bitfield;
         // If the entity is valid, all the bits would be 0
@@ -51,6 +55,15 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
         // If the systems has no components to it, we must not link the entity
         let system_valid = system_c_bitfield != 0;
         entity_valid && system_valid
+    }
+    // Calculate the system bitfield from an entity component bitfield
+    fn calculate_system_bitfield(world: &crate::world::World, entity_c_bitfield: usize) -> u32 {
+        let mut system_bitfield = 0; 
+        for system in world.ecs_manager.systemm.systems.iter() { 
+            let valid = is_entity_valid(system.c_bitfield, entity_c_bitfield);
+            if valid { system_bitfield |= system.system_id; }
+        }
+        system_bitfield
     }
     match query.task {
         Task::EntityAdd(mut entity, linkings) => {
@@ -69,14 +82,10 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             entity.c_bitfield = entity_cbitfield;
 
             // Calculate the system bitfield 
-            let mut entity_system_bitfield = 0;
-            for system in world.ecs_manager.systemm.systems.iter() { 
-                let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
-                if valid { entity_system_bitfield |= system.system_id; }
-            }
-            entity.system_bitfield = entity_system_bitfield;   
-                     
+            entity.system_bitfield = calculate_system_bitfield(world, entity.c_bitfield);   
+
             // Then add the entity
+            println!("{}", entity);
             world.ecs_manager.entitym.add_entity(entity);            
 
             // Check the systems where this entity might be valid
@@ -153,7 +162,28 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                 let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
                 hashmap.insert(id, new_global_id);
             }
-            // Signal the systems that they might have a new entity 
+            // Update the components links        
+            let old_entity_system_bitfield = entity.system_bitfield;  
+            let combined_c_bitfield = entity.c_bitfield | linkings.c_bitfield;     
+            // Compare the entity system bitfield
+            let new_entity_system_bitfield = calculate_system_bitfield(world, combined_c_bitfield);
+            let system_ids_new = new_entity_system_bitfield & !old_entity_system_bitfield; // This is the system bitfield for the systems that did not originally contain this entity because it was invalid, but the entity just became valid for that system 
+            let entity = world.ecs_manager.entitym.entity_mut(entity_id);
+            entity.linked_components = hashmap;
+            entity.c_bitfield = combined_c_bitfield;
+            entity.system_bitfield = new_entity_system_bitfield;
+            for system in world.ecs_manager.systemm.systems.iter() {
+                // System Bitfield Test
+                // entity:  100101 -> 011010
+                // system1: 000001 -> 000001 -> 000000 -> VALID
+                // system2: 000010 -> 000010 -> 000010 -> INVALID
+
+                // Check if this system actually did add the entity
+                if (system.system_id & !system_ids_new) == 0 {
+
+                }
+            }
+            // Signal the systems who have this entity as a new entity 
             ImmediateTaskResult::None
         },
         Task::SetRootVisibility(_) => ImmediateTaskResult::None,
