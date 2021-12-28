@@ -11,7 +11,7 @@ use std::{collections::HashMap};
 // This can either be a single task or a batch of tasks
 pub enum CommandQueryType {
     Single(CommandQuery),
-    Batch(BatchCommandQuery)
+    Batch(Vec<CommandQuery>)
 }
 
 // A sent command query

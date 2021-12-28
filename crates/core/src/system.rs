@@ -1,4 +1,5 @@
-use crate::batch::{BatchManager, BatchCommandQueryResult};
+use crate::batch::{BatchManager, BatchCommandQuery};
+use crate::command::CommandQueryResult;
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
 use ecs::{CustomSystemData, SystemData};
@@ -207,11 +208,12 @@ pub fn send_lsc_all(lgc: LogicSystemCommand, receiver: &WorldTaskReceiver) {
     }
 }
 
-// Add a batch to the thread local batch manager
-pub fn add_batch(batch: BatchCommandQueryResult) {
+// Add a command onto a batch
+pub fn batch_add(batch_id: u32, command_result: CommandQueryResult) {
     BATCH_MANAGER.with(|cell| {
         let mut cell = cell.borrow_mut();
-        cell.batches.insert(batch.id, batch);
+        let batch = cell.batches.entry(batch_id).or_default();
+        batch.add(command_result);
     });
 }
 

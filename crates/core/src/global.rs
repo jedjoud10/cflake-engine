@@ -221,13 +221,11 @@ pub mod timings {
 
 // Batches
 pub mod batch {
-    use crate::{command::CommandQueryResult, batch::BatchCommandQueryResult};
+    use crate::{command::CommandQueryResult, batch::BatchCommandQuery};
 
-    // Combine multiple tasks into one big batch and send it to the main thread
-    pub fn batch_tasks(commands: Vec<CommandQueryResult>, batch_id: u32) {
-        // Create the batch
-        let batch = BatchCommandQueryResult::new(batch_id, commands);
-        crate::system::add_batch(batch);
+    // Create a new batch command query for a specific ID and add a specific command onto it
+    pub fn batch_add(batch_id: u32, command_result: CommandQueryResult) {
+        crate::system::batch_add(batch_id, command_result);
     }
     // Send a specific thread local batch to the main thread
     pub fn send_batch(batch_id: u32) {

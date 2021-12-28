@@ -1,36 +1,24 @@
 use std::collections::HashMap;
-use crate::command::{CommandQueryResult, CommandQuery, CommandQueryType};
+use crate::{command::{CommandQueryResult, CommandQuery, CommandQueryType}, tasks::Task};
 
 // A thread local batch manager that is stored on each system worker thread
 #[derive(Default)]
 pub struct BatchManager {
-    pub batches: HashMap<u32, BatchCommandQueryResult>
-}
-
-pub struct BatchCommandQuery {
-    pub commands: Vec<CommandQuery>,
+    pub batches: HashMap<u32, BatchCommandQuery>
 }
 
 // A batch of multiple world commands that will be sent to the world all at the same time
-pub struct BatchCommandQueryResult {
+#[derive(Default)]
+pub struct BatchCommandQuery {
     pub id: u32,
-    commands: Vec<CommandQueryResult>
+    pub tasks: Vec<Task>,
 }
 
-impl BatchCommandQueryResult {
-    // New
-    pub fn new(id: u32, commands: Vec<CommandQueryResult>) -> Self {
-        Self {
-            id,
-            commands,
-        }
-    }
+impl BatchCommandQuery {
     // Send the batch to the main thread
     pub fn send(self) {
         let thread_id = std::thread::current().id();
-        let commands = self.commands.into_iter().map(|mut res | {
-            // Send the command
-            let task = res.task.take().unwrap();
+        let commands = self.tasks.into_iter().map(|task | {
             let query = CommandQuery {
                 task,
                 thread_id,
@@ -38,7 +26,12 @@ impl BatchCommandQueryResult {
             };
             query
         }).collect::<Vec<CommandQuery>>();
-        let batch = BatchCommandQuery { commands };
-        crate::command::command(CommandQueryType::Batch(batch));
+        // Send the commands
+        crate::command::command(CommandQueryType::Batch(commands));
+    }
+    // Add a command to this batch, so we can send it when we will send this batch
+    pub fn add(&mut self, mut command_result: CommandQueryResult) {
+        // Send the command
+        self.tasks.push(command_result.task.take().unwrap());
     }
 }

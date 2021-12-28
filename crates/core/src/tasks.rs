@@ -26,7 +26,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
     // We must extract the normal queries from the batch query if needed
     let queries = match query {
         CommandQueryType::Single(s) => vec![s],
-        CommandQueryType::Batch(s) => s.commands,
+        CommandQueryType::Batch(s) => s,
     };
     // Check if a specified entity fits the criteria to be in a specific system
     fn is_entity_valid(system_c_bitfield: usize, entity_c_bitfield: usize) -> bool {
