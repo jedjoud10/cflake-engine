@@ -4,7 +4,7 @@ use terrain::ChunkCoords;
 use super::ChunkSystem;
 ecs::impl_systemdata!(ChunkSystem);
 
-pub fn system_prefire(data: &mut SystemData<ChunkSystem>) {
+fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     // We must add all the chunks that the octree tells us to add
     // First of all, we get the camera data
     let camera = core::global::ecs::entity(core::global::main::world_data().main_camera_entity_id).unwrap();
@@ -52,8 +52,8 @@ fn create_chunk_entity(coords: ChunkCoords, octree_size: u64, data: &mut SystemD
             .with_position(coords.position.into())
             .with_scale(veclib::Vector3::new((coords.size / octree_size) as f32, (coords.size / octree_size) as f32, (coords.size / octree_size) as f32))
         ).unwrap();
-    // Create a renderer with an empty model
-    let renderer = crate::components::Renderer::default().set_material(data.material).set_wireframe(true);
+    // Create a renderer with an empty model and empty material
+    let renderer = crate::components::Renderer::default().set_wireframe(true);
     linkings.link::<crate::components::Renderer>(renderer).unwrap();
     println!("Add chunk {}", name);
     // Add the entity
@@ -68,7 +68,7 @@ fn create_chunk_entity(coords: ChunkCoords, octree_size: u64, data: &mut SystemD
 
 // Create the Chunk Manager system
 // This system will add / remove chunks from the world and nothing else
-pub fn system(depth: u8, csgtree: math::csg::CSGTree, material: rendering::GPUObjectID) {    
+pub fn system(depth: u8, csgtree: math::csg::CSGTree) {    
     // Check if a an already existing node could be subdivided even more
     fn can_node_subdivide_twin(node: &math::octrees::OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
         let c: veclib::Vector3<f32> = node.get_center().into();
@@ -84,7 +84,6 @@ pub fn system(depth: u8, csgtree: math::csg::CSGTree, material: rendering::GPUOb
     let chunk_system_data = ChunkSystem {
         octree,
         csgtree,
-        material,
         ..ChunkSystem::default()
     };
     core::global::ecs::add_system(chunk_system_data, || {

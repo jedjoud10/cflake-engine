@@ -5,18 +5,17 @@ use super::buffer::PipelineBuffer;
 pub struct AsyncGPUCommandData {    
     pub sync: *const gl::types::__GLsync, // The OpenGL fence sync
     pub command_data: Option<(u64, Option<(u64, std::thread::ThreadId)>)>,
-    pub gpuobjectid_opt: Option<GPUObjectID>,
-    pub callback: fn(GPUObjectID, &mut PipelineBuffer),
 }
 
 impl AsyncGPUCommandData {
     // New
-    pub fn new(sync: *const gl::types::__GLsync, gpuobjectid_opt: Option<GPUObjectID>, callback: fn(GPUObjectID, &mut PipelineBuffer)) -> Self {
+    pub fn new() -> Self {
+        let sync = unsafe {
+            gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0)
+        };
         Self {
             sync,
-            gpuobjectid_opt,
             command_data: None,
-            callback
         }
     }
     // Give the data a bit more information about the command that created it

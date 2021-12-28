@@ -4,6 +4,8 @@ use ecs::SystemData;
 use others::callbacks::{NullCallback, OwnedCallback};
 
 // Some default events
+fn system_prefire(data: &mut SystemData<()>) {
+}
 pub fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
 }
 
@@ -18,6 +20,7 @@ pub fn system() {
         // Link some components to the system
         system.link::<crate::components::Transform>();
         // And link the events
+        system.event(ecs::SystemEventType::SystemPrefire(system_prefire));
         system.event(ecs::SystemEventType::EntityUpdate(entity_update));
         system.event(ecs::SystemEventType::EntityRemoved(entity_removed));
         // Return the newly made system

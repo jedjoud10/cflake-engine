@@ -7,7 +7,7 @@ use super::VoxelGenerationSystem;
 ecs::impl_systemdata!(VoxelGenerationSystem);
 
 // Get the first pending chunk, and tell the voxel generator to generate it's voxel data if it is allowed to
-pub fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
+fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
     if !data.generating && data.pending_chunks.len() > 0 {
         // We can run the voxel generation logic
         let chunk_coords = data.pending_chunks.remove(0);
@@ -97,7 +97,7 @@ pub fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
 }
 
 // Check if the current Chunk has gotten it's voxel data generated
-pub fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
+fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
     let chunk_coords = &core::global::ecs::component::<terrain::Chunk>(entity).unwrap().coords;
 
     // Check if we generated the voxel data for this chunk
@@ -122,13 +122,13 @@ pub fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs:
 }
 
 // When a chunk gets added, we tell the voxel generator to buffer the voxel generation for that chunk
-pub fn entity_added(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
+fn entity_added(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
     let chunk_coords = core::global::ecs::component::<terrain::Chunk>(entity).unwrap().coords.clone();
     data.pending_chunks.push(chunk_coords);
 }
 
 // When a chunk gets removed, we tell the voxel generator to stop generating the chunk's voxel data, if it is
-pub fn entity_removed(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
+fn entity_removed(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
     let chunk_coords = &core::global::ecs::component::<terrain::Chunk>(entity).unwrap().coords;
     let i = data.pending_chunks.iter().position(|x| x == chunk_coords);
     if let Option::Some(i) = i { data.pending_chunks.remove(i); }    

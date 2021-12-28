@@ -836,14 +836,10 @@ mod object_creation {
         unsafe { gl::Flush(); }
         // Dispatch the compute shader for execution
         uniforms_group.consume(buf).unwrap();
-        let sync = unsafe {
-            gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-            gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0)
-        };
-        fn callback(id: GPUObjectID, buf: &mut PipelineBuffer) {
-            
+        unsafe {
+            gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);   
         }
-        AsyncGPUCommandData::new(sync, Some(id), callback)
+        AsyncGPUCommandData::new()
     }
     pub fn create_material(buf: &mut PipelineBuffer, material: SharedData<Material>) -> GPUObjectID {
         let material = material.get();

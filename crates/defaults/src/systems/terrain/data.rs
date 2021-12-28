@@ -5,8 +5,7 @@ use terrain::{ChunkCoords, VoxelData, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK
 // Handles the creation/destruction of the chunk entities
 #[derive(Default)]
 pub struct ChunkSystem {
-    pub octree: math::octrees::AdvancedOctree, // An advanced octree, so we can actually create the chunks
-    pub material: rendering::GPUObjectID, // The Chunks' terrain material
+    pub octree: math::octrees::AdvancedOctree, // An advanced octree, so we can actually create the chunks    
     pub csgtree: math::csg::CSGTree, // The CSG tree that will be used for massive optimizations
     pub chunks: HashMap<ChunkCoords, usize>, // The chunks that were added into the world
 }
@@ -62,4 +61,11 @@ impl VoxelGenerationSystem {
             ..Self::default()
         }
     }
+}
+
+// Handles the mesh generation for each chunk
+#[derive(Default)]
+pub struct MesherSystem {
+    pub material: rendering::GPUObjectID, // The Chunks' terrain material
+    pub pending_chunks: Vec<ChunkCoords>, // The chunks that are pending their mesh generation
 }
