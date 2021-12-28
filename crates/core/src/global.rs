@@ -6,10 +6,6 @@ pub mod ecs {
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
-    use lazy_static::lazy_static;
-    use std::sync::atomic::AtomicUsize;
-    use std::sync::atomic::Ordering;
-    use std::sync::RwLockReadGuard;
     /* #region Entities */
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
@@ -67,6 +63,11 @@ pub mod ecs {
         let component = unsafe { &mut *component_ };
         Ok(component)
     }
+    // Manually add a component linking group to an already existing entity
+    // If some components collide, we will panic
+    pub fn link_components(entity: &ecs::Entity, linkings: ecs::ComponentLinkingGroup) -> CommandQueryResult {
+        CommandQueryResult::new(Task::AddComponentLinkingGroup(entity.entity_id, linkings))
+    }
     /* #endregion */
     /* #region Systems */
     // Add the system on the main thread
@@ -77,8 +78,10 @@ pub mod ecs {
     {
         // Create a new thread and initialize the system on it
         let (join_handle, c_bitfield) = crate::system::create_worker_thread(default_state, callback);
-        let system_thread_data = ecs::SystemThreadData::new(join_handle, c_bitfield);
         let mut w = crate::world::world_mut();
+        // Calculate the system bitfield 
+        let bitfield = 1 << w.ecs_manager.systemm.systems.len();
+        let system_thread_data = ecs::SystemThreadData::new(bitfield, join_handle, c_bitfield);
         w.ecs_manager.systemm.systems.push(system_thread_data);
     }
     /* #endregion */

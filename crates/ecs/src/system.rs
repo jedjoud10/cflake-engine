@@ -10,14 +10,15 @@ pub struct SystemManager {
 
 // Contains some data about the actual system on the worker thread
 pub struct SystemThreadData {
+    pub system_id: u32,
     pub join_handle: std::thread::JoinHandle<()>,
     pub c_bitfield: usize,
 }
 
 impl SystemThreadData {
     // New
-    pub fn new(join_handle: std::thread::JoinHandle<()>, c_bitfield: usize) -> Self {
-        Self { join_handle, c_bitfield }
+    pub fn new(system_id: u32, join_handle: std::thread::JoinHandle<()>, c_bitfield: usize) -> Self {
+        Self { system_id, join_handle, c_bitfield }
     }
 }
 

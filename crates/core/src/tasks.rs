@@ -15,18 +15,18 @@ pub enum Task {
     EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup),
     EntityRemove(usize),
     EntityRemovedDecrementCounter(usize),
-    // This is only valid if the entity is also valid
-    ComponentLinkDirect(usize, usize),
-    ComponentUnlinkDirect(usize, usize),
+    // Directly add a component linking group to an already existing entity
+    AddComponentLinkingGroup(usize, ecs::ComponentLinkingGroup),
     // UI
     SetRootVisibility(bool),
 }
 
 // This is some immediate result that is given after we execute a query command on the main thread
+// We can only retrieve this if we are on the main thread
 pub enum ImmediateTaskResult {
     None,
     EntityAdd(usize),
-    EntityDelte(usize),
+    EntityDelete(usize),
 }
 
 impl ImmediateTaskResult {
@@ -35,7 +35,7 @@ impl ImmediateTaskResult {
         match self {
             ImmediateTaskResult::None => None,
             ImmediateTaskResult::EntityAdd(id) => Some(id),
-            ImmediateTaskResult::EntityDelte(id) => Some(id),
+            ImmediateTaskResult::EntityDelete(id) => Some(id),
         }
     }
 }
@@ -67,6 +67,15 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             entity.entity_id = entity_id;
             entity.linked_components = hashmap;
             entity.c_bitfield = entity_cbitfield;
+
+            // Calculate the system bitfield 
+            let mut entity_system_bitfield = 0;
+            for system in world.ecs_manager.systemm.systems.iter() { 
+                let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
+                if valid { entity_system_bitfield |= system.system_id; }
+            }
+            entity.system_bitfield = entity_system_bitfield;   
+                     
             // Then add the entity
             world.ecs_manager.entitym.add_entity(entity);            
 
@@ -132,10 +141,21 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             // Now, we must wait until the next frame to actually delete the entity and it's components
             world.ecs_manager.entitym.entities_to_delete.insert(entity_id, count);
 
-            ImmediateTaskResult::None
+            ImmediateTaskResult::EntityDelete(entity_id)
         }
-        Task::ComponentLinkDirect(_, _) => ImmediateTaskResult::None,
-        Task::ComponentUnlinkDirect(_, _) => ImmediateTaskResult::None,
+        Task::AddComponentLinkingGroup(entity_id, linkings) => {
+            // Check if there are any components that are already linked to the entity
+            let entity = world.ecs_manager.entitym.entity(entity_id);
+            if (entity.c_bitfield & linkings.c_bitfield) != 0 { /* There was a collision! */ panic!() }
+            // Add the new components onto the entity
+            let mut hashmap: HashMap<usize, usize> = HashMap::new();
+            for (id, boxed_component) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
+                let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
+                hashmap.insert(id, new_global_id);
+            }
+            // Signal the systems that they might have a new entity 
+            ImmediateTaskResult::None
+        },
         Task::SetRootVisibility(_) => ImmediateTaskResult::None,
         Task::EntityRemovedDecrementCounter(entity_id) => {
             let counter = {
