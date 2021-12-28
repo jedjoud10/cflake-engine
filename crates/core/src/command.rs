@@ -121,7 +121,7 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
             rendering::MainThreadMessage::ExecuteGPUObjectCallback(id, args, thread_id) => {
                 // We must explicitly run the callback
                 crate::system::send_lsc(
-                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUObject(args)),
+                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingCommanGPUObject(args)),
                     &thread_id,
                     receiver,
                 );
@@ -129,7 +129,7 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
             rendering::MainThreadMessage::ExecuteExecutionCallback(id, thread_id) => {
                 // We must explicitly run the callback
                 crate::system::send_lsc(
-                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingGPUExecution),
+                    LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::RenderingCommanExecution),
                     &thread_id,
                     receiver,
                 );

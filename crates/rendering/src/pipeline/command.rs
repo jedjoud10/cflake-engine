@@ -192,7 +192,7 @@ pub enum RenderTask {
     TextureCreate(SharedData<Texture>),
     TextureUpdateSize(GPUObjectID, TextureType),
     TextureUpdateData(GPUObjectID, Vec<u8>),
-    TextureFillArray(GPUObjectID, usize, Arc<AtomicPtr<Vec<u8>>>),
+    TextureFillArray(GPUObjectID, usize, Arc<Mutex<Vec<u8>>>),
     // Model
     ModelCreate(SharedData<Model>),
     ModelDispose(GPUObjectID),

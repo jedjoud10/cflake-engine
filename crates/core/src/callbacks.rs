@@ -69,14 +69,14 @@ pub fn execute_local_callbacks() {
     for (callback, arguments) in callbacks {
         // Execute the local callbacks
         match callback {
-            CallbackType::GPUObjectCallback(x) => {
+            CallbackType::RenderingGPUObjectCallback(x) => {
                 let callback = x.callback;
                 // Make sure this callback is the GPUObject one
-                if let LogicSystemCallbackArguments::RenderingGPUObject(args) = arguments {
+                if let LogicSystemCallbackArguments::RenderingCommanGPUObject(args) = arguments {
                     (callback)(args);
                 }
             }
-            CallbackType::GPUCommandExecution(x) => {
+            CallbackType::RenderingCommandExecution(x) => {
                 let callback = x.callback;
                 (callback)();
             }
@@ -119,14 +119,14 @@ pub enum LogicSystemCallbackArguments {
     EntityRef(usize),
     EntityMut(usize),
     // Rendering
-    RenderingGPUObject((rendering::GPUObject, rendering::GPUObjectID)),
-    RenderingGPUExecution,
+    RenderingCommanGPUObject((rendering::GPUObject, rendering::GPUObjectID)),
+    RenderingCommanExecution,
 }
 
 // The callback type
 pub enum CallbackType {
-    GPUObjectCallback(OwnedCallback<(rendering::GPUObject, rendering::GPUObjectID)>),
-    GPUCommandExecution(NullCallback),
+    RenderingGPUObjectCallback(OwnedCallback<(rendering::GPUObject, rendering::GPUObjectID)>),
+    RenderingCommandExecution(NullCallback),
     EntityCreatedCallback(RefCallback<ecs::Entity>),
     LocalEntityMut(MutCallback<ecs::Entity>),
 }

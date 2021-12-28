@@ -16,7 +16,7 @@ fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: usize, ire
     // The entity is pending
     let shared_data = rendering::SharedData::new((irenderer.clone(), transform.calculate_matrix()));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
-    result.with_callback(GPUObjectCallback(OwnedCallback::new(move |(_, id)| {
+    result.with_callback(RenderingGPUObjectCallback(OwnedCallback::new(move |(_, id)| {
         global::ecs::entity_mut(
             entity_id,
             LocalEntityMut(MutCallback::new(move |entity| {
@@ -75,7 +75,9 @@ fn system_prefire(data: &mut SystemData<RenderingSystem>) {
     let pos = camera_transform.position;
     let rot = camera_transform.rotation;
     let shared_data = rendering::SharedData::new((pos, rot, camera_data.clip_planes, camera_data.projection_matrix));
-    rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data));
+    if global::timings::frame_count() % 20 == 0 {
+        rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data));
+    }
 }
 
 // Create the default system

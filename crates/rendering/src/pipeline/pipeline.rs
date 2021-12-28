@@ -239,6 +239,7 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUO
 // Run a command on the Render Thread
 fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
     // Handle the common cases
+    //println!("Executing command with ID {}...", command.command_id);
     let (command_result, async_command_data) = match command.task {
         // Window tasks
         RenderTask::WindowUpdateFullscreen(fullscreen) => {
@@ -327,7 +328,6 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
         // Valid command
         command(lock, buf, renderer, camera, render_command_query, window, glfw);
     }
-    //println!("Executed {} Render Commands", i);
 }
 
 // Check if any of the async GPU commands have finished executing
@@ -798,7 +798,7 @@ mod object_creation {
             }
         }
     }
-    pub fn texture_fill_array(buf: &mut PipelineBuffer, id: GPUObjectID, bytecount_per_pixel: usize, return_bytes: Arc<AtomicPtr<Vec<u8>>>) {
+    pub fn texture_fill_array(buf: &mut PipelineBuffer, id: GPUObjectID, bytecount_per_pixel: usize, return_bytes: Arc<Mutex<Vec<u8>>>) {
         let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() {
             x
         } else { panic!() };
@@ -831,10 +831,8 @@ mod object_creation {
         }
 
         // Update the vector that was given using the AtomicPtr
-        let new_bytes = return_bytes.as_ref().load(Ordering::Relaxed); 
-        unsafe { 
-            *new_bytes = pixels;
-        }
+        let mut new_bytes = return_bytes.as_ref().lock().unwrap();
+        *new_bytes = pixels;
     }
     pub fn run_compute(buf: &mut PipelineBuffer, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) -> AsyncGPUCommandData {
         unsafe { gl::Flush(); }

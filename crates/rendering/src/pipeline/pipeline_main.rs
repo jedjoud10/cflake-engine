@@ -28,6 +28,7 @@ pub mod pipec {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, MutexGuard};
 
+    use crate::pipeline::batch_command::BatchRenderCommandQueryResult;
     use crate::pipeline::buffer::PipelineBuffer;
     use crate::pipeline::{buffer, object::*};
     use crate::{GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandQueryResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, is_render_thread};
@@ -61,6 +62,10 @@ pub mod pipec {
     // Send a task to the render thread, returning a Command
     pub fn task(task: RenderTask) -> RenderCommandQueryResult {
         RenderCommandQueryResult::new(task)
+    }
+    // Create a batch of tasks
+    pub fn task_batch(tasks: Vec<RenderTask>) -> BatchRenderCommandQueryResult {
+        BatchRenderCommandQueryResult::new(tasks)
     }
     // Load or create functions
     pub fn subshader(subshader: SubShader) -> GPUObjectID {
