@@ -42,3 +42,15 @@ pub fn is_component_registered<T: ComponentID>() -> bool {
     let rc = REGISTERED_COMPONENTS.read().unwrap();
     rc.contains_key(&T::get_component_name())
 }
+// Get multiple component names from a cBitfield
+pub fn get_component_names_cbitfield(cbitfield: usize) -> Vec<String> {
+    let read = REGISTERED_COMPONENTS.read().unwrap();
+    let mut component_names = Vec::new();
+    for (component_name, id) in (*read).iter() {
+        // If it is valid
+        if (id & !cbitfield) == 0 {
+            component_names.push(component_name.clone());
+        }
+    }
+    component_names
+}

@@ -85,7 +85,6 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             entity.system_bitfield = calculate_system_bitfield(world, entity.c_bitfield);   
 
             // Then add the entity
-            println!("{}", entity);
             world.ecs_manager.entitym.add_entity(entity);            
 
             // Check the systems where this entity might be valid
@@ -155,7 +154,11 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
         Task::AddComponentLinkingGroup(entity_id, linkings) => {
             // Check if there are any components that are already linked to the entity
             let entity = world.ecs_manager.entitym.entity(entity_id);
-            if (entity.c_bitfield & linkings.c_bitfield) != 0 { /* There was a collision! */ panic!() }
+            let collision_cbitfield = entity.c_bitfield & linkings.c_bitfield;
+            if collision_cbitfield != 0 { 
+                // There was a collision! 
+                panic!("The components that had a collision are {:?}", ecs::registry::get_component_names_cbitfield(collision_cbitfield));
+            }
             // Add the new components onto the entity
             let mut hashmap: HashMap<usize, usize> = HashMap::new();
             for (id, boxed_component) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
@@ -183,7 +186,6 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                     crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                 }
             }
-            println!("Update {}", entity);
             // Signal the systems who have this entity as a new entity 
             ImmediateTaskResult::None
         },

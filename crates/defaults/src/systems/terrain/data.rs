@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use rendering::{GPUObjectID, pipec, TextureFormat, TextureFilter, TextureWrapping, TextureType};
 use terrain::{ChunkCoords, VoxelData, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
 
@@ -16,7 +16,7 @@ pub struct VoxelGenerationSystem {
     pub compute: GPUObjectID, // The compute shader that is used for voxel generation    
     pub voxel_texture: GPUObjectID, // The 3D texture used for voxel generation, only stores the density in a 16 bit value    
     pub material_texture: GPUObjectID, // The 3D texture used to store MaterialID, ShaderID
-    pub result: Option<(ChunkCoords, VoxelData)>, // The voxel data that we generated. Also contains the ChunkCoords of the matching Chunk
+    pub result: Option<(ChunkCoords, Option<VoxelData>)>, // The voxel data that we generated. Also contains the ChunkCoords of the matching Chunk
     pub generating: bool, // Are we currently generating / waiting for the voxel data?
     pub pending_chunks: Vec<ChunkCoords>, // The chunks that are pending their voxel data generation
 }
@@ -67,5 +67,5 @@ impl VoxelGenerationSystem {
 #[derive(Default)]
 pub struct MesherSystem {
     pub material: rendering::GPUObjectID, // The Chunks' terrain material
-    pub pending_chunks: Vec<ChunkCoords>, // The chunks that are pending their mesh generation
+    pub pending_chunks: HashSet<ChunkCoords>, // The chunks that are pending their mesh generation
 }

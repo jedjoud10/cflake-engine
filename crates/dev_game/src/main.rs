@@ -14,7 +14,8 @@ pub fn load_entities() {
     // Create the default camera
 
     let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings.link_default::<crate::components::Transform>().unwrap();
+    let camera_transform = crate::components::Transform::default().with_position(veclib::Vector3::Y * 100.0);
+    linkings.link::<crate::components::Transform>(camera_transform).unwrap();
     linkings.link_default::<crate::components::Camera>().unwrap();
     // Add the camera
     let main_camera_entity_id = core::global::ecs::entity_add(ecs::Entity::new("Default Camera"), linkings)

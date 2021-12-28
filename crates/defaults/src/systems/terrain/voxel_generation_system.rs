@@ -31,9 +31,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         let result = pipec::task(pipec::RenderTask::ComputeRun(data.compute, indices, group));
         // Callback data that we will pass
         let mut data = data.clone();
-        let i = std::time::Instant::now();
         result.with_callback(CallbackType::GPUCommandExecution(NullCallback::new(move || { 
-            println!("Took {}ms for the compute shader to run!", i.elapsed().as_millis());
             let i = std::time::Instant::now();
             // This callback is executed when the compute shader finishes it's execution. 
             // We can safely read back from the textures now
@@ -89,9 +87,11 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                     }
                 }
             }
+            // If there is no surface, no need to waste time
+            let surface = min.signum() != max.signum(); 
             // Tell the main system data that we finished the voxel generation for this specific chunk
-            data.result = Some((chunk_coords, voxel_data));
-            println!("Took {}ms for the voxel data creation", i.elapsed().as_millis());
+            let result = if surface { Some(voxel_data) } else { None };
+            data.result = Some((chunk_coords, result));
         })).create());
     }
 }
@@ -101,7 +101,10 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
     let chunk_coords = &core::global::ecs::component::<terrain::Chunk>(entity).unwrap().coords;
 
     // Check if we generated the voxel data for this chunk
-    let voxel_data = if let Option::Some((generatin_chunk_coords, _)) = &data.result {
+    // The outer option is whether or not we have generated the Voxel Data
+    // The inner option is whether or not we have a valid Voxel Data (Voxel Data with a valid surface)
+    let voxel_data = 
+    if let Option::Some((generatin_chunk_coords, _)) = &data.result {
         // We are currently generating a chunk, but we are not sure if we are generating the correct one
         if generatin_chunk_coords == chunk_coords {
             // It is a match, return the voxel data
@@ -116,7 +119,8 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
         core::global::ecs::entity_mut(entity.entity_id, CallbackType::LocalEntityMut(MutCallback::new(|entity| {
             // Update the chunk component
             let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-            chunk.voxel_data = Some(voxel_data);
+            chunk.voxel_data = voxel_data;
+            chunk.generated = true;
         })).create());
     }
 }
