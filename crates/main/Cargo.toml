@@ -10,6 +10,7 @@ edition = "2021"
 glfw = "0.41.0"
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
+spin_sleep = "1.0.0"
 core = { path = "../core" }
 input = { path = "../input" }
 others = { path = "../others" }

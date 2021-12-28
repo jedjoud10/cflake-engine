@@ -46,6 +46,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
             result2.wait_execution();
             let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
             let material_pixels = pipec::convert_native_veclib::<veclib::Vector2<u8>, u8>(material_pixels);
+            println!("{:.2}", i.elapsed().as_secs_f32() * 1000.0);
             // Keep track of the min and max values
             let mut min = f32::MAX;
             let mut max = f32::MIN;
@@ -92,6 +93,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
             // Tell the main system data that we finished the voxel generation for this specific chunk
             let result = if surface { Some(voxel_data) } else { None };
             data.result = Some((chunk_coords, result));
+            
         })).create());
     }
 }

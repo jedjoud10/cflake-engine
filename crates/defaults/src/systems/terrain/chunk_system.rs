@@ -111,7 +111,7 @@ pub fn system(depth: u8, csgtree: math::csg::CSGTree) {
     // Check if a an already existing node could be subdivided even more
     fn can_node_subdivide_twin(node: &math::octrees::OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
         let c: veclib::Vector3<f32> = node.get_center().into();
-        let max = node.depth == 1 || node.depth == 2;
+        let max = node.depth == 1;
         let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
         node.children_indices.is_none() && node.depth < max_depth && result
     }
