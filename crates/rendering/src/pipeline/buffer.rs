@@ -13,6 +13,7 @@ pub struct PipelineBuffer {
     pub names_to_id: HashMap<String, usize>,                            // Names to GPUObject index
     pub renderers: HashSet<GPUObjectID>,                                   // Renderers
     pub async_gpu_command_datas: Vec<AsyncGPUCommandData>, // Some sync data that will be polled each frame
+    pub batch_commands_executed: HashMap<u64, u16> // The number of commands that have executed, who where part of a batch. They are all linked to one u64, which is the batch callback ID 
 }
 
 unsafe impl Send for PipelineBuffer {}

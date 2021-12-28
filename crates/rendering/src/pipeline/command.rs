@@ -10,13 +10,10 @@ use std::{
         Arc, Mutex,
     },
 };
-use super::buffer::PipelineBuffer;
-
-lazy_static! {
-    static ref COMMAND_ID: AtomicU64 = AtomicU64::new(0);
-}
-
-fn increment_command_id() -> u64 {
+use super::{buffer::PipelineBuffer, batch_command::BatchCallbackData};
+// Keep track of a command ID
+pub fn increment_command_id() -> u64 {
+    static COMMAND_ID: AtomicU64 = AtomicU64::new(0);
     COMMAND_ID.fetch_add(1, Ordering::Relaxed)
 }
 
@@ -43,7 +40,7 @@ thread_local! {
 }
 
 // Send a render command to the render thread
-fn command(command: RenderCommandQuery) {
+pub(crate) fn command(command: RenderCommandQuery) {
     // Create the render command
     // No need to check if we are on the render thread, because even if we are on the render thread, we can't do anything differently
     // Send the command query
@@ -57,7 +54,7 @@ fn command(command: RenderCommandQuery) {
 
 // The immediate result for a render command
 pub struct RenderCommandQueryResult {
-    task: Option<RenderTask>, // The task that we will send to the render thread OR that we will execute internally    
+    pub task: Option<RenderTask>, // The task that we will send to the render thread OR that we will execute internally    
     id: Option<GPUObjectID> // In case that we have loaded a GPU object ID already
 }
 
@@ -79,6 +76,7 @@ impl RenderCommandQueryResult {
         let query = RenderCommandQuery {
             task,
             callback_id: None,
+            batch_callback_data: None,
             command_id,
             thread_id: std::thread::current().id(),
         };
@@ -93,11 +91,12 @@ impl RenderCommandQueryResult {
         let query = RenderCommandQuery {
             task,
             callback_id: Some(callback_id),
-            command_id: command_id,
+            batch_callback_data: None,
+            command_id,
             thread_id: std::thread::current().id(),
         };
         command(query);
-    }
+    }    
     // We will wait for thes result of this render command query as a GPUObject ID
     pub fn wait(mut self) -> GPUObjectID {
         // Panic if we are on the render thread
@@ -111,6 +110,7 @@ impl RenderCommandQueryResult {
                 let query = RenderCommandQuery {
                     task,
                     callback_id: None,
+                    batch_callback_data: None,
                     command_id,
                     thread_id: std::thread::current().id(),
                 };
@@ -129,13 +129,13 @@ impl RenderCommandQueryResult {
         let query = RenderCommandQuery {
             task,
             callback_id: None,
+            batch_callback_data: None,
             command_id,
             thread_id: std::thread::current().id(),
         };
         command(query);
         crate::others::wait_execution(command_id)
     }
-
     // Wait for the creation of a GPU object, but internally
     pub fn wait_internal(mut self, buf: &mut PipelineBuffer) -> GPUObjectID {
         if !is_render_thread() { panic!() }
@@ -163,6 +163,7 @@ impl std::ops::Drop for RenderCommandQueryResult {
                     let query = RenderCommandQuery {
                         task,
                         callback_id: None,
+                        batch_callback_data: None,
                         command_id,
                         thread_id: std::thread::current().id(),
                     };
@@ -177,6 +178,7 @@ impl std::ops::Drop for RenderCommandQueryResult {
 // A render command query
 pub struct RenderCommandQuery {
     pub callback_id: Option<u64>,
+    pub batch_callback_data: Option<BatchCallbackData>,
     pub command_id: u64,
     pub thread_id: std::thread::ThreadId,
     pub task: RenderTask,

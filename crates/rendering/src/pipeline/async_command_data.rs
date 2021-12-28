@@ -1,10 +1,15 @@
 use crate::GPUObjectID;
-
-use super::buffer::PipelineBuffer;
+use super::{buffer::PipelineBuffer, batch_command::BatchCallbackData};
+#[derive(Clone)]
+pub struct InternalAsyncGPUCommandData {
+    pub command_id: u64,
+    pub callback_id: Option<(u64, std::thread::ThreadId)>,
+    pub batch_callback_data: Option<BatchCallbackData>,
+}
 
 pub struct AsyncGPUCommandData {    
     pub sync: *const gl::types::__GLsync, // The OpenGL fence sync
-    pub command_data: Option<(u64, Option<(u64, std::thread::ThreadId)>)>,
+    pub internal: Option<InternalAsyncGPUCommandData>,
 }
 
 impl AsyncGPUCommandData {
@@ -15,12 +20,12 @@ impl AsyncGPUCommandData {
         };
         Self {
             sync,
-            command_data: None,
+            internal: None,
         }
     }
     // Give the data a bit more information about the command that created it
-    pub fn additional_command_data(&mut self, command_data: (u64, Option<(u64, std::thread::ThreadId)>)) {
-        self.command_data = Some(command_data);
+    pub fn additional_command_data(&mut self, command_data: InternalAsyncGPUCommandData) {
+        self.internal = Some(command_data);
     }
     // Check if the corresponding GPU data of the fence has executed on the GPU
     pub fn has_executed(&self) -> bool {

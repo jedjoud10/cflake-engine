@@ -2,6 +2,8 @@ use std::{sync::{Mutex, atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering}},
 use crate::{GPUObjectID};
 use lazy_static::lazy_static;
 
+use super::{batch_command::BatchCallbackData, buffer::PipelineBuffer};
+
 #[derive(Default)]
 pub struct CommandExecutionResults {
     pub results: HashMap<u64, Option<GPUObjectID>>,
@@ -74,8 +76,23 @@ pub fn wait_execution(command_id: u64) {
     }
 }
 // We have executed a command, possibly with a returned GPU ID
-pub fn executed_command(command_id: u64, id_opt: Option<GPUObjectID>, x: &mut CommandExecutionResults) {
+pub fn executed_command(buf: &mut PipelineBuffer, command_id: u64, batch_callback_data: Option<BatchCallbackData>, id_opt: Option<GPUObjectID>, x: &mut CommandExecutionResults) {
     // Update the mutex
     // We can now create a copy of the GPUObjectID
     x.results.insert(command_id, id_opt);
+
+    // If we have received a command that was sent in a batch, we must handle the command execution count
+    if let Option::Some(batch_callback_data) = batch_callback_data {
+        let callback_id = batch_callback_data.callback_id;
+        let count = buf.batch_commands_executed.entry(callback_id).or_insert(batch_callback_data.command_count);
+        // We must decrement the counter every time we execute a command
+        *count -= 1;
+
+        // If the counter reaches 0, we have executed all the commands that we need, so we can call the callback now
+        if *count == 0 {
+            buf.callback_objects.insert(callback_id, (None, batch_callback_data.thread_id));
+            // Also remove it
+            buf.batch_commands_executed.remove(&callback_id);
+        }
+    }
 }

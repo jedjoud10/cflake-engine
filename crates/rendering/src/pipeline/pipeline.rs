@@ -1,4 +1,4 @@
-use super::{object::*, async_command_data::AsyncGPUCommandData};
+use super::{object::*, async_command_data::{AsyncGPUCommandData, InternalAsyncGPUCommandData}};
 use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer, others::{RESULT, CommandExecutionResults}};
 use glfw::Context;
 use lazy_static::lazy_static;
@@ -302,16 +302,17 @@ fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, rendere
         Some(x) => Some((x, thread_id)),
         None => None,
     };
+    let batch_callback_data = command.batch_callback_data;
     // If this is an async GPU task (Like running a compute shader) we will not call the callbacks
     if let Option::Some(mut x) = async_command_data {
         // We must buffer the async command data, so we can poll it and check if it was executed later
-        x.additional_command_data((command_id, callback_id));
+        x.additional_command_data(InternalAsyncGPUCommandData { command_id, callback_id, batch_callback_data });
         buf.add_async_gpu_command_data(x);
     } else {
         // This is not an async GPU task, we can buffer the callbacks directly
         buf.received_new_gpuobject_additional(command_result.clone(), callback_id);
-        crate::others::executed_command(command_id, command_result, lock);    
-    }
+        crate::others::executed_command(buf, command_id, batch_callback_data, command_result, lock);    
+    }   
 }
 
 // Poll commands that have been sent to us by the worker threads OR the main thread
@@ -331,21 +332,24 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
 
 // Check if any of the async GPU commands have finished executing
 fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
-    let mut datas: Vec<(u64, Option<(u64, std::thread::ThreadId)>)> = Vec::new();
+    let mut datas: Vec<InternalAsyncGPUCommandData> = Vec::new();
     buf.async_gpu_command_datas.retain(|async_gpu_command_data| {
         // Check if the OpenGL command was executed
         if async_gpu_command_data.has_executed() {
             // The OpenGL command did executed, so we must tell signal the threads to run their callbacks
-            let x = async_gpu_command_data.command_data.unwrap();
-            datas.push(x);             
+            datas.push(async_gpu_command_data.internal.as_ref().unwrap().clone());             
             false
         } else { true }
     });
     // Inform the other thread
     let mut lock = RESULT.lock().unwrap();
-    for (command_id, callback_id) in datas {
+    for async_data in datas {
+        // Extract
+        let command_id = async_data.command_id;
+        let callback_id = async_data.callback_id;
+        let batch_callback_data = async_data.batch_callback_data;
         buf.received_new_gpuobject_additional(None, callback_id);
-        crate::others::executed_command(command_id, None, &mut *lock);   
+        crate::others::executed_command(buf, command_id, batch_callback_data, None, &mut *lock);   
     }
 }
 // Data that will be sent back to the main thread after we start the pipeline thread
