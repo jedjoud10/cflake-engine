@@ -6,8 +6,7 @@ use bitflags::bitflags;
 bitflags! {
     pub struct RendererFlags: u8 {
         const WIREFRAME = 0b00000001;
-        const AUTO_ADD = 0b00000010;
-        const DEFAULT = Self::WIREFRAME.bits + Self::AUTO_ADD.bits;
+        const DEFAULT = Self::WIREFRAME.bits;
     }
 }
 

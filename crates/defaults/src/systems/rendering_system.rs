@@ -6,9 +6,7 @@ use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 use rendering::RendererFlags;
 // An improved multithreaded rendering system
 #[derive(Default)]
-struct RenderingSystem {
-    pending_renderers: HashSet<usize>, // Entity IDs of Renderers that are waiting for the Render Thread to add their iRenderer
-}
+struct RenderingSystem;
 ecs::impl_systemdata!(RenderingSystem);
 
 // Create a renderer from an entity
@@ -16,7 +14,6 @@ fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: usize, ire
     // Create the shared data
     let mut data = data.clone();
     // The entity is pending
-    data.pending_renderers.insert(entity_id);
     let shared_data = rendering::SharedData::new((irenderer.clone(), transform.calculate_matrix()));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
     result.with_callback(GPUObjectCallback(OwnedCallback::new(move |(_, id)| {
@@ -27,7 +24,6 @@ fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: usize, ire
                 // Update the entity's renderer
                 r.internal_renderer.index = Some(id);
                 // The entity got it's internal renderer, so it is not pending anymore
-                data.pending_renderers.remove(&entity.entity_id);
             }))
             .create(),
         );
@@ -42,10 +38,7 @@ fn entity_added(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     // Get the transform, and make sure it's matrix is valid
     let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
     // First of all, check if we must auto-add this renderer and check if we have a valid model
-    if irenderer.flags.contains(RendererFlags::AUTO_ADD) && irenderer.model.is_some() {
-        // We can add this renderer  
-        create_renderer(data, entity.entity_id, irenderer, transform);             
-    }    
+    create_renderer(data, entity.entity_id, irenderer, transform);        
 }
 // Remove the renderer from the pipeline renderer
 fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
@@ -70,14 +63,6 @@ fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
             }
             None => {}
         }
-    }
-
-    // Check again if the renderer can be auto-added
-    if irenderer.flags.contains(RendererFlags::AUTO_ADD) {
-        // Check if the entity has a valid render thread Renderer associated with it AND if we have a valid model
-        if irenderer.index.is_none() && irenderer.model.is_some() {
-            create_renderer(data, entity.entity_id, irenderer, transform); 
-        }    
     }
 }
 // System prefire so we can send the camera data to the render pipeline

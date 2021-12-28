@@ -44,8 +44,7 @@ impl std::hash::Hash for ChunkCoords {
 #[derive(Default)]
 pub struct Chunk {
     pub coords: ChunkCoords,
-    pub generated: Option<VoxelData>,
-    pub tmodel: TModel
+    pub voxel_data: Option<VoxelData>,
 }
 
 // Main traits implemented
@@ -56,12 +55,7 @@ impl Chunk {
     pub fn new(coords: ChunkCoords) -> Self {        
         Self {
             coords,
-            generated: None,
-            tmodel: TModel {
-                model: None,
-                skirts_model: None,
-                coords,
-            },
+            voxel_data: None,
         }
     }
 }

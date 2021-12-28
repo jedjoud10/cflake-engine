@@ -116,7 +116,7 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
         core::global::ecs::entity_mut(entity.entity_id, CallbackType::LocalEntityMut(MutCallback::new(|entity| {
             // Update the chunk component
             let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-            chunk.generated = Some(voxel_data);
+            chunk.voxel_data = Some(voxel_data);
         })).create());
     }
 }

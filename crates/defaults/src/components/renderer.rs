@@ -6,13 +6,11 @@ pub struct Renderer {
     pub internal_renderer: rendering::Renderer, // The internal renderer that we will pass to the render thread when creating this component
     pub matrix: veclib::Matrix4x4<f32>, // The model matrix of this renderer
     pub update_frame_id: FrameID,
-    pub added: bool,
 }
 
 impl Default for Renderer {
     fn default() -> Self {
         Self {
-            added: false,
             internal_renderer: rendering::Renderer::default(),
             matrix: veclib::Matrix4x4::default(),
             update_frame_id: FrameID::default(),
@@ -21,15 +19,6 @@ impl Default for Renderer {
 }
 
 impl Renderer {
-    // Set the auto add status
-    pub fn set_autoadd(mut self, autoadd: bool) -> Self {
-        if autoadd {
-            self.internal_renderer.flags.insert(RendererFlags::AUTO_ADD);
-        } else {
-            self.internal_renderer.flags.remove(RendererFlags::AUTO_ADD);
-        }
-        self
-    }
     // Set a model
     pub fn set_model(mut self, model: GPUObjectID) -> Self {
         self.internal_renderer.model = Some(model);

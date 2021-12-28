@@ -52,9 +52,6 @@ fn create_chunk_entity(coords: ChunkCoords, octree_size: u64, data: &mut SystemD
             .with_position(coords.position.into())
             .with_scale(veclib::Vector3::new((coords.size / octree_size) as f32, (coords.size / octree_size) as f32, (coords.size / octree_size) as f32))
         ).unwrap();
-    // Create a renderer with an empty model and empty material
-    let renderer = crate::components::Renderer::default().set_wireframe(true);
-    linkings.link::<crate::components::Renderer>(renderer).unwrap();
     println!("Add chunk {}", name);
     // Add the entity
     let result = core::global::ecs::entity_add(entity, linkings);

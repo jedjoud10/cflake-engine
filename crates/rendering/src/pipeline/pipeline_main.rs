@@ -15,14 +15,10 @@ pub fn is_render_thread() -> bool {
 }
 
 
-// Generate a random name using the current system time and a prefix
 pub fn rname(prefix: &str) -> String {
-    // Create a randomized name for a texture without a name
-    let mut hash = DefaultHasher::new();
-    let st = std::time::SystemTime::now();
-    st.hash(&mut hash);
-    let x = hash.finish();
-    format!("{}_{:x}", prefix, x)
+    // Use the others::id_counter to create a counted ID that we can transform into a String
+    let name = format!("{:x}", others::id_counter::get_id());
+    format!("{}_{}", prefix, name)
 }
 
 pub mod pipec {
@@ -92,7 +88,6 @@ pub mod pipec {
         })
     }
     pub fn model(model: Model) -> GPUObjectID {
-        // (TODO: Implement model caching)
         execute(match others::get_id(&model.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::ModelCreate(SharedData::new(model))),

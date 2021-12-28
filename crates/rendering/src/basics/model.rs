@@ -33,32 +33,34 @@ impl Model {
         }
     }
     // Combine a model with this one, and return the new model
-    pub fn combine(&self, other: &Self) -> Self {
-        let mut output_model = self.clone();
+    pub fn combine(mut self, other: Self) -> Self {
         let max_triangle_index: u32 = self.vertices.len() as u32;
         // Get the max triangle inde
         let mut final_tris = other.triangles.clone();
         for x in final_tris.iter_mut() {
             *x += max_triangle_index;
         }
-        output_model.triangles.extend(final_tris);
-        output_model.vertices.extend(other.vertices.clone());
-        output_model.normals.extend(other.normals.clone());
-        output_model.uvs.extend(other.uvs.clone());
-        output_model.colors.extend(other.colors.clone());
-        output_model.tangents.extend(other.tangents.clone());
-        output_model
+        self.triangles.extend(final_tris);
+        self.vertices.extend(other.vertices.into_iter());
+        self.normals.extend(other.normals.into_iter());
+        self.uvs.extend(other.uvs.into_iter());
+        self.colors.extend(other.colors.into_iter());
+        self.tangents.extend(other.tangents.into_iter());
+        // Update the name as well
+        self.name = format!("{}_{}", self.name, other.name);
+        self
     }
     // Comebine a model with this one
     // NOTE: This assumes that the second model uses vertices from the first model
-    pub fn combine_smart(&self, other: &Self) -> Self {
-        let mut output_model: Self = self.clone();
-        output_model.triangles.extend(other.triangles.clone());
-        output_model.vertices.extend(other.vertices.clone());
-        output_model.normals.extend(other.normals.clone());
-        output_model.uvs.extend(other.uvs.clone());
-        output_model.colors.extend(other.colors.clone());
-        output_model.tangents.extend(other.tangents.clone());
-        output_model
+    pub fn combine_smart(mut self, other: Self) -> Self {
+        self.triangles.extend(other.triangles.into_iter());
+        self.vertices.extend(other.vertices.into_iter());
+        self.normals.extend(other.normals.into_iter());
+        self.uvs.extend(other.uvs.into_iter());
+        self.colors.extend(other.colors.into_iter());
+        self.tangents.extend(other.tangents.into_iter());
+        // Update the name as well
+        self.name = format!("{}_{}", self.name, other.name);
+        self
     }
 }

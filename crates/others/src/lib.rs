@@ -2,6 +2,7 @@
 mod instances;
 mod smart_list;
 mod time;
+pub mod id_counter;
 pub mod world_barrier_data;
 pub use instances::Instance;
 pub mod callbacks;

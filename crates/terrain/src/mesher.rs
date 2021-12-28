@@ -135,8 +135,8 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
         transform_y_local,
     );
     TModel {
-        model: Some(model),
-        skirts_model: Some(skirts_model),
+        model: model,
+        skirts_model: skirts_model,
         coords: coords,
     }
 }
