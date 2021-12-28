@@ -9,7 +9,7 @@ pub struct Voxel {
 }
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap
 pub struct VoxelData {
-    pub voxels: Box<[Voxel]>
+    pub voxels: Box<[Voxel]>,
 }
 
 impl Index<usize> for VoxelData {

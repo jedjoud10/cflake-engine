@@ -1,12 +1,12 @@
 use crate::{custom_world_data::CustomWorldData, GameConfig};
 use ::rendering::*;
 
+use ::others::*;
 use debug::*;
 use ecs::*;
 use glfw::{self};
 use input::*;
 use io::SaverLoader;
-use ::others::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::thread::ThreadId;

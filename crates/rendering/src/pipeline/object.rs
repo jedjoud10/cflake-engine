@@ -4,7 +4,6 @@ use crate::{GPUObjectID, MaterialFlags, SubShaderType, TextureShaderAccessType, 
 
 use super::buffer::PipelineBuffer;
 
-
 pub trait GPUObjectIdentifiable {
     // Get the GPU object ID of the current GPU object
     fn get_id(&self) -> GPUObjectID;
@@ -56,7 +55,7 @@ pub struct CameraDataGPUObject {
 pub struct MaterialGPUObject {
     pub shader: Option<GPUObjectID>,
     pub uniforms: ShaderUniformsGroup,
-    pub flags: MaterialFlags 
+    pub flags: MaterialFlags,
 }
 #[derive(Clone)]
 pub struct RendererGPUObject {
@@ -66,7 +65,7 @@ pub struct RendererGPUObject {
 }
 
 pub mod uniform_setters {
-    use crate::{GPUObjectID, TextureGPUObject, TextureShaderAccessType, pipeline::buffer::PipelineBuffer, GPUObject};
+    use crate::{pipeline::buffer::PipelineBuffer, GPUObject, GPUObjectID, TextureGPUObject, TextureShaderAccessType};
     use std::ffi::CString;
     // Actually set the shader uniforms
     #[allow(temporary_cstring_as_ptr)]
@@ -181,7 +180,11 @@ impl ShaderUniformsGroup {
         for a in y {
             x.insert(a.0, a.1);
         }
-        Self { shader: Some(shader), shader_id: None, uniforms: x }
+        Self {
+            shader: Some(shader),
+            shader_id: None,
+            uniforms: x,
+        }
     }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
@@ -274,9 +277,13 @@ impl ShaderUniformsGroup {
                         x.program
                     } else if let Option::Some(x) = buf.as_compute_shader(&id) {
                         x.program
-                    } else { return None; }
-                },
-                None => { return None; },
+                    } else {
+                        return None;
+                    }
+                }
+                None => {
+                    return None;
+                }
             },
         };
         unsafe {

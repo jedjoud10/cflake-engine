@@ -1,5 +1,5 @@
-pub mod voxel_generation_system;
 pub mod chunk_system;
-pub mod mesher_system;
 mod data;
+pub mod mesher_system;
+pub mod voxel_generation_system;
 use data::*;

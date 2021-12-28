@@ -1,5 +1,8 @@
 use others::{Instance, SmartList};
-use std::{collections::{HashMap, HashSet}, sync::{atomic::AtomicU8, Arc}};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::{atomic::AtomicU8, Arc},
+};
 
 // An entity manager that handles entities
 #[derive(Default)]
@@ -37,11 +40,11 @@ impl EntityManager {
 // A simple entity in the world
 #[derive(Clone, Default, Debug)]
 pub struct Entity {
-    pub name: String, // The name of the entity
-    pub system_bitfield: u32, // A bitfield for the System IDs that we are part of
-    pub entity_id: usize, // The ID of the entity
+    pub name: String,                             // The name of the entity
+    pub system_bitfield: u32,                     // A bitfield for the System IDs that we are part of
+    pub entity_id: usize,                         // The ID of the entity
     pub linked_components: HashMap<usize, usize>, // A hash map containing the component ID to global ID of our components
-    pub c_bitfield: usize, // Our component bitfield
+    pub c_bitfield: usize,                        // Our component bitfield
 }
 
 // ECS time bois

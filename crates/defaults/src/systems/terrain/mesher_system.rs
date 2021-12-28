@@ -1,11 +1,11 @@
 use core::global::callbacks::CallbackType;
 use std::collections::HashSet;
 
+use super::MesherSystem;
 use ecs::SystemData;
 use math::octrees::OctreeNode;
 use others::callbacks::MutCallback;
 use terrain::{ChunkCoords, ChunkState};
-use super::MesherSystem;
 ecs::impl_systemdata!(MesherSystem);
 
 // Loop though every entity, checking if one of them got their Voxel Data generated
@@ -18,30 +18,34 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             // If the voxel data is valid, create the model for this chunk
             let tmodel = terrain::mesher::generate_model(&voxel_data, chunk.coords, true);
             let model = rendering::Model::combine(tmodel.model, tmodel.skirts_model);
-    
+
             // Create the model on the GPU
             let model_id = rendering::pipec::model(model);
             // Since each chunk starts without a renderer, we must manually add the renderer component
             let mut linkings = ecs::ComponentLinkingGroup::new();
             // Create a renderer with the correct model and materials
-            
-            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material) ;
+
+            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material);
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
             data.pending_chunks.remove(&chunk.coords);
-            core::global::ecs::link_components(entity.entity_id, linkings);            
+            core::global::ecs::link_components(entity.entity_id, linkings);
         } else {
             // We generated the voxel data, but there was no surface, so no need to create the model
         }
 
         // Even though we might not have a model, we must validate the Chunk's state
-        core::global::ecs::entity_mut(entity.entity_id, CallbackType::LocalEntityMut(MutCallback::new(|entity| {
-            // Update the chunk state
-            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-            chunk.state = ChunkState::PendingModelGeneration;
-            chunk.state = ChunkState::ValidModelData;
-            chunk.state = ChunkState::Valid;
-        })).create());
-    }    
+        core::global::ecs::entity_mut(
+            entity.entity_id,
+            CallbackType::LocalEntityMut(MutCallback::new(|entity| {
+                // Update the chunk state
+                let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
+                chunk.state = ChunkState::PendingModelGeneration;
+                chunk.state = ChunkState::ValidModelData;
+                chunk.state = ChunkState::Valid;
+            }))
+            .create(),
+        );
+    }
 }
 
 // When a Chunk gets added to the mesher system, we will constantly wait for it's Voxel Data generation
@@ -57,7 +61,7 @@ fn entity_removed(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
 }
 
 // Create the Mesher System
-pub fn system(material: rendering::GPUObjectID) {    
+pub fn system(material: rendering::GPUObjectID) {
     let mesher_system_data = MesherSystem {
         material,
         pending_chunks: HashSet::new(),

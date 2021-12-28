@@ -1,7 +1,7 @@
 use core::global::{self, callbacks::CallbackType::*};
 use std::collections::{HashMap, HashSet};
 
-use ecs::{SystemEventType, SystemData};
+use ecs::{SystemData, SystemEventType};
 use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 use rendering::RendererFlags;
 // An improved multithreaded rendering system
@@ -16,18 +16,21 @@ fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: usize, ire
     // The entity is pending
     let shared_data = rendering::SharedData::new((irenderer.clone(), transform.calculate_matrix()));
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
-    result.with_callback(RenderingGPUObjectCallback(OwnedCallback::new(move |(_, id)| {
-        global::ecs::entity_mut(
-            entity_id,
-            LocalEntityMut(MutCallback::new(move |entity| {
-                let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
-                // Update the entity's renderer
-                r.internal_renderer.index = Some(id);
-                // The entity got it's internal renderer, so it is not pending anymore
-            }))
-            .create(),
-        );
-    })).create());  
+    result.with_callback(
+        RenderingGPUObjectCallback(OwnedCallback::new(move |(_, id)| {
+            global::ecs::entity_mut(
+                entity_id,
+                LocalEntityMut(MutCallback::new(move |entity| {
+                    let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
+                    // Update the entity's renderer
+                    r.internal_renderer.index = Some(id);
+                    // The entity got it's internal renderer, so it is not pending anymore
+                }))
+                .create(),
+            );
+        }))
+        .create(),
+    );
 }
 
 // Add the renderer in the render pipeline renderer
@@ -38,7 +41,7 @@ fn entity_added(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     // Get the transform, and make sure it's matrix is valid
     let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
     // First of all, check if we must auto-add this renderer and check if we have a valid model
-    create_renderer(data, entity.entity_id, irenderer, transform);        
+    create_renderer(data, entity.entity_id, irenderer, transform);
 }
 // Remove the renderer from the pipeline renderer
 fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
@@ -48,18 +51,20 @@ fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) 
     if let Option::Some(index) = index {
         rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
     }
-    
 }
 // Send the updated data from the entity to the render pipeline as commands
 fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     let renderer = core::global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let irenderer = &renderer.internal_renderer;
     let transform = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
-    // Only update the transform if we need to 
+    // Only update the transform if we need to
     if transform.update_frame_id != renderer.update_frame_id {
         match renderer.internal_renderer.index {
             Some(index) => {
-                rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(index, rendering::SharedData::new(transform.calculate_matrix())));
+                rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(
+                    index,
+                    rendering::SharedData::new(transform.calculate_matrix()),
+                ));
             }
             None => {}
         }

@@ -1,8 +1,8 @@
 use crate::ChunkCoords;
 use crate::TModel;
+use crate::VoxelData;
 use crate::ISOLINE;
 use crate::MAIN_CHUNK_SIZE;
-use crate::VoxelData;
 
 use super::tables::*;
 use super::Voxel;

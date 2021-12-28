@@ -1,8 +1,8 @@
 use ecs::SystemThreadData;
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU8;
+use std::sync::Arc;
 
 use crate::command::CommandQuery;
 use crate::communication::WorldTaskReceiver;
@@ -58,10 +58,12 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
     }
     // Calculate the system bitfield from an entity component bitfield
     fn calculate_system_bitfield(world: &crate::world::World, entity_c_bitfield: usize) -> u32 {
-        let mut system_bitfield = 0; 
-        for system in world.ecs_manager.systemm.systems.iter() { 
+        let mut system_bitfield = 0;
+        for system in world.ecs_manager.systemm.systems.iter() {
             let valid = is_entity_valid(system.c_bitfield, entity_c_bitfield);
-            if valid { system_bitfield |= system.system_id; }
+            if valid {
+                system_bitfield |= system.system_id;
+            }
         }
         system_bitfield
     }
@@ -81,11 +83,11 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             entity.linked_components = hashmap;
             entity.c_bitfield = entity_cbitfield;
 
-            // Calculate the system bitfield 
-            entity.system_bitfield = calculate_system_bitfield(world, entity.c_bitfield);   
+            // Calculate the system bitfield
+            entity.system_bitfield = calculate_system_bitfield(world, entity.c_bitfield);
 
             // Then add the entity
-            world.ecs_manager.entitym.add_entity(entity);            
+            world.ecs_manager.entitym.add_entity(entity);
 
             // Check the systems where this entity might be valid
             for system in world.ecs_manager.systemm.systems.iter() {
@@ -113,18 +115,20 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
         }
         Task::EntityRemove(entity_id) => {
             // Check if we even have the entity in the first place
-            if !world.ecs_manager.entitym.is_entity_valid(entity_id) { return ImmediateTaskResult::None;  }
+            if !world.ecs_manager.entitym.is_entity_valid(entity_id) {
+                return ImmediateTaskResult::None;
+            }
             // Run the Entity Remove event on the systems
-            let entity = world.ecs_manager.entitym.entity(entity_id);           
+            let entity = world.ecs_manager.entitym.entity(entity_id);
 
             // Check the systems where this entity might be valid
-            let valid_systems: Vec<&SystemThreadData> = world.ecs_manager
-                .systemm.systems
+            let valid_systems: Vec<&SystemThreadData> = world
+                .ecs_manager
+                .systemm
+                .systems
                 .iter()
-                .filter(|system| 
-                    is_entity_valid(system.c_bitfield, entity.c_bitfield)
-                )
-            .collect::<Vec<&SystemThreadData>>();
+                .filter(|system| is_entity_valid(system.c_bitfield, entity.c_bitfield))
+                .collect::<Vec<&SystemThreadData>>();
             let count = valid_systems.len() as u8;
             // Send the command to each system
             for system in valid_systems {
@@ -155,9 +159,12 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             // Check if there are any components that are already linked to the entity
             let entity = world.ecs_manager.entitym.entity(entity_id);
             let collision_cbitfield = entity.c_bitfield & linkings.c_bitfield;
-            if collision_cbitfield != 0 { 
-                // There was a collision! 
-                panic!("The components that had a collision are {:?}", ecs::registry::get_component_names_cbitfield(collision_cbitfield));
+            if collision_cbitfield != 0 {
+                // There was a collision!
+                panic!(
+                    "The components that had a collision are {:?}",
+                    ecs::registry::get_component_names_cbitfield(collision_cbitfield)
+                );
             }
             // Add the new components onto the entity
             let mut hashmap: HashMap<usize, usize> = HashMap::new();
@@ -165,12 +172,12 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                 let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
                 hashmap.insert(id, new_global_id);
             }
-            // Update the components links        
-            let old_entity_system_bitfield = entity.system_bitfield;  
-            let combined_c_bitfield = entity.c_bitfield | linkings.c_bitfield;     
+            // Update the components links
+            let old_entity_system_bitfield = entity.system_bitfield;
+            let combined_c_bitfield = entity.c_bitfield | linkings.c_bitfield;
             // Compare the entity system bitfield
             let new_entity_system_bitfield = calculate_system_bitfield(world, combined_c_bitfield);
-            let system_ids_new = new_entity_system_bitfield & !old_entity_system_bitfield; // This is the system bitfield for the systems that did not originally contain this entity because it was invalid, but the entity just became valid for that system 
+            let system_ids_new = new_entity_system_bitfield & !old_entity_system_bitfield; // This is the system bitfield for the systems that did not originally contain this entity because it was invalid, but the entity just became valid for that system
             let entity = world.ecs_manager.entitym.entity_mut(entity_id);
             entity.linked_components.extend(hashmap);
             entity.c_bitfield = combined_c_bitfield;
@@ -186,9 +193,9 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                     crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                 }
             }
-            // Signal the systems who have this entity as a new entity 
+            // Signal the systems who have this entity as a new entity
             ImmediateTaskResult::None
-        },
+        }
         Task::SetRootVisibility(_) => ImmediateTaskResult::None,
         Task::EntityRemovedDecrementCounter(entity_id) => {
             let counter = {
@@ -208,6 +215,6 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             }
 
             ImmediateTaskResult::None
-        },
+        }
     }
 }

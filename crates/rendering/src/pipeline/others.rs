@@ -1,6 +1,12 @@
-use std::{sync::{Mutex, atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering}}, collections::HashMap};
-use crate::{GPUObjectID};
+use crate::GPUObjectID;
 use lazy_static::lazy_static;
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
+        Mutex,
+    },
+};
 
 use super::{batch_command::BatchCallbackData, buffer::PipelineBuffer};
 
@@ -11,7 +17,7 @@ pub struct CommandExecutionResults {
 
 lazy_static! {
     // A global buffer that contains a conversion HashMap of Names -> GPUObjectIDs
-    pub(crate) static ref GLOBAL_BUFFER: Mutex<GlobalBuffer> = Mutex::new(GlobalBuffer::default()); 
+    pub(crate) static ref GLOBAL_BUFFER: Mutex<GlobalBuffer> = Mutex::new(GlobalBuffer::default());
     pub(crate) static ref RESULT: Mutex<CommandExecutionResults> = Mutex::new(CommandExecutionResults::default());
 }
 
@@ -58,7 +64,7 @@ pub fn wait_id(command_id: u64) -> GPUObjectID {
         let mut lock = RESULT.lock().unwrap();
         if lock.results.contains_key(&command_id) {
             // We can now create a copy of the GPUObjectID
-            let x = lock.results.remove(&command_id).flatten().unwrap(); 
+            let x = lock.results.remove(&command_id).flatten().unwrap();
             return x;
         }
     }
@@ -70,7 +76,7 @@ pub fn wait_execution(command_id: u64) {
         let mut lock = RESULT.lock().unwrap();
         if lock.results.contains_key(&command_id) {
             // We can now create a copy of the GPUObjectID
-            lock.results.remove(&command_id); 
+            lock.results.remove(&command_id);
             return;
         }
     }

@@ -30,8 +30,7 @@ impl PartialEq for ChunkCoords {
         self.center == other.center && self.depth == other.depth
     }
 }
-impl Eq for ChunkCoords {
-}
+impl Eq for ChunkCoords {}
 impl std::hash::Hash for ChunkCoords {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.center.hash(state);
@@ -43,7 +42,7 @@ impl std::hash::Hash for ChunkCoords {
 // Some sort of state for chunks
 #[derive(PartialEq, Clone)]
 pub enum ChunkState {
-    AwaitingCreation, 
+    AwaitingCreation,
     AwaitingDeletion,
 
     PendingVoxelGeneration,
@@ -67,7 +66,7 @@ ecs::impl_component!(Chunk);
 
 impl Chunk {
     // New
-    pub fn new(coords: ChunkCoords) -> Self {        
+    pub fn new(coords: ChunkCoords) -> Self {
         Self {
             coords,
             voxel_data: None,

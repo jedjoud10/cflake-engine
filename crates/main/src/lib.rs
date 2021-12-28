@@ -58,10 +58,10 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
     core::global::main::start_system_loops();
     let mut last_time: f64 = 0.0;
     others::barrier::as_ref().init_finished_world();
-    
+
     while !window.should_close() {
         // Update the delta_time
-        
+
         let new_time = glfw.get_time();
         let delta = new_time - last_time;
         last_time = new_time;
@@ -77,7 +77,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
             core::world::update_main_thread_stuff(delta, world, &pipeline_data);
             // Get the GLFW events first
             glfw.poll_events();
-            
+
             for (_, event) in glfw::flush_messages(&events) {
                 match event {
                     glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
@@ -106,7 +106,6 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
             }
             //std::thread::sleep(std::time::Duration::from_millis(1));
         }
-        
     }
     // When the window closes and we exit from the game
     core::world::kill_world(pipeline_data);

@@ -1,16 +1,16 @@
+use super::{batch_command::BatchCallbackData, buffer::PipelineBuffer};
 use crate::{
-    internal_task, ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup, SubShader,
-    Texture, TextureGPUObject, TextureType, is_render_thread,
+    internal_task, is_render_thread, ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup,
+    SubShader, Texture, TextureGPUObject, TextureType,
 };
 use lazy_static::lazy_static;
 use std::{
     cell::RefCell,
     sync::{
-        atomic::{AtomicU64, Ordering, AtomicPtr, AtomicBool},
+        atomic::{AtomicBool, AtomicPtr, AtomicU64, Ordering},
         Arc, Mutex,
     },
 };
-use super::{buffer::PipelineBuffer, batch_command::BatchCallbackData};
 // Keep track of a command ID
 pub fn increment_command_id() -> u64 {
     static COMMAND_ID: AtomicU64 = AtomicU64::new(0);
@@ -54,8 +54,8 @@ pub(crate) fn command(command: RenderCommandQuery) {
 
 // The immediate result for a render command
 pub struct RenderCommandQueryResult {
-    pub task: Option<RenderTask>, // The task that we will send to the render thread OR that we will execute internally    
-    id: Option<GPUObjectID> // In case that we have loaded a GPU object ID already
+    pub task: Option<RenderTask>, // The task that we will send to the render thread OR that we will execute internally
+    id: Option<GPUObjectID>,      // In case that we have loaded a GPU object ID already
 }
 
 impl RenderCommandQueryResult {
@@ -69,7 +69,9 @@ impl RenderCommandQueryResult {
     }
     // Explicitly tell this command query result to send the result immediatly
     pub fn send(mut self) {
-        if is_render_thread() { panic!() }
+        if is_render_thread() {
+            panic!()
+        }
         // Send the command
         let task = self.task.take().unwrap();
         let command_id = increment_command_id();
@@ -84,7 +86,9 @@ impl RenderCommandQueryResult {
     }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
-        if is_render_thread() { panic!() }
+        if is_render_thread() {
+            panic!()
+        }
         // Send the command
         let task = self.task.take().unwrap();
         let command_id = increment_command_id();
@@ -96,11 +100,13 @@ impl RenderCommandQueryResult {
             thread_id: std::thread::current().id(),
         };
         command(query);
-    }    
+    }
     // We will wait for thes result of this render command query as a GPUObject ID
     pub fn wait(mut self) -> GPUObjectID {
         // Panic if we are on the render thread
-        if is_render_thread() { panic!() }
+        if is_render_thread() {
+            panic!()
+        }
         // Send the command, and wait for it's return value
         match self.id {
             Some(x) => x,
@@ -116,13 +122,15 @@ impl RenderCommandQueryResult {
                 };
                 command(query);
                 crate::others::wait_id(command_id)
-            },
-        }        
+            }
+        }
     }
     // Wait till we have executed the command on the render thread
     pub fn wait_execution(mut self) {
         // Panic if we are on the render thread
-        if is_render_thread() { panic!() }
+        if is_render_thread() {
+            panic!()
+        }
         // Send the command, and wait for it's return value
         let command_id = increment_command_id();
         let task = self.task.take().unwrap();
@@ -138,7 +146,9 @@ impl RenderCommandQueryResult {
     }
     // Wait for the creation of a GPU object, but internally
     pub fn wait_internal(mut self, buf: &mut PipelineBuffer) -> GPUObjectID {
-        if !is_render_thread() { panic!() }
+        if !is_render_thread() {
+            panic!()
+        }
         match self.id {
             Some(x) => x,
             None => {
@@ -148,7 +158,7 @@ impl RenderCommandQueryResult {
                 let gpuobject = id.0.unwrap();
                 gpuobject
             }
-        }        
+        }
     }
 }
 
@@ -171,7 +181,7 @@ impl std::ops::Drop for RenderCommandQueryResult {
                 }
                 None => { /* We have called a function that invalidates the task */ }
             }
-        }        
+        }
     }
 }
 

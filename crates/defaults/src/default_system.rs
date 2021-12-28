@@ -4,13 +4,10 @@ use ecs::SystemData;
 use others::callbacks::{NullCallback, OwnedCallback};
 
 // Some default events
-fn system_prefire(data: &mut SystemData<()>) {
-}
-pub fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
-}
+fn system_prefire(data: &mut SystemData<()>) {}
+pub fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {}
 
-pub fn entity_removed(data: &mut SystemData<()>, entity: &ecs::Entity) {
-}
+pub fn entity_removed(data: &mut SystemData<()>, entity: &ecs::Entity) {}
 
 // Create the default system
 pub fn system() {

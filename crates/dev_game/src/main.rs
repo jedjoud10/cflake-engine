@@ -26,15 +26,11 @@ pub fn load_entities() {
     let material = rendering::pipec::material(rendering::Material::new("Test"));
     let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap());
     let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings
-        .link_default::<crate::components::Transform>()
-        .unwrap();   
-        
+    linkings.link_default::<crate::components::Transform>().unwrap();
+
     let entity_id = core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings).immediate_result().entity_id().unwrap();
     let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings
-        .link(crate::components::Renderer::default().set_model(model).set_material(material))
-        .unwrap();
+    linkings.link(crate::components::Renderer::default().set_model(model).set_material(material)).unwrap();
     core::global::ecs::link_components(entity_id, linkings);
     /*
     for x in 0..200 {
@@ -45,7 +41,7 @@ pub fn load_entities() {
         linkings
             .link(crate::components::Renderer::default().set_model(model).set_material(material))
             .unwrap();
-        
+
         core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings);
     }
     */

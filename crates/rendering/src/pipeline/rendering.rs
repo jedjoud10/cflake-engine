@@ -49,17 +49,17 @@ pub mod window_commands {
 // The main renderer, this is stored
 #[derive(Default)]
 pub struct PipelineRenderer {
-    framebuffer: u32,                          // The master frame buffer
-    diffuse_texture: GPUObjectID,              // Diffuse texture, can also store HDR values
-    normals_texture: GPUObjectID,              // World Normals texture
-    position_texture: GPUObjectID,             // World Positions texture
-    depth_texture: GPUObjectID,                // Depth texture
-    debug_view: u16,                           // OUr currenty debug view mode
-    wireframe: bool,                           // Are we rendering in wireframe or not
-    quad_model: GPUObjectID,                   // The current screen quad model that we are using
-    screen_shader: GPUObjectID,                // The current screen quad shader that we are using
-    sky_texture: GPUObjectID,                  // The sky gradient texture
-    wireframe_shader: GPUObjectID,             // The current wireframe shader
+    framebuffer: u32,              // The master frame buffer
+    diffuse_texture: GPUObjectID,  // Diffuse texture, can also store HDR values
+    normals_texture: GPUObjectID,  // World Normals texture
+    position_texture: GPUObjectID, // World Positions texture
+    depth_texture: GPUObjectID,    // Depth texture
+    debug_view: u16,               // OUr currenty debug view mode
+    wireframe: bool,               // Are we rendering in wireframe or not
+    quad_model: GPUObjectID,       // The current screen quad model that we are using
+    screen_shader: GPUObjectID,    // The current screen quad shader that we are using
+    sky_texture: GPUObjectID,      // The sky gradient texture
+    wireframe_shader: GPUObjectID, // The current wireframe shader
     //frame_stats: FrameStats,                   // Some frame stats
     pub window: Window,                        // Window
     pub default_material: Option<GPUObjectID>, // Self explanatory
@@ -88,7 +88,7 @@ pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &Camer
                     Some(shader) => shader,
                     None => shader,
                 },
-                None => shader
+                None => shader,
             };
             user_material
         }
@@ -179,17 +179,17 @@ impl PipelineRenderer {
                 .unwrap(),
         );
         // Create a default material
-        self.default_material = Some(pipec::material(Material::new("Default Material").set_shader(pipec::shader(
+        self.default_material = Some(pipec::material(
+            Material::new("Default Material").set_shader(pipec::shader(
                 Shader::default()
                     .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
                     .unwrap(),
-                ))
-            )
-        );
+            )),
+        ));
         println!("Loaded the default material!");
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
-        
+
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
@@ -265,7 +265,7 @@ impl PipelineRenderer {
     }
     // Called each frame, for each renderer that is valid in the pipeline
     pub fn renderer_frame(&self, buf: &PipelineBuffer, camera: &CameraDataGPUObject) {
-        let i = std::time::Instant::now();   
+        let i = std::time::Instant::now();
         let material = buf.as_material(self.default_material.as_ref().unwrap()).unwrap();
         for renderer in buf.renderers.iter().map(|x| buf.as_renderer(x).unwrap()) {
             // Should we render in wireframe or not?
@@ -273,7 +273,7 @@ impl PipelineRenderer {
                 render_wireframe(buf, renderer, camera, &self.wireframe_shader);
             } else {
                 render(buf, renderer, camera, material);
-            }          
+            }
         }
     }
     // Post-render event

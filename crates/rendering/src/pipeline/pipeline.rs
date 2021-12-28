@@ -1,10 +1,20 @@
-use super::{object::*, async_command_data::{AsyncGPUCommandData, InternalAsyncGPUCommandData}};
-use crate::{basics::*, rendering::PipelineRenderer, GPUObjectID, RenderCommandQuery, RenderTask, SharedData, pipeline::buffer::PipelineBuffer, others::{RESULT, CommandExecutionResults}};
+use super::{
+    async_command_data::{AsyncGPUCommandData, InternalAsyncGPUCommandData},
+    object::*,
+};
+use crate::{
+    basics::*,
+    others::{CommandExecutionResults, RESULT},
+    pipeline::buffer::PipelineBuffer,
+    rendering::PipelineRenderer,
+    GPUObjectID, RenderCommandQuery, RenderTask, SharedData,
+};
 use glfw::Context;
 use lazy_static::lazy_static;
 use others::SmartList;
 use std::{
     borrow::BorrowMut,
+    cell::RefCell,
     collections::{HashMap, HashSet},
     ffi::{c_void, CString},
     mem::size_of,
@@ -13,7 +23,7 @@ use std::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         mpsc::{Receiver, Sender},
         Arc, Barrier, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
-    }, cell::RefCell,
+    },
 };
 
 // Messages that will be to the main thread
@@ -155,9 +165,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let tx2 = tx2.clone();
                 println!("Successfully created the RenderThread!");
                 barrier_clone.wait();
-                
+
                 loop {
-                    // Update the delta_time                    
+                    // Update the delta_time
                     let new_time = glfw.get_time();
                     let delta = new_time - last_time;
                     last_time = new_time;
@@ -186,7 +196,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                             barrier_data.thread_sync_quit();
                             break;
                         }
-                    }             
+                    }
                 }
                 println!("Stopped the render thread!");
             })
@@ -217,7 +227,7 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUO
             object_creation::update_texture_data(buf, id, bytes);
             (None, None)
         }
-        RenderTask::TextureFillArray(id, bytecount_per_pixel, return_bytes) =>  {
+        RenderTask::TextureFillArray(id, bytecount_per_pixel, return_bytes) => {
             object_creation::texture_fill_array(buf, id, bytecount_per_pixel, return_bytes);
             (None, None)
         }
@@ -237,7 +247,15 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUO
 }
 
 // Run a command on the Render Thread
-fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, command: RenderCommandQuery, _window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+fn command(
+    lock: &mut CommandExecutionResults,
+    buf: &mut PipelineBuffer,
+    renderer: &mut PipelineRenderer,
+    camera: &mut CameraDataGPUObject,
+    command: RenderCommandQuery,
+    _window: &mut glfw::Window,
+    glfw: &mut glfw::Glfw,
+) {
     // Handle the common cases
     //println!("Executing command with ID {}...", command.command_id);
     let (command_result, async_command_data) = match command.task {
@@ -307,23 +325,34 @@ fn command(lock: &mut CommandExecutionResults, buf: &mut PipelineBuffer, rendere
     // If this is an async GPU task (Like running a compute shader) we will not call the callbacks
     if let Option::Some(mut x) = async_command_data {
         // We must buffer the async command data, so we can poll it and check if it was executed later
-        x.additional_command_data(InternalAsyncGPUCommandData { command_id, callback_id, batch_callback_data });
+        x.additional_command_data(InternalAsyncGPUCommandData {
+            command_id,
+            callback_id,
+            batch_callback_data,
+        });
         buf.add_async_gpu_command_data(x);
     } else {
         // This is not an async GPU task, we can buffer the callbacks directly
         buf.received_new_gpuobject_additional(command_result.clone(), callback_id);
-        crate::others::executed_command(buf, command_id, batch_callback_data, command_result, lock);    
-    }   
+        crate::others::executed_command(buf, command_id, batch_callback_data, command_result, lock);
+    }
 }
 
 // Poll commands that have been sent to us by the worker threads OR the main thread
-fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, window: &mut glfw::Window, glfw: &mut glfw::Glfw) {
+fn poll_commands(
+    buf: &mut PipelineBuffer,
+    renderer: &mut PipelineRenderer,
+    camera: &mut CameraDataGPUObject,
+    rx: &Receiver<RenderCommandQuery>,
+    window: &mut glfw::Window,
+    glfw: &mut glfw::Glfw,
+) {
     // We must loop through every command that we receive from the main thread
-    let mut i = 0;    
+    let mut i = 0;
     let mut lock = RESULT.lock().unwrap();
     let lock = &mut *lock;
     for render_command_query in rx.try_iter() {
-        i+=1;        
+        i += 1;
         // Check special commands first
         // Valid command
         command(lock, buf, renderer, camera, render_command_query, window, glfw);
@@ -337,9 +366,11 @@ fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
         // Check if the OpenGL command was executed
         if async_gpu_command_data.has_executed() {
             // The OpenGL command did executed, so we must tell signal the threads to run their callbacks
-            datas.push(async_gpu_command_data.internal.as_ref().unwrap().clone());             
+            datas.push(async_gpu_command_data.internal.as_ref().unwrap().clone());
             false
-        } else { true }
+        } else {
+            true
+        }
     });
     // Inform the other thread
     let mut lock = RESULT.lock().unwrap();
@@ -349,7 +380,7 @@ fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
         let callback_id = async_data.callback_id;
         let batch_callback_data = async_data.batch_callback_data;
         buf.received_new_gpuobject_additional(None, callback_id);
-        crate::others::executed_command(buf, command_id, batch_callback_data, None, &mut *lock);   
+        crate::others::executed_command(buf, command_id, batch_callback_data, None, &mut *lock);
     }
 }
 // Data that will be sent back to the main thread after we start the pipeline thread
@@ -359,19 +390,27 @@ pub struct PipelineStartData {
 }
 
 mod object_creation {
-    use std::{ffi::{CString, c_void}, ptr::null, mem::size_of, sync::{atomic::{AtomicPtr, Ordering}, Mutex, Arc}};
+    use std::{
+        ffi::{c_void, CString},
+        mem::size_of,
+        ptr::null,
+        sync::{
+            atomic::{AtomicPtr, Ordering},
+            Arc, Mutex,
+        },
+    };
 
-    use crate::{Renderer, SharedData, GPUObjectID, RendererGPUObject, GPUObject, pipeline::{buffer::PipelineBuffer, async_command_data::AsyncGPUCommandData}, SubShader, SubShaderType, SubShaderGPUObject, Shader, ComputeShaderGPUObject, ShaderGPUObject, Model, ModelGPUObject, Texture, TextureType, TextureFilter, TextureFlags, TextureWrapping, TextureGPUObject, ShaderUniformsGroup, Material, MaterialGPUObject};
+    use crate::{
+        pipeline::{async_command_data::AsyncGPUCommandData, buffer::PipelineBuffer},
+        ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, MaterialGPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderGPUObject,
+        ShaderUniformsGroup, SharedData, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType, TextureWrapping,
+    };
     // Add the renderer to the renderer (lol I need better name)
     pub fn add_renderer(buf: &mut PipelineBuffer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
         let (renderer, matrix) = renderer.get();
         let material_id = renderer.material.unwrap();
         let model_id = renderer.model.clone().unwrap();
-        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject {
-            model_id,
-            material_id,
-            matrix,
-        });
+        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject { model_id, material_id, matrix });
         let id = buf.add_gpuobject(renderer_gpuobject, None);
         buf.renderers.insert(id.clone());
         id
@@ -465,24 +504,27 @@ mod object_creation {
                 panic!();
             }
             // Check if this a compute shader
-            let compute_shader = if let SubShaderType::Compute = subshaders.first().unwrap().subshader_type { true } else { false };
+            let compute_shader = if let SubShaderType::Compute = subshaders.first().unwrap().subshader_type {
+                true
+            } else {
+                false
+            };
             // Detach shaders
             for subshader in subshaders {
                 gl::DetachShader(program, subshader.program);
             }
             let gpuobject = if !compute_shader {
                 // Normal shader
-                GPUObject::Shader(ShaderGPUObject {
-                    program,
-                })
+                GPUObject::Shader(ShaderGPUObject { program })
             } else {
                 // Compute shader
-                GPUObject::ComputeShader(ComputeShaderGPUObject {
-                    program,
-                })
+                GPUObject::ComputeShader(ComputeShaderGPUObject { program })
             };
             // Add the gpu object
-            println!("\x1b[32mShader {} compiled and created succsessfully! ComputeShader: {}\x1b[0m", shader.name, compute_shader);
+            println!(
+                "\x1b[32mShader {} compiled and created succsessfully! ComputeShader: {}\x1b[0m",
+                shader.name, compute_shader
+            );
             buf.add_gpuobject(gpuobject, Some(shader.name.clone()))
         }
     }
@@ -610,7 +652,9 @@ mod object_creation {
         let gpuobject = buf.get_gpuobject_mut(&id).unwrap();
         let model = if let GPUObject::Model(x) = gpuobject {
             x
-        } else { panic!(); };
+        } else {
+            panic!();
+        };
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut model.vertex_buf);
@@ -733,9 +777,7 @@ mod object_creation {
     }
     pub fn update_texture_size(buf: &mut PipelineBuffer, id: GPUObjectID, ttype: TextureType) {
         // Get the GPU texture object
-        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() {
-            x
-        } else { panic!() };
+        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() { x } else { panic!() };
         // Check if the current dimension type matches up with the new one
         let ifd = texture.ifd;
         // This is a normal texture getting resized
@@ -758,9 +800,7 @@ mod object_creation {
         }
     }
     pub fn update_texture_data(buf: &mut PipelineBuffer, id: GPUObjectID, bytes: Vec<u8>) {
-        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() {
-            x
-        } else { panic!() };
+        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() { x } else { panic!() };
         let mut pointer: *const c_void = null();
         if !bytes.is_empty() {
             pointer = bytes.as_ptr() as *const c_void;
@@ -799,9 +839,7 @@ mod object_creation {
         }
     }
     pub fn texture_fill_array(buf: &mut PipelineBuffer, id: GPUObjectID, bytecount_per_pixel: usize, return_bytes: Arc<Mutex<Vec<u8>>>) {
-        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() {
-            x
-        } else { panic!() };
+        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() { x } else { panic!() };
         // Get the length of the vector
         let length: usize = match texture.ttype {
             TextureType::Texture1D(x) => (x as usize),
@@ -835,11 +873,13 @@ mod object_creation {
         *new_bytes = pixels;
     }
     pub fn run_compute(buf: &mut PipelineBuffer, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) -> AsyncGPUCommandData {
-        unsafe { gl::Flush(); }
+        unsafe {
+            gl::Flush();
+        }
         // Dispatch the compute shader for execution
         uniforms_group.consume(buf).unwrap();
         unsafe {
-            gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);   
+            gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
         }
         AsyncGPUCommandData::new()
     }

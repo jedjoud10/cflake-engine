@@ -133,7 +133,7 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
                     &thread_id,
                     receiver,
                 );
-            },
+            }
         }
     }
 }

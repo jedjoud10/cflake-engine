@@ -7,6 +7,8 @@ pub struct FrameID {
 impl FrameID {
     // Get the current global FrameID
     pub fn now() -> Self {
-        FrameID { count: crate::global::timings::frame_count() }
+        FrameID {
+            count: crate::global::timings::frame_count(),
+        }
     }
 }

@@ -1,13 +1,13 @@
 use core::global::callbacks::CallbackType;
 
+use super::ChunkSystem;
 use ecs::SystemData;
 use math::octrees::OctreeNode;
 use terrain::{ChunkCoords, ChunkState};
-use super::ChunkSystem;
 ecs::impl_systemdata!(ChunkSystem);
 
 // Create the chunk entity and add it to the world
-fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, octree_size: u64 ) {
+fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, octree_size: u64) {
     // Create the entity
     let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
     let entity = ecs::Entity::new(name.as_str());
@@ -17,17 +17,23 @@ fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, 
     // Link the components
     let mut linkings = ecs::ComponentLinkingGroup::new();
     linkings.link::<terrain::Chunk>(chunk).unwrap();
-    
+
     // Transform
     linkings
-        .link::<crate::components::Transform>(crate::components::Transform::default()
-            .with_position(coords.position.into())
-            .with_scale(veclib::Vector3::new((coords.size / octree_size) as f32, (coords.size / octree_size) as f32, (coords.size / octree_size) as f32))
-        ).unwrap();
+        .link::<crate::components::Transform>(
+            crate::components::Transform::default()
+                .with_position(coords.position.into())
+                .with_scale(veclib::Vector3::new(
+                    (coords.size / octree_size) as f32,
+                    (coords.size / octree_size) as f32,
+                    (coords.size / octree_size) as f32,
+                )),
+        )
+        .unwrap();
     println!("Add chunk {}", name);
     // Add the entity
     let result = core::global::ecs::entity_add(entity, linkings);
-    
+
     // Init the internal state for this chunk
     data.chunk_states.insert(coords, ChunkState::AwaitingCreation);
 }
@@ -39,18 +45,20 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     let camera_transform = core::global::ecs::component::<crate::components::Transform>(&camera).unwrap();
     let camera_pos = camera_transform.position;
 
-    let i = std::time::Instant::now();    
+    let i = std::time::Instant::now();
     // We are only allowed to update the octree in 2 conditions
     // 1. We do not have any current chunks, so we must initialize the octree
     // 2. All of the generated chunks have a chunk state of Valid, meaning that they have generated their Voxel Data and TModel successfully
     let valid = data.chunk_states.len() == 0 || data.chunk_states.iter().all(|(_, x)| *x == ChunkState::Valid);
-    if !valid { return; }
+    if !valid {
+        return;
+    }
     // Update the octree
     let octree = &mut data.octree;
     let octree_size = octree.internal_octree.size;
     if let Option::Some((added, removed, total)) = octree.generate_incremental_octree(&camera_pos, terrain::DEFAULT_LOD_FACTOR) {
-        // We successfully updated the octree 
-        
+        // We successfully updated the octree
+
         // Add the chunks into the world
         for x in added {
             let octree_node: OctreeNode = x;
@@ -86,9 +94,10 @@ fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
         // If the Chunk System internally says that the chunk is Awaiting Deletion, we should prioritize that
         if *internal_chunk_state != ChunkState::AwaitingDeletion {
             *internal_chunk_state = chunk.state.clone();
-        } else { /* Can't do anything */ }
+        } else { /* Can't do anything */
+        }
     }
-}    
+}
 
 // When we have added a Chunk Entity. This saves us from creating a callback actually
 fn entity_added(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
@@ -107,7 +116,7 @@ fn entity_removed(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
 
 // Create the Chunk Manager system
 // This system will add / remove chunks from the world and nothing else
-pub fn system(depth: u8, csgtree: math::csg::CSGTree) {    
+pub fn system(depth: u8, csgtree: math::csg::CSGTree) {
     // Check if a an already existing node could be subdivided even more
     fn can_node_subdivide_twin(node: &math::octrees::OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
         let c: veclib::Vector3<f32> = node.get_center().into();

@@ -74,12 +74,12 @@ pub mod ecs {
     pub fn add_system<T: ecs::CustomSystemData + 'static, F>(default_state: T, callback: F)
     where
         F: FnOnce() -> ecs::System<T> + 'static + Send,
-        T: Sync + Send
+        T: Sync + Send,
     {
         // Create a new thread and initialize the system on it
         let (join_handle, c_bitfield) = crate::system::create_worker_thread(default_state, callback);
         let mut w = crate::world::world_mut();
-        // Calculate the system bitfield 
+        // Calculate the system bitfield
         let bitfield = 1 << w.ecs_manager.systemm.systems.len();
         let system_thread_data = ecs::SystemThreadData::new(bitfield, join_handle, c_bitfield);
         w.ecs_manager.systemm.systems.push(system_thread_data);

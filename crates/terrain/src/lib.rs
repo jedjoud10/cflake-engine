@@ -1,4 +1,5 @@
 // Export
+mod chunk;
 mod detail_manager;
 pub mod mesher;
 mod model;
@@ -7,7 +8,6 @@ mod tables;
 mod terrain_stats;
 pub mod utils;
 mod voxel;
-mod chunk;
 
 pub use chunk::*;
 pub use detail_manager::*;

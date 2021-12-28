@@ -1,11 +1,11 @@
 use crate::communication::{WorldTaskReceiver, RECEIVER};
-use crate::global::callbacks::{LogicSystemCallbackArguments, CallbackType};
+use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
 use ecs::{CustomSystemData, SystemData};
 use lazy_static::lazy_static;
 use others::callbacks::MutCallback;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use std::sync::atomic::{AtomicUsize, Ordering, AtomicPtr, AtomicU8};
+use std::sync::atomic::{AtomicPtr, AtomicU8, AtomicUsize, Ordering};
 use std::sync::{mpsc::Sender, Arc, Mutex};
 use std::thread::JoinHandle;
 
@@ -77,7 +77,7 @@ where
                     };
                 }
                 // Create the shared data
-                let mut data = default_state; 
+                let mut data = default_state;
                 let mut shared = SystemData::new(&mut data);
                 loop {
                     // Wait for the start of the sync at the start of the frame
@@ -179,7 +179,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             };
             let entity = unsafe { ptr.as_ref().unwrap() };
             system.remove_entity(shared, entity);
-            // The main thread does not know that we have deleted the entity from this entity, so we must decrement the counter       
+            // The main thread does not know that we have deleted the entity from this entity, so we must decrement the counter
             crate::command::CommandQueryResult::new(crate::tasks::Task::EntityRemovedDecrementCounter(entity_id)).send();
         }
         LogicSystemCommand::StartSystemLoop => { /* How the fuck */ }

@@ -1,17 +1,20 @@
+use ecs::SystemData;
 use lazy_static::lazy_static;
 use others::callbacks::*;
 use std::{
-    collections::HashMap,
-    sync::{atomic::{AtomicU64, AtomicU8, Ordering}, Mutex, Arc},
     cell::RefCell,
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicU64, AtomicU8, Ordering},
+        Arc, Mutex,
+    },
 };
-use ecs::SystemData;
 
 lazy_static! {
     static ref CALLBACK_COUNTER: AtomicU64 = AtomicU64::new(0); // The number of callbacks that have been created
 }
 
-thread_local! {    
+thread_local! {
     static CALLBACK_MANAGER_BUFFER: RefCell<CallbackManagerBuffer> = RefCell::new(CallbackManagerBuffer::default());
 }
 // The main callback manager that is stored on the main thread, and that sends commands to the system threads that must execute their callbacks
@@ -25,7 +28,7 @@ impl Default for CallbackManagerBuffer {
     fn default() -> Self {
         Self {
             callbacks: HashMap::new(),
-            buffered_executions: Vec::new()
+            buffered_executions: Vec::new(),
         }
     }
 }

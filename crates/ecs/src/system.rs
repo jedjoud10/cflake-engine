@@ -1,6 +1,13 @@
-use std::{any::Any, sync::{Arc, atomic::{AtomicPtr, Ordering}}, rc::Rc};
+use std::{
+    any::Any,
+    rc::Rc,
+    sync::{
+        atomic::{AtomicPtr, Ordering},
+        Arc,
+    },
+};
 
-use crate::{ComponentID, Entity, impl_systemdata};
+use crate::{impl_systemdata, ComponentID, Entity};
 
 #[derive(Default)]
 // Manages the systems, however each system is in it's own thread (For now at least)
@@ -18,12 +25,19 @@ pub struct SystemThreadData {
 impl SystemThreadData {
     // New
     pub fn new(system_id: u32, join_handle: std::thread::JoinHandle<()>, c_bitfield: usize) -> Self {
-        Self { system_id, join_handle, c_bitfield }
+        Self {
+            system_id,
+            join_handle,
+            c_bitfield,
+        }
     }
 }
 
 // A system event enum
-pub enum SystemEventType<T> where T: CustomSystemData {
+pub enum SystemEventType<T>
+where
+    T: CustomSystemData,
+{
     // Control events
     SystemPrefire(fn(&mut SystemData<T>)),
     SystemPostfire(fn(&mut SystemData<T>)),
@@ -149,26 +163,36 @@ where
 pub trait CustomSystemData {}
 
 // Some custom system data that can be copied whenever we create a callback
-pub struct SystemData<T> where T: CustomSystemData {
-    pub ptr: Rc<*mut T>
+pub struct SystemData<T>
+where
+    T: CustomSystemData,
+{
+    pub ptr: Rc<*mut T>,
 }
 
-impl<T> Clone for SystemData<T> where T: CustomSystemData {
+impl<T> Clone for SystemData<T>
+where
+    T: CustomSystemData,
+{
     fn clone(&self) -> Self {
         Self { ptr: self.ptr.clone() }
     }
 }
 
-impl<T> SystemData<T> where T: CustomSystemData {
+impl<T> SystemData<T>
+where
+    T: CustomSystemData,
+{
     // New
     pub fn new(t: &mut T) -> Self {
-        Self {
-            ptr: Rc::new(t as *mut T)
-        }
+        Self { ptr: Rc::new(t as *mut T) }
     }
 }
 
-impl<T> std::ops::Deref for SystemData<T> where T: CustomSystemData {
+impl<T> std::ops::Deref for SystemData<T>
+where
+    T: CustomSystemData,
+{
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -176,7 +200,10 @@ impl<T> std::ops::Deref for SystemData<T> where T: CustomSystemData {
     }
 }
 
-impl<T> std::ops::DerefMut for SystemData<T> where T: CustomSystemData {
+impl<T> std::ops::DerefMut for SystemData<T>
+where
+    T: CustomSystemData,
+{
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { self.ptr.as_mut().unwrap() }
     }

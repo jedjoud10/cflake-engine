@@ -14,7 +14,6 @@ pub fn is_render_thread() -> bool {
     IS_RENDER_THREAD.with(|x| x.get())
 }
 
-
 pub fn rname(prefix: &str) -> String {
     // Use the others::id_counter to create a counted ID that we can transform into a String
     let name = format!("{:x}", others::id_counter::get_id());
@@ -28,12 +27,14 @@ pub mod pipec {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, MutexGuard};
 
+    pub use super::super::others;
     use crate::pipeline::batch_command::BatchRenderCommandQueryResult;
     use crate::pipeline::buffer::PipelineBuffer;
     use crate::pipeline::{buffer, object::*};
-    use crate::{GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandQueryResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER, is_render_thread};
+    use crate::{
+        is_render_thread, GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandQueryResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER,
+    };
     pub use crate::{RenderTask, SharedData};
-    pub use super::super::others as others;
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
         crate::pipeline::init_pipeline(glfw, window)
@@ -57,14 +58,18 @@ pub mod pipec {
         if is_render_thread() {
             let mut buf = crate::pipeline::pipeline::BUFFER.lock().unwrap();
             rs.wait_internal(&mut buf)
-        } else { rs.wait() }
+        } else {
+            rs.wait()
+        }
     }
     // Send a task to the render thread, returning a Command
     pub fn task(task: RenderTask) -> RenderCommandQueryResult {
         RenderCommandQueryResult::new(task)
     }
     // Create a batch of tasks
-    pub fn task_batch(tasks: Vec<RenderTask>) -> BatchRenderCommandQueryResult {
+    pub fn task_batch(results: Vec<RenderCommandQueryResult>) -> BatchRenderCommandQueryResult {
+        // Extract the tasks from the command query results
+        let tasks = results.into_iter().map(|mut x| x.task.take().unwrap()).collect::<Vec<RenderTask>>();
         BatchRenderCommandQueryResult::new(tasks)
     }
     // Load or create functions
@@ -105,7 +110,7 @@ pub mod pipec {
         })
     }
     // Load or create functions, cached type
-    pub fn texturec(texturec: CachedObject<Texture>) -> GPUObjectID {        
+    pub fn texturec(texturec: CachedObject<Texture>) -> GPUObjectID {
         execute(match others::get_id(&texturec.arc.as_ref().name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
             None => task(RenderTask::TextureCreate(SharedData::new(texturec.arc.as_ref().clone()))),

@@ -1,6 +1,6 @@
 use core::global::callbacks::CallbackType::LocalEntityMut;
 
-use ecs::{SystemEventType, SystemData};
+use ecs::{SystemData, SystemEventType};
 use input::{Keys, MapType};
 use others::callbacks::MutCallback;
 
