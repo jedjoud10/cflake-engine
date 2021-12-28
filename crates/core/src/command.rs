@@ -6,12 +6,12 @@ use crate::communication::*;
 use crate::global::callbacks::LogicSystemCallbackArguments;
 use crate::system::*;
 use crate::tasks::*;
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 // This can either be a single task or a batch of tasks
 pub enum CommandQueryType {
     Single(CommandQuery),
-    Batch(Vec<CommandQuery>)
+    Batch(Vec<CommandQuery>),
 }
 
 // A sent command query

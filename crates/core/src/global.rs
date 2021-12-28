@@ -4,7 +4,7 @@
 pub mod ecs {
     use crate::command::*;
     use crate::tasks::*;
-    use ecs::Component;    
+    use ecs::Component;
     /* #region Entities */
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
@@ -221,14 +221,15 @@ pub mod timings {
 
 // Batches
 pub mod batch {
-    use crate::{command::CommandQueryResult, batch::BatchCommandQuery};
+    use crate::{batch::BatchCommandQuery, command::CommandQueryResult};
 
     // Create a new batch command query for a specific ID and add a specific command onto it
     pub fn batch_add(batch_id: u32, command_result: CommandQueryResult) {
         crate::system::batch_add(batch_id, command_result);
     }
     // Send a specific thread local batch to the main thread
-    pub fn send_batch(batch_id: u32) {
-        crate::system::send_batch(batch_id);
+    // The delete parameters tells us if we should delete the batch after sending it or just clearing it
+    pub fn send_batch(batch_id: u32, delete: bool) {
+        crate::system::send_batch(batch_id, delete);
     }
 }

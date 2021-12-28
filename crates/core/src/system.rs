@@ -1,4 +1,4 @@
-use crate::batch::{BatchManager, BatchCommandQuery};
+use crate::batch::{BatchCommandQuery, BatchManager};
 use crate::command::CommandQueryResult;
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
@@ -218,12 +218,19 @@ pub fn batch_add(batch_id: u32, command_result: CommandQueryResult) {
 }
 
 // Send a batch to the main thread for execution
-pub fn send_batch(batch_id: u32) {
+pub fn send_batch(batch_id: u32, delete: bool) {
     BATCH_MANAGER.with(|cell| {
         let mut cell = cell.borrow_mut();
-        match cell.batches.remove(&batch_id) {
-            Some(batch) => batch.send(),
-            None => {},
+        if delete {
+            // We must delete the batch after sending
+            if let Option::Some(mut batch) = cell.batches.remove(&batch_id) {
+                batch.send();
+            }
+        } else {
+            // We should no delete the batch
+            if let Option::Some(batch) = cell.batches.get_mut(&batch_id) {
+                batch.send();
+            }
         }
     });
 }

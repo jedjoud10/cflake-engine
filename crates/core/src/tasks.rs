@@ -66,17 +66,17 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 // Set the entity values
                 let entity_id = world.ecs_manager.entitym.entities.get_next_valid_id();
                 let entity_cbitfield = linkings.c_bitfield;
-    
+
                 entity.entity_id = entity_id;
                 entity.linked_components = hashmap;
                 entity.c_bitfield = entity_cbitfield;
-    
+
                 // Calculate the system bitfield
                 entity.system_bitfield = calculate_system_bitfield(world, entity.c_bitfield);
-    
+
                 // Then add the entity
                 world.ecs_manager.entitym.add_entity(entity);
-    
+
                 // Check the systems where this entity might be valid
                 for system in world.ecs_manager.systemm.systems.iter() {
                     let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
@@ -84,7 +84,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                         crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                     }
                 }
-    
+
                 // Only run the callback if we are not on the main thread
                 if query.thread_id != std::thread::current().id() {
                     // Tell the main callback manager to execute this callback
@@ -107,7 +107,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 }
                 // Run the Entity Remove event on the systems
                 let entity = world.ecs_manager.entitym.entity(entity_id);
-    
+
                 // Check the systems where this entity might be valid
                 let valid_systems: Vec<&SystemThreadData> = world
                     .ecs_manager
@@ -121,7 +121,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 for system in valid_systems {
                     crate::system::send_lsc(LogicSystemCommand::RemoveEntityFromSystem(entity_id), &system.join_handle.thread().id(), receiver);
                 }
-    
+
                 // Only run the callback if we are not on the main thread
                 if query.thread_id != std::thread::current().id() {
                     // Tell the main callback manager to execute this callback
@@ -136,7 +136,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                         None => { /* No callback available */ }
                     }
                 }
-    
+
                 // Now, we must wait until the next frame to actually delete the entity and it's components
                 world.ecs_manager.entitym.entities_to_delete.insert(entity_id, count);
             }
@@ -173,14 +173,14 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                     // entity:  100101 -> 011010
                     // system1: 000001 -> 000001 -> 000000 -> VALID
                     // system2: 000010 -> 000010 -> 000010 -> INVALID
-    
+
                     // Check if this system can actually add the entity internally
                     if (system.system_id & !system_ids_new) == 0 {
                         crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                     }
                 }
             }
-            Task::SetRootVisibility(_) => {},
+            Task::SetRootVisibility(_) => {}
             Task::EntityRemovedDecrementCounter(entity_id) => {
                 let counter = {
                     // One of the systems has safely removed the entity from it's list, so we must decrement the counter
@@ -199,5 +199,5 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 }
             }
         }
-    }    
+    }
 }
