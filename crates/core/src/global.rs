@@ -65,8 +65,8 @@ pub mod ecs {
     }
     // Manually add a component linking group to an already existing entity
     // If some components collide, we will panic
-    pub fn link_components(entity: &ecs::Entity, linkings: ecs::ComponentLinkingGroup) -> CommandQueryResult {
-        CommandQueryResult::new(Task::AddComponentLinkingGroup(entity.entity_id, linkings))
+    pub fn link_components(entity_id: usize, linkings: ecs::ComponentLinkingGroup) -> CommandQueryResult {
+        CommandQueryResult::new(Task::AddComponentLinkingGroup(entity_id, linkings))
     }
     /* #endregion */
     /* #region Systems */

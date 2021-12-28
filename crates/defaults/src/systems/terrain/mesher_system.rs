@@ -15,8 +15,8 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
         // If the voxel data is valid, create the model for this chunk
         let tmodel = terrain::mesher::generate_model(&voxel_data, chunk.coords, true);
         let model = rendering::Model::combine(tmodel.model, tmodel.skirts_model);
+
         // Create the model on the GPU
-        /*
         let model_id = rendering::pipec::model(model);
         // Since each chunk starts without a renderer, we must manually add the renderer component
         let mut linkings = ecs::ComponentLinkingGroup::new();
@@ -24,8 +24,7 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
         
         let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material) ;
         linkings.link::<crate::components::Renderer>(renderer).unwrap();
-        core::global::ecs::link_components(entity, linkings);
-        */
+        core::global::ecs::link_components(entity.entity_id, linkings);
     }
 }
 
@@ -53,7 +52,6 @@ pub fn system(material: rendering::GPUObjectID) {
         let mut system = ecs::System::new();
         // Link some components to the system
         system.link::<crate::components::Transform>();
-        system.link::<crate::components::Renderer>();
         system.link::<terrain::Chunk>();
         // And link the events
         system.event(ecs::SystemEventType::EntityUpdate(entity_update));

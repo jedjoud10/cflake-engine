@@ -169,7 +169,7 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
             let new_entity_system_bitfield = calculate_system_bitfield(world, combined_c_bitfield);
             let system_ids_new = new_entity_system_bitfield & !old_entity_system_bitfield; // This is the system bitfield for the systems that did not originally contain this entity because it was invalid, but the entity just became valid for that system 
             let entity = world.ecs_manager.entitym.entity_mut(entity_id);
-            entity.linked_components = hashmap;
+            entity.linked_components.extend(hashmap);
             entity.c_bitfield = combined_c_bitfield;
             entity.system_bitfield = new_entity_system_bitfield;
             for system in world.ecs_manager.systemm.systems.iter() {
@@ -178,11 +178,12 @@ pub fn excecute_query(query: CommandQuery, world: &mut crate::world::World, rece
                 // system1: 000001 -> 000001 -> 000000 -> VALID
                 // system2: 000010 -> 000010 -> 000010 -> INVALID
 
-                // Check if this system actually did add the entity
+                // Check if this system can actually add the entity internally
                 if (system.system_id & !system_ids_new) == 0 {
-
+                    crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                 }
             }
+            println!("Update {}", entity);
             // Signal the systems who have this entity as a new entity 
             ImmediateTaskResult::None
         },

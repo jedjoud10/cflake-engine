@@ -57,7 +57,6 @@ pub fn preload_systems() {
     systems::terrain::mesher_system::system(rendering::pipec::material(rendering::Material::new("a")));
     systems::terrain::chunk_system::system(4, csgtree);
     systems::terrain::voxel_generation_system::system(string);
-    
     systems::rendering_system::system();
     systems::physics_system::system();
     systems::camera_system::system();
