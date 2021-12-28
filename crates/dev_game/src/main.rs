@@ -18,20 +18,11 @@ pub fn load_entities() {
     linkings.link::<crate::components::Transform>(camera_transform).unwrap();
     linkings.link_default::<crate::components::Camera>().unwrap();
     // Add the camera
-    let main_camera_entity_id = core::global::ecs::entity_add(ecs::Entity::new("Default Camera"), linkings)
-        .immediate_result()
-        .entity_id()
-        .unwrap();
+    core::global::ecs::entity_add(ecs::Entity::new("Default Camera"), linkings);
+    /*
+    main_camera_entity_id = core::global::ecs::find_entity("Default Camera");
     core::global::main::world_data_mut(|data| data.main_camera_entity_id = main_camera_entity_id);
-    let material = rendering::pipec::material(rendering::Material::new("Test"));
-    let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap());
-    let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings.link_default::<crate::components::Transform>().unwrap();
-
-    let entity_id = core::global::ecs::entity_add(ecs::Entity::new("Sphere"), linkings).immediate_result().entity_id().unwrap();
-    let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings.link(crate::components::Renderer::default().set_model(model).set_material(material)).unwrap();
-    core::global::ecs::link_components(entity_id, linkings);
+    */
     /*
     for x in 0..200 {
         let mut linkings = ecs::ComponentLinkingGroup::new();

@@ -1,4 +1,4 @@
-use crate::{command::CommandQuery, system::LogicSystemCommand};
+use crate::{command::{CommandQuery, CommandQueryType}, system::LogicSystemCommand};
 use lazy_static::lazy_static;
 use std::{
     collections::HashMap,
@@ -15,6 +15,6 @@ lazy_static! {
 }
 // Main thread
 pub struct WorldTaskReceiver {
-    pub rx: Receiver<CommandQuery>,                                          // CommandQuery. WorkerThreads -> MainThread
+    pub rx: Receiver<CommandQueryType>,                                          // CommandQuery. WorkerThreads -> MainThread
     pub lsc_txs: HashMap<std::thread::ThreadId, Sender<LogicSystemCommand>>, // WaitableTask. MainThread -> WorkerThreads
 }

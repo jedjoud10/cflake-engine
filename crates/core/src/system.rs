@@ -1,3 +1,4 @@
+use crate::batch::{BatchManager, BatchCommandQueryResult};
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
 use ecs::{CustomSystemData, SystemData};
@@ -22,14 +23,16 @@ lazy_static! {
     // The number of systems
     pub static ref SYSTEM_COUNTER: AtomicU8 = AtomicU8::new(0);
     // A copy of the task Sender
-    pub static ref SENDER_COPY: Arc<Mutex<Option<Sender<crate::command::CommandQuery>>>> = Arc::new(Mutex::new(None));
+    pub static ref SENDER_COPY: Arc<Mutex<Option<Sender<crate::command::CommandQueryType>>>> = Arc::new(Mutex::new(None));
 }
 
 // The system group thread data is local to each system thread
 thread_local! {
     pub static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
     // Sender of tasks. Is called on the worker threads, sends message to the main thread
-    pub static SENDER: RefCell<Option<Sender<crate::command::CommandQuery>>> = RefCell::new(None);
+    pub static SENDER: RefCell<Option<Sender<crate::command::CommandQueryType>>> = RefCell::new(None);
+    // Each system contains a local batch manager
+    static BATCH_MANAGER: RefCell<BatchManager> = RefCell::new(BatchManager::default());
 }
 
 // Create a worker thread
@@ -202,4 +205,23 @@ pub fn send_lsc_all(lgc: LogicSystemCommand, receiver: &WorldTaskReceiver) {
         // Send the message
         sender.send(lgc.clone()).unwrap();
     }
+}
+
+// Add a batch to the thread local batch manager
+pub fn add_batch(batch: BatchCommandQueryResult) {
+    BATCH_MANAGER.with(|cell| {
+        let mut cell = cell.borrow_mut();
+        cell.batches.insert(batch.id, batch);
+    });
+}
+
+// Send a batch to the main thread for execution
+pub fn send_batch(batch_id: u32) {
+    BATCH_MANAGER.with(|cell| {
+        let mut cell = cell.borrow_mut();
+        match cell.batches.remove(&batch_id) {
+            Some(batch) => batch.send(),
+            None => {},
+        }
+    });
 }

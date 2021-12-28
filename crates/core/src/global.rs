@@ -2,10 +2,9 @@
 // Commands grouped for each module
 // Entity Component Systems
 pub mod ecs {
-
     use crate::command::*;
     use crate::tasks::*;
-    use ecs::Component;
+    use ecs::Component;    
     /* #region Entities */
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
@@ -201,7 +200,6 @@ pub mod main {
 pub mod callbacks {
     pub use crate::callbacks::*;
 }
-
 // Timings
 pub mod timings {
     // Get the delta time
@@ -218,5 +216,21 @@ pub mod timings {
     pub fn frame_count() -> u64 {
         let w = crate::world::world();
         w.time_manager.frame_count
+    }
+}
+
+// Batches
+pub mod batch {
+    use crate::{command::CommandQueryResult, batch::BatchCommandQueryResult};
+
+    // Combine multiple tasks into one big batch and send it to the main thread
+    pub fn batch_tasks(commands: Vec<CommandQueryResult>, batch_id: u32) {
+        // Create the batch
+        let batch = BatchCommandQueryResult::new(batch_id, commands);
+        crate::system::add_batch(batch);
+    }
+    // Send a specific thread local batch to the main thread
+    pub fn send_batch(batch_id: u32) {
+        crate::system::send_batch(batch_id);
     }
 }

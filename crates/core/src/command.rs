@@ -1,11 +1,18 @@
 use rendering::PipelineStartData;
 
+use crate::batch::BatchCommandQuery;
 // Sending - Receiving
 use crate::communication::*;
 use crate::global::callbacks::LogicSystemCallbackArguments;
 use crate::system::*;
 use crate::tasks::*;
-use std::{collections::HashMap, sync::atomic::Ordering};
+use std::{collections::HashMap};
+
+// This can either be a single task or a batch of tasks
+pub enum CommandQueryType {
+    Single(CommandQuery),
+    Batch(BatchCommandQuery)
+}
 
 // A sent command query
 pub struct CommandQuery {
@@ -15,7 +22,7 @@ pub struct CommandQuery {
 }
 // The immediate result for that command query
 pub struct CommandQueryResult {
-    task: Option<Task>,
+    pub task: Option<Task>,
 }
 
 impl CommandQueryResult {
@@ -32,7 +39,7 @@ impl CommandQueryResult {
             thread_id: std::thread::current().id(),
             callback_id: None,
         };
-        command(query);
+        command(CommandQueryType::Single(query));
     }
     // Set callback for this specific command query result. It will receive a notif from the main thread when to execute this callback
     pub fn with_callback(mut self, callback_id: u64) {
@@ -43,18 +50,7 @@ impl CommandQueryResult {
             thread_id: std::thread::current().id(),
             callback_id: Some(callback_id),
         };
-        command(query);
-    }
-    // Get the immediate result of this query result if we have called it on the main thread
-    pub fn immediate_result(mut self) -> ImmediateTaskResult {
-        // Send the command
-        let task = self.task.take().unwrap();
-        let query = CommandQuery {
-            task,
-            thread_id: std::thread::current().id(),
-            callback_id: None,
-        };
-        command(query).unwrap()
+        command(CommandQueryType::Single(query));
     }
 }
 
@@ -69,7 +65,7 @@ impl std::ops::Drop for CommandQueryResult {
                     thread_id: std::thread::current().id(),
                     callback_id: None,
                 };
-                command(query);
+                command(CommandQueryType::Single(query));
             }
             None => { /* We have called the with_callback function, so the task is empty */ }
         }
@@ -79,7 +75,7 @@ impl std::ops::Drop for CommandQueryResult {
 // Initialize the main channels on the main thread
 pub fn initialize_channels_main() {
     // Create the channels
-    let (tx_command, rx_command) = std::sync::mpsc::channel::<CommandQuery>();
+    let (tx_command, rx_command) = std::sync::mpsc::channel::<CommandQueryType>();
     let mut receiver_ = RECEIVER.lock().unwrap();
     // Set the main thread values
     *receiver_ = Some(WorldTaskReceiver {
@@ -99,7 +95,7 @@ pub fn initialize_channels_worker_thread() {
     crate::system::SENDER.with(|x| {
         let mut sender_ = x.borrow_mut();
         let sender = &mut *sender_;
-        let mut sender_copy_ = crate::system::SENDER_COPY.as_ref().lock().unwrap();
+        let sender_copy_ = crate::system::SENDER_COPY.as_ref().lock().unwrap();
         let sender_copy = sender_copy_.as_ref().unwrap();
         // We do the cloning
         *sender = Some(sender_copy.clone());
@@ -137,8 +133,8 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
         }
     }
 }
-// Send a command query to the world
-fn command(query: CommandQuery) -> Option<ImmediateTaskResult> {
+// Send a command query (or a batch command query) to the world
+pub(crate) fn command(query: CommandQueryType) {
     // Check if we are running on the main thread
     let is_main_thread = IS_MAIN_THREAD.with(|x| x.get());
     if is_main_thread {
@@ -147,7 +143,7 @@ fn command(query: CommandQuery) -> Option<ImmediateTaskResult> {
         // Execute the task on the main thread
         let receiver_ = RECEIVER.lock().unwrap();
         let receiver = receiver_.as_ref().unwrap();
-        Some(excecute_query(query, &mut world, receiver))
+        excecute_query(query, &mut world, receiver)
     } else {
         // Send the command query
         SENDER.with(|sender| {
@@ -155,6 +151,5 @@ fn command(query: CommandQuery) -> Option<ImmediateTaskResult> {
             let tx = sender_.as_ref().unwrap();
             tx.send(query).unwrap();
         });
-        None
     }
 }

@@ -6,6 +6,7 @@ pub use frame_id::*;
 pub mod world;
 pub use game_file::*;
 mod command;
+mod batch;
 mod communication;
 mod custom_world_data;
 pub mod global;
