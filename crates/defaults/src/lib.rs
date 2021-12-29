@@ -68,16 +68,10 @@ pub fn preload_systems() {
     material.uniforms.set_f32("normals_strength", 2.0);
     material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE * 0.7);
 
-    let texture = rendering::pipec::texture(Texture::create_texturearray(
-        vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"],
-        256,
-        256,
-    ));
-    let texture2 = rendering::pipec::texture(Texture::create_texturearray(
-        vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"],
-        256,
-        256,
-    ));
+    let texture =
+        rendering::pipec::texture(Texture::create_texturearray(vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"], 256, 256).enable_mipmaps());
+    let texture2 =
+        rendering::pipec::texture(Texture::create_texturearray(vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"], 256, 256).enable_mipmaps());
     material.uniforms.set_t2da("diffuse_textures", &texture, 0);
     material.uniforms.set_t2da("normals_textures", &texture2, 1);
 

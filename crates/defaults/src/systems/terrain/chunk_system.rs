@@ -4,7 +4,7 @@ use super::ChunkSystem;
 use ecs::SystemData;
 use math::octrees::OctreeNode;
 use others::callbacks::MutCallback;
-use terrain::{ChunkCoords, ChunkState};
+use terrain::{ChunkCoords};
 ecs::impl_systemdata!(ChunkSystem);
 
 // Create the chunk entity and add it to the world
@@ -31,8 +31,6 @@ fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, 
                 )),
         )
         .unwrap();
-    // Init the chunk state
-    data.chunk_states.insert(coords, ChunkState::AwaitingCreation);
     // Add the entity
     let result = core::global::ecs::entity_add(entity, linkings);
     core::global::batch::batch_add(0, result);
@@ -48,8 +46,8 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     // We are only allowed to update the octree in 2 conditions
     // 1. We do not have any current chunks, so we must initialize the octree
     // 2. All of the generated chunks have a chunk state of Valid, meaning that they have generated their Voxel Data and TModel successfully
-    let validity_test = data.chunk_states.iter().all(|(_, x)| *x == ChunkState::Valid);
-    let valid = data.chunk_states.is_empty() || (validity_test);
+    let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty();
+    let valid = data.chunks.is_empty() || validity_test;
     if valid {
         // Update the octree
         let octree = &mut data.octree;
@@ -64,19 +62,19 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
                 let coords = ChunkCoords::new(&octree_node);
                 // Add the entity
                 create_chunk_entity(data, coords, octree_size);
+                data.chunks_awaiting_validation.insert(coords);
+                println!("Add {} to the set", coords.center);
             }
 
             // Buffer the chunks that must be removed
             for octree_node in removed {
                 let coords = ChunkCoords::new(&octree_node);
                 // Get the entity ID, then we can remove it
-                if let Option::Some(entity_id) = data.chunks.remove(&coords) {
+                if let Option::Some(&entity_id) = data.chunks.get(&coords) {
                     // Set the state first
                     // Now we can actually remove the entity
                     let result = core::global::ecs::entity_remove(entity_id);
                     data.chunks_to_delete.insert(entity_id);
-                    let x = data.chunk_states.get_mut(&coords).unwrap();
-                    *x = ChunkState::AwaitingDeletion;
                     core::global::batch::batch_add(1, result);
                 }
             }
@@ -84,11 +82,11 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     }
 
     // If we are done generating the chunks, we can safely remove the old chunks
-    core::global::batch::send_batch(1, false);
-    if data.chunk_states.iter().all(|(_, x)| *x == ChunkState::Valid) && !data.chunks_to_delete.is_empty() {
+    if data.chunks_awaiting_validation.len() == 0 && !data.chunks_to_delete.is_empty() {
+        core::global::batch::send_batch(1, false);
         data.chunks_to_delete.clear();
     }
-
+    println!("Chunks awaiting validation {}", data.chunks_awaiting_validation.len());
     // We must send the "Chunk Creation" batch and the "Chunk Deletion" batch to the main thread
     core::global::batch::send_batch(0, false);
 }
@@ -96,56 +94,32 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
 // We will loop through every chunk and update our internal state about them
 fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
-    // Update the state
-    if let Option::Some(internal_chunk_state) = data.chunk_states.get_mut(&chunk.coords) {
-        *internal_chunk_state = chunk.state.clone();
+    // Check if the chunk has a renderer component
+    if chunk.voxel_data.is_some() {
+        if let Option::Some(renderer) = core::global::ecs::component::<crate::components::Renderer>(entity).ok() {
+            // Check if we have a valid model
+            if renderer.internal_renderer.index.is_some() {
+                // We have valid model, we can remove self from the hashset
+                if data.chunks_awaiting_validation.remove(&chunk.coords) {
+                    data.chunks.insert(chunk.coords, entity.entity_id);
+                    println!("Add {} as a full chunk", chunk.coords.center);
+                } else { }
+            }
+        } else {
+            // If we do not have a model, and do not expect to get one, we must remove it as well
+            if data.chunks_awaiting_validation.remove(&chunk.coords) {
+                data.chunks.insert(chunk.coords, entity.entity_id);
+                println!("Add {} as a full chunk", chunk.coords.center);
+            } else { }
+        }
     }
-    // Check if the chunk has a renderer, because if it does then it's state becomes ValidRenderer
-    core::global::ecs::entity_mut(
-        entity.entity_id,
-        CallbackType::LocalEntityMut(MutCallback::new(|entity: &mut ecs::Entity| {
-            let valid_renderer = match core::global::ecs::component::<crate::components::Renderer>(entity) {
-                Ok(renderer) => renderer.internal_renderer.index.is_some(),
-                Err(e) => {
-                    /* We simply do not have a renderer yet */
-                    false
-                }
-            };
-            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-            // Update the state if needed
-            if valid_renderer && chunk.state == ChunkState::ValidModelData {
-                chunk.state = ChunkState::Valid;
-            }
-        }))
-        .create(),
-    );
-}
-
-// When we have added a Chunk Entity. This saves us from creating a callback actually
-fn entity_added(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
-    // Add the chunk to our total chunks
-    let mut data = data.clone();
-    core::global::ecs::entity_mut(
-        entity.entity_id,
-        CallbackType::LocalEntityMut(MutCallback::new(move |entity: &mut ecs::Entity| {
-            let entity_id = entity.entity_id;
-            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-            let o = data.chunks.insert(chunk.coords, entity_id);
-            if let Option::Some(_) = o {
-                panic!()
-            }
-            *data.chunk_states.get_mut(&chunk.coords).unwrap() = ChunkState::ValidEntity;
-            chunk.state = ChunkState::ValidEntity;
-        }))
-        .create(),
-    );
 }
 
 // We have removed a Chunk, we must remove it's corresponding data from our internal states as well
 fn entity_removed(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     // Remove this chunk from our total chunks
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
-    data.chunk_states.remove(&chunk.coords);
+    data.chunks.remove(&chunk.coords).unwrap();
 }
 
 // Create the Chunk Manager system
@@ -176,7 +150,6 @@ pub fn system(depth: u8, csgtree: math::csg::CSGTree) {
         // And link the events
         system.event(ecs::SystemEventType::SystemPrefire(system_prefire));
         system.event(ecs::SystemEventType::EntityUpdate(entity_update));
-        system.event(ecs::SystemEventType::EntityAdded(entity_added));
         system.event(ecs::SystemEventType::EntityRemoved(entity_removed));
         // Return the newly made system
         system

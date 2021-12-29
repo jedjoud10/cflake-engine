@@ -6,7 +6,7 @@ use ecs::SystemData;
 use math::octrees::OctreeNode;
 use others::callbacks::MutCallback;
 use rendering::ShaderUniformsGroup;
-use terrain::{ChunkCoords, ChunkState};
+use terrain::{ChunkCoords};
 ecs::impl_systemdata!(MesherSystem);
 
 // Loop though every entity, checking if one of them got their Voxel Data generated
@@ -14,8 +14,8 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
     // Get the chunk component and check for valid Voxel Data
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
     // If this chunk is not a pending chunk, then we cannot generate it's model
-    if data.pending_chunks.contains(&chunk.coords) && chunk.state == ChunkState::ValidVoxelData {
-        let created_renderer: bool = if let Option::Some(voxel_data) = &chunk.voxel_data {
+    if data.pending_chunks.contains(&chunk.coords) && chunk.voxel_data.is_some() {
+        let created_renderer: bool = if let Option::Some(voxel_data) = &chunk.voxel_data.as_ref().unwrap() {
             // If the voxel data is valid, create the model for this chunk
             let tmodel = terrain::mesher::generate_model(&voxel_data, chunk.coords, true);
             let model = rendering::Model::combine(tmodel.model, tmodel.skirts_model);
@@ -40,22 +40,6 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             false
         };
         data.pending_chunks.remove(&chunk.coords);
-
-        // Even though we might not have a model, we must validate the Chunk's state
-        core::global::ecs::entity_mut(
-            entity.entity_id,
-            CallbackType::LocalEntityMut(MutCallback::new(move |entity: &mut ecs::Entity| {
-                // Update the chunk state
-                let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-                chunk.state = ChunkState::ValidModelData;
-
-                // If we did not have a renderer created, we must still validate the state
-                if !created_renderer {
-                    chunk.state = ChunkState::Valid;
-                }
-            }))
-            .create(),
-        );
     }
 }
 

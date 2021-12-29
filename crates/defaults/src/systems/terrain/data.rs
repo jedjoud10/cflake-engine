@@ -1,6 +1,6 @@
 use rendering::{pipec, GPUObjectID, TextureFilter, TextureFormat, TextureType, TextureWrapping};
 use std::collections::{HashMap, HashSet};
-use terrain::{ChunkCoords, ChunkState, VoxelData, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
+use terrain::{ChunkCoords, VoxelData, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
 
 // Handles the creation/destruction of the chunk entities
 #[derive(Default)]
@@ -9,7 +9,7 @@ pub struct ChunkSystem {
     pub csgtree: math::csg::CSGTree,           // The CSG tree that will be used for massive optimizations
     pub chunks: HashMap<ChunkCoords, usize>,   // The chunks that were added into the world
     pub chunks_to_delete: HashSet<usize>,
-    pub chunk_states: HashMap<ChunkCoords, ChunkState>, // The chunks and their current state
+    pub chunks_awaiting_validation: HashSet<ChunkCoords>, // The number of chunks that are awating to be created and validated
 }
 
 // Handles the voxel generation for each chunk

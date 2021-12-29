@@ -3,7 +3,7 @@ use core::global::callbacks::CallbackType;
 use ecs::SystemData;
 use others::callbacks::{MutCallback, NullCallback, OwnedCallback};
 use rendering::{pipec, RenderTask, TextureShaderAccessType};
-use terrain::{ChunkState, Voxel, VoxelData, ISOLINE, MAIN_CHUNK_SIZE};
+use terrain::{Voxel, VoxelData, ISOLINE, MAIN_CHUNK_SIZE};
 ecs::impl_systemdata!(VoxelGenerationSystem);
 
 // Get the first pending chunk, and tell the voxel generator to generate it's voxel data if it is allowed to
@@ -148,33 +148,22 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
         None
     };
 
-    if let Option::Some(voxel_data) = voxel_data {
-        // We did generate the voxel data for this chunk, so update it
-        core::global::ecs::entity_mut(
-            entity.entity_id,
-            CallbackType::LocalEntityMut(MutCallback::new(|entity| {
-                // Update the chunk component
-                let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-                chunk.voxel_data = voxel_data;
-                chunk.state = ChunkState::ValidVoxelData;
-            }))
-            .create(),
-        );
-    }
+    // We did generate the voxel data for this chunk, so update it
+    core::global::ecs::entity_mut(
+        entity.entity_id,
+        CallbackType::LocalEntityMut(MutCallback::new(|entity| {
+            // Update the chunk component
+            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
+            chunk.voxel_data = voxel_data;
+        }))
+        .create(),
+    );
 }
 
 // When a chunk gets added, we tell the voxel generator to buffer the voxel generation for that chunk
 fn entity_added(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Entity) {
     let chunk_coords = core::global::ecs::component::<terrain::Chunk>(entity).unwrap().coords.clone();
     data.pending_chunks.push(chunk_coords);
-    core::global::ecs::entity_mut(
-        entity.entity_id,
-        CallbackType::LocalEntityMut(MutCallback::new(|entity| {
-            // Update the chunk state
-            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-        }))
-        .create(),
-    );
 }
 
 // When a chunk gets removed, we tell the voxel generator to stop generating the chunk's voxel data, if it is

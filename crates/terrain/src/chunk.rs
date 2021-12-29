@@ -40,23 +40,10 @@ impl std::hash::Hash for ChunkCoords {
         self.depth.hash(state);
     }
 }
-
-// Some sort of state for chunks
-#[derive(PartialEq, Clone, Debug)]
-pub enum ChunkState {
-    AwaitingCreation,
-    ValidEntity,
-    ValidVoxelData,
-    ValidModelData,
-    Valid,
-    AwaitingDeletion,
-}
-
 // A component that will be added to well... chunks
 pub struct Chunk {
     pub coords: ChunkCoords,
-    pub voxel_data: Option<VoxelData>,
-    pub state: ChunkState,
+    pub voxel_data: Option<Option<VoxelData>>,
 }
 
 // Main traits implemented
@@ -68,7 +55,6 @@ impl Chunk {
         Self {
             coords,
             voxel_data: None,
-            state: ChunkState::AwaitingCreation,
         }
     }
 }
