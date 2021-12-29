@@ -6,7 +6,7 @@ use ecs::SystemData;
 use math::octrees::OctreeNode;
 use others::callbacks::MutCallback;
 use rendering::ShaderUniformsGroup;
-use terrain::{ChunkCoords};
+use terrain::ChunkCoords;
 ecs::impl_systemdata!(MesherSystem);
 
 // Loop though every entity, checking if one of them got their Voxel Data generated
@@ -25,10 +25,7 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             // Since each chunk starts without a renderer, we must manually add the renderer component
             let mut linkings = ecs::ComponentLinkingGroup::new();
             // Create a renderer with the correct model and materials
-            let renderer = crate::components::Renderer::default()
-                .set_wireframe(true)
-                .set_model(model_id)
-                .set_material(data.material);
+            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material);
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
             core::global::ecs::link_components(entity.entity_id, linkings);
             true

@@ -151,7 +151,7 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
             }))
             .create(),
         );
-    }    
+    }
 }
 
 // When a chunk gets added, we tell the voxel generator to buffer the voxel generation for that chunk

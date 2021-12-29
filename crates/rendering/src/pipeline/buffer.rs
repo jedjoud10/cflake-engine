@@ -5,7 +5,8 @@ use std::{
 };
 
 use crate::{
-    ComputeShaderGPUObject, GPUObject, GPUObjectID, MainThreadMessage, MaterialGPUObject, ModelGPUObject, RendererGPUObject, ShaderGPUObject, SubShaderGPUObject, TextureGPUObject, UniformsGPUObject,
+    ComputeShaderGPUObject, GPUObject, GPUObjectID, MainThreadMessage, MaterialGPUObject, ModelGPUObject, RendererGPUObject, ShaderGPUObject, SubShaderGPUObject, TextureGPUObject,
+    UniformsGPUObject,
 };
 
 use super::async_command_data::AsyncGPUCommandData;

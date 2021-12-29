@@ -76,7 +76,15 @@ pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &Came
 }
 
 // Render a renderer normally
-pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &CameraDataGPUObject, dm: &MaterialGPUObject, new_time: f32, delta: f32, resolution: veclib::Vector2<i32>) {
+pub fn render(
+    buf: &PipelineBuffer,
+    renderer: &RendererGPUObject,
+    camera: &CameraDataGPUObject,
+    dm: &MaterialGPUObject,
+    new_time: f32,
+    delta: f32,
+    resolution: veclib::Vector2<i32>,
+) {
     let material = buf.as_material(&renderer.material_id);
     let mut shader = buf.as_shader(&dm.shader.as_ref().unwrap()).unwrap();
     // If we do not have a material assigned, use the default material
@@ -105,12 +113,12 @@ pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &Camer
     group2.set_mat44("mvp_matrix", mvp_matrix);
     group2.set_mat44("model_matrix", *model_matrix);
     group2.set_mat44("view_matrix", camera.viewm);
-    group2.set_vec3f32("view_pos", camera.position); 
+    group2.set_vec3f32("view_pos", camera.position);
     // Set a default impl uniform
-    group2.set_f32("_active_time", renderer.time_alive); 
+    group2.set_f32("_active_time", renderer.time_alive);
     group2.set_f32("_time", new_time);
     group2.set_vec2i32("_resolution", resolution);
-    group2.set_f32("_delta", new_time);   
+    group2.set_f32("_delta", new_time);
     // Combine the two groups
     let mut combined = ShaderUniformsGroup::combine(group1, &group2);
 
@@ -120,10 +128,10 @@ pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &Camer
         // We might need to combine another time
         combined = ShaderUniformsGroup::combine(&combined, group);
     }
-    
+
     // Update the uniforms
     combined.execute(buf, settings).unwrap();
-    
+
     unsafe {
         // Enable / Disable vertex culling for double sided materials
         if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
@@ -172,7 +180,9 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
 impl PipelineRenderer {
     // Init the pipeline renderer
     pub fn init(&mut self) {
-        unsafe { gl::Viewport(0, 0, 1280, 720); }
+        unsafe {
+            gl::Viewport(0, 0, 1280, 720);
+        }
         println!("Initializing the pipeline renderer...");
         self.window = Window::default();
         // Create the quad model

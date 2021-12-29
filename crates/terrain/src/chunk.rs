@@ -52,9 +52,6 @@ ecs::impl_component!(Chunk);
 impl Chunk {
     // New
     pub fn new(coords: ChunkCoords) -> Self {
-        Self {
-            coords,
-            voxel_data: None,
-        }
+        Self { coords, voxel_data: None }
     }
 }

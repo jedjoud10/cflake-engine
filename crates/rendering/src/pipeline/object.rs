@@ -187,15 +187,14 @@ impl ShaderUniformsSettings {
             shader_id: Some(shader_id.clone()),
             shader_program_id: None,
         }
-    } 
+    }
     pub fn new_program_id(shader: &ShaderGPUObject) -> Self {
         Self {
             shader_id: None,
             shader_program_id: Some(shader.program),
         }
-    } 
+    }
 }
-
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
 #[derive(Clone)]
@@ -212,9 +211,7 @@ impl ShaderUniformsGroup {
         for a in y {
             x.insert(a.0, a.1);
         }
-        Self {
-            uniforms: x,
-        }
+        Self { uniforms: x }
     }
     // Set a bool uniform
     pub fn set_bool(&mut self, name: &str, value: bool) {
@@ -282,9 +279,7 @@ impl ShaderUniformsGroup {
     }
     // Create self
     pub fn new() -> Self {
-        Self {
-            uniforms: HashMap::default(),
-        }
+        Self { uniforms: HashMap::default() }
     }
     // Bind the shader and set the uniforms
     pub fn execute(&self, buf: &PipelineBuffer, settings: ShaderUniformsSettings) -> Option<()> {

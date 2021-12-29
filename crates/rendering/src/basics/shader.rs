@@ -66,14 +66,11 @@ impl Shader {
             // Impl default types
             if line.trim().starts_with("#load_defaults") {
                 let x = match line.split("#load_defaults ").collect::<Vec<&str>>()[1] {
-                    "renderer" => {                        
+                    "renderer" => {
                         vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string()]));
                         Ok(())
-                    },
-                    x => Err(RenderingError::new(format!(
-                        "Tried to expand #load_defaults, but the given type '{}' is not valid!",
-                        x   
-                    )))
+                    }
+                    x => Err(RenderingError::new(format!("Tried to expand #load_defaults, but the given type '{}' is not valid!", x))),
                 };
                 x?;
             }

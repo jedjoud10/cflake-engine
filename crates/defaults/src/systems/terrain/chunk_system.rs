@@ -4,7 +4,7 @@ use super::ChunkSystem;
 use ecs::SystemData;
 use math::octrees::OctreeNode;
 use others::callbacks::MutCallback;
-use terrain::{ChunkCoords};
+use terrain::ChunkCoords;
 ecs::impl_systemdata!(ChunkSystem);
 
 // Create the chunk entity and add it to the world
@@ -101,13 +101,15 @@ fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
                 // We have valid model, we can remove self from the hashset
                 if data.chunks_awaiting_validation.remove(&chunk.coords) {
                     data.chunks.insert(chunk.coords, entity.entity_id);
-                } else { }
+                } else {
+                }
             }
         } else {
             // If we do not have a model, and do not expect to get one, we must remove it as well
             if data.chunks_awaiting_validation.remove(&chunk.coords) {
                 data.chunks.insert(chunk.coords, entity.entity_id);
-            } else { }
+            } else {
+            }
         }
     }
 }

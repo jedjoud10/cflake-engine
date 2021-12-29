@@ -15,10 +15,10 @@ pub struct ChunkSystem {
 // Handles the voxel generation for each chunk
 #[derive(Default)]
 pub struct VoxelGenerationSystem {
-    pub compute: GPUObjectID,                             // The compute shader that is used for voxel generation
-    pub voxel_texture: GPUObjectID,                       // The 3D texture used for voxel generation, only stores the density in a 16 bit value
-    pub material_texture: GPUObjectID,                    // The 3D texture used to store MaterialID, ShaderID
-    pub pending_chunks: Vec<ChunkCoords>,                 // The chunks that are pending their voxel data generation
+    pub compute: GPUObjectID,                                     // The compute shader that is used for voxel generation
+    pub voxel_texture: GPUObjectID,                               // The 3D texture used for voxel generation, only stores the density in a 16 bit value
+    pub material_texture: GPUObjectID,                            // The 3D texture used to store MaterialID, ShaderID
+    pub pending_chunks: Vec<ChunkCoords>,                         // The chunks that are pending their voxel data generation
     pub results: HashMap<ChunkCoords, Option<Option<VoxelData>>>, // A specific result for a specific chunk
 }
 impl VoxelGenerationSystem {

@@ -350,13 +350,7 @@ fn command(
 }
 
 // Poll commands that have been sent to us by the worker threads OR the main thread
-fn poll_commands(
-    buf: &mut PipelineBuffer,
-    renderer: &mut PipelineRenderer,
-    camera: &mut CameraDataGPUObject,
-    rx: &Receiver<RenderCommandQuery>,
-    glfw: &mut glfw::Glfw,
-) {
+fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, glfw: &mut glfw::Glfw) {
     // We must loop through every command that we receive from the main thread
     let mut i = 0;
     let mut lock = RESULT.lock().unwrap();
@@ -413,7 +407,8 @@ mod object_creation {
     use crate::{
         pipeline::{async_command_data::AsyncGPUCommandData, buffer::PipelineBuffer},
         ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, MaterialGPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderGPUObject,
-        ShaderUniformsGroup, SharedData, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType, TextureWrapping, UniformsGPUObject, ShaderUniformsSettings,
+        ShaderUniformsGroup, ShaderUniformsSettings, SharedData, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType,
+        TextureWrapping, UniformsGPUObject,
     };
     // Add the renderer to the renderer (lol I need better name)
     pub fn add_renderer(buf: &mut PipelineBuffer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
@@ -906,9 +901,7 @@ mod object_creation {
         // We must convert the uniforms into the GPU Object ID
         let uniforms = {
             // Bruh
-            let gpuobject = GPUObject::Uniforms(UniformsGPUObject {
-                uniforms: material.uniforms,
-            });
+            let gpuobject = GPUObject::Uniforms(UniformsGPUObject { uniforms: material.uniforms });
             buf.add_gpuobject(gpuobject, None)
         };
         let gpuobject = GPUObject::Material(MaterialGPUObject {
@@ -920,9 +913,7 @@ mod object_creation {
     }
     pub fn create_uniforms(buf: &mut PipelineBuffer, uniforms: SharedData<ShaderUniformsGroup>) -> GPUObjectID {
         let uniforms = uniforms.get();
-        let gpuobject = GPUObject::Uniforms(UniformsGPUObject {
-            uniforms,
-        });
+        let gpuobject = GPUObject::Uniforms(UniformsGPUObject { uniforms });
         buf.add_gpuobject(gpuobject, None)
     }
 }
