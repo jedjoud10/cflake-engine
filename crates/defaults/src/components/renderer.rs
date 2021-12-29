@@ -35,7 +35,7 @@ impl Renderer {
         self
     }
     // Set a specific shader uniform for this renderer
-    pub fn set_shader_uniforms(mut self, shader_uniforms: GPUObjectID) -> Self {
+    pub fn set_shader_uniforms(mut self, shader_uniforms: ShaderUniformsGroup) -> Self {
         self.internal_renderer = self.internal_renderer.set_shader_uniforms(shader_uniforms);
         self
     }

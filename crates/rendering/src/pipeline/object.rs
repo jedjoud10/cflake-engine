@@ -73,7 +73,7 @@ pub struct RendererGPUObject {
     pub model_id: GPUObjectID,
     pub material_id: GPUObjectID,
     pub matrix: veclib::Matrix4x4<f32>,
-    pub uniforms: Option<GPUObjectID>,
+    pub uniforms: Option<ShaderUniformsGroup>,
 }
 
 pub mod uniform_setters {

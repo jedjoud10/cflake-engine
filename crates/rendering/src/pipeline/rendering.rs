@@ -124,7 +124,6 @@ pub fn render(
 
     // Use the custom renderer shader uniforms
     if let Option::Some(group) = &renderer.uniforms {
-        let group = &buf.as_uniforms(group).unwrap().uniforms;
         // We might need to combine another time
         combined = ShaderUniformsGroup::combine(&combined, group);
     }
