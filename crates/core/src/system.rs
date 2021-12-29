@@ -135,6 +135,7 @@ where
                         let thread_id = std::thread::current().id();
                         // Check if the world got yeeted
                         if barrier_data.is_world_destroyed() {
+                            println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());
                             barrier_data.thread_sync_quit();
                             break;
                         }
@@ -146,8 +147,7 @@ where
                         // Tell the main thread we have finished executing thread local callbacks
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                     }
-                }
-                println!("Loop for '{}' has stopped!", std::thread::current().name().unwrap());
+                }                
             });
         })
         .unwrap();

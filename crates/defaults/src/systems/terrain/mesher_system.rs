@@ -5,6 +5,7 @@ use super::MesherSystem;
 use ecs::SystemData;
 use math::octrees::OctreeNode;
 use others::callbacks::MutCallback;
+use rendering::ShaderUniformsGroup;
 use terrain::{ChunkCoords, ChunkState};
 ecs::impl_systemdata!(MesherSystem);
 
@@ -24,16 +25,17 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             // Since each chunk starts without a renderer, we must manually add the renderer component
             let mut linkings = ecs::ComponentLinkingGroup::new();
             // Create a renderer with the correct model and materials
-
-            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material);
+            let mut uniforms = ShaderUniformsGroup::new();
+            uniforms.set_f32("node_depth", chunk.coords.depth as f32 / 4 as f32);
+            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material).set_shader_uniforms(uniforms);
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
-            data.pending_chunks.remove(&chunk.coords);
             core::global::ecs::link_components(entity.entity_id, linkings);
             true
         } else {
             // We generated the voxel data, but there was no surface, so no need to create the model
             false
         };
+        data.pending_chunks.remove(&chunk.coords);
 
         // Even though we might not have a model, we must validate the Chunk's state
         core::global::ecs::entity_mut(

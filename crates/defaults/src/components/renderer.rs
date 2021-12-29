@@ -1,5 +1,5 @@
 use core::FrameID;
-use rendering::{GPUObject, GPUObjectID, Material, ModelGPUObject, RendererFlags, RendererGPUObject};
+use rendering::{GPUObject, GPUObjectID, Material, ModelGPUObject, RendererFlags, RendererGPUObject, ShaderUniformsGroup};
 
 // Wrapper
 pub struct Renderer {
@@ -21,23 +21,24 @@ impl Default for Renderer {
 impl Renderer {
     // Set a model
     pub fn set_model(mut self, model: GPUObjectID) -> Self {
-        self.internal_renderer.model = Some(model);
+        self.internal_renderer = self.internal_renderer.set_model(model);
         self
     }
     // Enable / disable the wireframe rendering for this entity
     pub fn set_wireframe(mut self, enabled: bool) -> Self {
-        if enabled {
-            self.internal_renderer.flags.insert(RendererFlags::WIREFRAME);
-        } else {
-            self.internal_renderer.flags.remove(RendererFlags::WIREFRAME);
-        }
+        self.internal_renderer = self.internal_renderer.set_wireframe(enabled);
         self
     }
     // With a specific material
     pub fn set_material(mut self, material: GPUObjectID) -> Self {
-        self.internal_renderer.material = Some(material);
+        self.internal_renderer = self.internal_renderer.set_material(material);
         self
     }
+    // Set a specific shader uniform for this renderer
+    pub fn set_shader_uniforms(mut self, shader_uniforms: ShaderUniformsGroup) -> Self {
+        self.internal_renderer = self.internal_renderer.set_shader_uniforms(shader_uniforms);
+        self
+    }    
 }
 
 ecs::impl_component!(Renderer);

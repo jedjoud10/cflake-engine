@@ -1,5 +1,5 @@
 use super::Material;
-use crate::{GPUObjectID, MaterialGPUObject, ModelGPUObject};
+use crate::{GPUObjectID, MaterialGPUObject, ModelGPUObject, ShaderUniformsGroup};
 
 use bitflags::bitflags;
 // Yup
@@ -16,6 +16,7 @@ pub struct Renderer {
     pub index: Option<GPUObjectID>,    // The ID of this renderer in the pipeline
     pub model: Option<GPUObjectID>,    // The model GPU of this renderer
     pub material: Option<GPUObjectID>, // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
+    pub uniforms: Option<ShaderUniformsGroup>,
     pub flags: RendererFlags,          // Flags
 }
 
@@ -25,6 +26,7 @@ impl Default for Renderer {
             index: None,
             model: None,
             material: None,
+            uniforms: None,
             flags: RendererFlags::DEFAULT,
         }
     }
@@ -49,6 +51,11 @@ impl Renderer {
     // With a specific material
     pub fn set_material(mut self, material: GPUObjectID) -> Self {
         self.material = Some(material);
+        self
+    }
+    // Set a specific shader uniform for this renderer
+    pub fn set_shader_uniforms(mut self, shader_uniforms: ShaderUniformsGroup) -> Self {
+        self.uniforms = Some(shader_uniforms);
         self
     }
 }

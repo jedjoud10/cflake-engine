@@ -412,7 +412,8 @@ mod object_creation {
         let (renderer, matrix) = renderer.get();
         let material_id = renderer.material.unwrap();
         let model_id = renderer.model.clone().unwrap();
-        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject { model_id, material_id, matrix });
+        let uniforms = renderer.uniforms;
+        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject { model_id, material_id, matrix, uniforms });
         let id = buf.add_gpuobject(renderer_gpuobject, None);
         buf.renderers.insert(id.clone());
         id

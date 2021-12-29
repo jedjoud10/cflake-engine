@@ -106,6 +106,12 @@ pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &Camer
     group.set_mat44("view_matrix", camera.viewm);
     group.set_vec3f32("view_pos", camera.position);
     group.consume(buf).unwrap();
+    // Use the custom renderer shader uniforms
+    if let Option::Some(group) = &renderer.uniforms {
+        let mut group = group.clone();
+        group.update_shader(shader);
+        group.consume(buf).unwrap();
+    }
 
     unsafe {
         // Enable / Disable vertex culling for double sided materials

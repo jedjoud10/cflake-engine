@@ -75,16 +75,17 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
                     // Now we can actually remove the entity
                     let result = core::global::ecs::entity_remove(entity_id);
                     data.chunks_to_delete.insert(entity_id);
-                    data.chunk_states.remove(&coords);
+                    let x = data.chunk_states.get_mut(&coords).unwrap();
+                    *x = ChunkState::AwaitingDeletion;
                     core::global::batch::batch_add(1, result);
                 }
             }
         }
     }
-
+    
     // If we are done generating the chunks, we can safely remove the old chunks
+    core::global::batch::send_batch(1, false);
     if data.chunk_states.iter().all(|(_, x)| { *x == ChunkState::Valid }) && !data.chunks_to_delete.is_empty() {
-        core::global::batch::send_batch(1, false);
         data.chunks_to_delete.clear();
     }  
     
@@ -120,7 +121,8 @@ fn entity_added(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     core::global::ecs::entity_mut(entity.entity_id, CallbackType::LocalEntityMut(MutCallback::new(move |entity: &mut ecs::Entity| {
         let entity_id = entity.entity_id;
         let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-        data.chunks.insert(chunk.coords, entity_id);
+        let o = data.chunks.insert(chunk.coords, entity_id);
+        if let Option::Some(_) = o { panic!() }
         *data.chunk_states.get_mut(&chunk.coords).unwrap() = ChunkState::ValidEntity;
         chunk.state = ChunkState::ValidEntity;
     })).create());
@@ -139,7 +141,7 @@ pub fn system(depth: u8, csgtree: math::csg::CSGTree) {
     // Check if a an already existing node could be subdivided even more
     fn can_node_subdivide_twin(node: &math::octrees::OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
         let c: veclib::Vector3<f32> = node.get_center().into();
-        let max = node.depth == 1 || node.depth == 2;
+        let max = node.depth == 1;
         let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
         node.children_indices.is_none() && node.depth < max_depth && result
     }

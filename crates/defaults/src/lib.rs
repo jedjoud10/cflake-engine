@@ -5,6 +5,7 @@ pub mod default_system;
 pub mod systems;
 
 use assets::preload_asset;
+use rendering::{Material, Shader, Texture};
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the resources
@@ -54,8 +55,26 @@ pub fn preload_systems() {
     default_system::system();
     let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
     let (string, csgtree) = interpreter.finalize().unwrap();
-    systems::terrain::mesher_system::system(rendering::pipec::material(rendering::Material::new("a")));
-    systems::terrain::chunk_system::system(10, csgtree);
+    let terrain_shader = rendering::pipec::shader(Shader::default()
+        .load_shader(
+        vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl"],
+    ).unwrap());
+
+    let mut material = Material::new("Terrain material").set_shader(terrain_shader);
+    material.uniforms.set_f32("normals_strength", 2.0);
+    material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE * 0.7);
+
+    let texture = rendering::pipec::texture(
+        Texture::create_texturearray(vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"], 256, 256)
+    );
+    let texture2 = rendering::pipec::texture(Texture::create_texturearray(
+        vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"], 256, 256)
+    );
+    material.uniforms.set_t2da("diffuse_textures", &texture, 0);
+    material.uniforms.set_t2da("normals_textures", &texture2, 1);
+    
+    systems::terrain::mesher_system::system(rendering::pipec::material(material));
+    systems::terrain::chunk_system::system(4, csgtree);
     systems::terrain::voxel_generation_system::system(string);
     systems::rendering_system::system();
     systems::physics_system::system();

@@ -49,7 +49,7 @@ pub enum ChunkState {
     ValidVoxelData,
     ValidModelData,
     Valid,
-    //AwaitingDeletion,
+    AwaitingDeletion,
 }
 
 // A component that will be added to well... chunks
