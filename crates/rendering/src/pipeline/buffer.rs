@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    ComputeShaderGPUObject, GPUObject, GPUObjectID, MainThreadMessage, MaterialGPUObject, ModelGPUObject, RendererGPUObject, ShaderGPUObject, SubShaderGPUObject, TextureGPUObject,
+    ComputeShaderGPUObject, GPUObject, GPUObjectID, MainThreadMessage, MaterialGPUObject, ModelGPUObject, RendererGPUObject, ShaderGPUObject, SubShaderGPUObject, TextureGPUObject, UniformsGPUObject,
 };
 
 use super::async_command_data::AsyncGPUCommandData;
@@ -136,6 +136,14 @@ impl PipelineBuffer {
     pub fn as_material(&self, id: &GPUObjectID) -> Option<&MaterialGPUObject> {
         let object = self.get_gpuobject(id)?;
         if let GPUObject::Material(x) = object {
+            Some(x)
+        } else {
+            None
+        }
+    }
+    pub fn as_uniforms(&self, id: &GPUObjectID) -> Option<&UniformsGPUObject> {
+        let object = self.get_gpuobject(id)?;
+        if let GPUObject::Uniforms(x) = object {
             Some(x)
         } else {
             None

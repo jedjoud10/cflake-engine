@@ -21,6 +21,7 @@ pub struct ModelGPUObject {
     pub element_buffer_object: u32,
     pub element_count: usize,
 }
+
 #[derive(Clone)]
 pub struct SubShaderGPUObject {
     pub subshader_type: SubShaderType,
@@ -36,12 +37,14 @@ pub struct ShaderGPUObject {
 pub struct ComputeShaderGPUObject {
     pub program: u32,
 }
+
 #[derive(Clone, Copy)]
 pub struct TextureGPUObject {
     pub texture_id: u32,
     pub ifd: (i32, u32, u32),
     pub ttype: TextureType,
 }
+
 #[derive(Clone)]
 // TODO: Add this as an actual GPU object lel
 pub struct CameraDataGPUObject {
@@ -51,18 +54,25 @@ pub struct CameraDataGPUObject {
     pub viewm: veclib::Matrix4x4<f32>,
     pub projm: veclib::Matrix4x4<f32>,
 }
+
 #[derive(Clone)]
 pub struct MaterialGPUObject {
     pub shader: Option<GPUObjectID>,
-    pub uniforms: ShaderUniformsGroup,
+    pub uniforms: GPUObjectID,
     pub flags: MaterialFlags,
 }
+
+#[derive(Clone)]
+pub struct UniformsGPUObject {
+    pub uniforms: ShaderUniformsGroup,
+}
+
 #[derive(Clone)]
 pub struct RendererGPUObject {
     pub model_id: GPUObjectID,
     pub material_id: GPUObjectID,
     pub matrix: veclib::Matrix4x4<f32>,
-    pub uniforms: Option<ShaderUniformsGroup>,
+    pub uniforms: Option<GPUObjectID>,
 }
 
 pub mod uniform_setters {
@@ -164,26 +174,44 @@ pub mod uniform_setters {
         gl::Uniform4i(index, vec[0], vec[1], vec[2], vec[3]);
     }
 }
+// Stores the current shader and the shader ID possibly of the shader linked to the uniforms
+pub struct ShaderUniformsSettings {
+    pub shader_id: Option<GPUObjectID>,
+    pub shader_program_id: Option<u32>,
+}
+
+impl ShaderUniformsSettings {
+    pub fn new_id(shader_id: &GPUObjectID) -> Self {
+        Self {
+            shader_id: Some(shader_id.clone()),
+            shader_program_id: None,
+        }
+    } 
+    pub fn new_program_id(shader: &ShaderGPUObject) -> Self {
+        Self {
+            shader_id: None,
+            shader_program_id: Some(shader.program),
+        }
+    } 
+}
+
+
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
 #[derive(Clone)]
 pub struct ShaderUniformsGroup {
-    pub shader: Option<u32>,
-    pub shader_id: Option<GPUObjectID>,
     pub uniforms: HashMap<String, Uniform>,
 }
 
 // Gotta change the place where this shit is in
 impl ShaderUniformsGroup {
     // Combine a shader uniform group with an another one
-    pub fn combine(a: Self, b: Self, shader: u32) -> Self {
-        let mut x = a.uniforms;
-        let y = b.uniforms;
+    pub fn combine(a: &Self, b: &Self) -> Self {
+        let mut x = a.uniforms.clone();
+        let y = b.uniforms.clone();
         for a in y {
             x.insert(a.0, a.1);
         }
         Self {
-            shader: Some(shader),
-            shader_id: None,
             uniforms: x,
         }
     }
@@ -254,24 +282,15 @@ impl ShaderUniformsGroup {
     // Create self
     pub fn new() -> Self {
         Self {
-            shader: None,
-            shader_id: None,
             uniforms: HashMap::default(),
         }
     }
-    // Update the shader of this uniform group
-    pub fn update_shader(&mut self, shader: &ShaderGPUObject) {
-        self.shader = Some(shader.program);
-    }
-    pub fn update_shader_id(&mut self, shader_id: &GPUObjectID) {
-        self.shader_id = Some(shader_id.clone());
-    }
     // Bind the shader and set the uniforms
-    pub fn consume(self, buf: &PipelineBuffer) -> Option<()> {
+    pub fn execute(&self, buf: &PipelineBuffer, settings: ShaderUniformsSettings) -> Option<()> {
         // Get the shader program ID
-        let program_id = match self.shader {
+        let program_id = match settings.shader_program_id {
             Some(x) => x,
-            None => match self.shader_id {
+            None => match settings.shader_id {
                 Some(id) => {
                     // Might be either a compute or a normal shader
                     if let Option::Some(x) = buf.as_shader(&id) {
@@ -323,6 +342,7 @@ pub enum GPUObject {
     None, // This value was not initalized yet
     Model(ModelGPUObject),
     Material(MaterialGPUObject),
+    Uniforms(UniformsGPUObject),
     SubShader(SubShaderGPUObject),
     Shader(ShaderGPUObject),
     ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions

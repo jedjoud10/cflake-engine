@@ -17,7 +17,6 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
 
         // First pass
         let mut group = rendering::ShaderUniformsGroup::new();
-        group.update_shader_id(&data.compute);
         group.set_i3d("voxel_image", &data.voxel_texture, TextureShaderAccessType::WriteOnly);
         group.set_i3d("material_image", &data.material_texture, TextureShaderAccessType::WriteOnly);
         group.set_i32("chunk_size", (MAIN_CHUNK_SIZE + 2) as i32);

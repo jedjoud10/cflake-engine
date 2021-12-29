@@ -86,7 +86,7 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
         core::global::batch::send_batch(1, false);
         data.chunks_to_delete.clear();
     }
-    println!("Chunks awaiting validation {}", data.chunks_awaiting_validation.len());
+    //println!("Chunks awaiting validation {}", data.chunks_awaiting_validation.len());
     // We must send the "Chunk Creation" batch and the "Chunk Deletion" batch to the main thread
     core::global::batch::send_batch(0, false);
 }
@@ -102,14 +102,14 @@ fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
                 // We have valid model, we can remove self from the hashset
                 if data.chunks_awaiting_validation.remove(&chunk.coords) {
                     data.chunks.insert(chunk.coords, entity.entity_id);
-                    println!("Add {} as a full chunk", chunk.coords.center);
+                    //println!("Add {} as a full chunk", chunk.coords.center);
                 } else { }
             }
         } else {
             // If we do not have a model, and do not expect to get one, we must remove it as well
             if data.chunks_awaiting_validation.remove(&chunk.coords) {
                 data.chunks.insert(chunk.coords, entity.entity_id);
-                println!("Add {} as a full chunk", chunk.coords.center);
+                //println!("Add {} as a full chunk", chunk.coords.center);
             } else { }
         }
     }

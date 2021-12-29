@@ -403,7 +403,7 @@ mod object_creation {
     use crate::{
         pipeline::{async_command_data::AsyncGPUCommandData, buffer::PipelineBuffer},
         ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, MaterialGPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderGPUObject,
-        ShaderUniformsGroup, SharedData, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType, TextureWrapping,
+        ShaderUniformsGroup, SharedData, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType, TextureWrapping, UniformsGPUObject, ShaderUniformsSettings,
     };
     // Add the renderer to the renderer (lol I need better name)
     pub fn add_renderer(buf: &mut PipelineBuffer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
@@ -883,7 +883,8 @@ mod object_creation {
             gl::Flush();
         }
         // Dispatch the compute shader for execution
-        uniforms_group.consume(buf).unwrap();
+        let settings = ShaderUniformsSettings::new_id(&id);
+        uniforms_group.execute(buf, settings).unwrap();
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
         }
@@ -891,11 +892,26 @@ mod object_creation {
     }
     pub fn create_material(buf: &mut PipelineBuffer, material: SharedData<Material>) -> GPUObjectID {
         let material = material.get();
+        // We must convert the uniforms into the GPU Object ID
+        let uniforms = {
+            // Bruh
+            let gpuobject = GPUObject::Uniforms(UniformsGPUObject {
+                uniforms: material.uniforms,
+            });
+            buf.add_gpuobject(gpuobject, None)
+        };
         let gpuobject = GPUObject::Material(MaterialGPUObject {
             shader: material.shader,
-            uniforms: material.uniforms,
+            uniforms,
             flags: material.flags,
         });
         buf.add_gpuobject(gpuobject, Some(material.material_name.clone()))
+    }
+    pub fn create_uniforms(buf: &mut PipelineBuffer, uniforms: SharedData<ShaderUniformsGroup>) -> GPUObjectID {
+        let uniforms = uniforms.get();
+        let gpuobject = GPUObject::Uniforms(UniformsGPUObject {
+            uniforms,
+        });
+        buf.add_gpuobject(gpuobject, None)
     }
 }

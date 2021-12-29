@@ -109,6 +109,9 @@ pub mod pipec {
             None => task(RenderTask::MaterialCreate(SharedData::new(material))),
         })
     }
+    pub fn uniforms(uniforms: ShaderUniformsGroup) -> GPUObjectID {
+        execute(task(RenderTask::UniformsCreate(SharedData::new(uniforms))))
+    }
     // Load or create functions, cached type
     pub fn texturec(texturec: CachedObject<Texture>) -> GPUObjectID {
         execute(match others::get_id(&texturec.arc.as_ref().name) {

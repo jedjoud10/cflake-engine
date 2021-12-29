@@ -76,7 +76,7 @@ pub fn preload_systems() {
     material.uniforms.set_t2da("normals_textures", &texture2, 1);
 
     systems::terrain::mesher_system::system(rendering::pipec::material(material));
-    systems::terrain::chunk_system::system(4, csgtree);
+    systems::terrain::chunk_system::system(8, csgtree);
     systems::terrain::voxel_generation_system::system(string);
     systems::rendering_system::system();
     systems::physics_system::system();

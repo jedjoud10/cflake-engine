@@ -99,20 +99,26 @@ pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &Camer
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     // Pass the MVP and the model matrix to the shader
-    let mut group = material.uniforms.clone();
-    group.update_shader(shader);
-    group.set_mat44("mvp_matrix", mvp_matrix);
-    group.set_mat44("model_matrix", *model_matrix);
-    group.set_mat44("view_matrix", camera.viewm);
-    group.set_vec3f32("view_pos", camera.position);
-    group.consume(buf).unwrap();
+    let group1 = &buf.as_uniforms(&material.uniforms).unwrap().uniforms;
+    let mut group2 = ShaderUniformsGroup::new();
+    let settings = ShaderUniformsSettings::new_program_id(shader);
+    group2.set_mat44("mvp_matrix", mvp_matrix);
+    group2.set_mat44("model_matrix", *model_matrix);
+    group2.set_mat44("view_matrix", camera.viewm);
+    group2.set_vec3f32("view_pos", camera.position);    
+    // Combine the two groups
+    let mut combined = ShaderUniformsGroup::combine(group1, &group2);
+
     // Use the custom renderer shader uniforms
     if let Option::Some(group) = &renderer.uniforms {
-        let mut group = group.clone();
-        group.update_shader(shader);
-        group.consume(buf).unwrap();
+        let group = &buf.as_uniforms(group).unwrap().uniforms;
+        // We might need to combine another time
+        combined = ShaderUniformsGroup::combine(&combined, group);
     }
-
+    
+    // Update the uniforms
+    combined.execute(buf, settings).unwrap();
+    
     unsafe {
         // Enable / Disable vertex culling for double sided materials
         if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
@@ -135,13 +141,13 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
     // Get the wireframe shader
     let ws = buf.as_shader(ws).unwrap();
     let mut group = ShaderUniformsGroup::new();
-    group.update_shader(ws);
+    let settings = ShaderUniformsSettings::new_program_id(ws);
     // Calculate the mvp matrix
     let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
     group.set_mat44("mvp_matrix", mvp_matrix);
     group.set_mat44("model_matrix", *model_matrix);
     group.set_mat44("view_matrix", camera.viewm);
-    group.consume(buf).unwrap();
+    group.execute(buf, settings).unwrap();
     unsafe {
         // Set the wireframe rendering
         gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -289,8 +295,8 @@ impl PipelineRenderer {
         let dimensions = self.window.dimensions;
         // Render the screen QUAD
         let screen_shader = buf.as_shader(&self.screen_shader).unwrap();
+        let settings = ShaderUniformsSettings::new_program_id(screen_shader);
         let mut group = ShaderUniformsGroup::new();
-        group.update_shader(screen_shader);
         group.set_vec2i32("resolution", dimensions.into());
         group.set_vec2f32("nf_planes", camera.clip_planes);
         group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
@@ -306,7 +312,7 @@ impl PipelineRenderer {
         group.set_vec3f32("camera_pos", camera.position);
         group.set_i32("debug_view", 0);
         //group.set_t2d("frame_stats", self.frame_stats.texture, 5);
-        group.consume(buf).unwrap();
+        group.execute(buf, settings).unwrap();
 
         // Render the screen quad
         let quad_model = buf.as_model(&self.quad_model).unwrap();
