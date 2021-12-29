@@ -144,6 +144,11 @@ impl Shader {
         self.externalcode.insert(id.to_string(), string);
         self
     }
+    // Prefix the name with something
+    pub fn prefix_name(mut self, prefix: &str) -> Self {
+        self.name = format!("{}_{}", prefix, self.name);
+        self
+    }
 }
 
 // Each shader can be instanced

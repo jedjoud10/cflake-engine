@@ -240,7 +240,7 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUO
             (None, None)
         }
         RenderTask::TextureFillArray(id, bytecount_per_pixel, return_bytes) => {
-            object_creation::texture_fill_array(buf, id, bytecount_per_pixel, return_bytes);
+            todo!();
             (None, None)
         }
         // Model
@@ -252,7 +252,7 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUO
         // Material
         RenderTask::MaterialCreate(material) => (Some(object_creation::create_material(buf, material)), None),
         // Compute
-        RenderTask::ComputeRun(id, axii, uniforms_group) => (None, Some(object_creation::run_compute(buf, id, axii, uniforms_group))),
+        RenderTask::ComputeRun(id, axii, compute_tasks, uniforms_group) => (None, Some(object_creation::run_compute(buf, id, axii, compute_tasks, uniforms_group))),
         // Others
         _ => (None, None),
     }
@@ -365,24 +365,22 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
 
 // Check if any of the async GPU commands have finished executing
 fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
-    let mut datas: Vec<InternalAsyncGPUCommandData> = Vec::new();
-    buf.async_gpu_command_datas.retain(|async_gpu_command_data| {
-        // Check if the OpenGL command was executed
-        if async_gpu_command_data.has_executed() {
-            // The OpenGL command did executed, so we must tell signal the threads to run their callbacks
-            datas.push(async_gpu_command_data.internal.as_ref().unwrap().clone());
-            false
-        } else {
-            true
-        }
-    });
-    // Inform the other thread
+    let datas = buf
+        .async_gpu_command_datas
+        .drain_filter(|async_gpu_command_data| {
+            // Check if the OpenGL command was executed
+            async_gpu_command_data.has_executed()
+        })
+        .collect::<Vec<AsyncGPUCommandData>>();
+    // Run the execution event and inform the other thread
     let mut lock = RESULT.lock().unwrap();
-    for async_data in datas {
+    for mut async_data in datas {
+        async_data.execute_event(buf);
         // Extract
-        let command_id = async_data.command_id;
-        let callback_id = async_data.callback_id;
-        let batch_callback_data = async_data.batch_callback_data;
+        let internal = async_data.internal.unwrap();
+        let command_id = internal.command_id;
+        let callback_id = internal.callback_id;
+        let batch_callback_data = internal.batch_callback_data;
         buf.received_new_gpuobject_additional(None, callback_id);
         crate::others::executed_command(buf, command_id, batch_callback_data, None, &mut *lock);
     }
@@ -405,7 +403,11 @@ mod object_creation {
     };
 
     use crate::{
-        pipeline::{async_command_data::AsyncGPUCommandData, buffer::PipelineBuffer},
+        compute::ComputeShaderSubTasks,
+        pipeline::{
+            async_command_data::{AsyncGPUCommandData, AsyncGPUCommandExecutionEvent},
+            buffer::PipelineBuffer,
+        },
         ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, MaterialGPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderGPUObject,
         ShaderUniformsGroup, ShaderUniformsSettings, SharedData, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType,
         TextureWrapping, UniformsGPUObject,
@@ -850,41 +852,13 @@ mod object_creation {
             }
         }
     }
-    pub fn texture_fill_array(buf: &mut PipelineBuffer, id: GPUObjectID, bytecount_per_pixel: usize, return_bytes: Arc<Mutex<Vec<u8>>>) {
-        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() { x } else { panic!() };
-        // Get the length of the vector
-        let length: usize = match texture.ttype {
-            TextureType::Texture1D(x) => (x as usize),
-            TextureType::Texture2D(x, y) => (x as usize * y as usize),
-            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
-            TextureType::TextureArray(_, _, _) => todo!(),
-        };
-        // Get the byte size
-        let byte_length = bytecount_per_pixel * length;
-
-        // Create the vector
-        let mut pixels: Vec<u8> = vec![0; byte_length];
-
-        let tex_type = match texture.ttype {
-            TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-
-        // Actually read the pixels
-        unsafe {
-            // Bind the buffer before reading
-            gl::BindTexture(tex_type, texture.texture_id);
-            let (_internal_format, format, data_type) = texture.ifd;
-            gl::GetTexImage(tex_type, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
-        }
-
-        // Update the vector that was given using the AtomicPtr
-        let mut new_bytes = return_bytes.as_ref().lock().unwrap();
-        *new_bytes = pixels;
-    }
-    pub fn run_compute(buf: &mut PipelineBuffer, id: GPUObjectID, axii: (u16, u16, u16), uniforms_group: ShaderUniformsGroup) -> AsyncGPUCommandData {
+    pub fn run_compute(
+        buf: &mut PipelineBuffer,
+        id: GPUObjectID,
+        axii: (u16, u16, u16),
+        compute_tasks: ComputeShaderSubTasks,
+        uniforms_group: ShaderUniformsGroup,
+    ) -> AsyncGPUCommandData {
         unsafe {
             gl::Flush();
         }
@@ -894,7 +868,7 @@ mod object_creation {
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
         }
-        AsyncGPUCommandData::new()
+        AsyncGPUCommandData::new(Some(AsyncGPUCommandExecutionEvent::ComputeShaderSubTasks(id, compute_tasks)))
     }
     pub fn create_material(buf: &mut PipelineBuffer, material: SharedData<Material>) -> GPUObjectID {
         let material = material.get();

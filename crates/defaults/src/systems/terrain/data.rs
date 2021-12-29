@@ -12,10 +12,12 @@ pub struct ChunkSystem {
     pub chunks_awaiting_validation: HashSet<ChunkCoords>, // The number of chunks that are awating to be created and validated
 }
 
+
+pub const PARALLEL_COMPUTES: usize = 3; // The number of computes shaders that are ran in parallel
 // Handles the voxel generation for each chunk
 #[derive(Default)]
 pub struct VoxelGenerationSystem {
-    pub compute: GPUObjectID,                                     // The compute shader that is used for voxel generation
+    pub computes: Vec<(GPUObjectID, bool)>,                                     // The computes shaders that are used for voxel generation
     pub voxel_texture: GPUObjectID,                               // The 3D texture used for voxel generation, only stores the density in a 16 bit value
     pub material_texture: GPUObjectID,                            // The 3D texture used to store MaterialID, ShaderID
     pub pending_chunks: Vec<ChunkCoords>,                         // The chunks that are pending their voxel data generation
@@ -24,12 +26,13 @@ pub struct VoxelGenerationSystem {
 impl VoxelGenerationSystem {
     pub fn new(interpreter_string: String) -> Self {
         // Create the voxel generation shader
-        let compute = pipec::compute_shader(
-            rendering::Shader::default()
-                .load_externalcode("voxel_interpreter", interpreter_string)
-                .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER])
-                .unwrap(),
-        );
+        fn create_compute(interpreter_string: String, i: usize) -> GPUObjectID {
+            pipec::compute_shader(
+                rendering::Shader::default()
+                    .load_externalcode("voxel_interpreter", interpreter_string)
+                    .load_shader(vec![DEFAULT_TERRAIN_COMPUTE_SHADER])
+                    .unwrap().prefix_name(&i.to_string()))
+        }
         // Create the voxel texture
         let voxel_texture = pipec::texture(
             rendering::Texture::default()
@@ -55,8 +58,9 @@ impl VoxelGenerationSystem {
                 .set_wrapping_mode(TextureWrapping::ClampToBorder),
         );
         // Create self
+        let computes = (0_usize..PARALLEL_COMPUTES).into_iter().map(|i: usize| (create_compute(interpreter_string.clone(), i), false)).collect::<Vec<(GPUObjectID, bool)>>();
         Self {
-            compute,
+            computes,
             voxel_texture,
             material_texture,
             ..Self::default()

@@ -1,5 +1,5 @@
 use super::{batch_command::BatchCallbackData, buffer::PipelineBuffer};
-use crate::GPUObjectID;
+use crate::{compute::ComputeShaderSubTasks, GPUObjectID};
 #[derive(Clone)]
 pub struct InternalAsyncGPUCommandData {
     pub command_id: u64,
@@ -7,16 +7,26 @@ pub struct InternalAsyncGPUCommandData {
     pub batch_callback_data: Option<BatchCallbackData>,
 }
 
+// Some events that we will execute after we finish executing the async command
+pub enum AsyncGPUCommandExecutionEvent {
+    ComputeShaderSubTasks(GPUObjectID, ComputeShaderSubTasks),
+}
+
 pub struct AsyncGPUCommandData {
     pub sync: *const gl::types::__GLsync, // The OpenGL fence sync
     pub internal: Option<InternalAsyncGPUCommandData>,
+    pub execution_event: Option<AsyncGPUCommandExecutionEvent>,
 }
 
 impl AsyncGPUCommandData {
     // New
-    pub fn new() -> Self {
+    pub fn new(execution_event: Option<AsyncGPUCommandExecutionEvent>) -> Self {
         let sync = unsafe { gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0) };
-        Self { sync, internal: None }
+        Self {
+            sync,
+            internal: None,
+            execution_event,
+        }
     }
     // Give the data a bit more information about the command that created it
     pub fn additional_command_data(&mut self, command_data: InternalAsyncGPUCommandData) {
@@ -31,6 +41,14 @@ impl AsyncGPUCommandData {
                 true
             } else {
                 false
+            }
+        }
+    }
+    // Execute the execution event
+    pub fn execute_event(&mut self, buf: &PipelineBuffer) {
+        if let Option::Some(event) = self.execution_event.take() {
+            match event {
+                AsyncGPUCommandExecutionEvent::ComputeShaderSubTasks(id, compute_tasks) => compute_tasks.run(buf, id),
             }
         }
     }

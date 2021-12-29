@@ -1,7 +1,7 @@
 use super::{batch_command::BatchCallbackData, buffer::PipelineBuffer};
 use crate::{
-    internal_task, is_render_thread, ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderUniformsGroup,
-    SubShader, Texture, TextureGPUObject, TextureType,
+    compute::ComputeShaderSubTasks, internal_task, is_render_thread, ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, Model, ModelGPUObject, Renderer, RendererGPUObject,
+    Shader, ShaderUniformsGroup, SubShader, Texture, TextureGPUObject, TextureType,
 };
 use lazy_static::lazy_static;
 use std::{
@@ -208,7 +208,7 @@ pub enum RenderTask {
     ModelCreate(SharedData<Model>),
     ModelDispose(GPUObjectID),
     // Compute
-    ComputeRun(GPUObjectID, (u16, u16, u16), ShaderUniformsGroup),
+    ComputeRun(GPUObjectID, (u16, u16, u16), ComputeShaderSubTasks, ShaderUniformsGroup),
     // Renderer
     RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
     RendererRemove(GPUObjectID),

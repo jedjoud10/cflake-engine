@@ -1,6 +1,6 @@
 mod async_command_data;
 mod batch_command;
-mod buffer;
+pub(crate) mod buffer;
 mod command;
 mod identifier;
 pub mod object;
