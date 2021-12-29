@@ -178,6 +178,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     poll_async_gpu_commands(&mut pipeline_buffer);
                     // --- Rendering ---
                     // Pre-render
+                    let i = std::time::Instant::now();
                     pipeline_renderer.pre_render();
                     // Render
                     pipeline_renderer.renderer_frame(&mut pipeline_buffer, &camera);
@@ -186,7 +187,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
                     // Run the callbacks
                     pipeline_buffer.execute_callbacks(&tx2);
-
                     frame_count += 1;
                     // The world is valid, we can wait
                     let barrier_data = others::barrier::as_ref();
@@ -197,6 +197,8 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                             break;
                         }
                     }
+
+                    
                 }
                 println!("Stopped the render thread!");
             })

@@ -40,7 +40,7 @@ impl std::hash::Hash for ChunkCoords {
 }
 
 // Some sort of state for chunks
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum ChunkState {
     AwaitingCreation,
     AwaitingDeletion,
@@ -50,6 +50,9 @@ pub enum ChunkState {
 
     PendingModelGeneration,
     ValidModelData,
+
+    NullRenderer,
+    ValidRenderer,
 
     Valid,
 }

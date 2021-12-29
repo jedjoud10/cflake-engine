@@ -107,7 +107,7 @@ pub fn frame_main_thread(world: &mut crate::world::World, pipeline_start_data: &
     let receiver_ = RECEIVER.lock().unwrap();
     let receiver = receiver_.as_ref().unwrap();
     let rx = &receiver.rx;
-    for query in rx.try_recv() {
+    for query in rx.try_iter() {
         // Just execute the task
         excecute_query(query, world, receiver);
     }

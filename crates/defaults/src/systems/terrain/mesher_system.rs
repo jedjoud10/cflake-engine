@@ -14,7 +14,7 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
     // If this chunk is not a pending chunk, then we cannot generate it's model
     if data.pending_chunks.contains(&chunk.coords) && chunk.state == ChunkState::ValidVoxelData {
-        if let Option::Some(voxel_data) = &chunk.voxel_data {
+        let created_renderer: bool = if let Option::Some(voxel_data) = &chunk.voxel_data {
             // If the voxel data is valid, create the model for this chunk
             let tmodel = terrain::mesher::generate_model(&voxel_data, chunk.coords, true);
             let model = rendering::Model::combine(tmodel.model, tmodel.skirts_model);
@@ -29,19 +29,26 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
             data.pending_chunks.remove(&chunk.coords);
             core::global::ecs::link_components(entity.entity_id, linkings);
+            true
         } else {
             // We generated the voxel data, but there was no surface, so no need to create the model
-        }
+            false
+        };
 
         // Even though we might not have a model, we must validate the Chunk's state
         core::global::ecs::entity_mut(
             entity.entity_id,
-            CallbackType::LocalEntityMut(MutCallback::new(|entity| {
+            CallbackType::LocalEntityMut(MutCallback::new(move |entity: &mut ecs::Entity| {
                 // Update the chunk state
                 let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
                 chunk.state = ChunkState::PendingModelGeneration;
                 chunk.state = ChunkState::ValidModelData;
-                chunk.state = ChunkState::Valid;
+
+                // If we did not have a renderer created, we must still validate the state 
+                if !created_renderer {
+                    chunk.state = ChunkState::NullRenderer;
+                    chunk.state = ChunkState::Valid;
+                }
             }))
             .create(),
         );

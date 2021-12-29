@@ -33,6 +33,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         let result = pipec::task(pipec::RenderTask::ComputeRun(data.compute, indices, group));
         // Callback data that we will pass
         let mut data = data.clone();
+        let i = std::time::Instant::now();
         result.with_callback(
             CallbackType::RenderingCommandExecution(NullCallback::new(move || {
                 use std::sync::{Arc, Mutex};
@@ -47,7 +48,8 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                 // Create the batch command
                 pipec::task_batch(vec![pipec::task(task1), pipec::task(task2)]).with_callback(
                     CallbackType::RenderingCommandExecution(NullCallback::new(move || {
-                        let i = std::time::Instant::now();
+                        let i1 = i.elapsed().as_millis();          
+                        let i = std::time::Instant::now();                        
                         let voxel_pixels = Arc::try_unwrap(voxel_pixels).unwrap().into_inner().unwrap();
                         let material_pixels = Arc::try_unwrap(material_pixels).unwrap().into_inner().unwrap();
                         let voxel_pixels = pipec::convert_native::<f32>(voxel_pixels);
@@ -73,6 +75,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                         let surface = min.signum() != max.signum();
                         if !surface {
                             data.result = Some((chunk_coords, None));
+                            println!("Finished voxel generation for Chunk {}, took {}ms (Async {}ms). [NO VALID SURFACE FOUND]", chunk_coords.center, i.elapsed().as_millis(), i1);
                             return;
                         };
 
@@ -102,6 +105,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                                 }
                             }
                         }
+                        println!("Finished voxel generation for Chunk {}, took {}ms (Async {}ms)", chunk_coords.center, i.elapsed().as_millis(), i1);
                         // Tell the main system data that we finished the voxel generation for this specific chunk
                         data.result = Some((chunk_coords, Some(voxel_data)));
                     }))
