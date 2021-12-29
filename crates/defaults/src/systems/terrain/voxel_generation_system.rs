@@ -26,7 +26,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         // We can run the voxel generation logic
         let chunk_coords = data.pending_chunks.remove(0);
         let testio = core::global::timings::frame_count();
-        println!("Started voxel generation for Chunk {} {}", chunk_coords.center, testio);
+        //println!("Started voxel generation for Chunk {} {}", chunk_coords.center, testio);
         // Set the state
 
         // First pass
@@ -59,7 +59,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         let i = std::time::Instant::now();
         result.with_callback(
             CallbackType::RenderingCommandExecution(NullCallback::new(move || {
-                println!("Midway through voxel generation for chunk {} {}", chunk_coords.center, testio);
+                //println!("Midway through voxel generation for chunk {} {}", chunk_coords.center, testio);
                 // This callback is executed when the compute shader finishes it's execution.
                 // We can safely read back from the textures now
                 let voxel_pixels = Arc::try_unwrap(voxel_pixels).unwrap().into_inner().unwrap();
