@@ -162,7 +162,6 @@ fn entity_added(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Enti
         CallbackType::LocalEntityMut(MutCallback::new(|entity| {
             // Update the chunk state
             let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-            chunk.state = ChunkState::PendingVoxelGeneration;
         }))
         .create(),
     );

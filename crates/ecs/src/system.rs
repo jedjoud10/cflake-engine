@@ -53,6 +53,8 @@ where
     T: CustomSystemData,
 {
     pub c_bitfield: usize,
+    pub show_stats: bool,
+    pub name: String,
 
     // Events
     // Control events
@@ -73,6 +75,8 @@ where
     pub fn new() -> Self {
         System {
             c_bitfield: 0,
+            show_stats: false,
+            name: String::new(),
             system_prefire: None,
             system_postfire: None,
             entity_added: None,
@@ -103,6 +107,11 @@ where
             SystemEventType::EntityRemoved(x) => self.entity_removed = Some(x),
             SystemEventType::EntityUpdate(x) => self.entity_update = Some(x),
         };
+    }
+    // Enable the stats, so we can know some info about the execution of the system
+    pub fn show_stats(&mut self, name: &str) {
+        self.show_stats = true;
+        self.name = name.to_string();
     }
     // Add an entity to the current system
     pub fn add_entity(&mut self, shared: &mut SystemData<T>, entity: &Entity) {

@@ -38,6 +38,7 @@ impl Octree {
             parent_index: 0,
             index: 0,
             children_indices: None,
+            generation: 0,
         }
     }
     // Generate an octree from a root and a target point

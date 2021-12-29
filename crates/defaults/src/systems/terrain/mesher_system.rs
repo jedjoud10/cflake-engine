@@ -41,12 +41,10 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             CallbackType::LocalEntityMut(MutCallback::new(move |entity: &mut ecs::Entity| {
                 // Update the chunk state
                 let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-                chunk.state = ChunkState::PendingModelGeneration;
                 chunk.state = ChunkState::ValidModelData;
 
                 // If we did not have a renderer created, we must still validate the state 
                 if !created_renderer {
-                    chunk.state = ChunkState::NullRenderer;
                     chunk.state = ChunkState::Valid;
                 }
             }))

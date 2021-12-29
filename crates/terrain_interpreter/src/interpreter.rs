@@ -44,8 +44,8 @@ impl Interpreter {
             .new(&[p], &mut interpreter)
             .unwrap();
         let d = Noise::default()
-            .set_type(NoiseType::VoronoiDistance)
-            .set_inverted(true)
+            .set_type(NoiseType::Simplex)
+            .set_inverted(false)
             .set_strength(120.0)
             .set_scale(0.003)
             .new(&[p], &mut interpreter)

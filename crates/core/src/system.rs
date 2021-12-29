@@ -125,6 +125,11 @@ where
                         Err(_) => {}
                     }
 
+                    // Print the system frame stats
+                    if system.show_stats {
+                        println!("Took {}ms to execute system '{:.2}'", system.name, i.elapsed().as_secs_f32() * 1000.0);
+                    }
+
                     // Very very end of the frame
                     if barrier_data.is_world_valid() {
                         let thread_id = std::thread::current().id();

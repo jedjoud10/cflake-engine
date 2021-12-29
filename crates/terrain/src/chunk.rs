@@ -9,6 +9,7 @@ pub struct ChunkCoords {
     pub center: veclib::Vector3<i64>,
     pub size: u64,
     pub depth: u8,
+    pub generation: u32,
 }
 
 // Generate the chunk coords from an octree node
@@ -20,6 +21,7 @@ impl ChunkCoords {
             center: octree_node.get_center(),
             size: octree_node.half_extent * 2,
             depth: octree_node.depth,
+            generation: octree_node.generation,
         }
     }
 }
@@ -43,18 +45,11 @@ impl std::hash::Hash for ChunkCoords {
 #[derive(PartialEq, Clone, Debug)]
 pub enum ChunkState {
     AwaitingCreation,
-    AwaitingDeletion,
-
-    PendingVoxelGeneration,
+    ValidEntity,
     ValidVoxelData,
-
-    PendingModelGeneration,
     ValidModelData,
-
-    NullRenderer,
-    ValidRenderer,
-
     Valid,
+    //AwaitingDeletion,
 }
 
 // A component that will be added to well... chunks

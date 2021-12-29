@@ -8,7 +8,7 @@ pub struct ChunkSystem {
     pub octree: math::octrees::AdvancedOctree,            // An advanced octree, so we can actually create the chunks
     pub csgtree: math::csg::CSGTree,                      // The CSG tree that will be used for massive optimizations
     pub chunks: HashMap<ChunkCoords, usize>,              // The chunks that were added into the world
-    pub chunks_to_remove: Vec<math::octrees::OctreeNode>, // The chunks that we must remove from the world
+    pub chunks_to_delete: HashSet<usize>,
     pub chunk_states: HashMap<ChunkCoords, ChunkState>,   // The chunks and their current state
 }
 

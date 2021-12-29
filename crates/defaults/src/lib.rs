@@ -55,7 +55,7 @@ pub fn preload_systems() {
     let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
     let (string, csgtree) = interpreter.finalize().unwrap();
     systems::terrain::mesher_system::system(rendering::pipec::material(rendering::Material::new("a")));
-    systems::terrain::chunk_system::system(4, csgtree);
+    systems::terrain::chunk_system::system(10, csgtree);
     systems::terrain::voxel_generation_system::system(string);
     systems::rendering_system::system();
     systems::physics_system::system();
