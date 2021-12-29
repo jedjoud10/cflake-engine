@@ -12,7 +12,6 @@ ecs::impl_systemdata!(VoxelGenerationSystem);
 // Get the first pending chunk, and tell the voxel generator to generate it's voxel data if it is allowed to
 fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
     let mut i = 0;
-    println!("{:?}", data.computes);
     while i < PARALLEL_COMPUTES && data.pending_chunks.len() > 0 {
         i += 1;
         // Get a compute shader that is free 
@@ -32,8 +31,10 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
 
         // First pass
         let mut group = rendering::ShaderUniformsGroup::new();
-        group.set_i3d("voxel_image", &data.voxel_texture, TextureShaderAccessType::WriteOnly);
-        group.set_i3d("material_image", &data.material_texture, TextureShaderAccessType::WriteOnly);
+        let voxel_texture = *data.voxel_texture.get(compute_index).unwrap();
+        let material_texture = *data.material_texture.get(compute_index).unwrap();
+        group.set_i3d("voxel_image", &voxel_texture, TextureShaderAccessType::WriteOnly);
+        group.set_i3d("material_image", &material_texture, TextureShaderAccessType::WriteOnly);
         group.set_i32("chunk_size", (MAIN_CHUNK_SIZE + 2) as i32);
         group.set_vec3f32("node_pos", veclib::Vector3::<f32>::from(chunk_coords.position));
         group.set_i32("node_size", chunk_coords.size as i32);
@@ -48,8 +49,8 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         // Create compute sub tasks, that way we can directly fill the textures after the compute shader runs
         let voxel_pixels: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
         let material_pixels: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
-        let task1 = ComputeShaderSubTask::TextureFillArray(data.voxel_texture, std::mem::size_of::<f32>(), voxel_pixels.clone());
-        let task2 = ComputeShaderSubTask::TextureFillArray(data.material_texture, std::mem::size_of::<u8>() * 2, material_pixels.clone());
+        let task1 = ComputeShaderSubTask::TextureFillArray(voxel_texture, std::mem::size_of::<f32>(), voxel_pixels.clone());
+        let task2 = ComputeShaderSubTask::TextureFillArray(material_texture, std::mem::size_of::<u8>() * 2, material_pixels.clone());
         let compute_tasks = ComputeShaderSubTasks::new(vec![task1, task2]);
         // We are generating data on this compute shader        
         let result = pipec::task(pipec::RenderTask::ComputeRun(compute, indices, compute_tasks, group));

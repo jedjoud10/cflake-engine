@@ -41,7 +41,7 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     // First of all, we get the camera data
     let camera = core::global::ecs::entity(core::global::main::world_data().main_camera_entity_id).unwrap();
     let camera_transform = core::global::ecs::component::<crate::components::Transform>(&camera).unwrap();
-    let camera_pos = veclib::Vector3::new(0.0, 100.0, 0.0);
+    let camera_pos = camera_transform.position;
 
     // We are only allowed to update the octree in 2 conditions
     // 1. We do not have any current chunks, so we must initialize the octree
@@ -49,11 +49,18 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty();
     let valid = data.chunks.is_empty() || validity_test;
     if valid && core::global::input::map_toggled("toggle_terrain_gen") {
+        if let Option::Some(x) = data.time_taken {
+            if x.elapsed().as_millis() > 90 {
+                println!("Octree update {:.3}", x.elapsed().as_secs_f32());
+                data.time_taken = None;
+            }
+        }
+        data.time_taken = Some(std::time::Instant::now());        
         // Update the octree
         let octree = &mut data.octree;
         let octree_size = octree.internal_octree.size;
         if let Option::Some((mut added, removed, total)) = octree.generate_incremental_octree(&camera_pos, terrain::DEFAULT_LOD_FACTOR) {
-            println!("Octree update {}", core::global::timings::frame_count());
+            
             // Do a bit of filtering on the added nodes
             added.retain(|node| node.children_indices.is_none() && math::Intersection::csgtree_aabb(&data.csgtree, &node.get_aabb()));
             // Add the chunks into the world
@@ -78,6 +85,8 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
                 }
             }
         }
+
+        
     }
 
     // If we are done generating the chunks, we can safely remove the old chunks

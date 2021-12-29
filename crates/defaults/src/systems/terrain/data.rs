@@ -8,18 +8,19 @@ pub struct ChunkSystem {
     pub octree: math::octrees::AdvancedOctree, // An advanced octree, so we can actually create the chunks
     pub csgtree: math::csg::CSGTree,           // The CSG tree that will be used for massive optimizations
     pub chunks: HashMap<ChunkCoords, usize>,   // The chunks that were added into the world
+    pub time_taken: Option<std::time::Instant>,
     pub chunks_to_delete: HashSet<usize>,
     pub chunks_awaiting_validation: HashSet<ChunkCoords>, // The number of chunks that are awating to be created and validated
 }
 
 
-pub const PARALLEL_COMPUTES: usize = 3; // The number of computes shaders that are ran in parallel
+pub const PARALLEL_COMPUTES: usize = 2; // The number of computes shaders that are ran in parallel
 // Handles the voxel generation for each chunk
 #[derive(Default)]
 pub struct VoxelGenerationSystem {
     pub computes: Vec<(GPUObjectID, bool)>,                                     // The computes shaders that are used for voxel generation
-    pub voxel_texture: GPUObjectID,                               // The 3D texture used for voxel generation, only stores the density in a 16 bit value
-    pub material_texture: GPUObjectID,                            // The 3D texture used to store MaterialID, ShaderID
+    pub voxel_texture: Vec<GPUObjectID>,                               // The 3D texture used for voxel generation, only stores the density in a 16 bit value
+    pub material_texture: Vec<GPUObjectID>,                            // The 3D texture used to store MaterialID, ShaderID
     pub pending_chunks: Vec<ChunkCoords>,                         // The chunks that are pending their voxel data generation
     pub results: HashMap<ChunkCoords, Option<Option<VoxelData>>>, // A specific result for a specific chunk
 }
@@ -34,35 +35,42 @@ impl VoxelGenerationSystem {
                     .unwrap().prefix_name(&i.to_string()))
         }
         // Create the voxel texture
-        let voxel_texture = pipec::texture(
-            rendering::Texture::default()
-                .set_dimensions(TextureType::Texture3D(
-                    (MAIN_CHUNK_SIZE + 2) as u16,
-                    (MAIN_CHUNK_SIZE + 2) as u16,
-                    (MAIN_CHUNK_SIZE + 2) as u16,
-                ))
-                .set_format(TextureFormat::R16F)
-                .set_data_type(rendering::DataType::Float32)
-                .set_filter(TextureFilter::Nearest)
-                .set_wrapping_mode(TextureWrapping::ClampToBorder),
-        );
-        let material_texture = pipec::texture(
-            rendering::Texture::default()
-                .set_dimensions(TextureType::Texture3D(
-                    (MAIN_CHUNK_SIZE + 2) as u16,
-                    (MAIN_CHUNK_SIZE + 2) as u16,
-                    (MAIN_CHUNK_SIZE + 2) as u16,
-                ))
-                .set_format(TextureFormat::RG8R)
-                .set_filter(TextureFilter::Nearest)
-                .set_wrapping_mode(TextureWrapping::ClampToBorder),
-        );
+        fn create_voxel_texture(i: usize) -> GPUObjectID {
+            pipec::texture(
+                rendering::Texture::default()
+                    .set_dimensions(TextureType::Texture3D(
+                        (MAIN_CHUNK_SIZE + 2) as u16,
+                        (MAIN_CHUNK_SIZE + 2) as u16,
+                        (MAIN_CHUNK_SIZE + 2) as u16,
+                    ))
+                    .set_format(TextureFormat::R16F)
+                    .set_data_type(rendering::DataType::Float32)
+                    .set_filter(TextureFilter::Nearest)
+                    .set_wrapping_mode(TextureWrapping::ClampToBorder)
+                    .prefix_name(&i.to_string()))
+        }
+        // Create the voxel texture
+        fn create_material_texture(i: usize) -> GPUObjectID {
+            pipec::texture(
+                rendering::Texture::default()
+                    .set_dimensions(TextureType::Texture3D(
+                        (MAIN_CHUNK_SIZE + 2) as u16,
+                        (MAIN_CHUNK_SIZE + 2) as u16,
+                        (MAIN_CHUNK_SIZE + 2) as u16,
+                    ))
+                    .set_format(TextureFormat::RG8R)
+                    .set_filter(TextureFilter::Nearest)
+                    .set_wrapping_mode(TextureWrapping::ClampToBorder)
+                    .prefix_name(&i.to_string()))
+        }
         // Create self
         let computes = (0_usize..PARALLEL_COMPUTES).into_iter().map(|i: usize| (create_compute(interpreter_string.clone(), i), false)).collect::<Vec<(GPUObjectID, bool)>>();
+        let vtextures = (0_usize..PARALLEL_COMPUTES).into_iter().map(|i: usize| create_voxel_texture(i)).collect::<Vec<GPUObjectID>>();
+        let mtextures = (0_usize..PARALLEL_COMPUTES).into_iter().map(|i: usize| create_material_texture(i)).collect::<Vec<GPUObjectID>>();
         Self {
             computes,
-            voxel_texture,
-            material_texture,
+            voxel_texture: vtextures,
+            material_texture: mtextures,
             ..Self::default()
         }
     }

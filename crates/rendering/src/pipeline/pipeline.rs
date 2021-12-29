@@ -861,7 +861,9 @@ mod object_creation {
     ) -> AsyncGPUCommandData {
         unsafe {
             gl::Flush();
+            gl::UseProgram(buf.as_compute_shader(&id).unwrap().program);
         }
+
         // Dispatch the compute shader for execution
         let settings = ShaderUniformsSettings::new_id(&id);
         uniforms_group.execute(buf, settings).unwrap();

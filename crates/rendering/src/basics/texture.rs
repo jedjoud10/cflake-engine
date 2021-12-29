@@ -277,6 +277,11 @@ impl Texture {
         self.name = name.to_string();
         self
     }
+    // Prefix the name with something
+    pub fn prefix_name(mut self, prefix: &str) -> Self {
+        self.name = format!("{}_{}", prefix, self.name);
+        self
+    }
     // The internal format and data type of the soon to be generated texture
     pub fn set_format(mut self, _format: TextureFormat) -> Self {
         self._format = _format;
