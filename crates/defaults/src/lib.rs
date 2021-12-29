@@ -76,6 +76,7 @@ pub fn preload_systems() {
         rendering::pipec::texture(Texture::create_texturearray(vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"], 256, 256).enable_mipmaps());
     material.uniforms.set_t2da("diffuse_textures", &texture, 0);
     material.uniforms.set_t2da("normals_textures", &texture2, 1);
+    material.uniforms.set_i32("max_depth", 8);
 
     systems::terrain::mesher_system::system(rendering::pipec::material(material));
     systems::terrain::chunk_system::system(8, csgtree);

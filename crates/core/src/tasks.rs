@@ -146,10 +146,11 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 let collision_cbitfield = entity.c_bitfield & linkings.c_bitfield;
                 if collision_cbitfield != 0 {
                     // There was a collision!
-                    panic!(
+                    println!(
                         "The components that had a collision are {:?}",
                         ecs::registry::get_component_names_cbitfield(collision_cbitfield)
                     );
+                    return;
                 }
                 // Add the new components onto the entity
                 let mut hashmap: HashMap<usize, usize> = HashMap::new();

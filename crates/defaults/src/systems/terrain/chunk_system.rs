@@ -48,14 +48,7 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     // 2. We do not have any chunks that are waiting to become validated AND we do not have any chunks to delete
     let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty();
     let valid = data.chunks.is_empty() || validity_test;
-    if valid && core::global::input::map_toggled("toggle_terrain_gen") {
-        if let Option::Some(x) = data.time_taken {
-            if x.elapsed().as_millis() > 90 {
-                println!("Octree update {:.3}", x.elapsed().as_secs_f32());
-                data.time_taken = None;
-            }
-        }
-        data.time_taken = Some(std::time::Instant::now());        
+    if valid && core::global::input::map_toggled("toggle_terrain_gen") { 
         // Update the octree
         let octree = &mut data.octree;
         let octree_size = octree.internal_octree.size;

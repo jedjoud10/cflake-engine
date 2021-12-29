@@ -251,10 +251,12 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUO
         }
         // Material
         RenderTask::MaterialCreate(material) => (Some(object_creation::create_material(buf, material)), None),
+        RenderTask::MaterialUpdateUniforms(_, _) => todo!(),
+        RenderTask::UniformsCreate(uniforms) => (Some(object_creation::create_uniforms(buf, uniforms)), None),
         // Compute
         RenderTask::ComputeRun(id, axii, compute_tasks, uniforms_group) => (None, Some(object_creation::run_compute(buf, id, axii, compute_tasks, uniforms_group))),
         // Others
-        _ => (None, None),
+        RenderTask::WindowUpdateFullscreen(_) | RenderTask::WindowUpdateVSync(_) | RenderTask::WindowUpdateSize(_) | RenderTask::CameraDataUpdate(_) | RenderTask::RendererAdd(_) | RenderTask::RendererRemove(_) | RenderTask::RendererUpdateTransform(_, _) => (None, None),
     }
 }
 

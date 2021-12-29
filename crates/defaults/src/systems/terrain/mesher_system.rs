@@ -22,10 +22,13 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
 
             // Create the model on the GPU
             let model_id = rendering::pipec::model(model);
+            let mut group = ShaderUniformsGroup::new();
+            group.set_i32("node_depth", chunk.coords.depth as i32);
+            let uniforms = rendering::pipec::uniforms(group);
             // Since each chunk starts without a renderer, we must manually add the renderer component
             let mut linkings = ecs::ComponentLinkingGroup::new();
             // Create a renderer with the correct model and materials
-            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material);
+            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material).set_shader_uniforms(uniforms);
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
             core::global::ecs::link_components(entity.entity_id, linkings);
             true

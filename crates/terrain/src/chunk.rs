@@ -9,7 +9,6 @@ pub struct ChunkCoords {
     pub center: veclib::Vector3<i64>,
     pub size: u64,
     pub depth: u8,
-    pub generation: u32,
 }
 
 // Generate the chunk coords from an octree node
@@ -21,7 +20,6 @@ impl ChunkCoords {
             center: octree_node.get_center(),
             size: octree_node.half_extent * 2,
             depth: octree_node.depth,
-            generation: octree_node.generation,
         }
     }
 }

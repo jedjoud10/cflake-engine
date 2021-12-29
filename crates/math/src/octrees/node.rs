@@ -13,7 +13,6 @@ pub struct OctreeNode {
     pub parent_index: usize,
     pub index: usize,
     pub children_indices: Option<[usize; 8]>,
-    pub generation: u32,
 }
 
 impl PartialEq for OctreeNode {
@@ -106,7 +105,6 @@ impl OctreeNode {
                         parent_index: self.index,
                         index: child_index,
                         children_indices: None,
-                        generation: 0,
                     };
                     // Update the indices
                     children_indices[i] = child_index;
