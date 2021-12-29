@@ -1,5 +1,5 @@
 #version 460 core
-#impldefaults renderer
+#load_defaults renderer
 #include "defaults\shaders\voxel_terrain\terrain_shader.func.glsl"
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_normal;
@@ -20,7 +20,7 @@ void main() {
 	vec3 normal;
 	vec3 diffuse;
 	get_frag(material_id, diffuse_textures, normals_textures, m_position, m_normal, uv_scale, normals_strength, diffuse, normal);
-	frag_diffuse = diffuse * m_color * tint;
+	frag_diffuse = diffuse * m_color * tint * _active_time;
 	frag_normal = normal;
 	frag_pos = m_position;
 }

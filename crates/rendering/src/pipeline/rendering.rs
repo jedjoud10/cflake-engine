@@ -76,7 +76,7 @@ pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &Came
 }
 
 // Render a renderer normally
-pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
+pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &CameraDataGPUObject, dm: &MaterialGPUObject, new_time: f32, delta: f32, resolution: veclib::Vector2<i32>) {
     let material = buf.as_material(&renderer.material_id);
     let mut shader = buf.as_shader(&dm.shader.as_ref().unwrap()).unwrap();
     // If we do not have a material assigned, use the default material
@@ -105,7 +105,12 @@ pub fn render(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &Camer
     group2.set_mat44("mvp_matrix", mvp_matrix);
     group2.set_mat44("model_matrix", *model_matrix);
     group2.set_mat44("view_matrix", camera.viewm);
-    group2.set_vec3f32("view_pos", camera.position);    
+    group2.set_vec3f32("view_pos", camera.position); 
+    // Set a default impl uniform
+    group2.set_f32("_active_time", renderer.time_alive); 
+    group2.set_f32("_time", new_time);
+    group2.set_vec2i32("_resolution", resolution);
+    group2.set_f32("_delta", new_time);   
     // Combine the two groups
     let mut combined = ShaderUniformsGroup::combine(group1, &group2);
 
@@ -276,7 +281,7 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, buf: &PipelineBuffer, camera: &CameraDataGPUObject) {
+    pub fn renderer_frame(&self, buf: &PipelineBuffer, camera: &CameraDataGPUObject, new_time: f32, delta: f32) {
         let i = std::time::Instant::now();
         let material = buf.as_material(self.default_material.as_ref().unwrap()).unwrap();
         for renderer in buf.renderers.iter().map(|x| buf.as_renderer(x).unwrap()) {
@@ -284,7 +289,7 @@ impl PipelineRenderer {
             if self.wireframe {
                 render_wireframe(buf, renderer, camera, &self.wireframe_shader);
             } else {
-                render(buf, renderer, camera, material);
+                render(buf, renderer, camera, material, new_time, delta, self.window.dimensions.into());
             }
         }
     }

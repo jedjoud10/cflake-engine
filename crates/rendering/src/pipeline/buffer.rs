@@ -17,6 +17,7 @@ pub struct PipelineBuffer {
     pub callback_objects: HashMap<u64, (Option<usize>, std::thread::ThreadId)>, // Callback ID to option GPUObject index
     pub names_to_id: HashMap<String, usize>,                                    // Names to GPUObject index
     pub renderers: HashSet<GPUObjectID>,                                        // Renderers
+    pub uniforms: HashSet<GPUObjectID>,                                         // Uniforms
     pub async_gpu_command_datas: Vec<AsyncGPUCommandData>,                      // Some sync data that will be polled each frame
     pub batch_commands_executed: HashMap<u64, u16>, // The number of commands that have executed, who were part of a batch. They are all linked to one u64, which is the batch callback ID
 }
@@ -195,6 +196,14 @@ impl PipelineBuffer {
     pub fn as_renderer_mut(&mut self, id: &GPUObjectID) -> Option<&mut RendererGPUObject> {
         let object = self.get_gpuobject_mut(id)?;
         if let GPUObject::Renderer(x) = object {
+            Some(x)
+        } else {
+            None
+        }
+    }
+    pub fn as_uniforms_mut(&mut self, id: &GPUObjectID) -> Option<&mut UniformsGPUObject> {
+        let object = self.get_gpuobject_mut(id)?;
+        if let GPUObject::Uniforms(x) = object {
             Some(x)
         } else {
             None

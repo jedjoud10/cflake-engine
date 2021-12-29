@@ -69,6 +69,7 @@ pub struct UniformsGPUObject {
 
 #[derive(Clone)]
 pub struct RendererGPUObject {
+    pub time_alive: f32,
     pub model_id: GPUObjectID,
     pub material_id: GPUObjectID,
     pub matrix: veclib::Matrix4x4<f32>,

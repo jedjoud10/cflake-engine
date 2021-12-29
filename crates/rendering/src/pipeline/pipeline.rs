@@ -174,14 +174,17 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     // Run the frame
                     // Poll first
                     let mut pipeline_buffer = BUFFER.lock().unwrap();
-                    poll_commands(&mut pipeline_buffer, &mut pipeline_renderer, &mut camera, &sent_tasks_receiver, window, glfw);
+                    poll_commands(&mut pipeline_buffer, &mut pipeline_renderer, &mut camera, &sent_tasks_receiver, glfw);
                     poll_async_gpu_commands(&mut pipeline_buffer);
+                    // Update the shader uniform objects that we have stored in the pipeline
+                    update_shader_uniform_objects(&mut pipeline_buffer, new_time as f32, delta as f32, &pipeline_renderer.window);
+
                     // --- Rendering ---
                     // Pre-render
                     let i = std::time::Instant::now();
                     pipeline_renderer.pre_render();
                     // Render
-                    pipeline_renderer.renderer_frame(&mut pipeline_buffer, &camera);
+                    pipeline_renderer.renderer_frame(&mut pipeline_buffer, &camera, new_time as f32, delta as f32);
                     // Post-render
                     pipeline_renderer.post_render(&pipeline_buffer, &camera, window);
 
@@ -208,6 +211,15 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     barrier.wait();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
     PipelineStartData { handle: join_handle, rx: rx2 }
+}
+
+// Update the shader uniform objects that we have stored
+fn update_shader_uniform_objects(buf: &mut PipelineBuffer, new_time: f32, delta: f32, window: &crate::Window) {
+    // Set the active time that the renderers were active for
+    for id in buf.renderers.clone() {
+        let renderer = buf.as_renderer_mut(&id).unwrap();
+        renderer.time_alive += delta;
+    }
 }
 
 // Commands that can be ran internally
@@ -253,7 +265,6 @@ fn command(
     renderer: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
     command: RenderCommandQuery,
-    _window: &mut glfw::Window,
     glfw: &mut glfw::Glfw,
 ) {
     // Handle the common cases
@@ -344,7 +355,6 @@ fn poll_commands(
     renderer: &mut PipelineRenderer,
     camera: &mut CameraDataGPUObject,
     rx: &Receiver<RenderCommandQuery>,
-    window: &mut glfw::Window,
     glfw: &mut glfw::Glfw,
 ) {
     // We must loop through every command that we receive from the main thread
@@ -355,7 +365,7 @@ fn poll_commands(
         i += 1;
         // Check special commands first
         // Valid command
-        command(lock, buf, renderer, camera, render_command_query, window, glfw);
+        command(lock, buf, renderer, camera, render_command_query, glfw);
     }
 }
 
@@ -412,6 +422,7 @@ mod object_creation {
         let model_id = renderer.model.clone().unwrap();
         let uniforms = renderer.uniforms;
         let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject {
+            time_alive: 0.0,
             model_id,
             material_id,
             matrix,

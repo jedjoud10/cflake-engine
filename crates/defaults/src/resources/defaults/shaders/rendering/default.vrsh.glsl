@@ -1,4 +1,5 @@
 #version 460 core
+#load_defaults renderer
 layout(location = 0) in vec3 model_pos;
 layout(location = 1) in vec3 model_normal;
 layout(location = 2) in vec4 model_tangent;

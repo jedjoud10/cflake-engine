@@ -23,6 +23,8 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl");
+    // Default impls
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer.func.glsl");
     // UI
     preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_elem.vrsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_panel.frsh.glsl");

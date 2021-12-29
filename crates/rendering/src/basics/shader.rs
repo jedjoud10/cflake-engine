@@ -63,6 +63,20 @@ impl Shader {
                 let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
                 vectors_to_insert.push((i, lines));
             }
+            // Impl default types
+            if line.trim().starts_with("#load_defaults") {
+                let x = match line.split("#load_defaults ").collect::<Vec<&str>>()[1] {
+                    "renderer" => {                        
+                        vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string()]));
+                        Ok(())
+                    },
+                    x => Err(RenderingError::new(format!(
+                        "Tried to expand #load_defaults, but the given type '{}' is not valid!",
+                        x   
+                    )))
+                };
+                x?;
+            }
         }
         // Add the newly included lines at their respective index
         let mut offset = 0;

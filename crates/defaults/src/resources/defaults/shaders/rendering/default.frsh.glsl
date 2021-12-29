@@ -1,4 +1,5 @@
 #version 460 core
+#load_defaults renderer
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_normal;
 layout(location = 2) out vec3 frag_pos;
