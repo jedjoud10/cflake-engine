@@ -22,7 +22,7 @@ fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 1.0 + core::global::input::mouse_scroll() * 0.4;
+    let original_speed = 1.0 + (core::global::input::mouse_scroll() * 0.1).powf(2.0);
     let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0;
 
     // Actually update the velocity

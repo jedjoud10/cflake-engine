@@ -41,19 +41,19 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     // First of all, we get the camera data
     let camera = core::global::ecs::entity(core::global::main::world_data().main_camera_entity_id).unwrap();
     let camera_transform = core::global::ecs::component::<crate::components::Transform>(&camera).unwrap();
-    let camera_pos = camera_transform.position;
+    let camera_pos = veclib::Vector3::new(0.0, 100.0, 0.0);
 
     // We are only allowed to update the octree in 2 conditions
     // 1. We do not have any current chunks, so we must initialize the octree
-    // 2. All of the generated chunks have a chunk state of Valid, meaning that they have generated their Voxel Data and TModel successfully
+    // 2. We do not have any chunks that are waiting to become validated AND we do not have any chunks to delete
     let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty();
     let valid = data.chunks.is_empty() || validity_test;
-    if valid {
+    if valid && core::global::input::map_toggled("toggle_terrain_gen") {
         // Update the octree
         let octree = &mut data.octree;
         let octree_size = octree.internal_octree.size;
         if let Option::Some((mut added, removed, total)) = octree.generate_incremental_octree(&camera_pos, terrain::DEFAULT_LOD_FACTOR) {
-            println!("Octree update");
+            println!("Octree update {}", core::global::timings::frame_count());
             // Do a bit of filtering on the added nodes
             added.retain(|node| node.children_indices.is_none() && math::Intersection::csgtree_aabb(&data.csgtree, &node.get_aabb()));
             // Add the chunks into the world
@@ -63,7 +63,6 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
                 // Add the entity
                 create_chunk_entity(data, coords, octree_size);
                 data.chunks_awaiting_validation.insert(coords);
-                println!("Add {} to the set", coords.center);
             }
 
             // Buffer the chunks that must be removed
@@ -102,14 +101,12 @@ fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
                 // We have valid model, we can remove self from the hashset
                 if data.chunks_awaiting_validation.remove(&chunk.coords) {
                     data.chunks.insert(chunk.coords, entity.entity_id);
-                    //println!("Add {} as a full chunk", chunk.coords.center);
                 } else { }
             }
         } else {
             // If we do not have a model, and do not expect to get one, we must remove it as well
             if data.chunks_awaiting_validation.remove(&chunk.coords) {
                 data.chunks.insert(chunk.coords, entity.entity_id);
-                //println!("Add {} as a full chunk", chunk.coords.center);
             } else { }
         }
     }
@@ -148,6 +145,7 @@ pub fn system(depth: u8, csgtree: math::csg::CSGTree) {
         // Link some components to the system
         system.link::<terrain::Chunk>();
         // And link the events
+        core::global::input::bind_key(input::Keys::Y, "toggle_terrain_gen", input::MapType::Toggle);
         system.event(ecs::SystemEventType::SystemPrefire(system_prefire));
         system.event(ecs::SystemEventType::EntityUpdate(entity_update));
         system.event(ecs::SystemEventType::EntityRemoved(entity_removed));

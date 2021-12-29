@@ -11,7 +11,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
     if !data.generating && data.pending_chunks.len() > 0 {
         // We can run the voxel generation logic
         let chunk_coords = data.pending_chunks.remove(0);
-        println!("Started voxel generation for Chunk {}", chunk_coords.center);
+        //println!("Started voxel generation for Chunk {}", chunk_coords.center);
         // Set the state
         data.generating = true;
 
@@ -74,12 +74,14 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                         let surface = min.signum() != max.signum();
                         if !surface {
                             data.result = Some((chunk_coords, None));
+                            /*
                             println!(
                                 "Finished voxel generation for Chunk {}, took {}ms (Async {}ms). [NO VALID SURFACE FOUND]",
                                 chunk_coords.center,
                                 i.elapsed().as_millis(),
                                 i1
                             );
+                            */
                             return;
                         };
 
@@ -109,12 +111,14 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                                 }
                             }
                         }
+                        /*
                         println!(
                             "Finished voxel generation for Chunk {}, took {}ms (Async {}ms)",
                             chunk_coords.center,
                             i.elapsed().as_millis(),
                             i1
                         );
+                        */
                         // Tell the main system data that we finished the voxel generation for this specific chunk
                         data.result = Some((chunk_coords, Some(voxel_data)));
                     }))

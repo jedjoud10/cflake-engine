@@ -23,6 +23,7 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\dithering.func.glsl");
     // Default impls
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer.func.glsl");
     // UI
@@ -54,7 +55,6 @@ pub fn preload_default_assets() {
 
 // Pre-load the default systems
 pub fn preload_systems() {
-    default_system::system();
     let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
     let (string, csgtree) = interpreter.finalize().unwrap();
     let terrain_shader = rendering::pipec::shader(
@@ -81,6 +81,5 @@ pub fn preload_systems() {
     systems::terrain::chunk_system::system(8, csgtree);
     systems::terrain::voxel_generation_system::system(string);
     systems::rendering_system::system();
-    systems::physics_system::system();
     systems::camera_system::system();
 }

@@ -172,6 +172,7 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
 impl PipelineRenderer {
     // Init the pipeline renderer
     pub fn init(&mut self) {
+        unsafe { gl::Viewport(0, 0, 1280, 720); }
         println!("Initializing the pipeline renderer...");
         self.window = Window::default();
         // Create the quad model
