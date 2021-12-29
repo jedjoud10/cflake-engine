@@ -12,8 +12,8 @@ ecs::impl_systemdata!(RenderingSystem);
 // Create a renderer from an entity
 fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: usize, irenderer: &rendering::Renderer, transform: &crate::components::Transform) {
     // The entity is pending
-    let shared_data = rendering::SharedData::new((irenderer.clone(), transform.calculate_matrix()));
-    let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(shared_data));
+    let data = (irenderer.clone(), transform.calculate_matrix());
+    let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(data));
     result.with_callback(
         RenderingGPUObjectCallback(OwnedCallback::new(move |(_, id)| {
             global::ecs::entity_mut(
@@ -61,7 +61,7 @@ fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
             Some(index) => {
                 rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(
                     index,
-                    rendering::SharedData::new(transform.calculate_matrix()),
+                    transform.calculate_matrix(),
                 ));
             }
             None => {}
@@ -77,8 +77,8 @@ fn system_prefire(data: &mut SystemData<RenderingSystem>) {
     let camera_transform = global::ecs::component::<crate::components::Transform>(&camera).unwrap();
     let pos = camera_transform.position;
     let rot = camera_transform.rotation;
-    let shared_data = rendering::SharedData::new((pos, rot, camera_data.clip_planes, camera_data.projection_matrix));
-    rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(shared_data));
+    let data = (pos, rot, camera_data.clip_planes, camera_data.projection_matrix);
+    rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(data));
     if global::timings::frame_count() % 20 == 0 {}
 }
 

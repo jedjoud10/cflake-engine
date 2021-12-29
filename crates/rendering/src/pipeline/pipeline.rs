@@ -7,7 +7,7 @@ use crate::{
     others::{CommandExecutionResults, RESULT},
     pipeline::buffer::PipelineBuffer,
     rendering::PipelineRenderer,
-    GPUObjectID, RenderCommandQuery, RenderTask, SharedData,
+    GPUObjectID, RenderCommandQuery, RenderTask,
 };
 use glfw::Context;
 use lazy_static::lazy_static;
@@ -295,8 +295,8 @@ fn command(
             (None, None)
         }
         // Pipeline
-        RenderTask::CameraDataUpdate(shared) => {
-            let (pos, rot, clip_planes, projm) = shared.get();
+        RenderTask::CameraDataUpdate(update_data) => {
+            let (pos, rot, clip_planes, projm) = update_data;
             // Calculate the view matrix using the position and rotation
             let viewm = {
                 let rm = veclib::Matrix4x4::from_quaternion(&rot);
@@ -314,7 +314,7 @@ fn command(
             (None, None)
         }
         // Renderer commands
-        RenderTask::RendererAdd(shared_renderer) => (Some(object_creation::add_renderer(buf, shared_renderer)), None),
+        RenderTask::RendererAdd(renderer) => (Some(object_creation::add_renderer(buf, renderer)), None),
         RenderTask::RendererRemove(renderer_id) => {
             object_creation::remove_renderer(buf, &renderer_id);
             (None, None)
@@ -411,12 +411,12 @@ mod object_creation {
             buffer::PipelineBuffer,
         },
         ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, MaterialGPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderGPUObject,
-        ShaderUniformsGroup, ShaderUniformsSettings, SharedData, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType,
+        ShaderUniformsGroup, ShaderUniformsSettings, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType,
         TextureWrapping, UniformsGPUObject,
     };
     // Add the renderer to the renderer (lol I need better name)
-    pub fn add_renderer(buf: &mut PipelineBuffer, renderer: SharedData<(Renderer, veclib::Matrix4x4<f32>)>) -> GPUObjectID {
-        let (renderer, matrix) = renderer.get();
+    pub fn add_renderer(buf: &mut PipelineBuffer, renderer: (Renderer, veclib::Matrix4x4<f32>)) -> GPUObjectID {
+        let (renderer, matrix) = renderer;
         let material_id = renderer.material.unwrap();
         let model_id = renderer.model.clone().unwrap();
         let uniforms = renderer.uniforms;
@@ -438,13 +438,11 @@ mod object_creation {
         buf.renderers.remove(renderer_id);
     }
     // Update a renderer's model matrix
-    pub fn update_renderer(buf: &mut PipelineBuffer, renderer_id: &GPUObjectID, matrix: SharedData<veclib::Matrix4x4<f32>>) {
+    pub fn update_renderer(buf: &mut PipelineBuffer, renderer_id: &GPUObjectID, matrix: veclib::Matrix4x4<f32>) {
         let renderer = buf.as_renderer_mut(renderer_id).unwrap();
-        renderer.matrix = matrix.get();
     }
-    pub fn create_compile_subshader(buf: &mut PipelineBuffer, subshader: SharedData<SubShader>) -> GPUObjectID {
+    pub fn create_compile_subshader(buf: &mut PipelineBuffer, subshader: SubShader) -> GPUObjectID {
         let shader_type: u32;
-        let subshader = subshader.get();
         match subshader.subshader_type {
             SubShaderType::Vertex => shader_type = gl::VERTEX_SHADER,
             SubShaderType::Fragment => shader_type = gl::FRAGMENT_SHADER,
@@ -484,8 +482,7 @@ mod object_creation {
             buf.add_gpuobject(gpuobject, Some(subshader.name.clone()))
         }
     }
-    pub fn create_compile_shader(buf: &mut PipelineBuffer, shader: SharedData<Shader>) -> GPUObjectID {
-        let shader = shader.get();
+    pub fn create_compile_shader(buf: &mut PipelineBuffer, shader: Shader) -> GPUObjectID {
         println!("\x1b[33mCompiling & Creating Shader {}...\x1b[0m", shader.name);
         unsafe {
             let program = gl::CreateProgram();
@@ -544,8 +541,7 @@ mod object_creation {
             buf.add_gpuobject(gpuobject, Some(shader.name.clone()))
         }
     }
-    pub fn create_model(buf: &mut PipelineBuffer, model: SharedData<Model>) -> GPUObjectID {
-        let model = model.get();
+    pub fn create_model(buf: &mut PipelineBuffer, model: Model) -> GPUObjectID {
         let mut gpu_data = ModelGPUObject {
             vertex_buf: 0,
             normal_buf: 0,
@@ -684,9 +680,8 @@ mod object_creation {
             gl::DeleteVertexArrays(1, &mut model.vertex_array_object);
         }
     }
-    pub fn generate_texture(buf: &mut PipelineBuffer, texture: SharedData<Texture>) -> GPUObjectID {
+    pub fn generate_texture(buf: &mut PipelineBuffer, texture: Texture) -> GPUObjectID {
         let mut pointer: *const c_void = null();
-        let texture = texture.get();
         if !texture.bytes.is_empty() {
             pointer = texture.bytes.as_ptr() as *const c_void;
         }
@@ -874,8 +869,7 @@ mod object_creation {
         }
         AsyncGPUCommandData::new(Some(AsyncGPUCommandExecutionEvent::ComputeShaderSubTasks(id, compute_tasks)))
     }
-    pub fn create_material(buf: &mut PipelineBuffer, material: SharedData<Material>) -> GPUObjectID {
-        let material = material.get();
+    pub fn create_material(buf: &mut PipelineBuffer, material: Material) -> GPUObjectID {
         // We must convert the uniforms into the GPU Object ID
         let uniforms = {
             // Bruh
@@ -889,8 +883,7 @@ mod object_creation {
         });
         buf.add_gpuobject(gpuobject, Some(material.material_name.clone()))
     }
-    pub fn create_uniforms(buf: &mut PipelineBuffer, uniforms: SharedData<ShaderUniformsGroup>) -> GPUObjectID {
-        let uniforms = uniforms.get();
+    pub fn create_uniforms(buf: &mut PipelineBuffer, uniforms: ShaderUniformsGroup) -> GPUObjectID {
         let gpuobject = GPUObject::Uniforms(UniformsGPUObject { uniforms });
         buf.add_gpuobject(gpuobject, None)
     }

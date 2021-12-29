@@ -17,23 +17,6 @@ pub fn increment_command_id() -> u64 {
     COMMAND_ID.fetch_add(1, Ordering::Relaxed)
 }
 
-// A shared GPU object that was sent to the render thread
-pub struct SharedData<T: Send> {
-    object: T,
-}
-
-impl<T> SharedData<T>
-where
-    T: Send,
-{
-    pub fn new(x: T) -> Self {
-        Self { object: x }
-    }
-    pub fn get(self) -> T {
-        self.object
-    }
-}
-
 thread_local! {
     // The render task sender!
     pub static RENDER_COMMAND_SENDER: RefCell<Option<std::sync::mpsc::Sender<crate::RenderCommandQuery>>> = RefCell::new(None);
@@ -196,30 +179,30 @@ pub struct RenderCommandQuery {
 // A render task (A specific message passed to the render thread)
 pub enum RenderTask {
     // Shader stuff
-    SubShaderCreate(SharedData<SubShader>),
-    ShaderCreate(SharedData<Shader>),
-    UniformsCreate(SharedData<ShaderUniformsGroup>),
+    SubShaderCreate(SubShader),
+    ShaderCreate(Shader),
+    UniformsCreate(ShaderUniformsGroup),
     // Textures
-    TextureCreate(SharedData<Texture>),
+    TextureCreate(Texture),
     TextureUpdateSize(GPUObjectID, TextureType),
     TextureUpdateData(GPUObjectID, Vec<u8>),
     TextureFillArray(GPUObjectID, usize, Arc<Mutex<Vec<u8>>>),
     // Model
-    ModelCreate(SharedData<Model>),
+    ModelCreate(Model),
     ModelDispose(GPUObjectID),
     // Compute
     ComputeRun(GPUObjectID, (u16, u16, u16), ComputeShaderSubTasks, ShaderUniformsGroup),
     // Renderer
-    RendererAdd(SharedData<(Renderer, veclib::Matrix4x4<f32>)>),
+    RendererAdd((Renderer, veclib::Matrix4x4<f32>)),
     RendererRemove(GPUObjectID),
-    RendererUpdateTransform(GPUObjectID, SharedData<veclib::Matrix4x4<f32>>),
+    RendererUpdateTransform(GPUObjectID, veclib::Matrix4x4<f32>),
     // Material
-    MaterialCreate(SharedData<Material>),
-    MaterialUpdateUniforms(GPUObjectID, SharedData<ShaderUniformsGroup>),
+    MaterialCreate(Material),
+    MaterialUpdateUniforms(GPUObjectID, ShaderUniformsGroup),
     // Window settings
     WindowUpdateSize(veclib::Vector2<u16>),
     WindowUpdateVSync(bool),
     WindowUpdateFullscreen(bool),
     // Pipeline
-    CameraDataUpdate(SharedData<(veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)>),
+    CameraDataUpdate((veclib::Vector3<f32>, veclib::Quaternion<f32>, veclib::Vector2<f32>, veclib::Matrix4x4<f32>)),
 }

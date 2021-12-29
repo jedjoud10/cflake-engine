@@ -34,7 +34,7 @@ pub mod pipec {
     use crate::{
         is_render_thread, GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandQueryResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER,
     };
-    pub use crate::{RenderTask, SharedData};
+    pub use crate::{RenderTask};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
         crate::pipeline::init_pipeline(glfw, window)
@@ -76,53 +76,53 @@ pub mod pipec {
     pub fn subshader(subshader: SubShader) -> GPUObjectID {
         execute(match others::get_id(&subshader.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::SubShaderCreate(SharedData::new(subshader))),
+            None => task(RenderTask::SubShaderCreate(subshader)),
         })
     }
     pub fn shader(shader: Shader) -> GPUObjectID {
         execute(match others::get_id(&shader.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::ShaderCreate(SharedData::new(shader))),
+            None => task(RenderTask::ShaderCreate(shader)),
         })
     }
     pub fn compute_shader(shader: Shader) -> GPUObjectID {
         execute(match others::get_id(&shader.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::ShaderCreate(SharedData::new(shader))),
+            None => task(RenderTask::ShaderCreate(shader)),
         })
     }
     pub fn texture(texture: Texture) -> GPUObjectID {
         execute(match others::get_id(&texture.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::TextureCreate(SharedData::new(texture))),
+            None => task(RenderTask::TextureCreate(texture)),
         })
     }
     pub fn model(model: Model) -> GPUObjectID {
         execute(match others::get_id(&model.name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::ModelCreate(SharedData::new(model))),
+            None => task(RenderTask::ModelCreate(model)),
         })
     }
     pub fn material(material: Material) -> GPUObjectID {
         execute(match others::get_id(&material.material_name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::MaterialCreate(SharedData::new(material))),
+            None => task(RenderTask::MaterialCreate(material)),
         })
     }
     pub fn uniforms(uniforms: ShaderUniformsGroup) -> GPUObjectID {
-        execute(task(RenderTask::UniformsCreate(SharedData::new(uniforms))))
+        execute(task(RenderTask::UniformsCreate(uniforms)))
     }
     // Load or create functions, cached type
     pub fn texturec(texturec: CachedObject<Texture>) -> GPUObjectID {
         execute(match others::get_id(&texturec.arc.as_ref().name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::TextureCreate(SharedData::new(texturec.arc.as_ref().clone()))),
+            None => task(RenderTask::TextureCreate(texturec.arc.as_ref().clone())),
         })
     }
     pub fn shaderc(shaderc: CachedObject<Shader>) -> GPUObjectID {
         execute(match others::get_id(&shaderc.arc.as_ref().name) {
             Some(id) => RenderCommandQueryResult::new_id(id),
-            None => task(RenderTask::ShaderCreate(SharedData::new(shaderc.arc.as_ref().clone()))),
+            None => task(RenderTask::ShaderCreate(shaderc.arc.as_ref().clone())),
         })
     }
     // Read the data from an array that was filled using a texture
