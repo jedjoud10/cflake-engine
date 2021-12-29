@@ -147,7 +147,7 @@ where
                         // Tell the main thread we have finished executing thread local callbacks
                         others::barrier::as_ref().thread_sync_local_callbacks(&thread_id);
                     }
-                }                
+                }
             });
         })
         .unwrap();

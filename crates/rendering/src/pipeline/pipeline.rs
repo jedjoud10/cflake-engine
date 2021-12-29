@@ -197,8 +197,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                             break;
                         }
                     }
-
-                    
                 }
                 println!("Stopped the render thread!");
             })
@@ -413,7 +411,12 @@ mod object_creation {
         let material_id = renderer.material.unwrap();
         let model_id = renderer.model.clone().unwrap();
         let uniforms = renderer.uniforms;
-        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject { model_id, material_id, matrix, uniforms });
+        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject {
+            model_id,
+            material_id,
+            matrix,
+            uniforms,
+        });
         let id = buf.add_gpuobject(renderer_gpuobject, None);
         buf.renderers.insert(id.clone());
         id

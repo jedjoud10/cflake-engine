@@ -38,7 +38,7 @@ impl Renderer {
     pub fn set_shader_uniforms(mut self, shader_uniforms: ShaderUniformsGroup) -> Self {
         self.internal_renderer = self.internal_renderer.set_shader_uniforms(shader_uniforms);
         self
-    }    
+    }
 }
 
 ecs::impl_component!(Renderer);

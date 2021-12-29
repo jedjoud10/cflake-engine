@@ -17,7 +17,7 @@ pub struct Renderer {
     pub model: Option<GPUObjectID>,    // The model GPU of this renderer
     pub material: Option<GPUObjectID>, // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
     pub uniforms: Option<ShaderUniformsGroup>,
-    pub flags: RendererFlags,          // Flags
+    pub flags: RendererFlags, // Flags
 }
 
 impl Default for Renderer {

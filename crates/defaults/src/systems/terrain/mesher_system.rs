@@ -27,7 +27,11 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             // Create a renderer with the correct model and materials
             let mut uniforms = ShaderUniformsGroup::new();
             uniforms.set_f32("node_depth", chunk.coords.depth as f32 / 4 as f32);
-            let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material).set_shader_uniforms(uniforms);
+            let renderer = crate::components::Renderer::default()
+                .set_wireframe(true)
+                .set_model(model_id)
+                .set_material(data.material)
+                .set_shader_uniforms(uniforms);
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
             core::global::ecs::link_components(entity.entity_id, linkings);
             true
@@ -45,7 +49,7 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
                 let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
                 chunk.state = ChunkState::ValidModelData;
 
-                // If we did not have a renderer created, we must still validate the state 
+                // If we did not have a renderer created, we must still validate the state
                 if !created_renderer {
                     chunk.state = ChunkState::Valid;
                 }
