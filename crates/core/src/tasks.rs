@@ -64,10 +64,8 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                     hashmap.insert(id, new_global_id);
                 }
                 // Set the entity values
-                let entity_id = world.ecs_manager.entitym.entities.get_next_valid_id();
                 let entity_cbitfield = linkings.c_bitfield;
 
-                entity.entity_id = entity_id;
                 entity.linked_components = hashmap;
                 entity.c_bitfield = entity_cbitfield;
 
@@ -75,7 +73,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 entity.system_bitfield = calculate_system_bitfield(world, entity.c_bitfield);
 
                 // Then add the entity
-                world.ecs_manager.entitym.add_entity(entity);
+                let entity_id = world.ecs_manager.entitym.add_entity(entity);
 
                 // Check the systems where this entity might be valid
                 for system in world.ecs_manager.systemm.systems.iter() {
@@ -102,11 +100,9 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
             }
             Task::EntityRemove(entity_id) => {
                 // Check if we even have the entity in the first place
-                if !world.ecs_manager.entitym.is_entity_valid(entity_id) {
-                    continue;
-                }
                 // Run the Entity Remove event on the systems
-                let entity = world.ecs_manager.entitym.entity(entity_id);
+                println!("Remove entity ID {}", entity_id);
+                let entity = world.ecs_manager.entitym.entity(entity_id).unwrap();
 
                 // Check the systems where this entity might be valid
                 let valid_systems: Vec<&SystemThreadData> = world
@@ -142,7 +138,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
             }
             Task::AddComponentLinkingGroup(entity_id, linkings) => {
                 // Check if there are any components that are already linked to the entity
-                let entity = world.ecs_manager.entitym.entity(entity_id);
+                let entity = world.ecs_manager.entitym.entity(entity_id).unwrap();
                 let collision_cbitfield = entity.c_bitfield & linkings.c_bitfield;
                 if collision_cbitfield != 0 {
                     // There was a collision!
@@ -164,7 +160,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 // Compare the entity system bitfield
                 let new_entity_system_bitfield = calculate_system_bitfield(world, combined_c_bitfield);
                 let system_ids_new = new_entity_system_bitfield & !old_entity_system_bitfield; // This is the system bitfield for the systems that did not originally contain this entity because it was invalid, but the entity just became valid for that system
-                let entity = world.ecs_manager.entitym.entity_mut(entity_id);
+                let entity = world.ecs_manager.entitym.entity_mut(entity_id).unwrap();
                 entity.linked_components.extend(hashmap);
                 entity.c_bitfield = combined_c_bitfield;
                 entity.system_bitfield = new_entity_system_bitfield;
@@ -193,7 +189,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 if counter == 0 {
                     // Delete the entity and it's corresponding components
                     world.ecs_manager.entitym.entities_to_delete.remove(&entity_id);
-                    let entity = world.ecs_manager.entitym.remove_entity(entity_id);
+                    let entity = world.ecs_manager.entitym.remove_entity(entity_id).unwrap();
                     for (component_id, global_id) in entity.linked_components {
                         world.ecs_manager.componentm.remove_component(global_id).unwrap();
                     }

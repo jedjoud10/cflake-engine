@@ -9,6 +9,7 @@ pub struct ChunkSystem {
     pub csgtree: math::csg::CSGTree,           // The CSG tree that will be used for massive optimizations
     pub chunks: HashMap<ChunkCoords, usize>,   // The chunks that were added into the world
     pub chunks_to_delete: HashSet<usize>,
+    pub deleted_chunks_descending: HashSet<usize>, 
     pub chunks_awaiting_validation: HashSet<ChunkCoords>, // The number of chunks that are awating to be created and validated
 }
 

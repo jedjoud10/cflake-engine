@@ -89,7 +89,7 @@ pub fn execute_local_callbacks() {
                 if let LogicSystemCallbackArguments::EntityRef(entity_id) = arguments {
                     let cloned_entity = {
                         let w = crate::world::world();
-                        w.ecs_manager.entitym.entity(entity_id).clone()
+                        w.ecs_manager.entitym.entity(entity_id).cloned().unwrap()
                     };
                     (callback)(&cloned_entity);
                 }
@@ -101,13 +101,13 @@ pub fn execute_local_callbacks() {
                     let callback = entity_callback.callback;
                     let mut cloned_entity = {
                         let w = crate::world::world();
-                        w.ecs_manager.entitym.entity(entity_id).clone()
+                        w.ecs_manager.entitym.entity(entity_id).cloned().unwrap()
                     };
                     // We must NOT have world() or world_mut() locked when executing these types of callbacks
                     (callback)(&mut cloned_entity);
                     // Update the value in the world
                     let mut w = crate::world::world_mut();
-                    let entity = w.ecs_manager.entitym.entity_mut(entity_id);
+                    let entity = w.ecs_manager.entitym.entity_mut(entity_id).unwrap();
                     *entity = cloned_entity;
                 }
             }

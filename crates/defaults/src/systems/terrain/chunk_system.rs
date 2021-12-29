@@ -46,7 +46,7 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     // We are only allowed to update the octree in 2 conditions
     // 1. We do not have any current chunks, so we must initialize the octree
     // 2. We do not have any chunks that are waiting to become validated AND we do not have any chunks to delete
-    let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty();
+    let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty() && data.deleted_chunks_descending.is_empty();
     let valid = data.chunks.is_empty() || validity_test;
     if valid && core::global::input::map_toggled("toggle_terrain_gen") { 
         // Update the octree
@@ -69,11 +69,13 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
             for octree_node in removed {
                 let coords = ChunkCoords::new(&octree_node);
                 // Get the entity ID, then we can remove it
-                if let Option::Some(&entity_id) = data.chunks.get(&coords) {
+                if let Option::Some(entity_id) = data.chunks.remove(&coords) {
                     // Set the state first
                     // Now we can actually remove the entity
                     let result = core::global::ecs::entity_remove(entity_id);
                     data.chunks_to_delete.insert(entity_id);
+                    data.deleted_chunks_descending.insert(entity_id);
+                    println!("Remove chunk with entity ID {}", entity_id);
                     core::global::batch::batch_add(1, result);
                 }
             }
@@ -96,7 +98,7 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
 fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
     // Check if the chunk has a renderer component
-    if chunk.voxel_data.is_some() {
+    if chunk.voxel_data.is_some() && !data.deleted_chunks_descending.contains(&entity.entity_id) {
         if let Option::Some(renderer) = core::global::ecs::component::<crate::components::Renderer>(entity).ok() {
             // Check if we have a valid model
             if renderer.internal_renderer.index.is_some() {
@@ -119,8 +121,10 @@ fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
 // We have removed a Chunk, we must remove it's corresponding data from our internal states as well
 fn entity_removed(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     // Remove this chunk from our total chunks
-    let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
-    data.chunks.remove(&chunk.coords).unwrap();
+    let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();    
+    if data.deleted_chunks_descending.remove(&entity.entity_id) {
+
+    } else { panic!() }
 }
 
 // Create the Chunk Manager system

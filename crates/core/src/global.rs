@@ -9,7 +9,7 @@ pub mod ecs {
     // Get an entity using it's global ID
     pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
         let w = crate::world::world();
-        w.ecs_manager.entitym.entities.get_element(entity_id).flatten().cloned()
+        w.ecs_manager.entitym.entity(entity_id).cloned()
     }
     // Entity mut callback. We run this callback at the end of the frame with a world_mut environment
     pub fn entity_mut(entity_id: usize, callback_id: u64) {

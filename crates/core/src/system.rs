@@ -96,7 +96,7 @@ where
                         let entities = entity_ids
                             .iter()
                             .map(|x| {
-                                let entity = w.ecs_manager.entitym.entity(*x);
+                                let entity = w.ecs_manager.entitym.entity(*x).unwrap();
                                 entity as *const ecs::Entity
                             })
                             .collect::<Vec<*const ecs::Entity>>();
@@ -171,7 +171,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             // Add the entity to the current entity list
             let ptr = {
                 let w = crate::world::world();
-                let entity = w.ecs_manager.entitym.entity(entity_id);
+                let entity = w.ecs_manager.entitym.entity(entity_id).unwrap();
                 entity as *const ecs::Entity
             };
             entity_ids.push(entity_id);
@@ -183,7 +183,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             let ptr = {
                 let w = crate::world::world();
                 entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
-                let entity = w.ecs_manager.entitym.entity(entity_id);
+                let entity = w.ecs_manager.entitym.entity(entity_id).unwrap();
                 entity as *const ecs::Entity
             };
             let entity = unsafe { ptr.as_ref().unwrap() };

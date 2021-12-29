@@ -7,33 +7,31 @@ use std::{
 // An entity manager that handles entities
 #[derive(Default)]
 pub struct EntityManager {
-    pub entities: SmartList<Entity>,
+    pub next_id: usize, 
+    pub entities: HashMap<usize, Entity>,
     pub entities_to_delete: HashMap<usize, u8>,
 }
 
 impl EntityManager {
     // Get an entity
-    pub fn entity(&self, entity_id: usize) -> &Entity {
-        self.entities.get_element(entity_id).flatten().unwrap()
+    pub fn entity(&self, entity_id: usize) -> Option<&Entity> {
+        self.entities.get(&entity_id)
     }
     // Get an entity mutably
-    pub fn entity_mut(&mut self, entity_id: usize) -> &mut Entity {
-        self.entities.get_element_mut(entity_id).flatten().unwrap()
+    pub fn entity_mut(&mut self, entity_id: usize) -> Option<&mut Entity> {
+        self.entities.get_mut(&entity_id)
     }
     // Add an entity to the manager
     pub fn add_entity(&mut self, mut entity: Entity) -> usize {
         // Set the entity ID
-        let next_id = self.entities.get_next_valid_id();
-        entity.entity_id = next_id;
-        self.entities.add_element(entity)
+        entity.entity_id = self.next_id;
+        self.entities.insert(entity.entity_id, entity);
+        self.next_id += 1;
+        self.next_id - 1
     }
     // Remove an entity from the manager, and return it's value
-    pub fn remove_entity(&mut self, entity_id: usize) -> Entity {
-        self.entities.remove_element(entity_id).unwrap()
-    }
-    // Check if an entity is valid
-    pub fn is_entity_valid(&self, entity_id: usize) -> bool {
-        self.entities.get_element(entity_id).flatten().is_some() && !self.entities_to_delete.contains_key(&entity_id)
+    pub fn remove_entity(&mut self, entity_id: usize) -> Option<Entity> {
+        self.entities.remove(&entity_id)
     }
 }
 
