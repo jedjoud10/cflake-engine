@@ -8,12 +8,14 @@ ecs::impl_systemdata!(VoxelGenerationSystem);
 
 // Get the first pending chunk, and tell the voxel generator to generate it's voxel data if it is allowed to
 fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
-    if !data.generating && data.pending_chunks.len() > 0 {
+    const limit: usize = 8;
+    let mut i = 0;
+    while i < limit && data.pending_chunks.len() > 0 {
+        i += 1;
         // We can run the voxel generation logic
         let chunk_coords = data.pending_chunks.remove(0);
         //println!("Started voxel generation for Chunk {}", chunk_coords.center);
         // Set the state
-        data.generating = true;
 
         // First pass
         let mut group = rendering::ShaderUniformsGroup::new();
@@ -73,7 +75,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                         // If there is no surface, no need to waste time
                         let surface = min.signum() != max.signum();
                         if !surface {
-                            data.result = Some((chunk_coords, None));
+                            data.results.insert(chunk_coords, Some(None));
                             /*
                             println!(
                                 "Finished voxel generation for Chunk {}, took {}ms (Async {}ms). [NO VALID SURFACE FOUND]",
@@ -120,7 +122,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
                         );
                         */
                         // Tell the main system data that we finished the voxel generation for this specific chunk
-                        data.result = Some((chunk_coords, Some(voxel_data)));
+                        data.results.insert(chunk_coords, Some(Some(voxel_data)));
                     }))
                     .create(),
                 );
@@ -137,30 +139,19 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
     // Check if we generated the voxel data for this chunk
     // The outer option is whether or not we have generated the Voxel Data
     // The inner option is whether or not we have a valid Voxel Data (Voxel Data with a valid surface)
-    let voxel_data = if let Option::Some((generatin_chunk_coords, _)) = &data.result {
-        // We are currently generating a chunk, but we are not sure if we are generating the correct one
-        if generatin_chunk_coords == chunk_coords {
-            // It is a match, return the voxel data
-            let (_, taken) = data.result.take().unwrap();
-            data.generating = false;
-            Some(taken)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
+    let voxel_data = data.results.remove(chunk_coords).flatten();
     // We did generate the voxel data for this chunk, so update it
-    core::global::ecs::entity_mut(
-        entity.entity_id,
-        CallbackType::LocalEntityMut(MutCallback::new(|entity| {
-            // Update the chunk component
-            let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
-            chunk.voxel_data = voxel_data;
-        }))
-        .create(),
-    );
+    if let Option::Some(voxel_data) = voxel_data {
+        core::global::ecs::entity_mut(
+            entity.entity_id,
+            CallbackType::LocalEntityMut(MutCallback::new(|entity| {
+                // Update the chunk component
+                let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();
+                chunk.voxel_data = Some(voxel_data);
+            }))
+            .create(),
+        );
+    }    
 }
 
 // When a chunk gets added, we tell the voxel generator to buffer the voxel generation for that chunk

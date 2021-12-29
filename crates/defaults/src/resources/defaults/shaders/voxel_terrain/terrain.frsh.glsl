@@ -26,9 +26,11 @@ void main() {
 	vec3 diffuse;
 	get_frag(material_id, diffuse_textures, normals_textures, m_position, m_normal, uv_scale, normals_strength, diffuse, normal);
 	frag_diffuse = diffuse * m_color * tint;
+	/*
 	if (any(lessThan(mod(m_position, 32), vec3(1)))) {
 		frag_diffuse *= 0.0;
 	} 
+	*/
 	frag_normal = normal;
 	frag_pos = m_position;
 }
