@@ -9,13 +9,15 @@ pub struct ChunkSystem {
     pub octree: math::octrees::AdvancedOctree,  // An advanced octree, so we can actually create the chunks
     pub csgtree: math::csg::CSGTree,            // The CSG tree that will be used for massive optimizations
     pub chunks: HashMap<ChunkCoords, EntityID>, // The chunks that were added into the world
-    pub chunks_to_delete: HashSet<EntityID>,
-    pub deleted_chunks_descending: HashSet<EntityID>,
+    pub chunks_to_delete: HashSet<EntityID>, // The chunks that we must delete
+    pub deleted_chunks_descending: HashSet<EntityID>, // The chunks that have been delete will remove their EntityID from this set
     pub chunks_awaiting_validation: HashSet<ChunkCoords>, // The number of chunks that are awating to be created and validated
+    pub removal_time: f32, // The moment in seconds since the start of the game when we want to delete the chunks
 }
 
 pub const PARALLEL_COMPUTES: usize = 1; // The number of computes shaders that are ran in parallel
-                                        // Handles the voxel generation for each chunk
+
+// Handles the voxel generation for each chunk
 #[derive(Default)]
 pub struct VoxelGenerationSystem {
     pub computes: Vec<(GPUObjectID, bool)>,                       // The computes shaders that are used for voxel generation

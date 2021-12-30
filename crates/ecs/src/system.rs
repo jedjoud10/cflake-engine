@@ -8,8 +8,9 @@ pub fn entity_valid(entity_cbitfield: &Bitfield<u32>, system: &SystemThreadData)
     if system.cbitfield == Bitfield::new() {
         return false;
     }
+    
     // Check the cbitfield
-    system.cbitfield.contains(entity_cbitfield)
+    entity_cbitfield.contains(&system.cbitfield)
 }
 
 // A system event enum

@@ -57,13 +57,12 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
     core::global::main::start_system_loops();
     let mut last_time: f64 = 0.0;
     others::barrier::as_ref().init_finished_world();
-
+    let mut spin_sleeper = spin_sleep::LoopHelper::builder().build_with_target_rate(300);
     while !window.should_close() {
-        // Update the delta_time
-
+        // Update the delta_time        
         let new_time = glfw.get_time();
-        let delta = new_time - last_time;
-        last_time = new_time;
+        let delta = spin_sleeper.loop_start_s();
+        last_time = last_time + delta;
         // Update the world
         let i = std::time::Instant::now();
         core::world::update_world_start_barrier(delta);
@@ -104,6 +103,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
                 }
             }
             //std::thread::sleep(std::time::Duration::from_millis(1));
+            spin_sleeper.loop_sleep();
         }
     }
     // When the window closes and we exit from the game

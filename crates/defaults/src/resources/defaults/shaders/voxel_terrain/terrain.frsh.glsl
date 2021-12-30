@@ -22,8 +22,8 @@ in vec2 m_uv;
 void main() {
 	// Some cool dithering at the start of the life of each chunk
 	ivec2 pixel = ivec2(gl_FragCoord.xy);
-	int level = clamp(int(_active_time * 20.0), 0, 5);
-	//if (get_dither(pixel, level)) { discard; }
+	int level = clamp(int(_active_time * 8.0 * 5.0), 0, 5);
+	if (get_dither(pixel, level)) { discard; }
 	vec3 normal;
 	vec3 diffuse;
 	get_frag(material_id, diffuse_textures, normals_textures, m_position, m_normal, uv_scale, normals_strength, diffuse, normal);
