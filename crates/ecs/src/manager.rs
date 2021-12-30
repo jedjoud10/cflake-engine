@@ -1,6 +1,6 @@
-use std::{collections::HashMap, any::Any};
+use std::{any::Any};
 use fnv::{FnvHashMap, FnvHashSet};
-use crate::{system::SystemManager, EntityManager, ComponentInternal, identifiers::{ComponentID, EntityID}, Entity, ECSError, Component, EntityError};
+use crate::{identifiers::{ComponentID, EntityID}, Entity, Component, EntityError, ComponentError};
 
 
 // The Entity Component System manager that will handle everything ECS related
@@ -8,7 +8,7 @@ use crate::{system::SystemManager, EntityManager, ComponentInternal, identifiers
 pub struct ECSManager {
     entities: Vec<Entity>, // A vector full of entities. Each entity can get invalidated, but never deleted
     free_entities: Vec<u16>, // A list of free entities, we
-    components: FnvHashMap<ComponentID, Box<dyn ComponentInternal + Sync + Send>>, // The components that are valid in the world 
+    components: FnvHashMap<ComponentID, Box<dyn Component + Sync + Send>>, // The components that are valid in the world 
 }
 // Global code for the Entities, Components, and Systems
 impl ECSManager {
@@ -42,49 +42,60 @@ impl ECSManager {
     /* #endregion */
     /* #region Components */
     // Add a specific linked componment to the component manager. Return the said component's ID
-    pub fn add_component(&mut self, component: Box<dyn ComponentInternal + Send + Sync + 'static>) -> Result<ComponentID, ECSError> {
+    pub fn add_component<T>(&mut self, entity_id: EntityID, component: T) -> Result<ComponentID, ComponentError>
+        where T: Component + Send + Sync + 'static
+    {
         // Create a new Component ID from an Entity ID
-        let global_id = self.components.insert(component);
-        Ok(global_id)
+        let id = ComponentID::new::<T>(entity_id);
+        // We must box the component
+        let boxed = Box::new(component);
+        self.components.insert(id, boxed);
+        Ok(id)
     }
     // Cast a boxed component to a reference of that component
-    fn cast_component<'a, T: ComponentInternal + 'static>(linked_component: &'a dyn ComponentInternal, global_id: usize) -> Result<&T, ECSError> {
+    fn cast_component<'a, T>(linked_component: &'a dyn Component, id: ComponentID) -> Result<&T, ComponentError> 
+        where T: Component + Send + Sync + 'static
+    {
         let component_any: &dyn Any = linked_component.as_any();
-        let reference = component_any.downcast_ref::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
+        let reference = component_any.downcast_ref::<T>().ok_or_else(|| ComponentError::new("Could not cast component".to_string(), id))?;
         Ok(reference)
     }
     // Cast a boxed component to a mutable reference of that component
-    fn cast_component_mut<'a, T: ComponentInternal + 'static>(boxed_component: &'a mut dyn ComponentInternal, global_id: usize) -> Result<&mut T, ECSError> {
-        let component_any: &mut dyn Any = boxed_component.as_any_mut();
-        let reference_mut = component_any.downcast_mut::<T>().ok_or_else(|| ECSError::new_str("Could not cast component"))?;
+    fn cast_component_mut<'a, T>(linked_component: &'a mut dyn Component, id: ComponentID) -> Result<&mut T, ComponentError>
+        where T: Component + Send + Sync + 'static
+    {
+        let component_any: &mut dyn Any = linked_component.as_any_mut();
+        let reference_mut = component_any.downcast_mut::<T>().ok_or_else(|| ComponentError::new("Could not cast component".to_string(), id))?;
         Ok(reference_mut)
     }
     // Get a reference to a specific linked component
-    pub fn get_component<'a, T: Component + 'static>(&'a self, global_id: usize) -> Result<&T, ECSError> {
+    pub fn get_component<T>(&self, id: ComponentID) -> Result<&T, ComponentError>
+        where T: Component + Send + Sync + 'static
+    {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         let linked_component = self
             .components
-            .get_element(global_id)
-            .flatten()
-            .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component::<T>(linked_component.as_ref(), global_id)?;
+            .get(&id)
+            .ok_or_else(|| ComponentError::new("Linked component could not be fetched!".to_string(), id))?;
+        let component = Self::cast_component::<T>(linked_component.as_ref(), id)?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_component_mut<'a, T: Component + 'static>(&'a mut self, global_id: usize) -> Result<&mut T, ECSError> {
+    pub fn get_component_mut<T>(&mut self, id: ComponentID) -> Result<&mut T, ComponentError>
+        where T: Component + Send + Sync + 'static
+    {
         let linked_component = self
             .components
-            .get_element_mut(global_id)
-            .flatten()
-            .ok_or_else(|| ECSError::new(format!("Linked component with global ID: '{}' could not be fetched!", global_id)))?;
-        let component = Self::cast_component_mut::<T>(linked_component.as_mut(), global_id)?;
+            .get_mut(&id)
+            .ok_or_else(|| ComponentError::new("Linked component could not be fetched!".to_string(), id))?;
+        let component = Self::cast_component_mut::<T>(linked_component.as_mut(), id)?;
         Ok(component)
     }
     // Remove a specified component from the list
-    pub fn remove_component(&mut self, global_id: usize) -> Result<(), ECSError> {
+    pub fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
-        self.components.remove_element(global_id).unwrap();
+        self.components.remove(&id).ok_or(ComponentError::new("Tried removing component, but it was not present in the HashMap!".to_string(), id));
         Ok(())
     }
     /* #endregion */

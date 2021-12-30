@@ -7,6 +7,7 @@ mod error;
 mod linking;
 mod macros;
 mod system;
+mod bitfield;
 pub mod identifiers;
 pub use component::*;
 pub use component_registry as registry;

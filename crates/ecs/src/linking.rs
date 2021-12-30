@@ -1,24 +1,20 @@
-use crate::{Component, ComponentInternal, ComponentError, ComponentLinkingError};
-use std::{collections::HashMap, fmt::Debug};
+use fnv::FnvHashMap;
+
+use crate::{Component, ComponentLinkingError, bitfield::ComponentBitfield, identifiers::ComponentID};
+use std::{collections::HashMap};
 
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 pub struct ComponentLinkingGroup {
-    pub linked_components: HashMap<usize, Box<dyn ComponentInternal + Sync + Send>>,
-    pub c_bitfield: usize,
-}
-
-impl Debug for ComponentLinkingGroup {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ComponentLinkingGroup").field("c_bitfield", &self.c_bitfield).finish()
-    }
+    pub linked_components: FnvHashMap<u32, Box<dyn Component + Sync + Send>>,
+    pub cbitfield: ComponentBitfield
 }
 
 // Linking methods
 impl ComponentLinkingGroup {
     pub fn new() -> Self {
         Self {
-            linked_components: HashMap::new(),
-            c_bitfield: 0,
+            linked_components: FnvHashMap::default(),
+            cbitfield: ComponentBitfield::default(),
         }
     }
     // Link a component to this entity and automatically set it to the default variable
@@ -27,14 +23,14 @@ impl ComponentLinkingGroup {
         self.link(T::default())
     }
     // Check if we have a component linked
-    pub fn is_component_linked(&self, component_id: usize) -> bool {
-        self.linked_components.contains_key(&component_id)
+    pub fn is_component_linked(&self, id: ComponentID) -> bool {
+        self.linked_components.contains_key(&id.component_id)
     }
     // Link a component to this entity and also link it's default component dependencies if they are not linked yet
     pub fn link<T: Component + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
-        let component_id = crate::registry::get_component_id::<T>();
+        let cbitfield = crate::registry::get_component_bitfield::<T>();
         // Check if we have the component linked on this entity
-        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(component_id) {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(*cbitfield.bitfield) {
             // Add the local component to our hashmap
             let boxed = Box::new(default_state);
             e.insert(boxed);
@@ -46,7 +42,7 @@ impl ComponentLinkingGroup {
             )));
         }
         // Add the component's bitfield to the entity's bitfield
-        self.c_bitfield |= component_id;
+        self.cbitfield.bitfield = self.cbitfield.bitfield.add(&cbitfield.bitfield);
         Ok(())
     }
 }

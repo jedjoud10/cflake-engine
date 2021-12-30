@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use crate::{impl_systemdata, Entity, Component};
+use crate::{Entity, Component, bitfield::ComponentBitfield};
 
 #[derive(Default)]
 // Manages the systems, however each system is in it's own thread (For now at least)
@@ -52,8 +52,7 @@ pub struct System<T>
 where
     T: CustomSystemData,
 {
-    pub c_bitfield: usize,
-    pub show_stats: bool,
+    pub cbitfield: ComponentBitfield,
     pub name: String,
 
     // Events
@@ -74,8 +73,7 @@ where
     // Create a new system
     pub fn new() -> Self {
         System {
-            c_bitfield: 0,
-            show_stats: false,
+            cbitfield: ComponentBitfield::default(),
             name: String::new(),
             system_prefire: None,
             system_postfire: None,
@@ -93,8 +91,8 @@ where
 {
     // Add a component to this system's component bitfield id
     pub fn link<U: Component>(&mut self) {
-        let c = crate::registry::get_component_id::<U>();
-        self.c_bitfield |= c;
+        let c = crate::registry::get_component_bitfield::<U>();
+        self.cbitfield.bitfield = self.cbitfield.bitfield.add(&c.bitfield);
     }
     // Attach the a specific system event
     pub fn event(&mut self, event: SystemEventType<T>) {
@@ -107,11 +105,6 @@ where
             SystemEventType::EntityRemoved(x) => self.entity_removed = Some(x),
             SystemEventType::EntityUpdate(x) => self.entity_update = Some(x),
         };
-    }
-    // Enable the stats, so we can know some info about the execution of the system
-    pub fn show_stats(&mut self, name: &str) {
-        self.show_stats = true;
-        self.name = name.to_string();
     }
     // Add an entity to the current system
     pub fn add_entity(&mut self, shared: &mut SystemData<T>, entity: &Entity) {

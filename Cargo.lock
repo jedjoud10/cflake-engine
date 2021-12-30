@@ -3,6 +3,11 @@
 version = 3
 
 [[package]]
+name = "bitfield"
+version = "0.1.3"
+source = "git+https://github.com/jedjoud10/bitfield#90a803d46e4e411ea2269f4d16171a9184145d11"
+
+[[package]]
 name = "cflake-engine"
 version = "0.1.2"
 
@@ -10,6 +15,7 @@ version = "0.1.2"
 name = "ecs"
 version = "0.1.0"
 dependencies = [
+ "bitfield",
  "fnv",
  "lazy_static",
  "ordered_vec",
