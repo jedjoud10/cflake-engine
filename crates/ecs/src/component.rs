@@ -4,5 +4,7 @@ use std::any::Any;
 pub trait Component: Send + Sync {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
-    fn get_component_name() -> String where Self: Sized;  
+    fn get_component_name() -> String
+    where
+        Self: Sized;
 }

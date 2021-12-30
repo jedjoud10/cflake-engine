@@ -1,18 +1,18 @@
 // Export
+mod bitfield;
 mod component;
 pub mod component_registry;
-mod manager;
 mod entity;
 mod error;
+pub mod identifiers;
 mod linking;
 mod macros;
+mod manager;
 mod system;
-mod bitfield;
-pub mod identifiers;
 pub use component::*;
 pub use component_registry as registry;
-pub use manager::*;
 pub use entity::*;
 pub use error::*;
 pub use linking::*;
+pub use manager::*;
 pub use system::*;

@@ -1,5 +1,5 @@
+use crate::identifiers::{ComponentID, EntityID};
 use core::fmt;
-use crate::identifiers::{EntityID, ComponentID};
 
 // An error related to the entities
 #[derive(Debug)]

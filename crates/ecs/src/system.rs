@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use crate::{Entity, Component, bitfield::ComponentBitfield};
+use crate::{bitfield::ComponentBitfield, Component, Entity};
 
 #[derive(Default)]
 // Manages the systems, however each system is in it's own thread (For now at least)

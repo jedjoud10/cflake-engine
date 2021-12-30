@@ -4,12 +4,15 @@ use std::{
     sync::{atomic::AtomicU8, Arc},
 };
 
-use crate::{identifiers::EntityID, bitfield::{ComponentBitfield, SystemBitfield}};
+use crate::{
+    bitfield::{ComponentBitfield, SystemBitfield},
+    identifiers::EntityID,
+};
 
 // An entity manager that handles entities
 #[derive(Default)]
 pub struct EntityManager {
-    pub next_id: usize, 
+    pub next_id: usize,
     pub entities: HashMap<usize, Entity>,
     pub entities_to_delete: HashMap<usize, u8>,
 }
