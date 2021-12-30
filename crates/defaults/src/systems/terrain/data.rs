@@ -1,3 +1,4 @@
+use ecs::EntityID;
 use rendering::{pipec, GPUObjectID, TextureFilter, TextureFormat, TextureType, TextureWrapping};
 use std::collections::{HashMap, HashSet};
 use terrain::{ChunkCoords, VoxelData, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK_SIZE};
@@ -7,9 +8,9 @@ use terrain::{ChunkCoords, VoxelData, DEFAULT_TERRAIN_COMPUTE_SHADER, MAIN_CHUNK
 pub struct ChunkSystem {
     pub octree: math::octrees::AdvancedOctree, // An advanced octree, so we can actually create the chunks
     pub csgtree: math::csg::CSGTree,           // The CSG tree that will be used for massive optimizations
-    pub chunks: HashMap<ChunkCoords, usize>,   // The chunks that were added into the world
-    pub chunks_to_delete: HashSet<usize>,
-    pub deleted_chunks_descending: HashSet<usize>, 
+    pub chunks: HashMap<ChunkCoords, EntityID>,   // The chunks that were added into the world
+    pub chunks_to_delete: HashSet<EntityID>,
+    pub deleted_chunks_descending: HashSet<EntityID>, 
     pub chunks_awaiting_validation: HashSet<ChunkCoords>, // The number of chunks that are awating to be created and validated
 }
 

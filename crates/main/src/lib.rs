@@ -48,8 +48,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
     // Get the system thread_ids
     let thread_ids = core::world::world()
         .ecs_manager
-        .systemm
-        .systems
+        .systems()
         .iter()
         .map(|x| x.join_handle.thread().id().clone())
         .collect::<Vec<ThreadId>>();

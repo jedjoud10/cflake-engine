@@ -156,7 +156,7 @@ fn entity_update(data: &mut SystemData<VoxelGenerationSystem>, entity: &ecs::Ent
     // We did generate the voxel data for this chunk, so update it
     if let Option::Some(voxel_data) = voxel_data {
         core::global::ecs::entity_mut(
-            entity.entity_id,
+            entity.id,
             CallbackType::LocalEntityMut(MutCallback::new(|entity| {
                 // Update the chunk component
                 let chunk = core::global::ecs::component_mut::<terrain::Chunk>(entity).unwrap();

@@ -53,7 +53,7 @@ fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
     let new_position = position + velocity * delta;
     // We can now update the camera rotation and position
     core::global::ecs::entity_mut(
-        entity.entity_id,
+        entity.id,
         LocalEntityMut(MutCallback::new(move |entity| {
             // Update the transform object
             let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
@@ -71,9 +71,8 @@ fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
 }
 fn entity_added(data: &mut SystemData<()>, entity: &ecs::Entity) {
     // Initialize the camera
-    let entity_id = entity.entity_id;
     core::global::ecs::entity_mut(
-        entity_id,
+        entity.id,
         LocalEntityMut(MutCallback::new(|entity| {
             // We can now update the camera
             let camera = core::global::ecs::component_mut::<crate::components::Camera>(entity).unwrap();

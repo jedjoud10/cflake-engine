@@ -11,7 +11,7 @@ ecs::impl_systemdata!(ChunkSystem);
 fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, octree_size: u64) {
     // Create the entity
     let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
-    let entity = ecs::Entity::new(name.as_str());
+    let entity = ecs::Entity::new();
 
     // Create the chunk component
     let chunk = terrain::Chunk::new(coords);
@@ -39,9 +39,15 @@ fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, 
 fn system_prefire(data: &mut SystemData<ChunkSystem>) {
     // We must add all the chunks that the octree tells us to add
     // First of all, we get the camera data
-    let camera = core::global::ecs::entity(core::global::main::world_data().main_camera_entity_id).unwrap();
-    let camera_transform = core::global::ecs::component::<crate::components::Transform>(&camera).unwrap();
-    let camera_pos = camera_transform.position;
+    let camera_pos = {
+        if let Option::Some(camera_id) = core::global::main::world_data().main_camera_entity_id {
+            let camera = core::global::ecs::entity(camera_id).unwrap();
+            let camera_transform = core::global::ecs::component::<crate::components::Transform>(&camera).unwrap();
+            camera_transform.position           
+        } else {
+            veclib::Vector3::default()
+        }
+    };    
 
     // We are only allowed to update the octree in 2 conditions
     // 1. We do not have any current chunks, so we must initialize the octree
@@ -97,20 +103,20 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
 fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
     // Check if the chunk has a renderer component
-    if chunk.voxel_data.is_some() && !data.deleted_chunks_descending.contains(&entity.entity_id) {
+    if chunk.voxel_data.is_some() && !data.deleted_chunks_descending.contains(&entity.id) {
         if let Option::Some(renderer) = core::global::ecs::component::<crate::components::Renderer>(entity).ok() {
             // Check if we have a valid model
             if renderer.internal_renderer.index.is_some() {
                 // We have valid model, we can remove self from the hashset
                 if data.chunks_awaiting_validation.remove(&chunk.coords) {
-                    data.chunks.insert(chunk.coords, entity.entity_id);
+                    data.chunks.insert(chunk.coords, entity.id);
                 } else {
                 }
             }
         } else {
             // If we do not have a model, and do not expect to get one, we must remove it as well
             if data.chunks_awaiting_validation.remove(&chunk.coords) {
-                data.chunks.insert(chunk.coords, entity.entity_id);
+                data.chunks.insert(chunk.coords, entity.id);
             } else {
             }
         }
@@ -121,8 +127,7 @@ fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
 fn entity_removed(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     // Remove this chunk from our total chunks
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();    
-    if data.deleted_chunks_descending.remove(&entity.entity_id) {
-
+    if data.deleted_chunks_descending.remove(&entity.id) {
     } else { panic!() }
 }
 

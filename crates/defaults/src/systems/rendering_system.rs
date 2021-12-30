@@ -1,7 +1,7 @@
 use core::global::{self, callbacks::CallbackType::*};
 use std::collections::{HashMap, HashSet};
 
-use ecs::{SystemData, SystemEventType};
+use ecs::{SystemData, SystemEventType, EntityID};
 use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 use rendering::RendererFlags;
 // An improved multithreaded rendering system
@@ -10,7 +10,7 @@ struct RenderingSystem;
 ecs::impl_systemdata!(RenderingSystem);
 
 // Create a renderer from an entity
-fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: usize, irenderer: &rendering::Renderer, transform: &crate::components::Transform) {
+fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: EntityID, irenderer: &rendering::Renderer, transform: &crate::components::Transform) {
     // The entity is pending
     let data = (irenderer.clone(), transform.calculate_matrix());
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(data));
@@ -39,7 +39,7 @@ fn entity_added(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     // Get the transform, and make sure it's matrix is valid
     let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
     // First of all, check if we must auto-add this renderer and check if we have a valid model
-    create_renderer(data, entity.entity_id, irenderer, transform);
+    create_renderer(data, entity.id, irenderer, transform);
 }
 // Remove the renderer from the pipeline renderer
 fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
@@ -70,8 +70,11 @@ fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
 }
 // System prefire so we can send the camera data to the render pipeline
 fn system_prefire(data: &mut SystemData<RenderingSystem>) {
+    // Only do this if we have a valid main camera entity
+    let camera_id = global::main::world_data().main_camera_entity_id;
+    if camera_id.is_none() { return; }
     // Camera data
-    let camera = global::ecs::entity(global::main::world_data().main_camera_entity_id).unwrap();
+    let camera = global::ecs::entity(camera_id.unwrap()).unwrap();
     let camera_data = global::ecs::component::<crate::components::Camera>(&camera).unwrap();
     // Transform data
     let camera_transform = global::ecs::component::<crate::components::Transform>(&camera).unwrap();

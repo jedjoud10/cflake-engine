@@ -29,7 +29,7 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
             // Create a renderer with the correct model and materials
             let renderer = crate::components::Renderer::default().set_wireframe(true).set_model(model_id).set_material(data.material).set_shader_uniforms(group);
             linkings.link::<crate::components::Renderer>(renderer).unwrap();
-            core::global::ecs::link_components(entity.entity_id, linkings);
+            core::global::ecs::link_components(entity.id, linkings);
             true
         } else {
             // We generated the voxel data, but there was no surface, so no need to create the model
