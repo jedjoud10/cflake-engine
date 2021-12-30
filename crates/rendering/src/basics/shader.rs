@@ -64,13 +64,21 @@ impl Shader {
                 vectors_to_insert.push((i, lines));
             }
             // Impl default types
-            if line.trim().starts_with("#load_defaults") {
-                let x = match line.split("#load_defaults ").collect::<Vec<&str>>()[1] {
+            if line.trim().starts_with("#load") {
+                let x = match line.split("#load ").collect::<Vec<&str>>()[1] {
                     "renderer" => {
                         vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string()]));
                         Ok(())
                     }
-                    x => Err(RenderingError::new(format!("Tried to expand #load_defaults, but the given type '{}' is not valid!", x))),
+                    "renderer_main_start" => {
+                        vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string()]));
+                        Ok(())                        
+                    }
+                    "renderer_life_fade" => {
+                        vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string()]));
+                        Ok(())                        
+                    }
+                    x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
                 };
                 x?;
             }

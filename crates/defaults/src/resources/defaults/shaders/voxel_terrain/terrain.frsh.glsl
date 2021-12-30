@@ -1,7 +1,6 @@
 #version 460 core
-#load_defaults renderer
+#load renderer
 #include "defaults\shaders\voxel_terrain\terrain_shader.func.glsl"
-#include "defaults\shaders\others\dithering.func.glsl"
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_normal;
 layout(location = 2) out vec3 frag_pos;
@@ -20,10 +19,8 @@ in vec4 m_tangent;
 in vec3 m_color;
 in vec2 m_uv;
 void main() {
-	// Some cool dithering at the start of the life of each chunk
-	ivec2 pixel = ivec2(gl_FragCoord.xy);
-	int level = clamp(int(_active_time * 8.0 * 5.0), 0, 5);
-	if (get_dither(pixel, level)) { discard; }
+	#load renderer_main_start
+	#load renderer_life_fade
 	vec3 normal;
 	vec3 diffuse;
 	get_frag(material_id, diffuse_textures, normals_textures, m_position, m_normal, uv_scale, normals_strength, diffuse, normal);
