@@ -28,8 +28,8 @@ pub mod ecs {
         CommandQueryResult::new(Task::EntityAdd(entity, linkings))
     }
     // Remove an entity from the world, returning a WorldCommandStatus of Failed if we failed to do so
-    pub fn entity_remove(entity_id: usize) -> CommandQueryResult {
-        CommandQueryResult::new(Task::EntityRemove(entity_id))
+    pub fn entity_remove(id: EntityID) -> CommandQueryResult {
+        CommandQueryResult::new(Task::EntityRemove(id))
     }
     /* #endregion */
     /* #region Components */
@@ -38,8 +38,8 @@ pub mod ecs {
         // Get the world using it's RwLock
         let w = crate::world::world();
         // Create a component ID
-        let id = ecs::ComponentID::new::<T>(entity.id);
-        let component = w.ecs_manager.get_component::<T>(id)?;
+        let id = ecs::ComponentID::new(entity.id, ecs::registry::get_component_bitfield::<T>());
+        let component = w.ecs_manager.component::<T>(id)?;
         let component_ = component as *const T;
         let component = unsafe { &*component_ };
         Ok(component)
@@ -47,11 +47,11 @@ pub mod ecs {
     // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback
     pub fn component_mut<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Result<&'a mut T, ecs::ComponentError> {
         // Get the world using it's RwLock
-        let w = crate::world::world();
+        let mut w = crate::world::world_mut();
         // Create a component ID
-        let id = ecs::ComponentID::new::<T>(entity.id);
-        let component = w.ecs_manager.get_component_mut::<T>(id)?;
-        let component_ = component as *const T;
+        let id = ecs::ComponentID::new(entity.id, ecs::registry::get_component_bitfield::<T>());
+        let component = w.ecs_manager.component_mut::<T>(id)?;
+        let component_ = component as *mut T;
         let component = unsafe { &mut *component_ };
         Ok(component)
     }
@@ -69,12 +69,11 @@ pub mod ecs {
         T: Sync + Send,
     {
         // Create a new thread and initialize the system on it
-        let (join_handle, c_bitfield) = crate::system::create_worker_thread(default_state, callback);
+        let (join_handle, cbitfield) = crate::system::create_worker_thread(default_state, callback);
         let mut w = crate::world::world_mut();
         // Calculate the system bitfield
-        let bitfield = 1 << w.ecs_manager.systemm.systems.len();
-        let system_thread_data = ecs::SystemThreadData::new(bitfield, join_handle, c_bitfield);
-        w.ecs_manager.systemm.systems.push(system_thread_data);
+        let system_thread_data = ecs::SystemThreadData::new(join_handle, cbitfield);
+        w.ecs_manager.add_system(system_thread_data);
     }
     /* #endregion */
 }

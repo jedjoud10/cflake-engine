@@ -2,6 +2,7 @@ use crate::batch::{BatchCommandQuery, BatchManager};
 use crate::command::CommandQueryResult;
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
+use bitfield::Bitfield;
 use ecs::{CustomSystemData, SystemData, EntityID};
 use lazy_static::lazy_static;
 use others::callbacks::MutCallback;
@@ -17,7 +18,7 @@ pub enum LogicSystemCommand {
     StartSystemLoop,
     RunCallback(u64, LogicSystemCallbackArguments),
     AddEntityToSystem(EntityID),
-    RemoveEntityFromSystem(id),
+    RemoveEntityFromSystem(EntityID),
 }
 
 lazy_static! {
@@ -37,14 +38,14 @@ thread_local! {
 }
 
 // Create a worker thread
-pub fn create_worker_thread<F, T: ecs::CustomSystemData + 'static>(default_state: T, callback: F) -> (JoinHandle<()>, usize)
+pub fn create_worker_thread<F, T: ecs::CustomSystemData + 'static>(default_state: T, callback: F) -> (JoinHandle<()>, Bitfield<u32>)
 where
     F: FnOnce() -> ecs::System<T> + 'static + Send,
     T: Sync + Send,
 {
     let system_id = SYSTEM_COUNTER.fetch_add(1, Ordering::Relaxed);
     let builder = std::thread::Builder::new().name(format!("LogicSystemThread '{}'", system_id));
-    let (tx_cbitfield, rx_cbitfield) = std::sync::mpsc::channel::<usize>();
+    let (tx_cbitfield, rx_cbitfield) = std::sync::mpsc::channel::<Bitfield<u32>>();
     // Simple one way channel (MainThread -> Worker Thread)
     let (tx, rx) = std::sync::mpsc::channel::<LogicSystemCommand>();
     let handler = builder
@@ -64,7 +65,7 @@ where
                 let barrier_data = others::barrier::as_ref();
                 // Start the system loop
                 let mut entity_ids: Vec<EntityID> = Vec::new();
-                tx_cbitfield.send(system.c_bitfield).unwrap();
+                tx_cbitfield.send(system.cbitfield).unwrap();
                 let mut pre_loop_buffer: Vec<LogicSystemCommand> = Vec::new();
                 // Wait for the message allowing us to start the loop
                 'ack: loop {
@@ -177,7 +178,6 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             // Remove the entity from the current entity list
             let ptr = {
                 let w = crate::world::world();
-                id.retain(|x| *x != id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
                 let entity = w.ecs_manager.entity(id).unwrap();
                 entity as *const ecs::Entity
             };

@@ -28,42 +28,24 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
         CommandQueryType::Single(s) => vec![s],
         CommandQueryType::Batch(s) => s,
     };
-    // Calculate the system bitfield from an entity component bitfield
-    fn calculate_system_bitfield(world: &crate::world::World, entity_c_bitfield: usize) -> u32 {
-        let mut system_bitfield = 0;
-        for system in world.ecs_manager.systemm.systems.iter() {
-            let valid = is_entity_valid(system.c_bitfield, entity_c_bitfield);
-            if valid {
-                system_bitfield |= system.system_id;
-            }
-        }
-        system_bitfield
-    }
     // Execute the queries
     for query in queries {
         match query.task {
             Task::EntityAdd(mut entity, linkings) => {
-                // Add the components first
+                // Add the entity first
+                let entity_cbitfield = linkings.cbitfield;
+                entity.cbitfield = linkings.cbitfield;
+                let entity_id = world.ecs_manager.add_entity(entity);
+
+                // Nowe add the components
                 let mut hashmap: HashMap<usize, usize> = HashMap::new();
-                for (id, boxed_component) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
-                    let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
-                    hashmap.insert(id, new_global_id);
+                for (cbitfield, boxed) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
+                    let id = world.ecs_manager.add_component(entity_id, boxed, cbitfield).unwrap();
                 }
-                // Set the entity values
-                let entity_cbitfield = linkings.c_bitfield;
-
-                entity.linked_components = hashmap;
-                entity.c_bitfield = entity_cbitfield;
-
-                // Calculate the system bitfield
-                entity.system_bitfield = calculate_system_bitfield(world, entity.c_bitfield);
-
-                // Then add the entity
-                let entity_id = world.ecs_manager.entitym.add_entity(entity);
 
                 // Check the systems where this entity might be valid
-                for system in world.ecs_manager.systemm.systems.iter() {
-                    let valid = is_entity_valid(system.c_bitfield, entity_cbitfield);
+                for system in world.ecs_manager.systems() {
+                    let valid = ecs::system::entity_valid(&entity_cbitfield, system);
                     if valid {
                         crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                     }
@@ -84,33 +66,32 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                     }
                 }
             }
-            Task::EntityRemove(entity_id) => {
+            Task::EntityRemove(id) => {
                 // Check if we even have the entity in the first place
                 // Run the Entity Remove event on the systems
-                println!("Remove entity ID {}", entity_id);
-                let entity = world.ecs_manager.entitym.entity(entity_id).unwrap();
+                println!("Remove entity ID {:?}", id);
+                let entity = world.ecs_manager.entity(id).unwrap();
 
                 // Check the systems where this entity might be valid
                 let valid_systems: Vec<&SystemThreadData> = world
                     .ecs_manager
-                    .systemm
-                    .systems
+                    .systems()
                     .iter()
-                    .filter(|system| is_entity_valid(system.c_bitfield, entity.c_bitfield))
+                    .filter(|system| ecs::system::entity_valid(&entity.cbitfield, system))
                     .collect::<Vec<&SystemThreadData>>();
                 let count = valid_systems.len() as u8;
                 // Send the command to each system
                 for system in valid_systems {
-                    crate::system::send_lsc(LogicSystemCommand::RemoveEntityFromSystem(entity_id), &system.join_handle.thread().id(), receiver);
+                    crate::system::send_lsc(LogicSystemCommand::RemoveEntityFromSystem(id), &system.join_handle.thread().id(), receiver);
                 }
 
                 // Only run the callback if we are not on the main thread
                 if query.thread_id != std::thread::current().id() {
                     // Tell the main callback manager to execute this callback
                     match query.callback_id {
-                        Some(id) => {
+                        Some(callback_id) => {
                             crate::system::send_lsc(
-                                LogicSystemCommand::RunCallback(id, LogicSystemCallbackArguments::EntityRef(entity_id)),
+                                LogicSystemCommand::RunCallback(callback_id, LogicSystemCallbackArguments::EntityRef(id)),
                                 &query.thread_id,
                                 receiver,
                             );
@@ -120,26 +101,24 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 }
 
                 // Now, we must wait until the next frame to actually delete the entity and it's components
-                world.ecs_manager.entitym.entities_to_delete.insert(entity_id, count);
+                world.ecs_manager.set_pending_removal_entity(entity.id, count);
             }
             Task::AddComponentLinkingGroup(entity_id, linkings) => {
                 // Check if there are any components that are already linked to the entity
-                let entity = world.ecs_manager.entitym.entity(entity_id).unwrap();
-                let collision_cbitfield = entity.c_bitfield & linkings.c_bitfield;
-                if collision_cbitfield != 0 {
+                let entity = world.ecs_manager.entity(entity_id).unwrap();
+                if entity.cbitfield.contains(&linkings.cbitfield) {
                     // There was a collision!
                     println!(
                         "The components that had a collision are {:?}",
-                        ecs::registry::get_component_names_cbitfield(collision_cbitfield)
+                        ecs::registry::get_component_names_cbitfield(entity.cbitfield)
                     );
                     return;
                 }
                 // Add the new components onto the entity
-                let mut hashmap: HashMap<usize, usize> = HashMap::new();
-                for (id, boxed_component) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
-                    let new_global_id = world.ecs_manager.componentm.add_component(boxed_component).unwrap();
-                    hashmap.insert(id, new_global_id);
+                for (cbitfield, boxed) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
+                    let id = world.ecs_manager.add_component(entity_id, boxed, cbitfield).unwrap();
                 }
+                /*
                 // Update the components links
                 let old_entity_system_bitfield = entity.system_bitfield;
                 let combined_c_bitfield = entity.c_bitfield | linkings.c_bitfield;
@@ -162,23 +141,13 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                         crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                     }
                 }
+                */
             }
             Task::SetRootVisibility(_) => {}
-            Task::EntityRemovedDecrementCounter(entity_id) => {
-                let counter = {
-                    // One of the systems has safely removed the entity from it's list, so we must decrement the counter
-                    let counter = world.ecs_manager.entitym.entities_to_delete.get_mut(&entity_id).unwrap();
-                    *counter -= 1;
-                    *counter
-                };
-                // If the counter has reached 0, we can safely remove the entity
-                if counter == 0 {
-                    // Delete the entity and it's corresponding components
-                    world.ecs_manager.entitym.entities_to_delete.remove(&entity_id);
-                    let entity = world.ecs_manager.entitym.remove_entity(entity_id).unwrap();
-                    for (component_id, global_id) in entity.linked_components {
-                        world.ecs_manager.componentm.remove_component(global_id).unwrap();
-                    }
+            Task::EntityRemovedDecrementCounter(id) => {
+                // Decrement the counter, and if we reached 0, we get a Some of the entity
+                if let Option::Some(entity) = world.ecs_manager.decrement_removal_counter(id) {
+                    let entity = entity.unwrap();
                 }
             }
         }

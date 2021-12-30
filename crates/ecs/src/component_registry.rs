@@ -1,4 +1,4 @@
-use bitfield::BitfieldU32;
+use bitfield::{Bitfield};
 use lazy_static::lazy_static;
 use std::{
     collections::HashMap,
@@ -8,21 +8,21 @@ use std::{
     },
 };
 
-use crate::{bitfield::ComponentBitfield, Component};
+use crate::{Component};
 // Use to keep track of the component IDs
 lazy_static! {
     static ref NEXT_REGISTERED_COMPONENT_ID: AtomicU32 = AtomicU32::new(1);
-    static ref REGISTERED_COMPONENTS: RwLock<HashMap<String, ComponentBitfield>> = RwLock::new(HashMap::new());
+    static ref REGISTERED_COMPONENTS: RwLock<HashMap<String, Bitfield<u32>>> = RwLock::new(HashMap::new());
 }
 
 // Register a specific component
-pub fn register_component<T: Component + Sized>() -> ComponentBitfield {
+pub fn register_component<T: Component + Sized>() -> Bitfield<u32> {
     // Register the component
     let mut rc = REGISTERED_COMPONENTS.write().unwrap();
     // Make a copy of the id before the bit shift
     let id = NEXT_REGISTERED_COMPONENT_ID.load(Ordering::Relaxed);
 
-    let component_id = ComponentBitfield::from_num(id);
+    let component_id = Bitfield::<u32>::from_num(id);
     rc.insert(T::get_component_name(), component_id.clone());
     // Bit shift to the left
     NEXT_REGISTERED_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
@@ -30,7 +30,7 @@ pub fn register_component<T: Component + Sized>() -> ComponentBitfield {
     component_id
 }
 // Get the bitfield ID of a specific component
-pub fn get_component_bitfield<T: Component>() -> ComponentBitfield {
+pub fn get_component_bitfield<T: Component>() -> Bitfield<u32> {
     if is_component_registered::<T>() {
         let rc = REGISTERED_COMPONENTS.read().unwrap();
 
@@ -45,7 +45,7 @@ pub fn is_component_registered<T: Component>() -> bool {
     rc.contains_key(&T::get_component_name())
 }
 // Get multiple component names from a cBitfield
-pub fn get_component_names_cbitfield(cbitfield: ComponentBitfield) -> Vec<String> {
+pub fn get_component_names_cbitfield(cbitfield: Bitfield<u32>) -> Vec<String> {
     let read = REGISTERED_COMPONENTS.read().unwrap();
     let mut component_names = Vec::new();
     for (component_name, id) in (*read).iter() {

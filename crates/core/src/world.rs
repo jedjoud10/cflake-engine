@@ -208,7 +208,7 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Loop threads ran their last frame!");
 
     let mut w = world_mut();
-    let systems = std::mem::take(&mut w.ecs_manager.systemm.systems);
+    let systems = std::mem::take(w.ecs_manager.systems_mut());
     // Tell all the child loop threads to stop
     // Then we join them
     for data in systems {

@@ -1,4 +1,3 @@
-use ecs::EntityManager;
 use rendering::ComputeShaderGPUObject;
 use std::collections::HashMap;
 

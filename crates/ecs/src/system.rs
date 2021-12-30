@@ -1,29 +1,13 @@
 use std::rc::Rc;
+use bitfield::Bitfield;
+use crate::{Component, Entity, SystemThreadData};
 
-use crate::{bitfield::ComponentBitfield, Component, Entity};
-
-#[derive(Default)]
-// Manages the systems, however each system is in it's own thread (For now at least)
-pub struct SystemManager {
-    pub systems: Vec<SystemThreadData>,
-}
-
-// Contains some data about the actual system on the worker thread
-pub struct SystemThreadData {
-    pub system_id: u32,
-    pub join_handle: std::thread::JoinHandle<()>,
-    pub c_bitfield: usize,
-}
-
-impl SystemThreadData {
-    // New
-    pub fn new(system_id: u32, join_handle: std::thread::JoinHandle<()>, c_bitfield: usize) -> Self {
-        Self {
-            system_id,
-            join_handle,
-            c_bitfield,
-        }
-    }
+// Check if an entity is valid to be in a system
+pub fn entity_valid(entity_cbitfield: &Bitfield<u32>, system: &SystemThreadData) -> bool {
+    // Check if the system is a nul type system, and if it is we must not add the entity
+    if system.cbitfield == Bitfield::new() { return false; }
+    // Check the cbitfield
+    system.cbitfield.contains(entity_cbitfield)
 }
 
 // A system event enum
@@ -45,9 +29,7 @@ pub struct System<T>
 where
     T: CustomSystemData,
 {
-    pub cbitfield: ComponentBitfield,
-    pub name: String,
-
+    pub cbitfield: Bitfield<u32>, // Our Component Bitfield
     // Events
     // Control events
     system_prefire: Option<fn(&mut SystemData<T>)>,
@@ -66,8 +48,7 @@ where
     // Create a new system
     pub fn new() -> Self {
         System {
-            cbitfield: ComponentBitfield::default(),
-            name: String::new(),
+            cbitfield: Bitfield::<u32>::default(),
             system_prefire: None,
             system_postfire: None,
             entity_added: None,
