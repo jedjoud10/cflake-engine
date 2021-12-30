@@ -71,8 +71,8 @@ dependencies = [
 
 [[package]]
 name = "bitfield"
-version = "0.1.7"
-source = "git+https://github.com/jedjoud10/bitfield#76eca0b51139408a9e0771786b7103b6693e991f"
+version = "0.1.8"
+source = "git+https://github.com/jedjoud10/bitfield#29c75116a2534d227b73aa9e4fea30760eaffd91"
 
 [[package]]
 name = "bitflags"
@@ -138,6 +138,7 @@ dependencies = [
 name = "core"
 version = "0.1.0"
 dependencies = [
+ "ahash",
  "assets",
  "backtrace",
  "bitfield",
@@ -700,9 +701,9 @@ dependencies = [
 
 [[package]]
 name = "ppv-lite86"
-version = "0.2.15"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed0cfbc8191465bed66e1718596ee0b0b35d5ee1f41c5df2189d0fe8bde535ba"
+checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
 name = "proc-macro2"

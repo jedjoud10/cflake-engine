@@ -23,6 +23,7 @@ pub enum Task {
 
 // Excecute a specific task and give back it's result
 pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, receiver: &WorldTaskReceiver) {
+    use ecs::system::entity_valid;
     // We must extract the normal queries from the batch query if needed
     let queries = match query {
         CommandQueryType::Single(s) => vec![s],
@@ -38,15 +39,13 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 let entity_id = world.ecs_manager.add_entity(entity);
 
                 // Nowe add the components
-                let mut hashmap: HashMap<usize, usize> = HashMap::new();
                 for (cbitfield, boxed) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
                     let id = world.ecs_manager.add_component(entity_id, boxed, cbitfield).unwrap();
                 }
 
                 // Check the systems where this entity might be valid
                 for system in world.ecs_manager.systems() {
-                    let valid = ecs::system::entity_valid(&entity_cbitfield, system);
-                    if valid {
+                    if entity_valid(&entity_cbitfield, system) {
                         crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                     }
                 }
@@ -77,7 +76,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                     .ecs_manager
                     .systems()
                     .iter()
-                    .filter(|system| ecs::system::entity_valid(&entity.cbitfield, system))
+                    .filter(|system| entity_valid(&entity.cbitfield, system))
                     .collect::<Vec<&SystemThreadData>>();
                 let count = valid_systems.len() as u8;
                 // Send the command to each system
@@ -106,7 +105,9 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
             Task::AddComponentLinkingGroup(entity_id, linkings) => {
                 // Check if there are any components that are already linked to the entity
                 let entity = world.ecs_manager.entity(entity_id).unwrap();
-                if entity.cbitfield.contains(&linkings.cbitfield) {
+                let new = linkings.cbitfield;
+                let old = entity.cbitfield;
+                if old.contains(&new) {
                     // There was a collision!
                     println!(
                         "The components that had a collision are {:?}",
@@ -118,6 +119,18 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 for (cbitfield, boxed) in linkings.linked_components.into_iter().sorted_by(|(a, _), (b, _)| Ord::cmp(a, b)) {
                     let id = world.ecs_manager.add_component(entity_id, boxed, cbitfield).unwrap();
                 }
+
+                // Update the entity
+                let entity = world.ecs_manager.entity_mut(entity_id).unwrap();
+                entity.cbitfield = new;
+
+                // Check the systems so we can add the entity if it became valid for them                
+                for system in world.ecs_manager.systems() {
+                    if entity_valid(&new, system) && !entity_valid(&old, system) {
+                        crate::system::send_lsc(LogicSystemCommand::RemoveEntityFromSystem(entity_id), &system.join_handle.thread().id(), receiver);
+                    }
+                }
+                
                 /*
                 // Update the components links
                 let old_entity_system_bitfield = entity.system_bitfield;

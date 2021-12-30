@@ -29,6 +29,7 @@ impl ECSManager {
     pub fn add_entity(&mut self, mut entity: Entity) -> EntityID {
         // Create a new EntityID for this entity
         let entity_id = EntityID::new(self.entities.len() as u16);
+        println!("Created entity with ID: {:?}", entity.id);
         entity.id = entity_id;
         // Add the entity
         self.entities.push(entity);
@@ -68,6 +69,7 @@ impl ECSManager {
     {
         // Create a new Component ID from an Entity ID
         let id = ComponentID::new(id, cbitfield);
+        println!("Created component with ID: {:?}", id);
         self.components.insert(id, boxed);
         Ok(id)
     }

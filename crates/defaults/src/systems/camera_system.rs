@@ -77,6 +77,8 @@ fn entity_added(data: &mut SystemData<()>, entity: &ecs::Entity) {
             // We can now update the camera
             let camera = core::global::ecs::component_mut::<crate::components::Camera>(entity).unwrap();
             camera.update_projection_matrix();
+            // If it is the first camera in the world, we must set it as the main camera
+            core::global::main::world_data_mut(|x| x.main_camera_entity_id = Some(entity.id));
         }))
         .create(),
     );

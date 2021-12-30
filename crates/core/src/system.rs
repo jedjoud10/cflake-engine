@@ -2,6 +2,7 @@ use crate::batch::{BatchCommandQuery, BatchManager};
 use crate::command::CommandQueryResult;
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
+use ahash::AHashSet;
 use bitfield::Bitfield;
 use ecs::{CustomSystemData, SystemData, EntityID};
 use lazy_static::lazy_static;
@@ -64,7 +65,7 @@ where
                 println!("Hello from '{}'!", std::thread::current().name().unwrap());
                 let barrier_data = others::barrier::as_ref();
                 // Start the system loop
-                let mut entity_ids: Vec<EntityID> = Vec::new();
+                let mut entity_ids: AHashSet<EntityID> = AHashSet::new();
                 tx_cbitfield.send(system.cbitfield).unwrap();
                 let mut pre_loop_buffer: Vec<LogicSystemCommand> = Vec::new();
                 // Wait for the message allowing us to start the loop
@@ -157,7 +158,7 @@ where
 }
 
 // Execute a logic system command
-fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<EntityID>, system: &mut ecs::System<T>, shared: &mut SystemData<T>) {
+fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut AHashSet<EntityID>, system: &mut ecs::System<T>, shared: &mut SystemData<T>) {
     match lsc {
         LogicSystemCommand::RunCallback(id, result_data) => {
             // We will run this when we run the local callbacks!
@@ -170,7 +171,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
                 let entity = w.ecs_manager.entity(id).unwrap();
                 entity as *const ecs::Entity
             };
-            entity_ids.push(id);
+            entity_ids.insert(id);
             let entity = unsafe { ptr.as_ref().unwrap() };
             system.add_entity(shared, entity);
         }
@@ -183,6 +184,7 @@ fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids
             };
             let entity = unsafe { ptr.as_ref().unwrap() };
             system.remove_entity(shared, entity);
+            entity_ids.remove(&id);
             // The main thread does not know that we have deleted the entity from this entity, so we must decrement the counter
             crate::command::CommandQueryResult::new(crate::tasks::Task::EntityRemovedDecrementCounter(id)).send();
         }

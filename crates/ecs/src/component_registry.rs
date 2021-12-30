@@ -26,16 +26,18 @@ pub fn register_component<T: Component + Sized>() -> Bitfield<u32> {
     rc.insert(T::get_component_name(), component_id.clone());
     // Bit shift to the left
     NEXT_REGISTERED_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
+    println!("{} {}", T::get_component_name(), component_id);
     // Return the component ID before the bit shift
     component_id
 }
 // Get the bitfield ID of a specific component
 pub fn get_component_bitfield<T: Component>() -> Bitfield<u32> {
     if is_component_registered::<T>() {
+        // Simple read
         let rc = REGISTERED_COMPONENTS.read().unwrap();
-
         rc[&T::get_component_name()].clone()
     } else {
+        // Register if it wasn't registered yet
         register_component::<T>()
     }
 }
