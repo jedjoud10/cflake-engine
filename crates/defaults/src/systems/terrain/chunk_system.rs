@@ -75,7 +75,6 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
                     let result = core::global::ecs::entity_remove(entity_id);
                     data.chunks_to_delete.insert(entity_id);
                     data.deleted_chunks_descending.insert(entity_id);
-                    println!("Remove chunk with entity ID {}", entity_id);
                     core::global::batch::batch_add(1, result);
                 }
             }
