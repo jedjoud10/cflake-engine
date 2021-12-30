@@ -5,16 +5,17 @@ pub mod ecs {
     use crate::command::*;
     use crate::tasks::*;
     use ecs::Component;
+    use ecs::identifiers::EntityID;
     /* #region Entities */
     // Get an entity using it's global ID
-    pub fn entity(entity_id: usize) -> Option<ecs::Entity> {
+    pub fn entity(id: EntityID) ->  Result<ecs::Entity, ecs::EntityError> {
         let w = crate::world::world();
-        w.ecs_manager.entitym.entity(entity_id).cloned()
+        w.ecs_manager.entity(id).map(|x| x.clone())
     }
     // Entity mut callback. We run this callback at the end of the frame with a world_mut environment
-    pub fn entity_mut(entity_id: usize, callback_id: u64) {
+    pub fn entity_mut(id: EntityID, callback_id: u64) {
         // Create a local callback
-        let args = crate::callbacks::LogicSystemCallbackArguments::EntityMut(entity_id);
+        let args = crate::callbacks::LogicSystemCallbackArguments::EntityMut(id);
         crate::callbacks::buffer_callback_execution(callback_id, args);
     }
     // Add an entity without any linking groups
@@ -33,39 +34,31 @@ pub mod ecs {
     /* #endregion */
     /* #region Components */
     // Get a component
-    pub fn component<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Result<&'a T, ecs::ECSError> {
-        // Get the corresponding global component ID from the entity
-        let global_id = entity
-            .linked_components
-            .get(&T::get_component_id())
-            .ok_or(ecs::ECSError::new_str("Could not get linked component on entity"))?;
+    pub fn component<'a, T: Component + 'static>(entity: &'a ecs::Entity) -> Result<&'a T, ecs::ComponentError> {
         // Get the world using it's RwLock
         let w = crate::world::world();
-        let componentm = &w.ecs_manager.componentm;
-        let component = componentm.get_component::<T>(*global_id)?;
+        // Create a component ID
+        let id = ecs::ComponentID::new::<T>(entity.id);
+        let component = w.ecs_manager.get_component::<T>(id)?;
         let component_ = component as *const T;
         let component = unsafe { &*component_ };
         Ok(component)
     }
     // Get a component mutably. However, we can only run this if we are in a EntityMutCallback callback
-    pub fn component_mut<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Result<&'a mut T, ecs::ECSError> {
-        // Get the corresponding global component ID from the entity
-        let global_id = entity
-            .linked_components
-            .get(&T::get_component_id())
-            .ok_or(ecs::ECSError::new_str("Could not get linked component on entity"))?;
+    pub fn component_mut<'a, T: Component + 'static>(entity: &'a mut ecs::Entity) -> Result<&'a mut T, ecs::ComponentError> {
         // Get the world using it's RwLock
-        let mut w = crate::world::world_mut();
-        let componentm = &mut w.ecs_manager.componentm;
-        let component = componentm.get_component_mut::<T>(*global_id)?;
-        let component_ = component as *mut T;
+        let w = crate::world::world();
+        // Create a component ID
+        let id = ecs::ComponentID::new::<T>(entity.id);
+        let component = w.ecs_manager.get_component_mut::<T>(id)?;
+        let component_ = component as *const T;
         let component = unsafe { &mut *component_ };
         Ok(component)
     }
     // Manually add a component linking group to an already existing entity
     // If some components collide, we will panic
-    pub fn link_components(entity_id: usize, linkings: ecs::ComponentLinkingGroup) -> CommandQueryResult {
-        CommandQueryResult::new(Task::AddComponentLinkingGroup(entity_id, linkings))
+    pub fn link_components(id: EntityID, linkings: ecs::ComponentLinkingGroup) -> CommandQueryResult {
+        CommandQueryResult::new(Task::AddComponentLinkingGroup(id, linkings))
     }
     /* #endregion */
     /* #region Systems */

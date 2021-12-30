@@ -1,4 +1,4 @@
-use ecs::SystemData;
+use ecs::{SystemData, identifiers::EntityID};
 use lazy_static::lazy_static;
 use others::callbacks::*;
 use std::{
@@ -86,10 +86,10 @@ pub fn execute_local_callbacks() {
             CallbackType::EntityCreatedCallback(x) => {
                 let callback = x.callback;
                 // Make sure this callback is the EntityRef one
-                if let LogicSystemCallbackArguments::EntityRef(entity_id) = arguments {
+                if let LogicSystemCallbackArguments::EntityRef(id) = arguments {
                     let cloned_entity = {
                         let w = crate::world::world();
-                        w.ecs_manager.entitym.entity(entity_id).cloned().unwrap()
+                        w.ecs_manager.entity(id).unwrap().clone()
                     };
                     (callback)(&cloned_entity);
                 }
@@ -101,13 +101,13 @@ pub fn execute_local_callbacks() {
                     let callback = entity_callback.callback;
                     let mut cloned_entity = {
                         let w = crate::world::world();
-                        w.ecs_manager.entitym.entity(entity_id).cloned().unwrap()
+                        w.ecs_manager.entity(entity_id).unwrap().clone()
                     };
                     // We must NOT have world() or world_mut() locked when executing these types of callbacks
                     (callback)(&mut cloned_entity);
                     // Update the value in the world
                     let mut w = crate::world::world_mut();
-                    let entity = w.ecs_manager.entitym.entity_mut(entity_id).unwrap();
+                    let entity = w.ecs_manager.entity_mut(entity_id).unwrap();
                     *entity = cloned_entity;
                 }
             }
@@ -119,8 +119,8 @@ pub fn execute_local_callbacks() {
 #[derive(Clone)]
 pub enum LogicSystemCallbackArguments {
     // Entity
-    EntityRef(usize),
-    EntityMut(usize),
+    EntityRef(EntityID),
+    EntityMut(EntityID),
     // Rendering
     RenderingCommanGPUObject((rendering::GPUObject, rendering::GPUObjectID)),
     RenderingCommanExecution,

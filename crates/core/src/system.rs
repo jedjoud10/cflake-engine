@@ -2,7 +2,7 @@ use crate::batch::{BatchCommandQuery, BatchManager};
 use crate::command::CommandQueryResult;
 use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
-use ecs::{CustomSystemData, SystemData};
+use ecs::{CustomSystemData, SystemData, EntityID};
 use lazy_static::lazy_static;
 use others::callbacks::MutCallback;
 use std::cell::{Cell, RefCell};
@@ -16,8 +16,8 @@ use std::thread::JoinHandle;
 pub enum LogicSystemCommand {
     StartSystemLoop,
     RunCallback(u64, LogicSystemCallbackArguments),
-    AddEntityToSystem(usize),
-    RemoveEntityFromSystem(usize),
+    AddEntityToSystem(EntityID),
+    RemoveEntityFromSystem(id),
 }
 
 lazy_static! {
@@ -63,7 +63,7 @@ where
                 println!("Hello from '{}'!", std::thread::current().name().unwrap());
                 let barrier_data = others::barrier::as_ref();
                 // Start the system loop
-                let mut entity_ids: Vec<usize> = Vec::new();
+                let mut entity_ids: Vec<EntityID> = Vec::new();
                 tx_cbitfield.send(system.c_bitfield).unwrap();
                 let mut pre_loop_buffer: Vec<LogicSystemCommand> = Vec::new();
                 // Wait for the message allowing us to start the loop
@@ -96,7 +96,7 @@ where
                         let entities = entity_ids
                             .iter()
                             .map(|x| {
-                                let entity = w.ecs_manager.entitym.entity(*x).unwrap();
+                                let entity = w.ecs_manager.entity(*x).unwrap();
                                 entity as *const ecs::Entity
                             })
                             .collect::<Vec<*const ecs::Entity>>();
@@ -123,11 +123,6 @@ where
                             logic_system_command(lsc, &mut entity_ids, &mut system, &mut shared);
                         }
                         Err(_) => {}
-                    }
-
-                    // Print the system frame stats
-                    if system.show_stats {
-                        println!("Took {}ms to execute system '{:.2}'", system.name, i.elapsed().as_secs_f32() * 1000.0);
                     }
 
                     // Very very end of the frame
@@ -161,35 +156,35 @@ where
 }
 
 // Execute a logic system command
-fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<usize>, system: &mut ecs::System<T>, shared: &mut SystemData<T>) {
+fn logic_system_command<T: CustomSystemData>(lsc: LogicSystemCommand, entity_ids: &mut Vec<EntityID>, system: &mut ecs::System<T>, shared: &mut SystemData<T>) {
     match lsc {
         LogicSystemCommand::RunCallback(id, result_data) => {
             // We will run this when we run the local callbacks!
             crate::callbacks::buffer_callback_execution(id, result_data);
         }
-        LogicSystemCommand::AddEntityToSystem(entity_id) => {
+        LogicSystemCommand::AddEntityToSystem(id) => {
             // Add the entity to the current entity list
             let ptr = {
                 let w = crate::world::world();
-                let entity = w.ecs_manager.entitym.entity(entity_id).unwrap();
+                let entity = w.ecs_manager.entity(id).unwrap();
                 entity as *const ecs::Entity
             };
-            entity_ids.push(entity_id);
+            entity_ids.push(id);
             let entity = unsafe { ptr.as_ref().unwrap() };
             system.add_entity(shared, entity);
         }
-        LogicSystemCommand::RemoveEntityFromSystem(entity_id) => {
+        LogicSystemCommand::RemoveEntityFromSystem(id) => {
             // Remove the entity from the current entity list
             let ptr = {
                 let w = crate::world::world();
-                entity_ids.retain(|x| *x != entity_id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
-                let entity = w.ecs_manager.entitym.entity(entity_id).unwrap();
+                id.retain(|x| *x != id); // We know that there is a unique entity ID in here, so no need to worry about duplicates
+                let entity = w.ecs_manager.entity(id).unwrap();
                 entity as *const ecs::Entity
             };
             let entity = unsafe { ptr.as_ref().unwrap() };
             system.remove_entity(shared, entity);
             // The main thread does not know that we have deleted the entity from this entity, so we must decrement the counter
-            crate::command::CommandQueryResult::new(crate::tasks::Task::EntityRemovedDecrementCounter(entity_id)).send();
+            crate::command::CommandQueryResult::new(crate::tasks::Task::EntityRemovedDecrementCounter(id)).send();
         }
         LogicSystemCommand::StartSystemLoop => { /* How the fuck */ }
     }

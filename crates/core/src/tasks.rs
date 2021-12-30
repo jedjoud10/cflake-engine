@@ -1,4 +1,4 @@
-use ecs::SystemThreadData;
+use ecs::{SystemThreadData, EntityID};
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU8;
@@ -13,10 +13,10 @@ use crate::system::LogicSystemCommand;
 pub enum Task {
     // Entity
     EntityAdd(ecs::Entity, ecs::ComponentLinkingGroup),
-    EntityRemove(usize),
-    EntityRemovedDecrementCounter(usize),
+    EntityRemove(EntityID),
+    EntityRemovedDecrementCounter(EntityID),
     // Directly add a component linking group to an already existing entity
-    AddComponentLinkingGroup(usize, ecs::ComponentLinkingGroup),
+    AddComponentLinkingGroup(EntityID, ecs::ComponentLinkingGroup),
     // UI
     SetRootVisibility(bool),
 }
@@ -28,20 +28,6 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
         CommandQueryType::Single(s) => vec![s],
         CommandQueryType::Batch(s) => s,
     };
-    // Check if a specified entity fits the criteria to be in a specific system
-    fn is_entity_valid(system_c_bitfield: usize, entity_c_bitfield: usize) -> bool {
-        // Component Bitfield Test
-        // entity:  100001 -> 011110
-        // system1: 001001 -> 001001 -> 001000 -> INVALID
-        // system2: 100000 -> 100010 -> 000010 -> VALID
-        // Check if the system matches the component ID of the entity
-        let bitfield: usize = system_c_bitfield & !entity_c_bitfield;
-        // If the entity is valid, all the bits would be 0
-        let entity_valid = bitfield == 0;
-        // If the systems has no components to it, we must not link the entity
-        let system_valid = system_c_bitfield != 0;
-        entity_valid && system_valid
-    }
     // Calculate the system bitfield from an entity component bitfield
     fn calculate_system_bitfield(world: &crate::world::World, entity_c_bitfield: usize) -> u32 {
         let mut system_bitfield = 0;

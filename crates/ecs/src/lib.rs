@@ -9,6 +9,7 @@ mod linking;
 mod macros;
 mod manager;
 mod system;
+pub use identifiers::*;
 pub use component::*;
 pub use component_registry as registry;
 pub use entity::*;
