@@ -2,7 +2,7 @@ use crate::{
     identifiers::{ComponentID, EntityID},
     Component, ComponentError, Entity, EntityError,
 };
-use fnv::{FnvHashMap, FnvHashSet};
+use fnv::{FnvHashMap};
 use std::any::Any;
 
 // The Entity Component System manager that will handle everything ECS related

@@ -1,10 +1,5 @@
 use std::{
-    any::Any,
     rc::Rc,
-    sync::{
-        atomic::{AtomicPtr, Ordering},
-        Arc,
-    },
 };
 
 use crate::{bitfield::ComponentBitfield, Component, Entity};

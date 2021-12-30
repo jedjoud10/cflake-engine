@@ -10,7 +10,7 @@ pub struct EntityError {
 
 impl EntityError {
     pub fn new(msg: String, id: EntityID) -> Self {
-        Self { details: msg.to_string(), id }
+        Self { details: msg, id }
     }
 }
 
@@ -35,7 +35,7 @@ pub struct ComponentError {
 
 impl ComponentError {
     pub fn new(msg: String, id: ComponentID) -> Self {
-        Self { details: msg.to_string(), id }
+        Self { details: msg, id }
     }
 }
 
@@ -59,7 +59,7 @@ pub struct ComponentLinkingError {
 
 impl ComponentLinkingError {
     pub fn new(msg: String) -> Self {
-        Self { details: msg.to_string() }
+        Self { details: msg }
     }
 }
 

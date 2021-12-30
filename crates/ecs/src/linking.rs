@@ -1,7 +1,7 @@
 use fnv::FnvHashMap;
 
 use crate::{bitfield::ComponentBitfield, identifiers::ComponentID, Component, ComponentLinkingError};
-use std::collections::HashMap;
+
 
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 pub struct ComponentLinkingGroup {

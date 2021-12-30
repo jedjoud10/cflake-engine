@@ -35,8 +35,8 @@ pub fn register_component<T: Component + Sized>() -> ComponentBitfield {
 pub fn get_component_bitfield<T: Component>() -> ComponentBitfield {
     if is_component_registered::<T>() {
         let rc = REGISTERED_COMPONENTS.read().unwrap();
-        let value = rc[&T::get_component_name()].clone();
-        value
+        
+        rc[&T::get_component_name()].clone()
     } else {
         register_component::<T>()
     }
