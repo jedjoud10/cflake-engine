@@ -4,7 +4,7 @@ use crate::communication::{WorldTaskReceiver, RECEIVER};
 use crate::global::callbacks::{CallbackType, LogicSystemCallbackArguments};
 use ahash::AHashSet;
 use bitfield::Bitfield;
-use ecs::{CustomSystemData, SystemData, EntityID};
+use ecs::{CustomSystemData, EntityID, SystemData};
 use lazy_static::lazy_static;
 use others::callbacks::MutCallback;
 use std::cell::{Cell, RefCell};

@@ -14,7 +14,7 @@ impl ComponentLinkingGroup {
     pub fn new() -> Self {
         Self {
             linked_components: AHashMap::new(),
-            cbitfield:  Bitfield::<u32>::default(),
+            cbitfield: Bitfield::<u32>::default(),
         }
     }
     // Link a component to this entity and automatically set it to the default variable

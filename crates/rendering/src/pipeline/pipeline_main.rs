@@ -31,10 +31,10 @@ pub mod pipec {
     use crate::pipeline::batch_command::BatchRenderCommandQueryResult;
     use crate::pipeline::buffer::PipelineBuffer;
     use crate::pipeline::{buffer, object::*};
+    pub use crate::RenderTask;
     use crate::{
         is_render_thread, GPUObjectID, Material, Model, PipelineStartData, RenderCommandQuery, RenderCommandQueryResult, Shader, SubShader, Texture, RENDER_COMMAND_SENDER,
     };
-    pub use crate::{RenderTask};
     // Start the render pipeline by initializing OpenGL on the new render thread (Ran on the main thread)
     pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
         crate::pipeline::init_pipeline(glfw, window)

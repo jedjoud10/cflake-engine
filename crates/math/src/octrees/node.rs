@@ -1,5 +1,5 @@
-use std::hash::Hash;
 use ordered_vec::ordered_vec::OrderedVec;
+use std::hash::Hash;
 
 use crate::bounds::AABB;
 

@@ -1,4 +1,4 @@
-use ecs::{SystemData, identifiers::EntityID};
+use ecs::{identifiers::EntityID, SystemData};
 use lazy_static::lazy_static;
 use others::callbacks::*;
 use std::{

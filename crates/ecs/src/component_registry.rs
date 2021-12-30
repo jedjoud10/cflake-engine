@@ -1,4 +1,4 @@
-use bitfield::{Bitfield};
+use bitfield::Bitfield;
 use lazy_static::lazy_static;
 use std::{
     collections::HashMap,
@@ -8,7 +8,7 @@ use std::{
     },
 };
 
-use crate::{Component};
+use crate::Component;
 // Use to keep track of the component IDs
 lazy_static! {
     static ref NEXT_REGISTERED_COMPONENT_ID: AtomicU32 = AtomicU32::new(1);

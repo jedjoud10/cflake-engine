@@ -14,7 +14,7 @@ use super::async_command_data::AsyncGPUCommandData;
 // A simple Buffer containing the GPU objects that have been generated on the pipeline thread
 #[derive(Default)]
 pub struct PipelineBuffer {
-    pub gpuobjects: OrderedVec<GPUObject>,                                       // GPU objects
+    pub gpuobjects: OrderedVec<GPUObject>,                                      // GPU objects
     pub callback_objects: HashMap<u64, (Option<usize>, std::thread::ThreadId)>, // Callback ID to option GPUObject index
     pub names_to_id: HashMap<String, usize>,                                    // Names to GPUObject index
     pub renderers: HashSet<GPUObjectID>,                                        // Renderers

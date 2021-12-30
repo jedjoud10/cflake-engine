@@ -43,23 +43,22 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
         if let Option::Some(camera_id) = core::global::main::world_data().main_camera_entity_id {
             let camera = core::global::ecs::entity(camera_id).unwrap();
             let camera_transform = core::global::ecs::component::<crate::components::Transform>(&camera).unwrap();
-            camera_transform.position           
+            camera_transform.position
         } else {
             veclib::Vector3::default()
         }
-    };    
+    };
 
     // We are only allowed to update the octree in 2 conditions
     // 1. We do not have any current chunks, so we must initialize the octree
     // 2. We do not have any chunks that are waiting to become validated AND we do not have any chunks to delete
     let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty() && data.deleted_chunks_descending.is_empty();
     let valid = data.chunks.is_empty() || validity_test;
-    if valid && core::global::input::map_toggled("toggle_terrain_gen") { 
+    if valid && core::global::input::map_toggled("toggle_terrain_gen") {
         // Update the octree
         let octree = &mut data.octree;
         let octree_size = octree.internal_octree.size;
         if let Option::Some((mut added, removed, total)) = octree.generate_incremental_octree(&camera_pos, terrain::DEFAULT_LOD_FACTOR) {
-            
             // Do a bit of filtering on the added nodes
             added.retain(|node| node.children_indices.is_none() && math::Intersection::csgtree_aabb(&data.csgtree, &node.get_aabb()));
             // Add the chunks into the world
@@ -85,8 +84,6 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
                 }
             }
         }
-
-        
     }
 
     // If we are done generating the chunks, we can safely remove the old chunks
@@ -126,9 +123,11 @@ fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
 // We have removed a Chunk, we must remove it's corresponding data from our internal states as well
 fn entity_removed(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
     // Remove this chunk from our total chunks
-    let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();    
+    let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
     if data.deleted_chunks_descending.remove(&entity.id) {
-    } else { panic!() }
+    } else {
+        panic!()
+    }
 }
 
 // Create the Chunk Manager system

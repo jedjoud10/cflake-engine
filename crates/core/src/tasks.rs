@@ -1,4 +1,4 @@
-use ecs::{SystemThreadData, EntityID};
+use ecs::{EntityID, SystemThreadData};
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU8;
@@ -125,13 +125,13 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 let entity = world.ecs_manager.entity_mut(entity_id).unwrap();
                 entity.cbitfield = new;
 
-                // Check the systems so we can add the entity if it became valid for them                
+                // Check the systems so we can add the entity if it became valid for them
                 for system in world.ecs_manager.systems() {
                     if entity_valid(&new, system) && !entity_valid(&old, system) {
                         crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                     }
                 }
-                
+
                 /*
                 // Update the components links
                 let old_entity_system_bitfield = entity.system_bitfield;

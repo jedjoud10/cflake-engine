@@ -10,10 +10,10 @@ use std::any::Any;
 // The Entity Component System manager that will handle everything ECS related
 #[derive(Default)]
 pub struct ECSManager {
-    entities: OrderedVec<Entity>,                                                 // A vector full of entities. Each entity can get invalidated, but never deleted
+    entities: OrderedVec<Entity>,                                        // A vector full of entities. Each entity can get invalidated, but never deleted
     pending_removal_entities: AHashMap<EntityID, u8>,                    // A hashmap of the entities that we must remove, eventually
     components: AHashMap<ComponentID, Box<dyn Component + Sync + Send>>, // The components that are valid in the world
-    systems: Vec<SystemThreadData>,                                        // Each system, stored in the order they were created
+    systems: Vec<SystemThreadData>,                                      // Each system, stored in the order they were created
 }
 // Global code for the Entities, Components, and Systems
 impl ECSManager {
@@ -53,7 +53,9 @@ impl ECSManager {
                 key.entity_id != id
             });
             Some(removed_entity)
-        } else { None }
+        } else {
+            None
+        }
     }
     // Remove an entity from the manager, and return it's value
     fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
@@ -66,8 +68,7 @@ impl ECSManager {
     /* #endregion */
     /* #region Components */
     // Add a specific linked componment to the component manager. Return the said component's ID
-    pub fn add_component(&mut self, id: EntityID, boxed: Box<dyn Component + Send + Sync>, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError>
-    {
+    pub fn add_component(&mut self, id: EntityID, boxed: Box<dyn Component + Send + Sync>, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
         // Create a new Component ID from an Entity ID
         let id = ComponentID::new(id, cbitfield);
         self.components.insert(id, boxed);
@@ -138,11 +139,10 @@ impl ECSManager {
     // Get a reference to the ecsmanager's systems.
     pub fn systems(&self) -> &[SystemThreadData] {
         self.systems.as_ref()
-    }    
+    }
     // Get a mutable reference to the ecsmanager's systems.
     pub fn systems_mut(&mut self) -> &mut Vec<SystemThreadData> {
         &mut self.systems
     }
     /* #endregion */
-
 }

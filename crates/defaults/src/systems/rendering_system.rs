@@ -1,7 +1,7 @@
 use core::global::{self, callbacks::CallbackType::*};
 use std::collections::{HashMap, HashSet};
 
-use ecs::{SystemData, SystemEventType, EntityID};
+use ecs::{EntityID, SystemData, SystemEventType};
 use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 use rendering::RendererFlags;
 // An improved multithreaded rendering system
@@ -59,10 +59,7 @@ fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     if transform.update_frame_id != renderer.update_frame_id {
         match renderer.internal_renderer.index {
             Some(index) => {
-                rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(
-                    index,
-                    transform.calculate_matrix(),
-                ));
+                rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(index, transform.calculate_matrix()));
             }
             None => {}
         }
@@ -72,7 +69,9 @@ fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
 fn system_prefire(data: &mut SystemData<RenderingSystem>) {
     // Only do this if we have a valid main camera entity
     let camera_id = global::main::world_data().main_camera_entity_id;
-    if camera_id.is_none() { return; }
+    if camera_id.is_none() {
+        return;
+    }
     // Camera data
     let camera = global::ecs::entity(camera_id.unwrap()).unwrap();
     let camera_data = global::ecs::component::<crate::components::Camera>(&camera).unwrap();

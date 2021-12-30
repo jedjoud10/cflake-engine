@@ -255,7 +255,13 @@ pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUO
         // Compute
         RenderTask::ComputeRun(id, axii, compute_tasks, uniforms_group) => (None, Some(object_creation::run_compute(buf, id, axii, compute_tasks, uniforms_group))),
         // Others
-        RenderTask::WindowUpdateFullscreen(_) | RenderTask::WindowUpdateVSync(_) | RenderTask::WindowUpdateSize(_) | RenderTask::CameraDataUpdate(_) | RenderTask::RendererAdd(_) | RenderTask::RendererRemove(_) | RenderTask::RendererUpdateTransform(_, _) => (None, None),
+        RenderTask::WindowUpdateFullscreen(_)
+        | RenderTask::WindowUpdateVSync(_)
+        | RenderTask::WindowUpdateSize(_)
+        | RenderTask::CameraDataUpdate(_)
+        | RenderTask::RendererAdd(_)
+        | RenderTask::RendererRemove(_)
+        | RenderTask::RendererUpdateTransform(_, _) => (None, None),
     }
 }
 

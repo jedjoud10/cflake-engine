@@ -1,11 +1,13 @@
-use std::rc::Rc;
-use bitfield::Bitfield;
 use crate::{Component, Entity, SystemThreadData};
+use bitfield::Bitfield;
+use std::rc::Rc;
 
 // Check if an entity is valid to be in a system
 pub fn entity_valid(entity_cbitfield: &Bitfield<u32>, system: &SystemThreadData) -> bool {
     // Check if the system is a nul type system, and if it is we must not add the entity
-    if system.cbitfield == Bitfield::new() { return false; }
+    if system.cbitfield == Bitfield::new() {
+        return false;
+    }
     // Check the cbitfield
     system.cbitfield.contains(entity_cbitfield)
 }

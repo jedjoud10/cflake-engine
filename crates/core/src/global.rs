@@ -4,11 +4,11 @@
 pub mod ecs {
     use crate::command::*;
     use crate::tasks::*;
-    use ecs::Component;
     use ecs::identifiers::EntityID;
+    use ecs::Component;
     /* #region Entities */
     // Get an entity using it's global ID
-    pub fn entity(id: EntityID) ->  Result<ecs::Entity, ecs::EntityError> {
+    pub fn entity(id: EntityID) -> Result<ecs::Entity, ecs::EntityError> {
         let w = crate::world::world();
         w.ecs_manager.entity(id).map(|x| x.clone())
     }

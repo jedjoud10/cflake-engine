@@ -181,11 +181,7 @@ impl AdvancedOctree {
             }
             None => {
                 // Nope, just take the newly generated nodes and get the diff
-                self.internal_octree
-                    .nodes
-                    .iter()
-                    .cloned()
-                    .collect::<HashSet<OctreeNode>>()
+                self.internal_octree.nodes.iter().cloned().collect::<HashSet<OctreeNode>>()
             }
         };
         // The old hashset

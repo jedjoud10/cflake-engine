@@ -1,4 +1,4 @@
-use super::{VoxelGenerationSystem, data::PARALLEL_COMPUTES};
+use super::{data::PARALLEL_COMPUTES, VoxelGenerationSystem};
 use core::global::callbacks::CallbackType;
 use ecs::SystemData;
 use others::callbacks::{MutCallback, NullCallback, OwnedCallback};
@@ -14,12 +14,18 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
     let mut i = 0;
     while i < PARALLEL_COMPUTES && data.pending_chunks.len() > 0 {
         i += 1;
-        // Get a compute shader that is free 
-        let compute = data.computes.iter().enumerate().find_map(|(i, x)| if !x.1 {
-            // We found a free compute shader
-            Some((i, x.0))
-        } else { None });
-        if compute.is_none() { return }
+        // Get a compute shader that is free
+        let compute = data.computes.iter().enumerate().find_map(|(i, x)| {
+            if !x.1 {
+                // We found a free compute shader
+                Some((i, x.0))
+            } else {
+                None
+            }
+        });
+        if compute.is_none() {
+            return;
+        }
         let (compute_index, compute) = compute.unwrap();
         let x = data.computes.get_mut(compute_index).unwrap();
         x.1 = true;
@@ -52,7 +58,7 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         let task1 = ComputeShaderSubTask::TextureFillArray(voxel_texture, std::mem::size_of::<f32>(), voxel_pixels.clone());
         let task2 = ComputeShaderSubTask::TextureFillArray(material_texture, std::mem::size_of::<u8>() * 2, material_pixels.clone());
         let compute_tasks = ComputeShaderSubTasks::new(vec![task1, task2]);
-        // We are generating data on this compute shader        
+        // We are generating data on this compute shader
         let result = pipec::task(pipec::RenderTask::ComputeRun(compute, indices, compute_tasks, group));
         // Callback data that we will pass
         let mut data = data.clone();
