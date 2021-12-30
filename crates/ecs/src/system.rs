@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use crate::{impl_systemdata, ComponentID, Entity};
+use crate::{impl_systemdata, Entity, Component};
 
 #[derive(Default)]
 // Manages the systems, however each system is in it's own thread (For now at least)
@@ -92,7 +92,7 @@ where
     T: CustomSystemData,
 {
     // Add a component to this system's component bitfield id
-    pub fn link<U: ComponentID>(&mut self) {
+    pub fn link<U: Component>(&mut self) {
         let c = crate::registry::get_component_id::<U>();
         self.c_bitfield |= c;
     }

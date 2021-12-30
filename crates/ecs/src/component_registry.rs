@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use crate::{ComponentID, ECSError};
+use crate::{Component};
 // Use to keep track of the component IDs
 lazy_static! {
     static ref NEXT_REGISTERED_COMPONENT_ID: AtomicUsize = AtomicUsize::new(1);
@@ -15,7 +15,7 @@ lazy_static! {
 }
 
 // Register a specific component
-pub fn register_component<T: ComponentID>() -> usize {
+pub fn register_component<T: Component + Sized>() -> usize {
     // Register the component
     let mut rc = REGISTERED_COMPONENTS.write().unwrap();
     let id = NEXT_REGISTERED_COMPONENT_ID.load(Ordering::Relaxed);
@@ -28,7 +28,7 @@ pub fn register_component<T: ComponentID>() -> usize {
     component_id
 }
 // Get the bitfield ID of a specific component
-pub fn get_component_id<T: ComponentID>() -> usize {
+pub fn get_component_id<T: Component>() -> usize {
     if is_component_registered::<T>() {
         let rc = REGISTERED_COMPONENTS.read().unwrap();
         let value = rc[&T::get_component_name()];
@@ -38,7 +38,7 @@ pub fn get_component_id<T: ComponentID>() -> usize {
     }
 }
 // Checks if a specific component is registered
-pub fn is_component_registered<T: ComponentID>() -> bool {
+pub fn is_component_registered<T: Component>() -> bool {
     let rc = REGISTERED_COMPONENTS.read().unwrap();
     rc.contains_key(&T::get_component_name())
 }
