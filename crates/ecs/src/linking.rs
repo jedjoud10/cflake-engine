@@ -29,7 +29,7 @@ impl ComponentLinkingGroup {
     pub fn link<T: Component + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
         let cbitfield = crate::registry::get_component_bitfield::<T>();
         // Check if we have the component linked on this entity
-        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(*cbitfield.bitfield) {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(*cbitfield) {
             // Add the local component to our hashmap
             let boxed = Box::new(default_state);
             e.insert(boxed);
@@ -41,7 +41,7 @@ impl ComponentLinkingGroup {
             )));
         }
         // Add the component's bitfield to the entity's bitfield
-        self.cbitfield.bitfield = self.cbitfield.bitfield.add(&cbitfield.bitfield);
+        self.cbitfield = self.cbitfield.add(&cbitfield);
         Ok(())
     }
 }

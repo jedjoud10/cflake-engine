@@ -22,9 +22,7 @@ pub fn register_component<T: Component + Sized>() -> ComponentBitfield {
     // Make a copy of the id before the bit shift
     let id = NEXT_REGISTERED_COMPONENT_ID.load(Ordering::Relaxed);
 
-    let component_id = ComponentBitfield {
-        bitfield: BitfieldU32::from_num(id),
-    };
+    let component_id = ComponentBitfield::from_num(id);
     rc.insert(T::get_component_name(), component_id.clone());
     // Bit shift to the left
     NEXT_REGISTERED_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
@@ -51,7 +49,7 @@ pub fn get_component_names_cbitfield(cbitfield: ComponentBitfield) -> Vec<String
     let read = REGISTERED_COMPONENTS.read().unwrap();
     let mut component_names = Vec::new();
     for (component_name, id) in (*read).iter() {
-        if cbitfield.bitfield.contains(&id.bitfield) {
+        if cbitfield.contains(&id) {
             component_names.push(component_name.clone());
         }
     }

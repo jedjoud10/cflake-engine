@@ -85,7 +85,7 @@ where
     // Add a component to this system's component bitfield id
     pub fn link<U: Component>(&mut self) {
         let c = crate::registry::get_component_bitfield::<U>();
-        self.cbitfield.bitfield = self.cbitfield.bitfield.add(&c.bitfield);
+        self.cbitfield = self.cbitfield.add(&c);
     }
     // Attach the a specific system event
     pub fn event(&mut self, event: SystemEventType<T>) {

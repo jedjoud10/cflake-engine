@@ -23,7 +23,7 @@ impl ComponentID {
         let component_bitfield = component_registry::get_component_bitfield::<T>();
         Self {
             entity_id: entity_id.index,
-            component_id: *component_bitfield.bitfield,
+            component_id: *component_bitfield,
         }
     }
 }
