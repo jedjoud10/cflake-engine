@@ -11,7 +11,6 @@ use crate::{
 };
 use glfw::Context;
 use lazy_static::lazy_static;
-use others::SmartList;
 use std::{
     borrow::BorrowMut,
     cell::RefCell,

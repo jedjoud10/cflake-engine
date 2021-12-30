@@ -1,4 +1,4 @@
-use others::SmartList;
+use ordered_vec::ordered_vec::OrderedVec;
 use std::{
     collections::{HashMap, HashSet},
     sync::{mpsc::Sender, Mutex},
@@ -14,7 +14,7 @@ use super::async_command_data::AsyncGPUCommandData;
 // A simple Buffer containing the GPU objects that have been generated on the pipeline thread
 #[derive(Default)]
 pub struct PipelineBuffer {
-    pub gpuobjects: SmartList<GPUObject>,                                       // GPU objects
+    pub gpuobjects: OrderedVec<GPUObject>,                                       // GPU objects
     pub callback_objects: HashMap<u64, (Option<usize>, std::thread::ThreadId)>, // Callback ID to option GPUObject index
     pub names_to_id: HashMap<String, usize>,                                    // Names to GPUObject index
     pub renderers: HashSet<GPUObjectID>,                                        // Renderers
@@ -62,7 +62,7 @@ impl PipelineBuffer {
     // Add a GPU object to the buffer, returning it's GPUObjectID
     pub fn add_gpuobject(&mut self, gpuobject: GPUObject, name: Option<String>) -> GPUObjectID {
         // Insert the gpu object
-        let index = self.gpuobjects.add_element(gpuobject);
+        let index = self.gpuobjects.push_shove(gpuobject);
         let id = GPUObjectID { index: Some(index) };
         // If we have a name add it
         match name {
@@ -80,7 +80,7 @@ impl PipelineBuffer {
     }
     // Remove a GPU object from the buffer
     pub fn remove_gpuobject(&mut self, id: GPUObjectID) {
-        self.gpuobjects.remove_element(id.index.unwrap()).unwrap();
+        self.gpuobjects.remove(id.index.unwrap()).unwrap();
     }
     // Add some additional data like callback ID or waitable ID to the GPU object
     pub fn received_new_gpuobject_additional(&mut self, gpuobject_id: Option<GPUObjectID>, callback_id: Option<(u64, std::thread::ThreadId)>) {
@@ -96,32 +96,24 @@ impl PipelineBuffer {
         let index = self.names_to_id.get(name);
         match index {
             Some(index) => {
-                let gpuobject = self.gpuobjects.get_element(*index);
+                let gpuobject = self.gpuobjects.get(*index);
                 // Flatten
-                gpuobject.flatten().cloned()
+                gpuobject.cloned()
             }
             None => None,
         }
     }
     // Get a GPU object using it's GPUObjectID
     pub fn get_gpuobject(&self, id: &GPUObjectID) -> Option<&GPUObject> {
-        self.gpuobjects.get_element(id.index?)?
+        self.gpuobjects.get(id.index?)
     }
     // Get a mutable GPU object using it's GPUObjectId
     pub fn get_gpuobject_mut(&mut self, id: &GPUObjectID) -> Option<&mut GPUObject> {
-        self.gpuobjects.get_element_mut(id.index?)?
+        self.gpuobjects.get_mut(id.index?)
     }
     // Get a GPU object using a ref usize
     pub fn get_gpuobject_usize(&self, index: &usize) -> Option<&GPUObject> {
-        self.gpuobjects.get_element(*index)?
-    }
-    // Get multiple GPU object using a ref usize
-    pub fn get_gpu_object_usize_batch<'a, I>(&self, ids: I) -> Option<Vec<&GPUObject>>
-    where
-        I: Iterator<Item = &'a usize>,
-    {
-        let mut gpuobjects = ids.map(|x| self.gpuobjects.get_element(*x).flatten().unwrap()).collect::<Vec<&GPUObject>>();
-        Some(gpuobjects)
+        self.gpuobjects.get(*index)
     }
 }
 

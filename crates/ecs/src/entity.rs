@@ -9,7 +9,7 @@ pub struct Entity {
 
 // ECS time bois
 impl Entity {
-    // Create a new entity with a name
+    // Create a new default entity
     pub fn new() -> Self {
         Self {
             id: EntityID::new(0),

@@ -1,9 +1,6 @@
 use crate::{pipec, pipeline::object::*, MaterialFlags, Shader, Texture};
 use crate::{texture::*, DataType, GPUObjectID, Material, Window};
-
 use glfw::Context;
-use others::SmartList;
-use std::collections::HashSet;
 use std::ptr::null;
 
 use super::buffer::PipelineBuffer;

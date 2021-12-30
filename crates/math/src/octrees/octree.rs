@@ -1,5 +1,4 @@
-use others::SmartList;
-
+use ordered_vec::ordered_vec::OrderedVec;
 use super::node::OctreeNode;
 
 // A simple octree, no incremental generation what so ever
@@ -8,7 +7,7 @@ pub struct Octree {
     // The target node
     pub target_node: Option<OctreeNode>,
     // The total nodes in the octree
-    pub nodes: SmartList<OctreeNode>,
+    pub nodes: OrderedVec<OctreeNode>,
     // The depth of the tree
     pub depth: u8,
     // The size factor for each node, should be a power of two
@@ -20,7 +19,7 @@ impl Octree {
     pub fn new(depth: u8, size: u64) -> Self {
         Self {
             target_node: None,
-            nodes: SmartList::default(),
+            nodes: OrderedVec::default(),
             size,
             depth,
         }
@@ -46,7 +45,7 @@ impl Octree {
         let mut pending_nodes: Vec<OctreeNode> = Vec::new();
         // The default root node
         pending_nodes.push(root_node.clone());
-        self.nodes.add_element(root_node);
+        self.nodes.push_shove(root_node);
 
         // The targetted node that is specified using the target position
         let mut targetted_node: Option<OctreeNode> = None;
@@ -75,7 +74,7 @@ impl Octree {
         self.target_node = targetted_node;
     }
     // Externally update the octree with nodes and a target node
-    pub fn extern_update(&mut self, target_node: Option<OctreeNode>, nodes: SmartList<OctreeNode>) {
+    pub fn extern_update(&mut self, target_node: Option<OctreeNode>, nodes: OrderedVec<OctreeNode>) {
         self.target_node = target_node;
         self.nodes = nodes;
     }

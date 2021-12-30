@@ -1,5 +1,5 @@
-use others::SmartList;
 use std::hash::Hash;
+use ordered_vec::ordered_vec::OrderedVec;
 
 use crate::bounds::AABB;
 
@@ -51,7 +51,7 @@ impl OctreeNode {
         aabb && self.depth < (max_depth - 1)
     }
     // Recursively find the children for this node
-    pub fn find_children_recursive(&self, nodes: &SmartList<OctreeNode>) -> Vec<OctreeNode> {
+    pub fn find_children_recursive(&self, nodes: &OrderedVec<OctreeNode>) -> Vec<OctreeNode> {
         let mut list: Vec<OctreeNode> = Vec::new();
         let mut pending: Vec<OctreeNode> = vec![self.clone()];
 
@@ -62,7 +62,7 @@ impl OctreeNode {
             match current.children_indices {
                 Some(x) => {
                     // Add them
-                    pending.extend(x.iter().map(|index| nodes.get_element(*index).unwrap().unwrap().clone()));
+                    pending.extend(x.iter().map(|index| nodes.get(*index).unwrap().clone()));
                 }
                 None => {}
             }
@@ -76,7 +76,7 @@ impl OctreeNode {
         list
     }
     // Subdivide this node into 8 smaller nodes
-    pub fn subdivide(&mut self, nodes: &mut SmartList<OctreeNode>) -> Vec<OctreeNode> {
+    pub fn subdivide(&mut self, nodes: &mut OrderedVec<OctreeNode>) -> Vec<OctreeNode> {
         let half_extent = self.half_extent as i64;
         // The outputted nodes
         let mut output: Vec<OctreeNode> = Vec::new();
@@ -93,7 +93,7 @@ impl OctreeNode {
                     let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * half_extent, y * half_extent, z * half_extent);
 
                     // Calculate the child's index
-                    let child_index = nodes.get_next_valid_id();
+                    let child_index = nodes.get_next_idx();
 
                     let child = OctreeNode {
                         position: self.position + offset,
@@ -109,7 +109,7 @@ impl OctreeNode {
                     // Update the indices
                     children_indices[i] = child_index;
                     output.push(child.clone());
-                    nodes.add_element(child);
+                    nodes.push_shove(child);
                     i += 1;
                 }
             }
@@ -119,7 +119,7 @@ impl OctreeNode {
         self.children_indices = Some(children_indices);
 
         // Update the parent node
-        let elm = nodes.get_element_mut(self.index).unwrap().unwrap();
+        let elm = nodes.get_mut(self.index).unwrap();
         elm.children_indices = Some(children_indices);
 
         output

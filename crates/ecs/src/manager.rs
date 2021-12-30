@@ -4,12 +4,13 @@ use crate::{
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
+use ordered_vec::ordered_vec::OrderedVec;
 use std::any::Any;
 
 // The Entity Component System manager that will handle everything ECS related
 #[derive(Default)]
 pub struct ECSManager {
-    entities: Vec<Entity>,                                                 // A vector full of entities. Each entity can get invalidated, but never deleted
+    entities: OrderedVec<Entity>,                                                 // A vector full of entities. Each entity can get invalidated, but never deleted
     pending_removal_entities: AHashMap<EntityID, u8>,                    // A hashmap of the entities that we must remove, eventually
     components: AHashMap<ComponentID, Box<dyn Component + Sync + Send>>, // The components that are valid in the world
     systems: Vec<SystemThreadData>,                                        // Each system, stored in the order they were created
@@ -28,10 +29,10 @@ impl ECSManager {
     // Add an entity to the manager
     pub fn add_entity(&mut self, mut entity: Entity) -> EntityID {
         // Create a new EntityID for this entity
-        let entity_id = EntityID::new(self.entities.len() as u16);
+        let entity_id = EntityID::new(self.entities.get_next_idx() as u16);
         entity.id = entity_id;
         // Add the entity
-        self.entities.push(entity);
+        self.entities.push_shove(entity);
         entity_id
     }
     // Store an entity for removal, and wait until it's specified Linked Systems Counter reaches 0

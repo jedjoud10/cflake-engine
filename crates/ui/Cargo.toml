@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
+ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 others = { path = "../others" }
 fonts = { path = "../fonts" }
 assets = { path = "../assets" }
