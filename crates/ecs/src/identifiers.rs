@@ -1,6 +1,6 @@
 use bitfield::Bitfield;
 
-use crate::{component_registry, Component};
+
 
 // An EntityID that will be used to identify entities
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
