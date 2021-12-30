@@ -29,7 +29,6 @@ impl ECSManager {
     pub fn add_entity(&mut self, mut entity: Entity) -> EntityID {
         // Create a new EntityID for this entity
         let entity_id = EntityID::new(self.entities.len() as u16);
-        println!("Created entity with ID: {:?}", entity.id);
         entity.id = entity_id;
         // Add the entity
         self.entities.push(entity);
@@ -44,6 +43,7 @@ impl ECSManager {
         let count = self.pending_removal_entities.get_mut(&id).unwrap();
         *count -= 1;
         if *count == 0 {
+            self.pending_removal_entities.remove(&id);
             // The counter has reached 0, we must actually remove the entity
             let removed_entity = self.remove_entity(id);
             // And also remove it's components
@@ -69,7 +69,6 @@ impl ECSManager {
     {
         // Create a new Component ID from an Entity ID
         let id = ComponentID::new(id, cbitfield);
-        println!("Created component with ID: {:?}", id);
         self.components.insert(id, boxed);
         Ok(id)
     }

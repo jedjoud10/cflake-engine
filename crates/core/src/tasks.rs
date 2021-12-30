@@ -100,7 +100,8 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 }
 
                 // Now, we must wait until the next frame to actually delete the entity and it's components
-                world.ecs_manager.set_pending_removal_entity(entity.id, count);
+                world.ecs_manager.set_pending_removal_entity(id, count);
+                println!("Start {:?}", id);
             }
             Task::AddComponentLinkingGroup(entity_id, linkings) => {
                 // Check if there are any components that are already linked to the entity
@@ -127,7 +128,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
                 // Check the systems so we can add the entity if it became valid for them                
                 for system in world.ecs_manager.systems() {
                     if entity_valid(&new, system) && !entity_valid(&old, system) {
-                        crate::system::send_lsc(LogicSystemCommand::RemoveEntityFromSystem(entity_id), &system.join_handle.thread().id(), receiver);
+                        crate::system::send_lsc(LogicSystemCommand::AddEntityToSystem(entity_id), &system.join_handle.thread().id(), receiver);
                     }
                 }
                 
@@ -159,6 +160,7 @@ pub fn excecute_query(query: CommandQueryType, world: &mut crate::world::World, 
             Task::SetRootVisibility(_) => {}
             Task::EntityRemovedDecrementCounter(id) => {
                 // Decrement the counter, and if we reached 0, we get a Some of the entity
+                println!("End {:?}", id);
                 if let Option::Some(entity) = world.ecs_manager.decrement_removal_counter(id) {
                     let entity = entity.unwrap();
                 }
