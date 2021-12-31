@@ -33,7 +33,7 @@ fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
                 // Create a renderer with the correct model and materials
                 let renderer = crate::components::Renderer::default()
                     .set_wireframe(true)
-                    .set_fading_animation(true)
+                    .set_fading_animation(false)
                     .set_model(model_id)
                     .set_material(material)
                     .set_shader_uniforms(group);

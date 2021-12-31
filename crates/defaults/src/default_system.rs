@@ -5,9 +5,6 @@ use others::callbacks::{NullCallback, OwnedCallback};
 
 // Some default events
 fn system_prefire(data: &mut SystemData<()>) {
-    if core::global::timings::frame_count() % 3000 == 0 {
-        //std::thread::sleep(std::time::Duration::from_millis(46));
-    }
 }
 // Create the default system
 pub fn system() {

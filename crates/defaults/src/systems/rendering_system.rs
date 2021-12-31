@@ -4,13 +4,9 @@ use std::collections::{HashMap, HashSet};
 use ecs::{EntityID, SystemData, SystemEventType};
 use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
 use rendering::RendererFlags;
-// An improved multithreaded rendering system
-#[derive(Default)]
-struct RenderingSystem;
-ecs::impl_systemdata!(RenderingSystem);
 
 // Create a renderer from an entity
-fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: EntityID, irenderer: &rendering::Renderer, transform: &crate::components::Transform) {
+fn create_renderer(data: &mut SystemData<()>, entity_id: EntityID, irenderer: &rendering::Renderer, transform: &crate::components::Transform) {
     // The entity is pending
     let data = (irenderer.clone(), transform.calculate_matrix());
     let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(data));
@@ -19,10 +15,10 @@ fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: EntityID, 
             global::ecs::entity_mut(
                 entity_id,
                 LocalEntityMut(MutCallback::new(move |entity| {
-                    let mut r = global::ecs::component_mut::<crate::components::Renderer>(entity).unwrap();
-                    // Update the entity's renderer
-                    r.internal_renderer.index = Some(id);
-                    // The entity got it's internal renderer, so it is not pending anymore
+                    if let Ok(x) = global::ecs::component_mut::<crate::components::Renderer>(entity) {
+                        // Update the entity's renderer
+                        x.internal_renderer.index = Some(id);
+                    }
                 }))
                 .create(),
             );
@@ -32,7 +28,7 @@ fn create_renderer(data: &mut SystemData<RenderingSystem>, entity_id: EntityID, 
 }
 
 // Add the renderer in the render pipeline renderer
-fn entity_added(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
+fn entity_added(data: &mut SystemData<()>, entity: &ecs::Entity) {
     // Get the internal renderer
     let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let irenderer = &renderer.internal_renderer;
@@ -42,7 +38,7 @@ fn entity_added(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
     create_renderer(data, entity.id, irenderer, transform);
 }
 // Remove the renderer from the pipeline renderer
-fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
+fn entity_removed(data: &mut SystemData<()>, entity: &ecs::Entity) {
     let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let index = renderer.internal_renderer.index;
     // Check if the renderer was created on the Render Thread first
@@ -51,7 +47,7 @@ fn entity_removed(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) 
     }
 }
 // Send the updated data from the entity to the render pipeline as commands
-fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
+fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
     let renderer = core::global::ecs::component::<crate::components::Renderer>(entity).unwrap();
     let irenderer = &renderer.internal_renderer;
     let transform = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
@@ -68,7 +64,7 @@ fn entity_update(data: &mut SystemData<RenderingSystem>, entity: &ecs::Entity) {
 
 // Create the default system
 pub fn system() {
-    core::global::ecs::add_system(RenderingSystem::default(), || {
+    core::global::ecs::add_system((), || {
         // Create a system
         let mut system = ecs::System::new();
         // Link some components to the system

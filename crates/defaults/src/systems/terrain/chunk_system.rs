@@ -88,13 +88,8 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
 
     // If we are done generating the chunks, we can safely remove the old chunks
     if data.chunks_awaiting_validation.len() == 0 && !data.chunks_to_delete.is_empty() {
-        if data.removal_time == 0.0 { data.removal_time = core::global::timings::elapsed() as f32 }
-        // If the 0.125s have passed we can delete the chunks
-        if (core::global::timings::elapsed() - data.removal_time as f64) > 0.125 {
-            data.removal_time = 0.0;
-            core::global::batch::send_batch(1, false);
-            data.chunks_to_delete.clear();    
-        }
+        core::global::batch::send_batch(1, false);
+        data.chunks_to_delete.clear();    
     }
     //println!("Chunks awaiting validation {}", data.chunks_awaiting_validation.len());
 }

@@ -14,14 +14,28 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
     let mut i = 0;
     while i < PARALLEL_COMPUTES && data.pending_chunks.len() > 0 {
         i += 1;
-        //x.1 = true;
+        // Get a compute shader that is free
+        let compute = data.computes.iter().enumerate().find_map(|(i, x)| {
+            if !x.1 {
+                // We found a free compute shader
+                Some((i, x.0))
+            } else {
+                None
+            }
+        });
+        if compute.is_none() {
+            return;
+        }
+        let (compute_index, compute) = compute.unwrap();
+        let x = data.computes.get_mut(compute_index).unwrap();
+        x.1 = true;
         // We can run the voxel generation logic
         let chunk_coords = data.pending_chunks.remove(0);
+        let testio = core::global::timings::frame_count();
         //println!("Started voxel generation for Chunk {} {}", chunk_coords.center, testio);
         // Set the state
 
         // First pass
-        /*
         let mut group = rendering::ShaderUniformsGroup::new();
         let voxel_texture = *data.voxel_texture.get(compute_index).unwrap();
         let material_texture = *data.material_texture.get(compute_index).unwrap();
@@ -39,19 +53,16 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
         );
         use std::sync::{Arc, Mutex};
         // Create compute sub tasks, that way we can directly fill the textures after the compute shader runs
-        
         let voxel_pixels: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
-        let material_pixels: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));        
+        let material_pixels: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
         let task1 = ComputeShaderSubTask::TextureFillArray(voxel_texture, std::mem::size_of::<f32>(), voxel_pixels.clone());
         let task2 = ComputeShaderSubTask::TextureFillArray(material_texture, std::mem::size_of::<u8>() * 2, material_pixels.clone());
         let compute_tasks = ComputeShaderSubTasks::new(vec![task1, task2]);
         // We are generating data on this compute shader
         let result = pipec::task(pipec::RenderTask::ComputeRun(compute, indices, compute_tasks, group));
-        */
         // Callback data that we will pass
         let mut data = data.clone();
         let i = std::time::Instant::now();
-        /*
         result.with_callback(
             CallbackType::RenderingCommandExecution(NullCallback::new(move || {
                 //println!("Midway through voxel generation for chunk {} {}", chunk_coords.center, testio);
@@ -137,63 +148,6 @@ fn system_prefire(data: &mut SystemData<VoxelGenerationSystem>) {
             }))
             .create(),
         );
-        */
-        // Keep track of the min and max values
-        let mut min = f32::MAX;
-        let mut max = f32::MIN;
-        // Turn the pixels into the data
-        let mut voxel_data: VoxelData = VoxelData {
-            voxels: vec![Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)].into_boxed_slice(),
-        };
-        // If there is no surface, no need to waste time
-        /*
-        let surface = min.signum() != max.signum();
-        if !surface {
-            data.results.insert(chunk_coords, Some(None));
-            /*
-            println!(
-                "Finished voxel generation for Chunk {}, took {}ms (Async {}ms). [NO VALID SURFACE FOUND]",
-                chunk_coords.center,
-                i.elapsed().as_millis(),
-                i1
-            );
-            */
-            // We finished generating data on this compute shader
-            let x = data.computes.get_mut(compute_index).unwrap();
-            x.1 = false;
-            return;
-        };
-        */
-
-        // Flatten using the custom size of MAIN_CHUNK_SIZE+2
-        fn custom_flatten(x: usize, y: usize, z: usize) -> usize {
-            x + (y * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)) + (z * (MAIN_CHUNK_SIZE + 2))
-        }
-        // Calculate the voxel normal
-        for x in 0..(MAIN_CHUNK_SIZE + 1) {
-            for y in 0..(MAIN_CHUNK_SIZE + 1) {
-                for z in 0..(MAIN_CHUNK_SIZE + 1) {
-                    let i = custom_flatten(x, y, z);
-                    // Normal
-                    let voxel = Voxel {
-                        density: y as f32 - 10.0,
-                        normal: veclib::Vector3::default(),
-                        material_id: 0,
-                    };
-                    voxel_data.voxels[terrain::utils::flatten((x, y, z))] = voxel;
-                }
-            }
-        }
-        /*
-        println!(
-            "Finished voxel generation for Chunk {}, took {}ms (Async {}ms)",
-            chunk_coords.center,
-            i.elapsed().as_millis(),
-            i1
-        );
-        */
-        // Tell the main system data that we finished the voxel generation for this specific chunk
-        data.results.insert(chunk_coords, Some(Some(voxel_data)));
     }
 }
 

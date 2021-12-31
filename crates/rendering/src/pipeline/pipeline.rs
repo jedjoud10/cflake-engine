@@ -878,7 +878,11 @@ mod object_creation {
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
         }
-        AsyncGPUCommandData::new(Some(AsyncGPUCommandExecutionEvent::ComputeShaderSubTasks(id, compute_tasks)))
+        let y = AsyncGPUCommandData::new(Some(AsyncGPUCommandExecutionEvent::ComputeShaderSubTasks(id, compute_tasks)));
+        unsafe {
+            gl::Finish();
+        }
+        y
     }
     pub fn create_material(buf: &mut PipelineBuffer, material: Material) -> GPUObjectID {
         // We must convert the uniforms into the GPU Object ID

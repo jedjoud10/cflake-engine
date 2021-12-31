@@ -127,7 +127,7 @@ pub fn update_world_start_barrier(delta: f64) {
     // The systems are running, we cannot do anything main thread related
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
-pub fn update_world_end_barrier(delta: f64, thread_ids: &Vec<ThreadId>) {
+pub fn update_world_end_barrier(thread_ids: &Vec<ThreadId>, pipeline_start_data: &PipelineStartData) {
     // --- SYSTEM FRAME END HERE ---
     // Sync the end of the system frame
     barrier::as_ref().thread_sync();
@@ -138,12 +138,15 @@ pub fn update_world_end_barrier(delta: f64, thread_ids: &Vec<ThreadId>) {
         barrier::as_ref().thread_sync_local_callbacks(thread_id);
         // --- THE SYSTEM FRAME LOOP ENDS, IT GOES BACK TO THE TOP OF THE LOOP ---
     }
+    {
+        let mut world = world_mut();
+        crate::command::frame_main_thread(&mut world, pipeline_start_data);    
+    }
     // The sytems started halting, we can do stuff on the main thread
 }
 // Update main thread stuff
-pub fn update_main_thread_stuff(delta: f64, world: &mut World, pipeline_start_data: &PipelineStartData) {
-    // Run the commands at the end of the frame
-    crate::command::frame_main_thread(world, pipeline_start_data);
+pub fn update_main_thread_stuff(delta: f64) {
+    let mut world = world_mut();
     world.input_manager.late_update(delta as f32);
     world.time_manager.elapsed = world.time_manager.elapsed + delta;
     world.time_manager.delta_time = delta;
