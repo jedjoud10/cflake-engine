@@ -125,7 +125,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 window.set_cursor_pos_polling(true);
                 window.set_scroll_polling(true);
                 window.set_size_polling(true);
-                glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+                glfw.set_swap_interval(glfw::SwapInterval::None);
                 window.make_current();
                 if gl::Viewport::is_loaded() {
                     gl::Viewport(0, 0, 1280, 720);
@@ -200,8 +200,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                         }
                     }
                     if i.elapsed().as_secs_f32() * 1000.0 > 5.0 {
-                        println!("Update pipeline in {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+                        //println!("Update pipeline in {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
                     }
+                    //std::thread::sleep(std::time::Duration::from_millis(16));
                 }
                 println!("Stopped the render thread!");
             })
@@ -371,6 +372,7 @@ fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, came
         // Valid command
         command(lock, buf, renderer, camera, render_command_query, glfw);
     }
+    //println!("Executed {} commands", i);
 }
 
 // Check if any of the async GPU commands have finished executing

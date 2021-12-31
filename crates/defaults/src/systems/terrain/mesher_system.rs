@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use super::MesherSystem;
 use ecs::SystemData;
 use math::octrees::OctreeNode;
-use others::callbacks::MutCallback;
+use others::callbacks::{MutCallback, OwnedCallback};
 use rendering::ShaderUniformsGroup;
 use terrain::ChunkCoords;
 ecs::impl_systemdata!(MesherSystem);
@@ -12,35 +12,39 @@ ecs::impl_systemdata!(MesherSystem);
 // Loop though every entity, checking if one of them got their Voxel Data generated
 fn entity_update(data: &mut SystemData<MesherSystem>, entity: &ecs::Entity) {
     // Get the chunk component and check for valid Voxel Data
+    let entity_id = entity.id.clone();
     let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
     // If this chunk is not a pending chunk, then we cannot generate it's model
+    let i = std::time::Instant::now();
     if data.pending_chunks.contains(&chunk.coords) && chunk.voxel_data.is_some() {
-        let created_renderer: bool = if let Option::Some(voxel_data) = &chunk.voxel_data.as_ref().unwrap() {
+        if let Option::Some(voxel_data) = &chunk.voxel_data.as_ref().unwrap() {
             // If the voxel data is valid, create the model for this chunk
             let tmodel = terrain::mesher::generate_model(&voxel_data, chunk.coords, true);
-            let model = rendering::Model::combine(tmodel.model, tmodel.skirts_model);
-
-            // Create the model on the GPU
-            let model_id = rendering::pipec::model(model);
-            let mut group = ShaderUniformsGroup::new();
-            group.set_i32("node_depth", chunk.coords.depth as i32);
-            // Since each chunk starts without a renderer, we must manually add the renderer component
-            let mut linkings = ecs::ComponentLinkingGroup::new();
-            // Create a renderer with the correct model and materials
-            let renderer = crate::components::Renderer::default()
-                .set_wireframe(true)
-                .set_fading_animation(true)
-                .set_model(model_id)
-                .set_material(data.material)
-                .set_shader_uniforms(group);
-            linkings.link::<crate::components::Renderer>(renderer).unwrap();
-            core::global::ecs::link_components(entity.id, linkings);
-            true
+            let material = data.material;
+            let model = rendering::Model::combine(tmodel.model, tmodel.skirts_model);          
+            let coords = chunk.coords;  
+            // The actual creation of the GPU model is asynchronous
+            rendering::pipec::task(rendering::RenderTask::ModelCreate(model)).with_callback(CallbackType::RenderingGPUObjectCallback(OwnedCallback::new(move |(_, model_id)| {
+                // Create the model on the GPU
+                let mut group = ShaderUniformsGroup::new();
+                group.set_i32("node_depth", coords.depth as i32);
+                // Since each chunk starts without a renderer, we must manually add the renderer component
+                let mut linkings = ecs::ComponentLinkingGroup::new();
+                // Create a renderer with the correct model and materials
+                let renderer = crate::components::Renderer::default()
+                    .set_wireframe(true)
+                    .set_fading_animation(true)
+                    .set_model(model_id)
+                    .set_material(material)
+                    .set_shader_uniforms(group);
+                linkings.link::<crate::components::Renderer>(renderer).unwrap();
+                core::global::batch::batch_add(0, true, core::global::ecs::link_components(entity_id, linkings));                
+            })).create());            
         } else {
             // We generated the voxel data, but there was no surface, so no need to create the model
-            false
         };
         data.pending_chunks.remove(&chunk.coords);
+        //println!("{}", i.elapsed().as_millis());
     }
 }
 

@@ -216,8 +216,8 @@ pub mod batch {
     use crate::{batch::BatchCommandQuery, command::CommandQueryResult};
 
     // Create a new batch command query for a specific ID and add a specific command onto it
-    pub fn batch_add(batch_id: u32, command_result: CommandQueryResult) {
-        crate::system::batch_add(batch_id, command_result);
+    pub fn batch_add(batch_id: u32, auto_send: bool, command_result: CommandQueryResult) {
+        crate::system::batch_add(batch_id, auto_send, command_result);
     }
     // Send a specific thread local batch to the main thread
     // The delete parameters tells us if we should delete the batch after sending it or just clearing it

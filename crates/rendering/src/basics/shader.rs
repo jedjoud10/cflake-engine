@@ -97,7 +97,6 @@ impl Shader {
                 let x = match line.split("#constant ").collect::<Vec<&str>>()[1] {
                     "fade_in_speed" => {
                         *line = format(line, FADE_IN_SPEED.to_string());   
-                        println!("{}", line);
                         Ok(())
                     }
                     "fade_out_speed" => {

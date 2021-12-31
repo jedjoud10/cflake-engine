@@ -33,7 +33,7 @@ fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, 
         .unwrap();
     // Add the entity
     let result = core::global::ecs::entity_add(entity, linkings);
-    core::global::batch::batch_add(0, result);
+    core::global::batch::batch_add(0, true, result);
 }
 
 fn system_prefire(data: &mut SystemData<ChunkSystem>) {
@@ -80,7 +80,7 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
                     let result = core::global::ecs::entity_remove(entity_id);
                     data.chunks_to_delete.insert(entity_id);
                     data.deleted_chunks_descending.insert(entity_id);
-                    core::global::batch::batch_add(1, result);
+                    core::global::batch::batch_add(1, false, result);
                 }
             }
         }
@@ -97,8 +97,6 @@ fn system_prefire(data: &mut SystemData<ChunkSystem>) {
         }
     }
     //println!("Chunks awaiting validation {}", data.chunks_awaiting_validation.len());
-    // We must send the "Chunk Creation" batch and the "Chunk Deletion" batch to the main thread
-    core::global::batch::send_batch(0, false);
 }
 
 // We will loop through every chunk and update our internal state about them

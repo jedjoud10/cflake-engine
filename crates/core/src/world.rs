@@ -16,12 +16,6 @@ use ui::UIManager;
 use lazy_static::lazy_static;
 lazy_static! {
     static ref WORLD: RwLock<World> = RwLock::new(new_internal());
-    static ref FRAME: AtomicBool = AtomicBool::new(false);
-}
-
-// Check if we are currently running a frame
-pub fn check_frame() -> bool {
-    FRAME.load(Ordering::Relaxed)
 }
 
 // Get a reference to the world
@@ -32,11 +26,6 @@ pub fn world() -> RwLockReadGuard<'static, World> {
 
 // Get a mutable reference to the world
 pub fn world_mut() -> RwLockWriteGuard<'static, World> {
-    // Check if we are in the middle of a frame
-    if FRAME.load(std::sync::atomic::Ordering::Relaxed) {
-        // We are currently running a frame, we cannot get the world mutably
-        panic!("Cannot get the world mutably during a frame!");
-    }
     let x = WORLD.write().unwrap();
     x
 }
@@ -87,6 +76,7 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     crate::local::input::create_key_cache();
     crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);
     crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);
+    crate::global::input::bind_key(Keys::F2, "debug", MapType::Button);
 
     // Create some default UI that prints some default info to the screen
     let mut root = ui::Root::new(1);
@@ -130,16 +120,14 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 // This is the main Update loop, ran on the main thread
 pub fn update_world_start_barrier(delta: f64) {
     // Systems are halting, tell them to continue their next frame
-    if delta * 1000.0 > 10.0 {
+    if (crate::global::input::map_pressed("debug")) {
         println!("Update world in {:.2}ms", delta * 1000.0);
     }
     barrier::as_ref().thread_sync();
-    FRAME.store(true, Ordering::Relaxed);
     // The systems are running, we cannot do anything main thread related
 }
 // Finish the frame, telling the logic systems to wait until they all sync up
 pub fn update_world_end_barrier(delta: f64, thread_ids: &Vec<ThreadId>) {
-    FRAME.store(false, Ordering::Relaxed);
     // --- SYSTEM FRAME END HERE ---
     // Sync the end of the system frame
     barrier::as_ref().thread_sync();
@@ -204,7 +192,6 @@ pub fn kill_world(pipeline_data: PipelineStartData) {
     println!("Loop threads running their last frame...");
     // Set the AtomicBool
     barrier_data.destroying_world();
-    FRAME.store(false, Ordering::Relaxed);
     barrier_data.thread_sync();
     barrier_data.thread_sync_quit();
     println!("Loop threads ran their last frame!");

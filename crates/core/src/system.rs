@@ -127,6 +127,9 @@ where
                         Err(_) => {}
                     }
 
+                    // Send the auto batches
+                    send_autos();
+
                     // Very very end of the frame
                     if barrier_data.is_world_valid() {
                         let thread_id = std::thread::current().id();
@@ -210,10 +213,23 @@ pub fn send_lsc_all(lgc: LogicSystemCommand, receiver: &WorldTaskReceiver) {
     }
 }
 
+// Auto send the thread local batches at the end of the current system frame
+fn send_autos() {
+    let autos = BATCH_MANAGER.with(|cell| {
+        let mut cell = cell.borrow_mut();
+        std::mem::take(&mut cell.auto_send_batches)
+    });
+
+    for x in autos {
+        send_batch(x, false);
+    }
+}
+
 // Add a command onto a batch
-pub fn batch_add(batch_id: u32, command_result: CommandQueryResult) {
+pub fn batch_add(batch_id: u32, auto_send: bool, command_result: CommandQueryResult) {
     BATCH_MANAGER.with(|cell| {
         let mut cell = cell.borrow_mut();
+        if auto_send { cell.auto_send_batches.insert(batch_id); }
         let batch = cell.batches.entry(batch_id).or_default();
         batch.add(command_result);
     });

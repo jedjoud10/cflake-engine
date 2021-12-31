@@ -2,12 +2,13 @@ use crate::{
     command::{CommandQuery, CommandQueryResult, CommandQueryType},
     tasks::Task,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 // A thread local batch manager that is stored on each system worker thread
 #[derive(Default)]
 pub struct BatchManager {
     pub batches: HashMap<u32, BatchCommandQuery>,
+    pub auto_send_batches: HashSet<u32>,
 }
 
 // A batch of multiple world commands that will be sent to the world all at the same time
