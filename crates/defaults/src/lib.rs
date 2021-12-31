@@ -80,9 +80,10 @@ pub fn preload_systems() {
     material.uniforms.set_t2da("normals_textures", &texture2, 1);
     material.uniforms.set_i32("max_depth", 8);
 
+    default_system::system();    
     systems::terrain::mesher_system::system(rendering::pipec::material(material));
     systems::terrain::chunk_system::system(8, csgtree);
-    systems::terrain::voxel_generation_system::system(string);
+    systems::terrain::voxel_generation_system::system(string);    
     systems::rendering_system::system();
     systems::camera_system::system();
 }

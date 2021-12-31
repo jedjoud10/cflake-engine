@@ -1,5 +1,5 @@
 use crate::{pipec, pipeline::object::*, MaterialFlags, Shader, Texture};
-use crate::{texture::*, DataType, GPUObjectID, Material, Window};
+use crate::{texture::*, DataType, GPUObjectID, Material, Window, RendererFlags};
 use glfw::Context;
 use std::ptr::null;
 
@@ -116,6 +116,7 @@ pub fn render(
     group2.set_f32("_time", new_time);
     group2.set_vec2i32("_resolution", resolution);
     group2.set_f32("_delta", new_time);
+    group2.set_bool("_fade_anim", renderer.flags.contains(RendererFlags::FADING_ANIMATION));
     // Combine the two groups
     let mut combined = ShaderUniformsGroup::combine(group1, &group2);
 

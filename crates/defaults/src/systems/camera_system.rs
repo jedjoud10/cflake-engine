@@ -62,6 +62,10 @@ fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
             let camera = core::global::ecs::component_mut::<crate::components::Camera>(entity).unwrap();
             // And don't forget to update the camera matrices
             camera.update_view_matrix(new_position, new_rotation);
+            let pos = new_position;
+            let rot = new_rotation;
+            let data = (pos, rot, camera.clip_planes, camera.projection_matrix);
+            rendering::pipec::task(rendering::pipec::RenderTask::CameraDataUpdate(data));
             if !core::global::input::map_toggled("cull_update") {
                 camera.update_frustum_culling_matrix();
             }

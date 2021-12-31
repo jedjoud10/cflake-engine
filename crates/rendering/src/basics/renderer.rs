@@ -6,6 +6,7 @@ use bitflags::bitflags;
 bitflags! {
     pub struct RendererFlags: u8 {
         const WIREFRAME = 0b00000001;
+        const FADING_ANIMATION = 0b00000010;
         const DEFAULT = Self::WIREFRAME.bits;
     }
 }
@@ -39,12 +40,21 @@ impl Renderer {
         self.model = Some(model);
         self
     }
-    // Enable / disable the wireframe rendering for this entity
+    // Enable / disable the wireframe rendering
     pub fn set_wireframe(mut self, enabled: bool) -> Self {
         if enabled {
             self.flags.insert(RendererFlags::WIREFRAME);
         } else {
             self.flags.remove(RendererFlags::WIREFRAME);
+        }
+        self
+    }
+    // Enable / disable fading animation
+    pub fn set_fading_animation(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.flags.insert(RendererFlags::FADING_ANIMATION);
+        } else {
+            self.flags.remove(RendererFlags::FADING_ANIMATION);
         }
         self
     }

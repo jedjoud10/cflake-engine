@@ -24,9 +24,14 @@ impl Renderer {
         self.internal_renderer = self.internal_renderer.set_model(model);
         self
     }
-    // Enable / disable the wireframe rendering for this entity
+    // Enable / disable the wireframe rendering
     pub fn set_wireframe(mut self, enabled: bool) -> Self {
         self.internal_renderer = self.internal_renderer.set_wireframe(enabled);
+        self
+    }
+    // Enable / disable the fading animation
+    pub fn set_fading_animation(mut self, enabled: bool) -> Self {
+        self.internal_renderer = self.internal_renderer.set_fading_animation(enabled);
         self
     }
     // With a specific material

@@ -125,7 +125,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 window.set_cursor_pos_polling(true);
                 window.set_scroll_polling(true);
                 window.set_size_polling(true);
-                glfw.set_swap_interval(glfw::SwapInterval::None);
+                glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
                 window.make_current();
                 if gl::Viewport::is_loaded() {
                     gl::Viewport(0, 0, 1280, 720);
@@ -172,6 +172,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     last_time = new_time;
                     // Run the frame
                     // Poll first
+                    let i = std::time::Instant::now();
                     let mut pipeline_buffer = BUFFER.lock().unwrap();
                     poll_commands(&mut pipeline_buffer, &mut pipeline_renderer, &mut camera, &sent_tasks_receiver, glfw);
                     poll_async_gpu_commands(&mut pipeline_buffer);
@@ -180,7 +181,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
                     // --- Rendering ---
                     // Pre-render
-                    let i = std::time::Instant::now();
                     pipeline_renderer.pre_render();
                     // Render
                     pipeline_renderer.renderer_frame(&mut pipeline_buffer, &camera, new_time as f32, delta as f32);
@@ -198,6 +198,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                             barrier_data.thread_sync_quit();
                             break;
                         }
+                    }
+                    if i.elapsed().as_secs_f32() * 1000.0 > 5.0 {
+                        println!("Update pipeline in {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
                     }
                 }
                 println!("Stopped the render thread!");
@@ -431,6 +434,7 @@ mod object_creation {
             material_id,
             matrix,
             uniforms,
+            flags: renderer.flags,
         });
         let id = buf.add_gpuobject(renderer_gpuobject, None);
         buf.renderers.insert(id.clone());

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ffi::CString};
 
-use crate::{GPUObjectID, MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform};
+use crate::{GPUObjectID, MaterialFlags, SubShaderType, TextureShaderAccessType, TextureType, Uniform, RendererFlags};
 
 use super::buffer::PipelineBuffer;
 
@@ -74,6 +74,7 @@ pub struct RendererGPUObject {
     pub material_id: GPUObjectID,
     pub matrix: veclib::Matrix4x4<f32>,
     pub uniforms: Option<ShaderUniformsGroup>,
+    pub flags: RendererFlags,
 }
 
 pub mod uniform_setters {
@@ -173,6 +174,10 @@ pub mod uniform_setters {
     // Set a vec4 i32 uniform
     pub unsafe fn set_vec4i32(index: i32, vec: &veclib::Vector4<i32>) {
         gl::Uniform4i(index, vec[0], vec[1], vec[2], vec[3]);
+    }
+    // Set a singular boolean
+    pub unsafe fn set_bool(index: i32, val: &bool) {
+        gl::Uniform1i(index, *val as i32);
     }
 }
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
@@ -325,7 +330,7 @@ impl ShaderUniformsGroup {
                     Uniform::Texture2DArray(x, y) => set_t2da(buf, index, x, y),
                     Uniform::Image2D(x, y) => set_i2d(buf, index, x, y),
                     Uniform::Image3D(x, y) => set_i3d(buf, index, x, y),
-                    Uniform::Bool(_x) => todo!(),
+                    Uniform::Bool(x) => set_bool(index, x),
                 }
             }
         }
