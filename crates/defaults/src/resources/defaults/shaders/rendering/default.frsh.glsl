@@ -17,6 +17,7 @@ in vec3 m_color;
 in vec2 screen_space_pos;
 in mat3 tbn;
 void main() {
+	#load renderer_life_fade
 	frag_diffuse = texture(diffuse_tex, (m_uv) * uv_scale).xyz * tint * m_color;
 	vec3 tangent_space_normals = texture(normals_tex, (m_uv) * uv_scale).xyz * 2.0 - 1.0;
 	tangent_space_normals.xy *= normals_strength;

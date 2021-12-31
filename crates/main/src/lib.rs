@@ -57,7 +57,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
     core::global::main::start_system_loops();
     let mut last_time: f64 = 0.0;
     others::barrier::as_ref().init_finished_world();
-    let mut spin_sleeper = spin_sleep::LoopHelper::builder().build_with_target_rate(300);
+    let mut spin_sleeper = spin_sleep::LoopHelper::builder().build_without_target_rate();
     while !window.should_close() {
         // Update the delta_time        
         let new_time = glfw.get_time();

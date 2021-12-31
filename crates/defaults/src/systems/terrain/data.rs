@@ -15,7 +15,7 @@ pub struct ChunkSystem {
     pub removal_time: f32, // The moment in seconds since the start of the game when we want to delete the chunks
 }
 
-pub const PARALLEL_COMPUTES: usize = 1; // The number of computes shaders that are ran in parallel
+pub const PARALLEL_COMPUTES: usize = 2; // The number of computes shaders that are ran in parallel
 
 // Handles the voxel generation for each chunk
 #[derive(Default)]

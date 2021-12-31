@@ -5,6 +5,7 @@ uniform float _dead_time;
 uniform ivec2 _resolution;
 uniform float _delta;
 uniform bool _dead;
+uniform bool _fade_anim;
 const float _FADE_IN_SPEED = #constant fade_in_speed
 const float _FADE_OUT_SPEED = #constant fade_out_speed
 

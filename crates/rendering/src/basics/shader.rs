@@ -3,6 +3,7 @@ use crate::utils::RenderingError;
 use crate::SubShaderGPUObject;
 use crate::{pipec, GPUObjectID, SubShaderType};
 use assets::Object;
+use crate::params::*;
 use std::collections::{HashMap, HashSet};
 // A shader that contains two sub shaders that are compiled independently
 #[derive(Clone)]
@@ -33,72 +34,87 @@ impl Object for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(&self, subshader_name: &str, lines: &mut Vec<String>, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
-        let mut vectors_to_insert: Vec<(usize, Vec<String>)> = Vec::new();
-        for (i, line) in lines.iter().enumerate() {
+    fn load_includes<'a>(&self, subshader_name: &str, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
+        // Turn the string into lines
+        let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
+        for (i, line) in lines.iter_mut().enumerate() {
             // Check if this is an include statement
             if line.starts_with("#include ") {
                 // Get the local path of the include file
                 let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace('"', "");
                 let local_path = local_path.trim_start();
-                if !included_paths.contains(&local_path.to_string()) {
+                
+                // Load the include function text
+                let text = if !included_paths.contains(&local_path.to_string()) {
                     // Load the function shader text
                     included_paths.insert(local_path.to_string());
-                    let text = assets::assetc::load_text(local_path).map_err(|_| {
+                    assets::assetc::load_text(local_path).map_err(|_| {
                         RenderingError::new(format!(
                             "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
                             local_path, subshader_name
                         ))
-                    })?;
-                    let new_lines = text.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                    vectors_to_insert.push((i, new_lines));
-                }
+                    })?
+                } else { String::new() };
+
+                // Update the original line
+                *line = text; 
+                break;
             }
             // External shader code
-            if !self.externalcode.is_empty() && line.trim().starts_with("#include_custom") {
+            if !self.externalcode.is_empty() && line.trim().starts_with("#include_custom ") {
                 // Get the source
                 let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
                 let source_id = &c[2..(c.len() - 2)];
                 let source = self.externalcode.get(source_id).unwrap();
-                let lines = source.lines().map(|x| x.to_string()).collect::<Vec<String>>();
-                vectors_to_insert.push((i, lines));
+                *line = source.clone();
+                break;
             }
             // Impl default types
             if line.trim().starts_with("#load") {
                 let x = match line.split("#load ").collect::<Vec<&str>>()[1] {
                     "renderer" => {
-                        vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string()]));
+                        *line = "#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string();
                         Ok(())
                     }
                     "renderer_main_start" => {
-                        vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string()]));
-                        Ok(())                        
+                        *line = "#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string();          
+                        Ok(())            
                     }
                     "renderer_life_fade" => {
-                        vectors_to_insert.push((i, vec!["#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string()]));
+                        *line = "#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string();
                         Ok(())                        
                     }
                     x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
                 };
                 x?;
+                break;
+            }
+            // Constants
+            if line.trim().contains("#constant ") {
+                fn format(line: &String, val: String) -> String {
+                    format!("{} {};", line.trim().split("#constant").nth(0).unwrap(), val)
+                }
+                let x = match line.split("#constant ").collect::<Vec<&str>>()[1] {
+                    "fade_in_speed" => {
+                        *line = format(line, FADE_IN_SPEED.to_string());   
+                        println!("{}", line);
+                        Ok(())
+                    }
+                    "fade_out_speed" => {
+                        *line = format(line, FADE_OUT_SPEED.to_string());          
+                        Ok(())            
+                    }
+                    x => Err(RenderingError::new(format!("Tried to expand #constant, but the given type '{}' is not valid!", x))),
+                };
+                x?;
+                break;
             }
         }
-        // Add the newly included lines at their respective index
-        let mut offset = 0;
-        for (i, _) in vectors_to_insert.iter() {
-            let x = lines.get_mut(*i).unwrap();
-            *x = String::default();
-        }
-        for (i, included_lines) in vectors_to_insert.iter() {
-            // Remove the include
-            for x in 0..included_lines.len() {
-                let new_index = x + offset + *i;
-                lines.insert(new_index, included_lines[x].clone());
-            }
-            // Add the offset so the next lines will be at their correct positions
-            offset += included_lines.len();
-        }
-        Ok(!vectors_to_insert.is_empty())
+        // Update the source
+        *source = lines.join("\n");
+        // Check if we need to continue expanding the includes        
+        let need_to_continue = lines.iter().any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
+        Ok(need_to_continue)
     }
     // Creates a shader from multiple subshader files
     pub fn load_shader(mut self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
@@ -115,19 +131,13 @@ impl Shader {
                 // It was not cached, so we need to cache it
                 let mut subshader: SubShader = assets::assetc::dload(subshader_path).map_err(|_| RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
                 // Recursively load the shader includes
-                let lines = subshader.source.lines().collect::<Vec<&str>>();
-                let lines = lines.clone().iter().map(|x| x.to_string()).collect::<Vec<String>>();
-                // Included lines
-                let mut included_lines: Vec<String> = lines;
+                let mut final_source = subshader.source;
                 // Include the sources until no sources can be included
-                while Self::load_includes(&self, subshader_path, &mut included_lines, &mut included_paths)? {
+                while Self::load_includes(&self, subshader_path, &mut final_source, &mut included_paths)? {
                     // We are still including paths
                 }
                 // Set the shader source for this shader
-                let extend_shader_source = included_lines.join("\n");
-
-                // Remove the version directive from the original subshader source
-                subshader.source = extend_shader_source;
+                subshader.source = final_source;
                 // Gotta filter out the include messages
                 subshader.source = subshader
                     .source
