@@ -1,6 +1,6 @@
 use crate::{
-    identifiers::{ComponentID, EntityID},
-    ComponentError, Entity, EntityError, EnclosedComponent, System, ComponentLinkingGroup,
+    identifiers::{ComponentID, IEntityID},
+    ComponentError, Entity, EntityError, EnclosedComponent, System, ComponentLinkingGroup, EntityID,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
@@ -18,30 +18,42 @@ impl ECSManager {
     /* #region Entities */
     // Get an entity
     pub fn entity(&self, id: EntityID) -> Result<&Entity, EntityError> {
-        self.entities.get(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id))
+        let _id = id.try_get().ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
+        self.entities.get(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id))
     }
     // Get an entity mutably
     pub fn entity_mut(&mut self, id: EntityID) -> Result<&mut Entity, EntityError> {
-        self.entities.get_mut(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id))
+        let _id = id.try_get().ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
+        self.entities.get_mut(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id))
     }
-    // Add an entity to the manager
-    pub fn add_entity(&mut self, mut entity: Entity) -> EntityID {
+    // Add an entity to the manager, and automatically link it's components
+    pub fn add_entity(&mut self, mut entity: Entity, group: ComponentLinkingGroup, external_id: EntityID) {
         // Create a new EntityID for this entity
-        let entity_id = EntityID::new(self.entities.get_next_idx() as u16);
-        entity.id = entity_id;        
+        let entity_id = IEntityID::new(self.entities.get_next_idx() as u16);
+        entity.id = entity_id;
         // Add the entity
-        self.entities.push_shove(entity);
-        entity_id
+        let idx = self.entities.push_shove(entity);
+        let id_ref = &self.entities.get(idx).unwrap().id;
+        // Update the given entity ID only if the reference count is higher than 2
+        if external_id.ref_count() >= 2 {
+            external_id.set(id_ref);
+        }
+        // After doing that, we can safely add the components
+        self.add_component_group(entity_id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
     fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate an entity
-        self.entities.remove(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id))
+        let _id = id.try_get().ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
+        let res = self.entities.remove(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id));
+        // Since the entity got removed, we must invalidate the ptr stored in the AtomicPtr
+        id.invalidate();
+        res
     }
     /* #endregion */
     /* #region Components */
     // Add a component linking group to the manager
-    pub fn add_component_group(&mut self, id: EntityID, group: ComponentLinkingGroup) -> Result<(), ComponentError> {
+    fn add_component_group(&mut self, id: IEntityID, group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in group.linked_components {
             self.add_component(id, boxed, cbitfield)?;
         }
@@ -50,14 +62,14 @@ impl ECSManager {
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
-    pub fn add_component(&mut self, id: EntityID, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
+    fn add_component(&mut self, id: IEntityID, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
         // Create a new Component ID from an Entity ID
         let id = ComponentID::new(id, cbitfield);
         self.components.insert(id, boxed);
         Ok(id)
     }
     // Remove a specified component from the list
-    pub fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
+    fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
         self.components
             .remove(&id)

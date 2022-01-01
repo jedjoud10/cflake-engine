@@ -1,10 +1,11 @@
 #[cfg(test)]
 pub mod test {
-    use crate::{ECSManager, Entity, ComponentLinkingGroup, defaults::Name, System, SystemEventType, linked_components::LinkedComponents};
+    use crate::{ECSManager, Entity, ComponentLinkingGroup, defaults::Name, System, SystemEventType, linked_components::LinkedComponents, EntityID};
 
     fn update_components(c: &mut LinkedComponents) {
         let component = c.component::<Name>().unwrap();
         let name = &component.name; 
+        dbg!(name);
     }
 
     #[test]
@@ -22,9 +23,15 @@ pub mod test {
         let mut group = ComponentLinkingGroup::new();
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::new();
-        let id = ecs.add_entity(Entity::new());
-        ecs.add_component_group(id, group).unwrap();        
-
+        let id = EntityID::new();
+        let id2 = id.clone();
+        let id3 = id.clone();
+        // The entity is not created yet, so it is null
+        assert!(id.is_null());
+        assert!(ecs.entity(id2).is_err());
+        ecs.add_entity(entity, group, id);
+        // The ID is valid now
+        assert_eq!(id3.try_get().unwrap(), id3.try_get().unwrap());
         // Run the system for one frame
         ecs.run_systems();
     }
