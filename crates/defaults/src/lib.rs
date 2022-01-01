@@ -1,8 +1,10 @@
 // Default components
 pub mod components;
 // Default systems
+/*
 pub mod default_system;
 pub mod systems;
+*/
 
 use assets::preload_asset;
 use rendering::{Material, Shader, Texture};

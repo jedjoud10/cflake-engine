@@ -1,11 +1,10 @@
 use ahash::AHashMap;
 use bitfield::Bitfield;
 
-use crate::{identifiers::ComponentID, Component, ComponentLinkingError};
-
+use crate::{identifiers::ComponentID, Component, ComponentLinkingError, EnclosedComponent};
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 pub struct ComponentLinkingGroup {
-    pub linked_components: AHashMap<Bitfield<u32>, Box<dyn Component + Sync + Send>>,
+    pub linked_components: AHashMap<Bitfield<u32>, EnclosedComponent>,
     pub cbitfield: Bitfield<u32>,
 }
 

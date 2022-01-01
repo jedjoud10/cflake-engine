@@ -1,3 +1,4 @@
+use crate::context::OwnedContext;
 use crate::{custom_world_data::CustomWorldData, GameConfig};
 use ::rendering::*;
 
@@ -7,73 +8,34 @@ use ecs::*;
 use glfw::{self};
 use input::*;
 use io::SaverLoader;
+use std::cell::{RefCell, Cell, Ref};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::thread::ThreadId;
 use ui::UIManager;
-
-// Global main for purely just low level task management
 use lazy_static::lazy_static;
+
 lazy_static! {
-    static ref WORLD: RwLock<World> = RwLock::new(new_internal());
-}
-
-// Get a reference to the world
-pub fn world() -> RwLockReadGuard<'static, World> {
-    let x = WORLD.read().unwrap();
-    x
-}
-
-// Get a mutable reference to the world
-pub fn world_mut() -> RwLockWriteGuard<'static, World> {
-    let x = WORLD.write().unwrap();
-    x
-}
-
-//  The actual world
-pub struct World {
-    pub input_manager: InputManager,
-    pub ui_manager: UIManager,
-    pub ecs_manager: ECSManager,
-
+    pub(crate) static ref INPUT_MANAGER: OwnedContext<InputManager> =  OwnedContext::default();
+    pub(crate) static ref UI_MANAGER: OwnedContext<UIManager> =  OwnedContext::default();
+    pub(crate) static ref ECS_MANAGER: OwnedContext<ECSManager> = OwnedContext::default();
+    
     // Miscs
-    pub debug: MainDebug,
-    pub instance_manager: InstanceManager,
-    pub custom_data: CustomWorldData,
-    pub time_manager: Time,
-    pub saver_loader: SaverLoader,
-    pub config_file: GameConfig,
+    pub(crate) static ref CUSTOM_DATA: OwnedContext<CustomWorldData> =  OwnedContext::default();
+    pub(crate) static ref TIME: OwnedContext<Time> =  OwnedContext::default();
+    pub(crate) static ref IO: OwnedContext<SaverLoader> =  OwnedContext::default();
+    pub(crate) static ref CONFIG_FILE: OwnedContext<GameConfig> =  OwnedContext::default();
 }
-
-// Get a new copy of a brand new world (Though don't initialize the SaverLoader yet)
-pub fn new_internal() -> World {
-    World {
-        ecs_manager: ECSManager::default(),
-        input_manager: InputManager::default(),
-        ui_manager: UIManager::default(),
-        debug: MainDebug::default(),
-
-        instance_manager: InstanceManager::default(),
-        custom_data: CustomWorldData::default(),
-        time_manager: Time::default(),
-        saver_loader: SaverLoader::default(),
-        config_file: GameConfig::default(),
-    }
+// Create a new world
+pub fn new(author_name: &str, app_name: &str)  {
+    let saver_loader = IO.borrow_mut();
+    *saver_loader = SaverLoader::new(author_name, app_name);
 }
-// Just update the saver loader basically
-pub fn new(author_name: &str, app_name: &str) {
-    println!("Going to create a new SaverLoader");
-    let mut w = world_mut();
-    w.saver_loader = SaverLoader::new(author_name, app_name);
-}
-// Just create a new saver loader
 // When the world started initializing
 pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     println!("Starting world...");
-    // Start the multithreaded shit
-    crate::command::initialize_channels_main();
     // Load the default stuff
-    crate::local::input::create_key_cache();
+    crate::global::input::create_key_cache();
     crate::global::input::bind_key(Keys::F4, "toggle_console", MapType::Button);
     crate::global::input::bind_key(Keys::Enter, "enter", MapType::Button);
     crate::global::input::bind_key(Keys::F2, "debug", MapType::Button);
@@ -117,41 +79,6 @@ pub fn start_world(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     window_commands::set_vsync(config_file_copy.vsync);
     println!("Hello world from MainThread! Must call initalization callback!");
 }
-// This is the main Update loop, ran on the main thread
-pub fn update_world_start_barrier(delta: f64) {
-    // Systems are halting, tell them to continue their next frame
-    if (crate::global::input::map_pressed("debug")) {
-        println!("Update world in {:.2}ms", delta * 1000.0);
-    }
-    barrier::as_ref().thread_sync();
-    // The systems are running, we cannot do anything main thread related
-}
-// Finish the frame, telling the logic systems to wait until they all sync up
-pub fn update_world_end_barrier(thread_ids: &Vec<ThreadId>, pipeline_start_data: &PipelineStartData) {
-    // --- SYSTEM FRAME END HERE ---
-    // Sync the end of the system frame
-    barrier::as_ref().thread_sync();
-    // We will tell the systems to execute their local callbacks
-    for thread_id in thread_ids {
-        barrier::as_ref().thread_sync_local_callbacks(thread_id);
-        // Wait until the special block finish
-        barrier::as_ref().thread_sync_local_callbacks(thread_id);
-        // --- THE SYSTEM FRAME LOOP ENDS, IT GOES BACK TO THE TOP OF THE LOOP ---
-    }
-    {
-        let mut world = world_mut();
-        crate::command::frame_main_thread(&mut world, pipeline_start_data);    
-    }
-    // The sytems started halting, we can do stuff on the main thread
-}
-// Update main thread stuff
-pub fn update_main_thread_stuff(delta: f64) {
-    let mut world = world_mut();
-    world.input_manager.late_update(delta as f32);
-    world.time_manager.elapsed = world.time_manager.elapsed + delta;
-    world.time_manager.delta_time = delta;
-    world.time_manager.frame_count += 1;
-}
 
 // Update the console
 fn update_console() {
@@ -188,50 +115,6 @@ fn update_console() {
 }
 // When we want to close the application
 pub fn kill_world(pipeline_data: PipelineStartData) {
-    println!("Killing child threads...");
-    let barrier_data = barrier::as_ref();
-
-    // Run their last frame...
-    println!("Loop threads running their last frame...");
-    // Set the AtomicBool
-    barrier_data.destroying_world();
-    barrier_data.thread_sync();
-    barrier_data.thread_sync_quit();
-    println!("Loop threads ran their last frame!");
-
-    let mut w = world_mut();
-    let systems = std::mem::take(w.ecs_manager.systems_mut());
-    // Tell all the child loop threads to stop
-    // Then we join them
-    for data in systems {
-        data.join_handle.join().unwrap();
-    }
-    pipec::join_pipeline(pipeline_data);
-    println!("Joined up all the child threads, we can safely exit!");
+    // Killing world
+    println!("Killing world!");
 }
-// We have received input events from GLFW
-pub fn receive_key_event(key_scancode: i32, action_type: i32, world: &mut World) {
-    world.input_manager.receive_key_event(key_scancode, action_type);
-}
-pub fn receive_mouse_pos_event(x: f64, y: f64, world: &mut World) {
-    world.input_manager.receive_mouse_event(Some((x, y)), None);
-}
-pub fn receive_mouse_scroll_event(scroll: f64, world: &mut World) {
-    world.input_manager.receive_mouse_event(None, Some(scroll));
-}
-pub fn resize_window_event(_x: u16, _y: u16, _world: &mut World) {}
-/*
-// When we resize the window
-pub fn resize_window_event(size: (u16, u16)) {
-    let dims = veclib::Vector2::new(size.0, size.1);
-    pipec::task(pipec::RenderTask::WindowUpdateSize(dims), "window_data_update", |_| {});
-    let world = crate::world::world_mut();
-    let camera_entity_clone = crate::global::ecs::entity(world.custom_data.main_camera_entity_id).unwrap();
-    let entity_clone_id = camera_entity_clone.entity_id;
-    let camera_component = crate::global::ecs::component_mut::<components::Camera>(camera_entity_clone, |x| {
-
-    }).unwrap();
-    camera_component.aspect_ratio = size.0 as f32 / size.1 as f32;
-    camera_component.update_aspect_ratio(dims);
-}
-*/

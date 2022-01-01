@@ -17,12 +17,3 @@ macro_rules! impl_component {
         }
     };
 }
-#[macro_export]
-macro_rules! impl_systemdata {
-    ($t:ty) => {
-        use $crate::CustomSystemData;
-        impl CustomSystemData for $t {}
-    };
-}
-
-impl_systemdata!(());

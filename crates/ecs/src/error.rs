@@ -30,12 +30,15 @@ impl std::error::Error for EntityError {
 #[derive(Debug)]
 pub struct ComponentError {
     details: String,
-    id: ComponentID,
+    id: Option<ComponentID>,
 }
 
 impl ComponentError {
     pub fn new(msg: String, id: ComponentID) -> Self {
-        Self { details: msg, id }
+        Self { details: msg, id: Some(id) }
+    }
+    pub fn new_without_id(msg: String) -> Self {
+        Self { details: msg, id: None }
     }
 }
 

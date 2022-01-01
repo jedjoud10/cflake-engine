@@ -1,9 +1,11 @@
 // Export
+mod test;
 mod component;
 pub mod component_registry;
 mod entity;
 mod error;
 pub mod identifiers;
+mod linked_components;
 mod linking;
 mod macros;
 mod manager;
