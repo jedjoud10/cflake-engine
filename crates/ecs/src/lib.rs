@@ -1,5 +1,6 @@
 // Export
 mod test;
+mod defaults;
 mod component;
 pub mod component_registry;
 mod entity;

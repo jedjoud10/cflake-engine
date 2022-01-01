@@ -13,13 +13,6 @@ thread_local! {
 pub fn is_render_thread() -> bool {
     IS_RENDER_THREAD.with(|x| x.get())
 }
-
-pub fn rname(prefix: &str) -> String {
-    // Use the others::id_counter to create a counted ID that we can transform into a String
-    let name = format!("{:x}", others::id_counter::get_id());
-    format!("{}_{}", prefix, name)
-}
-
 pub mod pipec {
     use assets::CachedObject;
     use std::borrow::{Borrow, BorrowMut};

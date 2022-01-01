@@ -1,6 +1,7 @@
-use crate::{Component, Entity, linked_components::{LinkedComponents, LinkedComponentsID}, ComponentID, EnclosedComponent};
-use ahash::AHashMap;
+use crate::{Component, Entity, linked_components::{LinkedComponents}, ComponentID, EnclosedComponent, EntityID};
+use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
+use ordered_vec::ordered_vec::OrderedVec;
 
 // A system event enum
 pub enum SystemEventType
@@ -16,7 +17,7 @@ pub struct System
     // Events
     update_components: Option<fn(&mut LinkedComponents)>,
     // The component IDs
-    linked_components_ids: Vec<LinkedComponentsID>,
+    entities: AHashSet<EntityID>,
 }
 
 // Initialization of the system
@@ -26,7 +27,7 @@ impl System {
         System {
             cbitfield: Bitfield::<u32>::default(),
             update_components: None,
-            linked_components_ids: Vec::new(),
+            entities: AHashSet::default(),
         }
     }
 }
@@ -45,6 +46,17 @@ impl System {
             SystemEventType::UpdateComponents(x) => self.update_components = Some(x),
         };
     }
+    // Check if we can add an entity (It's cbitfield became adequate for our system or the entity was added from the world)
+    // If we can add it, then just do that
+    pub fn check_add_entity(&mut self, cbitfield: Bitfield<u32>, id: EntityID) {
+        if cbitfield.contains(&self.cbitfield) && !self.cbitfield.empty() {
+            self.entities.insert(id);
+        }
+    }
+    // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
+    pub fn remove_entity(&mut self, id: EntityID) {
+        self.entities.remove(&id);
+    }
     // Run the system for a single iteration
     // This will use the components data given by the world to run all the component updates in PARALLEL
     // The components get mutated in parallel, though the system is NOT in parallel
@@ -52,7 +64,7 @@ impl System {
     {
         // These components are filtered for us
         if let Some(evn) = self.update_components {
-            let components = self.linked_components_ids.iter().map(|id| LinkedComponents::new(id, components, &self.cbitfield));
+            let components = self.entities.iter().map(|id| LinkedComponents::new(id, components, &self.cbitfield));
             // This can be ran in parallel, and yet still be totally safe
             for mut linked_components in components {
                 evn(&mut linked_components);

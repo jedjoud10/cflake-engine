@@ -28,7 +28,7 @@ impl ECSManager {
     pub fn add_entity(&mut self, mut entity: Entity) -> EntityID {
         // Create a new EntityID for this entity
         let entity_id = EntityID::new(self.entities.get_next_idx() as u16);
-        entity.id = entity_id;
+        entity.id = entity_id;        
         // Add the entity
         self.entities.push_shove(entity);
         entity_id
@@ -45,6 +45,8 @@ impl ECSManager {
         for (cbitfield, boxed) in group.linked_components {
             self.add_component(id, boxed, cbitfield)?;
         }
+        // Check if the linked entity is valid to be added into the systems
+        self.systems.iter_mut().for_each(|system| system.check_add_entity(group.cbitfield, id));
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
@@ -74,7 +76,7 @@ impl ECSManager {
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn update_systems(&mut self) {
+    pub fn run_systems(&mut self) {
         // Filter the components for each system
         for system in self.systems.iter() {
             system.run_system(&mut self.components);

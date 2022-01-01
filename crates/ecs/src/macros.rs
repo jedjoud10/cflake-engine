@@ -2,9 +2,8 @@
 #[macro_export]
 macro_rules! impl_component {
     ($t: ty) => {
-        use $crate::Component;
         // Main traits implemented
-        impl Component for $t {
+        impl $crate::Component for $t {
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }

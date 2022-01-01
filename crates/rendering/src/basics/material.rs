@@ -100,14 +100,3 @@ impl Material {
         self
     }
 }
-
-// Each material can be instanced
-use ::others::Instance;
-impl Instance for Material {
-    fn set_name(&mut self, string: String) {
-        self.material_name = string
-    }
-    fn get_name(&self) -> String {
-        self.material_name.clone()
-    }
-}
