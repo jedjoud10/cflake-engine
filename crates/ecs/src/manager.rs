@@ -5,6 +5,7 @@ use crate::{
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::ordered_vec::OrderedVec;
+use others::ExternalID;
 
 // The Entity Component System manager that will handle everything ECS related
 #[derive(Default)]

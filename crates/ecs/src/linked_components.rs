@@ -26,7 +26,7 @@ impl LinkedComponents {
 
 impl LinkedComponents {
     // Get a reference to a specific linked component
-    pub fn component<'a, T>(&'a self) -> Result<ComponentReadGuard<T>, ComponentError>
+    pub fn component<'a, T>(&'a self) -> Result<ComponentReadGuard<'a, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
@@ -44,7 +44,7 @@ impl LinkedComponents {
         Ok(guard)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn component_mut<'a, T>(&'a mut self, id: ComponentID) -> Result<ComponentWriteGuard<T>, ComponentError>
+    pub fn component_mut<'a, T>(&'a mut self) -> Result<ComponentWriteGuard<'a, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {

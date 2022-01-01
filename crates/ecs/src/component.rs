@@ -38,62 +38,62 @@ where
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
 
 // Component ref guards. This can be used to detect whenever we mutate a component
-pub struct ComponentReadGuard<T>
+pub struct ComponentReadGuard<'a, T>
     where T: Component
 {
-    ptr: *const T
+    borrow: &'a T
 }
 
-impl<T> ComponentReadGuard<T> 
+impl<'a, T> ComponentReadGuard<'a, T> 
     where T: Component 
 {
-    pub fn new(val: &T) -> Self {
+    pub fn new(borrow: &'a T) -> Self {
         Self {
-            ptr: val as *const T,
+            borrow,
         }
     }
 }
 
-impl<T> std::ops::Deref for ComponentReadGuard<T>
+impl<'a, T> std::ops::Deref for ComponentReadGuard<'a, T>
     where T: Component
 {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*self.ptr }
+        self.borrow
     }
 }
 // Component mut guard
-pub struct ComponentWriteGuard<T>
+pub struct ComponentWriteGuard<'a, T>
     where T: Component
 {
-    ptr: *mut T
+    borrow_mut: &'a mut T
 }
 
-impl<T> ComponentWriteGuard<T> 
+impl<'a, T> ComponentWriteGuard<'a, T> 
     where T: Component 
 {
-    pub fn new(val: &mut T) -> Self {
+    pub fn new(borrow_mut: &'a mut T) -> Self {
         Self {
-            ptr: val as *mut T,
+            borrow_mut,
         }
     }
 }
 
-impl<T> std::ops::Deref for ComponentWriteGuard<T>
+impl<'a, T> std::ops::Deref for ComponentWriteGuard<'a, T>
     where T: Component
 {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*self.ptr }
+        self.borrow_mut
     }
 }
 
-impl<T> std::ops::DerefMut for ComponentWriteGuard<T>
+impl<'a, T> std::ops::DerefMut for ComponentWriteGuard<'a, T>
     where T: Component
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *self.ptr }
+        self.borrow_mut
     }
 }

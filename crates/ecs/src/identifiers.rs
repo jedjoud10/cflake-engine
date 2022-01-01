@@ -19,32 +19,11 @@ impl EntityID {
             ptr: Arc::new(AtomicPtr::new(null_mut()))
         }
     }
-    // Update the value of the pointer. WE MUST DO THIS ON THE MAIN THREAD
-    pub(crate) fn set(self, id: &IEntityID) {
-        let ptr = self.ptr.as_ref();
-        ptr.store((id as *const IEntityID) as *mut IEntityID, Relaxed);
-    }
-    // Get the number of references that the internal Arc contains
-    pub fn ref_count(&self) -> usize { Arc::strong_count(&self.ptr) }
-    // Check if the pointer simply null
-    pub fn is_null(&self) -> bool { self.ptr.load(Relaxed).is_null() }
-    // Invalidate the pointer if it is not null
-    pub fn invalidate(self) {
-        if !self.is_null() {
-            // Invalidation
-            self.ptr.store(null_mut(), Relaxed);
-        } else {
-            // Uh oh
-            panic!()
-        }
-    }
-    // Check if the pointer is null, and try to get it. WE MUST DO THIS ON THE MAIN THREAD
-    pub(crate) fn try_get(&self) -> Option<IEntityID> {
-        if self.is_null() {
-            None
-        } else {  
-            Some(unsafe { self.ptr.load(Relaxed).read() })
-        }
+}
+
+impl others::ExternalID<IEntityID> for EntityID {
+    fn ptr(&self) -> &Arc<AtomicPtr<IEntityID>> {
+        &self.ptr
     }
 }
 
