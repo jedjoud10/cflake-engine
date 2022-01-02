@@ -1,2 +1,4 @@
-mod pipeline_object;
-pub use pipeline_object::*;
+mod object;
+mod identifier;
+pub use identifier::*;
+pub use object::*;

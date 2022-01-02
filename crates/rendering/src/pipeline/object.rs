@@ -268,22 +268,3 @@ impl ShaderUniformsGroup {
         Some(())
     }
 }
-// Some identifiers that we will use to communicate from the Render Thread -> Main Thread
-#[derive(Clone)]
-pub enum GPUObject {
-    None, // This value was not initalized yet
-    Model(ModelGPUObject),
-    Material(MaterialGPUObject),
-    Uniforms(UniformsGPUObject),
-    SubShader(SubShaderGPUObject),
-    Shader(ShaderGPUObject),
-    ComputeShader(ComputeShaderGPUObject), // Pretty much the same as a normal shader but we have some extra functions
-    Texture(TextureGPUObject),
-    Renderer(RendererGPUObject),
-}
-
-impl Default for GPUObject {
-    fn default() -> Self {
-        Self::None
-    }
-}

@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 lazy_static = "1.4.0"
+ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
