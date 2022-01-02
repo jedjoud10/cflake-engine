@@ -1,4 +1,4 @@
-use crate::{Component, Entity, linked_components::{LinkedComponents}, ComponentID, EnclosedComponent, EntityID, IEntityID};
+use crate::{Component, Entity, linked_components::{LinkedComponents}, ComponentID, EnclosedComponent, IEntityID};
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 use ordered_vec::ordered_vec::OrderedVec;

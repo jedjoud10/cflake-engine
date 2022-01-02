@@ -1,6 +1,6 @@
 use crate::{
     identifiers::{ComponentID, IEntityID},
-    ComponentError, Entity, EntityError, EnclosedComponent, System, ComponentLinkingGroup, EntityID,
+    ComponentError, Entity, EntityError, EnclosedComponent, System, ComponentLinkingGroup,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
@@ -13,42 +13,41 @@ pub struct ECSManager {
     entities: OrderedVec<Entity>,                                        // A vector full of entities. Each entity can get invalidated, but never deleted
     components: AHashMap<ComponentID, EnclosedComponent>,                // The components that are valid in the world
     systems: Vec<System>,                                                // Each system, stored in the order they were created
+    pub(crate) buffer: others::GlobalBuffer<IEntityID>,                             // A buffer that stores the actual internal value for the External Entity IDs
 }
 // Global code for the Entities, Components, and Systems
 impl ECSManager {
     /* #region Entities */
     // Get an entity
-    pub fn entity(&self, id: EntityID) -> Result<&Entity, EntityError> {
-        let _id = id.try_get().ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
+    pub fn entity(&self, id: ExternalID<IEntityID>) -> Result<&Entity, EntityError> {
+        let _id = *id.try_get(&self.buffer).ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
         self.entities.get(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id))
     }
     // Get an entity mutably
-    pub fn entity_mut(&mut self, id: EntityID) -> Result<&mut Entity, EntityError> {
-        let _id = id.try_get().ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
+    pub fn entity_mut(&mut self, id: ExternalID<IEntityID>) -> Result<&mut Entity, EntityError> {
+        let _id = *id.try_get(&self.buffer).ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
         self.entities.get_mut(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id))
     }
     // Add an entity to the manager, and automatically link it's components
-    pub fn add_entity(&mut self, mut entity: Entity, group: ComponentLinkingGroup, external_id: EntityID) {
+    pub fn add_entity(&mut self, mut entity: Entity, group: ComponentLinkingGroup, external_id: ExternalID<IEntityID>) {
         // Create a new EntityID for this entity
         let entity_id = IEntityID::new(self.entities.get_next_idx() as u16);
         entity.id = entity_id;
         // Add the entity
         let idx = self.entities.push_shove(entity);
         let id_ref = &self.entities.get(idx).unwrap().id;
-        // Update the given entity ID only if the reference count is higher than 2
-        if external_id.ref_count() >= 2 {
-            external_id.set(id_ref);
-        }
+        // Update the given entity ID
+        external_id.set(entity_id, &mut self.buffer); 
         // After doing that, we can safely add the components
         self.add_component_group(entity_id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
-    fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
+    pub fn remove_entity(&mut self, external_id: ExternalID<IEntityID>) -> Result<Entity, EntityError> {
         // Invalidate an entity
-        let _id = id.try_get().ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
-        let res = self.entities.remove(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id));
+        let _id = external_id.try_get(&mut self.buffer).ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
+        let res = self.entities.remove(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *_id));
         // Since the entity got removed, we must invalidate the ptr stored in the AtomicPtr
-        id.invalidate();
+        external_id.invalidate(&mut self.buffer);
         res
     }
     /* #endregion */
