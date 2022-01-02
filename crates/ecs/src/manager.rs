@@ -1,6 +1,6 @@
 use crate::{
     identifiers::{ComponentID, IEntityID},
-    ComponentError, Entity, EntityError, EnclosedComponent, System, ComponentLinkingGroup,
+    ComponentError, Entity, EntityError, EnclosedComponent, System, ComponentLinkingGroup, EntityID,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
@@ -13,23 +13,23 @@ pub struct ECSManager {
     entities: OrderedVec<Entity>,                                        // A vector full of entities. Each entity can get invalidated, but never deleted
     components: AHashMap<ComponentID, EnclosedComponent>,                // The components that are valid in the world
     systems: Vec<System>,                                                // Each system, stored in the order they were created
-    pub(crate) buffer: others::GlobalBuffer<IEntityID>,                             // A buffer that stores the actual internal value for the External Entity IDs
+    pub(crate) buffer: others::GlobalBuffer<EntityID, IEntityID>,        // A buffer that stores the actual internal value for the External Entity IDs
 }
 // Global code for the Entities, Components, and Systems
 impl ECSManager {
     /* #region Entities */
     // Get an entity
-    pub fn entity(&self, id: ExternalID<IEntityID>) -> Result<&Entity, EntityError> {
+    pub fn entity(&self, id: EntityID) -> Result<&Entity, EntityError> {
         let _id = *id.try_get(&self.buffer).ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
         self.entities.get(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id))
     }
     // Get an entity mutably
-    pub fn entity_mut(&mut self, id: ExternalID<IEntityID>) -> Result<&mut Entity, EntityError> {
+    pub fn entity_mut(&mut self, id: EntityID) -> Result<&mut Entity, EntityError> {
         let _id = *id.try_get(&self.buffer).ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
         self.entities.get_mut(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), _id))
     }
     // Add an entity to the manager, and automatically link it's components
-    pub fn add_entity(&mut self, mut entity: Entity, group: ComponentLinkingGroup, external_id: ExternalID<IEntityID>) {
+    pub fn add_entity(&mut self, mut entity: Entity, group: ComponentLinkingGroup, external_id: EntityID) {
         // Create a new EntityID for this entity
         let entity_id = IEntityID::new(self.entities.get_next_idx() as u16);
         entity.id = entity_id;
@@ -42,7 +42,7 @@ impl ECSManager {
         self.add_component_group(entity_id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
-    pub fn remove_entity(&mut self, external_id: ExternalID<IEntityID>) -> Result<Entity, EntityError> {
+    pub fn remove_entity(&mut self, external_id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate an entity
         let _id = external_id.try_get(&mut self.buffer).ok_or(EntityError::new("The given entity ID is invalid!".to_string(), IEntityID::new(0)))?;
         let res = self.entities.remove(_id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *_id));

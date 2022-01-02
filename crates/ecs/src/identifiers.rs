@@ -2,6 +2,24 @@ use std::{ptr::{null_mut, null}, sync::{atomic::{AtomicPtr, Ordering::Relaxed}, 
 
 use bitfield::Bitfield;
 use others::ExternalID;
+
+#[derive(Clone)]
+pub struct EntityID {
+    id: usize,
+}
+
+impl ExternalID<IEntityID> for EntityID {
+    fn new() -> Self {
+        Self {
+            id: Self::increment(),
+        }
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+
 // An EntityID that will be used to identify entities
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct IEntityID {

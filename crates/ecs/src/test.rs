@@ -2,7 +2,7 @@
 pub mod test {
     use others::ExternalID;
 
-    use crate::{ECSManager, Entity, ComponentLinkingGroup, defaults::Name, System, SystemEventType, linked_components::LinkedComponents, IEntityID};
+    use crate::{ECSManager, Entity, ComponentLinkingGroup, defaults::Name, System, SystemEventType, linked_components::LinkedComponents, IEntityID, EntityID};
 
     fn update_components(c: &mut LinkedComponents) {
         // Get the component immutably
@@ -30,7 +30,7 @@ pub mod test {
         let mut group = ComponentLinkingGroup::new();
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::new();
-        let id = ExternalID::<IEntityID>::new();
+        let id = EntityID::new();
         let id2 = id.clone();
         let id3 = id.clone();
         // The entity is not created yet, so it is null
