@@ -1,6 +1,8 @@
 use std::{sync::{atomic::{AtomicU16, Ordering::Relaxed}, RwLock}, marker::PhantomData};
 use ordered_vec::ordered_vec::OrderedVec;
 
+use crate::ExternalID;
+
 // A watchable trait. Implemented on structs that can be detected whenever they execute
 pub trait Watchable<U> {
     fn get_uid(&self) -> usize;
