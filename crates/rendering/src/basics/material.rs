@@ -3,6 +3,7 @@ use crate::object::{PipelineObjectID, PipelineObject, PipelineTask};
 use crate::pipeline::*;
 
 use bitflags::bitflags;
+use others::Context;
 
 bitflags! {
     pub struct MaterialFlags: u8 {
@@ -52,10 +53,10 @@ impl BuilderConvert for PipelineObjectBuilder<Texture> {
 
 impl PipelineObjectBuilder<Texture> {
     // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, pipeline: &SharedPipeline) -> Self {
+    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, pipeline: Context<SharedPipeline>) -> Self {
         // Load the texture
         let texture = pipec::texturec(
-            assets::cachec::acache_l(
+            assets::assetc::load(path, obj)
                 diffuse_path,
                 Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
             )
