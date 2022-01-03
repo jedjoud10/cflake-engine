@@ -10,7 +10,6 @@ use std::collections::{HashMap, HashSet};
 pub struct Shader {
     pub name: String,
     pub source: String,
-    externalcode: HashMap<String, String>,
     pub linked_subshaders: Vec<GPUObjectID>,
 }
 
