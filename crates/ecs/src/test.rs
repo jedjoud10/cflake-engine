@@ -49,4 +49,36 @@ pub mod test {
         ecs.remove_entity(id2).unwrap();
         assert_eq!(id4.try_get(&ecs.buffer), None);
     }
+    // Simple test with a watcher
+    #[test]
+    pub fn watcher_test() {
+        // Create the main ECS manager
+        let mut ecs = ECSManager::default();
+        // Create the main Watcher
+        let mut watcher = others::Watcher::<EntityID, ECSManager>::default();
+
+        // Make a simple system
+        let mut hello_system = System::new();
+        hello_system.link::<Name>();
+        hello_system.event(SystemEventType::UpdateComponents(update_components));
+        ecs.add_system(hello_system);
+        
+        // Create a simple entity with that component
+        let mut group = ComponentLinkingGroup::new();
+        group.link(Name::new("Person")).unwrap();
+        let entity = Entity::new();
+        let id = EntityID::new();
+        ecs.add_entity(entity, group, id.clone());
+        dbg!(id.try_get(&ecs.buffer));
+        
+        // Update the watcher
+        watcher.add(id.clone());
+        watcher.update(&ecs);
+
+        assert!(watcher.has_become_valid(&id));
+        // Update the watcher
+        watcher.update(&ecs);
+
+        assert!(!watcher.has_become_valid(&id));     
+    }
 }

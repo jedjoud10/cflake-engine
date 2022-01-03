@@ -5,7 +5,7 @@ use crate::{
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::ordered_vec::OrderedVec;
-use others::ExternalID;
+use others::{ExternalID, GlobalBuffer};
 
 // The Entity Component System manager that will handle everything ECS related
 #[derive(Default)]
@@ -13,7 +13,7 @@ pub struct ECSManager {
     entities: OrderedVec<Entity>,                                        // A vector full of entities. Each entity can get invalidated, but never deleted
     components: AHashMap<ComponentID, EnclosedComponent>,                // The components that are valid in the world
     systems: Vec<System>,                                                // Each system, stored in the order they were created
-    pub(crate) buffer: others::GlobalBuffer<EntityID, IEntityID>,        // A buffer that stores the actual internal value for the External Entity IDs
+    pub(crate) buffer: GlobalBuffer<EntityID, IEntityID>,        // A buffer that stores the actual internal value for the External Entity IDs
 }
 // Global code for the Entities, Components, and Systems
 impl ECSManager {

@@ -14,7 +14,7 @@ pub struct GlobalBuffer<T, U>
 {
     // The state of each ExternalID
     states: HashMap<usize, U>,
-    phantom: PhantomData<T>,
+    phantom: PhantomData<*const T>,
 }
 
 impl<T, U> Default for GlobalBuffer<T, U>
@@ -44,10 +44,10 @@ impl<T, U> GlobalBuffer<T, U>
         self.states.remove(&external_id.id());
     }
     // Check if an ExternalID can be valid
-    pub(crate) fn poll(&self, external_id: &T) -> Option<&U> {
-        if self.states.contains_key(&external_id.id()) {
+    pub(crate) fn poll(&self, external_id: &usize) -> Option<&U> {
+        if self.states.contains_key(external_id) {
             // We have the key, we can return the value
-            Some(self.states.get(&external_id.id()).unwrap())
+            Some(self.states.get(external_id).unwrap())
         } else {
             // Non
             None
@@ -72,7 +72,7 @@ pub trait ExternalID<T>
     // We can only do this once, after we update the internal value of the ExternalID, we will not be able to update it no more
     fn set(self, internal_val: T, buffer: &mut GlobalBuffer<Self, T>) {
         // Set the value if it doesn't exist
-        if let None = buffer.poll(&self) {
+        if let None = buffer.poll(&self.id()) {
             buffer.receive(self, internal_val)
         }
     }
@@ -82,6 +82,10 @@ pub trait ExternalID<T>
     }
     // Check if the internal value has been returned, and try to get it.
     fn try_get<'a>(&self, buffer: &'a GlobalBuffer<Self, T>) -> Option<&'a T> {
-        buffer.poll(&self) 
+        buffer.poll(&self.id()) 
+    }
+    // Try get using an ID
+    fn try_get_id<'a, B, A: ExternalID<B>>(id: usize, buffer: &'a GlobalBuffer<A, B>) -> Option<&'a B> {
+        buffer.poll(&id) 
     }
 }

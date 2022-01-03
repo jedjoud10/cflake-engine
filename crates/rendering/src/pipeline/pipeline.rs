@@ -1,43 +1,13 @@
-use super::{
-    async_command_data::{AsyncGPUCommandData, InternalAsyncGPUCommandData},
-    object::*,
-};
-use crate::{
-    basics::*,
-    others::{CommandExecutionResults, RESULT},
-    pipeline::buffer::PipelineBuffer,
-    rendering::PipelineRenderer,
-    GPUObjectID, RenderCommandQuery, RenderTask,
-};
-use glfw::Context;
-use lazy_static::lazy_static;
-use std::{
-    borrow::BorrowMut,
-    cell::RefCell,
-    collections::{HashMap, HashSet},
-    ffi::{c_void, CString},
-    mem::size_of,
-    ptr::null,
-    sync::{
-        atomic::{AtomicBool, AtomicPtr, Ordering},
-        mpsc::{Receiver, Sender},
-        Arc, Barrier, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
-    },
-};
+use others::GlobalBuffer;
 
-// Messages that will be to the main thread
-pub enum MainThreadMessage {
-    ExecuteGPUObjectCallback(u64, (GPUObject, GPUObjectID), std::thread::ThreadId),
-    ExecuteExecutionCallback(u64, std::thread::ThreadId),
+use crate::object::{AsyncPipelineObjectID, PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus};
+
+// Some sort of shared pipeline that we share between threads so we can send multiple commands to the render thread
+pub struct SharedPipeline {
+    pub buffer: GlobalBuffer<IAsyncPipelineObjectID, PipelineObjectID>, // Buffer that tells the other threads whether or not we have generated some Pipeline Objects
+    pub task_buffer: GlobalBuffer<AsyncPipelineTaskID, PipelineTaskStatus>, // Buffer that tells the other threads when we have executed the tasks that they issued
 }
 
-lazy_static! {
-    // Template render command query sender that we can copy over the multiple task threads
-    pub static ref TX_TEMPLATE: Mutex<Option<Sender<RenderCommandQuery>>> = Mutex::new(None);
-
-    // This might be in a mutex, but we never share it around the threads. This is only a static because I don't want to manually implement internal functions for internal render thread commands
-    pub(crate) static ref BUFFER: Mutex<PipelineBuffer> = Mutex::new(PipelineBuffer::default());
-}
 
 // Load the default rendering things
 fn load_defaults() {

@@ -1,8 +1,13 @@
 use std::{ptr::{null_mut, null}, sync::{atomic::{AtomicPtr, Ordering::Relaxed}, Arc}};
 
 use bitfield::Bitfield;
-use others::ExternalID;
+use others::{ExternalID, Watchable};
 
+use crate::ECSManager;
+
+
+// An external entity ID that we can actually use. 
+// This is basically a pointer to the actual entity ID, since we cannot deduce the Entity ID the moment we create it
 #[derive(Clone)]
 pub struct EntityID {
     id: usize,
@@ -17,6 +22,16 @@ impl ExternalID<IEntityID> for EntityID {
 
     fn id(&self) -> usize {
         self.id
+    }
+}
+
+impl Watchable<ECSManager> for EntityID {
+    fn get_uid(&self) -> usize {
+        self.id
+    }
+
+    fn is_valid(&self, context: &ECSManager) -> bool {
+        self.try_get(&context.buffer).is_some()
     }
 }
 

@@ -1,6 +1,8 @@
 use std::marker::PhantomData;
 
-use crate::{Texture, object::{AsyncPipelineObjectID, PipelineObject, AsyncPipelineTaskID}};
+use others::TaskSender;
+
+use crate::{Texture, object::{AsyncPipelineObjectID, PipelineObject, AsyncPipelineTaskID, PipelineTask}, SharedPipeline};
 
 // A simple builder that can be used to create Pipeline Objects
 pub struct Builder<T> {
@@ -13,7 +15,7 @@ impl<T> Builder<T>
     where T: PipelineObject
 {
     // Create the AsyncPipelineObjectID
-    pub fn build(self) -> AsyncPipelineObjectID<T> {
+    pub fn build(self, context: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> AsyncPipelineObjectID<T> {
         todo!();
     }
 }
@@ -25,7 +27,7 @@ pub struct TaskBuilder {
 
 impl TaskBuilder {
     // Build a task and send it to the render thread 
-    pub fn build(task: RenderTask) -> AsyncPipelineTaskID {
+    pub fn build(task: PipelineTask, context: &SharedPipeline) -> AsyncPipelineTaskID {
         
     }
 }
