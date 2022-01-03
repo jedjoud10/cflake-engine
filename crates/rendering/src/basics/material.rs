@@ -1,4 +1,5 @@
 use crate::basics::*;
+use crate::object::{PipelineObjectID, PipelineObject, PipelineTask};
 use crate::pipeline::*;
 
 use bitflags::bitflags;
@@ -15,48 +16,43 @@ impl Default for MaterialFlags {
 }
 
 // A material that can have multiple parameters and such
-#[derive(Clone)]
 pub struct Material {
     // Rendering stuff
-    pub shader: Option<GPUObjectID>,
-    pub material_name: String,
+    pub name: String,
+    pub shader: Option<PipelineObjectID<Shader>>,
     pub flags: MaterialFlags,
-    pub uniforms: ShaderUniformsGroup,
-    // Is this material even visible?
-    pub visible: bool,
+    uniforms: ShaderUniformsGroup,
+    _private: ()
 }
 
-impl Default for Material {
-    fn default() -> Self {
-        let material: Self = Material {
+impl PipelineObject for Material {
+    // Create a new builder for this material
+    fn builder() -> PipelineObjectBuilder<Self> {
+        let mut default_material = Self {
+            name: crate::utils::rname("material"),
             shader: None,
-            material_name: String::new(),
             flags: MaterialFlags::empty(),
             uniforms: ShaderUniformsGroup::new(),
-            visible: true,
+            _private: (),
         };
-        material
+        let mut group = ShaderUniformsGroup::new();
+        default_material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
+        default_material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
+        default_material.uniforms.set_f32("normals_strength", 1.0);
+        PipelineObjectBuilder::new(default_material);
+    }    
+}
+
+impl BuilderConvert for PipelineObjectBuilder<Texture> {
+    fn convert(self) -> PipelineTask {
+        PipelineTask::CreateMaterial(self)
     }
 }
 
-impl Material {
-    // Create a new material with a name
-    pub fn new(material_name: &str) -> Self {
-        let mut material = Self::default();
-        material.material_name = material_name.to_string();
-        material
-            .uniforms
-            .set_t2d("diffuse_tex", &pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
-        material
-            .uniforms
-            .set_t2d("normals_tex", &pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
-        material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
-        material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
-        material.uniforms.set_f32("normals_strength", 1.0);
-        material
-    }
+
+impl PipelineObjectBuilder<Texture> {
     // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>) -> Self {
+    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, pipeline: &SharedPipeline) -> Self {
         // Load the texture
         let texture = pipec::texturec(
             assets::cachec::acache_l(
@@ -99,4 +95,18 @@ impl Material {
         self.visible = visible;
         self
     }
+}
+
+// Create a new material with a name
+pub fn new(material_name: &str) -> Self {
+    let mut material = Self::default();
+    material.material_name = material_name.to_string();
+    material
+        .uniforms
+        .set_t2d("diffuse_tex", &pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
+    material
+        .uniforms
+        .set_t2d("normals_tex", &pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
+    
+    material
 }

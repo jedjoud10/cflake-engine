@@ -3,11 +3,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{buffer::PipelineBuffer, GPUObject, GPUObjectID, TextureType};
+use crate::{TextureType, object::PipelineObjectID, Texture, SharedPipeline};
 
 // A singular compute shader sub task
 pub enum ComputeShaderSubTask {
-    TextureFillArray(GPUObjectID, usize, Arc<Mutex<Vec<u8>>>),
+    TextureFillArray(PipelineObjectID<Texture>, usize, Arc<Mutex<Vec<u8>>>),
 }
 
 // Some compute shader tasks that we can execute after we asynchronously run a compute shader
@@ -20,7 +20,7 @@ impl ComputeShaderSubTasks {
         Self { tasks }
     }
     // Execute the sub tasks
-    pub fn run(self, buf: &PipelineBuffer, id: GPUObjectID) {
+    pub fn run(self, pipeline: &SharedPipeline) {
         for task in self.tasks {
             match task {
                 ComputeShaderSubTask::TextureFillArray(texture_id, bytecount_per_pixel, return_bytes) => {

@@ -4,7 +4,7 @@ use crate::SharedPipeline;
 use super::{PipelineObject, PipelineTaskStatus};
 
 // An ID for the PipelineObject
-pub struct PipelineObjectID {
+pub struct IPipelineObjectID {
     pub(crate) id: u16, // The OrderedVec's ID for this pipeline object
 }
 // A wrapper so we hide the generic type T so we can store this in the SharedPipeline
@@ -12,7 +12,7 @@ pub(crate) struct IAsyncPipelineObjectID {
     id: usize,
 }
 
-impl ExternalID<PipelineObjectID> for IAsyncPipelineObjectID {
+impl ExternalID<IPipelineObjectID> for IAsyncPipelineObjectID {
     fn new() -> Self {
         panic!()
     }
@@ -24,14 +24,14 @@ impl ExternalID<PipelineObjectID> for IAsyncPipelineObjectID {
 
 // A simple ptr to the actual PipelineObjectID
 // We can detect whenever the actual Pipeline command finished generating / updating the Object specified by the ID
-pub struct AsyncPipelineObjectID<T> 
+pub struct PipelineObjectID<T> 
     where T: PipelineObject
 {
     phantom: PhantomData<*const T>,
     id: usize,
 }
 
-impl<T> ExternalID<PipelineObjectID> for AsyncPipelineObjectID<T> 
+impl<T> ExternalID<IPipelineObjectID> for PipelineObjectID<T> 
     where T: PipelineObject 
 {
     fn new() -> Self {
@@ -46,15 +46,15 @@ impl<T> ExternalID<PipelineObjectID> for AsyncPipelineObjectID<T>
     }
 }
 
-impl<T> others::Watchable<SharedPipeline> for AsyncPipelineObjectID<T>
+impl<T> others::Watchable<SharedPipeline> for PipelineObjectID<T>
     where T: PipelineObject
 {
     fn get_uid(&self) -> usize {
         self.id
     }
 
-    fn is_valid(&self, context: &SharedPipeline) -> bool {
-        Self::try_get_id(self.id, &context.buffer).is_some()
+    fn is_valid(&self, pipeline: &SharedPipeline) -> bool {
+        Self::try_get_id(self.id, &pipeline.buffer).is_some()
     }
 }
 
@@ -82,8 +82,8 @@ impl others::Watchable<SharedPipeline> for AsyncPipelineTaskID {
         self.id
     }
 
-    fn is_valid(&self, context: &SharedPipeline) -> bool {
-        if let Some(status) = Self::try_get_id(self.id, &context.task_buffer) {
+    fn is_valid(&self, pipeline: &SharedPipeline) -> bool {
+        if let Some(status) = Self::try_get_id(self.id, &pipeline.task_buffer) {
             if let PipelineTaskStatus::Finished = status {
                 true
             } else { false }

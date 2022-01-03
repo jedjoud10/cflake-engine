@@ -1,8 +1,9 @@
-use crate::Texture;
+use crate::{Texture, basics::PipelineObjectBuilder};
 
 // A pipeline task that will be sent to the render thread
 pub enum PipelineTask {
-    CreateTexture(crate::basics::Builder<Texture>),
+    CreateTexture(PipelineObjectBuilder<Texture>),
+    CreateMaterial(PipelineObjectBuilder<Material>),
 
 }
 

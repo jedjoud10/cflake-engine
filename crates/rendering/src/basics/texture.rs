@@ -1,10 +1,13 @@
 use std::hash::{Hash, Hasher};
 
-use crate::{utils::*, object::PipelineObject};
+use crate::{utils::*, object::{PipelineObject, PipelineTask, PipelineObjectID}, SharedPipeline, BuilderConvert};
 use assets::*;
 use bitflags::bitflags;
 use gl;
 use image::{EncodableLayout, GenericImageView};
+use others::TaskSender;
+
+use super::builder::PipelineObjectBuilder;
 
 bitflags! {
     pub struct TextureFlags: u8 {
@@ -240,7 +243,6 @@ pub enum TextureShaderAccessType {
 }
 
 // A texture
-#[derive(Clone)]
 pub struct Texture {
     // The internal GPU Object for this texture
     pub name: String,
@@ -251,13 +253,13 @@ pub struct Texture {
     pub filter: TextureFilter, // Texture mag and min filters, either Nearest or Linear
     pub wrap_mode: TextureWrapping,
     pub ttype: TextureType, // The dimensions of the texture and it's texture type
+    _private: ()
 }
 
-impl PipelineObject for Texture {}
-
-impl Default for Texture {
-    fn default() -> Self {
-        Self {
+impl PipelineObject for Texture {
+    // Create a new builder for this texture
+    fn builder() -> PipelineObjectBuilder<Self> {
+        let default_texture = Self {
             name: crate::utils::rname("texture"),
             bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
@@ -265,46 +267,54 @@ impl Default for Texture {
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
-            ttype: TextureType::Texture2D(0, 0),
-        }
+            ttype: TextureType::Texture2D(0, 0),    
+            _private: (),        
+        };
+        PipelineObjectBuilder::new(default_texture)
+    }    
+}
+
+impl BuilderConvert for PipelineObjectBuilder<Texture> {
+    fn convert(self) -> PipelineTask {
+        PipelineTask::CreateTexture(self)
     }
 }
 
-// Some texture-only things, not related to OpenGL
-impl Texture {
+// Create a texture and send it to the pipeline so we can actually create it on the GPU
+impl PipelineObjectBuilder<Texture> {    
     // Set name
     pub fn set_name(mut self, name: &str) -> Self {
-        self.name = name.to_string();
+        self.data.name = name.to_string();
         self
     }
     // Prefix the name with something
     pub fn prefix_name(mut self, prefix: &str) -> Self {
-        self.name = format!("{}_{}", prefix, self.name);
+        self.data.name = format!("{}_{}", prefix, self.data.name);
         self
     }
     // The internal format and data type of the soon to be generated texture
     pub fn set_format(mut self, _format: TextureFormat) -> Self {
-        self._format = _format;
+        self.data._format = _format;
         self
     }
     // Set the data type for this texture
     pub fn set_data_type(mut self, _type: DataType) -> Self {
-        self._type = _type;
+        self.data._type = _type;
         self
     }
     // Set the height and width of the soon to be generated texture
     pub fn set_dimensions(mut self, ttype: TextureType) -> Self {
-        self.ttype = ttype;
+        self.data.ttype = ttype;
         self
     }
     // Set the texture type
     pub fn set_type(mut self, ttype: TextureType) -> Self {
-        self.ttype = ttype;
+        self.data.ttype = ttype;
         self
     }
     // Set the bytes of this texture
     pub fn set_bytes(mut self, bytes: Vec<u8>) -> Self {
-        self.bytes = bytes;
+        self.data.bytes = bytes;
         self
     }
     // Set if we should use the new opengl api (Gl tex storage that allows for immutable texture) or the old one
@@ -319,7 +329,7 @@ impl Texture {
         self
     }
     // Apply the texture load options on a texture
-    pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Texture {
+    pub fn apply_texture_load_options(self, opt: Option<TextureLoadOptions>) -> Self {
         let opt = opt.unwrap_or_default();
         let texture = self.set_filter(opt.filter);
 
@@ -338,32 +348,32 @@ impl Texture {
     }
     // Set the generation of mipmaps
     pub fn enable_mipmaps(mut self) -> Self {
-        self.flags |= TextureFlags::MIPMAPS;
+        self.data.flags |= TextureFlags::MIPMAPS;
         self
     }
     // Disable mipmaps
     pub fn disable_mipmaps(mut self) -> Self {
-        self.flags &= !TextureFlags::MIPMAPS;
+        self.data.flags &= !TextureFlags::MIPMAPS;
         self
     }
     // Set the mag and min filters
     pub fn set_filter(mut self, filter: TextureFilter) -> Self {
-        self.filter = filter;
+        self.data.filter = filter;
         self
     }
     // Set the wrapping mode
     pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
-        self.wrap_mode = wrapping_mode;
+        self.data.wrap_mode = wrapping_mode;
         self
     }
     // Set the flags
     pub fn set_flags(mut self, flags: TextureFlags) -> Self {
-        self.flags = flags;
+        self.data.flags = flags;
         self
     }
     // Get the width of this texture
     pub fn get_width(&self) -> u16 {
-        match self.ttype {
+        match self.data.ttype {
             TextureType::Texture1D(x) => x,
             TextureType::Texture2D(x, _) => x,
             TextureType::Texture3D(x, _, _) => x,
@@ -372,7 +382,7 @@ impl Texture {
     }
     // Get the height of this texture
     pub fn get_height(&self) -> u16 {
-        match self.ttype {
+        match self.data.ttype {
             TextureType::Texture1D(_y) => panic!(),
             TextureType::Texture2D(_, y) => y,
             TextureType::Texture3D(_, y, _) => y,
@@ -381,7 +391,7 @@ impl Texture {
     }
     // Get the depth of this texture, if it is a 3D texture
     pub fn get_depth(&self) -> u16 {
-        match self.ttype {
+        match self.data.ttype {
             TextureType::Texture1D(_) => panic!(),
             TextureType::Texture2D(_, _) => panic!(),
             TextureType::Texture3D(_, _, z) => z,

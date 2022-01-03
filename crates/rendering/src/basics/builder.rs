@@ -2,25 +2,38 @@ use std::marker::PhantomData;
 
 use others::TaskSender;
 
-use crate::{Texture, object::{AsyncPipelineObjectID, PipelineObject, AsyncPipelineTaskID, PipelineTask}, SharedPipeline};
+use crate::{Texture, object::{PipelineObjectID, PipelineObject, AsyncPipelineTaskID, PipelineTask}, SharedPipeline};
 
 // A simple builder that can be used to create Pipeline Objects
-pub struct ObjectBuilder<T> 
+pub struct PipelineObjectBuilder<T> 
     where T: PipelineObject
 {
-    data: T,
+    pub(crate) data: T,
 }
 
-// This will create the AsyncPipelineObjectID and return it, while also send it to the render thread
+// This will create the PipelineObjectID and return it, while also send it to the render thread
 // This is only available for GPUObjects, which are objects specifically created with OpenGL
-impl<T> ObjectBuilder<T>
-    where T: PipelineObject
+impl<T> PipelineObjectBuilder<T>
+    where T: PipelineObject, Self: BuilderConvert
 {
-    // Create the AsyncPipelineObjectID and send the task to the task sender
-    fn send(self, task: PipelineTask, context: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> AsyncPipelineObjectID<T> {
+    // Create a new builder using an already existing default value
+    fn new(data: T) -> Self {
+        Self {
+            data
+        }
+    }
+    // Create the PipelineObjectID and send the task to the task sender
+    fn build(self, pipeline: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> PipelineObjectID<T> {
         // Magic
+        let task = self.convert();
         todo!()
     }
+}
+
+// Pub(Crate) trait
+pub(crate) trait BuilderConvert {
+    // Turn our raw PipelineObjectBuilder into it's creation task, so we can actually send it to the render thread
+    fn convert(self) -> PipelineTask;    
 }
 
 // This is a task builer, and it will create tasks and send them to the render thread.
@@ -30,18 +43,9 @@ pub struct TaskBuilder {
 
 impl TaskBuilder {
     // Build a task and send it to the render thread 
-    pub fn build(task: PipelineTask, context: &SharedPipeline) -> AsyncPipelineTaskID {
-        
+    pub fn build(task: PipelineTask, pipeline: &SharedPipeline) -> AsyncPipelineTaskID {        
     }
 }
 
 // This will create the AsyncPipelineObjectID and return it, while also send it to the render thread
 // This is only available for GPUObjects, which are objects specifically created with OpenGL
-
-
-impl ObjectBuilder<Texture> {
-    // Build the texture, and send it's creation task to the render thread
-    fn build(self, context: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> AsyncPipelineObjectID<Texture> {
-        self.send(PipelineTask::CreateTexture(self.data), context, task_sender)
-    }
-}
