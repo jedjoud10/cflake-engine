@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::utils::*;
+use crate::{utils::*, object::PipelineObject};
 use assets::*;
 use bitflags::bitflags;
 use gl;
@@ -253,10 +253,12 @@ pub struct Texture {
     pub ttype: TextureType, // The dimensions of the texture and it's texture type
 }
 
+impl PipelineObject for Texture {}
+
 impl Default for Texture {
     fn default() -> Self {
         Self {
-            name: crate::pipeline::rname("texture"),
+            name: crate::utils::rname("texture"),
             bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,
@@ -267,8 +269,6 @@ impl Default for Texture {
         }
     }
 }
-
-// Load
 
 // Some texture-only things, not related to OpenGL
 impl Texture {
@@ -325,7 +325,6 @@ impl Texture {
 
         texture.set_wrapping_mode(opt.wrapping)
     }
-    // Cr
     // Guess how many mipmap levels a texture with a specific maximum coordinate can have
     pub fn guess_mipmap_levels(i: usize) -> usize {
         let mut x: f32 = i as f32;
@@ -389,9 +388,6 @@ impl Texture {
             TextureType::TextureArray(_, _, z) => z,
         }
     }
-}
-
-impl Texture {
     // Read bytes
     pub fn read_bytes(metadata: &AssetMetadata) -> (Vec<u8>, u16, u16) {
         // Load this texture from the bytes

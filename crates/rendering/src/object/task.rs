@@ -1,5 +1,9 @@
+use crate::Texture;
+
 // A pipeline task that will be sent to the render thread
 pub enum PipelineTask {
+    CreateTexture(crate::basics::Builder<Texture>),
+
 }
 
 // The status for a specific PipelineTask

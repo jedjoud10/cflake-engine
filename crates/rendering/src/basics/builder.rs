@@ -5,18 +5,21 @@ use others::TaskSender;
 use crate::{Texture, object::{AsyncPipelineObjectID, PipelineObject, AsyncPipelineTaskID, PipelineTask}, SharedPipeline};
 
 // A simple builder that can be used to create Pipeline Objects
-pub struct Builder<T> {
-    phantom: PhantomData<T>
+pub struct ObjectBuilder<T> 
+    where T: PipelineObject
+{
+    data: T,
 }
 
 // This will create the AsyncPipelineObjectID and return it, while also send it to the render thread
 // This is only available for GPUObjects, which are objects specifically created with OpenGL
-impl<T> Builder<T>
+impl<T> ObjectBuilder<T>
     where T: PipelineObject
 {
-    // Create the AsyncPipelineObjectID
-    pub fn build(self, context: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> AsyncPipelineObjectID<T> {
-        todo!();
+    // Create the AsyncPipelineObjectID and send the task to the task sender
+    fn send(self, task: PipelineTask, context: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> AsyncPipelineObjectID<T> {
+        // Magic
+        todo!()
     }
 }
 
@@ -36,6 +39,9 @@ impl TaskBuilder {
 // This is only available for GPUObjects, which are objects specifically created with OpenGL
 
 
-impl Builder<Texture> {
-
+impl ObjectBuilder<Texture> {
+    // Build the texture, and send it's creation task to the render thread
+    fn build(self, context: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> AsyncPipelineObjectID<Texture> {
+        self.send(PipelineTask::CreateTexture(self.data), context, task_sender)
+    }
 }
