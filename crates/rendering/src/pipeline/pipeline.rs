@@ -1,11 +1,20 @@
 use others::GlobalBuffer;
 
-use crate::object::{AsyncPipelineObjectID, PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus};
+use crate::object::{PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus};
 
 // Some sort of shared pipeline that we share between threads so we can send multiple commands to the render thread
+// This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that time
 pub struct SharedPipeline {
     pub buffer: GlobalBuffer<IAsyncPipelineObjectID, PipelineObjectID>, // Buffer that tells the other threads whether or not we have generated some Pipeline Objects
     pub task_buffer: GlobalBuffer<AsyncPipelineTaskID, PipelineTaskStatus>, // Buffer that tells the other threads when we have executed the tasks that they issued
+}
+
+// The pipeline that is actually stored on the Render Thread
+pub(crate) struct InternalPipeline {
+    // We store the Pipeline Objects
+    // And their names
+    // And we buffer the tasks for next frame
+    // And we store the status of all the tasks
 }
 
 

@@ -22,12 +22,6 @@ impl<T> PipelineObjectBuilder<T>
             data
         }
     }
-    // Create the PipelineObjectID and send the task to the task sender
-    fn build(self, pipeline: &SharedPipeline, task_sender: &TaskSender<PipelineTask>) -> PipelineObjectID<T> {
-        // Magic
-        let task = self.convert();
-        todo!()
-    }
 }
 
 // Pub(Crate) trait
