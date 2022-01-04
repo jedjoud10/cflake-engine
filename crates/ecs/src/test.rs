@@ -1,8 +1,6 @@
 #[cfg(test)]
 pub mod test {
-    use others::ExternalID;
-
-    use crate::{ECSManager, Entity, ComponentLinkingGroup, defaults::Name, System, SystemEventType, linked_components::LinkedComponents, IEntityID, EntityID};
+    use crate::{ECSManager, Entity, ComponentLinkingGroup, defaults::Name, System, SystemEventType, linked_components::LinkedComponents, EntityID};
 
     fn update_components(c: &mut LinkedComponents) {
         // Get the component immutably
@@ -30,24 +28,20 @@ pub mod test {
         let mut group = ComponentLinkingGroup::new();
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::new();
-        let id = EntityID::new();
+        let id = EntityID::new(&ecs);
         let id2 = id.clone();
         let id3 = id.clone();
         // The entity is not created yet, so it is null
-        assert!(id.try_get(&ecs.buffer).is_none());
-        assert!(ecs.entity(id2.clone()).is_err());
-        ecs.add_entity(entity, group, id);
-        dbg!(id2.try_get(&ecs.buffer));
-        dbg!(id3.try_get(&ecs.buffer));
+        ecs.add_entity(entity, id, group);
         // The ID is valid now
-        assert_eq!(id2.try_get(&ecs.buffer).unwrap(), id3.try_get(&ecs.buffer).unwrap());
+        assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
         ecs.run_systems();
         ecs.run_systems();
         // Remove the entity and check if the corresponding ID's became invalid
-        let id4 = id2.clone();
-        ecs.remove_entity(id2).unwrap();
-        assert_eq!(id4.try_get(&ecs.buffer), None);
+        let id4 = id3.clone();
+        ecs.remove_entity(id3).unwrap();
+        assert!(ecs.entity(&id4).is_err());
     }
     // Simple test with a watcher
     #[test]
@@ -67,9 +61,8 @@ pub mod test {
         let mut group = ComponentLinkingGroup::new();
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::new();
-        let id = EntityID::new();
-        ecs.add_entity(entity, group, id.clone());
-        dbg!(id.try_get(&ecs.buffer));
+        let id = EntityID::new(&ecs);
+        ecs.add_entity(entity, id.clone(), group);
         
         // Update the watcher
         watcher.add(id.clone());

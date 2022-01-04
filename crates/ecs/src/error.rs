@@ -1,22 +1,22 @@
-use crate::identifiers::{ComponentID, IEntityID};
+use crate::identifiers::{ComponentID, EntityID};
 use core::fmt;
 
 // An error related to the entities
 #[derive(Debug)]
 pub struct EntityError {
     details: String,
-    id: IEntityID,
+    id: EntityID,
 }
 
 impl EntityError {
-    pub(crate) fn new(msg: String, id: IEntityID) -> Self {
+    pub(crate) fn new(msg: String, id: EntityID) -> Self {
         Self { details: msg, id }
     }
 }
 
 impl fmt::Display for EntityError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}. IEntityID: {:?}", self.details, self.id)
+        write!(f, "{}. EntityID: {:?}", self.details, self.id)
     }
 }
 

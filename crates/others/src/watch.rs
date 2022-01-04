@@ -1,7 +1,5 @@
-use std::{sync::{atomic::{AtomicU16, Ordering::Relaxed}, RwLock}, marker::PhantomData};
-use ordered_vec::ordered_vec::OrderedVec;
-
-use crate::ExternalID;
+use std::{sync::{atomic::{AtomicU16, Ordering::Relaxed}, RwLock}, marker::PhantomData, collections::HashSet};
+use ordered_vec::simple::OrderedVec;
 
 // A watchable trait. Implemented on structs that can be detected whenever they execute
 pub trait Watchable<U> {
@@ -13,9 +11,9 @@ pub trait Watchable<U> {
 pub struct Watcher<T, U> 
     where T: Watchable<U>
 {
-    phantom: PhantomData<U>,
+    phantom: PhantomData<*const U>,
     watchables: OrderedVec<T>, // The watchable values that are waiting to become valid
-    valids: RwLock<Vec<usize>>, // The watchable values that have become valid in the next frame. We clear this buffer at the end of each frame
+    valids: HashSet<usize>, // The watchable values that have become valid
 }
 
 impl<T, U> Default for  Watcher<T, U>
@@ -25,7 +23,7 @@ impl<T, U> Default for  Watcher<T, U>
         Self { 
             phantom: PhantomData::default(),
             watchables: OrderedVec::default(),
-            valids: RwLock::new(Vec::new())
+            valids: HashSet::new()
         }
     }
 }
@@ -39,18 +37,16 @@ impl<T, U> Watcher<T, U>
     pub fn add(&mut self, watchable: T) {
         self.watchables.push_shove(watchable);
     }
-    // Update the watcher, checking each value if it has become valid. If values did become valid, we must store their CommandID in a RwLock so we can share it around 
-    // Update this at the end of each frame
+    // Update the watcher, checking each value if it has become valid. If values did become valid, we must store their UID in self, since we will share self 
+    // Update this at the end of each frame, after we do everything task related on the main thread
     pub fn update(&mut self, context: &U) {
         // Detect the values that became valid
-        let validated = self.watchables.my_drain(|index, val| val.is_valid(context)).collect::<Vec<(usize, T)>>();
-        let mut valids = self.valids.write().unwrap();
-        valids.clear();
-        *valids = validated.iter().map(|(index, val)| val.get_uid()).collect::<Vec<usize>>();
+        let validated = self.watchables.my_drain(|_, val| val.is_valid(context)).collect::<Vec<(usize, T)>>();
+        // And we will set the values that became valid
+        self.valids = validated.iter().map(|(_, val)| val.get_uid()).collect::<HashSet<usize>>();
     }
     // Check if a value became valid (This can be called on any thread, as long as we have a reference to self)
     pub fn has_become_valid(&self, watchable: &T) -> bool {
-        let valids = self.valids.read().unwrap();
-        valids.contains(&watchable.get_uid())
+        self.valids.contains(&watchable.get_uid())
     }
 }

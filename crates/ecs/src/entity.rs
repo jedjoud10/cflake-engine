@@ -1,10 +1,9 @@
 use bitfield::Bitfield;
-
-use crate::IEntityID;
+use crate::EntityID;
 // A simple entity in the world
 #[derive(Clone)]
 pub struct Entity {
-    pub(crate) id: IEntityID,                  // This entity's ID
+    pub(crate) id: Option<EntityID>,     // This entity's ID
     pub(crate) cbitfield: Bitfield<u32>, // Component Bitfield
 }
 
@@ -13,7 +12,7 @@ impl Entity {
     // Create a new default entity
     pub fn new() -> Self {
         Self {
-            id: IEntityID::new(0),
+            id: None,
             cbitfield: Bitfield::default(),
         }
     }

@@ -1,7 +1,6 @@
-use crate::{Component, Entity, linked_components::{LinkedComponents}, ComponentID, EnclosedComponent, IEntityID};
+use crate::{Component, Entity, linked_components::{LinkedComponents}, ComponentID, EnclosedComponent, EntityID};
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
-use ordered_vec::ordered_vec::OrderedVec;
 
 // A system event enum
 pub enum SystemEventType
@@ -16,8 +15,8 @@ pub struct System
     cbitfield: Bitfield<u32>, // Our Component Bitfield
     // Events
     update_components: Option<fn(&mut LinkedComponents)>,
-    // The component IDs
-    entities: AHashSet<IEntityID>,
+    // The entity IDs
+    entities: AHashSet<EntityID>,
 }
 
 // Initialization of the system
@@ -48,13 +47,13 @@ impl System {
     }
     // Check if we can add an entity (It's cbitfield became adequate for our system or the entity was added from the world)
     // If we can add it, then just do that
-    pub(crate) fn check_add_entity(&mut self, cbitfield: Bitfield<u32>, id: IEntityID) {
+    pub(crate) fn check_add_entity(&mut self, cbitfield: Bitfield<u32>, id: EntityID) {
         if cbitfield.contains(&self.cbitfield) && !self.cbitfield.empty() {
             self.entities.insert(id);
         }
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
-    pub(crate) fn remove_entity(&mut self, id: IEntityID) {
+    pub(crate) fn remove_entity(&mut self, id: EntityID) {
         self.entities.remove(&id);
     }
     // Run the system for a single iteration
