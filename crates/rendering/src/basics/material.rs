@@ -1,9 +1,7 @@
 use crate::basics::*;
 use crate::object::{PipelineObjectID, PipelineObject, PipelineTask};
 use crate::pipeline::*;
-
 use bitflags::bitflags;
-use others::Context;
 
 bitflags! {
     pub struct MaterialFlags: u8 {
@@ -19,54 +17,28 @@ impl Default for MaterialFlags {
 // A material that can have multiple parameters and such
 pub struct Material {
     // Rendering stuff
-    pub name: String,
-    pub shader: Option<PipelineObjectID<Shader>>,
-    pub flags: MaterialFlags,
+    shader: PipelineObjectID<Shader>,
+    flags: MaterialFlags,
     uniforms: ShaderUniformsGroup,
     _private: ()
 }
 
-impl PipelineObject for Material {
-    // Create a new builder for this material
-    fn builder() -> PipelineObjectBuilder<Self> {
-        let mut default_material = Self {
-            name: crate::utils::rname("material"),
-            shader: None,
-            flags: MaterialFlags::empty(),
-            uniforms: ShaderUniformsGroup::new(),
-            _private: (),
-        };
-        let mut group = ShaderUniformsGroup::new();
-        default_material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
-        default_material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
-        default_material.uniforms.set_f32("normals_strength", 1.0);
-        PipelineObjectBuilder::new(default_material);
-    }    
-}
-
-impl BuilderConvert for PipelineObjectBuilder<Texture> {
-    fn convert(self) -> PipelineTask {
-        PipelineTask::CreateMaterial(self)
-    }
-}
+impl Buildable 
 
 
-impl PipelineObjectBuilder<Texture> {
+impl PipelineObjectBuilder<Material> {
     // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>, pipeline: Context<SharedPipeline>) -> Self {
-        // Load the texture
-        let texture = pipec::texturec(
-            assets::assetc::load(path, obj)
-                diffuse_path,
-                Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
-            )
-            .unwrap(),
-        );
+    pub fn load_diffuse(mut self, diffuse_path: &str, opt: TextureLoadOptions, pipeline: &SharedPipeline) -> Self {
+        // Load the texture by creating it's builder
+        let mut builder = assets::assetc::dload::<>(path)
+
+        let texture = assets::assetc::dload::<Texture>(diffuse_path).unwrap()
+        let texture = crate::pipec::texturec(pipeline, );
         self.uniforms.set_t2d("diffuse_tex", &texture, 0);
         self
     }
     // Load the normal texture
-    pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>) -> Self {
+    pub fn load_normal(mut self, normal_path: &str, opt: TextureLoadOptions) -> Self {
         // Load the texture
         let texture = pipec::texturec(
             assets::cachec::acache_l(
