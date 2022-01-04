@@ -1,5 +1,5 @@
 use crate::basics::*;
-use crate::object::{PipelineObjectID, PipelineObject, PipelineTask};
+use crate::object::{PipelineObjectID, PipelineObject, PipelineTask, ObjectID};
 use crate::pipeline::*;
 use bitflags::bitflags;
 
@@ -16,14 +16,43 @@ impl Default for MaterialFlags {
 
 // A material that can have multiple parameters and such
 pub struct Material {
-    // Rendering stuff
-    shader: PipelineObjectID<Shader>,
+    shader: ObjectID<Shader>,
     flags: MaterialFlags,
     uniforms: ShaderUniformsGroup,
     _private: ()
 }
 
-impl Buildable 
+impl Buildable for Material {
+    fn send(self, pipeline: &Pipeline) -> ObjectID<Self> {
+        // Create the ID
+        let id = pipeline.materials.get_next_idx_increment();
+        ObjectID::new(id)
+    }
+
+    fn new(pipeline: &Pipeline) -> Self {
+        // Create a new material, with default 
+        let mut materail = Self {
+            shader: None,
+            flags: MaterialFlags::empty(),
+            uniforms: ShaderUniformsGroup::new(),
+            _private: (),
+        };
+        // Create some default uniforms
+        let mut group = ShaderUniformsGroup::new();
+        group.set_vec2f32("uv_scale", veclib::Vector2::ONE);
+        group.set_vec3f32("tint", veclib::Vector3::ONE);
+        group.set_f32("normals_strength", 1.0);
+        group.set_t2d(name, texture, active_texture_id)
+        PipelineObjectBuilder::new(default_material);
+        material
+        .uniforms
+        .set_t2d("diffuse_tex", &pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
+    material
+        .uniforms
+        .set_t2d("normals_tex", &pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
+    
+    }
+}
 
 
 impl PipelineObjectBuilder<Material> {
