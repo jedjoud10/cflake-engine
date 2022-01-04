@@ -1,11 +1,14 @@
 // Some pipeline commands
 pub mod pipec {
-    use others::TaskSender;
+    use std::sync::mpsc::Sender;
+    use crate::{object::{PipelineTask, TaskID, PipelineObject, ObjectID}, Pipeline, Buildable};
 
-    use crate::{SharedPipeline, object::PipelineTask};
-
-    // Send a builder to the render thread so it can build it's inner value
-    pub fn construct(pipeline: &SharedPipeline, sender: TaskSender<PipelineTask>) {
-        
+    // Send a task to the shared pipeline 
+    pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {
+        todo!();
+    }
+    // Create a Pipeline Object, returning it's ObjectID
+    pub fn construct<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
+        todo!();
     }
 }

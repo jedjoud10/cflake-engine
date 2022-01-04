@@ -1,5 +1,5 @@
 use super::{node::OctreeNode, octree::Octree};
-use ordered_vec::ordered_vec::OrderedVec;
+use ordered_vec::simple::OrderedVec;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::collections::{HashMap, HashSet};
 

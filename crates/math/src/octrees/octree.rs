@@ -1,5 +1,5 @@
 use super::node::OctreeNode;
-use ordered_vec::ordered_vec::OrderedVec;
+use ordered_vec::simple::OrderedVec;
 
 // A simple octree, no incremental generation what so ever
 #[derive(Default)]

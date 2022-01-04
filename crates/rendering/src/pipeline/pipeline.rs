@@ -1,22 +1,21 @@
-use others::GlobalBuffer;
+use std::sync::mpsc::Sender;
 
-use crate::object::{PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus};
+use ordered_vec::shareable::ShareableOrderedVec;
 
-// Some sort of shared pipeline that we share between threads so we can send multiple commands to the render thread
+use crate::{object::{PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus, PipelineTask}, Texture, Material};
+
+// The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that time
-pub struct SharedPipeline {
-    pub buffer: GlobalBuffer<IAsyncPipelineObjectID, PipelineObjectID>, // Buffer that tells the other threads whether or not we have generated some Pipeline Objects
-    pub task_buffer: GlobalBuffer<AsyncPipelineTaskID, PipelineTaskStatus>, // Buffer that tells the other threads when we have executed the tasks that they issued
-}
+pub struct Pipeline {
+    // The sender that we will use to send Pipeline Tasks to the render thread
+    pub(crate) tx: Sender<PipelineTask>,
+    // We store the Pipeline Objects, for each Pipeline Object type
+    pub(crate) textures: ShareableOrderedVec<Texture>,
+    pub(crate) materials: ShareableOrderedVec<Material>,
 
-// The pipeline that is actually stored on the Render Thread
-pub(crate) struct InternalPipeline {
-    // We store the Pipeline Objects
-    // And their names
-    // And we buffer the tasks for next frame
-    // And we store the status of all the tasks
+    // Store thet status for all of our tasks
+    pub(crate) task_statuses: ShareableOrderedVec<PipelineTaskStatus>,
 }
-
 
 // Load the default rendering things
 fn load_defaults() {

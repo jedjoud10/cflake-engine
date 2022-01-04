@@ -1,4 +1,4 @@
-use ordered_vec::ordered_vec::OrderedVec;
+use ordered_vec::simple::OrderedVec;
 use std::hash::Hash;
 
 use crate::bounds::AABB;

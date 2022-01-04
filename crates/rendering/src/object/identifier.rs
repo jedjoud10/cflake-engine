@@ -1,90 +1,43 @@
 use std::{marker::PhantomData, sync::{Arc, atomic::AtomicPtr}};
-use others::{ExternalID};
-use crate::SharedPipeline;
+use crate::{Pipeline, Buildable};
 use super::{PipelineObject, PipelineTaskStatus};
 
-// An ID for the PipelineObject
-pub struct IPipelineObjectID {
-    pub(crate) id: u16, // The OrderedVec's ID for this pipeline object
-}
-// A wrapper so we hide the generic type T so we can store this in the SharedPipeline
-pub(crate) struct IAsyncPipelineObjectID {
-    id: usize,
-}
-
-impl ExternalID<IPipelineObjectID> for IAsyncPipelineObjectID {
-    fn new() -> Self {
-        panic!()
-    }
-
-    fn id(&self) -> usize {
-        self.id
-    }
-}
-
-// A simple ptr to the actual PipelineObjectID
-// We can detect whenever the actual Pipeline command finished generating / updating the Object specified by the ID
-pub struct PipelineObjectID<T> 
-    where T: PipelineObject
+// This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
+pub struct ObjectID<T>
+    where T: PipelineObject + Buildable
 {
-    phantom: PhantomData<*const T>,
-    id: usize,
+    pub(crate) index: usize,
+    _phantom: PhantomData<*const T>,
 }
 
-impl<T> ExternalID<IPipelineObjectID> for PipelineObjectID<T> 
-    where T: PipelineObject 
+impl<T> ObjectID<T>
+    where T: PipelineObject + Buildable
 {
-    fn new() -> Self {
+    // Create a new object ID using an actual index
+    pub fn new(index: usize) -> Self {
         Self {
-            phantom: PhantomData::default(),
-            id: Self::increment(),
+            index, _phantom: PhantomData::default()
         }
     }
+}
+// We must implement watchable separately :(
 
-    fn id(&self) -> usize {
-        self.id
-    }
+
+// This is an ID for each Task that we dispatch to the render thread.
+// We can use this to detect whenever said task has completed
+pub struct TaskID {
+    index: usize,
 }
 
-impl<T> others::Watchable<SharedPipeline> for PipelineObjectID<T>
-    where T: PipelineObject
-{
+impl others::Watchable<Pipeline> for TaskID {
     fn get_uid(&self) -> usize {
-        self.id
+        self.index
     }
 
-    fn is_valid(&self, pipeline: &SharedPipeline) -> bool {
-        Self::try_get_id(self.id, &pipeline.buffer).is_some()
-    }
-}
-
-// A simple ptr to the actual PipelineObjectID
-// We can detect whenever the actual Pipeline Task finished using the others::Watchable trait
-pub struct AsyncPipelineTaskID
-{
-    id: usize,
-}
-
-impl ExternalID<PipelineTaskStatus> for AsyncPipelineTaskID {
-    fn new() -> Self {
-        Self {
-            id: Self::increment(),
-        }
-    }
-
-    fn id(&self) -> usize {
-        self.id
-    }
-}
-
-impl others::Watchable<SharedPipeline> for AsyncPipelineTaskID {
-    fn get_uid(&self) -> usize {
-        self.id
-    }
-
-    fn is_valid(&self, pipeline: &SharedPipeline) -> bool {
-        if let Some(status) = Self::try_get_id(self.id, &pipeline.task_buffer) {
-            if let PipelineTaskStatus::Finished = status {
+    fn is_valid(&self, context: &Pipeline) -> bool {
+        // Try to get the task and check if it is valid
+        if let Some(status) =  context.task_statuses.get(self.index) {
+            if let PipelineTaskStatus::Finished = *status {
                 true
             } else { false }
         } else { false }
