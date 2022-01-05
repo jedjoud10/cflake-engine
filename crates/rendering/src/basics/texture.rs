@@ -63,7 +63,7 @@ pub enum TextureFormat {
     DepthComponent32,
 }
 
-// Get the IDF from a simple TextureFormat and DataType
+// Get the IFD from a simple TextureFormat and DataType
 pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (i32, u32, u32) {
     let internal_format = match tf {
         // Red
@@ -241,9 +241,13 @@ pub enum TextureShaderAccessType {
 
 // A texture
 pub struct Texture {
+    pub oid: u32, // The OpenGL id for this texture
     pub bytes: Vec<u8>, // The bytes stored in this texture
+
     pub _format: TextureFormat, // The internal format of the texture
     pub _type: DataType,        // The data type that this texture uses for storage
+    pub(crate) ifd: (i32, u32, u32), // Internal Format, Format, Data
+
     pub flags: TextureFlags,    // This texture's flags
     pub filter: TextureFilter, // Texture mag and min filters, either Nearest or Linear
     pub wrap_mode: TextureWrapping, // What kind of wrapping will we use for this texture
@@ -260,6 +264,7 @@ impl Buildable for Texture {
 
     fn new(pipeline: &Pipeline) -> Self {
         Self {
+            oid: 0,
             bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,

@@ -2,7 +2,7 @@ use std::sync::mpsc::Sender;
 
 use ordered_vec::shareable::ShareableOrderedVec;
 
-use crate::{object::{PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus, PipelineTask}, Texture, Material};
+use crate::{object::{PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus, PipelineTask}, Texture, Material, Shader, Renderer, SubShader, Model};
 
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that time
@@ -10,11 +10,19 @@ pub struct Pipeline {
     // The sender that we will use to send Pipeline Tasks to the render thread
     pub(crate) tx: Sender<PipelineTask>,
     // We store the Pipeline Objects, for each Pipeline Object type
-    pub(crate) textures: ShareableOrderedVec<Texture>,
+    // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
+    pub(crate) models: ShareableOrderedVec<Model>,
+    pub(crate) renderers: ShareableOrderedVec<Renderer>,
+    pub(crate) shaders: ShareableOrderedVec<Shader>,
+    pub(crate) subshaders: ShareableOrderedVec<SubShader>,
+    pub(crate) textures: ShareableOrderedVec<Texture>,
 
     // Store thet status for all of our tasks
     pub(crate) task_statuses: ShareableOrderedVec<PipelineTaskStatus>,
+}
+
+impl Pipeline {
 }
 
 // Load the default rendering things
