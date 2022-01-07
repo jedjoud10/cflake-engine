@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{Uniform, object::ObjectID, Texture, TextureShaderAccessType, Pipeline, ShaderUniformsSettings, Uniformable};
+use veclib::{Vector, SupportedValue};
+
+use crate::{Uniform, object::ObjectID, Texture, TextureShaderAccessType, Pipeline, ShaderUniformsSettings};
 
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
@@ -20,27 +22,29 @@ impl ShaderUniformsGroup {
         }
         Self { uniforms: x }
     }
-    // Set a "value" uniform
-    pub fn value<T>(&mut self, name: &str, val: T)
-        where T: Uniformable
-    {
+    // Set singular/multiple i32 value
+    pub fn i32<T: SupportedValue + Vector<i32>>(&mut self, name: &str, val: T) {
         // Add the uniform
-        let uniform = val.get_uniform();
-        self.uniforms.insert(name.to_string(), uniform);
+        self.uniforms.insert(name.to_string(), Uniform::I32(val.get_unsized()));
+    }
+    // Set singular/multiple f32 value
+    pub fn f32<T: SupportedValue + Vector<f32>>(&mut self, name: &str, val: T) {
+        // Add the uniform
+        self.uniforms.insert(name.to_string(), Uniform::F32(val.get_unsized()));
+    }
+    // Set singular/multiple bool value
+    pub fn bool<T: SupportedValue + Vector<T>>(&mut self, name: &str, val: T) {
+        // Add the uniform
+        self.uniforms.insert(name.to_string(), Uniform::Bool(val.get_unsized()));
     }
     // Set a "texture" uniform
     pub fn texture<T>(&mut self, name: &str, val: ObjectID<Texture>, active_texture_id: u32)
     {
-        // Make a (ObjectID<Texture>, u32), then convert that into a uniform
-        // Add the uniform
-        let uniform = (val, active_texture_id).get_uniform();
-        self.uniforms.insert(name.to_string(), uniform);
+        self.uniforms.push(Uniform::Texture(val, active_texture_id))
     }
     // Set a "image" uniform
-    pub fn image<T>(&mut self, val: T, active_texture_id: u32)
-        where T: Uniformable
-    {
-        self.uniforms.push()
+    pub fn image(&mut self, val: ObjectID<Texture>, access_type: TextureShaderAccessType) {
+        self.uniforms.push(Uniform::Image(val, access_type))
     }
 
 
@@ -51,7 +55,8 @@ impl ShaderUniformsGroup {
     // Bind the shader and set the uniforms
     pub fn execute(&self, pipeline: &Pipeline, settings: ShaderUniformsSettings) -> Option<()> {
         // Get the shader program ID
-        let program_id = 
+        let shader =  pipeline.shaders.get(settings.shader_id.index)?;
+        let program_id = shader.program;
         unsafe {
             gl::UseProgram(program_id);
         }

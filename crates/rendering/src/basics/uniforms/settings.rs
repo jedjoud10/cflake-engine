@@ -1,6 +1,8 @@
+use crate::{object::ObjectID, Shader};
+
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
 pub struct ShaderUniformsSettings {
-    shader_id: ObjectID<Shader>,
+    pub(crate) shader_id: ObjectID<Shader>,
 }
 
 impl ShaderUniformsSettings {

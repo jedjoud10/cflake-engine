@@ -255,6 +255,8 @@ pub struct Texture {
     _private: () // Private type so we can't make the texture from outside this crate
 }
 
+impl PipelineObject for Texture {}
+
 impl Buildable for Texture {
     fn send(self, pipeline: &Pipeline) -> ObjectID<Self> {
         // Create the ID
@@ -268,6 +270,7 @@ impl Buildable for Texture {
             bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,
+            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte), 
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,

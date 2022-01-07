@@ -1,35 +1,49 @@
 use super::SubShader;
+use crate::object::PipelineObject;
 use crate::utils::RenderingError;
-use crate::SubShaderGPUObject;
-use crate::{pipec, GPUObjectID, SubShaderType};
-use assets::Object;
-use crate::params::*;
-use std::collections::{HashMap, HashSet};
-// A shader that contains two sub shaders that are compiled independently
-#[derive(Clone)]
-pub struct Shader {
-    pub name: String,
-    pub source: String,
-    pub linked_subshaders: Vec<GPUObjectID>,
+use crate::{pipec, object::ObjectID};
+use crate::{params::*, Buildable};
+use std::collections::{HashSet, HashMap};
+// Some shader settings that we can use to load the shader
+pub struct ShaderSettings {
+    pub(crate) external_code: String,
+    pub(crate) subshader_paths: HashMap<u8, String>,
 }
 
-impl Default for Shader {
-    fn default() -> Self {
+impl ShaderSettings {
+    // Load some external code that can be loading using specific include points
+    pub fn external_code(mut self, id: u8, string: String) -> Self {
+        self.external_code.insert(id.to_string(), string);
+        self
+    }
+    // Load a subshader
+    pub fn subshader(mut self, path: &str) -> Self {
+        self.subshader_paths.push(path)
+    }
+}
+
+// A shader that contains two sub shaders that are compiled independently
+pub struct Shader {
+    pub(crate) source: String,
+    pub(crate) linked_subshaders: Vec<ObjectID<SubShader>>,
+}
+impl PipelineObject for Shader {}
+
+impl Buildable for Shader {
+    fn send(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
+        // Create the ID
+        let id = pipeline.shaders.get_next_idx_increment();
+        ObjectID::new(id)
+    }
+
+    fn new(pipeline: &crate::Pipeline) -> Self {
         Self {
-            name: String::new(),
             source: String::new(),
-            externalcode: HashMap::new(),
             linked_subshaders: Vec::new(),
         }
     }
 }
 
-// A shader is an asset object, while a subshader is an asset
-impl Object for Shader {
-    fn get_unique_object_name(&self, _local_path: &str) -> String {
-        self.name.to_string()
-    }
-}
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
@@ -114,10 +128,8 @@ impl Shader {
         let need_to_continue = lines.iter().any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
         Ok(need_to_continue)
     }
-    // Creates a shader from multiple subshader files
-    pub fn load_shader(mut self, subshader_paths: Vec<&str>) -> Result<Self, RenderingError> {
-        // Create the shader name
-        self.name = format!("shader_{}", subshader_paths.join("__"));
+    // Creates a shader from it's corresponding shader settings
+    pub fn load_shader(mut self, settings: ShaderSettings) -> Result<Self, RenderingError> {
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through all the subshaders and link them
         for subshader_path in subshader_paths {
@@ -154,15 +166,5 @@ impl Shader {
             }
         }
         Ok(self)
-    }
-    // Load some external code that can be loading using specific include points
-    pub fn load_externalcode(mut self, id: &str, string: String) -> Self {
-        self.externalcode.insert(id.to_string(), string);
-        self
-    }
-    // Prefix the name with something
-    pub fn prefix_name(mut self, prefix: &str) -> Self {
-        self.name = format!("{}_{}", prefix, self.name);
-        self
-    }
+    }    
 }

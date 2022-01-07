@@ -16,6 +16,7 @@ pub struct Pipeline {
     pub(crate) renderers: ShareableOrderedVec<Renderer>,
     pub(crate) shaders: ShareableOrderedVec<Shader>,
     pub(crate) subshaders: ShareableOrderedVec<SubShader>,
+    pub(crate) subshader_paths: Vec
     pub(crate) textures: ShareableOrderedVec<Texture>,
 
     // Store thet status for all of our tasks
