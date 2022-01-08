@@ -1,7 +1,7 @@
-use crate::{object::PipelineObject, Buildable};
+use crate::{object::{PipelineObject, ObjectID, PipelineTask, ObjectBuildingTask}, Buildable};
 
 // A simple model that holds vertex, normal, and color data
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Model {
     // Per vertex data
     pub vertices: Vec<veclib::Vector3<f32>>,
@@ -16,23 +16,13 @@ pub struct Model {
 impl PipelineObject for Model {}
 
 impl Buildable for Model {
-    fn pre_construct(self, pipeline: &crate::Pipeline) -> Self {
-        
-    }
-
     fn construct(self, pipeline: &crate::Pipeline) -> crate::object::ObjectID<Self> {
-        
-    }
-
-    fn new() -> Self {
-        Self {
-            vertices: Vec::new(),
-            normals: Vec::new(),
-            tangents: Vec::new(),
-            uvs: Vec::new(),
-            colors: Vec::new(),
-            triangles: Vec::new(),
-        }
+        // Create the ID
+        let id = pipeline.materials.get_next_idx_increment();
+        let id = ObjectID::new(id);
+        // Create the task and send it
+        crate::pipec::task(PipelineTask::CreateModel(ObjectBuildingTask::<Self>(self, id)), pipeline);
+        id
     }
 }
 
@@ -58,8 +48,6 @@ impl Model {
         self.uvs.extend(other.uvs.into_iter());
         self.colors.extend(other.colors.into_iter());
         self.tangents.extend(other.tangents.into_iter());
-        // Update the name as well
-        self.name = format!("{}_{}", self.name, other.name);
         self
     }
     // Comebine a model with this one
@@ -71,8 +59,6 @@ impl Model {
         self.uvs.extend(other.uvs.into_iter());
         self.colors.extend(other.colors.into_iter());
         self.tangents.extend(other.tangents.into_iter());
-        // Update the name as well
-        self.name = format!("{}_{}", self.name, other.name);
         self
     }
 }

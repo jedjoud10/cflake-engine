@@ -1,211 +1,183 @@
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr};
 
+use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 
-use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID}, Texture, Material, Shader, Renderer, SubShader, Model};
+use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID}, Texture, Material, Shader, Renderer, Model, pipeline::camera::Camera};
+
+// Some default values like the default material or even the default shader
+pub(crate) struct DefaultPipelineObjects {
+    pub(crate) default_diffuse_tex: ObjectID<Texture>,
+    pub(crate) default_normals_tex: ObjectID<Texture>,
+    pub(crate) default_shader: ObjectID<Shader>,
+}
 
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
-// This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that time
-pub struct Pipeline {
-    // The sender that we will use to send Pipeline Tasks to the render thread
-    pub(crate) tx: Sender<PipelineTask>,
+// This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that times
+pub struct Pipeline {    
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
-    tasks: Vec<PipelineTask>,
+    tasks: Vec<(PipelineTask, TaskID)>,
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
     pub(crate) models: ShareableOrderedVec<Model>,
     pub(crate) renderers: ShareableOrderedVec<Renderer>,
     pub(crate) shaders: ShareableOrderedVec<Shader>,
-    pub(crate) subshaders: ShareableOrderedVec<SubShader>,
     pub(crate) textures: ShareableOrderedVec<Texture>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
-    pub(crate) default_diffuse_tex: ObjectID<Texture>,
-    pub(crate) default_normals_tex: ObjectID<Texture>,
+    pub(crate) defaults: Option<DefaultPipelineObjects>,
 
-    // Store thet status for all of our tasks
+    // Store the status for all of our tasks
     pub(crate) task_statuses: ShareableOrderedVec<PipelineTaskStatus>,
+
+    // The current main camera that is rendering the world
+    pub(crate) camera: Camera,
 }
 
 impl Pipeline {
+    // Flush all the buffered tasks, and execute them
+    pub fn flush(&mut self) {
+        // We must take the commands first
+        let tasks = std::mem::take(&mut self.tasks);
+        for (task, task_id) in tasks {
+            // Now we must execute these tasks
+            match task {
+                PipelineTask::CreateTexture(_) => {},
+                PipelineTask::CreateMaterial(_) => {},
+                PipelineTask::CreateShader(_) => {},
+                PipelineTask::CreateModel(_) => {},
+            }
+
+            // After executing the tasks, we must update our status
+            let status = self.task_statuses.get_mut(task_id.index).unwrap();
+            *status = PipelineTaskStatus::Finished;
+        }
+    }
 }
 
-// Load the default rendering things
-fn load_defaults() {
-    crate::pipec::texturec(assets::cachec::acache_l("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap());
-    // Create the black texture
-    crate::pipec::texturec(
-        assets::cachec::cache(
-            "black",
-            Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("black")
-                .set_bytes(vec![0, 0, 0, 255]),
-        )
-        .unwrap(),
-    );
-
-    // Create the white texture
-    crate::pipec::texturec(
-        assets::cachec::cache(
-            "white",
-            Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("white")
-                .set_bytes(vec![255, 255, 255, 255]),
-        )
-        .unwrap(),
-    );
-    // Create the default normals texture
-    crate::pipec::texturec(
-        assets::cachec::cache(
-            "default_normals",
-            Texture::default()
-                .set_dimensions(TextureType::Texture2D(1, 1))
-                .set_filter(TextureFilter::Linear)
-                .enable_mipmaps()
-                .set_name("default_normals")
-                .set_bytes(vec![127, 128, 255, 255]),
-        )
-        .unwrap(),
-    );
+// Data that will be sent back to the main thread after we start the pipeline thread
+pub struct PipelineStartData {
+    // The thread handle for the render thread, so we can join it to the main thread at any time
+    pub handle: std::thread::JoinHandle<()>,
+    // A sender that we can use to send messages to the render thread
+    pub(crate) tx: Sender<(PipelineTask, TaskID)>,
+    // A barrier that we can use to sync up with the main thread after every frame
+}
+// Initialize GLFW and the Window
+fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    // Set the type of events that we want to listen to
+    window.set_key_polling(true);
+    window.set_cursor_pos_polling(true);
+    window.set_scroll_polling(true);
+    window.set_size_polling(true);
+    glfw.set_swap_interval(glfw::SwapInterval::None);
+    window.make_current();
+}
+// Initialize OpenGL
+unsafe fn init_opengl() {
+    gl::Viewport(0, 0, 1280, 720);
+    gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+    gl::Enable(gl::DEPTH_TEST);
+    gl::Enable(gl::CULL_FACE);
+    gl::CullFace(gl::BACK);
 }
 
-// Create the new render thread
+// Create the new render thread, and return some data so we can access it from other threads
 pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
-    // Create a single channel (WorkerThreads/MainThread  => Render Thread)
-    let (tx, rx) = std::sync::mpsc::channel::<RenderCommandQuery>(); // Main to render
-    let (tx2, rx2) = std::sync::mpsc::channel::<MainThreadMessage>(); // Render to main
-    {
-        let mut template_ = TX_TEMPLATE.lock().unwrap();
-        let template = &mut *template_;
-        *template = Some(tx);
-    }
-    // Barrier so we can wait until the render thread has finished initializing
+    // Create a single channel to allow us to receive Pipeline Tasks from the other threads
+    let (tx, rx) = std::sync::mpsc::channel::<(PipelineTask, TaskID)>(); // Main to render
+    
+    // Barrier so we can sync with the main thread at the start of each frame
     let barrier = Arc::new(Barrier::new(2));
     let barrier_clone = barrier.clone();
-    let join_handle: std::thread::JoinHandle<()>;
-    unsafe {
-        // Window and GLFW wrapper
-        struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
+
+    // An init barrier
+    let init_barrier = Arc::new(Barrier::new(2));
+    let init_barrier_clone = init_barrier.clone();
+    
+    // Create a simple unsafe wrapper so we can send the glfw and window data to the render thread
+    // Window and GLFW wrapper
+    struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
+    let wrapper = unsafe {
         // Create the render wrapper
         let glfw = glfw as *mut glfw::Glfw;
         let window = window as *mut glfw::Window;
-        let render_wrapper = RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window));
         unsafe impl Send for RenderWrapper {}
         unsafe impl Sync for RenderWrapper {}
-        let builder = std::thread::Builder::new().name("RenderThread".to_string());
-        join_handle = builder
-            .spawn(move || {
-                // Start OpenGL
-                let glfw = &mut *render_wrapper.0.load(std::sync::atomic::Ordering::Relaxed);
-                let window = &mut *render_wrapper.1.load(std::sync::atomic::Ordering::Relaxed);
-                // Initialize OpenGL
-                println!("Initializing OpenGL...");
-                window.make_current();
-                glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
-                gl::load_with(|s| window.get_proc_address(s) as *const _);
-
-                // Set the type of events that we want to listen to
-                window.set_key_polling(true);
-                window.set_cursor_pos_polling(true);
-                window.set_scroll_polling(true);
-                window.set_size_polling(true);
-                glfw.set_swap_interval(glfw::SwapInterval::None);
-                window.make_current();
-                if gl::Viewport::is_loaded() {
-                    gl::Viewport(0, 0, 1280, 720);
-                    gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-                    gl::Enable(gl::DEPTH_TEST);
-                    gl::Enable(gl::CULL_FACE);
-                    gl::CullFace(gl::BACK);
-                    println!("Successfully initialized OpenGL!");
-                } else {
-                    /* NON */
-                    panic!()
-                }
-                // The render command receiver
-                let sent_tasks_receiver = rx;
-
-                // Create the pipeline
-                let mut pipeline_renderer = PipelineRenderer::default();
-                // This is indeed the render thread
-                crate::pipeline::IS_RENDER_THREAD.with(|x| x.set(true));
-                load_defaults();
-                pipeline_renderer.init();
-
-                // El camera
-                let mut camera = CameraDataGPUObject {
-                    position: veclib::Vector3::ZERO,
-                    rotation: veclib::Quaternion::IDENTITY,
-                    clip_planes: veclib::Vector2::ZERO,
-                    viewm: veclib::Matrix4x4::IDENTITY,
-                    projm: veclib::Matrix4x4::IDENTITY,
-                };
-
-                // We must render every frame
-                // Timing stuff
-                let mut last_time: f64 = 0.0;
-                let mut frame_count: u128 = 0;
-                let tx2 = tx2.clone();
-                println!("Successfully created the RenderThread!");
-                barrier_clone.wait();
-
-                loop {
-                    // Update the delta_time
-                    let new_time = glfw.get_time();
-                    let delta = new_time - last_time;
-                    last_time = new_time;
-                    // Run the frame
-                    // Poll first
-                    let i = std::time::Instant::now();
-                    let mut pipeline_buffer = BUFFER.lock().unwrap();
-                    poll_commands(&mut pipeline_buffer, &mut pipeline_renderer, &mut camera, &sent_tasks_receiver, glfw);
-                    poll_async_gpu_commands(&mut pipeline_buffer);
-                    // Update the shader uniform objects that we have stored in the pipeline
-                    update_shader_uniform_objects(&mut pipeline_buffer, new_time as f32, delta as f32, &pipeline_renderer.window);
-
-                    // --- Rendering ---
-                    // Pre-render
-                    pipeline_renderer.pre_render();
-                    // Render
-                    pipeline_renderer.renderer_frame(&mut pipeline_buffer, &camera, new_time as f32, delta as f32);
-                    // Post-render
-                    pipeline_renderer.post_render(&pipeline_buffer, &camera, window);
-
-                    // Run the callbacks
-                    pipeline_buffer.execute_callbacks(&tx2);
-                    frame_count += 1;
-                    // The world is valid, we can wait
-                    let barrier_data = others::barrier::as_ref();
-                    if barrier_data.is_world_valid() {
-                        if barrier_data.is_world_destroyed() {
-                            println!("Stopping the render thread...");
-                            barrier_data.thread_sync_quit();
-                            break;
-                        }
-                    }
-                    if i.elapsed().as_secs_f32() * 1000.0 > 5.0 {
-                        //println!("Update pipeline in {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-                    }
-                    //std::thread::sleep(std::time::Duration::from_millis(16));
-                }
-                println!("Stopped the render thread!");
-            })
-            .unwrap();
+        RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window))
     };
+
+    // Actually make the render thread
+    let handle = std::thread::spawn(|| {
+        // Start OpenGL
+        let glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
+        let window = unsafe { &mut *wrapper.1.load(std::sync::atomic::Ordering::Relaxed) };
+        // Initialize OpenGL
+        println!("Initializing OpenGL...");
+        window.make_current();
+        unsafe {
+            glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
+            gl::load_with(|s| window.get_proc_address(s) as *const _);
+        }
+
+        // Init Glfw and OpenGL
+        init_glfw(glfw, window);
+        if gl::Viewport::is_loaded() {
+            unsafe { init_opengl(); }
+            println!("Successfully initialized OpenGL!");
+        } else {
+            /* NON */
+            panic!()
+        }
+        // The render command receiver
+        let sent_tasks_receiver = rx;
+
+        // Create the pipeline
+        let pipeline = Pipeline {
+            // Buffered tasks
+            tasks: Vec::new(),
+            // Buffers
+            materials: ShareableOrderedVec::default(),
+            models: ShareableOrderedVec::default(),
+            renderers: ShareableOrderedVec::default(),
+            shaders: ShareableOrderedVec::default(),
+            textures: ShareableOrderedVec::default(),
+            // Defaults
+            defaults: None,
+            // Status
+            task_statuses: ShareableOrderedVec::default(),
+            // Others
+            camera: Camera {
+                position: veclib::Vector3::ZERO,
+                rotation: veclib::Quaternion::IDENTITY,
+                clip_planes: veclib::Vector2::ZERO,
+                viewm: veclib::Matrix4x4::IDENTITY,
+                projm: veclib::Matrix4x4::IDENTITY,
+            },
+        };
+
+        // ---- Finished initializing the Pipeline! ----
+        init_barrier_clone.wait();
+        println!("Successfully created the RenderThread!");
+        
+        // We must render every frame
+        loop {
+            // At the start of each frame we must sync up with the main thread
+            barrier_clone.wait();
+        }
+        println!("Stopped the render thread!");
+    });
     // Wait for the init message...
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");
-    barrier.wait();
+    init_barrier.wait();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
-    PipelineStartData { handle: join_handle, rx: rx2 }
+    PipelineStartData {
+        handle,
+        tx,
+    }
 }
 
 // Update the shader uniform objects that we have stored
@@ -389,11 +361,7 @@ fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
         crate::others::executed_command(buf, command_id, batch_callback_data, None, &mut *lock);
     }
 }
-// Data that will be sent back to the main thread after we start the pipeline thread
-pub struct PipelineStartData {
-    pub handle: std::thread::JoinHandle<()>,
-    pub rx: std::sync::mpsc::Receiver<MainThreadMessage>,
-}
+
 
 mod object_creation {
     use std::{

@@ -10,6 +10,4 @@ pub(crate) trait Buildable: PipelineObject
     fn pre_construct(self, pipeline: &Pipeline) -> Self { self }
     // Construct the ID for self, send a task to the pipeline to create "self", and return our ID
     fn construct(self, pipeline: &Pipeline) -> ObjectID<Self>;
-    // Create self. This basically replaces the Default implementation, since we will use some sort of "self" builder
-    fn new() -> Self;
 }

@@ -3,11 +3,12 @@ use crate::{Pipeline, Buildable};
 use super::{PipelineObject, PipelineTaskStatus};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
+#[derive(Default)]
 pub struct ObjectID<T>
     where T: PipelineObject + Buildable
 {
     pub(crate) index: usize,
-    _phantom: PhantomData<*const T>,
+    _phantom: PhantomData<fn() -> T>,
 }
 
 impl<T> ObjectID<T>
@@ -26,7 +27,16 @@ impl<T> ObjectID<T>
 // This is an ID for each Task that we dispatch to the render thread.
 // We can use this to detect whenever said task has completed
 pub struct TaskID {
-    index: usize,
+    pub(crate) index: usize,
+}
+
+impl TaskID {
+    // Create a new task ID using an actual index
+    pub fn new(index: usize) -> Self {
+        Self {
+            index
+        }
+    }
 }
 
 impl others::Watchable<Pipeline> for TaskID {

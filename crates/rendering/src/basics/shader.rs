@@ -40,7 +40,7 @@ impl ShaderSettings {
         self.sources.insert(path.to_string(), ShaderSource {
             path: path.to_string(),
             text,
-            _type: match metadata.extension {
+            _type: match metadata.extension.as_str() {
                 "vrsh.glsl" => ShaderSourceType::Vertex,
                 "frsh.glsl" => ShaderSourceType::Fragment,
                 "cmpt.glsl" => ShaderSourceType::Compute,
@@ -52,7 +52,10 @@ impl ShaderSettings {
 }
 
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
+#[derive(Default)]
 pub struct Shader {
+    // The OpenGL program linked to this shader
+    pub(crate) program: u32,
     // The updated and modified shader sources
     pub(crate) sources: HashMap<String, ShaderSource>,
 }
@@ -66,18 +69,12 @@ impl Buildable for Shader {
         crate::pipec::task(PipelineTask::CreateShader(ObjectBuildingTask::<Self>(self, id)), pipeline);
         id
     }
-
-    fn new() -> Self {
-        Self {
-            sources: HashMap::new(),
-        }
-    }
 }
 
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(&self, subshader_name: &str, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
+    fn load_includes<'a>(&self, settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
         // Turn the string into lines
         let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
         for (i, line) in lines.iter_mut().enumerate() {
@@ -93,8 +90,8 @@ impl Shader {
                     included_paths.insert(local_path.to_string());
                     assets::assetc::load_text(local_path).map_err(|_| {
                         RenderingError::new(format!(
-                            "Tried to include function shader '{}' and it was not pre-loaded!. Shader '{}'",
-                            local_path, subshader_name
+                            "Tried to include function shader '{}' and it was not pre-loaded!.",
+                            local_path
                         ))
                     })?
                 } else { String::new() };
@@ -104,11 +101,11 @@ impl Shader {
                 break;
             }
             // External shader code
-            if !self.externalcode.is_empty() && line.trim().starts_with("#include_custom ") {
+            if !settings.external_code.is_empty() && line.trim().starts_with("#include_custom ") {
                 // Get the source
                 let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-                let source_id = &c[2..(c.len() - 2)];
-                let source = self.externalcode.get(source_id).unwrap();
+                let source_id = &c[2..(c.len() - 2)].to_string().parse::<u8>().unwrap();
+                let source = settings.external_code.get(source_id).unwrap();
                 *line = source.clone();
                 break;
             }
@@ -159,41 +156,19 @@ impl Shader {
         Ok(need_to_continue)
     }
     // Creates a shader from it's corresponding shader settings
-    pub fn load_shader(mut self, settings: ShaderSettings) -> Result<Self, RenderingError> {
+    pub fn load_shader(mut self, mut settings: ShaderSettings) -> Result<Self, RenderingError> {
         let mut included_paths: HashSet<String> = HashSet::new();
+        // Loop through the shader sources and edit them
+        let mut sources = std::mem::take(&mut settings.sources);
         // Loop through all the subshaders and link them
-        for subshader_path in subshader_paths {
-            // Check if we even have the subshader cached (In the object cacher) and check if it's cached in the pipeline as well
-            if assets::cachec::cached(subshader_path) && pipec::others::gpuobject_name_valid(subshader_path) {
-                let id = pipec::others::get_id(subshader_path).unwrap();
-                self.linked_subshaders.push(id);
-            } else {
-                // It was not cached, so we need to cache it
-                let mut subshader: SubShader = assets::assetc::dload(subshader_path).map_err(|_| RenderingError::new_str("Sub-shader was not pre-loaded!"))?;
-                // Recursively load the shader includes
-                let mut final_source = subshader.source;
-                // Include the sources until no sources can be included
-                while Self::load_includes(&self, subshader_path, &mut final_source, &mut included_paths)? {
-                    // We are still including paths
-                }
-                // Set the shader source for this shader
-                subshader.source = final_source;
-                // Gotta filter out the include messages
-                subshader.source = subshader
-                    .source
-                    .lines()
-                    .filter(|x| {
-                        let s = x.to_string();
-                        let s = s.trim();
-                        !s.starts_with("#include") && !s.starts_with("#include_custom")
-                    })
-                    .collect::<Vec<&str>>()
-                    .join("\n");
-
-                // Cache it, and link it
-                self.linked_subshaders.push(pipec::subshader(subshader.clone()));
-                let _rc_subshader = assets::cachec::cache_l(subshader_path, subshader).unwrap();
-            }
+        for (source_path, mut source_data) in sources {
+            // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
+            // Include the includables until they cannot be included
+            while Self::load_includes(&self, &settings, &mut source_data.text, &mut included_paths)? {
+                // We are still including paths
+            }            
+            // Add this shader source to be generated as a subshader
+            self.sources.insert(source_path, source_data);
         }
         Ok(self)
     }    

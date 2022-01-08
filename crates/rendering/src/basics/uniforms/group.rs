@@ -6,45 +6,65 @@ use crate::{Uniform, object::ObjectID, Texture, TextureShaderAccessType, Pipelin
 
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
-#[derive(Clone)]
+#[derive(Default)]
 pub struct ShaderUniformsGroup {
-    pub uniforms: HashMap<String, Uniform>,
+    pub(crate) uniforms: HashMap<String, Uniform>,
 }
 
 // Gotta change the place where this shit is in
 impl ShaderUniformsGroup {
     // Combine a shader uniform group with an another one
-    pub fn combine(a: &Self, b: &Self) -> Self {
-        let mut x = a.uniforms.clone();
-        let y = b.uniforms.clone();
+    pub fn combine(a: Self, b: Self) -> Self {
+        let mut x = a.uniforms;
+        let y = b.uniforms;
         for a in y {
             x.insert(a.0, a.1);
         }
         Self { uniforms: x }
     }
-    // Set singular/multiple i32 value
-    pub fn i32<T: SupportedValue + Vector<i32>>(&mut self, name: &str, val: T) {
-        // Add the uniform
+    // Set singular i32 value
+    pub fn set_i32(&mut self, name: &str, val: i32) {
         self.uniforms.insert(name.to_string(), Uniform::I32(val.get_unsized()));
     }
-    // Set singular/multiple f32 value
-    pub fn f32<T: SupportedValue + Vector<f32>>(&mut self, name: &str, val: T) {
-        // Add the uniform
+    // Set a vector 2 of i32 values
+    pub fn set_vec2i32(&mut self, name: &str, val: veclib::Vector2<i32>) {
+        self.uniforms.insert(name.to_string(), Uniform::I32(val.get_unsized()));
+    }
+    // Set a vector 3 of i32 values
+    pub fn set_vec3i32(&mut self, name: &str, val: veclib::Vector3<i32>) {
+        self.uniforms.insert(name.to_string(), Uniform::I32(val.get_unsized()));
+    }
+    // Set singular f32 value
+    pub fn set_f32(&mut self, name: &str, val: f32) {
         self.uniforms.insert(name.to_string(), Uniform::F32(val.get_unsized()));
     }
-    // Set singular/multiple bool value
-    pub fn bool<T: SupportedValue + Vector<T>>(&mut self, name: &str, val: T) {
-        // Add the uniform
+    // Set a vector 2 of f32 values
+    pub fn set_vec2f32(&mut self, name: &str, val: veclib::Vector2<f32>) {
+        self.uniforms.insert(name.to_string(), Uniform::F32(val.get_unsized()));
+    }
+    // Set a vector 3 of f32 values
+    pub fn set_vec3f32(&mut self, name: &str, val: veclib::Vector3<f32>) {
+        self.uniforms.insert(name.to_string(), Uniform::F32(val.get_unsized()));
+    }
+    // Set singular bool value
+    pub fn set_bool(&mut self, name: &str, val: bool) {
+        self.uniforms.insert(name.to_string(), Uniform::Bool(val.get_unsized()));
+    }
+    // Set a vector 2 of bool values
+    pub fn set_vec2bool(&mut self, name: &str, val: veclib::Vector2<bool>) {
+        self.uniforms.insert(name.to_string(), Uniform::Bool(val.get_unsized()));
+    }
+    // Set a vector 3 of bool values
+    pub fn set_vec3bool(&mut self, name: &str, val: veclib::Vector3<bool>) {
         self.uniforms.insert(name.to_string(), Uniform::Bool(val.get_unsized()));
     }
     // Set a "texture" uniform
-    pub fn texture<T>(&mut self, name: &str, val: ObjectID<Texture>, active_texture_id: u32)
-    {
-        self.uniforms.push(Uniform::Texture(val, active_texture_id))
+    pub fn set_texture(&mut self, name: &str, val: ObjectID<Texture>, active_texture_id: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::Texture(val, active_texture_id));
     }
     // Set a "image" uniform
-    pub fn image(&mut self, val: ObjectID<Texture>, access_type: TextureShaderAccessType) {
-        self.uniforms.push(Uniform::Image(val, access_type))
+    pub fn set_image(&mut self, name: &str, val: ObjectID<Texture>, access_type: TextureShaderAccessType) {
+        self.uniforms.insert(name.to_string(), Uniform::Image(val, access_type));
     }
     // Create self
     pub fn new() -> Self {
@@ -65,9 +85,9 @@ impl ShaderUniformsGroup {
                 match &uniform {
                     Uniform::Bool(unsized_vector) => match unsized_vector {
                         veclib::UnsizedVector::Single(val) => set_bool(index, val),
-                        veclib::UnsizedVector::Vec2(val) => set_bool(index, val),
-                        veclib::UnsizedVector::Vec3(val) => set_bool(index, val),
-                        veclib::UnsizedVector::Vec4(val) => set_bool(index, val),
+                        veclib::UnsizedVector::Vec2(val) => set_vec2bool(index, val),
+                        veclib::UnsizedVector::Vec3(val) => set_vec3bool(index, val),
+                        veclib::UnsizedVector::Vec4(val) => set_vec4bool(index, val),
                     },
                     Uniform::I32(unsized_vector) => match unsized_vector {
                         veclib::UnsizedVector::Single(val) => set_i32(index, val),

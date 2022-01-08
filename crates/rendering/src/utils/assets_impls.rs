@@ -5,7 +5,7 @@ use assets::{Asset};
 
 // All the Asset trait implementations are here
 // One for the textures
-impl Asset for PipelineObjectBuilder<Texture> {
+impl Asset for Texture {
     fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
     where
         Self: Sized,
@@ -17,8 +17,7 @@ impl Asset for PipelineObjectBuilder<Texture> {
             .set_bytes(bytes)
             .set_dimensions(TextureType::Texture2D(width, height))
             .set_format(TextureFormat::RGBA8R)
-            .set_data_type(DataType::UByte)
-            .set_name(&data.name);
+            .set_data_type(DataType::UByte);
         Some(texture)
     }
 }
@@ -33,7 +32,6 @@ impl Asset for Model {
         let string = data.read_string();
         let lines = string.lines();
         let mut model = Model::default();
-        model.name = data.name.clone();
         for line in lines {
             let start = line.split_once(' ').unwrap().0;
             let other = line.split_once(' ').unwrap().1;

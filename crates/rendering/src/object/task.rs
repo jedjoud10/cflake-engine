@@ -1,4 +1,4 @@
-use crate::{Texture, Material, Buildable, Shader};
+use crate::{Texture, Material, Buildable, Shader, Model};
 use super::{ObjectID, PipelineObject};
 
 // A task to create an object
@@ -8,6 +8,7 @@ pub enum PipelineTask {
     CreateTexture(ObjectBuildingTask<Texture>),
     CreateMaterial(ObjectBuildingTask<Material>),
     CreateShader(ObjectBuildingTask<Shader>),
+    CreateModel(ObjectBuildingTask<Model>),
 }
 
 // The status for a specific PipelineTask

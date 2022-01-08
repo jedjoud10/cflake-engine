@@ -256,6 +256,24 @@ pub struct Texture {
     _private: () // Private type so we can't make the texture from outside this crate
 }
 
+impl Default for Texture {
+    fn default() -> Self {
+        Self {
+            oid: 0,
+            bytes: Vec::new(),
+            _format: TextureFormat::RGBA8R,
+            _type: DataType::UByte,
+            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte), 
+            target: gl::TEXTURE_2D,
+            flags: TextureFlags::empty(),
+            filter: TextureFilter::Linear,
+            wrap_mode: TextureWrapping::Repeat,
+            ttype: TextureType::Texture2D(0, 0),    
+            _private: (),        
+        } 
+    }
+}
+
 impl PipelineObject for Texture {}
 
 impl Buildable for Texture {
@@ -274,22 +292,6 @@ impl Buildable for Texture {
         // Create a task and send it
         crate::pipec::task(PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)), pipeline);
         id
-    }
-
-    fn new() -> Self {
-        Self {
-            oid: 0,
-            bytes: Vec::new(),
-            _format: TextureFormat::RGBA8R,
-            _type: DataType::UByte,
-            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte), 
-            target: gl::TEXTURE_2D,
-            flags: TextureFlags::empty(),
-            filter: TextureFilter::Linear,
-            wrap_mode: TextureWrapping::Repeat,
-            ttype: TextureType::Texture2D(0, 0),    
-            _private: (),        
-        }      
     }
 }
 
