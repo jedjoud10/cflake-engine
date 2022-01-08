@@ -1,75 +1,23 @@
-use crate::{pipec, pipeline::object::*, MaterialFlags, Shader, Texture};
-use crate::{texture::*, DataType, GPUObjectID, Material, Window, RendererFlags};
-use glfw::Context;
-use std::ptr::null;
+use crate::{object::ObjectID, Texture, Model, Pipeline, pipec, Shader, ShaderSettings};
 
-use super::buffer::PipelineBuffer;
-
-// These should be ran on the main thread btw
-pub mod window_commands {
-    // Set fullscreen
-    pub fn set_fullscreen(fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-        if fullscreen {
-            // Set the glfw window as a fullscreen window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let videomode = monitor.unwrap().get_video_mode().unwrap();
-                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
-                unsafe {
-                    // Update the OpenGL viewport
-                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-                }
-            });
-        } else {
-            // Set the glfw window as a windowed window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                let size = crate::WINDOW_SIZE;
-                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, size.x as u32, size.y as u32, None);
-                unsafe {
-                    // Update the OpenGL viewport
-                    gl::Viewport(0, 0, size.x as i32, size.y as i32);
-                }
-            });
-        }
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen));
-    }
-    // Set vsync
-    pub fn set_vsync(vsync: bool) {
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync));
-    }
-    // Hide the cursor
-    pub fn hide_cursor(window: &mut glfw::Window) {
-        window.set_cursor_mode(glfw::CursorMode::Disabled);
-        window.set_cursor_pos(0.0, 0.0);
-    }
-}
-// The main renderer, this is stored
+// Pipeline renderer that will render our world
 #[derive(Default)]
 pub struct PipelineRenderer {
-    framebuffer: u32,              // The master frame buffer
-    diffuse_texture: GPUObjectID,  // Diffuse texture, can also store HDR values
-    normals_texture: GPUObjectID,  // World Normals texture
-    position_texture: GPUObjectID, // World Positions texture
-    depth_texture: GPUObjectID,    // Depth texture
-    debug_view: u16,               // OUr currenty debug view mode
-    wireframe: bool,               // Are we rendering in wireframe or not
-    quad_model: GPUObjectID,       // The current screen quad model that we are using
-    screen_shader: GPUObjectID,    // The current screen quad shader that we are using
-    sky_texture: GPUObjectID,      // The sky gradient texture
-    wireframe_shader: GPUObjectID, // The current wireframe shader
-    //frame_stats: FrameStats,                   // Some frame stats
-    pub window: Window,                        // Window
-    pub default_material: Option<GPUObjectID>, // Self explanatory
-}
+    // The master frame buffer
+    framebuffer: u32,
+    
+    // Our deferred textures
+    diffuse_texture: ObjectID<Texture>,
+    normals_texture: ObjectID<Texture>,
+    position_texture: ObjectID<Texture>, 
+    depth_texture: ObjectID<Texture>,
 
-// Render debug primitives
-pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
-    /*
-    let _vp_m = camera.projm * camera.viewm;
-    for primitive in &primitives {
-        render(primitive, camera, dm);
-    }
-    */
+    // Screen rendering
+    screen_shader: ObjectID<Shader>,
+    quad_model: ObjectID<Model>,
+
+    // Others
+    sky_texture: ObjectID<Texture>,
 }
 
 // Render a renderer normally
@@ -175,16 +123,14 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
 }
 
 impl PipelineRenderer {
-    // Init the pipeline renderer
-    pub fn init(&mut self) {
-        unsafe {
-            gl::Viewport(0, 0, 1280, 720);
-        }
+    // Create a new pipeline renderer
+    pub fn new(pipeline: &Pipeline) -> Self {
         println!("Initializing the pipeline renderer...");
-        self.window = Window::default();
-        // Create the quad model
+        // Create "self" first of all
+        let pr = Self::default();
+        // Create the quad model that we will use to render the whole screen
         use crate::basics::Model;
-        use veclib::consts::*;
+        use veclib::{vec3, vec2};
         let quad = Model {
             vertices: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
             normals: vec![veclib::Vector3::ZERO; 4],
@@ -194,8 +140,16 @@ impl PipelineRenderer {
             triangles: vec![0, 1, 2, 0, 3, 1],
             ..Model::default()
         };
-        self.quad_model = pipec::model(quad);
-        self.screen_shader = pipec::shader(
+        // Load the quad model
+        pr.quad_model = pipec::construct(quad, pipeline);
+
+        // Load the screen shader
+        let ss = ShaderSettings::default()
+            .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
+            .source("defaults\\shaders\\rendering\\screen.frsh.glsl");
+        pr.screen_shader = pipec::construct(Shader::new(ss).unwrap(), pipeline); 
+        
+        pipec::shader(
             Shader::default()
                 .load_shader(vec![
                     "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",

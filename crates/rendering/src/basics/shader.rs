@@ -20,6 +20,7 @@ pub(crate) struct ShaderSource {
 } 
 
 // Some shader settings that we can use to load the shader
+#[derive(Default)]
 pub struct ShaderSettings {
     // Some external code that we can 
     pub(crate) external_code: HashMap<u8, String>,
@@ -52,7 +53,6 @@ impl ShaderSettings {
 }
 
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
-#[derive(Default)]
 pub struct Shader {
     // The OpenGL program linked to this shader
     pub(crate) program: u32,
@@ -74,7 +74,7 @@ impl Buildable for Shader {
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes<'a>(&self, settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
+    fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
         // Turn the string into lines
         let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
         for (i, line) in lines.iter_mut().enumerate() {
@@ -156,7 +156,12 @@ impl Shader {
         Ok(need_to_continue)
     }
     // Creates a shader from it's corresponding shader settings
-    pub fn load_shader(mut self, mut settings: ShaderSettings) -> Result<Self, RenderingError> {
+    pub fn new(mut settings: ShaderSettings) -> Result<Self, RenderingError> {
+        // Create "self"
+        let mut shader = Self {
+            program: 0,
+            sources: HashMap::default(),
+        };
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through the shader sources and edit them
         let mut sources = std::mem::take(&mut settings.sources);
@@ -164,12 +169,12 @@ impl Shader {
         for (source_path, mut source_data) in sources {
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
             // Include the includables until they cannot be included
-            while Self::load_includes(&self, &settings, &mut source_data.text, &mut included_paths)? {
+            while Self::load_includes(&settings, &mut source_data.text, &mut included_paths)? {
                 // We are still including paths
             }            
             // Add this shader source to be generated as a subshader
-            self.sources.insert(source_path, source_data);
+            shader.sources.insert(source_path, source_data);
         }
-        Ok(self)
+        Ok(shader)
     }    
 }

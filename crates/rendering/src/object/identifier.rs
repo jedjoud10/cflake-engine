@@ -3,12 +3,19 @@ use crate::{Pipeline, Buildable};
 use super::{PipelineObject, PipelineTaskStatus};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
-#[derive(Default)]
 pub struct ObjectID<T>
     where T: PipelineObject + Buildable
 {
     pub(crate) index: usize,
     _phantom: PhantomData<fn() -> T>,
+}
+
+impl<T> Default for ObjectID<T> 
+    where T: PipelineObject + Buildable
+{
+    fn default() -> Self {
+        Self { index: 0, _phantom: PhantomData::default() }
+    }
 }
 
 impl<T> ObjectID<T>

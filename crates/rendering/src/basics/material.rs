@@ -30,11 +30,11 @@ impl Buildable for Material {
         group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
         group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
         group.set_f32("normals_strength", 1.0);
-        group.set_texture("diffuse_tex", pipeline.default_diffuse_tex, 0);
-        group.set_texture("normals_tex", pipeline.default_normals_tex, 1);
+        group.set_texture("diffuse_tex", pipeline.defaults.unwrap().default_diffuse_tex, 0);
+        group.set_texture("normals_tex", pipeline.defaults.unwrap().default_normals_tex, 1);
         self.uniforms = group;
         // Set the default rendering shader if no shader was specified
-        self.shader.get_or_insert(pipeline.default_shader);
+        self.shader.get_or_insert(pipeline.defaults.unwrap().default_shader);
         self
     }
 

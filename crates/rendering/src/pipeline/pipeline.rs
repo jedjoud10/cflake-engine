@@ -1,9 +1,9 @@
-use std::sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr};
+use std::sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr, RwLock};
 
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 
-use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID}, Texture, Material, Shader, Renderer, Model, pipeline::camera::Camera};
+use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID}, Texture, Material, Shader, Renderer, Model, pipeline::camera::Camera, PipelineRenderer};
 
 // Some default values like the default material or even the default shader
 pub(crate) struct DefaultPipelineObjects {
@@ -15,6 +15,8 @@ pub(crate) struct DefaultPipelineObjects {
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that times
 pub struct Pipeline {    
+    // The sender that we will use to send data to the RenderThread. We will wrap the Pipeline in a RwLock, so we are fine
+    tx: std::sync::mpsc::Sender<(PipelineTask, TaskID)>,
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
     tasks: Vec<(PipelineTask, TaskID)>,
     // We store the Pipeline Objects, for each Pipeline Object type
@@ -33,9 +35,16 @@ pub struct Pipeline {
 
     // The current main camera that is rendering the world
     pub(crate) camera: Camera,
+
+    // Should we quit from the render thread?
+    should_quit: bool,
 }
 
 impl Pipeline {
+    // Set the buffered tasks from RX messages
+    pub fn add_tasks(&mut self, messages: Vec<(PipelineTask, TaskID)>) {
+        self.tasks.extend(messages);
+    }
     // Flush all the buffered tasks, and execute them
     pub fn flush(&mut self) {
         // We must take the commands first
@@ -47,6 +56,7 @@ impl Pipeline {
                 PipelineTask::CreateMaterial(_) => {},
                 PipelineTask::CreateShader(_) => {},
                 PipelineTask::CreateModel(_) => {},
+                PipelineTask::Quit => self.should_quit = false,
             }
 
             // After executing the tasks, we must update our status
@@ -60,9 +70,10 @@ impl Pipeline {
 pub struct PipelineStartData {
     // The thread handle for the render thread, so we can join it to the main thread at any time
     pub handle: std::thread::JoinHandle<()>,
-    // A sender that we can use to send messages to the render thread
-    pub(crate) tx: Sender<(PipelineTask, TaskID)>,
-    // A barrier that we can use to sync up with the main thread after every frame
+    // A barrier that we can use to sync up with the main thread at the start of each frame
+    pub sbarrier: Arc<Barrier>,
+    // A barrier that we can use to sync up with the main thread at the end of each frame
+    pub ebarrier: Arc<Barrier>,
 }
 // Initialize GLFW and the Window
 fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -90,12 +101,16 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     let (tx, rx) = std::sync::mpsc::channel::<(PipelineTask, TaskID)>(); // Main to render
     
     // Barrier so we can sync with the main thread at the start of each frame
-    let barrier = Arc::new(Barrier::new(2));
-    let barrier_clone = barrier.clone();
+    let sbarrier = Arc::new(Barrier::new(2));
+    let sbarrier_clone = sbarrier.clone();
+
+    // Barrier so we can sync with the main thread at the end of each frame
+    let ebarrier = Arc::new(Barrier::new(2));
+    let ebarrier_clone = ebarrier.clone();
 
     // An init barrier
-    let init_barrier = Arc::new(Barrier::new(2));
-    let init_barrier_clone = init_barrier.clone();
+    let ibarrier = Arc::new(Barrier::new(2));
+    let ibarrier_clone = ibarrier.clone();
     
     // Create a simple unsafe wrapper so we can send the glfw and window data to the render thread
     // Window and GLFW wrapper
@@ -136,6 +151,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // Create the pipeline
         let pipeline = Pipeline {
+            tx,
             // Buffered tasks
             tasks: Vec::new(),
             // Buffers
@@ -156,36 +172,64 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 viewm: veclib::Matrix4x4::IDENTITY,
                 projm: veclib::Matrix4x4::IDENTITY,
             },
+            should_quit: false,
+        };
+
+        // Create the Arc and RwLock for the pipeline
+        let pipeline = Arc::new(RwLock::new(pipeline));
+
+        // Setup the pipeline renderer
+        let renderer = {
+            let pipeline = pipeline.read().unwrap();
+            PipelineRenderer::new(pipeline)   
         };
 
         // ---- Finished initializing the Pipeline! ----
-        init_barrier_clone.wait();
+        ibarrier_clone.wait();
         println!("Successfully created the RenderThread!");
         
         // We must render every frame
         loop {
-            // At the start of each frame we must sync up with the main thread
-            barrier_clone.wait();
+            // This is a single frame
+            {
+                // At the start of each frame we must sync up with the main thread
+                sbarrier_clone.wait();
+                
+                // We render the world here
+                let pipeline = pipeline.read().unwrap();
+                
+                // And we also sync at the end of each frame
+                ebarrier_clone.wait();
+            }
+            // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
+            {
+                let pipeline = pipeline.write().unwrap();// We poll the messages, buffer them, and execute them
+                let messages = rx.try_iter().collect::<Vec<(PipelineTask, TaskID)>>();
+                // Set the buffer
+                pipeline.add_tasks(messages);
+                
+                // Execute the tasks
+                pipeline.flush();
+
+                // Check if we must exit from the render thread
+                if pipeline.should_quit {
+                    break;
+                }
+            }            
         }
         println!("Stopped the render thread!");
     });
     // Wait for the init message...
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");
-    init_barrier.wait();
+    ibarrier.wait();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
+
+    // Create the pipeline start data
     PipelineStartData {
         handle,
-        tx,
-    }
-}
-
-// Update the shader uniform objects that we have stored
-fn update_shader_uniform_objects(buf: &mut PipelineBuffer, new_time: f32, delta: f32, window: &crate::Window) {
-    // Set the active time that the renderers were active for
-    for id in buf.renderers.clone() {
-        let renderer = buf.as_renderer_mut(&id).unwrap();
-        renderer.time_alive += delta;
+        sbarrier,
+        ebarrier,
     }
 }
 

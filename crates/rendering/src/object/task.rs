@@ -5,10 +5,14 @@ use super::{ObjectID, PipelineObject};
 pub(crate) struct ObjectBuildingTask<T: PipelineObject + Buildable>(pub T, pub ObjectID<T>);
 // A pipeline task that will be sent to the render thread
 pub enum PipelineTask {
+    // Creation tasks
     CreateTexture(ObjectBuildingTask<Texture>),
     CreateMaterial(ObjectBuildingTask<Material>),
     CreateShader(ObjectBuildingTask<Shader>),
     CreateModel(ObjectBuildingTask<Model>),
+
+    // Specific pipeline tasks
+    Quit,
 }
 
 // The status for a specific PipelineTask
