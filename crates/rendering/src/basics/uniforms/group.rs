@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ffi::CString};
 
 use veclib::{Vector, SupportedValue};
 
@@ -46,8 +46,6 @@ impl ShaderUniformsGroup {
     pub fn image(&mut self, val: ObjectID<Texture>, access_type: TextureShaderAccessType) {
         self.uniforms.push(Uniform::Image(val, access_type))
     }
-
-
     // Create self
     pub fn new() -> Self {
         Self { uniforms: HashMap::default() }
@@ -60,27 +58,39 @@ impl ShaderUniformsGroup {
         unsafe {
             gl::UseProgram(program_id);
         }
-        use super::uniform_setters::*;
+        use super::setters::*;
         for (name, uniform) in self.uniforms.iter() {
             let index = unsafe { gl::GetUniformLocation(program_id, CString::new(name.clone()).ok()?.as_ptr()) };
             unsafe {
                 match &uniform {
-                    Uniform::F32(x) => set_f32(index, x),
-                    Uniform::I32(x) => set_i32(index, x),
-                    Uniform::Vec2F32(x) => set_vec2f32(index, x),
-                    Uniform::Vec3F32(x) => set_vec3f32(index, x),
-                    Uniform::Vec4F32(x) => set_vec4f32(index, x),
-                    Uniform::Vec2I32(x) => set_vec2i32(index, x),
-                    Uniform::Vec3I32(x) => set_vec3i32(index, x),
-                    Uniform::Vec4I32(x) => set_vec4i32(index, x),
-                    Uniform::Mat44F32(x) => set_mat44(index, x),
-                    Uniform::Texture1D(x, y) => set_t1d(buf, index, x, y),
-                    Uniform::Texture2D(x, y) => set_t2d(buf, index, x, y),
-                    Uniform::Texture3D(x, y) => set_t3d(buf, index, x, y),
-                    Uniform::Texture2DArray(x, y) => set_t2da(buf, index, x, y),
-                    Uniform::Image2D(x, y) => set_i2d(buf, index, x, y),
-                    Uniform::Image3D(x, y) => set_i3d(buf, index, x, y),
-                    Uniform::Bool(x) => set_bool(index, x),
+                    Uniform::Bool(unsized_vector) => match unsized_vector {
+                        veclib::UnsizedVector::Single(val) => set_bool(index, val),
+                        veclib::UnsizedVector::Vec2(val) => set_bool(index, val),
+                        veclib::UnsizedVector::Vec3(val) => set_bool(index, val),
+                        veclib::UnsizedVector::Vec4(val) => set_bool(index, val),
+                    },
+                    Uniform::I32(unsized_vector) => match unsized_vector {
+                        veclib::UnsizedVector::Single(val) => set_i32(index, val),
+                        veclib::UnsizedVector::Vec2(val) => set_vec2i32(index, val),
+                        veclib::UnsizedVector::Vec3(val) => set_vec3i32(index, val),
+                        veclib::UnsizedVector::Vec4(val) => set_vec4i32(index, val),
+                    },
+                    Uniform::F32(unsized_vector) => match unsized_vector {
+                        veclib::UnsizedVector::Single(val) => set_f32(index, val),
+                        veclib::UnsizedVector::Vec2(val) => set_vec2f32(index, val),
+                        veclib::UnsizedVector::Vec3(val) => set_vec3f32(index, val),
+                        veclib::UnsizedVector::Vec4(val) => set_vec4f32(index, val),
+                    },
+                    Uniform::Texture(id, active_texture_id) => {
+                        // We need to know the texture target first
+                        let texture = pipeline.textures.get(id.index)?;
+                        set_texture(texture, index, active_texture_id);
+                    },
+                    Uniform::Image(id, access_type) => {
+                        // We need to know the texture target first
+                        let texture = pipeline.textures.get(id.index)?;
+                        set_image(texture, index, access_type);
+                    },
                 }
             }
         }

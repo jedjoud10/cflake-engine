@@ -690,7 +690,7 @@ mod object_creation {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+            TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
 
         // It's a normal mutable texture
@@ -711,7 +711,7 @@ mod object_creation {
                     gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
                 }
                 // This is a texture array
-                TextureType::TextureArray(width, height, depth) => {
+                TextureType::Texture2DArray(width, height, depth) => {
                     gl::TexStorage3D(
                         tex_type,
                         Texture::guess_mipmap_levels(width.max(height) as usize) as i32,
@@ -804,7 +804,7 @@ mod object_creation {
                     gl::BindTexture(gl::TEXTURE_3D, texture.texture_id);
                     gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, null());
                 }
-                TextureType::TextureArray(_, _, _) => todo!(),
+                TextureType::Texture2DArray(_, _, _) => todo!(),
             }
         }
     }
@@ -820,7 +820,7 @@ mod object_creation {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
             TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::TextureArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+            TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
 
         unsafe {
@@ -836,7 +836,7 @@ mod object_creation {
                     gl::TexImage3D(tex_type, 0, internal_format, width as i32, height as i32, depth as i32, 0, format, data_type, pointer);
                 }
                 // This is a texture array
-                TextureType::TextureArray(width, height, depth) => {
+                TextureType::Texture2DArray(width, height, depth) => {
                     gl::TexStorage3D(tex_type, 10, internal_format as u32, width as i32, height as i32, depth as i32);
                     // We might want to do mipmap
                     for i in 0..depth {

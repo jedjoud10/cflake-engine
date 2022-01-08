@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::{utils::*, object::{PipelineObject, PipelineTask, ObjectID}, Buildable, Pipeline};
+use crate::{utils::*, object::{PipelineObject, PipelineTask, ObjectID, ObjectBuildingTask}, Buildable, Pipeline};
 use assets::*;
 use bitflags::bitflags;
 use gl;
@@ -192,7 +192,7 @@ pub enum TextureType {
     Texture1D(u16),
     Texture2D(u16, u16),
     Texture3D(u16, u16, u16),
-    TextureArray(u16, u16, u16),
+    Texture2DArray(u16, u16, u16),
 }
 
 impl Default for TextureType {
@@ -208,7 +208,7 @@ impl TextureType {
             TextureType::Texture1D(x) => *x,
             TextureType::Texture2D(x, _) => *x,
             TextureType::Texture3D(x, _, _) => *x,
-            TextureType::TextureArray(x, _, _) => *x,
+            TextureType::Texture2DArray(x, _, _) => *x,
         }
     }
     // Get the height of this texture
@@ -217,7 +217,7 @@ impl TextureType {
             TextureType::Texture1D(_y) => panic!(),
             TextureType::Texture2D(_, y) => *y,
             TextureType::Texture3D(_, y, _) => *y,
-            TextureType::TextureArray(_, y, _) => *y,
+            TextureType::Texture2DArray(_, y, _) => *y,
         }
     }
     // Get the depth of this texture, if it is a 3D texture
@@ -226,7 +226,7 @@ impl TextureType {
             TextureType::Texture1D(_) => panic!(),
             TextureType::Texture2D(_, _) => panic!(),
             TextureType::Texture3D(_, _, z) => *z,
-            TextureType::TextureArray(_, _, z) => *z,
+            TextureType::Texture2DArray(_, _, z) => *z,
         }
     }
 }
@@ -241,12 +241,13 @@ pub enum TextureShaderAccessType {
 
 // A texture
 pub struct Texture {
-    pub oid: u32, // The OpenGL id for this texture
-    pub bytes: Vec<u8>, // The bytes stored in this texture
+    pub(crate) oid: u32, // The OpenGL id for this texture
+    pub(crate) bytes: Vec<u8>, // The bytes stored in this texture
 
     pub _format: TextureFormat, // The internal format of the texture
     pub _type: DataType,        // The data type that this texture uses for storage
     pub(crate) ifd: (i32, u32, u32), // Internal Format, Format, Data
+    pub(crate) target: u32, // The OpenGL target that is linked with this texture. Example: TEXTURE_2D or TEXTURE_ARRAY
 
     pub flags: TextureFlags,    // This texture's flags
     pub filter: TextureFilter, // Texture mag and min filters, either Nearest or Linear
@@ -258,10 +259,20 @@ pub struct Texture {
 impl PipelineObject for Texture {}
 
 impl Buildable for Texture {
-    fn send(self, pipeline: &Pipeline) -> ObjectID<Self> {
+    fn construct(self, pipeline: &Pipeline) -> ObjectID<Self> {
+        // Before we send off the texture to the render thread, we want to make sure that our internal values are updated
+        self.ifd = get_ifd(self._format, self._type);
+        self.target = match self.ttype {
+            TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
         // Create the ID
         let id = pipeline.textures.get_next_idx_increment();
-        ObjectID::new(id)
+        let id = ObjectID::new(id);
+        // Create a task and send it
+        crate::pipec::task(PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)))
     }
 
     fn new(pipeline: &Pipeline) -> Self {
@@ -271,6 +282,7 @@ impl Buildable for Texture {
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,
             ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte), 
+            target: gl::TEXTURE_2D,
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
@@ -407,7 +419,7 @@ impl Texture {
         }
         Texture {
             bytes: bytes.into_iter().flatten().collect::<Vec<u8>>(),
-            ttype: TextureType::TextureArray(width, height, texture_paths.len() as u16),
+            ttype: TextureType::Texture2DArray(width, height, texture_paths.len() as u16),
             ..Texture::default()
         }
     }

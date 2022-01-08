@@ -5,8 +5,8 @@ use crate::{Texture, object::{PipelineObject, PipelineTask, ObjectID, TaskID}, P
 pub(crate) trait Buildable: PipelineObject
     where Self: Sized
 {
-    // Create a task, send it, and return the Object ID for this specific PipelineObject
-    fn send(self, pipeline: &Pipeline) -> ObjectID<Self>;
+    // Construct the ID for self, send a task to the pipeline to create "self", and return our ID
+    fn construct(self, pipeline: &Pipeline) -> ObjectID<Self>;
     // Create self. This basically replaces the Default implementation because we also get access to the pipeline, which is better
     fn new(pipeline: &Pipeline) -> Self;
 }

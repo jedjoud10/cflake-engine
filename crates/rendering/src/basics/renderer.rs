@@ -16,7 +16,7 @@ bitflags! {
 pub struct Renderer {
     pub index: Option<GPUObjectID>,    // The ID of this renderer in the pipeline
     pub model: Option<GPUObjectID>,    // The model GPU of this renderer
-    pub material: Option<GPUObjectID>, // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
+    pub material: Option<GPUObjectID>, // The GPU material of this renderer
     pub uniforms: Option<ShaderUniformsGroup>,
     pub flags: RendererFlags, // Flags
 }

@@ -30,7 +30,7 @@ pub struct Shader {
 impl PipelineObject for Shader {}
 
 impl Buildable for Shader {
-    fn send(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
+    fn construct_id(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
         // Create the ID
         let id = pipeline.shaders.get_next_idx_increment();
         ObjectID::new(id)

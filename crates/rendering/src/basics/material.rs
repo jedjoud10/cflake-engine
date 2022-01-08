@@ -1,5 +1,5 @@
 use crate::basics::*;
-use crate::object::{PipelineObjectID, PipelineObject, PipelineTask, ObjectID};
+use crate::object::{PipelineObject, PipelineTask, ObjectID, ObjectBuildingTask};
 use crate::pipeline::*;
 use bitflags::bitflags;
 
@@ -23,10 +23,12 @@ pub struct Material {
 }
 
 impl Buildable for Material {
-    fn send(self, pipeline: &Pipeline) -> ObjectID<Self> {
+    fn construct(self, pipeline: &Pipeline) -> ObjectID<Self> {
         // Create the ID
         let id = pipeline.materials.get_next_idx_increment();
-        ObjectID::new(id)
+        let id = ObjectID::new(id);
+        // Create the task and send it
+        crate::pipec::task(PipelineTask::CreateMaterial(ObjectBuildingTask::<Self>(self, id)));
     }
 
     fn new(pipeline: &Pipeline) -> Self {
