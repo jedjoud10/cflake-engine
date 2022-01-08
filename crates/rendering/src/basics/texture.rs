@@ -272,10 +272,11 @@ impl Buildable for Texture {
         let id = pipeline.textures.get_next_idx_increment();
         let id = ObjectID::new(id);
         // Create a task and send it
-        crate::pipec::task(PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)))
+        crate::pipec::task(PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)), pipeline);
+        id
     }
 
-    fn new(pipeline: &Pipeline) -> Self {
+    fn new() -> Self {
         Self {
             oid: 0,
             bytes: Vec::new(),
@@ -304,17 +305,7 @@ impl others::Watchable<Pipeline> for ObjectID<Texture> {
 
 
 // Create a texture and send it to the pipeline so we can actually create it on the GPU
-impl Texture {    
-    // Set name
-    pub fn set_name(mut self, name: &str) -> Self {
-        self.name = name.to_string();
-        self
-    }
-    // Prefix the name with something
-    pub fn prefix_name(mut self, prefix: &str) -> Self {
-        self.name = format!("{}_{}", prefix, self.name);
-        self
-    }
+impl Texture {
     // The internal format and data type of the soon to be generated texture
     pub fn set_format(mut self, _format: TextureFormat) -> Self {
         self._format = _format;

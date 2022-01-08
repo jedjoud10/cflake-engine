@@ -1,7 +1,17 @@
 // Some asset commands
 pub mod assetc {
     pub use crate::globals::asset_cacher;
-    use crate::{Asset, AssetLoadError, AssetType};
+    use crate::{Asset, AssetLoadError, AssetMetadata};
+    // Just load the raw metadata of an asset
+    pub fn raw_metadata(path: &str) -> Result<AssetMetadata, AssetLoadError> {
+        let assetcacher = asset_cacher();
+        let md = assetcacher
+            .cached_metadata
+            .get(path)
+            .ok_or(AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
+        // TODO: I must remove this global state later on
+        Ok(md.clone())
+    }
     // Load an asset
     pub fn load<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
         // Load the metadata first
@@ -25,14 +35,6 @@ pub mod assetc {
             .get(path)
             .ok_or(AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
         // Pls don't deadlock again
-        let output = match &md.asset_type {
-            // This asset is a text asset
-            AssetType::Text => {
-                let text = String::from_utf8(md.bytes.clone()).ok().unwrap();
-                text
-            }
-            _ => panic!(),
-        };
-        Ok(output)
+        Ok(md.read_string())
     }
 }
