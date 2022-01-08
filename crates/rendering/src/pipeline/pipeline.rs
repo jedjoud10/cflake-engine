@@ -3,20 +3,22 @@ use std::sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr, RwLock};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 
-use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID}, Texture, Material, Shader, Renderer, Model, pipeline::camera::Camera, PipelineRenderer};
+use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID}, Texture, Material, Shader, Renderer, Model, pipeline::camera::Camera, PipelineRenderer, ShaderSettings, pipec};
 
 // Some default values like the default material or even the default shader
 pub(crate) struct DefaultPipelineObjects {
-    pub(crate) default_diffuse_tex: ObjectID<Texture>,
-    pub(crate) default_normals_tex: ObjectID<Texture>,
-    pub(crate) default_shader: ObjectID<Shader>,
+    pub(crate) diffuse_tex: ObjectID<Texture>,
+    pub(crate) normals_tex: ObjectID<Texture>,
+    pub(crate) shader: ObjectID<Shader>,
+    pub(crate) material: ObjectID<Material>,
+    pub(crate) model: ObjectID<Model>,
 }
 
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that times
 pub struct Pipeline {    
     // The sender that we will use to send data to the RenderThread. We will wrap the Pipeline in a RwLock, so we are fine
-    tx: std::sync::mpsc::Sender<(PipelineTask, TaskID)>,
+    pub(crate) tx: std::sync::mpsc::Sender<(PipelineTask, TaskID)>,
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
     tasks: Vec<(PipelineTask, TaskID)>,
     // We store the Pipeline Objects, for each Pipeline Object type
@@ -74,6 +76,55 @@ pub struct PipelineStartData {
     pub sbarrier: Arc<Barrier>,
     // A barrier that we can use to sync up with the main thread at the end of each frame
     pub ebarrier: Arc<Barrier>,
+}
+// Load some defaults
+fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
+    use crate::texture::{TextureType, TextureFilter};
+    use assets::assetc::load;
+    
+    // Create the default missing texture
+    let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap(), pipeline);
+
+    // Create the default white texture
+    let white = pipec::construct(Texture::default()
+        .set_dimensions(TextureType::Texture2D(1, 1))
+        .set_filter(TextureFilter::Linear)
+        .set_bytes(vec![255, 255, 255, 255])
+        .enable_mipmaps(), pipeline);
+
+    // Create the default black texture
+    let black = pipec::construct(Texture::default()
+        .set_dimensions(TextureType::Texture2D(1, 1))
+        .set_filter(TextureFilter::Linear)
+        .set_bytes(vec![0, 0, 0, 255])
+        .enable_mipmaps(), pipeline);
+
+    // Create the default normal map texture
+    let normals = pipec::construct(Texture::default()
+        .set_dimensions(TextureType::Texture2D(1, 1))
+        .set_filter(TextureFilter::Linear)
+        .set_bytes(vec![127, 128, 255, 255])
+        .enable_mipmaps(), pipeline);
+
+    // Create the default rendering shader
+    let ss = ShaderSettings::default()
+        .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
+        .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl");
+    let shader = pipec::construct(Shader::new(ss).unwrap(), pipeline);
+
+    // Create the default material
+    let material = pipec::construct(Material::default().set_shader(shader), pipeline);
+
+    // Create the default model
+    let model = pipec::construct(Model::default(), pipeline);
+
+    DefaultPipelineObjects {
+        diffuse_tex: missing,
+        normals_tex: normals,
+        shader,
+        material,
+        model,
+    }
 }
 // Initialize GLFW and the Window
 fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -177,11 +228,17 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // Create the Arc and RwLock for the pipeline
         let pipeline = Arc::new(RwLock::new(pipeline));
+        
+        // Load the default objects
+        {
+            let pipeline = pipeline.write().unwrap();
+            pipeline.defaults = Some(load_defaults(&*pipeline));
+        }
 
         // Setup the pipeline renderer
         let renderer = {
             let pipeline = pipeline.read().unwrap();
-            PipelineRenderer::new(pipeline)   
+            PipelineRenderer::new(&*pipeline)   
         };
 
         // ---- Finished initializing the Pipeline! ----
@@ -232,277 +289,77 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         ebarrier,
     }
 }
-
-// Commands that can be ran internally
-pub fn internal_task(buf: &mut PipelineBuffer, task: RenderTask) -> (Option<GPUObjectID>, Option<AsyncGPUCommandData>) {
-    // Handle the internal case
-    match task {
-        // Shaders
-        RenderTask::SubShaderCreate(shared_shader) => (Some(object_creation::create_compile_subshader(buf, shared_shader)), None),
-        RenderTask::ShaderCreate(shared_shader) => (Some(object_creation::create_compile_shader(buf, shared_shader)), None),
-        // Textures
-        RenderTask::TextureCreate(shared_texture) => (Some(object_creation::generate_texture(buf, shared_texture)), None),
-        RenderTask::TextureUpdateSize(id, ttype) => {
-            object_creation::update_texture_size(buf, id, ttype);
-            (None, None)
-        }
-        RenderTask::TextureUpdateData(id, bytes) => {
-            object_creation::update_texture_data(buf, id, bytes);
-            (None, None)
-        }
-        RenderTask::TextureFillArray(id, bytecount_per_pixel, return_bytes) => {
-            todo!();
-            (None, None)
-        }
-        // Model
-        RenderTask::ModelCreate(shared_model) => (Some(object_creation::create_model(buf, shared_model)), None),
-        RenderTask::ModelDispose(gpumodel) => {
-            object_creation::dispose_model(buf, gpumodel);
-            (None, None)
-        }
-        // Material
-        RenderTask::MaterialCreate(material) => (Some(object_creation::create_material(buf, material)), None),
-        RenderTask::MaterialUpdateUniforms(_, _) => todo!(),
-        RenderTask::UniformsCreate(uniforms) => (Some(object_creation::create_uniforms(buf, uniforms)), None),
-        // Compute
-        RenderTask::ComputeRun(id, axii, compute_tasks, uniforms_group) => (None, Some(object_creation::run_compute(buf, id, axii, compute_tasks, uniforms_group))),
-        // Others
-        RenderTask::WindowUpdateFullscreen(_)
-        | RenderTask::WindowUpdateVSync(_)
-        | RenderTask::WindowUpdateSize(_)
-        | RenderTask::CameraDataUpdate(_)
-        | RenderTask::RendererAdd(_)
-        | RenderTask::RendererRemove(_)
-        | RenderTask::RendererUpdateTransform(_, _) => (None, None),
-    }
-}
-
-// Run a command on the Render Thread
-fn command(
-    lock: &mut CommandExecutionResults,
-    buf: &mut PipelineBuffer,
-    renderer: &mut PipelineRenderer,
-    camera: &mut CameraDataGPUObject,
-    command: RenderCommandQuery,
-    glfw: &mut glfw::Glfw,
-) {
-    // Handle the common cases
-    //println!("Executing command with ID {}...", command.command_id);
-    let (command_result, async_command_data) = match command.task {
-        // Window tasks
-        RenderTask::WindowUpdateFullscreen(fullscreen) => {
-            renderer.window.fullscreen = fullscreen;
-            (None, None)
-        }
-        RenderTask::WindowUpdateVSync(vsync) => {
-            renderer.window.vsync = vsync;
-            // We need an OpenGL context to do this shit
-            if vsync {
-                // Enable VSync
-                glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-            } else {
-                // Disable VSync
-                glfw.set_swap_interval(glfw::SwapInterval::None);
-            }
-            (None, None)
-        }
-        RenderTask::WindowUpdateSize(size) => {
-            renderer.window.dimensions = size;
-            renderer.update_window_dimensions(size);
-            (None, None)
-        }
-        // Pipeline
-        RenderTask::CameraDataUpdate(update_data) => {
-            let (pos, rot, clip_planes, projm) = update_data;
-            // Calculate the view matrix using the position and rotation
-            let viewm = {
-                let rm = veclib::Matrix4x4::from_quaternion(&rot);
-                let forward_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0)).normalized();
-                let up_vector = rm.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0)).normalized();
-                veclib::Matrix4x4::look_at(&pos, &up_vector, &(forward_vector + pos))
-            };
-            *camera = CameraDataGPUObject {
-                position: pos,
-                rotation: rot,
-                clip_planes,
-                viewm,
-                projm,
-            };
-            (None, None)
-        }
-        // Renderer commands
-        RenderTask::RendererAdd(renderer) => (Some(object_creation::add_renderer(buf, renderer)), None),
-        RenderTask::RendererRemove(renderer_id) => {
-            object_creation::remove_renderer(buf, &renderer_id);
-            (None, None)
-        }
-        RenderTask::RendererUpdateTransform(renderer_id, matrix) => {
-            object_creation::update_renderer(buf, &renderer_id, matrix);
-            (None, None)
-        }
-        // Internal cases
-        x => internal_task(buf, x),
-    };
-    // Extract
-    let command_id = command.command_id;
-    let callback_id = command.callback_id.clone();
-    let thread_id = command.thread_id;
-    let callback_id = match callback_id {
-        Some(x) => Some((x, thread_id)),
-        None => None,
-    };
-    let batch_callback_data = command.batch_callback_data;
-    // If this is an async GPU task (Like running a compute shader) we will not call the callbacks
-    if let Option::Some(mut x) = async_command_data {
-        // We must buffer the async command data, so we can poll it and check if it was executed later
-        x.additional_command_data(InternalAsyncGPUCommandData {
-            command_id,
-            callback_id,
-            batch_callback_data,
-        });
-        buf.add_async_gpu_command_data(x);
-    } else {
-        // This is not an async GPU task, we can buffer the callbacks directly
-        buf.received_new_gpuobject_additional(command_result.clone(), callback_id);
-        crate::others::executed_command(buf, command_id, batch_callback_data, command_result, lock);
-    }
-}
-
-// Poll commands that have been sent to us by the worker threads OR the main thread
-fn poll_commands(buf: &mut PipelineBuffer, renderer: &mut PipelineRenderer, camera: &mut CameraDataGPUObject, rx: &Receiver<RenderCommandQuery>, glfw: &mut glfw::Glfw) {
-    // We must loop through every command that we receive from the main thread
-    let mut i = 0;
-    let mut lock = RESULT.lock().unwrap();
-    let lock = &mut *lock;
-    for render_command_query in rx.try_iter() {
-        i += 1;
-        // Check special commands first
-        // Valid command
-        command(lock, buf, renderer, camera, render_command_query, glfw);
-    }
-    //println!("Executed {} commands", i);
-}
-
-// Check if any of the async GPU commands have finished executing
-fn poll_async_gpu_commands(buf: &mut PipelineBuffer) {
-    let datas = buf
-        .async_gpu_command_datas
-        .drain_filter(|async_gpu_command_data| {
-            // Check if the OpenGL command was executed
-            async_gpu_command_data.has_executed()
-        })
-        .collect::<Vec<AsyncGPUCommandData>>();
-    // Run the execution event and inform the other thread
-    let mut lock = RESULT.lock().unwrap();
-    for mut async_data in datas {
-        async_data.execute_event(buf);
-        // Extract
-        let internal = async_data.internal.unwrap();
-        let command_id = internal.command_id;
-        let callback_id = internal.callback_id;
-        let batch_callback_data = internal.batch_callback_data;
-        buf.received_new_gpuobject_additional(None, callback_id);
-        crate::others::executed_command(buf, command_id, batch_callback_data, None, &mut *lock);
-    }
-}
-
-
+// Here we will create the actual OpenGL objects
 mod object_creation {
     use std::{
         ffi::{c_void, CString},
         mem::size_of,
         ptr::null,
-        sync::{
-            atomic::{AtomicPtr, Ordering},
-            Arc, Mutex,
-        },
     };
+    use crate::{Pipeline, Renderer, object::{ObjectBuildingTask, ObjectID}, ShaderSource, ShaderSourceType, Shader};
 
-    use crate::{
-        compute::ComputeShaderSubTasks,
-        pipeline::{
-            async_command_data::{AsyncGPUCommandData, AsyncGPUCommandExecutionEvent},
-            buffer::PipelineBuffer,
-        },
-        ComputeShaderGPUObject, GPUObject, GPUObjectID, Material, MaterialGPUObject, Model, ModelGPUObject, Renderer, RendererGPUObject, Shader, ShaderGPUObject,
-        ShaderUniformsGroup, ShaderUniformsSettings, SubShader, SubShaderGPUObject, SubShaderType, Texture, TextureFilter, TextureFlags, TextureGPUObject, TextureType,
-        TextureWrapping, UniformsGPUObject,
-    };
-    // Add the renderer to the renderer (lol I need better name)
-    pub fn add_renderer(buf: &mut PipelineBuffer, renderer: (Renderer, veclib::Matrix4x4<f32>)) -> GPUObjectID {
-        let (renderer, matrix) = renderer;
-        let material_id = renderer.material.unwrap();
-        let model_id = renderer.model.clone().unwrap();
-        let uniforms = renderer.uniforms;
-        let renderer_gpuobject = GPUObject::Renderer(RendererGPUObject {
-            time_alive: 0.0,
-            model_id,
-            material_id,
-            matrix,
-            uniforms,
-            flags: renderer.flags,
-        });
-        let id = buf.add_gpuobject(renderer_gpuobject, None);
-        buf.renderers.insert(id.clone());
-        id
+    // Add the renderer
+    pub fn add_renderer(pipeline: &mut Pipeline, task: ObjectBuildingTask<Renderer>) {
+        // Get the renderer data, if it does not exist then use the default renderer data
+        let renderer = task.0;
+        let material_id = renderer.material.unwrap_or(pipeline.defaults.unwrap().material);
+        let model_id = renderer.model.unwrap_or(pipeline.defaults.unwrap().model);
+        
+        pipeline.renderers.insert(task.1.index, renderer);
     }
     // Remove the renderer using it's renderer ID
-    pub fn remove_renderer(buf: &mut PipelineBuffer, renderer_id: &GPUObjectID) {
-        // Remove first
-        buf.remove_gpuobject(renderer_id.clone());
-        buf.renderers.remove(renderer_id);
+    pub fn remove_renderer(pipeline: &mut Pipeline, id: ObjectID<Renderer>) {
+        pipeline.renderers.remove(id.index);
     }
-    // Update a renderer's model matrix
-    pub fn update_renderer(buf: &mut PipelineBuffer, renderer_id: &GPUObjectID, matrix: veclib::Matrix4x4<f32>) {
-        let renderer = buf.as_renderer_mut(renderer_id).unwrap();
-    }
-    pub fn create_compile_subshader(buf: &mut PipelineBuffer, subshader: SubShader) -> GPUObjectID {
-        let shader_type: u32;
-        match subshader.subshader_type {
-            SubShaderType::Vertex => shader_type = gl::VERTEX_SHADER,
-            SubShaderType::Fragment => shader_type = gl::FRAGMENT_SHADER,
-            SubShaderType::Compute => shader_type = gl::COMPUTE_SHADER,
-        }
-        unsafe {
-            let program = gl::CreateShader(shader_type);
-            // Compile the shader
-            let cstring = CString::new(subshader.source.clone()).unwrap();
-            let shader_source: *const i8 = cstring.as_ptr();
-            gl::ShaderSource(program, 1, &shader_source, null());
-            gl::CompileShader(program);
-            // Check for any errors
-            let mut info_log_length: i32 = 0;
-            let info_log_length_ptr: *mut i32 = &mut info_log_length;
-            gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-            // Print any errors that might've happened while compiling this subshader
-            if info_log_length > 0 {
-                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                println!("Error while compiling sub-shader {}!:", subshader.name);
-                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                let string = String::from_utf8(printable_log).unwrap();
-
-                println!("Error: \n\x1b[31m{}", string);
-                println!("\x1b[0m");
-                println!("{}", subshader.source);
-                panic!();
+    // Create a shader and cache it. We do not cache the "subshader" though
+    pub fn compile_shader(pipeline: &mut Pipeline, task: ObjectBuildingTask<Shader>) {
+        // Compile a single shader source
+        fn compile_single_source(source_data: ShaderSource) -> u32 {
+            let shader_type: u32;
+            println!("\x1b[33mCompiling & Creating Shader Source {}...\x1b[0m", source_data.path);
+            match source_data._type {
+                ShaderSourceType::Vertex => shader_type = gl::VERTEX_SHADER,
+                ShaderSourceType::Fragment => shader_type = gl::FRAGMENT_SHADER,
+                ShaderSourceType::Compute => shader_type = gl::COMPUTE_SHADER,
             }
+            unsafe {
+                let program = gl::CreateShader(shader_type);
+                // Compile the shader
+                let cstring = CString::new(source_data.text.clone()).unwrap();
+                let shader_source: *const i8 = cstring.as_ptr();
+                gl::ShaderSource(program, 1, &shader_source, null());
+                gl::CompileShader(program);
+                // Check for any errors
+                let mut info_log_length: i32 = 0;
+                let info_log_length_ptr: *mut i32 = &mut info_log_length;
+                gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+                // Print any errors that might've happened while compiling this shader source
+                if info_log_length > 0 {
+                    let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+                    gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+                    println!("Error while compiling sub-shader {}!:", source_data.path);
+                    let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+                    let string = String::from_utf8(printable_log).unwrap();
 
-            println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", subshader.name);
-            // Add the gpu object
-            let gpuobject = GPUObject::SubShader(SubShaderGPUObject {
-                subshader_type: subshader.subshader_type,
-                program,
-            });
-            buf.add_gpuobject(gpuobject, Some(subshader.name.clone()))
+                    println!("Error: \n\x1b[31m{}", string);
+                    println!("\x1b[0m");
+                    panic!();
+                }
+
+                println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", source_data.path);
+                program
+            }
         }
-    }
-    pub fn create_compile_shader(buf: &mut PipelineBuffer, shader: Shader) -> GPUObjectID {
-        println!("\x1b[33mCompiling & Creating Shader {}...\x1b[0m", shader.name);
+        // Extract the shader
+        let shader = task.0;
+        let shader_name = shader.sources.iter().map(|(name, _)| name.clone()).collect::<Vec<String>>().join("_");
+
+        // Actually compile the shader now
+        println!("\x1b[33mCompiling & Creating Shader {}...\x1b[0m", shader_name);
         unsafe {
             let program = gl::CreateProgram();
 
-            // Attach the shader
+            // Create & compile the shader sources and link them 
             let mut subshaders: Vec<&SubShaderGPUObject> = Vec::new();
             for subshader_id in shader.linked_subshaders.iter() {
                 let subshader = buf.as_subshader(subshader_id).unwrap();

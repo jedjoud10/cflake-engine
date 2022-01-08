@@ -15,6 +15,7 @@ impl Default for MaterialFlags {
 }
 
 // A material that can have multiple parameters and such
+#[derive(Default)]
 pub struct Material {
     shader: Option<ObjectID<Shader>>, // The shader that we will use to render this material
     flags: MaterialFlags, // The special flags that this material has that changes how it is rendered
@@ -30,11 +31,11 @@ impl Buildable for Material {
         group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
         group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
         group.set_f32("normals_strength", 1.0);
-        group.set_texture("diffuse_tex", pipeline.defaults.unwrap().default_diffuse_tex, 0);
-        group.set_texture("normals_tex", pipeline.defaults.unwrap().default_normals_tex, 1);
+        group.set_texture("diffuse_tex", pipeline.defaults.unwrap().diffuse_tex, 0);
+        group.set_texture("normals_tex", pipeline.defaults.unwrap().normals_tex, 1);
         self.uniforms = group;
         // Set the default rendering shader if no shader was specified
-        self.shader.get_or_insert(pipeline.defaults.unwrap().default_shader);
+        self.shader.get_or_insert(pipeline.defaults.unwrap().shader);
         self
     }
 

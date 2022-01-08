@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use crate::{object::ObjectID, Material, Model};
+use crate::{object::{ObjectID, PipelineObject, ObjectBuildingTask, PipelineTask}, Material, Model, Buildable};
 // Yup
 bitflags! {
     pub struct RendererFlags: u8 {
@@ -15,6 +15,18 @@ pub struct Renderer {
     pub model: Option<ObjectID<Model>>,    // The model GPU of this renderer
     pub material: Option<ObjectID<Material>>, // The GPU material of this renderer
     pub flags: RendererFlags, // Flags
+}
+
+impl PipelineObject for Renderer {}
+
+impl Buildable for Renderer {
+    fn construct(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
+        // Create the ID
+        let id = pipeline.renderers.get_next_idx_increment();
+        let id = ObjectID::new(id);
+        crate::pipec::task(PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), pipeline);
+        id
+    }
 }
 
 // Everything related to the creation of a renderer

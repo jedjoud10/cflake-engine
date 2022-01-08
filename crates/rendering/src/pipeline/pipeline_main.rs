@@ -7,7 +7,7 @@ pub mod pipec {
     pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {
         // Create a new task ID
         let id = TaskID::new(pipeline.task_statuses.get_next_idx_increment());
-        sender.send((task, id)).unwrap();
+        pipeline.tx.send((task, id)).unwrap();
         id
     }
     // Create a Pipeline Object, returning it's ObjectID

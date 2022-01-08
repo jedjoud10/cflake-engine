@@ -149,23 +149,6 @@ impl PipelineRenderer {
             .source("defaults\\shaders\\rendering\\screen.frsh.glsl");
         pr.screen_shader = pipec::construct(Shader::new(ss).unwrap(), pipeline); 
         
-        pipec::shader(
-            Shader::default()
-                .load_shader(vec![
-                    "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",
-                    "defaults\\shaders\\rendering\\screen.frsh.glsl",
-                ])
-                .unwrap(),
-        );
-        // Create a default material
-        self.default_material = Some(pipec::material(
-            Material::new("Default Material").set_shader(pipec::shader(
-                Shader::default()
-                    .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
-                    .unwrap(),
-            )),
-        ));
-        println!("Loaded the default material!");
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
 

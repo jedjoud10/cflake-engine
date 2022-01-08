@@ -10,6 +10,7 @@ pub enum PipelineTask {
     CreateMaterial(ObjectBuildingTask<Material>),
     CreateShader(ObjectBuildingTask<Shader>),
     CreateModel(ObjectBuildingTask<Model>),
+    CreateRenderer(ObjectBuildingTask<Renderer>),
 
     // Specific pipeline tasks
     Quit,
