@@ -2,13 +2,15 @@ use std::sync::mpsc::Sender;
 
 use ordered_vec::shareable::ShareableOrderedVec;
 
-use crate::{object::{PipelineObjectID, IAsyncPipelineObjectID, AsyncPipelineTaskID, PipelineTaskStatus, PipelineTask}, Texture, Material, Shader, Renderer, SubShader, Model};
+use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID}, Texture, Material, Shader, Renderer, SubShader, Model};
 
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that time
 pub struct Pipeline {
     // The sender that we will use to send Pipeline Tasks to the render thread
     pub(crate) tx: Sender<PipelineTask>,
+    // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
+    tasks: Vec<PipelineTask>,
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
@@ -16,8 +18,11 @@ pub struct Pipeline {
     pub(crate) renderers: ShareableOrderedVec<Renderer>,
     pub(crate) shaders: ShareableOrderedVec<Shader>,
     pub(crate) subshaders: ShareableOrderedVec<SubShader>,
-    pub(crate) subshader_paths: Vec
     pub(crate) textures: ShareableOrderedVec<Texture>,
+
+    // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
+    pub(crate) default_diffuse_tex: ObjectID<Texture>,
+    pub(crate) default_normals_tex: ObjectID<Texture>,
 
     // Store thet status for all of our tasks
     pub(crate) task_statuses: ShareableOrderedVec<PipelineTaskStatus>,

@@ -1,19 +1,31 @@
+use crate::{object::PipelineObject, Buildable};
+
 // A simple model that holds vertex, normal, and color data
 #[derive(Clone)]
 pub struct Model {
-    pub name: String,
+    // Per vertex data
     pub vertices: Vec<veclib::Vector3<f32>>,
     pub normals: Vec<veclib::Vector3<f32>>,
     pub tangents: Vec<veclib::Vector4<f32>>,
     pub uvs: Vec<veclib::Vector2<f32>>,
     pub colors: Vec<veclib::Vector3<f32>>,
+    // Triangles
     pub triangles: Vec<u32>,
 }
 
-impl Default for Model {
-    fn default() -> Self {
+impl PipelineObject for Model {}
+
+impl Buildable for Model {
+    fn pre_construct(self, pipeline: &crate::Pipeline) -> Self {
+        
+    }
+
+    fn construct(self, pipeline: &crate::Pipeline) -> crate::object::ObjectID<Self> {
+        
+    }
+
+    fn new() -> Self {
         Self {
-            name: crate::pipeline::rname("model"),
             vertices: Vec::new(),
             normals: Vec::new(),
             tangents: Vec::new(),

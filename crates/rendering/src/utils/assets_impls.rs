@@ -73,27 +73,3 @@ impl Asset for Model {
         Some(model)
     }
 }
-
-// One for the subshaders obviously
-impl Asset for SubShader {
-    fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        // Load a subshader from this metadata
-        let text = String::from_utf8(data.bytes.clone()).ok()?;
-        Some(Self {
-            name: data.name.clone(),
-            source: text,
-            subshader_type: match &data.asset_type {
-                assets::AssetType::VertSubshader => SubShaderType::Vertex,
-                assets::AssetType::FragSubshader => SubShaderType::Fragment,
-                assets::AssetType::ComputeSubshader => SubShaderType::Compute,
-                _ => {
-                    /* Nothing */
-                    panic!()
-                }
-            },
-        })
-    }
-}

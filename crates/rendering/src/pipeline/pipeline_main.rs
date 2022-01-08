@@ -9,6 +9,7 @@ pub mod pipec {
     }
     // Create a Pipeline Object, returning it's ObjectID
     pub fn construct<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
+        let object = object.pre_construct(pipeline);
         // Construct it's ID and automatically send it's construction task
         object.construct(pipeline)
     }

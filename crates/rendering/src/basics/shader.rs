@@ -1,45 +1,75 @@
-use super::SubShader;
-use crate::object::PipelineObject;
+use crate::object::{PipelineObject, PipelineTask, ObjectBuildingTask};
 use crate::utils::RenderingError;
 use crate::{pipec, object::ObjectID};
 use crate::{params::*, Buildable};
 use std::collections::{HashSet, HashMap};
+// Shader source type
+pub(crate) enum ShaderSourceType {
+    Vertex,
+    Fragment,
+    Compute,
+}
+// And a shader source
+pub(crate) struct ShaderSource {
+    // Corresponding path for this shader source, since we store them in different files
+    pub path: String,
+    // The actual source code text
+    pub text: String,
+    // And a specific type just to help use
+    pub _type: ShaderSourceType,
+} 
+
 // Some shader settings that we can use to load the shader
 pub struct ShaderSettings {
-    pub(crate) external_code: String,
-    pub(crate) subshader_paths: HashMap<u8, String>,
+    // Some external code that we can 
+    pub(crate) external_code: HashMap<u8, String>,
+    pub(crate) sources: HashMap<String, ShaderSource>,
 }
 
 impl ShaderSettings {
     // Load some external code that can be loading using specific include points
     pub fn external_code(mut self, id: u8, string: String) -> Self {
-        self.external_code.insert(id.to_string(), string);
+        self.external_code.insert(id, string);
         self
     }
-    // Load a subshader
-    pub fn subshader(mut self, path: &str) -> Self {
-        self.subshader_paths.push(path)
+    // Load a shader source
+    pub fn source(mut self, path: &str) -> Self {        
+        // Load a shader source from scratch
+        let metadata = assets::assetc::raw_metadata(path).unwrap();
+        let text = assets::assetc::load_text(path).unwrap();
+        self.sources.insert(path.to_string(), ShaderSource {
+            path: path.to_string(),
+            text,
+            _type: match metadata.extension {
+                "vrsh.glsl" => ShaderSourceType::Vertex,
+                "frsh.glsl" => ShaderSourceType::Fragment,
+                "cmpt.glsl" => ShaderSourceType::Compute,
+                _ => panic!()
+            },
+        });
+        self
     }
 }
 
-// A shader that contains two sub shaders that are compiled independently
+// A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
 pub struct Shader {
-    pub(crate) source: String,
-    pub(crate) linked_subshaders: Vec<ObjectID<SubShader>>,
+    // The updated and modified shader sources
+    pub(crate) sources: HashMap<String, ShaderSource>,
 }
 impl PipelineObject for Shader {}
 
 impl Buildable for Shader {
-    fn construct_id(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
+    fn construct(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
         // Create the ID
         let id = pipeline.shaders.get_next_idx_increment();
-        ObjectID::new(id)
+        let id = ObjectID::new(id);
+        crate::pipec::task(PipelineTask::CreateShader(ObjectBuildingTask::<Self>(self, id)), pipeline);
+        id
     }
 
-    fn new(pipeline: &crate::Pipeline) -> Self {
+    fn new() -> Self {
         Self {
-            source: String::new(),
-            linked_subshaders: Vec::new(),
+            sources: HashMap::new(),
         }
     }
 }
