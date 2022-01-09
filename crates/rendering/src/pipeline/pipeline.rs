@@ -1,7 +1,7 @@
 use std::{sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr, RwLock}, ffi::{CString, c_void}, mem::size_of, ptr::null};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
-use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID, ObjectBuildingTask}, Texture, Material, Shader, Renderer, Model, pipeline::{camera::Camera, sender}, PipelineRenderer, ShaderSettings, pipec, TextureType, ShaderSource, ShaderSourceType, ModelBuffers, TextureFilter, TextureFlags, TextureWrapping, compute::ComputeShaderExecutionSettings, ShaderUniformsSettings};
+use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID, ObjectBuildingTask}, Texture, Material, Shader, Renderer, Model, pipeline::{camera::Camera, sender}, PipelineRenderer, ShaderSettings, pipec, TextureType, ShaderSource, ShaderSourceType, ModelBuffers, TextureFilter, TextureFlags, TextureWrapping, compute::{ComputeShaderExecutionSettings, ComputeShader}, ShaderUniformsSettings};
 
 // Some default values like the default material or even the default shader
 pub(crate) struct DefaultPipelineObjects {
@@ -23,7 +23,7 @@ pub struct Pipeline {
     pub(crate) models: ShareableOrderedVec<Model>,
     pub(crate) renderers: ShareableOrderedVec<Renderer>,
     pub(crate) shaders: ShareableOrderedVec<Shader>,
-    pub(crate) compute_shaders: ShareableOrderedVec<Shader>,
+    pub(crate) compute_shaders: ShareableOrderedVec<ComputeShader>,
     pub(crate) textures: ShareableOrderedVec<Texture>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
@@ -52,12 +52,12 @@ impl Pipeline {
             // Now we must execute these tasks
             match task {
                 // Creation tasks
-                PipelineTask::CreateTexture(_) => {},
-                PipelineTask::CreateMaterial(_) => {},
-                PipelineTask::CreateShader(_) => {},
-                PipelineTask::CreateModel(_) => {},
-                PipelineTask::CreateRenderer(_) => todo!(),
-                PipelineTask::CreateComputeShader(_) => self.,
+                PipelineTask::CreateTexture(t) => self.texture_create(t),
+                PipelineTask::CreateMaterial(t) => self.material_create(t),
+                PipelineTask::CreateShader(t) => self.shader_create(t),
+                PipelineTask::CreateModel(t) => self.model_create(t),
+                PipelineTask::CreateRenderer(t) => self.renderer_create(t),
+                PipelineTask::CreateComputeShader(t) => self.compute_create(t),
 
                 PipelineTask::RunComputeShader(id, settings) => self.compute_run((id, settings)),
                 
@@ -95,7 +95,7 @@ impl Pipeline {
             match source_data._type {
                 ShaderSourceType::Vertex => shader_type = gl::VERTEX_SHADER,
                 ShaderSourceType::Fragment => shader_type = gl::FRAGMENT_SHADER,
-                ShaderSourceType::Compute => shader_type = gl::COMPUTE_SHADER,
+                ShaderSourceType::Compute => { panic!() }, // We are not allowed to create compute shaders using the normal create_shader function
             }
             unsafe {
                 let program = gl::CreateShader(shader_type);
@@ -112,7 +112,7 @@ impl Pipeline {
                 if info_log_length > 0 {
                     let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
                     gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                    println!("Error while compiling sub-shader {}!:", source_data.path);
+                    println!("Error while compiling shader source {}!:", source_data.path);
                     let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                     let string = String::from_utf8(printable_log).unwrap();
 
@@ -121,7 +121,7 @@ impl Pipeline {
                     panic!();
                 }
 
-                println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", source_data.path);
+                println!("\x1b[32mShader Source {} compiled succsessfully!\x1b[0m", source_data.path);
                 program
             }
         }
@@ -171,6 +171,73 @@ impl Pipeline {
         }
         // Add the shader at the end
         self.shaders.insert(task.1.index, shader);
+    }
+    // Create a compute shader and cache it
+    pub fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
+        // Extract the shader
+        let shader = task.0;
+
+        // Actually compile the shader now
+        println!("\x1b[33mCompiling & Creating Compute Shader {}...\x1b[0m", shader.source.path);
+        println!("\x1b[33mCompiling & Creating Compute Shader Source {}...\x1b[0m", shader.source.path);
+        let shader_source_program = unsafe {
+            // Compiling the source
+            let program = gl::CreateShader(gl::COMPUTE_SHADER);
+            // Compile the shader
+            let cstring = CString::new(shader.source.text.clone()).unwrap();
+            let shader_source: *const i8 = cstring.as_ptr();
+            gl::ShaderSource(program, 1, &shader_source, null());
+            gl::CompileShader(program);
+            // Check for any errors
+            let mut info_log_length: i32 = 0;
+            let info_log_length_ptr: *mut i32 = &mut info_log_length;
+            gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+            // Print any errors that might've happened while compiling this shader source
+            if info_log_length > 0 {
+                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+                gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+                println!("Error while compiling shader source {}!:", shader.source.path);
+                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+                let string = String::from_utf8(printable_log).unwrap();
+
+                println!("Error: \n\x1b[31m{}", string);
+                println!("\x1b[0m");
+                panic!();
+            }
+
+            println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", shader.source.path);
+            program
+        };
+        unsafe {
+            let program = gl::CreateProgram();
+            gl::AttachShader(program, shader_source_program);
+            // Finalize the shader and stuff
+            gl::LinkProgram(program);
+
+            // Check for any errors
+            let mut info_log_length: i32 = 0;
+            let info_log_length_ptr: *mut i32 = &mut info_log_length;
+            let mut result: i32 = 0;
+            let result_ptr: *mut i32 = &mut result;
+            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+            gl::GetProgramiv(program, gl::LINK_STATUS, result_ptr);
+            // Print any errors that might've happened while finalizing this shader
+            if info_log_length > 0 {
+                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+                gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+                println!("Error while finalizing shader {}!:", shader.source.path);
+                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+                let string = String::from_utf8(printable_log).unwrap();
+                println!("Error: \n\x1b[31m{}", string);
+                println!("\x1b[0m");
+                panic!();
+            }
+            // Detach shader source
+            gl::DetachShader(program, shader_source_program);
+            println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader.source.path);
+        }
+        // Add the shader at the end
+        self.compute_shaders.insert(task.1.index, shader);
     }
     // Create a model
     pub fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
@@ -431,12 +498,12 @@ impl Pipeline {
         }
     }
     // Run a compute shader
-    pub fn compute_run(&mut self, data: (ObjectID<Shader>, ComputeShaderExecutionSettings)) {
+    pub fn compute_run(&mut self, data: (ObjectID<ComputeShader>, ComputeShaderExecutionSettings)) {
         // Execute some shader uniforms if we want to
         let group = (data.1).uniforms;
         if let Some(group) = group {
             // Create some shader uniforms settings that we can use
-            let settings = ShaderUniformsSettings::new_id(data.0);
+            let settings = ShaderUniformsSettings::new_compute(data.0);
             group.execute(self, settings).unwrap();
         }
         // Dispatch the compute shader for execution
@@ -452,7 +519,7 @@ impl Pipeline {
         }
     }
     // Create a materail
-    pub fn material_creae(&mut self, task: ObjectBuildingTask<Material>) {
+    pub fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
         self.materials.insert(task.1.index, task.0);
     }

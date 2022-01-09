@@ -1,16 +1,35 @@
-use crate::{object::ObjectID, Shader};
+use crate::{object::ObjectID, Shader, compute::ComputeShader, Pipeline};
 
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
 pub struct ShaderUniformsSettings {
-    pub(crate) shader_id: ObjectID<Shader>,
+    // The ID of a specific shader, if available
+    pub(crate) shader_id: Option<ObjectID<Shader>>,
+    // The ID of a specific compute shader, if available
+    pub(crate) compute_shader_id: Option<ObjectID<ComputeShader>>,
 }
 
 impl ShaderUniformsSettings {
     // Create some new uniform settings using a shader ID
-    pub fn new_id(shader_id: ObjectID<Shader>) -> Self {
+    pub fn new(id: ObjectID<Shader>) -> Self {
         Self {
-            shader_id
+            shader_id: Some(id),
+            compute_shader_id: None,
         }
+    }
+    // Create some new uniform settings using a compute shader ID
+    pub fn new_compute(id: ObjectID<ComputeShader>) -> Self {
+        Self {
+            shader_id: None,
+            compute_shader_id: Some(id),
+        }
+    }
+    // Get the program ID of the shader
+    pub(crate) fn get_program_id(&self, pipeline: &Pipeline) -> u32 {
+        if let Some(x) = self.shader_id {
+            return pipeline.shaders.get(x.index).unwrap().program;
+        } else if let Some(y) = self.compute_shader_id {
+            return pipeline.compute_shaders.get(y.index).unwrap().program;
+        } else { panic!() }
     }
 }
 

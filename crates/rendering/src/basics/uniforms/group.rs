@@ -73,8 +73,7 @@ impl ShaderUniformsGroup {
     // Bind the shader and set the uniforms
     pub fn execute(&self, pipeline: &Pipeline, settings: ShaderUniformsSettings) -> Option<()> {
         // Get the shader program ID
-        let shader =  pipeline.shaders.get(settings.shader_id.index)?;
-        let program_id = shader.program;
+        let program_id = settings.get_program_id(pipeline);
         unsafe {
             gl::UseProgram(program_id);
         }

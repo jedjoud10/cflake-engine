@@ -66,4 +66,9 @@ impl Material {
         self.flags.remove(flag);
         self
     }
+    // Set the uniforms
+    pub fn set_uniforms(mut self, uniforms: ShaderUniformsGroup) -> Self {
+        self.uniforms = uniforms;
+        self
+    }
 }

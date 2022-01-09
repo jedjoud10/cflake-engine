@@ -1,4 +1,4 @@
-use crate::{Texture, Material, Buildable, Shader, Model};
+use crate::{Texture, Material, Buildable, Shader, Model, compute::{ComputeShader, ComputeShaderExecutionSettings}, Renderer};
 use super::{ObjectID, PipelineObject};
 
 // A task to create an object
@@ -9,8 +9,11 @@ pub enum PipelineTask {
     CreateTexture(ObjectBuildingTask<Texture>),
     CreateMaterial(ObjectBuildingTask<Material>),
     CreateShader(ObjectBuildingTask<Shader>),
+    CreateComputeShader(ObjectBuildingTask<ComputeShader>),
     CreateModel(ObjectBuildingTask<Model>),
     CreateRenderer(ObjectBuildingTask<Renderer>),
+
+    RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
 
     // Specific pipeline tasks
     Quit,
