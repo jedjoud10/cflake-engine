@@ -1,7 +1,7 @@
 // Some pipeline commands
 pub mod pipec {
     use std::sync::mpsc::Sender;
-    use crate::{object::{PipelineTask, TaskID, PipelineObject, ObjectID}, Pipeline, Buildable};
+    use crate::{object::{PipelineTask, TaskID, PipelineObject, ObjectID}, Buildable, Pipeline};
 
     // Send a task to the shared pipeline 
     pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {

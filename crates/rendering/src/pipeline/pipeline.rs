@@ -59,6 +59,7 @@ impl Pipeline {
                 PipelineTask::CreateShader(_) => {},
                 PipelineTask::CreateModel(_) => {},
                 PipelineTask::Quit => self.should_quit = false,
+                PipelineTask::CreateRenderer(_) => todo!(),
             }
 
             // After executing the tasks, we must update our status
@@ -651,10 +652,7 @@ mod object_creation {
     }
     pub fn run_compute(
         pipeline: &mut Pipeline,
-        
-        axii: (u16, u16, u16),
-        compute_tasks: ComputeShaderSubTasks,
-        uniforms_group: ShaderUniformsGroup,
+        data: (ObjectID<Shader>, ComputeShaderExecutionSettings),
     ) -> AsyncGPUCommandData {
         unsafe {
             gl::Flush();
@@ -673,18 +671,6 @@ mod object_creation {
         }
         y
     }
-    pub fn create_material(buf: &mut PipelineBuffer, material: Material) -> GPUObjectID {
-        // We must convert the uniforms into the GPU Object ID
-        let uniforms = {
-            // Bruh
-            let gpuobject = GPUObject::Uniforms(UniformsGPUObject { uniforms: material.uniforms });
-            buf.add_gpuobject(gpuobject, None)
-        };
-        let gpuobject = GPUObject::Material(MaterialGPUObject {
-            shader: material.shader,
-            uniforms,
-            flags: material.flags,
-        });
-        buf.add_gpuobject(gpuobject, Some(material.material_name.clone()))
+    pub fn create_material(pipeline: &mut Pipeline, task: ObjectCreationTask<Material>) {
     }
 }
