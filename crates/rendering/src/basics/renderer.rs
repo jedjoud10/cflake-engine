@@ -12,9 +12,9 @@ bitflags! {
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
-    pub model: Option<ObjectID<Model>>,    // The model GPU of this renderer
-    pub material: Option<ObjectID<Material>>, // The GPU material of this renderer
-    pub flags: RendererFlags, // Flags
+    pub model: Option<ObjectID<Model>>, 
+    pub material: Option<ObjectID<Material>>, 
+    pub flags: RendererFlags,
 }
 
 impl PipelineObject for Renderer {}

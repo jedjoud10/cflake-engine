@@ -17,9 +17,9 @@ impl Default for MaterialFlags {
 // A material that can have multiple parameters and such
 #[derive(Default)]
 pub struct Material {
-    shader: Option<ObjectID<Shader>>, // The shader that we will use to render this material
-    flags: MaterialFlags, // The special flags that this material has that changes how it is rendered
-    uniforms: ShaderUniformsGroup, // A uniform group specific for this material
+    shader: Option<ObjectID<Shader>>, 
+    flags: MaterialFlags, 
+    uniforms: ShaderUniformsGroup, 
 }
 
 impl PipelineObject for Material {}

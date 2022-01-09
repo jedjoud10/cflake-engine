@@ -241,19 +241,28 @@ pub enum TextureShaderAccessType {
 
 // A texture
 pub struct Texture {
-    pub(crate) oid: u32, // The OpenGL id for this texture
-    pub(crate) bytes: Vec<u8>, // The bytes stored in this texture
+    // The OpenGL id for this texture
+    pub(crate) oid: u32, 
+    // The bytes stored in this texture
+    pub(crate) bytes: Vec<u8>, 
 
-    pub _format: TextureFormat, // The internal format of the texture
-    pub _type: DataType,        // The data type that this texture uses for storage
-    pub(crate) ifd: (i32, u32, u32), // Internal Format, Format, Data
-    pub(crate) target: u32, // The OpenGL target that is linked with this texture. Example: TEXTURE_2D or TEXTURE_ARRAY
+    // The internal format of the texture
+    pub _format: TextureFormat, 
+    // The data type that this texture uses for storage
+    pub _type: DataType,        
+    // Internal Format, Format, Data
+    pub(crate) ifd: (i32, u32, u32),
+    // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY 
+    pub(crate) target: u32, 
 
-    pub flags: TextureFlags,    // This texture's flags
-    pub filter: TextureFilter, // Texture mag and min filters, either Nearest or Linear
-    pub wrap_mode: TextureWrapping, // What kind of wrapping will we use for this texture
-    pub ttype: TextureType, // The dimensions of the texture and it's texture type
-    _private: () // Private type so we can't make the texture from outside this crate
+    // This texture's flags
+    pub flags: TextureFlags,   
+    // Texture mag and min filters, either Nearest or Linear 
+    pub filter: TextureFilter, 
+    // What kind of wrapping will we use for this texture
+    pub wrap_mode: TextureWrapping,
+    // The dimensions of the texture and it's texture type 
+    pub ttype: TextureType, 
 }
 
 impl Default for Texture {
@@ -268,8 +277,7 @@ impl Default for Texture {
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
-            ttype: TextureType::Texture2D(0, 0),    
-            _private: (),        
+            ttype: TextureType::Texture2D(0, 0),   
         } 
     }
 }
