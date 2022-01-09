@@ -296,7 +296,7 @@ mod object_creation {
         mem::size_of,
         ptr::null,
     };
-    use crate::{Pipeline, Renderer, object::{ObjectBuildingTask, ObjectID}, ShaderSource, ShaderSourceType, Shader};
+    use crate::{Pipeline, Renderer, object::{ObjectBuildingTask, ObjectID}, ShaderSource, ShaderSourceType, Shader, Model, ModelBuffers, Texture, TextureType, TextureFilter, TextureFlags, TextureWrapping};
 
     // Add the renderer
     pub fn add_renderer(pipeline: &mut Pipeline, task: ObjectBuildingTask<Renderer>) {
@@ -360,11 +360,11 @@ mod object_creation {
             let program = gl::CreateProgram();
 
             // Create & compile the shader sources and link them 
-            let mut subshaders: Vec<&SubShaderGPUObject> = Vec::new();
-            for subshader_id in shader.linked_subshaders.iter() {
-                let subshader = buf.as_subshader(subshader_id).unwrap();
-                gl::AttachShader(program, subshader.program);
-                subshaders.push(subshader);
+            let taken = std::mem::take(&mut shader.sources);
+            let programs: Vec<u32> = taken.into_iter().map(|(path, data)| compile_single_source(data)).collect::<Vec<_>>();
+            // Link
+            for shader in programs.iter() {
+                gl::AttachShader(program, *shader)
             }
 
             // Finalize the shader and stuff
@@ -381,57 +381,33 @@ mod object_creation {
             if info_log_length > 0 {
                 let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
                 gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                println!("Error while finalizing shader {}!:", shader.name);
+                println!("Error while finalizing shader {}!:", shader_name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
                 panic!();
             }
-            // Check if this a compute shader
-            let compute_shader = if let SubShaderType::Compute = subshaders.first().unwrap().subshader_type {
-                true
-            } else {
-                false
-            };
             // Detach shaders
-            for subshader in subshaders {
-                gl::DetachShader(program, subshader.program);
+            for shader in programs.iter() {
+                gl::DetachShader(program, *shader);
             }
-            let gpuobject = if !compute_shader {
-                // Normal shader
-                GPUObject::Shader(ShaderGPUObject { program })
-            } else {
-                // Compute shader
-                GPUObject::ComputeShader(ComputeShaderGPUObject { program })
-            };
-            // Add the gpu object
-            println!(
-                "\x1b[32mShader {} compiled and created succsessfully! ComputeShader: {}\x1b[0m",
-                shader.name, compute_shader
-            );
-            buf.add_gpuobject(gpuobject, Some(shader.name.clone()))
+            println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader_name);
         }
+        // Add the shader at the end
+        pipeline.shaders.insert(task.1.index, shader);
     }
-    pub fn create_model(buf: &mut PipelineBuffer, model: Model) -> GPUObjectID {
-        let mut gpu_data = ModelGPUObject {
-            vertex_buf: 0,
-            normal_buf: 0,
-            uv_buf: 0,
-            tangent_buf: 0,
-            color_buf: 0,
-            vertex_array_object: 0,
-            element_buffer_object: 0,
-            element_count: 0,
-        };
+    pub fn create_model(pipeline: &mut Pipeline, task: ObjectBuildingTask<Model>) {
+        let mut model = task.0;
+        let mut buffers = ModelBuffers::default();
         unsafe {
             // Create the VAO
-            gl::GenVertexArrays(1, &mut gpu_data.vertex_array_object);
-            gl::BindVertexArray(gpu_data.vertex_array_object);
+            gl::GenVertexArrays(1, &mut buffers.vertex_array_object);
+            gl::BindVertexArray(buffers.vertex_array_object);
 
             // Create the EBO
-            gl::GenBuffers(1, &mut gpu_data.element_buffer_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, gpu_data.element_buffer_object);
+            gl::GenBuffers(1, &mut buffers.element_buffer_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers.element_buffer_object);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (model.triangles.len() * size_of::<u32>()) as isize,
@@ -440,8 +416,8 @@ mod object_creation {
             );
 
             // Create the vertex buffer and populate it
-            gl::GenBuffers(1, &mut gpu_data.vertex_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.vertex_buf);
+            gl::GenBuffers(1, &mut buffers.vertex_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
                 (model.vertices.len() * size_of::<f32>() * 3) as isize,
@@ -450,8 +426,8 @@ mod object_creation {
             );
 
             // Create the normals buffer
-            gl::GenBuffers(1, &mut gpu_data.normal_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.normal_buf);
+            gl::GenBuffers(1, &mut buffers.normal_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
                 (model.normals.len() * size_of::<f32>() * 3) as isize,
@@ -461,8 +437,8 @@ mod object_creation {
 
             if !model.tangents.is_empty() {
                 // And it's brother, the tangent buffer
-                gl::GenBuffers(1, &mut gpu_data.tangent_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
+                gl::GenBuffers(1, &mut buffers.tangent_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
                     (model.tangents.len() * size_of::<f32>() * 4) as isize,
@@ -473,8 +449,8 @@ mod object_creation {
 
             if !model.uvs.is_empty() {
                 // The texture coordinates buffer
-                gl::GenBuffers(1, &mut gpu_data.uv_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
+                gl::GenBuffers(1, &mut buffers.uv_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
                     (model.uvs.len() * size_of::<f32>() * 2) as isize,
@@ -485,8 +461,8 @@ mod object_creation {
 
             if !model.colors.is_empty() {
                 // Finally, the vertex colors buffer
-                gl::GenBuffers(1, &mut gpu_data.color_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
+                gl::GenBuffers(1, &mut buffers.color_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
                     (model.colors.len() * size_of::<f32>() * 3) as isize,
@@ -496,63 +472,60 @@ mod object_creation {
             }
             // Create the vertex attrib arrays
             gl::EnableVertexAttribArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.vertex_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
             gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
 
             // Normal attribute
             gl::EnableVertexAttribArray(1);
-            gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.normal_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
             gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
 
             if !model.tangents.is_empty() {
                 // Tangent attribute
                 gl::EnableVertexAttribArray(2);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.tangent_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
                 gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
             }
             if !model.uvs.is_empty() {
                 // UV attribute
                 gl::EnableVertexAttribArray(3);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.uv_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
                 gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
             }
             if !model.colors.is_empty() {
                 // Vertex color attribute
                 gl::EnableVertexAttribArray(4);
-                gl::BindBuffer(gl::ARRAY_BUFFER, gpu_data.color_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
             }
             gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
             // Unbind
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
-        gpu_data.element_count = model.triangles.len();
-        // Add the gpu object
-        let gpuobject = GPUObject::Model(gpu_data);
-        buf.add_gpuobject(gpuobject, Some(model.name))
+
+        // Add the model
+        model.buffers = Some(buffers);
+
+        pipeline.models.insert(task.1.index, model);
     }
-    pub fn dispose_model(buf: &mut PipelineBuffer, id: GPUObjectID) {
-        // Get the model GPU object first
-        let gpuobject = buf.get_gpuobject_mut(&id).unwrap();
-        let model = if let GPUObject::Model(x) = gpuobject {
-            x
-        } else {
-            panic!();
-        };
+    pub fn dispose_model(pipeline: &mut Pipeline, id: ObjectID<Model>) {
+        // Get the model buffers
+        let buffers = pipeline.models.get(id.index).unwrap().buffers.as_ref().unwrap();
         unsafe {
             // Delete the VBOs
-            gl::DeleteBuffers(1, &mut model.vertex_buf);
-            gl::DeleteBuffers(1, &mut model.normal_buf);
-            gl::DeleteBuffers(1, &mut model.uv_buf);
-            gl::DeleteBuffers(1, &mut model.tangent_buf);
-            gl::DeleteBuffers(1, &mut model.color_buf);
-            gl::DeleteBuffers(1, &mut model.element_buffer_object);
+            gl::DeleteBuffers(1, &mut buffers.vertex_buf);
+            gl::DeleteBuffers(1, &mut buffers.normal_buf);
+            gl::DeleteBuffers(1, &mut buffers.uv_buf);
+            gl::DeleteBuffers(1, &mut buffers.tangent_buf);
+            gl::DeleteBuffers(1, &mut buffers.color_buf);
+            gl::DeleteBuffers(1, &mut buffers.element_buffer_object);
 
             // Delete the vertex array
-            gl::DeleteVertexArrays(1, &mut model.vertex_array_object);
+            gl::DeleteVertexArrays(1, &mut buffers.vertex_array_object);
         }
     }
-    pub fn generate_texture(buf: &mut PipelineBuffer, texture: Texture) -> GPUObjectID {
+    pub fn generate_texture(pipeline: &mut Pipeline, task: ObjectBuildingTask<Texture>) {
+        let texture = task.0;
         let mut pointer: *const c_void = null();
         if !texture.bytes.is_empty() {
             pointer = texture.bytes.as_ptr() as *const c_void;
@@ -567,7 +540,6 @@ mod object_creation {
             TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
 
-        // It's a normal mutable texture
         let mut id: u32 = 0;
         unsafe {
             gl::GenTextures(1, &mut id as *mut u32);
@@ -638,92 +610,48 @@ mod object_creation {
         }
 
         // Set the wrap mode for the texture (Mipmapped or not)
-        let wrapping_mode: i32;
+        let wrapping_mode: u32;
         match texture.wrap_mode {
-            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE as i32,
-            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER as i32,
-            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT as i32,
-            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT as i32,
+            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE,
+            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER,
+            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT,
+            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT,
         }
         unsafe {
             // Now set the actual wrapping mode in the opengl texture
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode);
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode);
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
         }
-        println!("RenderThread: Succsesfully generated texture {}", texture.name);
-        let gpuobject = GPUObject::Texture(TextureGPUObject {
-            texture_id: id,
-            ifd,
-            ttype: texture.ttype,
-        });
-        buf.add_gpuobject(gpuobject, Some(texture.name.clone()))
+        // Add the texture
+        pipeline.textures.insert(task.1.index, texture);
     }
-    pub fn update_texture_size(buf: &mut PipelineBuffer, id: GPUObjectID, ttype: TextureType) {
+    pub fn update_texture_size(pipeline: &mut Pipeline, data: (ObjectID<Texture>, TextureType)) {
         // Get the GPU texture object
-        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() { x } else { panic!() };
+        let texture = pipeline.textures.get(data.0.index).unwrap();
         // Check if the current dimension type matches up with the new one
         let ifd = texture.ifd;
         // This is a normal texture getting resized
         unsafe {
-            match ttype {
+            match data.1 {
                 TextureType::Texture1D(width) => {
-                    gl::BindTexture(gl::TEXTURE_1D, texture.texture_id);
+                    gl::BindTexture(gl::TEXTURE_1D, texture.oid);
                     gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
                 }
                 TextureType::Texture2D(width, height) => {
-                    gl::BindTexture(gl::TEXTURE_2D, texture.texture_id);
+                    gl::BindTexture(gl::TEXTURE_2D, texture.oid);
                     gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, null());
                 }
                 TextureType::Texture3D(width, height, depth) => {
-                    gl::BindTexture(gl::TEXTURE_3D, texture.texture_id);
+                    gl::BindTexture(gl::TEXTURE_3D, texture.oid);
                     gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, null());
                 }
                 TextureType::Texture2DArray(_, _, _) => todo!(),
             }
         }
     }
-    pub fn update_texture_data(buf: &mut PipelineBuffer, id: GPUObjectID, bytes: Vec<u8>) {
-        let texture = if let GPUObject::Texture(x) = buf.get_gpuobject(&id).unwrap() { x } else { panic!() };
-        let mut pointer: *const c_void = null();
-        if !bytes.is_empty() {
-            pointer = bytes.as_ptr() as *const c_void;
-        }
-
-        let (internal_format, format, data_type) = texture.ifd;
-        let tex_type = match texture.ttype {
-            TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-
-        unsafe {
-            gl::BindTexture(tex_type, texture.texture_id);
-            match texture.ttype {
-                TextureType::Texture1D(width) => gl::TexImage1D(tex_type, 0, internal_format, width as i32, 0, format, data_type, pointer),
-                // This is a 2D texture
-                TextureType::Texture2D(width, height) => {
-                    gl::TexImage2D(tex_type, 0, internal_format, width as i32, height as i32, 0, format, data_type, pointer);
-                }
-                // This is a 3D texture
-                TextureType::Texture3D(width, height, depth) => {
-                    gl::TexImage3D(tex_type, 0, internal_format, width as i32, height as i32, depth as i32, 0, format, data_type, pointer);
-                }
-                // This is a texture array
-                TextureType::Texture2DArray(width, height, depth) => {
-                    gl::TexStorage3D(tex_type, 10, internal_format as u32, width as i32, height as i32, depth as i32);
-                    // We might want to do mipmap
-                    for i in 0..depth {
-                        let localized_bytes = bytes[(i as usize * height as usize * 4 * width as usize)..bytes.len()].as_ptr() as *const c_void;
-                        gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, format, data_type, localized_bytes);
-                    }
-                }
-            }
-        }
-    }
     pub fn run_compute(
-        buf: &mut PipelineBuffer,
-        id: GPUObjectID,
+        pipeline: &mut Pipeline,
+        
         axii: (u16, u16, u16),
         compute_tasks: ComputeShaderSubTasks,
         uniforms_group: ShaderUniformsGroup,
@@ -758,9 +686,5 @@ mod object_creation {
             flags: material.flags,
         });
         buf.add_gpuobject(gpuobject, Some(material.material_name.clone()))
-    }
-    pub fn create_uniforms(buf: &mut PipelineBuffer, uniforms: ShaderUniformsGroup) -> GPUObjectID {
-        let gpuobject = GPUObject::Uniforms(UniformsGPUObject { uniforms });
-        buf.add_gpuobject(gpuobject, None)
     }
 }
