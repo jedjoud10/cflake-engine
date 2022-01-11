@@ -42,6 +42,7 @@ pub struct Pipeline {
 impl Pipeline {
     // Set the buffered tasks from RX messages
     pub fn add_tasks(&mut self, messages: Vec<(PipelineTask, TaskID)>) {
+        messages.iter().for_each(|(_, id)| { self.task_statuses.insert(id.index, PipelineTaskStatus::Pending); });
         self.tasks.extend(messages);
     }
     // Flush all the buffered tasks, and execute them
