@@ -1,7 +1,7 @@
 use crate::object::{PipelineObject, PipelineTask, ObjectBuildingTask};
 use crate::utils::RenderingError;
 use crate::{pipec, object::ObjectID};
-use crate::{params::*, Buildable};
+use crate::{params::*, Buildable, Pipeline};
 use std::collections::{HashSet, HashMap};
 // Shader source type
 pub(crate) enum ShaderSourceType {
@@ -70,7 +70,6 @@ impl Buildable for Shader {
         id
     }
 }
-
 
 impl Shader {
     // Load the files that need to be included for this specific shader and return the included lines

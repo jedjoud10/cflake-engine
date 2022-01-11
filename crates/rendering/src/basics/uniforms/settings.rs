@@ -28,7 +28,7 @@ impl ShaderUniformsSettings {
         if let Some(x) = self.shader_id {
             return pipeline.get_shader(x).unwrap().program;
         } else if let Some(y) = self.compute_shader_id {
-            return pipeline.get_compute_Shader(y).unwrap().program;
+            return pipeline.get_compute_shader(y).unwrap().program;
         } else { panic!() }
     }
 }

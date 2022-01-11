@@ -32,7 +32,6 @@ impl<T> ObjectID<T>
         self.index.is_some()
     }
 }
-// We must implement watchable separately :(
 
 
 // This is an ID for each Task that we dispatch to the render thread.
@@ -51,10 +50,6 @@ impl TaskID {
 }
 
 impl others::Watchable<Pipeline> for TaskID {
-    fn get_uid(&self) -> usize {
-        self.index
-    }
-
     fn is_valid(&self, context: &Pipeline) -> bool {
         // Try to get the task and check if it is valid
         if let Some(status) =  context.task_statuses.get(self.index) {

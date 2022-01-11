@@ -303,13 +303,6 @@ impl Buildable for Texture {
     }
 }
 
-impl others::Watchable<Pipeline> for ObjectID<Texture> {
-    fn is_valid(&self, context: &Pipeline) -> bool {
-        context.get_texture(self).is_some()
-    }
-}
-
-
 // Create a texture and send it to the pipeline so we can actually create it on the GPU
 impl Texture {
     // The internal format and data type of the soon to be generated texture

@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use crate::{object::{ObjectID, PipelineObject, ObjectBuildingTask, PipelineTask}, Material, Model, Buildable};
+use crate::{object::{ObjectID, PipelineObject, ObjectBuildingTask, PipelineTask}, Material, Model, Buildable, Pipeline};
 // Yup
 bitflags! {
     pub struct RendererFlags: u8 {
