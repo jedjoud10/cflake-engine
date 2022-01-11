@@ -12,8 +12,8 @@ bitflags! {
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
-    pub model: Option<ObjectID<Model>>, 
-    pub material: Option<ObjectID<Material>>, 
+    pub model: ObjectID<Model>, 
+    pub material: ObjectID<Material>, 
     pub flags: RendererFlags,
 }
 
@@ -27,18 +27,28 @@ impl Buildable for Renderer {
         crate::pipec::task(PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), pipeline);
         id
     }
+    fn pre_construct(self, pipeline: &crate::Pipeline) -> Self {
+        // We must fill out our model and material if they are empty
+        if !self.model.valid() {
+            self.model = pipeline.defaults.unwrap().model;
+        }
+        if !self.material.valid() {
+            self.material = pipeline.defaults.unwrap().material;
+        }
+        self
+    }
 }
 
 // Everything related to the creation of a renderer
 impl Renderer {
     // Set a model
     pub fn set_model(mut self, model: ObjectID<Model>) -> Self {
-        self.model = Some(model);
+        self.model = model;
         self
     }
     // With a specific material
     pub fn set_material(mut self, material: ObjectID<Material>) -> Self {
-        self.material = Some(material);
+        self.material = material;
         self
     }
     // Add a flag to our flags

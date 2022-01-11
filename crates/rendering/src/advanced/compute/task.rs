@@ -11,7 +11,7 @@ impl ComputeShaderTask {
     pub fn execute(self, pipeline: &Pipeline) {
         match self {
             ComputeShaderTask::FillTexture(id, bytecount_per_pixel, bytes) => {
-                let texture = pipeline.textures.get(id.index).unwrap();
+                let texture = pipeline.get_texture(id).unwrap();
                 // Get the length of the vector
                 let length: usize = match texture.ttype {
                     TextureType::Texture1D(x) => (x as usize),

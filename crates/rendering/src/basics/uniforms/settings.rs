@@ -26,9 +26,9 @@ impl ShaderUniformsSettings {
     // Get the program ID of the shader
     pub(crate) fn get_program_id(&self, pipeline: &Pipeline) -> u32 {
         if let Some(x) = self.shader_id {
-            return pipeline.shaders.get(x.index).unwrap().program;
+            return pipeline.get_shader(x).unwrap().program;
         } else if let Some(y) = self.compute_shader_id {
-            return pipeline.compute_shaders.get(y.index).unwrap().program;
+            return pipeline.get_compute_Shader(y).unwrap().program;
         } else { panic!() }
     }
 }
