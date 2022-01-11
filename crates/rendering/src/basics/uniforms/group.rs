@@ -66,6 +66,10 @@ impl ShaderUniformsGroup {
     pub fn set_image(&mut self, name: &str, val: ObjectID<Texture>, access_type: TextureShaderAccessType) {
         self.uniforms.insert(name.to_string(), Uniform::Image(val, access_type));
     }
+    // Check if we have a specific uniform store
+    pub fn contains_uniform(&self, name: &str) -> bool {
+        self.uniforms.contains_key(name)
+    }
     // Create self
     pub fn new() -> Self {
         Self { uniforms: HashMap::default() }
@@ -102,12 +106,12 @@ impl ShaderUniformsGroup {
                     },
                     Uniform::Texture(id, active_texture_id) => {
                         // We need to know the texture target first
-                        let texture = pipeline.textures.get(id.index)?;
+                        let texture = pipeline.get_texture(*id)?;
                         set_texture(texture, index, active_texture_id);
                     },
                     Uniform::Image(id, access_type) => {
                         // We need to know the texture target first
-                        let texture = pipeline.textures.get(id.index)?;
+                        let texture = pipeline.get_texture(*id)?;
                         set_image(texture, index, access_type);
                     },
                 }

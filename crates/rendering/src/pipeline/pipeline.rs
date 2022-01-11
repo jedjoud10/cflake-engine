@@ -71,20 +71,56 @@ impl Pipeline {
         }
     }
 
+    // Get a material using it's respective ID
+    pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
+        if let Some(index) = id.index {
+            self.materials.get(index)
+        } else { None }
+    }
+    // Get a model using it's respective ID
+    pub fn get_model(&self, id: ObjectID<Model>) -> Option<&Model> {
+        if let Some(index) = id.index {
+            self.models.get(index)
+        } else { None }
+    }
+    // Get a renderer using it's respective ID
+    pub fn get_renderer(&self, id: ObjectID<Renderer>) -> Option<&Renderer> {
+        if let Some(index) = id.index {
+            self.renderers.get(index)
+        } else { None }
+    }
+    // Get a shader using it's respective ID
+    pub fn get_shader(&self, id: ObjectID<Shader>) -> Option<&Shader> {
+        if let Some(index) = id.index {
+            self.shaders.get(index)
+        } else { None }
+    }
+    // Get a compute shader using it's respective ID
+    pub fn get_compute_shader(&self, id: ObjectID<ComputeShader>) -> Option<&ComputeShader> {
+        if let Some(index) = id.index {
+            self.compute_shaders.get(index)
+        } else { None }
+    }
+    // Get a texture using it's texture
+    pub fn get_texture(&self, id: ObjectID<Texture>) -> Option<&Texture> {
+        if let Some(index) = id.index {
+            self.textures.get(index)
+        } else { None }
+    }
 
     // Actually update our data
     // Add the renderer
     pub fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
         // Get the renderer data, if it does not exist then use the default renderer data
         let renderer = task.0;
-        let material_id = renderer.material.unwrap_or(self.defaults.unwrap().material);
-        let model_id = renderer.model.unwrap_or(self.defaults.unwrap().model);
+        let material_id = self.get_material(self.defaults.unwrap().material);
+        let model_id = self.get_model(self.defaults.unwrap().model);
         
-        self.renderers.insert(task.1.index, renderer);
+        self.renderers.insert(task.1.index.unwrap(), renderer);
     }
     // Remove the renderer using it's renderer ID
     pub fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
-        self.renderers.remove(id.index);
+        self.renderers.remove(id.index.unwrap());
     }
     // Create a shader and cache it. We do not cache the "subshader" though
     pub fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
@@ -170,7 +206,7 @@ impl Pipeline {
             println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader_name);
         }
         // Add the shader at the end
-        self.shaders.insert(task.1.index, shader);
+        self.shaders.insert(task.1.index.unwrap(), shader);
     }
     // Create a compute shader and cache it
     pub fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
@@ -237,7 +273,7 @@ impl Pipeline {
             println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader.source.path);
         }
         // Add the shader at the end
-        self.compute_shaders.insert(task.1.index, shader);
+        self.compute_shaders.insert(task.1.index.unwrap(), shader);
     }
     // Create a model
     pub fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
@@ -349,12 +385,12 @@ impl Pipeline {
         // Add the model
         model.buffers = Some(buffers);
 
-        self.models.insert(task.1.index, model);
+        self.models.insert(task.1.index.unwrap(), model);
     }
     // Dispose of a model, also remove it from the pipeline
     pub fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Get the model buffers
-        let buffers = self.models.get(id.index).unwrap().buffers.as_ref().unwrap();
+        let buffers = self.get_model(id).unwrap().buffers.as_ref().unwrap();
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut buffers.vertex_buf);
@@ -368,7 +404,7 @@ impl Pipeline {
             gl::DeleteVertexArrays(1, &mut buffers.vertex_array_object);
         }
         // Also remove the model
-        self.models.remove(id.index).unwrap();
+        self.models.remove(id.index.unwrap()).unwrap();
     }
     // Create a texture
     pub fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
@@ -470,12 +506,12 @@ impl Pipeline {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
         }
         // Add the texture
-        self.textures.insert(task.1.index, texture);
+        self.textures.insert(task.1.index.unwrap(), texture);
     }
     // Update the size of a texture
     pub fn texture_update_size(&mut self, data: (ObjectID<Texture>, TextureType)) {
         // Get the GPU texture object
-        let texture = self.textures.get(data.0.index).unwrap();
+        let texture = self.get_texture(data.0).unwrap();
         // Check if the current dimension type matches up with the new one
         let ifd = texture.ifd;
         // This is a normal texture getting resized
@@ -521,7 +557,7 @@ impl Pipeline {
     // Create a materail
     pub fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
-        self.materials.insert(task.1.index, task.0);
+        self.materials.insert(task.1.index.unwrap(), task.0);
     }
 }
 

@@ -6,7 +6,7 @@ use super::{PipelineObject, PipelineTaskStatus};
 pub struct ObjectID<T>
     where T: PipelineObject + Buildable
 {
-    pub(crate) index: usize,
+    pub(crate) index: Option<usize>,
     _phantom: PhantomData<fn() -> T>,
 }
 
@@ -14,7 +14,7 @@ impl<T> Default for ObjectID<T>
     where T: PipelineObject + Buildable
 {
     fn default() -> Self {
-        Self { index: 0, _phantom: PhantomData::default() }
+        Self { index: None, _phantom: PhantomData::default() }
     }
 }
 
@@ -24,8 +24,12 @@ impl<T> ObjectID<T>
     // Create a new object ID using an actual index
     pub fn new(index: usize) -> Self {
         Self {
-            index, _phantom: PhantomData::default()
+            index: Some(index), _phantom: PhantomData::default()
         }
+    }
+    // Check if this ID is even valid LOCALLY
+    pub fn valid(&self) -> bool {
+        self.index.is_some()
     }
 }
 // We must implement watchable separately :(

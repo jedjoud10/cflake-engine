@@ -1,4 +1,6 @@
-use crate::{object::ObjectID, Texture, Model, Pipeline, pipec, Shader, ShaderSettings};
+use crate::{object::ObjectID, Texture, Model, Pipeline, pipec, Shader, ShaderSettings, Renderer};
+
+use super::camera::Camera;
 
 // Pipeline renderer that will render our world
 #[derive(Default)]
@@ -18,78 +20,7 @@ pub struct PipelineRenderer {
 
     // Others
     sky_texture: ObjectID<Texture>,
-}
-
-// Render a renderer normally
-pub fn render(
-    buf: &PipelineBuffer,
-    renderer: &RendererGPUObject,
-    camera: &CameraDataGPUObject,
-    dm: &MaterialGPUObject,
-    new_time: f32,
-    delta: f32,
-    resolution: veclib::Vector2<i32>,
-) {
-    let material = buf.as_material(&renderer.material_id);
-    let mut shader = buf.as_shader(&dm.shader.as_ref().unwrap()).unwrap();
-    // If we do not have a material assigned, use the default material
-    let material = match material {
-        Some(user_material) => {
-            // If we do not have a shader assigned, use the default material's shader
-            shader = match &user_material.shader {
-                Some(id) => match buf.as_shader(&id) {
-                    Some(shader) => shader,
-                    None => shader,
-                },
-                None => shader,
-            };
-            user_material
-        }
-        None => dm,
-    };
-    let model = buf.as_model(&renderer.model_id).unwrap();
-    let model_matrix = &renderer.matrix;
-    // Calculate the mvp matrix
-    let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
-    // Pass the MVP and the model matrix to the shader
-    let group1 = &buf.as_uniforms(&material.uniforms).unwrap().uniforms;
-    let mut group2 = ShaderUniformsGroup::new();
-    let settings = ShaderUniformsSettings::new_program_id(shader);
-    group2.set_mat44("mvp_matrix", mvp_matrix);
-    group2.set_mat44("model_matrix", *model_matrix);
-    group2.set_mat44("view_matrix", camera.viewm);
-    group2.set_vec3f32("view_pos", camera.position);
-    // Set a default impl uniform
-    group2.set_f32("_active_time", renderer.time_alive);
-    group2.set_f32("_time", new_time);
-    group2.set_vec2i32("_resolution", resolution);
-    group2.set_f32("_delta", new_time);
-    group2.set_bool("_fade_anim", renderer.flags.contains(RendererFlags::FADING_ANIMATION));
-    // Combine the two groups
-    let mut combined = ShaderUniformsGroup::combine(group1, &group2);
-
-    // Use the custom renderer shader uniforms
-    if let Option::Some(group) = &renderer.uniforms {
-        // We might need to combine another time
-        combined = ShaderUniformsGroup::combine(&combined, group);
-    }
-
-    // Update the uniforms
-    combined.execute(buf, settings).unwrap();
-
-    unsafe {
-        // Enable / Disable vertex culling for double sided materials
-        if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
-            gl::Disable(gl::CULL_FACE);
-        } else {
-            gl::Enable(gl::CULL_FACE);
-        }
-
-        // Actually draw
-        gl::BindVertexArray(model.vertex_array_object);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.element_buffer_object);
-        gl::DrawElements(gl::TRIANGLES, model.element_count as i32, gl::UNSIGNED_INT, null());
-    }
+    camera_data: Camera,
 }
 
 // Render a renderer using wireframe
@@ -123,6 +54,70 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
 }
 
 impl PipelineRenderer {
+    // Render a single renderere
+    fn render(&self, pipeline: &Pipeline, renderer: ObjectID<Renderer>, camera: &Camera) {
+        let renderer = pipeline.get_renderer(renderer).unwrap();
+        let material = pipeline.get_material(renderer.material).unwrap();
+        let mut shader = buf.as_shader(&dm.shader.as_ref().unwrap()).unwrap();
+        // If we do not have a material assigned, use the default material
+        let material = match material {
+            Some(user_material) => {
+                // If we do not have a shader assigned, use the default material's shader
+                shader = match &user_material.shader {
+                    Some(id) => match buf.as_shader(&id) {
+                        Some(shader) => shader,
+                        None => shader,
+                    },
+                    None => shader,
+                };
+                user_material
+            }
+            None => dm,
+        };
+        let model = buf.as_model(&renderer.model_id).unwrap();
+        let model_matrix = &renderer.matrix;
+        // Calculate the mvp matrix
+        let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
+        // Pass the MVP and the model matrix to the shader
+        let group1 = &buf.as_uniforms(&material.uniforms).unwrap().uniforms;
+        let mut group2 = ShaderUniformsGroup::new();
+        let settings = ShaderUniformsSettings::new_program_id(shader);
+        group2.set_mat44("mvp_matrix", mvp_matrix);
+        group2.set_mat44("model_matrix", *model_matrix);
+        group2.set_mat44("view_matrix", camera.viewm);
+        group2.set_vec3f32("view_pos", camera.position);
+        // Set a default impl uniform
+        group2.set_f32("_active_time", renderer.time_alive);
+        group2.set_f32("_time", new_time);
+        group2.set_vec2i32("_resolution", resolution);
+        group2.set_f32("_delta", new_time);
+        group2.set_bool("_fade_anim", renderer.flags.contains(RendererFlags::FADING_ANIMATION));
+        // Combine the two groups
+        let mut combined = ShaderUniformsGroup::combine(group1, &group2);
+
+        // Use the custom renderer shader uniforms
+        if let Option::Some(group) = &renderer.uniforms {
+            // We might need to combine another time
+            combined = ShaderUniformsGroup::combine(&combined, group);
+        }
+
+        // Update the uniforms
+        combined.execute(buf, settings).unwrap();
+
+        unsafe {
+            // Enable / Disable vertex culling for double sided materials
+            if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
+                gl::Disable(gl::CULL_FACE);
+            } else {
+                gl::Enable(gl::CULL_FACE);
+            }
+
+            // Actually draw
+            gl::BindVertexArray(model.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, model.element_count as i32, gl::UNSIGNED_INT, null());
+        }
+    }
     // Create a new pipeline renderer
     pub fn new(pipeline: &Pipeline) -> Self {
         println!("Initializing the pipeline renderer...");

@@ -304,12 +304,8 @@ impl Buildable for Texture {
 }
 
 impl others::Watchable<Pipeline> for ObjectID<Texture> {
-    fn get_uid(&self) -> usize {
-        self.index
-    }
-
     fn is_valid(&self, context: &Pipeline) -> bool {
-        context.textures.get(self.index).is_some()
+        context.get_texture(self).is_some()
     }
 }
 
