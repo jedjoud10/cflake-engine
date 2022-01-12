@@ -1,6 +1,5 @@
 // Export
 mod asset_cacher;
-mod asset_object;
 mod commands;
 mod error;
 mod macros;
@@ -8,7 +7,6 @@ mod tests;
 use std::sync::Mutex;
 
 pub use asset_cacher::*;
-pub use asset_object::*;
 pub use commands::*;
 pub use error::*;
 pub use macros::*;

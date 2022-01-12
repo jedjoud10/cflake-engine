@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod test {
-    use crate::{defaults::Name, linked_components::LinkedComponents, ComponentLinkingGroup, ECSManager, Entity, EntityID, System, ComponentManager};
+    use crate::{defaults::Name, linked_components::LinkedComponents, ComponentLinkingGroup, ECSManager, Entity, EntityID, System};
 
     // A test world
     pub struct World();
@@ -21,7 +21,6 @@ pub mod test {
     pub fn test() {
         // Create the main ECS manager, and the Component Manager
         let mut ecs = ECSManager::default();
-        let mut cmanager = ComponentManager::default();
         // Also create the context
         let world = World();
 
@@ -39,15 +38,46 @@ pub mod test {
         let id2 = id.clone();
         let id3 = id.clone();
         // The entity is not created yet, so it is null
-        ecs.add_entity(entity, id, group, &mut cmanager);
+        ecs.add_entity(entity, id, group);
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
-        ecs.run_systems(&world, &mut cmanager);
-        ecs.run_systems(&world, &mut cmanager);
+        ecs.run_systems(&world);
+        ecs.run_systems(&world);
+        ecs.run_systems(&world);
+        ecs.run_systems(&world);
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3.clone();
         ecs.remove_entity(id3).unwrap();
         assert!(ecs.entity(&id4).is_err());
+    }
+    #[test]
+    // Test the parralelization
+    pub fn test_parallel() {
+        // Create the main ECS manager, and the Component Manager
+        let mut ecs = ECSManager::default();
+        // Also create the context
+        let world = World();
+
+        // Make a simple system
+        let mut hello_system = System::new();
+        hello_system.link::<Name>();
+        hello_system.set_event(update_components);
+        ecs.add_system(hello_system);
+
+        // Create a simple entity with that component
+        for x in 0..100 {
+            let mut group = ComponentLinkingGroup::new();
+            group.link(Name::new("Person")).unwrap();
+            let entity = Entity::new();
+            let id = EntityID::new(&ecs);
+            // The entity is not created yet, so it is null
+            ecs.add_entity(entity, id, group);
+        }
+        // Run the system for two frames
+        ecs.run_systems(&world);
+        ecs.run_systems(&world);
+        ecs.run_systems(&world);
+        ecs.run_systems(&world);
     }
 }

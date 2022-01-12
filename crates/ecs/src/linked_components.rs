@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{cast_component, cast_component_mut, component_registry, Component, ComponentError, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EntityID};
 use ahash::AHashMap;
 use bitfield::Bitfield;
@@ -10,14 +12,17 @@ pub struct LinkedComponents {
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
     // Theoretically, this should only be done once, when an entity becomes valid for a system
-    pub(crate) fn new(id: &EntityID, components: &mut AHashMap<ComponentID, EnclosedComponent>, cbitfield: &Bitfield<u32>) -> Self {
+    pub(crate) fn new(id: &EntityID, components: &AHashMap<ComponentID, RefCell<EnclosedComponent>>, cbitfield: &Bitfield<u32>) -> Self {
         // Get the components from the world, that fit the cbitfield and the Entity ID
         let filtered_components = components
-            .iter_mut()
+            .iter()
             .filter_map(|(component_id, component)| {
                 if cbitfield.contains(&component_id.cbitfield) && component_id.entity_id == *id {
-                    Some((component_id.cbitfield, component as *mut EnclosedComponent))
+                    // The component is linked to the entity, and we must get the component's pointer
+                    let ptr = component.as_ptr();
+                    Some((component_id.cbitfield, ptr))
                 } else {
+                    // The component is not linked to the entity
                     None
                 }
             })

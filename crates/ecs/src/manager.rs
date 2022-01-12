@@ -1,18 +1,26 @@
+use std::cell::RefCell;
+
 use crate::{
     identifiers::EntityID,
-    ComponentError, ComponentLinkingGroup, Entity, EntityError, System, ComponentManager,
+    ComponentError, ComponentLinkingGroup, Entity, EntityError, System, ComponentID, EnclosedComponent,
 };
+use ahash::AHashMap;
+use bitfield::Bitfield;
 use ordered_vec::shareable::ShareableOrderedVec;
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
 pub struct ECSManager<C> {
-    pub(crate) entities: ShareableOrderedVec<Entity>, // A vector full of entities. Each entity can get invalidated, but never deleted
-    systems: Vec<System<C>>,                             // Each system, stored in the order they were created
+    // A vector full of entities. Each entity can get invalidated, but never deleted
+    pub(crate) entities: ShareableOrderedVec<Entity>, 
+    // Each system, stored in the order they were created
+    systems: Vec<System<C>>,                             
+    // The components that are valid in the world
+    components: AHashMap<ComponentID, RefCell<EnclosedComponent>>, 
 }
 
 impl<C> Default for ECSManager<C> {
     fn default() -> Self {
-        Self { entities: Default::default(), systems: Default::default() }
+        Self { entities: Default::default(), systems: Default::default(), components: Default::default() }
     }
 }
 
@@ -29,7 +37,7 @@ impl<C> ECSManager<C> {
         self.entities.get_mut(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
-    pub fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup, component_manager: &mut ComponentManager) {
+    pub fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
         // Check if the EntityID was not occupied already
         if self.entities.get(id.index as usize).is_some() {
             panic!()
@@ -38,7 +46,7 @@ impl<C> ECSManager<C> {
         // Add the entity
         let idx = self.entities.insert(id.index as usize, entity);
         // After doing that, we can safely add the components
-        self.add_component_group(id, group, component_manager).unwrap();
+        self.add_component_group(id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
     pub fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
@@ -49,14 +57,31 @@ impl<C> ECSManager<C> {
     /* #endregion */
     /* #region Components */
     // Add a component linking group to the manager
-    fn add_component_group(&mut self, id: EntityID, group: ComponentLinkingGroup, component_manager: &mut ComponentManager) -> Result<(), ComponentError> {
+    fn add_component_group(&mut self, id: EntityID, group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in group.linked_components {
-            component_manager.add_component(id, boxed, cbitfield)?;
+            self.add_component(id, boxed, cbitfield)?;
         }
         // Check if the linked entity is valid to be added into the systems
         self.systems.iter_mut().for_each(|system| system.check_add_entity(group.cbitfield, id));
         Ok(())
     }    
+    // Add a specific linked componment to the component manager. Return the said component's ID
+    fn add_component(&mut self, id: EntityID, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
+        // Create a new Component ID from an Entity ID
+        let id = ComponentID::new(id, cbitfield);
+        // We must make this a RefCell
+        let cell = RefCell::new(boxed);
+        self.components.insert(id, cell);
+        Ok(id)
+    }
+    // Remove a specified component from the list
+    fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
+        // To remove a specific component just set it's component slot to None
+        self.components
+        .remove(&id)
+        .ok_or(ComponentError::new("Tried removing component, but it was not present in the HashMap!".to_string(), id))?;
+        Ok(())
+    }
     /* #endregion */
     /* #region Systems */
     // Add a system to our current systems
@@ -69,10 +94,11 @@ impl<C> ECSManager<C> {
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems(&self, context: &C, component_manager: &mut ComponentManager) {
+    pub fn run_systems(&self, context: &C) {
         // Filter the components for each system
         for system in self.systems.iter() {
-            system.run_system(context, &mut component_manager.components);
+            // We don't need to give it &mut self.components because each component is stored in the heap, so we can use unsafe code to mutate it whenever we want
+            system.run_system(context, &self.components);
         }
     }
     /* #endregion */

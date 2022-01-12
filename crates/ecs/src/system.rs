@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{linked_components::LinkedComponents, Component, ComponentID, EnclosedComponent, Entity, EntityID};
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
@@ -48,13 +50,13 @@ impl<C> System<C> {
     }
     // Run the system for a single iteration
     // This will use the components data given by the world to run all the component updates in PARALLEL
-    // The components get mutated in parallel, though the system is NOT in parallel
-    pub fn run_system(&self, context: &C, components: &mut AHashMap<ComponentID, EnclosedComponent>) {
+    // The components get mutated in parallel, though the system is NOT stored on another thread
+    pub fn run_system(&self, context: &C, components: &AHashMap<ComponentID, RefCell<EnclosedComponent>>) {
         // These components are filtered for us
         let evn = self.update_components_event;
         let components = self.entities.iter().map(|id| LinkedComponents::new(id, components, &self.cbitfield));
         // This can be ran in parallel, and yet still be totally safe
-        for mut linked_components in components {
+        for mut linked_components in components.iter() {
             evn(context, &mut linked_components);
         }
     }
