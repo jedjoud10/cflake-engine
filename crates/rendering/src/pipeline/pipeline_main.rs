@@ -1,11 +1,11 @@
 // Some pipeline commands
 pub mod pipec {
     use crate::{
-        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskStatus, TaskID},
+        object::{ObjectID, PipelineObject, PipelineTask, TaskID},
         pipeline::sender,
         Buildable, Pipeline,
     };
-    use std::sync::mpsc::Sender;
+    
 
     // Send a task to the shared pipeline
     pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {
@@ -28,8 +28,8 @@ pub mod pipec {
         let object = object.pre_construct(pipeline);
         // Construct it's ID and automatically send it's construction task
         let (t, id) = object.construct_task(pipeline);
-        let data = (task(t, pipeline), id);
-        data
+        
+        (task(t, pipeline), id)
     }
     // Detect if a task has executed. If this task did indeed execute, it would be deleted next frame
     pub fn has_task_executed(id: TaskID, pipeline: &Pipeline) -> bool {

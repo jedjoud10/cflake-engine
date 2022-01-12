@@ -66,7 +66,7 @@ impl PipelineRenderer {
         let material = pipeline.get_material(renderer.material).unwrap();
 
         // The shader will always be valid
-        let shader = pipeline.get_shader(material.shader).unwrap();
+        let _shader = pipeline.get_shader(material.shader).unwrap();
         let model = pipeline.get_model(renderer.model).unwrap();
         let model_matrix = &renderer.matrix;
 
@@ -202,7 +202,7 @@ impl PipelineRenderer {
     }
     // Called each frame, to render the world
     pub fn renderer_frame(&self, pipeline: &Pipeline) {
-        let i = std::time::Instant::now();
+        let _i = std::time::Instant::now();
         for renderer in pipeline.renderers.iter() {
             self.render(pipeline, renderer);
         }
@@ -248,7 +248,7 @@ impl PipelineRenderer {
     // Update window
     pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
         // Update the size of each texture that is bound to the framebuffer
-        let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
+        let _dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
         /*
         pipec::task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims)).wait_execution();
         pipec::task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims)).wait_execution();

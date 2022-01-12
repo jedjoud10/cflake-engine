@@ -13,7 +13,7 @@ use std::{
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
-    sync::{atomic::AtomicPtr, mpsc::Sender, Arc, Barrier, RwLock},
+    sync::{atomic::AtomicPtr, Arc, Barrier, RwLock},
 };
 
 // Some default values like the default material or even the default shader
@@ -151,8 +151,8 @@ impl Pipeline {
         // Get the renderer data, if it does not exist then use the default renderer data
         let renderer = task.0;
         let defaults = self.defaults.as_ref().unwrap();
-        let material_id = self.get_material(defaults.material);
-        let model_id = self.get_model(defaults.model);
+        let _material_id = self.get_material(defaults.material);
+        let _model_id = self.get_model(defaults.model);
 
         self.renderers.insert(task.1.index.unwrap(), renderer);
     }
@@ -161,7 +161,7 @@ impl Pipeline {
         self.renderers.remove(id.index.unwrap());
     }
     // Update a renderer's matrix
-    pub fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {}
+    pub fn renderer_update_matrix(&mut self, _id: ObjectID<Renderer>, _matrix: veclib::Matrix4x4<f32>) {}
     // Create a shader and cache it. We do not cache the "subshader" though
     pub fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
         // Compile a single shader source
@@ -214,7 +214,7 @@ impl Pipeline {
 
             // Create & compile the shader sources and link them
             let taken = std::mem::take(&mut shader.sources);
-            let programs: Vec<u32> = taken.into_iter().map(|(path, data)| compile_single_source(data)).collect::<Vec<_>>();
+            let programs: Vec<u32> = taken.into_iter().map(|(_path, data)| compile_single_source(data)).collect::<Vec<_>>();
             // Link
             for shader in programs.iter() {
                 gl::AttachShader(program, *shader)
@@ -319,7 +319,7 @@ impl Pipeline {
     }
     // Create a model
     pub fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
-        let mut model = task.0;
+        let model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
         unsafe {
@@ -431,7 +431,7 @@ impl Pipeline {
     // Dispose of a model, also remove it from the pipeline
     pub fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Remove the model and it's buffers
-        let (model, mut buffers) = self.models.remove(id.index.unwrap()).unwrap();
+        let (_model, mut buffers) = self.models.remove(id.index.unwrap()).unwrap();
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut buffers.vertex_buf);
@@ -618,7 +618,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap(), pipeline);
 
     // Create the default white texture
-    let white = pipec::construct(
+    let _white = pipec::construct(
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
@@ -628,7 +628,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     );
 
     // Create the default black texture
-    let black = pipec::construct(
+    let _black = pipec::construct(
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
@@ -753,7 +753,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         }
 
         // Setup the pipeline renderer
-        let renderer = {
+        let _renderer = {
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
             renderer.initialize(&mut *pipeline);
@@ -775,7 +775,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 sbarrier_clone.wait();
 
                 // We render the world here
-                let pipeline = pipeline.read().unwrap();
+                let _pipeline = pipeline.read().unwrap();
 
                 // And we also sync at the end of each frame
                 ebarrier_clone.wait();

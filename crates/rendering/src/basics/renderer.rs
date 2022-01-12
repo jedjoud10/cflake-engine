@@ -2,7 +2,7 @@ use bitflags::bitflags;
 
 use crate::{
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    Buildable, Material, Model, Pipeline,
+    Buildable, Material, Model,
 };
 // Yup
 bitflags! {

@@ -1,7 +1,7 @@
 use crate::object::{ObjectBuildingTask, PipelineObject, PipelineTask};
 use crate::utils::RenderingError;
-use crate::{object::ObjectID, pipec};
-use crate::{params::*, Buildable, Pipeline};
+use crate::{object::ObjectID};
+use crate::{params::*, Buildable};
 use std::collections::{HashMap, HashSet};
 // Shader source type
 pub(crate) enum ShaderSourceType {
@@ -78,7 +78,7 @@ impl Shader {
     fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
         // Turn the string into lines
         let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
-        for (i, line) in lines.iter_mut().enumerate() {
+        for (_i, line) in lines.iter_mut().enumerate() {
             // Check if this is an include statement
             if line.starts_with("#include ") {
                 // Get the local path of the include file
@@ -131,7 +131,7 @@ impl Shader {
             // Constants
             if line.trim().contains("#constant ") {
                 fn format(line: &String, val: String) -> String {
-                    format!("{} {};", line.trim().split("#constant").nth(0).unwrap(), val)
+                    format!("{} {};", line.trim().split("#constant").next().unwrap(), val)
                 }
                 let x = match line.split("#constant ").collect::<Vec<&str>>()[1] {
                     "fade_in_speed" => {
@@ -165,7 +165,7 @@ impl Shader {
         };
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through the shader sources and edit them
-        let mut sources = std::mem::take(&mut settings.sources);
+        let sources = std::mem::take(&mut settings.sources);
         // Loop through all the subshaders and link them
         for (source_path, mut source_data) in sources {
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline

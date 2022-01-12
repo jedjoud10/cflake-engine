@@ -1,8 +1,7 @@
-use super::{PipelineObject, PipelineTaskStatus};
-use crate::{Buildable, Pipeline};
+use super::{PipelineObject};
+
 use std::{
     marker::PhantomData,
-    sync::{atomic::AtomicPtr, Arc},
 };
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
@@ -17,8 +16,8 @@ where
 impl<T: PipelineObject> Clone for ObjectID<T> {
     fn clone(&self) -> Self {
         Self {
-            index: self.index.clone(),
-            _phantom: self._phantom.clone(),
+            index: self.index,
+            _phantom: self._phantom,
         }
     }
 }
