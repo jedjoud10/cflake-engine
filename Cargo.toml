@@ -9,26 +9,26 @@ edition = "2021"
 
 [workspace]
 members = [
-
-    "crates\\dev_game",
-    "crates\\main",
-    "crates\\debug",
+    "crates\\assets",
     "crates\\core",
+    "crates\\debug",
+    "crates\\defaults",
+    "crates\\dev_game",
     "crates\\ecs",
+    "crates\\font_generator",
+    "crates\\fonts",
+    "crates\\input",
+    "crates\\io",
+    "crates\\main",
     "crates\\math",
+    "crates\\network",
+    "crates\\others",
     "crates\\physics",
     "crates\\rendering",
-    
-    "crates\\input",
-    "crates\\defaults",
-    "crates\\others",
-    "crates\\assets",
-    "crates\\terrain_interpreter",
     "crates\\terrain",
+    "crates\\terrain_interpreter",
     "crates\\ui",
-    "crates\\io",
-    "crates\\fonts",
-    "crates\\font_generator"
+    "crates\\worker_threads",    
 ]
 
 
