@@ -1,7 +1,7 @@
 use crate::FontChar;
-use ::rendering::{basics::*, pipec, pipeline::*};
+use ::rendering::{basics::*, pipec, pipeline::*, object::ObjectID};
 use ascii::AsciiStr;
-use assets::{Asset, Object};
+use assets::{Asset};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 // A simple font containing the characters
@@ -10,7 +10,7 @@ pub struct Font {
     pub name: String,
     pub atlas_dimensions: veclib::Vector2<u16>,
     pub texture_pixels: Vec<u8>,
-    pub texture: GPUObjectID,
+    pub texture: ObjectID<Texture>,
     pub chars: Vec<FontChar>,
     pub font_options: FontOptions,
 }
@@ -47,15 +47,14 @@ impl Font {
         return char;
     }
     // Create the actual texture from the raw pixel bitmap data we have
-    pub fn create_texture(&mut self) {
+    pub fn create_texture(&mut self, pipeline: &Pipeline) {
         // Create the texture and set it's parameters
-        self.texture = pipec::texture(
+        self.texture = pipec::construct(
             Texture::default()
                 .set_dimensions(TextureType::Texture2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
                 .set_filter(TextureFilter::Linear)
                 .set_format(TextureFormat::R16R)
-                .set_bytes(self.texture_pixels.clone()),
-        );
+                .set_bytes(self.texture_pixels.clone()), pipeline);
     }
     // Turn some text into an array of font chars
     pub fn convert_text_to_font_chars(&self, text: &str) -> Vec<&FontChar> {
@@ -103,8 +102,6 @@ impl Asset for Font {
             };
             output_font.chars.push(loaded_char);
         }
-        output_font.create_texture();
         Some(output_font)
     }
 }
-impl Object for Font {}

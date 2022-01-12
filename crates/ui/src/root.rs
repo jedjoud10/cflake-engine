@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ordered_vec::ordered_vec::OrderedVec;
+use ordered_vec::simple::OrderedVec;
 
 use crate::ButtonState;
 use crate::CoordinateType;

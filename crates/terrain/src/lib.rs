@@ -1,6 +1,5 @@
 // Export
 mod chunk;
-mod detail_manager;
 pub mod mesher;
 mod model;
 mod params;
@@ -10,7 +9,6 @@ pub mod utils;
 mod voxel;
 
 pub use chunk::*;
-pub use detail_manager::*;
 pub use model::*;
 pub use params::*;
 pub use tables::*;

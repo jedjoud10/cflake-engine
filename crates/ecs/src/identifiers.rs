@@ -1,7 +1,6 @@
 use crate::{ECSManager, Entity};
 use bitfield::Bitfield;
 use ordered_vec::shareable::*;
-use others::Watchable;
 // An EntityID that will be used to identify entities
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct EntityID {
@@ -13,16 +12,6 @@ impl EntityID {
         Self {
             index: ecs_manager.entities.get_next_idx_increment() as u16,
         }
-    }
-}
-
-impl Watchable<ECSManager> for EntityID {
-    fn get_uid(&self) -> usize {
-        self.index as usize
-    }
-
-    fn is_valid(&self, context: &ECSManager) -> bool {
-        context.entity(&self).is_ok()
     }
 }
 
