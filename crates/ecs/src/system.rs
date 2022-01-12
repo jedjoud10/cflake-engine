@@ -2,46 +2,38 @@ use crate::{linked_components::LinkedComponents, Component, ComponentID, Enclose
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 
-// A system event enum
-pub enum SystemEventType {
-    // Component events
-    UpdateComponents(fn(&mut LinkedComponents)),
-}
-
 // A system that updates specific components in parallel
-pub struct System {
-    cbitfield: Bitfield<u32>, // Our Component Bitfield
-    // Events
-    update_components: Option<fn(&mut LinkedComponents)>,
+pub struct System<C> {
+    // Our Component Bitfield
+    cbitfield: Bitfield<u32>, 
+    // Event
+    update_components_event: fn(context: &C, &mut LinkedComponents),
     // The entity IDs
     entities: AHashSet<EntityID>,
 }
 
 // Initialization of the system
-impl System {
+impl<C> System<C> {
     // Create a new system
     pub fn new() -> Self {
         System {
             cbitfield: Bitfield::<u32>::default(),
-            update_components: None,
+            update_components_event: |_, _| {},
             entities: AHashSet::default(),
         }
     }
 }
 
 // System code
-impl System {
+impl<C> System<C> {
     // Add a component to this system's component bitfield id
     pub fn link<U: Component>(&mut self) {
         let c = crate::registry::get_component_bitfield::<U>();
         self.cbitfield = self.cbitfield.add(&c);
     }
-    // Attach the a specific system event
-    pub fn event(&mut self, event: SystemEventType) {
-        match event {
-            // Component events
-            SystemEventType::UpdateComponents(x) => self.update_components = Some(x),
-        };
+    // Set the update components event
+    pub fn set_event(&mut self, event: fn(context: &C, &mut LinkedComponents)) {
+        self.update_components_event = event;
     }
     // Check if we can add an entity (It's cbitfield became adequate for our system or the entity was added from the world)
     // If we can add it, then just do that
@@ -57,14 +49,13 @@ impl System {
     // Run the system for a single iteration
     // This will use the components data given by the world to run all the component updates in PARALLEL
     // The components get mutated in parallel, though the system is NOT in parallel
-    pub fn run_system(&self, components: &mut AHashMap<ComponentID, EnclosedComponent>) {
+    pub fn run_system(&self, context: &C, components: &mut AHashMap<ComponentID, EnclosedComponent>) {
         // These components are filtered for us
-        if let Some(evn) = self.update_components {
-            let components = self.entities.iter().map(|id| LinkedComponents::new(id, components, &self.cbitfield));
-            // This can be ran in parallel, and yet still be totally safe
-            for mut linked_components in components {
-                evn(&mut linked_components);
-            }
+        let evn = self.update_components_event;
+        let components = self.entities.iter().map(|id| LinkedComponents::new(id, components, &self.cbitfield));
+        // This can be ran in parallel, and yet still be totally safe
+        for mut linked_components in components {
+            evn(context, &mut linked_components);
         }
     }
 }

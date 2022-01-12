@@ -1,19 +1,5 @@
-use crate::context::OwnedContext;
-use crate::{custom_world_data::CustomWorldData, GameConfig};
-use ::rendering::*;
+// 
 
-use ::others::*;
-use debug::*;
-use ecs::*;
-use glfw::{self};
-use input::*;
-use io::SaverLoader;
-use std::cell::{RefCell, Cell, Ref};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::thread::ThreadId;
-use ui::UIManager;
-use lazy_static::lazy_static;
 
 lazy_static! {
     pub(crate) static ref INPUT_MANAGER: OwnedContext<InputManager> =  OwnedContext::default();
