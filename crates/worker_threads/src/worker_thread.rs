@@ -11,16 +11,22 @@ pub fn new<C: 'static, T: Sync + 'static>(thread_index: usize, barriers: Arc<(Ba
         let ptr = shared_data.as_ref();
         loop {
             barrier.wait();
+            //println!("Executing thread '{}'", thread_index);
             // Execute the code that was given, if valid
             let ptr = ptr.read().unwrap();
             let idx = thread_index;
-                let data = unsafe { &*ptr };
-                let context = unsafe { &*data.context };
-                let elements = unsafe { &*data.elements };
-                
-                // Calculate the indices
-                let start_idx = idx * data.chunk_size;
-                let end_idx = (idx+1) * data.chunk_size;
+            let data = &*ptr;
+            let context = unsafe { &*data.context };
+            let elements = &*data.elements;
+            
+            // Calculate the indices
+            let start_idx = idx * data.chunk_size;
+            let end_idx = (idx+1) * data.chunk_size;
+            // If our start index is not in range, we can skip
+            //dbg!(start_idx);
+            //dbg!(end_idx);
+            if start_idx < elements.len() { 
+                let mut count = 0;
                 for i in start_idx..end_idx {
                     // Execute the function
                     let elem = elements.get(i);
@@ -28,8 +34,11 @@ pub fn new<C: 'static, T: Sync + 'static>(thread_index: usize, barriers: Arc<(Ba
                         // Unsafe magic
                         let elem = unsafe { &mut *elem };
                         (data.function)(context, elem);
+                        count += 1;
                     }
                 }
+                //println!("Finished executing thread '{}', executed '{}'", thread_index, count);
+            }
                 
             // Check if we must shutdown
             if SHUTDOWN.load(Ordering::Relaxed) {

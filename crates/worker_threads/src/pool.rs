@@ -31,15 +31,18 @@ impl<C: 'static, T: Sync + 'static> ThreadPool<C, T> {
         }
     }
     // Divide the task between the multiple threads, and invoke them
-    pub fn execute(&mut self, elements: Vec<&mut T>, context: &C, task: fn(&C, &mut T), chunk_size: usize) {
+    pub fn execute(&self, elements: &mut Vec<T>, context: &C, task: fn(&C, &mut T), chunk_size: usize) {
         let (barrier, end_barrier, shutdown_barrier) = self.barriers.as_ref();
-        // Update the value, then unlock
-        let mut shared_data = self.arc.write().unwrap();
-        shared_data.elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
-        shared_data.function = task;
-        shared_data.context = context as *const C;
-        shared_data.chunk_size = chunk_size;
-        // Now we can unlock
+        {
+            // Update the value, then unlock
+            let mut shared_data = self.arc.write().unwrap();
+            // Convert the &mut Vec<T> to Vec<*mut T>
+            shared_data.elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
+            shared_data.function = task;
+            shared_data.context = context as *const C;
+            shared_data.chunk_size = chunk_size;
+            // Now we can unlock
+        }
         barrier.wait();
 
         // The threads and running their functions...
