@@ -5,7 +5,6 @@ pub mod pipec {
         pipeline::sender,
         Buildable, Pipeline,
     };
-    
 
     // Send a task to the shared pipeline
     pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {
@@ -28,7 +27,7 @@ pub mod pipec {
         let object = object.pre_construct(pipeline);
         // Construct it's ID and automatically send it's construction task
         let (t, id) = object.construct_task(pipeline);
-        
+
         (task(t, pipeline), id)
     }
     // Detect if a task has executed. If this task did indeed execute, it would be deleted next frame

@@ -1,6 +1,6 @@
+use crate::object::ObjectID;
 use crate::object::{ObjectBuildingTask, PipelineObject, PipelineTask};
 use crate::utils::RenderingError;
-use crate::{object::ObjectID};
 use crate::{params::*, Buildable};
 use std::collections::{HashMap, HashSet};
 // Shader source type

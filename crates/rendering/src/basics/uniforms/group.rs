@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ffi::CString};
 
-use veclib::{Vector};
+use veclib::Vector;
 
 use crate::{object::ObjectID, Pipeline, ShaderUniformsSettings, Texture, TextureShaderAccessType, Uniform};
 
