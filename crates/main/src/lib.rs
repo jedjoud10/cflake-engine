@@ -59,7 +59,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
     others::barrier::as_ref().init_finished_world();
     let mut spin_sleeper = spin_sleep::LoopHelper::builder().build_without_target_rate();
     while !window.should_close() {
-        // Update the delta_time        
+        // Update the delta_time
         let new_time = glfw.get_time();
         let delta = spin_sleeper.loop_start_s();
         last_time = last_time + delta;
@@ -72,7 +72,7 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
                 // Get the GLFW events first
                 glfw.poll_events();
                 let mut _w = core::world::world_mut();
-                let world = &mut _w; 
+                let world = &mut _w;
                 for (_, event) in glfw::flush_messages(&events) {
                     match event {
                         glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
@@ -99,12 +99,12 @@ pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), l
                         _ => {}
                     }
                 }
-            } 
+            }
             // Start
             core::world::update_world_start_barrier(delta);
             // End
             core::world::update_world_end_barrier(&thread_ids, &pipeline_data);
-            // We can do stuff on the main thread            
+            // We can do stuff on the main thread
             //std::thread::sleep(std::time::Duration::from_millis(1));
             spin_sleeper.loop_sleep();
         }

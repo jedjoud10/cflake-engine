@@ -23,23 +23,17 @@ pub fn load_entities() {
     let model = rendering::pipec::model(assets::assetc::dload("defaults\\models\\cube.mdl3d").unwrap());
 
     let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings
-        .link_default::<crate::components::Transform>()
-        .unwrap();
-    linkings
-        .link(crate::components::Renderer::default().set_model(model).set_material(material))
-        .unwrap();
-        
+    linkings.link_default::<crate::components::Transform>().unwrap();
+    linkings.link(crate::components::Renderer::default().set_model(model).set_material(material)).unwrap();
+
     core::global::ecs::entity_add(ecs::Entity::new(), linkings);
     for x in 0..200 {
         let mut linkings = ecs::ComponentLinkingGroup::new();
         linkings
             .link(crate::components::Transform::default().with_position(veclib::Vector3::new(0.0, 0.0, x as f32 * 2.0)))
             .unwrap();
-        linkings
-            .link(crate::components::Renderer::default().set_model(model).set_material(material))
-            .unwrap();
-        
+        linkings.link(crate::components::Renderer::default().set_model(model).set_material(material)).unwrap();
+
         core::global::ecs::entity_add(ecs::Entity::new(), linkings);
     }
     /*

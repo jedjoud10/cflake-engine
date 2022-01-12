@@ -1,4 +1,4 @@
-use crate::{object::ObjectID, Shader, compute::ComputeShader, Pipeline};
+use crate::{compute::ComputeShader, object::ObjectID, Pipeline, Shader};
 
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
 pub struct ShaderUniformsSettings {
@@ -29,7 +29,8 @@ impl ShaderUniformsSettings {
             return pipeline.get_shader(x).unwrap().program;
         } else if let Some(y) = self.compute_shader_id {
             return pipeline.get_compute_shader(y).unwrap().program;
-        } else { panic!() }
+        } else {
+            panic!()
+        }
     }
 }
-

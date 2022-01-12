@@ -11,7 +11,7 @@ pub struct ComputeShaderExecutionSettings {
     // Some tasks that we will execute after executing the compute shader
     pub(crate) tasks: Vec<ComputeShaderTask>,
     // Store some shader uniforms, if we want to
-    pub(crate) uniforms: Option<ShaderUniformsGroup>, 
+    pub(crate) uniforms: Option<ShaderUniformsGroup>,
 }
 
 impl ComputeShaderExecutionSettings {
@@ -21,7 +21,7 @@ impl ComputeShaderExecutionSettings {
             id,
             axii,
             tasks: Vec::new(),
-            uniforms: None
+            uniforms: None,
         }
     }
     // We can also specify some tasks to execute, but this is optional

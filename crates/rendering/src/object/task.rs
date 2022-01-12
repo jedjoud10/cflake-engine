@@ -1,5 +1,8 @@
-use crate::{Texture, Material, Buildable, Shader, Model, compute::{ComputeShader, ComputeShaderExecutionSettings}, Renderer};
 use super::{ObjectID, PipelineObject};
+use crate::{
+    compute::{ComputeShader, ComputeShaderExecutionSettings},
+    Buildable, Material, Model, Renderer, Shader, Texture,
+};
 
 // A task to create an object
 pub struct ObjectBuildingTask<T: PipelineObject + Buildable>(pub T, pub ObjectID<T>);

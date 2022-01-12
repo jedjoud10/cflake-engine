@@ -1,5 +1,5 @@
 use crate::basics::*;
-use crate::object::{PipelineObject, PipelineTask, ObjectID, ObjectBuildingTask};
+use crate::object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask};
 use crate::pipeline::*;
 use bitflags::bitflags;
 
@@ -17,9 +17,9 @@ impl Default for MaterialFlags {
 // A material that can have multiple parameters and such
 #[derive(Default)]
 pub struct Material {
-    pub shader: ObjectID<Shader>, 
-    pub flags: MaterialFlags, 
-    pub uniforms: ShaderUniformsGroup, 
+    pub shader: ObjectID<Shader>,
+    pub flags: MaterialFlags,
+    pub uniforms: ShaderUniformsGroup,
 }
 
 impl PipelineObject for Material {}
@@ -32,11 +32,17 @@ impl Buildable for Material {
         group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
         group.set_f32("normals_strength", 1.0);
         let defaults = pipeline.defaults.as_ref().unwrap();
-        if !group.contains_uniform("diffuse_tex") { group.set_texture("diffuse_tex", defaults.diffuse_tex, 0); }
-        if !group.contains_uniform("normals_tex") { group.set_texture("normals_tex", defaults.normals_tex, 1); }
+        if !group.contains_uniform("diffuse_tex") {
+            group.set_texture("diffuse_tex", defaults.diffuse_tex, 0);
+        }
+        if !group.contains_uniform("normals_tex") {
+            group.set_texture("normals_tex", defaults.normals_tex, 1);
+        }
         self.uniforms = group;
         // Set the default rendering shader if no shader was specified
-        if !self.shader.valid() { self.shader = defaults.shader }
+        if !self.shader.valid() {
+            self.shader = defaults.shader
+        }
         self
     }
 

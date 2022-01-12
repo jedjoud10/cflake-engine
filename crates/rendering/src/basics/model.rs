@@ -1,4 +1,7 @@
-use crate::{object::{PipelineObject, ObjectID, PipelineTask, ObjectBuildingTask}, Buildable};
+use crate::{
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    Buildable,
+};
 
 // Some OpenGL data for a model
 #[derive(Default)]
@@ -32,7 +35,7 @@ pub struct Model {
 
 impl Clone for Model {
     fn clone(&self) -> Self {
-        Self { 
+        Self {
             vertices: self.vertices.clone(),
             normals: self.normals.clone(),
             tangents: self.tangents.clone(),

@@ -1,7 +1,7 @@
+use lazy_static::lazy_static;
+use std::cell::RefCell;
 use std::sync::mpsc::SendError;
 use std::sync::{mpsc::Sender, Mutex};
-use std::cell::RefCell;
-use lazy_static::lazy_static;
 
 use crate::object::{PipelineTask, TaskID};
 
@@ -16,7 +16,7 @@ thread_local! {
 }
 
 // Set the global sender
-pub(crate) fn set_global_sender(sender: Sender<(PipelineTask,TaskID)>) {
+pub(crate) fn set_global_sender(sender: Sender<(PipelineTask, TaskID)>) {
     {
         let mut lock = SENDER.lock().unwrap();
         *lock = Some(sender);
@@ -43,4 +43,4 @@ pub fn send_task(task: (PipelineTask, TaskID)) -> Result<(), SendError<(Pipeline
         let sender = (&*cell).as_ref().unwrap();
         sender.send(task)
     })
-} 
+}

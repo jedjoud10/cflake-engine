@@ -1,7 +1,7 @@
+use crate::{ECSManager, Entity};
 use bitfield::Bitfield;
 use ordered_vec::shareable::*;
 use others::Watchable;
-use crate::{Entity, ECSManager};
 // An EntityID that will be used to identify entities
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct EntityID {

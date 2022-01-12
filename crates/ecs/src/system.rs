@@ -1,17 +1,15 @@
-use crate::{Component, Entity, linked_components::{LinkedComponents}, ComponentID, EnclosedComponent, EntityID};
+use crate::{linked_components::LinkedComponents, Component, ComponentID, EnclosedComponent, Entity, EntityID};
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 
 // A system event enum
-pub enum SystemEventType
-{
+pub enum SystemEventType {
     // Component events
     UpdateComponents(fn(&mut LinkedComponents)),
 }
 
 // A system that updates specific components in parallel
-pub struct System
-{
+pub struct System {
     cbitfield: Bitfield<u32>, // Our Component Bitfield
     // Events
     update_components: Option<fn(&mut LinkedComponents)>,
@@ -59,8 +57,7 @@ impl System {
     // Run the system for a single iteration
     // This will use the components data given by the world to run all the component updates in PARALLEL
     // The components get mutated in parallel, though the system is NOT in parallel
-    pub fn run_system(&self, components: &mut AHashMap<ComponentID, EnclosedComponent>)
-    {
+    pub fn run_system(&self, components: &mut AHashMap<ComponentID, EnclosedComponent>) {
         // These components are filtered for us
         if let Some(evn) = self.update_components {
             let components = self.entities.iter().map(|id| LinkedComponents::new(id, components, &self.cbitfield));

@@ -1,13 +1,13 @@
 #[cfg(test)]
 pub mod test {
-    use crate::{ECSManager, Entity, ComponentLinkingGroup, defaults::Name, System, SystemEventType, linked_components::LinkedComponents, EntityID};
+    use crate::{defaults::Name, linked_components::LinkedComponents, ComponentLinkingGroup, ECSManager, Entity, EntityID, System, SystemEventType};
 
     fn update_components(c: &mut LinkedComponents) {
         // Get the component immutably
         let component = c.component::<Name>().unwrap();
-        let name = &component.name; 
+        let name = &component.name;
         dbg!(name);
-        
+
         // Write to the name
         let mut component2 = c.component_mut::<Name>().unwrap();
         component2.name = "Not a Person".to_string();
@@ -23,7 +23,7 @@ pub mod test {
         hello_system.link::<Name>();
         hello_system.event(SystemEventType::UpdateComponents(update_components));
         ecs.add_system(hello_system);
-        
+
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::new();
         group.link(Name::new("Person")).unwrap();
@@ -56,14 +56,14 @@ pub mod test {
         hello_system.link::<Name>();
         hello_system.event(SystemEventType::UpdateComponents(update_components));
         ecs.add_system(hello_system);
-        
+
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::new();
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::new();
         let id = EntityID::new(&ecs);
         ecs.add_entity(entity, id.clone(), group);
-        
+
         // Update the watcher
         watcher.add(id.clone());
         watcher.update(&ecs);
@@ -72,6 +72,6 @@ pub mod test {
         // Update the watcher
         watcher.update(&ecs);
 
-        assert!(!watcher.has_become_valid(&id));     
+        assert!(!watcher.has_become_valid(&id));
     }
 }

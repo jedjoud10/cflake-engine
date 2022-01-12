@@ -2,10 +2,10 @@
 #![feature(drain_filter)]
 pub mod pipeline;
 pub use pipeline::*;
-mod params;
 pub mod advanced;
 pub mod basics;
 pub mod object;
+mod params;
 pub mod utils;
 pub use advanced::*;
 pub use basics::*;

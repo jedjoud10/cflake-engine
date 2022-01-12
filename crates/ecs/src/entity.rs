@@ -1,5 +1,5 @@
-use bitfield::Bitfield;
 use crate::EntityID;
+use bitfield::Bitfield;
 // A simple entity in the world
 #[derive(Clone)]
 pub struct Entity {

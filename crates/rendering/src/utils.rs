@@ -1,10 +1,10 @@
 mod assets_impls;
 mod error;
-mod utils;
 mod main_types;
+mod utils;
 mod window;
-pub use utils::*;
 pub use assets_impls::*;
 pub use error::*;
 pub use main_types::*;
+pub use utils::*;
 pub use window::*;

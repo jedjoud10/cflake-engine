@@ -1,8 +1,8 @@
-mod pipeline;
 mod camera;
+mod pipeline;
 mod pipeline_main;
-mod sender;
 pub mod rendering;
+mod sender;
 pub use pipeline::*;
 pub use pipeline_main::*;
 pub use rendering::*;

@@ -1,9 +1,8 @@
 use std::{collections::HashMap, ffi::CString};
 
-use veclib::{Vector, SupportedValue};
+use veclib::{SupportedValue, Vector};
 
-use crate::{Uniform, object::ObjectID, Texture, TextureShaderAccessType, Pipeline, ShaderUniformsSettings};
-
+use crate::{object::ObjectID, Pipeline, ShaderUniformsSettings, Texture, TextureShaderAccessType, Uniform};
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
 #[derive(Default, Clone)]
@@ -113,12 +112,12 @@ impl ShaderUniformsGroup {
                         // We need to know the texture target first
                         let texture = pipeline.get_texture(*id)?;
                         set_texture(texture, index, active_texture_id);
-                    },
+                    }
                     Uniform::Image(id, access_type) => {
                         // We need to know the texture target first
                         let texture = pipeline.get_texture(*id)?;
                         set_image(texture, index, access_type);
-                    },
+                    }
                 }
             }
         }

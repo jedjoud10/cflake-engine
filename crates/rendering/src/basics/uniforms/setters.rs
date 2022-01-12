@@ -1,6 +1,6 @@
 use std::ffi::CString;
 
-use crate::{Pipeline, object::ObjectID, Texture, TextureShaderAccessType};
+use crate::{object::ObjectID, Pipeline, Texture, TextureShaderAccessType};
 // Actually set the shader uniforms
 #[allow(temporary_cstring_as_ptr)]
 // Set a f32 uniform

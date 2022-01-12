@@ -1,9 +1,12 @@
-use std::{sync::{Arc, Mutex}, ffi::c_void};
-use crate::{object::ObjectID, Texture, Pipeline, TextureType};
+use crate::{object::ObjectID, Pipeline, Texture, TextureType};
+use std::{
+    ffi::c_void,
+    sync::{Arc, Mutex},
+};
 
 // Some task that we will execute after we run the compute shader
 pub enum ComputeShaderTask {
-    FillTexture(ObjectID<Texture>, usize, Arc<Mutex<Vec<u8>>>)
+    FillTexture(ObjectID<Texture>, usize, Arc<Mutex<Vec<u8>>>),
 }
 
 impl ComputeShaderTask {
@@ -37,7 +40,7 @@ impl ComputeShaderTask {
                 // Update the vector that was given using the AtomicPtr
                 let mut new_bytes = bytes.as_ref().lock().unwrap();
                 *new_bytes = pixels;
-            },
+            }
         }
     }
 }

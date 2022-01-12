@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use crate::{ComponentID, ComponentError};
+use crate::{ComponentError, ComponentID};
 // We do a little bit of googling https://stackoverflow.com/questions/26983355/is-there-a-way-to-combine-multiple-traits-in-order-to-define-a-new-trait
 // A component trait that can be added to other components
 pub trait Component: Send + Sync {
@@ -39,23 +39,24 @@ pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
 
 // Component ref guards. This can be used to detect whenever we mutate a component
 pub struct ComponentReadGuard<'a, T>
-    where T: Component
+where
+    T: Component,
 {
-    borrow: &'a T
+    borrow: &'a T,
 }
 
-impl<'a, T> ComponentReadGuard<'a, T> 
-    where T: Component 
+impl<'a, T> ComponentReadGuard<'a, T>
+where
+    T: Component,
 {
     pub fn new(borrow: &'a T) -> Self {
-        Self {
-            borrow,
-        }
+        Self { borrow }
     }
 }
 
 impl<'a, T> std::ops::Deref for ComponentReadGuard<'a, T>
-    where T: Component
+where
+    T: Component,
 {
     type Target = T;
 
@@ -65,23 +66,24 @@ impl<'a, T> std::ops::Deref for ComponentReadGuard<'a, T>
 }
 // Component mut guard
 pub struct ComponentWriteGuard<'a, T>
-    where T: Component
+where
+    T: Component,
 {
-    borrow_mut: &'a mut T
+    borrow_mut: &'a mut T,
 }
 
-impl<'a, T> ComponentWriteGuard<'a, T> 
-    where T: Component 
+impl<'a, T> ComponentWriteGuard<'a, T>
+where
+    T: Component,
 {
     pub fn new(borrow_mut: &'a mut T) -> Self {
-        Self {
-            borrow_mut,
-        }
+        Self { borrow_mut }
     }
 }
 
 impl<'a, T> std::ops::Deref for ComponentWriteGuard<'a, T>
-    where T: Component
+where
+    T: Component,
 {
     type Target = T;
 
@@ -91,7 +93,8 @@ impl<'a, T> std::ops::Deref for ComponentWriteGuard<'a, T>
 }
 
 impl<'a, T> std::ops::DerefMut for ComponentWriteGuard<'a, T>
-    where T: Component
+where
+    T: Component,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.borrow_mut

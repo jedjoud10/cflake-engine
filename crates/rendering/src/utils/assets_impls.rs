@@ -1,7 +1,7 @@
 use crate::basics::*;
 use crate::utils::*;
 
-use assets::{Asset};
+use assets::Asset;
 
 // All the Asset trait implementations are here
 // One for the textures

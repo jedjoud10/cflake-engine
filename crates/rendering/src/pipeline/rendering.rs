@@ -1,6 +1,9 @@
 use std::ptr::null;
 
-use crate::{object::ObjectID, Texture, Model, Pipeline, pipec, Shader, ShaderSettings, Renderer, TextureType, TextureFormat, DataType, ShaderUniformsSettings, MaterialFlags, ShaderUniformsGroup};
+use crate::{
+    object::ObjectID, pipec, DataType, MaterialFlags, Model, Pipeline, Renderer, Shader, ShaderSettings, ShaderUniformsGroup, ShaderUniformsSettings, Texture, TextureFormat,
+    TextureType,
+};
 
 use super::camera::Camera;
 
@@ -9,11 +12,11 @@ use super::camera::Camera;
 pub struct PipelineRenderer {
     // The master frame buffer
     framebuffer: u32,
-    
+
     // Our deferred textures
     diffuse_texture: ObjectID<Texture>,
     normals_texture: ObjectID<Texture>,
-    position_texture: ObjectID<Texture>, 
+    position_texture: ObjectID<Texture>,
     depth_texture: ObjectID<Texture>,
 
     // Screen rendering
@@ -66,7 +69,7 @@ impl PipelineRenderer {
         let shader = pipeline.get_shader(material.shader).unwrap();
         let model = pipeline.get_model(renderer.model).unwrap();
         let model_matrix = &renderer.matrix;
-        
+
         // Calculate the mvp matrix
         let mvp_matrix: veclib::Matrix4x4<f32> = pipeline.camera.projm * camera.viewm * *model_matrix;
 
@@ -108,7 +111,7 @@ impl PipelineRenderer {
     pub fn initialize(&mut self, pipeline: &mut Pipeline) {
         println!("Initializing the pipeline renderer...");
         // Create the quad model that we will use to render the whole screen
-        use veclib::{vec3, vec2};
+        use veclib::{vec2, vec3};
         let quad = Model {
             vertices: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
             normals: vec![veclib::Vector3::ZERO; 4],
@@ -125,8 +128,8 @@ impl PipelineRenderer {
         let ss = ShaderSettings::default()
             .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
             .source("defaults\\shaders\\rendering\\screen.frsh.glsl");
-        self.screenshader = pipec::construct(Shader::new(ss).unwrap(), pipeline); 
-        
+        self.screenshader = pipec::construct(Shader::new(ss).unwrap(), pipeline);
+
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
 
@@ -135,23 +138,18 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::construct(Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB32F), pipeline);
+            self.diffuse_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F), pipeline);
             // Create the normals render texture
-            self.normals_texture = pipec::construct(Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB8RS), pipeline);
+            self.normals_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS), pipeline);
             // Create the position render texture
-            self.position_texture = pipec::construct(Texture::default()
-                .set_dimensions(dims)
-                .set_format(TextureFormat::RGB32F), pipeline);
+            self.position_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F), pipeline);
             // Create the depth render texture
             self.depth_texture = pipec::construct(
                 Texture::default()
                     .set_dimensions(dims)
                     .set_format(TextureFormat::DepthComponent32)
-                    .set_data_type(DataType::Float32), pipeline
+                    .set_data_type(DataType::Float32),
+                pipeline,
             );
 
             // Now bind the attachememnts
@@ -184,7 +182,10 @@ impl PipelineRenderer {
         /* #region Actual pipeline renderer shit */
         // Load sky gradient texture
         self.sky_texture = pipec::construct(
-            assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png").unwrap().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge), pipeline
+            assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png")
+                .unwrap()
+                .set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge),
+            pipeline,
         );
         /* #endregion */
 
@@ -212,7 +213,7 @@ impl PipelineRenderer {
         let dimensions = pipeline.window.dimensions;
         let camera = &pipeline.camera;
 
-        // Render the screen quad        
+        // Render the screen quad
         let mut group = ShaderUniformsGroup::new();
         group.set_vec2i32("resolution", dimensions.into());
         group.set_vec2f32("nf_planes", camera.clip_planes);

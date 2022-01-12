@@ -1,6 +1,6 @@
+use crate::{cast_component, cast_component_mut, component_registry, Component, ComponentError, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EntityID};
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use crate::{EnclosedComponent, ComponentID, EntityID, ComponentReadGuard, ComponentWriteGuard, Component, ComponentError, component_registry, cast_component, cast_component_mut};
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however
 pub struct LinkedComponents {
@@ -14,11 +14,13 @@ impl LinkedComponents {
         // Get the components from the world, that fit the cbitfield and the Entity ID
         let filtered_components = components
             .iter_mut()
-            .filter_map(|(component_id, component)| 
-                if cbitfield.contains(&component_id.cbitfield) && 
-                component_id.entity_id == *id {
+            .filter_map(|(component_id, component)| {
+                if cbitfield.contains(&component_id.cbitfield) && component_id.entity_id == *id {
                     Some((component_id.cbitfield, component as *mut EnclosedComponent))
-                } else { None })   
+                } else {
+                    None
+                }
+            })
             .collect::<AHashMap<Bitfield<u32>, *mut EnclosedComponent>>();
         Self { components: filtered_components }
     }

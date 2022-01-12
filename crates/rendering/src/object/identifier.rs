@@ -1,10 +1,14 @@
-use std::{marker::PhantomData, sync::{Arc, atomic::AtomicPtr}};
-use crate::{Pipeline, Buildable};
 use super::{PipelineObject, PipelineTaskStatus};
+use crate::{Buildable, Pipeline};
+use std::{
+    marker::PhantomData,
+    sync::{atomic::AtomicPtr, Arc},
+};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
 pub struct ObjectID<T>
-    where T: PipelineObject
+where
+    T: PipelineObject,
 {
     pub(crate) index: Option<usize>,
     _phantom: PhantomData<fn() -> T>,
@@ -12,30 +16,36 @@ pub struct ObjectID<T>
 
 impl<T: PipelineObject> Clone for ObjectID<T> {
     fn clone(&self) -> Self {
-        Self { 
+        Self {
             index: self.index.clone(),
-            _phantom: self._phantom.clone()
+            _phantom: self._phantom.clone(),
         }
     }
 }
 
 impl<T: PipelineObject> Copy for ObjectID<T> {}
 
-impl<T> Default for ObjectID<T> 
-    where T: PipelineObject
+impl<T> Default for ObjectID<T>
+where
+    T: PipelineObject,
 {
     fn default() -> Self {
-        Self { index: None, _phantom: PhantomData::default() }
+        Self {
+            index: None,
+            _phantom: PhantomData::default(),
+        }
     }
 }
 
 impl<T> ObjectID<T>
-    where T: PipelineObject
+where
+    T: PipelineObject,
 {
     // Create a new object ID using an actual index
     pub fn new(index: usize) -> Self {
         Self {
-            index: Some(index), _phantom: PhantomData::default()
+            index: Some(index),
+            _phantom: PhantomData::default(),
         }
     }
     // Check if this ID is even valid LOCALLY
@@ -43,7 +53,6 @@ impl<T> ObjectID<T>
         self.index.is_some()
     }
 }
-
 
 // This is an ID for each Task that we dispatch to the render thread.
 // We can use this to detect whenever said task has completed
@@ -55,8 +64,6 @@ pub struct TaskID {
 impl TaskID {
     // Create a new task ID using an actual index
     pub fn new(index: usize) -> Self {
-        Self {
-            index
-        }
+        Self { index }
     }
 }

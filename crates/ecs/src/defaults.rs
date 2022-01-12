@@ -7,17 +7,21 @@ pub struct Name {
     pub name: String,
 }
 
-impl Name { pub fn new(name: &str) -> Self { Self { name: name.to_string() } } }
+impl Name {
+    pub fn new(name: &str) -> Self {
+        Self { name: name.to_string() }
+    }
+}
 
 // A tag component that can be added to entities that contain some sort of "Tag" We can then search for entities with the same tag
 pub struct Tagged {
-    pub tag: String
+    pub tag: String,
 }
 
 // Load state for entities
 pub enum LoadState {
     Loaded,
-    Unloaded
+    Unloaded,
 }
 
 impl_component!(Name);

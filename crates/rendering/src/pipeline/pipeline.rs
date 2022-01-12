@@ -1,7 +1,20 @@
-use std::{sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr, RwLock}, ffi::{CString, c_void}, mem::size_of, ptr::null, collections::HashSet};
+use crate::{
+    compute::{ComputeShader, ComputeShaderExecutionSettings},
+    object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskStatus, TaskID},
+    pipec,
+    pipeline::{camera::Camera, sender},
+    Material, Model, ModelBuffers, PipelineRenderer, Renderer, Shader, ShaderSettings, ShaderSource, ShaderSourceType, ShaderUniformsSettings, Texture, TextureFilter,
+    TextureFlags, TextureType, TextureWrapping, Window,
+};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
-use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID, ObjectBuildingTask}, Texture, Material, Shader, Renderer, Model, pipeline::{camera::Camera, sender}, PipelineRenderer, ShaderSettings, pipec, TextureType, ShaderSource, ShaderSourceType, ModelBuffers, TextureFilter, TextureFlags, TextureWrapping, compute::{ComputeShaderExecutionSettings, ComputeShader}, ShaderUniformsSettings, Window};
+use std::{
+    collections::HashSet,
+    ffi::{c_void, CString},
+    mem::size_of,
+    ptr::null,
+    sync::{atomic::AtomicPtr, mpsc::Sender, Arc, Barrier, RwLock},
+};
 
 // Some default values like the default material or even the default shader
 pub(crate) struct DefaultPipelineObjects {
@@ -15,7 +28,7 @@ pub(crate) struct DefaultPipelineObjects {
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that times
 #[derive(Default)]
-pub struct Pipeline {    
+pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
     tasks: Vec<(PipelineTask, TaskID)>,
     // We store the Pipeline Objects, for each Pipeline Object type
@@ -46,7 +59,9 @@ pub struct Pipeline {
 impl Pipeline {
     // Set the buffered tasks from RX messages
     pub fn add_tasks(&mut self, messages: Vec<(PipelineTask, TaskID)>) {
-        messages.iter().for_each(|(_, id)| { self.task_statuses.insert(id.index, PipelineTaskStatus::Pending); });
+        messages.iter().for_each(|(_, id)| {
+            self.task_statuses.insert(id.index, PipelineTaskStatus::Pending);
+        });
         self.tasks.extend(messages);
     }
     // Flush all the buffered tasks, and execute them
@@ -69,7 +84,7 @@ impl Pipeline {
 
                 PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
                 PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
-                
+
                 // Others
                 PipelineTask::Quit => self.should_quit = false,
             }
@@ -85,37 +100,49 @@ impl Pipeline {
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
         if let Some(index) = id.index {
             self.materials.get(index)
-        } else { None }
+        } else {
+            None
+        }
     }
     // Get a model using it's respective ID
     pub fn get_model(&self, id: ObjectID<Model>) -> Option<&(Model, ModelBuffers)> {
         if let Some(index) = id.index {
             self.models.get(index)
-        } else { None }
+        } else {
+            None
+        }
     }
     // Get a renderer using it's respective ID
     pub fn get_renderer(&self, id: ObjectID<Renderer>) -> Option<&Renderer> {
         if let Some(index) = id.index {
             self.renderers.get(index)
-        } else { None }
+        } else {
+            None
+        }
     }
     // Get a shader using it's respective ID
     pub fn get_shader(&self, id: ObjectID<Shader>) -> Option<&Shader> {
         if let Some(index) = id.index {
             self.shaders.get(index)
-        } else { None }
+        } else {
+            None
+        }
     }
     // Get a compute shader using it's respective ID
     pub fn get_compute_shader(&self, id: ObjectID<ComputeShader>) -> Option<&ComputeShader> {
         if let Some(index) = id.index {
             self.compute_shaders.get(index)
-        } else { None }
+        } else {
+            None
+        }
     }
     // Get a texture using it's texture
     pub fn get_texture(&self, id: ObjectID<Texture>) -> Option<&Texture> {
         if let Some(index) = id.index {
             self.textures.get(index)
-        } else { None }
+        } else {
+            None
+        }
     }
 
     // Actually update our data
@@ -126,7 +153,7 @@ impl Pipeline {
         let defaults = self.defaults.as_ref().unwrap();
         let material_id = self.get_material(defaults.material);
         let model_id = self.get_model(defaults.model);
-        
+
         self.renderers.insert(task.1.index.unwrap(), renderer);
     }
     // Remove the renderer using it's renderer ID
@@ -134,9 +161,7 @@ impl Pipeline {
         self.renderers.remove(id.index.unwrap());
     }
     // Update a renderer's matrix
-    pub fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
-
-    }
+    pub fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {}
     // Create a shader and cache it. We do not cache the "subshader" though
     pub fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
         // Compile a single shader source
@@ -146,7 +171,9 @@ impl Pipeline {
             match source_data._type {
                 ShaderSourceType::Vertex => shader_type = gl::VERTEX_SHADER,
                 ShaderSourceType::Fragment => shader_type = gl::FRAGMENT_SHADER,
-                ShaderSourceType::Compute => { panic!() }, // We are not allowed to create compute shaders using the normal create_shader function
+                ShaderSourceType::Compute => {
+                    panic!()
+                } // We are not allowed to create compute shaders using the normal create_shader function
             }
             unsafe {
                 let program = gl::CreateShader(shader_type);
@@ -185,7 +212,7 @@ impl Pipeline {
         unsafe {
             let program = gl::CreateProgram();
 
-            // Create & compile the shader sources and link them 
+            // Create & compile the shader sources and link them
             let taken = std::mem::take(&mut shader.sources);
             let programs: Vec<u32> = taken.into_iter().map(|(path, data)| compile_single_source(data)).collect::<Vec<_>>();
             // Link
@@ -584,32 +611,41 @@ pub struct PipelineStartData {
 }
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
-    use crate::texture::{TextureType, TextureFilter};
+    use crate::texture::{TextureFilter, TextureType};
     use assets::assetc::load;
-    
+
     // Create the default missing texture
     let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap(), pipeline);
 
     // Create the default white texture
-    let white = pipec::construct(Texture::default()
-        .set_dimensions(TextureType::Texture2D(1, 1))
-        .set_filter(TextureFilter::Linear)
-        .set_bytes(vec![255, 255, 255, 255])
-        .enable_mipmaps(), pipeline);
+    let white = pipec::construct(
+        Texture::default()
+            .set_dimensions(TextureType::Texture2D(1, 1))
+            .set_filter(TextureFilter::Linear)
+            .set_bytes(vec![255, 255, 255, 255])
+            .enable_mipmaps(),
+        pipeline,
+    );
 
     // Create the default black texture
-    let black = pipec::construct(Texture::default()
-        .set_dimensions(TextureType::Texture2D(1, 1))
-        .set_filter(TextureFilter::Linear)
-        .set_bytes(vec![0, 0, 0, 255])
-        .enable_mipmaps(), pipeline);
+    let black = pipec::construct(
+        Texture::default()
+            .set_dimensions(TextureType::Texture2D(1, 1))
+            .set_filter(TextureFilter::Linear)
+            .set_bytes(vec![0, 0, 0, 255])
+            .enable_mipmaps(),
+        pipeline,
+    );
 
     // Create the default normal map texture
-    let normals = pipec::construct(Texture::default()
-        .set_dimensions(TextureType::Texture2D(1, 1))
-        .set_filter(TextureFilter::Linear)
-        .set_bytes(vec![127, 128, 255, 255])
-        .enable_mipmaps(), pipeline);
+    let normals = pipec::construct(
+        Texture::default()
+            .set_dimensions(TextureType::Texture2D(1, 1))
+            .set_filter(TextureFilter::Linear)
+            .set_bytes(vec![127, 128, 255, 255])
+            .enable_mipmaps(),
+        pipeline,
+    );
 
     // Create the default rendering shader
     let ss = ShaderSettings::default()
@@ -654,7 +690,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<(PipelineTask, TaskID)>(); // Main to render
-    
+
     // Barrier so we can sync with the main thread at the start of each frame
     let sbarrier = Arc::new(Barrier::new(2));
     let sbarrier_clone = sbarrier.clone();
@@ -666,7 +702,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // An init barrier
     let ibarrier = Arc::new(Barrier::new(2));
     let ibarrier_clone = ibarrier.clone();
-    
+
     // Create a simple unsafe wrapper so we can send the glfw and window data to the render thread
     // Window and GLFW wrapper
     struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
@@ -695,7 +731,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         // Init Glfw and OpenGL
         init_glfw(glfw, window);
         if gl::Viewport::is_loaded() {
-            unsafe { init_opengl(); }
+            unsafe {
+                init_opengl();
+            }
             println!("Successfully initialized OpenGL!");
         } else {
             /* NON */
@@ -707,7 +745,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // Create the Arc and RwLock for the pipeline
         let pipeline = Arc::new(RwLock::new(pipeline));
-        
+
         // Load the default objects
         {
             let mut pipeline = pipeline.write().unwrap();
@@ -719,7 +757,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
             renderer.initialize(&mut *pipeline);
-            renderer   
+            renderer
         };
 
         // Set the global sender
@@ -728,27 +766,27 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         // ---- Finished initializing the Pipeline! ----
         ibarrier_clone.wait();
         println!("Successfully created the RenderThread!");
-        
+
         // We must render every frame
         loop {
             // This is a single frame
             {
                 // At the start of each frame we must sync up with the main thread
                 sbarrier_clone.wait();
-                
+
                 // We render the world here
                 let pipeline = pipeline.read().unwrap();
-                
+
                 // And we also sync at the end of each frame
                 ebarrier_clone.wait();
             }
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
             {
-                let mut pipeline = pipeline.write().unwrap();// We poll the messages, buffer them, and execute them
+                let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
                 let messages = rx.try_iter().collect::<Vec<(PipelineTask, TaskID)>>();
                 // Set the buffer
                 pipeline.add_tasks(messages);
-                
+
                 // Execute the tasks
                 pipeline.flush();
 
@@ -756,7 +794,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 if pipeline.should_quit {
                     break;
                 }
-            }            
+            }
         }
         println!("Stopped the render thread!");
     });
@@ -767,9 +805,5 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
 
     // Create the pipeline start data
-    PipelineStartData {
-        handle,
-        sbarrier,
-        ebarrier,
-    }
+    PipelineStartData { handle, sbarrier, ebarrier }
 }

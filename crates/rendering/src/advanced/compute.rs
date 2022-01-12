@@ -1,6 +1,6 @@
+mod settings;
 mod shader;
 mod task;
-mod settings;
+pub use settings::*;
 pub use shader::*;
 pub use task::*;
-pub use settings::*;

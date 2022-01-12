@@ -1,8 +1,7 @@
 // Export
-mod test;
-mod defaults;
 mod component;
 pub mod component_registry;
+mod defaults;
 mod entity;
 mod error;
 pub mod identifiers;
@@ -11,6 +10,7 @@ mod linking;
 mod macros;
 mod manager;
 pub mod system;
+mod test;
 pub use component::*;
 pub use component_registry as registry;
 pub use entity::*;

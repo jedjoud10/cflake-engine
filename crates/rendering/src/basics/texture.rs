@@ -1,6 +1,10 @@
 use std::hash::{Hash, Hasher};
 
-use crate::{utils::*, object::{PipelineObject, PipelineTask, ObjectID, ObjectBuildingTask}, Buildable, Pipeline};
+use crate::{
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    utils::*,
+    Buildable, Pipeline,
+};
 use assets::*;
 use bitflags::bitflags;
 use gl;
@@ -242,27 +246,27 @@ pub enum TextureShaderAccessType {
 // A texture
 pub struct Texture {
     // The OpenGL id for this texture
-    pub(crate) oid: u32, 
+    pub(crate) oid: u32,
     // The bytes stored in this texture
-    pub(crate) bytes: Vec<u8>, 
+    pub(crate) bytes: Vec<u8>,
 
     // The internal format of the texture
-    pub _format: TextureFormat, 
+    pub _format: TextureFormat,
     // The data type that this texture uses for storage
-    pub _type: DataType,        
+    pub _type: DataType,
     // Internal Format, Format, Data
     pub(crate) ifd: (i32, u32, u32),
-    // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY 
-    pub(crate) target: u32, 
+    // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
+    pub(crate) target: u32,
 
     // This texture's flags
-    pub flags: TextureFlags,   
-    // Texture mag and min filters, either Nearest or Linear 
-    pub filter: TextureFilter, 
+    pub flags: TextureFlags,
+    // Texture mag and min filters, either Nearest or Linear
+    pub filter: TextureFilter,
     // What kind of wrapping will we use for this texture
     pub wrap_mode: TextureWrapping,
-    // The dimensions of the texture and it's texture type 
-    pub ttype: TextureType, 
+    // The dimensions of the texture and it's texture type
+    pub ttype: TextureType,
 }
 
 impl Default for Texture {
@@ -272,13 +276,13 @@ impl Default for Texture {
             bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
             _type: DataType::UByte,
-            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte), 
+            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte),
             target: gl::TEXTURE_2D,
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
-            ttype: TextureType::Texture2D(0, 0),   
-        } 
+            ttype: TextureType::Texture2D(0, 0),
+        }
     }
 }
 

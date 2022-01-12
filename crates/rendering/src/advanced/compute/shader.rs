@@ -1,11 +1,14 @@
-use crate::{ShaderSource, object::{PipelineObject, ObjectID, PipelineTask, ObjectBuildingTask}, Buildable};
+use crate::{
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    Buildable, ShaderSource,
+};
 
 // A compute shader that can run parallel calculations on the GPU
 pub struct ComputeShader {
     // The OpenGL program linked to this compute shader
     pub(crate) program: u32,
     // We only have one shader source since we are a compute shader
-    pub(crate) source: ShaderSource
+    pub(crate) source: ShaderSource,
 }
 impl PipelineObject for ComputeShader {}
 

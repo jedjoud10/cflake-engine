@@ -1,6 +1,9 @@
 use bitflags::bitflags;
 
-use crate::{object::{ObjectID, PipelineObject, ObjectBuildingTask, PipelineTask}, Material, Model, Buildable, Pipeline};
+use crate::{
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    Buildable, Material, Model, Pipeline,
+};
 // Yup
 bitflags! {
     pub struct RendererFlags: u8 {
@@ -12,8 +15,8 @@ bitflags! {
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
-    pub model: ObjectID<Model>, 
-    pub material: ObjectID<Material>, 
+    pub model: ObjectID<Model>,
+    pub material: ObjectID<Material>,
     pub flags: RendererFlags,
     pub matrix: veclib::Matrix4x4<f32>,
 }

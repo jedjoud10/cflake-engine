@@ -1,6 +1,6 @@
 use crate::{
     identifiers::{ComponentID, EntityID},
-    ComponentError, Entity, EntityError, EnclosedComponent, System, ComponentLinkingGroup,
+    ComponentError, ComponentLinkingGroup, EnclosedComponent, Entity, EntityError, System,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
@@ -9,9 +9,9 @@ use ordered_vec::shareable::ShareableOrderedVec;
 // The Entity Component System manager that will handle everything ECS related
 #[derive(Default)]
 pub struct ECSManager {
-    pub(crate) entities: ShareableOrderedVec<Entity>,                               // A vector full of entities. Each entity can get invalidated, but never deleted
-    components: AHashMap<ComponentID, EnclosedComponent>,                // The components that are valid in the world
-    systems: Vec<System>,                                                // Each system, stored in the order they were created
+    pub(crate) entities: ShareableOrderedVec<Entity>, // A vector full of entities. Each entity can get invalidated, but never deleted
+    components: AHashMap<ComponentID, EnclosedComponent>, // The components that are valid in the world
+    systems: Vec<System>,                             // Each system, stored in the order they were created
 }
 // Global code for the Entities, Components, and Systems
 impl ECSManager {
