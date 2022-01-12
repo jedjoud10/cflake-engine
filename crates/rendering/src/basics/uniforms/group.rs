@@ -6,7 +6,7 @@ use crate::{Uniform, object::ObjectID, Texture, TextureShaderAccessType, Pipelin
 
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ShaderUniformsGroup {
     pub(crate) uniforms: HashMap<String, Uniform>,
 }
@@ -58,6 +58,10 @@ impl ShaderUniformsGroup {
     pub fn set_vec3bool(&mut self, name: &str, val: veclib::Vector3<bool>) {
         self.uniforms.insert(name.to_string(), Uniform::Bool(val.get_unsized()));
     }
+    // Set a matrix 4x4 of f32 values
+    pub fn set_mat44f32(&mut self, name: &str, val: veclib::Matrix4x4<f32>) {
+        self.uniforms.insert(name.to_string(), Uniform::Mat44F32(val));
+    }
     // Set a "texture" uniform
     pub fn set_texture(&mut self, name: &str, val: ObjectID<Texture>, active_texture_id: u32) {
         self.uniforms.insert(name.to_string(), Uniform::Texture(val, active_texture_id));
@@ -104,6 +108,7 @@ impl ShaderUniformsGroup {
                         veclib::UnsizedVector::Vec3(val) => set_vec3f32(index, val),
                         veclib::UnsizedVector::Vec4(val) => set_vec4f32(index, val),
                     },
+                    Uniform::Mat44F32(matrix) => set_mat44f32(index, matrix),
                     Uniform::Texture(id, active_texture_id) => {
                         // We need to know the texture target first
                         let texture = pipeline.get_texture(*id)?;

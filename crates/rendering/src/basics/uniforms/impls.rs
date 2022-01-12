@@ -8,7 +8,7 @@ pub enum Uniform {
     I32(veclib::UnsizedVector<i32>),
     F32(veclib::UnsizedVector<f32>),
     // Matrices
-    MAT44F32(veclib::Matr)
+    Mat44F32(veclib::Matrix4x4<f32>),
     // Others
     Texture(ObjectID<Texture>, u32),
     // Compute sheit

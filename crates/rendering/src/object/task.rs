@@ -2,7 +2,7 @@ use crate::{Texture, Material, Buildable, Shader, Model, compute::{ComputeShader
 use super::{ObjectID, PipelineObject};
 
 // A task to create an object
-pub(crate) struct ObjectBuildingTask<T: PipelineObject + Buildable>(pub T, pub ObjectID<T>);
+pub struct ObjectBuildingTask<T: PipelineObject + Buildable>(pub T, pub ObjectID<T>);
 // A pipeline task that will be sent to the render thread
 pub enum PipelineTask {
     // Creation tasks

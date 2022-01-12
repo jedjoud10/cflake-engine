@@ -25,7 +25,7 @@ pub unsafe fn set_i32(index: i32, value: &i32) {
     gl::Uniform1i(index, *value);
 }
 // Set a matrix 4x4 f32
-pub unsafe fn set_mat44(index: i32, matrix: &veclib::Matrix4x4<f32>) {
+pub unsafe fn set_mat44f32(index: i32, matrix: &veclib::Matrix4x4<f32>) {
     let ptr: *const f32 = &matrix[0];
     gl::UniformMatrix4fv(index, 1, gl::FALSE, ptr);
 }

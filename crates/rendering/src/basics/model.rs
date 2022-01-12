@@ -2,17 +2,20 @@ use crate::{object::{PipelineObject, ObjectID, PipelineTask, ObjectBuildingTask}
 
 // Some OpenGL data for a model
 #[derive(Default)]
-pub(crate) struct ModelBuffers {
+pub struct ModelBuffers {
     // The OpenGL data
-    pub(crate) vertex_buf: u32,
-    pub(crate) normal_buf: u32,
-    pub(crate) tangent_buf: u32,
-    pub(crate) uv_buf: u32,
-    pub(crate) color_buf: u32,
+    pub vertex_buf: u32,
+    pub normal_buf: u32,
+    pub tangent_buf: u32,
+    pub uv_buf: u32,
+    pub color_buf: u32,
 
-    pub(crate) vertex_array_object: u32,
-    pub(crate) element_buffer_object: u32,
+    pub vertex_array_object: u32,
+    pub element_buffer_object: u32,
+    pub triangle_count: usize,
 }
+
+impl PipelineObject for ModelBuffers {}
 
 // A simple model that holds vertex, normal, and color data
 #[derive(Default)]
@@ -25,8 +28,6 @@ pub struct Model {
     pub colors: Vec<veclib::Vector3<f32>>,
     // Triangles
     pub triangles: Vec<u32>,
-    // Some model buffers    
-    pub(crate) buffers: Option<ModelBuffers>,
 }
 
 impl Clone for Model {
@@ -38,7 +39,6 @@ impl Clone for Model {
             uvs: self.uvs.clone(),
             colors: self.colors.clone(),
             triangles: self.triangles.clone(),
-            buffers: None
         }
     }
 }

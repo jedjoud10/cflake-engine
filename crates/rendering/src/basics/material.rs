@@ -25,17 +25,18 @@ pub struct Material {
 impl PipelineObject for Material {}
 
 impl Buildable for Material {
-    fn pre_construct(self, pipeline: &Pipeline) -> Self {
+    fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
         // Create some default uniforms
         let mut group = ShaderUniformsGroup::new();
         group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
         group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
         group.set_f32("normals_strength", 1.0);
-        if !group.contains_uniform("diffuse_tex") { group.set_texture("diffuse_tex", pipeline.defaults.unwrap().diffuse_tex, 0); }
-        if !group.contains_uniform("normals_tex") { group.set_texture("normals_tex", pipeline.defaults.unwrap().normals_tex, 1); }
+        let defaults = pipeline.defaults.as_ref().unwrap();
+        if !group.contains_uniform("diffuse_tex") { group.set_texture("diffuse_tex", defaults.diffuse_tex, 0); }
+        if !group.contains_uniform("normals_tex") { group.set_texture("normals_tex", defaults.normals_tex, 1); }
         self.uniforms = group;
         // Set the default rendering shader if no shader was specified
-        if !self.shader.valid() { self.shader = pipeline.defaults.unwrap().shader }
+        if !self.shader.valid() { self.shader = defaults.shader }
         self
     }
 

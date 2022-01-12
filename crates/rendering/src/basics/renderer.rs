@@ -27,13 +27,14 @@ impl Buildable for Renderer {
         let id = ObjectID::new(id);
         (PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), id)
     }
-    fn pre_construct(self, pipeline: &crate::Pipeline) -> Self {
+    fn pre_construct(mut self, pipeline: &crate::Pipeline) -> Self {
         // We must fill out our model and material if they are empty
+        let defaults = pipeline.defaults.as_ref().unwrap();
         if !self.model.valid() {
-            self.model = pipeline.defaults.unwrap().model;
+            self.model = defaults.model;
         }
         if !self.material.valid() {
-            self.material = pipeline.defaults.unwrap().material;
+            self.material = defaults.material;
         }
         self
     }

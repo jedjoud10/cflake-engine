@@ -4,14 +4,25 @@ use super::{PipelineObject, PipelineTaskStatus};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
 pub struct ObjectID<T>
-    where T: PipelineObject + Buildable
+    where T: PipelineObject
 {
     pub(crate) index: Option<usize>,
     _phantom: PhantomData<fn() -> T>,
 }
 
+impl<T: PipelineObject> Clone for ObjectID<T> {
+    fn clone(&self) -> Self {
+        Self { 
+            index: self.index.clone(),
+            _phantom: self._phantom.clone()
+        }
+    }
+}
+
+impl<T: PipelineObject> Copy for ObjectID<T> {}
+
 impl<T> Default for ObjectID<T> 
-    where T: PipelineObject + Buildable
+    where T: PipelineObject
 {
     fn default() -> Self {
         Self { index: None, _phantom: PhantomData::default() }
@@ -19,7 +30,7 @@ impl<T> Default for ObjectID<T>
 }
 
 impl<T> ObjectID<T>
-    where T: PipelineObject + Buildable
+    where T: PipelineObject
 {
     // Create a new object ID using an actual index
     pub fn new(index: usize) -> Self {
@@ -36,6 +47,7 @@ impl<T> ObjectID<T>
 
 // This is an ID for each Task that we dispatch to the render thread.
 // We can use this to detect whenever said task has completed
+#[derive(Clone, Copy)]
 pub struct TaskID {
     pub(crate) index: usize,
 }

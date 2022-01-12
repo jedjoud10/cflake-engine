@@ -21,7 +21,7 @@ pub struct Pipeline {
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
-    pub(crate) models: ShareableOrderedVec<Model>,
+    pub(crate) models: ShareableOrderedVec<(Model, ModelBuffers)>,
     pub(crate) renderers: ShareableOrderedVec<Renderer>,
     pub(crate) shaders: ShareableOrderedVec<Shader>,
     pub(crate) compute_shaders: ShareableOrderedVec<ComputeShader>,
@@ -88,7 +88,7 @@ impl Pipeline {
         } else { None }
     }
     // Get a model using it's respective ID
-    pub fn get_model(&self, id: ObjectID<Model>) -> Option<&Model> {
+    pub fn get_model(&self, id: ObjectID<Model>) -> Option<&(Model, ModelBuffers)> {
         if let Some(index) = id.index {
             self.models.get(index)
         } else { None }
@@ -123,8 +123,9 @@ impl Pipeline {
     pub fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
         // Get the renderer data, if it does not exist then use the default renderer data
         let renderer = task.0;
-        let material_id = self.get_material(self.defaults.unwrap().material);
-        let model_id = self.get_model(self.defaults.unwrap().model);
+        let defaults = self.defaults.as_ref().unwrap();
+        let material_id = self.get_material(defaults.material);
+        let model_id = self.get_model(defaults.model);
         
         self.renderers.insert(task.1.index.unwrap(), renderer);
     }
@@ -176,7 +177,7 @@ impl Pipeline {
             }
         }
         // Extract the shader
-        let shader = task.0;
+        let mut shader = task.0;
         let shader_name = shader.sources.iter().map(|(name, _)| name.clone()).collect::<Vec<String>>().join("_");
 
         // Actually compile the shader now
@@ -293,6 +294,7 @@ impl Pipeline {
     pub fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
         let mut model = task.0;
         let mut buffers = ModelBuffers::default();
+        buffers.triangle_count = model.triangles.len();
         unsafe {
             // Create the VAO
             gl::GenVertexArrays(1, &mut buffers.vertex_array_object);
@@ -396,15 +398,13 @@ impl Pipeline {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
 
-        // Add the model
-        model.buffers = Some(buffers);
-
-        self.models.insert(task.1.index.unwrap(), model);
+        // Add the model normally and also add it's corresponding buffers
+        self.models.insert(task.1.index.unwrap(), (model, buffers));
     }
     // Dispose of a model, also remove it from the pipeline
     pub fn model_dispose(&mut self, id: ObjectID<Model>) {
-        // Get the model buffers
-        let buffers = self.get_model(id).unwrap().buffers.as_ref().unwrap();
+        // Remove the model and it's buffers
+        let (model, mut buffers) = self.models.remove(id.index.unwrap()).unwrap();
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut buffers.vertex_buf);
@@ -417,8 +417,6 @@ impl Pipeline {
             // Delete the vertex array
             gl::DeleteVertexArrays(1, &mut buffers.vertex_array_object);
         }
-        // Also remove the model
-        self.models.remove(id.index.unwrap()).unwrap();
     }
     // Create a texture
     pub fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
@@ -682,7 +680,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     };
 
     // Actually make the render thread
-    let handle = std::thread::spawn(|| {
+    let handle = std::thread::spawn(move || {
         // Start OpenGL
         let glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
         let window = unsafe { &mut *wrapper.1.load(std::sync::atomic::Ordering::Relaxed) };
@@ -703,8 +701,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             /* NON */
             panic!()
         }
-        // The render command receiver
-        let sent_tasks_receiver = rx;
 
         // Create the pipeline
         let pipeline = Pipeline::default();
@@ -714,15 +710,15 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         
         // Load the default objects
         {
-            let pipeline = pipeline.write().unwrap();
+            let mut pipeline = pipeline.write().unwrap();
             pipeline.defaults = Some(load_defaults(&*pipeline));
         }
 
         // Setup the pipeline renderer
         let renderer = {
-            let pipeline = pipeline.read().unwrap();
+            let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
-            renderer.new(&*pipeline);
+            renderer.initialize(&mut *pipeline);
             renderer   
         };
 
@@ -748,7 +744,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             }
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
             {
-                let pipeline = pipeline.write().unwrap();// We poll the messages, buffer them, and execute them
+                let mut pipeline = pipeline.write().unwrap();// We poll the messages, buffer them, and execute them
                 let messages = rx.try_iter().collect::<Vec<(PipelineTask, TaskID)>>();
                 // Set the buffer
                 pipeline.add_tasks(messages);

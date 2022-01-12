@@ -285,7 +285,7 @@ impl Default for Texture {
 impl PipelineObject for Texture {}
 
 impl Buildable for Texture {
-    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
+    fn construct_task(mut self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Before we send off the texture to the render thread, we want to make sure that our internal values are updated
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.ttype {

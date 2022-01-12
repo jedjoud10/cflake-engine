@@ -29,10 +29,10 @@ pub(crate) fn set_global_sender(sender: Sender<(PipelineTask,TaskID)>) {
 pub fn init_coms() {
     // Get the global sender and copy it to the local sender
     let lock = SENDER.lock().unwrap();
-    let sender = lock.unwrap();
+    let sender = (&*lock).as_ref().unwrap();
     LOCAL_SENDER.with(|cell| {
-        let cell = cell.borrow_mut();
-        *cell = Some(sender);
+        let mut cell = cell.borrow_mut();
+        *cell = Some(sender.clone());
     })
 }
 
