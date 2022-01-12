@@ -46,13 +46,12 @@ impl Clone for Model {
 impl PipelineObject for Model {}
 
 impl Buildable for Model {
-    fn construct(self, pipeline: &crate::Pipeline) -> crate::object::ObjectID<Self> {
+    fn construct_task(self, pipeline: &crate::Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.materials.get_next_idx_increment();
         let id = ObjectID::new(id);
         // Create the task and send it
-        crate::pipec::task(PipelineTask::CreateModel(ObjectBuildingTask::<Self>(self, id)), pipeline);
-        id
+        (PipelineTask::CreateModel(ObjectBuildingTask::<Self>(self, id)), id)
     }
 }
 

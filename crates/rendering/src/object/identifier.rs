@@ -48,14 +48,3 @@ impl TaskID {
         }
     }
 }
-
-impl others::Watchable<Pipeline> for TaskID {
-    fn is_valid(&self, context: &Pipeline) -> bool {
-        // Try to get the task and check if it is valid
-        if let Some(status) =  context.task_statuses.get(self.index) {
-            if let PipelineTaskStatus::Finished = *status {
-                true
-            } else { false }
-        } else { false }
-    }
-}

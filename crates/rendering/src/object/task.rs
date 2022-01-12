@@ -13,7 +13,9 @@ pub enum PipelineTask {
     CreateModel(ObjectBuildingTask<Model>),
     CreateRenderer(ObjectBuildingTask<Renderer>),
 
+    // Update tasks
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
+    UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
 
     // Specific pipeline tasks
     Quit,

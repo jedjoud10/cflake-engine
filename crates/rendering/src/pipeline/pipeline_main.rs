@@ -1,7 +1,7 @@
 // Some pipeline commands
 pub mod pipec {
     use std::sync::mpsc::Sender;
-    use crate::{object::{PipelineTask, TaskID, PipelineObject, ObjectID}, Buildable, Pipeline, pipeline::sender};
+    use crate::{object::{PipelineTask, TaskID, PipelineObject, ObjectID, PipelineTaskStatus}, Buildable, Pipeline, pipeline::sender};
 
     // Send a task to the shared pipeline 
     pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {
@@ -15,6 +15,20 @@ pub mod pipec {
     pub fn construct<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
         let object = object.pre_construct(pipeline);
         // Construct it's ID and automatically send it's construction task
-        object.construct(pipeline)
+        let (t, id) = object.construct_task(pipeline);
+        task(t, pipeline);
+        id
+    }
+    // Create a Pipeline Object, but also return it's TaskID, so we can detect whenever the task has executed
+    pub fn construct_return_task<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> (TaskID, ObjectID<T>) {
+        let object = object.pre_construct(pipeline);
+        // Construct it's ID and automatically send it's construction task
+        let (t, id) = object.construct_task(pipeline);
+        let data = (task(t, pipeline), id);
+        data
+    }
+    // Detect if a task has executed. If this task did indeed execute, it would be deleted next frame
+    pub fn has_task_executed(id: TaskID, pipeline: &Pipeline) -> bool {
+        pipeline.last_frame_task_statuses.contains(&id.index)
     }
 }

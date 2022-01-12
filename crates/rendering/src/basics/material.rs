@@ -17,9 +17,9 @@ impl Default for MaterialFlags {
 // A material that can have multiple parameters and such
 #[derive(Default)]
 pub struct Material {
-    shader: Option<ObjectID<Shader>>, 
-    flags: MaterialFlags, 
-    uniforms: ShaderUniformsGroup, 
+    pub shader: ObjectID<Shader>, 
+    pub flags: MaterialFlags, 
+    pub uniforms: ShaderUniformsGroup, 
 }
 
 impl PipelineObject for Material {}
@@ -35,17 +35,16 @@ impl Buildable for Material {
         if !group.contains_uniform("normals_tex") { group.set_texture("normals_tex", pipeline.defaults.unwrap().normals_tex, 1); }
         self.uniforms = group;
         // Set the default rendering shader if no shader was specified
-        self.shader.get_or_insert(pipeline.defaults.unwrap().shader);
+        if !self.shader.valid() { self.shader = pipeline.defaults.unwrap().shader }
         self
     }
 
-    fn construct(self, pipeline: &Pipeline) -> ObjectID<Self> {
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.materials.get_next_idx_increment();
         let id = ObjectID::new(id);
         // Create the task and send it
-        crate::pipec::task(PipelineTask::CreateMaterial(ObjectBuildingTask::<Self>(self, id)), pipeline);
-        id
+        (PipelineTask::CreateMaterial(ObjectBuildingTask::<Self>(self, id)), id)
     }
 }
 
@@ -53,7 +52,7 @@ impl Buildable for Material {
 impl Material {
     // Set the main shader
     pub fn set_shader(mut self, shader: ObjectID<Shader>) -> Self {
-        self.shader = Some(shader);
+        self.shader = shader;
         self
     }
     // Add a flag to our flags

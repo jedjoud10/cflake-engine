@@ -1,4 +1,4 @@
-use crate::{object::ObjectID, Texture, Model, Pipeline, pipec, Shader, ShaderSettings, Renderer};
+use crate::{object::ObjectID, Texture, Model, Pipeline, pipec, Shader, ShaderSettings, Renderer, TextureType, TextureFormat, DataType};
 
 use super::camera::Camera;
 
@@ -22,7 +22,7 @@ pub struct PipelineRenderer {
     sky_texture: ObjectID<Texture>,
     camera_data: Camera,
 }
-
+/*
 // Render a renderer using wireframe
 fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &CameraDataGPUObject, ws: &GPUObjectID) {
     let model = buf.as_model(&renderer.model_id).unwrap();
@@ -52,29 +52,15 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
         gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
     }
 }
-
+*/
 impl PipelineRenderer {
     // Render a single renderere
     fn render(&self, pipeline: &Pipeline, renderer: ObjectID<Renderer>, camera: &Camera) {
         let renderer = pipeline.get_renderer(renderer).unwrap();
         let material = pipeline.get_material(renderer.material).unwrap();
-        let mut shader = buf.as_shader(&dm.shader.as_ref().unwrap()).unwrap();
-        // If we do not have a material assigned, use the default material
-        let material = match material {
-            Some(user_material) => {
-                // If we do not have a shader assigned, use the default material's shader
-                shader = match &user_material.shader {
-                    Some(id) => match buf.as_shader(&id) {
-                        Some(shader) => shader,
-                        None => shader,
-                    },
-                    None => shader,
-                };
-                user_material
-            }
-            None => dm,
-        };
-        let model = buf.as_model(&renderer.model_id).unwrap();
+        // The shader will always be valid
+        let mut shader = pipeline.get_shader(material.shader);
+        let model = pipeline.get_model(&renderer.model).unwrap();
         let model_matrix = &renderer.matrix;
         // Calculate the mvp matrix
         let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
@@ -119,7 +105,7 @@ impl PipelineRenderer {
         }
     }
     // Create a new pipeline renderer
-    pub fn new(pipeline: &Pipeline) -> Self {
+    pub fn new(&mut self, pipeline: &Pipeline) {
         println!("Initializing the pipeline renderer...");
         // Create "self" first of all
         let pr = Self::default();
@@ -150,37 +136,41 @@ impl PipelineRenderer {
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            let dims = TextureType::Texture2D(self.window.dimensions.x, self.window.dimensions.y);
+            let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
+            self.diffuse_texture = pipec::construct(Texture::default()
+                .set_dimensions(dims)
+                .set_format(TextureFormat::RGB32F), pipeline);
             // Create the normals render texture
-            self.normals_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS));
+            self.normals_texture = pipec::construct(Texture::default()
+                .set_dimensions(dims)
+                .set_format(TextureFormat::RGB8RS), pipeline);
             // Create the position render texture
-            self.position_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
+            self.position_texture = pipec::construct(Texture::default()
+                .set_dimensions(dims)
+                .set_format(TextureFormat::RGB32F), pipeline);
             // Create the depth render texture
-            self.depth_texture = pipec::texture(
+            self.depth_texture = pipec::construct(
                 Texture::default()
                     .set_dimensions(dims)
                     .set_format(TextureFormat::DepthComponent32)
-                    .set_data_type(DataType::Float32),
+                    .set_data_type(DataType::Float32), pipeline
             );
 
             // Now bind the attachememnts
-            fn bind_attachement(attachement: u32, texture: &GPUObjectID) {
+            fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
                 // Get the textures from the GPUObjectID
-                let buf = crate::BUFFER.lock().unwrap();
-                let texture = buf.as_texture(texture).unwrap();
-                // Default target, no multisamplind
-                let target: u32 = gl::TEXTURE_2D;
+                let texture = pipeline.get_texture(*texture)?;
                 unsafe {
-                    gl::BindTexture(target, texture.texture_id);
-                    gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.texture_id, 0);
+                    gl::BindTexture(texture.target, texture.oid);
+                    gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target, texture.oid, 0);
                 }
+                Some(())
             }
-            bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
-            bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
-            bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
-            bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture);
+            bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture, pipeline).unwrap();
+            bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture, pipeline).unwrap();
             let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2];
             gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
 
@@ -196,19 +186,8 @@ impl PipelineRenderer {
         /* #endregion */
         /* #region Actual pipeline renderer shit */
         // Load sky gradient texture
-        self.sky_texture = pipec::texturec(
-            assets::cachec::acache_l(
-                "defaults\\textures\\sky_gradient.png",
-                Texture::default().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge),
-            )
-            .unwrap(),
-        );
-
-        // Load the wireframe shader
-        self.wireframe_shader = pipec::shader(
-            Shader::default()
-                .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"])
-                .unwrap(),
+        self.sky_texture = pipec::construct(
+            assets::assetc::dload("defaults\\textures\\sky_gradient.png").unwrap().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge), pipeline
         );
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
@@ -220,10 +199,9 @@ impl PipelineRenderer {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
     }
-    // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, buf: &PipelineBuffer, camera: &CameraDataGPUObject, new_time: f32, delta: f32) {
+    // Called each frame, to render the world
+    pub fn renderer_frame(&self, pipeline: &Pipeline) {
         let i = std::time::Instant::now();
-        let material = buf.as_material(self.default_material.as_ref().unwrap()).unwrap();
         for renderer in buf.renderers.iter().map(|x| buf.as_renderer(x).unwrap()) {
             // Should we render in wireframe or not?
             if self.wireframe {

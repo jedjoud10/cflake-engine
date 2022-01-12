@@ -1,7 +1,7 @@
-use std::{sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr, RwLock}, ffi::{CString, c_void}, mem::size_of, ptr::null};
+use std::{sync::{mpsc::Sender, Arc, Barrier, atomic::AtomicPtr, RwLock}, ffi::{CString, c_void}, mem::size_of, ptr::null, collections::HashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
-use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID, ObjectBuildingTask}, Texture, Material, Shader, Renderer, Model, pipeline::{camera::Camera, sender}, PipelineRenderer, ShaderSettings, pipec, TextureType, ShaderSource, ShaderSourceType, ModelBuffers, TextureFilter, TextureFlags, TextureWrapping, compute::{ComputeShaderExecutionSettings, ComputeShader}, ShaderUniformsSettings};
+use crate::{object::{PipelineTaskStatus, PipelineTask, ObjectID, TaskID, ObjectBuildingTask}, Texture, Material, Shader, Renderer, Model, pipeline::{camera::Camera, sender}, PipelineRenderer, ShaderSettings, pipec, TextureType, ShaderSource, ShaderSourceType, ModelBuffers, TextureFilter, TextureFlags, TextureWrapping, compute::{ComputeShaderExecutionSettings, ComputeShader}, ShaderUniformsSettings, Window};
 
 // Some default values like the default material or even the default shader
 pub(crate) struct DefaultPipelineObjects {
@@ -14,6 +14,7 @@ pub(crate) struct DefaultPipelineObjects {
 
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that times
+#[derive(Default)]
 pub struct Pipeline {    
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
     tasks: Vec<(PipelineTask, TaskID)>,
@@ -31,9 +32,12 @@ pub struct Pipeline {
 
     // Store the status for all of our tasks
     pub(crate) task_statuses: ShareableOrderedVec<PipelineTaskStatus>,
-
+    // Store the TaskIDs for tasks that have finished execution from last frame
+    pub(crate) last_frame_task_statuses: HashSet<usize>,
     // The current main camera that is rendering the world
     pub(crate) camera: Camera,
+    // Our window
+    pub window: Window,
 
     // Should we quit from the render thread?
     should_quit: bool,
@@ -46,9 +50,12 @@ impl Pipeline {
         self.tasks.extend(messages);
     }
     // Flush all the buffered tasks, and execute them
+    // We should do this at the end of each frame, but we can force execution of it if we are running it internally
     pub fn flush(&mut self) {
         // We must take the commands first
         let tasks = std::mem::take(&mut self.tasks);
+        // Clear
+        self.last_frame_task_statuses.clear();
         for (task, task_id) in tasks {
             // Now we must execute these tasks
             match task {
@@ -60,15 +67,17 @@ impl Pipeline {
                 PipelineTask::CreateRenderer(t) => self.renderer_create(t),
                 PipelineTask::CreateComputeShader(t) => self.compute_create(t),
 
-                PipelineTask::RunComputeShader(id, settings) => self.compute_run((id, settings)),
+                PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
+                PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
                 
                 // Others
                 PipelineTask::Quit => self.should_quit = false,
             }
 
-            // After executing the tasks, we must update our status
-            let status = self.task_statuses.get_mut(task_id.index).unwrap();
-            *status = PipelineTaskStatus::Finished;
+            // After executing the tasks, we must remove our current status, and add the index to the valid task statuses
+            let mut status = self.task_statuses.remove(task_id.index).unwrap();
+            status = PipelineTaskStatus::Finished;
+            self.last_frame_task_statuses.insert(task_id.index);
         }
     }
 
@@ -122,6 +131,10 @@ impl Pipeline {
     // Remove the renderer using it's renderer ID
     pub fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
         self.renderers.remove(id.index.unwrap());
+    }
+    // Update a renderer's matrix
+    pub fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
+
     }
     // Create a shader and cache it. We do not cache the "subshader" though
     pub fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
@@ -510,14 +523,14 @@ impl Pipeline {
         self.textures.insert(task.1.index.unwrap(), texture);
     }
     // Update the size of a texture
-    pub fn texture_update_size(&mut self, data: (ObjectID<Texture>, TextureType)) {
+    pub fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
         // Get the GPU texture object
-        let texture = self.get_texture(data.0).unwrap();
+        let texture = self.get_texture(id).unwrap();
         // Check if the current dimension type matches up with the new one
         let ifd = texture.ifd;
         // This is a normal texture getting resized
         unsafe {
-            match data.1 {
+            match tt {
                 TextureType::Texture1D(width) => {
                     gl::BindTexture(gl::TEXTURE_1D, texture.oid);
                     gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
@@ -535,23 +548,23 @@ impl Pipeline {
         }
     }
     // Run a compute shader
-    pub fn compute_run(&mut self, data: (ObjectID<ComputeShader>, ComputeShaderExecutionSettings)) {
+    pub fn compute_run(&mut self, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) {
         // Execute some shader uniforms if we want to
-        let group = (data.1).uniforms;
+        let group = settings.uniforms;
         if let Some(group) = group {
             // Create some shader uniforms settings that we can use
-            let settings = ShaderUniformsSettings::new_compute(data.0);
+            let settings = ShaderUniformsSettings::new_compute(id);
             group.execute(self, settings).unwrap();
         }
         // Dispatch the compute shader for execution
-        let axii = (data.1).axii;
+        let axii = settings.axii;
         unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
             // Force the execution and result of the compute shader. THIS IS NOT IDEAL
             gl::Finish();
         }
         // Run the tasks
-        for task in (data.1).tasks {
+        for task in settings.tasks {
             task.execute(self);
         }
     }
@@ -694,30 +707,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         let sent_tasks_receiver = rx;
 
         // Create the pipeline
-        let pipeline = Pipeline {
-            // Buffered tasks
-            tasks: Vec::new(),
-            // Buffers
-            materials: ShareableOrderedVec::default(),
-            models: ShareableOrderedVec::default(),
-            renderers: ShareableOrderedVec::default(),
-            shaders: ShareableOrderedVec::default(),
-            compute_shaders: ShareableOrderedVec::default(),
-            textures: ShareableOrderedVec::default(),
-            // Defaults
-            defaults: None,
-            // Status
-            task_statuses: ShareableOrderedVec::default(),
-            // Others
-            camera: Camera {
-                position: veclib::Vector3::ZERO,
-                rotation: veclib::Quaternion::IDENTITY,
-                clip_planes: veclib::Vector2::ZERO,
-                viewm: veclib::Matrix4x4::IDENTITY,
-                projm: veclib::Matrix4x4::IDENTITY,
-            },
-            should_quit: false,
-        };
+        let pipeline = Pipeline::default();
 
         // Create the Arc and RwLock for the pipeline
         let pipeline = Arc::new(RwLock::new(pipeline));
@@ -731,7 +721,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         // Setup the pipeline renderer
         let renderer = {
             let pipeline = pipeline.read().unwrap();
-            PipelineRenderer::new(&*pipeline)   
+            let mut renderer = PipelineRenderer::default();
+            renderer.new(&*pipeline);
+            renderer   
         };
 
         // Set the global sender

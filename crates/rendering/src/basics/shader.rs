@@ -62,12 +62,11 @@ pub struct Shader {
 impl PipelineObject for Shader {}
 
 impl Buildable for Shader {
-    fn construct(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
+    fn construct_task(self, pipeline: &crate::Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.shaders.get_next_idx_increment();
         let id = ObjectID::new(id);
-        crate::pipec::task(PipelineTask::CreateShader(ObjectBuildingTask::<Self>(self, id)), pipeline);
-        id
+        (PipelineTask::CreateShader(ObjectBuildingTask::<Self>(self, id)), id)
     }
 }
 

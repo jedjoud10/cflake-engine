@@ -15,17 +15,17 @@ pub struct Renderer {
     pub model: ObjectID<Model>, 
     pub material: ObjectID<Material>, 
     pub flags: RendererFlags,
+    pub matrix: veclib::Matrix4x4<f32>,
 }
 
 impl PipelineObject for Renderer {}
 
 impl Buildable for Renderer {
-    fn construct(self, pipeline: &crate::Pipeline) -> ObjectID<Self> {
+    fn construct_task(self, pipeline: &crate::Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.renderers.get_next_idx_increment();
         let id = ObjectID::new(id);
-        crate::pipec::task(PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), pipeline);
-        id
+        (PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), id)
     }
     fn pre_construct(self, pipeline: &crate::Pipeline) -> Self {
         // We must fill out our model and material if they are empty

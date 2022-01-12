@@ -9,5 +9,5 @@ pub(crate) trait Buildable: PipelineObject
     // This is ran before we actually construct the object's ID, so we are fine
     fn pre_construct(self, pipeline: &Pipeline) -> Self { self }
     // Construct the ID for self, send a task to the pipeline to create "self", and return our ID
-    fn construct(self, pipeline: &Pipeline) -> ObjectID<Self>;
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>);
 }

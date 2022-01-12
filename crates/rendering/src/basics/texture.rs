@@ -285,7 +285,7 @@ impl Default for Texture {
 impl PipelineObject for Texture {}
 
 impl Buildable for Texture {
-    fn construct(self, pipeline: &Pipeline) -> ObjectID<Self> {
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Before we send off the texture to the render thread, we want to make sure that our internal values are updated
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.ttype {
@@ -298,8 +298,7 @@ impl Buildable for Texture {
         let id = pipeline.textures.get_next_idx_increment();
         let id = ObjectID::new(id);
         // Create a task and send it
-        crate::pipec::task(PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)), pipeline);
-        id
+        (PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)), id)
     }
 }
 
