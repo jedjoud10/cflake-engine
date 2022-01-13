@@ -33,7 +33,7 @@ pub fn new<C: 'static, T: Sync + 'static>(thread_index: usize, barriers: Arc<(Ba
                     if let Some(&elem) = elem {
                         // Unsafe magic
                         let elem = unsafe { &mut *elem };
-                        (data.function)(context, elem);
+                        (data.function)(context, i, elem);
                         count += 1;
                     }
                 }

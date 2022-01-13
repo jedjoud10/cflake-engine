@@ -11,6 +11,8 @@ pub struct ThreadPool<C, T: Sync> {
     barriers: Arc<(Barrier, Barrier, Barrier)>,
     // Also store it's pointer, since we need to update it
     arc: Arc<RwLock<SharedData<C, T>>>,
+    // The numbers of threads that we have in total
+    max_thread_count: usize,
 } 
 
 impl<C: 'static, T: Sync + 'static> ThreadPool<C, T> {
@@ -26,12 +28,13 @@ impl<C: 'static, T: Sync + 'static> ThreadPool<C, T> {
         }
         
         Self {
+            max_thread_count,
             barriers,
             arc,
         }
     }
     // Divide the task between the multiple threads, and invoke them
-    pub fn execute(&self, elements: &mut Vec<T>, context: &C, task: fn(&C, &mut T), chunk_size: usize) {
+    pub fn execute(&self, elements: &mut Vec<T>, context: &C, task: fn(&C, usize, &mut T)) {
         let (barrier, end_barrier, shutdown_barrier) = self.barriers.as_ref();
         {
             // Update the value, then unlock
@@ -40,7 +43,9 @@ impl<C: 'static, T: Sync + 'static> ThreadPool<C, T> {
             shared_data.elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
             shared_data.function = task;
             shared_data.context = context as *const C;
-            shared_data.chunk_size = chunk_size;
+            // Calculate the chunk size
+            const MIN_CHUNK_SIZE: usize = 64;
+            shared_data.chunk_size = ((elements.len() / self.max_thread_count) + 1).max(MIN_CHUNK_SIZE);
             // Now we can unlock
         }
         barrier.wait();
