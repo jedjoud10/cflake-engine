@@ -8,9 +8,9 @@ pub struct Time {
 
 impl Time {
     /// Update the time
-    pub fn update(&mut self, delta: f64) {
-        self.delta = delta;
-        self.elapsed += self.elapsed;
+    pub fn update(&mut self, new_time: f64) {
+        self.delta = new_time - self.elapsed;
+        self.elapsed = new_time;
         self.frame_count += 1;
     }
 }

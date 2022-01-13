@@ -1,21 +1,26 @@
+use rendering::PipelineStartData;
+
 use crate::{data::World, GameConfig};
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(author_name: &str, app_name: &str) -> Self  {
-        let world = World {
+    pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineStartData) -> Self  {
+        let mut world = World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
             ecs: Default::default(),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
+            pipeline: pipeline_data.pipeline.clone(),
+            pipeline_thread: pipeline_data
         };
+        world.init();
         world
     }
     // Initialize the world
-    pub fn init(&mut self) {
+    fn init(&mut self) {
         println!("Initializing world...");
         // Load the default stuff
         self.input.create_key_cache();
