@@ -1,5 +1,5 @@
 // Default components
-pub mod components;
+//pub mod components;
 // Default systems
 /*
 pub mod default_system;
@@ -56,7 +56,7 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png");
     println!("Finished pre-loading default assets!");
 }
-
+/*
 // Pre-load the default systems
 pub fn preload_systems() {
     let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
@@ -89,3 +89,4 @@ pub fn preload_systems() {
     systems::rendering_system::system();
     systems::camera_system::system();
 }
+*/

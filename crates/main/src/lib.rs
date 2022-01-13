@@ -5,6 +5,7 @@ extern crate glfw;
 
 // World
 pub use core;
+use core::World;
 use std::thread::ThreadId;
 
 // Re-Export
@@ -22,23 +23,19 @@ pub use ui;
 pub use veclib;
 
 // Load up the OpenGL window and such
-pub fn start(author_name: &str, app_name: &str, assets_preload_callback: fn(), load_entities: fn(), load_systems: fn()) {
+pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(&World)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
         .create_window(rendering::WINDOW_SIZE.x as u32, rendering::WINDOW_SIZE.y as u32, app_name, glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
     // Pre-load the assets first
     defaults::preload_default_assets();
-    assets_preload_callback();
+    preload_assets();
     // Hehe multithreaded renering goes BRRRRRRRR
-    let pipeline_data = rendering::pipec::init_pipeline(&mut glfw, &mut window);
-    rendering::pipec::initialize_threadlocal_render_comms();
-    // Set the type of events that we want to listen to
-    window.set_key_polling(true);
-    window.set_cursor_pos_polling(true);
-    window.set_scroll_polling(true);
-    window.set_size_polling(true);
+    let pipeline_data = rendering::pipeline::init_pipeline(&mut glfw, &mut window);
+    rendering::pipeline::init_coms();
     // Create the world
+    let world = 
     core::world::new(author_name, app_name);
     core::world::start_world(&mut glfw, &mut window);
     // Calling the callback

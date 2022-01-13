@@ -608,6 +608,8 @@ pub struct PipelineStartData {
     pub sbarrier: Arc<Barrier>,
     // A barrier that we can use to sync up with the main thread at the end of each frame
     pub ebarrier: Arc<Barrier>,
+    // The pipeline itself 
+    pub pipeline: Arc<RwLock<Pipeline>>,
 }
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
@@ -699,9 +701,8 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     let ebarrier = Arc::new(Barrier::new(2));
     let ebarrier_clone = ebarrier.clone();
 
-    // An init barrier
-    let ibarrier = Arc::new(Barrier::new(2));
-    let ibarrier_clone = ibarrier.clone();
+    // An init channel
+    let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
 
     // Create a simple unsafe wrapper so we can send the glfw and window data to the render thread
     // Window and GLFW wrapper
@@ -764,7 +765,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         sender::set_global_sender(tx);
 
         // ---- Finished initializing the Pipeline! ----
-        ibarrier_clone.wait();
+        itx.send(pipeline.clone()).unwrap();
         println!("Successfully created the RenderThread!");
 
         // We must render every frame
@@ -801,9 +802,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // Wait for the init message...
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");
-    ibarrier.wait();
+    let pipeline = irx.recv().unwrap();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
 
     // Create the pipeline start data
-    PipelineStartData { handle, sbarrier, ebarrier }
+    PipelineStartData { handle, sbarrier, ebarrier, pipeline }
 }
