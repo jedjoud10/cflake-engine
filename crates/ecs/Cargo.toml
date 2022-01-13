@@ -11,3 +11,4 @@ lazy_static = "1.4.0"
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 others = { path = "../others" }
+worker_threads = { path = "../worker_threads" }

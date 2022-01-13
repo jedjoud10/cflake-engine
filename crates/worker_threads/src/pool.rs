@@ -4,7 +4,7 @@ use crate::{SharedData, SHUTDOWN};
 
 // A thread pool that contains multiple WorkerThreadInitData, 
 // so we can send messages to the threads to tell them to execute something, and we will wait until all of them have executed
-pub struct ThreadPool<C, T: Sync> {
+pub struct ThreadPool<C, T> {
     // A barrier that we can use to sync up the threads for execution
     // The second barrier is used after every execution, juuust to make sure
     // The third barrier is the shutdown barrier, so we all the threads shut down in sync
@@ -15,7 +15,7 @@ pub struct ThreadPool<C, T: Sync> {
     max_thread_count: usize,
 } 
 
-impl<C: 'static, T: Sync + 'static> ThreadPool<C, T> {
+impl<C: 'static, T: 'static> ThreadPool<C, T> {
     // Create a new thread pool
     pub fn new(max_thread_count: usize) -> Self {
         // Barrier stuff
@@ -34,7 +34,7 @@ impl<C: 'static, T: Sync + 'static> ThreadPool<C, T> {
         }
     }
     // Divide the task between the multiple threads, and invoke them
-    pub fn execute(&self, elements: &mut Vec<T>, context: &C, task: fn(&C, usize, &mut T)) {
+    pub fn execute(&self, elements: &mut Vec<T>, context: &C, task: fn(&C, &mut T)) {
         let (barrier, end_barrier, shutdown_barrier) = self.barriers.as_ref();
         {
             // Update the value, then unlock

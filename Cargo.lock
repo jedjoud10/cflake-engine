@@ -318,6 +318,7 @@ dependencies = [
  "lazy_static",
  "ordered_vec",
  "others",
+ "worker_threads",
 ]
 
 [[package]]

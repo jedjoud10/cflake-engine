@@ -9,7 +9,7 @@ pub mod test {
         // Get the component immutably
         let component = components.component::<Name>().unwrap();
         let name = &component.name;
-        dbg!(name);
+        println!("{} {:?}", name, components.entity_id);
 
         // Write to the name
         let mut component2 = components.component_mut::<Name>().unwrap();
@@ -63,10 +63,11 @@ pub mod test {
         let mut hello_system = System::new();
         hello_system.link::<Name>();
         hello_system.set_event(update_components);
+        hello_system.enable_multithreading();
         ecs.add_system(hello_system);
 
         // Create a simple entity with that component
-        for x in 0..100 {
+        for x in 0..128 {
             let mut group = ComponentLinkingGroup::new();
             group.link(Name::new("Person")).unwrap();
             let entity = Entity::new();
@@ -75,8 +76,6 @@ pub mod test {
             ecs.add_entity(entity, id, group);
         }
         // Run the system for two frames
-        ecs.run_systems(&world);
-        ecs.run_systems(&world);
         ecs.run_systems(&world);
         ecs.run_systems(&world);
     }

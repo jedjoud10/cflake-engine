@@ -2,25 +2,27 @@ use std::cell::RefCell;
 
 use crate::{
     identifiers::EntityID,
-    ComponentError, ComponentLinkingGroup, Entity, EntityError, System, ComponentID, EnclosedComponent,
+    ComponentError, ComponentLinkingGroup, Entity, EntityError, System, ComponentID, EnclosedComponent, linked_components::LinkedComponents,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::shareable::ShareableOrderedVec;
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
-pub struct ECSManager<C> {
+pub struct ECSManager<C: 'static> {
     // A vector full of entities. Each entity can get invalidated, but never deleted
     pub(crate) entities: ShareableOrderedVec<Entity>, 
     // Each system, stored in the order they were created
     systems: Vec<System<C>>,                             
     // The components that are valid in the world
-    components: AHashMap<ComponentID, RefCell<EnclosedComponent>>, 
+    pub(crate) components: AHashMap<ComponentID, RefCell<EnclosedComponent>>, 
+    // A thread pool that we will use to parallelize the updating of components
+    pub(crate) pool: worker_threads::ThreadPool<C, LinkedComponents>,
 }
 
-impl<C> Default for ECSManager<C> {
+impl<C: 'static> Default for ECSManager<C> {
     fn default() -> Self {
-        Self { entities: Default::default(), systems: Default::default(), components: Default::default() }
+        Self { entities: Default::default(), systems: Default::default(), components: Default::default(), pool: worker_threads::ThreadPool::new(8) }
     }
 }
 
@@ -98,7 +100,7 @@ impl<C> ECSManager<C> {
         // Filter the components for each system
         for system in self.systems.iter() {
             // We don't need to give it &mut self.components because each component is stored in the heap, so we can use unsafe code to mutate it whenever we want
-            system.run_system(context, &self.components);
+            system.run_system(context, self);
         }
     }
     /* #endregion */

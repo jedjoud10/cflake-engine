@@ -4,7 +4,7 @@ use crate::SharedData;
 pub(crate) static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
 // Create a new thread
-pub fn new<C: 'static, T: Sync + 'static>(thread_index: usize, barriers: Arc<(Barrier, Barrier, Barrier)>, shared_data: Arc<RwLock<SharedData<C, T>>>) {
+pub fn new<C: 'static, T: 'static>(thread_index: usize, barriers: Arc<(Barrier, Barrier, Barrier)>, shared_data: Arc<RwLock<SharedData<C, T>>>) {
     std::thread::spawn(move || {
         // Wait until the barrier allows us to continue
         let (barrier, end_barrier, shutdown_barrier) = barriers.as_ref();
@@ -33,7 +33,7 @@ pub fn new<C: 'static, T: Sync + 'static>(thread_index: usize, barriers: Arc<(Ba
                     if let Some(&elem) = elem {
                         // Unsafe magic
                         let elem = unsafe { &mut *elem };
-                        (data.function)(context, i, elem);
+                        (data.function)(context, elem);
                         count += 1;
                     }
                 }

@@ -7,6 +7,7 @@ use bitfield::Bitfield;
 // These components are stored on the main thread however
 pub struct LinkedComponents {
     components: AHashMap<Bitfield<u32>, *mut EnclosedComponent>,
+    pub(crate) entity_id: EntityID, 
 }
 
 impl LinkedComponents {
@@ -27,7 +28,7 @@ impl LinkedComponents {
                 }
             })
             .collect::<AHashMap<Bitfield<u32>, *mut EnclosedComponent>>();
-        Self { components: filtered_components }
+        Self { components: filtered_components, entity_id: id.clone() }
     }
 }
 
