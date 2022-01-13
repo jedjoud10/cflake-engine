@@ -22,7 +22,7 @@ pub struct ECSManager<C: 'static> {
 
 impl<C: 'static> Default for ECSManager<C> {
     fn default() -> Self {
-        Self { entities: Default::default(), systems: Default::default(), components: Default::default(), pool: worker_threads::ThreadPool::new(8) }
+        Self { entities: Default::default(), systems: Default::default(), components: Default::default(), pool: worker_threads::ThreadPool::new(8)  }
     }
 }
 

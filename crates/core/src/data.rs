@@ -1,4 +1,4 @@
-use std::sync::{RwLock, Arc};
+use std::sync::{RwLock, Arc, mpsc::SendError};
 
 use ecs::{ECSManager};
 use input::InputManager;
@@ -7,7 +7,7 @@ use others::Time;
 use rendering::{PipelineStartData, Pipeline};
 use ui::UIManager;
 
-use crate::GameConfig;
+use crate::{GameConfig, WorldTask};
 
 // The whole world that stores our managers and data
 pub struct World {
@@ -49,5 +49,9 @@ impl<'a> Context<'a> {
                 unsafe { &*ptr }
             }
         }
+    }
+    // We can also send tasks using the context
+    pub(crate) fn send(&self, task: WorldTask) -> Option<()> {
+        crate::sender::send_task(task)
     }
 }
