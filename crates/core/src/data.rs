@@ -50,8 +50,4 @@ impl<'a> Context<'a> {
             }
         }
     }
-    // We can also send tasks using the context
-    pub(crate) fn send(&self, task: WorldTask) -> Option<()> {
-        crate::sender::send_task(task)
-    }
 }

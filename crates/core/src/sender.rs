@@ -1,8 +1,7 @@
 use lazy_static::lazy_static;
 use std::cell::RefCell;
-use std::sync::mpsc::SendError;
 use std::sync::{mpsc::Sender, Mutex};
-use crate::global::WorldTask;
+use crate::task::WorldTask;
 
 // We will store a global sender, that way we can copy it to the other threads using an init coms method
 lazy_static! {
@@ -12,6 +11,7 @@ lazy_static! {
 // Thread local sender
 thread_local! {
     static LOCAL_SENDER: RefCell<Option<Sender<WorldTask>>> = RefCell::new(None);
+    static MAIN_THREAD: RefCell<bool> = RefCell::new(false);
 }
 
 // Set the global sender
@@ -19,6 +19,12 @@ pub(crate) fn set_global_sender(sender: Sender<WorldTask>) {
     {
         let mut lock = SENDER.lock().unwrap();
         *lock = Some(sender);
+    }
+    {
+        MAIN_THREAD.with(|cell| {
+            let mut cell = cell.borrow_mut();
+            *cell = true;
+        });
     }
 }
 
@@ -35,6 +41,10 @@ pub fn init_coms() {
 
 // Send a task using the thread local sender
 pub(crate) fn send_task(task: WorldTask) -> Option<()> {
+    // We cannot send a task while we are on the main thread
+    if MAIN_THREAD.with(|x| *x.borrow()) {
+        return None;
+    }
     LOCAL_SENDER.with(|cell| {
         let cell = cell.borrow();
         let sender = (&*cell).as_ref()?;
