@@ -35,18 +35,18 @@ impl<C: 'static, T: 'static> ThreadPool<C, T> {
         }
     }
     // Divide the task between the multiple threads, and invoke them
-    pub fn execute(&self, elements: &mut Vec<T>, context: &C, task: fn(&C, &mut T)) {
+    pub fn execute(&self, elements: Vec<*mut T>, context: &C, task: fn(&C, &mut T)) {
         let (barrier, end_barrier, shutdown_barrier) = self.barriers.as_ref();
         {
             // Update the value, then unlock
             let mut shared_data = self.arc.write().unwrap();
             // Convert the &mut Vec<T> to Vec<*mut T>
-            shared_data.elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
+            shared_data.chunk_size = ((elements.len() / self.max_thread_count) + 1).max(MIN_CHUNK_SIZE);
+            shared_data.elements = elements;
             shared_data.function = task;
             shared_data.context = context as *const C;
             // Calculate the chunk size
             const MIN_CHUNK_SIZE: usize = 64;
-            shared_data.chunk_size = ((elements.len() / self.max_thread_count) + 1).max(MIN_CHUNK_SIZE);
             // Now we can unlock
         }
         barrier.wait();

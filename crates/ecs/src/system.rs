@@ -1,21 +1,21 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, marker::PhantomData, ffi::c_void};
 
-use crate::{linked_components::LinkedComponents, Component, ComponentID, EnclosedComponent, Entity, EntityID, ECSManager};
+use crate::{linked_components::{LinkedComponents, ComponentQuery}, Component, ComponentID, EnclosedComponent, Entity, EntityID, ECSManager};
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
+use worker_threads::ThreadPool;
 
 // A system that updates specific components in parallel
 pub struct System<RefContext: 'static, MutContext: 'static> {
     // Our Component Bitfield
     cbitfield: Bitfield<u32>, 
     // Events
-    update_components_event_m: fn(context: &RefContext, components: &mut LinkedComponents),
-    system_prefire: fn(context: &MutContext),
-    system_postfire: fn(context: &MutContext),
-    // The entity IDs
-    entities: AHashSet<EntityID>,
-    // Are we updating the components in parallel?
-    multithreading: bool,
+    run_system: fn(context: &mut MutContext, components: ComponentQuery),
+    added_component_group: fn(context: &mut MutContext, components: ComponentQuery),
+    removed_component_group: fn(context: &mut MutContext, component: ComponentQuery),
+    phantom_: PhantomData<*const RefContext>,
+    // The stored linked components
+    linked_components: AHashMap<EntityID, LinkedComponents>,
 }
 
 // Initialization of the system
@@ -24,11 +24,11 @@ impl<RefContext: 'static, MutContext: 'static> System<RefContext, MutContext> {
     pub fn new() -> Self {
         System {
             cbitfield: Bitfield::<u32>::default(),
-            update_components_event_m: |_, _| {},
-            system_prefire: |_| {},
-            system_postfire: |_| {},
-            entities: AHashSet::default(),
-            multithreading: false,
+            run_system: |context, query| {},
+            added_component_group: |context, query| {},
+            removed_component_group: |context, query| {},
+            phantom_: PhantomData::default(),
+            linked_components: AHashMap::new(),
         }
     }
 }
@@ -40,46 +40,36 @@ impl<RefContext: 'static, MutContext: 'static> System<RefContext, MutContext> {
         let c = crate::registry::get_component_bitfield::<U>();
         self.cbitfield = self.cbitfield.add(&c);
     }
-    // Enable multithreading, so whenever we update the components, we will update them in parallel
-    pub fn enable_multithreading(&mut self) {
-        self.multithreading = true;
-    } 
-    // Set the update components event
-    pub fn set_event(&mut self, event: fn(context: &RefContext, components: &mut LinkedComponents)) {
-        self.update_components_event_m = event;
+    // Set the run system event
+    pub fn set_event(&mut self, run_system: fn(&mut MutContext, ComponentQuery)) {
+        self.run_system = run_system;
     }
     // Check if we can add an entity (It's cbitfield became adequate for our system or the entity was added from the world)
     // If we can add it, then just do that
-    pub(crate) fn check_add_entity(&mut self, cbitfield: Bitfield<u32>, id: EntityID) {
+    pub(crate) fn check_add_entity(&mut self, ecs_manager: &ECSManager<RefContext, MutContext>, cbitfield: Bitfield<u32>, id: EntityID) {
         if cbitfield.contains(&self.cbitfield) && !self.cbitfield.empty() {
-            self.entities.insert(id);
+            let entity = ecs_manager.entity(&id).unwrap();
+            let linked_components = LinkedComponents::new(&id, entity, &ecs_manager.components, &self.cbitfield);
+            self.linked_components.insert(id, linked_components);
         }
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
     pub(crate) fn remove_entity(&mut self, id: EntityID) {
-        self.entities.remove(&id);
+        self.linked_components.remove(&id);
     }
     // Run the system for a single iteration
-    // This will use the components data given by the world to run all the component updates in PARALLEL
-    // The components get mutated in parallel, though the system is NOT stored on another thread
-    pub fn run_system(&self, context: &RefContext, mut_context: &MutContext, ecs_manager: &ECSManager<RefContext, MutContext>) {
+    pub fn run_system(&self, mut_context: &mut MutContext, ecs_manager: &ECSManager<RefContext, MutContext>) {
         // These components are filtered for us
-        let components = &ecs_manager.components;        
-        let evn = self.update_components_event_m;
-        let components = self.entities.iter().map(|id| LinkedComponents::new(id, components, &self.cbitfield));
-        let prefire_evn = self.system_prefire;
-        prefire_evn(mut_context);
-        if self.multithreading {
-            // Multi threadingggg
-            let mut components = components.collect::<Vec<LinkedComponents>>();
-            ecs_manager.pool.execute(&mut components, context, evn)
-        } else {
-            // Not multithreaded, just the single threaded manner
-            for mut linked_components in components {
-                evn(context, &mut linked_components);
-            }
-        }
-        let postfire_evn = self.system_postfire;
-        postfire_evn(mut_context);
+        let components = &ecs_manager.components;    
+        let i = std::time::Instant::now();
+        dbg!(i.elapsed());
+        // Create the component query
+        let query = ComponentQuery {
+            linked_components: &self.linked_components,
+            pool: { (&ecs_manager.pool as *const ThreadPool<RefContext, LinkedComponents>) as *const c_void },
+        };
+        let run_system_evn = self.run_system;
+        // Run the "run system" event
+        run_system_evn(mut_context, query);
     }
 }

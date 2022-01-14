@@ -8,7 +8,7 @@ pub mod test {
         // Test the parralelization
         let pool = ThreadPool::<(), i32>::new(16, |_| {});
         let mut numbers = vec![0; 512];
-        pool.execute(&mut numbers, &(), |_, _| {});
+        pool.execute(numbers.iter_mut().map(|x| x as *mut i32).collect::<Vec<_>>(), &(), |_, _| {});
     }
     #[test]
     // Test the speed compared to single threaded
@@ -23,7 +23,7 @@ pub mod test {
             l
         }
         let i = std::time::Instant::now();
-        pool.execute(&mut numbers1, &(), |a, b| { *b = expensive_calculation() });
+        pool.execute(numbers1.iter_mut().map(|x| x as *mut i32).collect::<Vec<_>>(), &(), |a, b| { *b = expensive_calculation() });
         println!("Took '{}' micros to execute multithreaded code", i.elapsed().as_micros());
 
         let mut numbers2 = vec![0; 4096];

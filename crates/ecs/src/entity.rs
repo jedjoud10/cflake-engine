@@ -1,10 +1,16 @@
-use crate::EntityID;
+use crate::{EntityID, EnclosedComponent};
+use ahash::AHashMap;
 use bitfield::Bitfield;
 // A simple entity in the world
 #[derive(Clone)]
 pub struct Entity {
-    pub(crate) id: Option<EntityID>,     // This entity's ID
-    pub(crate) cbitfield: Bitfield<u32>, // Component Bitfield
+    // This entity's ID
+    pub(crate) id: Option<EntityID>,     
+
+    // Component Bitfield
+    pub(crate) cbitfield: Bitfield<u32>, 
+    // Our linked components
+    pub(crate) components: AHashMap<Bitfield<u32>, *mut EnclosedComponent>
 }
 
 // ECS time bois
@@ -14,6 +20,7 @@ impl Entity {
         Self {
             id: None,
             cbitfield: Bitfield::default(),
+            components: AHashMap::default(),
         }
     }
 }

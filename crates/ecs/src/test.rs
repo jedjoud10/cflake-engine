@@ -1,35 +1,49 @@
 #[cfg(test)]
 pub mod test {
-    use crate::{defaults::Name, linked_components::LinkedComponents, ComponentLinkingGroup, ECSManager, Entity, EntityID, System};
+    use crate::{defaults::Name, linked_components::{LinkedComponents, ComponentQuery}, ComponentLinkingGroup, ECSManager, Entity, EntityID, System};
 
     // Some test contexts
     pub struct RefContext;
     pub struct MutContext;
 
-    fn update_components(_context: &RefContext, components: &mut LinkedComponents) {
-        // Get the component immutably
-        let component = components.component::<Name>().unwrap();
-        let name = &component.name;
-        println!("{} {:?}", name, components.entity_id);
+    fn run_system(_context: &mut MutContext, components: ComponentQuery) {
 
-        // Write to the name
-        let mut component2 = components.component_mut::<Name>().unwrap();
-        component2.name = "Not a Person".to_string();
+        // Transform the _context to RefContext using some magic fuckery
+        
+        components.update_all(RefContext, |context, components| {
+            let mut i = 0;
+            for x in 0..64 {
+                i += x;
+            }
+            let mut name = components.component_mut::<Name>().unwrap();
+            name.name = i.to_string();
+        }, true);        
+        
+        /*
+        let i = std::time::Instant::now();
+        components.update_all(RefContext, |context, components| {
+            let mut i = 0;
+            for x in 0..1024 {
+                i += x;
+            }
+        }, true);        
+        println!("{}", i.elapsed().as_micros());
+        */
     }
 
     #[test]
     // Simple test to test the ecs
     pub fn test() {
         // Create the main ECS manager, and the Component Manager
-        let mut ecs = ECSManager::new(|_| {});
+        let mut ecs = ECSManager::<RefContext, MutContext>::new(|_| {});
         // Also create the contextes
         let ref_context = RefContext;
-        let mut_context = MutContext;
+        let mut mut_context = MutContext;
 
         // Make a simple system
         let mut hello_system = System::new();
         hello_system.link::<Name>();
-        hello_system.set_event(update_components);
+        hello_system.set_event(run_system);
         ecs.add_system(hello_system);
 
         // Create a simple entity with that component
@@ -44,10 +58,10 @@ pub mod test {
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
-        ecs.run_systems(&ref_context, &mut_context);
-        ecs.run_systems(&ref_context, &mut_context);
-        ecs.run_systems(&ref_context, &mut_context);
-        ecs.run_systems(&ref_context, &mut_context);
+        ecs.run_systems(&mut mut_context);
+        ecs.run_systems(&mut mut_context);
+        ecs.run_systems(&mut mut_context);
+        ecs.run_systems(&mut mut_context);
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3.clone();
         ecs.remove_entity(&mut_context, id3).unwrap();
@@ -57,20 +71,19 @@ pub mod test {
     // Test the parralelization
     pub fn test_parallel() {
         // Create the main ECS manager, and the Component Manager
-        let mut ecs = ECSManager::new(|_| {});
+        let mut ecs = ECSManager::<RefContext, MutContext>::new(|_| {});
         // Also create the contextes
         let ref_context = RefContext;
-        let mut_context = MutContext;
+        let mut mut_context = MutContext;
 
         // Make a simple system
         let mut hello_system = System::new();
         hello_system.link::<Name>();
-        hello_system.set_event(update_components);
-        hello_system.enable_multithreading();
+        hello_system.set_event(run_system);
         ecs.add_system(hello_system);
 
         // Create a simple entity with that component
-        for x in 0..128 {
+        for x in 0..4096 {
             let mut group = ComponentLinkingGroup::new();
             group.link(Name::new("Person")).unwrap();
             let entity = Entity::new();
@@ -78,8 +91,12 @@ pub mod test {
             // The entity is not created yet, so it is null
             ecs.add_entity(&mut_context, entity, id, group);
         }
-        // Run the system for two frames
-        ecs.run_systems(&ref_context, &mut_context);
-        ecs.run_systems(&ref_context, &mut_context);
+        // Run the system for two frames    
+        for x in 0..300 {
+            let i = std::time::Instant::now();
+            ecs.run_systems(&mut mut_context);
+            println!("{}", i.elapsed().as_millis());
+        }    
+        //ecs.run_systems(&mut mut_context);
     }
 }

@@ -66,7 +66,7 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
             self.add_component(id, boxed, cbitfield)?;
         }
         // Check if the linked entity is valid to be added into the systems
-        self.systems.iter_mut().for_each(|system| system.check_add_entity(group.cbitfield, id));
+        self.systems.iter_mut().for_each(|system| system.check_add_entity(self, group.cbitfield, id));
         Ok(())
     }    
     // Add a specific linked componment to the component manager. Return the said component's ID
@@ -98,11 +98,11 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems(&self, context: &RefContext, mut_context: &MutContext) {
+    pub fn run_systems(&self, mut_context: &mut MutContext) {
         // Filter the components for each system
         for system in self.systems.iter() {
             // We don't need to give it &mut self.components because each component is stored in the heap, so we can use unsafe code to mutate it whenever we want
-            system.run_system(context, mut_context, self);
+            system.run_system(mut_context, self);
         }
     }
     /* #endregion */
