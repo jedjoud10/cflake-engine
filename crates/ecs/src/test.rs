@@ -15,11 +15,8 @@ pub mod test {
             for x in 0..64 {
                 i += x;
             }
-            let mut name = components.component_mut::<Name>().unwrap();
-            dbg!("");
-            name.name = i.to_string();
-            dbg!("");
-        }, true);        
+            let name = components.component::<Name>().unwrap();
+        }, false);        
         
         /*
         let i = std::time::Instant::now();
@@ -37,7 +34,7 @@ pub mod test {
     // Simple test to test the ecs
     pub fn test() {
         // Create the main ECS manager, and the Component Manager
-        let mut ecs = ECSManager::<RefContext, MutContext>::new(|_| {});
+        let mut ecs = ECSManager::<RefContext, MutContext>::new(|| {});
         // Also create the contextes
         let ref_context = RefContext;
         let mut mut_context = MutContext;
@@ -73,7 +70,7 @@ pub mod test {
     // Test the parralelization
     pub fn test_parallel() {
         // Create the main ECS manager, and the Component Manager
-        let mut ecs = ECSManager::<RefContext, MutContext>::new(|_| {});
+        let mut ecs = ECSManager::<RefContext, MutContext>::new(|| {});
         // Also create the contextes
         let ref_context = RefContext;
         let mut mut_context = MutContext;
@@ -97,7 +94,7 @@ pub mod test {
         for x in 0..300 {
             let i = std::time::Instant::now();
             ecs.run_systems(&mut mut_context);
-            println!("{}", i.elapsed().as_millis());
+            println!("{}", i.elapsed().as_micros());
         }    
         //ecs.run_systems(&mut mut_context);
     }

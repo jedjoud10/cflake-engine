@@ -1,4 +1,4 @@
-use crate::{EntityID, EnclosedComponent};
+use crate::{EntityID, EnclosedComponent, ComponentID};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 // A simple entity in the world
@@ -9,6 +9,9 @@ pub struct Entity {
 
     // Component Bitfield
     pub(crate) cbitfield: Bitfield<u32>, 
+
+    // Our stored components
+    pub(crate) components: Vec<ComponentID>,
 }
 
 // ECS time bois
@@ -18,6 +21,7 @@ impl Entity {
         Self {
             id: None,
             cbitfield: Bitfield::default(),
+            components: Vec::new(),
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, sync::Arc};
 
 use crate::{
     identifiers::EntityID,
@@ -6,7 +6,8 @@ use crate::{
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use ordered_vec::shareable::ShareableOrderedVec;
+use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
+use rayon::ThreadPool;
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
 pub struct ECSManager<RefContext: 'static, MutContext: 'static> {
@@ -15,20 +16,38 @@ pub struct ECSManager<RefContext: 'static, MutContext: 'static> {
     // Each system, stored in the order they were created
     systems: Vec<System<RefContext, MutContext>>,                             
     // The components that are valid in the world
-    pub(crate) components: AHashMap<ComponentID, RefCell<EnclosedComponent>>, 
+    pub(crate) components_ids: AHashMap<ComponentID, usize>,
+    pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>, 
+    // The rayon thread pool
+    pub(crate) rayon_thread_pool: ThreadPool,
 }
 
 // Global code for the Entities, Components, and Systems
 impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext> {
     // Create a new ECS manager
-    pub fn new(start_function: fn(usize)) -> Self {
+    pub fn new<F>(start_function: F) -> Self
+        where F: Fn() -> () + Sync + Send + 'static {
+        // Start the thread pool
+        let boxed = Arc::new(Box::new(start_function));
+        let thread_pool = rayon::ThreadPoolBuilder::new().num_threads(4).thread_name(|x| format!("ECS-Thread {}", x)).spawn_handler(|builder| 
+            {
+                let boxed = boxed.clone();
+                let join_handle = std::thread::spawn(move || { 
+                    // Rayon is extremely cool
+                    let function = (&*boxed).as_ref();
+                    (function)();
+                    builder.run();
+                });
+                Ok(())
+            }
+        ).build().unwrap();
         Self { 
             entities: Default::default(),
             systems: Default::default(),
+            components_ids: Default::default(),
             components: Default::default(),
+            rayon_thread_pool: thread_pool,
         }
-        // Start the thread pool
-
     }
     /* #region Entities */
     // Get an entity
@@ -62,27 +81,29 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
     // Add a component linking group to the manager
     fn add_component_group(&mut self, id: EntityID, group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in group.linked_components {
-            self.add_component(id, boxed, cbitfield)?;
+            let idx = self.add_component(id, boxed, cbitfield)?;
+            let entity = self.entity_mut(&id).unwrap();
+            entity.components.push(idx);
         }        
         // Check if the linked entity is valid to be added into the systems
-        self.systems.iter().for_each(|system| system.check_add_entity(self, group.cbitfield, id));
+        self.systems.iter_mut().for_each(|system| system.check_add_entity(group.cbitfield, id));
         Ok(())
     }    
     // Add a specific linked componment to the component manager. Return the said component's ID
     fn add_component(&mut self, id: EntityID, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
-        // Create a new Component ID from an Entity ID
-        let id = ComponentID::new(id, cbitfield);
         // We must make this a RefCell
         let cell = RefCell::new(boxed);
-        self.components.insert(id, cell);
+        let idx = self.components.push_shove(cell);
+        // Create a new Component ID
+        let id = ComponentID::new(cbitfield, idx);
+        self.components_ids.insert(id, idx);
         Ok(id)
     }
     // Remove a specified component from the list
     fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
-        self.components
-        .remove(&id)
-        .ok_or(ComponentError::new("Tried removing component, but it was not present in the HashMap!".to_string(), id))?;
+        let idx = self.components_ids.remove(&id).ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
+        self.components.remove(idx);
         Ok(())
     }
     /* #endregion */
@@ -98,9 +119,7 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
     pub fn run_systems(&self, mut_context: &mut MutContext) {
-        // Filter the components for each system
         for system in self.systems.iter() {
-            // We don't need to give it &mut self.components because each component is stored in the heap, so we can use unsafe code to mutate it whenever we want
             system.run_system(mut_context, self);
         }
     }

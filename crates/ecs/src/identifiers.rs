@@ -18,12 +18,12 @@ impl EntityID {
 // A ComponentID that will be used to identify components
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct ComponentID {
-    pub(crate) entity_id: EntityID,
     pub(crate) cbitfield: Bitfield<u32>,
+    pub(crate) idx: usize,
 }
 impl ComponentID {
-    // Create a new component ID using a component generic and an entity ID
-    pub(crate) fn new(entity_id: EntityID, cbitfield: Bitfield<u32>) -> Self {
-        Self { entity_id, cbitfield }
+    // Create a new component ID
+    pub(crate) fn new(cbitfield: Bitfield<u32>, idx: usize) -> Self {
+        Self { cbitfield, idx }
     }
 }
