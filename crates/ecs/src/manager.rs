@@ -10,20 +10,20 @@ use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use worker_threads::ThreadPool;
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
-pub struct ECSManager<RefContext: 'static, MutContext: 'static> {
+pub struct ECSManager {
     // A vector full of entities. Each entity can get invalidated, but never deleted
     pub(crate) entities: ShareableOrderedVec<Entity>, 
     // Each system, stored in the order they were created
-    systems: Vec<System<RefContext, MutContext>>,                             
+    systems: Vec<System>,                             
     // The components that are valid in the world
     pub(crate) components_ids: AHashMap<ComponentID, usize>,
     pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>, 
     // The internal ECS thread pool
-    pub(crate) thread_pool: ThreadPool<RefContext, LinkedComponents>,
+    pub(crate) thread_pool: ThreadPool<LinkedComponents>,
 }
 
 // Global code for the Entities, Components, and Systems
-impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext> {
+impl ECSManager {
     // Create a new ECS manager
     pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
         // Start the thread pool
@@ -46,7 +46,7 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
         self.entities.get_mut(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
-    pub fn add_entity(&mut self, mut_context: &MutContext, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
+    pub fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
         // Check if the EntityID was not occupied already
         if self.entities.get(id.index as usize).is_some() {
             panic!()
@@ -58,7 +58,7 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
         self.add_component_group(id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
-    pub fn remove_entity(&mut self, mut_context: &MutContext, id: EntityID) -> Result<Entity, EntityError> {
+    pub fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate the entity
         let res = self.entities.remove(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id));
         res
@@ -96,18 +96,18 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
     /* #endregion */
     /* #region Systems */
     // Add a system to our current systems
-    pub fn add_system(&mut self, system: System<RefContext, MutContext>) {
+    pub fn add_system(&mut self, system: System) {
         self.systems.push(system)
     }
     // Get a reference to the ecsmanager's systems.
-    pub fn systems(&self) -> &[System<RefContext, MutContext>] {
+    pub fn systems(&self) -> &[System] {
         self.systems.as_ref()
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems(&self, mut_context: &mut MutContext) {
+    pub fn run_systems(&self) {
         for system in self.systems.iter() {
-            system.run_system(mut_context, self);
+            system.run_system(self);
         }
     }
     /* #endregion */

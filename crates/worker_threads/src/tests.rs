@@ -6,15 +6,18 @@ pub mod test {
     // Just a normal test to see if it crashes or not
     pub fn test() {
         // Test the parralelization
-        let pool = ThreadPool::<(), i32>::new(8, || {});
+        let pool = ThreadPool::<i32>::new(8, || {});
         let mut numbers = vec![0; 512];
-        pool.execute(&mut numbers, &(), |_, _| {});
+        let data = 10;
+        pool.execute(&mut numbers, move |x| {
+            *x = data;
+        });
     }
     #[test]
     // Test the speed compared to single threaded
     pub fn speed_test() {
         // Test the parralelization
-        let pool = ThreadPool::<(), i32>::new(8, || {});
+        let pool = ThreadPool::<i32>::new(8, || {});
         let mut numbers1 = vec![0; 4096];
         // Some sort of expensive calculation
         fn expensive_calculation() -> i32 {
@@ -23,7 +26,7 @@ pub mod test {
             l
         }
         let i = std::time::Instant::now();
-        pool.execute(&mut numbers1, &(), |a, b| { *b = expensive_calculation() });
+        pool.execute(&mut numbers1, |b| { *b = expensive_calculation() });
         println!("Took '{}' micros to execute multithreaded code", i.elapsed().as_micros());
 
         let mut numbers2 = vec![0; 4096];

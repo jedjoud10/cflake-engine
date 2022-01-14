@@ -1,46 +1,47 @@
-use std::{cell::RefCell, marker::PhantomData, ffi::c_void};
+use std::{cell::RefCell, marker::PhantomData, ffi::c_void, sync::{RwLock, Arc}};
 
 use crate::{linked_components::{LinkedComponents, ComponentQuery}, Component, ComponentID, EnclosedComponent, Entity, EntityID, ECSManager};
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 
 // A system that updates specific components in parallel
-pub struct System<RefContext: 'static, MutContext: 'static> {
+pub struct System {
     // Our Component Bitfield
     cbitfield: Bitfield<u32>, 
     // Events
-    run_system: fn(context: &mut MutContext, components: ComponentQuery),
-    added_component_group: fn(context: &mut MutContext, components: ComponentQuery),
-    removed_component_group: fn(context: &mut MutContext, component: ComponentQuery),
-    phantom_: PhantomData<*const RefContext>,
+    run_system: Option<Box<dyn Fn(ComponentQuery)>>,
+    added_component_group: Option<Box<dyn Fn(ComponentQuery)>>,
+    removed_component_group: Option<Box<dyn Fn(ComponentQuery)>>,
     entities: AHashSet<EntityID>,
 }
 
 // Initialization of the system
-impl<RefContext: 'static, MutContext: 'static> System<RefContext, MutContext> {
+impl System {
     // Create a new system
     pub fn new() -> Self {
         System {
             cbitfield: Bitfield::<u32>::default(),
-            run_system: |context, query| {},
-            added_component_group: |context, query| {},
-            removed_component_group: |context, query| {},
-            phantom_: PhantomData::default(),
+            run_system: None,
+            added_component_group: None,
+            removed_component_group: None,
             entities: AHashSet::new(),
         }
     }
 }
 
 // System code
-impl<RefContext: 'static, MutContext: 'static> System<RefContext, MutContext> {
+impl System {
     // Add a component to this system's component bitfield id
     pub fn link<U: Component>(&mut self) {
         let c = crate::registry::get_component_bitfield::<U>();
         self.cbitfield = self.cbitfield.add(&c);
     }
-    // Set the run system event
-    pub fn set_event(&mut self, run_system: fn(&mut MutContext, ComponentQuery)) {
-        self.run_system = run_system;
+    // Set the a ref context system event
+    pub fn set_event<'a, 'b: 'a, RefContext: Clone + 'static>(&'a mut self, refc: RefContext, run_system: &'a fn(RefContext, ComponentQuery)) {
+        let event = |query: ComponentQuery| {
+            run_system(refc.clone(), query);
+        };
+        self.run_system = Some(Box::new(event));
     }
     // Check if we can add an entity (It's cbitfield became adequate for our system or the entity was added from the world)
     // If we can add it, then just do that
@@ -54,7 +55,7 @@ impl<RefContext: 'static, MutContext: 'static> System<RefContext, MutContext> {
         self.entities.remove(&id);
     }
     // Run the system for a single iteration
-    pub fn run_system(&self, mut_context: &mut MutContext, ecs_manager: &ECSManager<RefContext, MutContext>) {
+    pub fn run_system(&self, ecs_manager: &ECSManager) {
         // These components are filtered for us
         let components = &ecs_manager.components;    
         let i = std::time::Instant::now();
@@ -67,10 +68,12 @@ impl<RefContext: 'static, MutContext: 'static> System<RefContext, MutContext> {
         
         let query = ComponentQuery {
             linked_components: components,
+            thread_pool: &ecs_manager.thread_pool,
         };
-        let run_system_evn = self.run_system;
-        // Run the "run system" event
-        run_system_evn(mut_context, query);
+        if let Some(run_system_evn) = self.run_system.as_ref() {
+            // Run the "run system" event
+            run_system_evn(query);
+        }
         //dbg!(i.elapsed());
     }
 }

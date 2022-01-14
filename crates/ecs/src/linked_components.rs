@@ -81,22 +81,24 @@ impl LinkedComponents {
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL
 // The components get mutated in parallel, though the system is NOT stored on another thread
-pub struct ComponentQuery {
+pub struct ComponentQuery<'a> {
     // The actual components
     pub(crate) linked_components: Vec<LinkedComponents>,
+    // Thread pool because I am insane
+    pub(crate) thread_pool: &'a ThreadPool<LinkedComponents>,
 }
 
-impl ComponentQuery {
+impl<'a> ComponentQuery<'a> {
     // Execute the component query, so we actually update the components
-    pub fn update_all<RefContext: 'static, MutContext: 'static>(mut self, context: RefContext, function: fn(&RefContext, &mut LinkedComponents), multithreaded: bool) {
+    pub fn update_all<F: Fn(&mut LinkedComponents) + 'static + Sync + Send>(mut self, function: F, multithreaded: bool) {
         if !multithreaded {
             // Run it normally
             for mut linked_components in self.linked_components {
-                function(&context, &mut linked_components);
+                function(&mut linked_components);
             }
         } else {
             // Run it using multithreading
-            ecs_manager.thread_pool.execute(&mut self.linked_components, &context, function)
+            self.thread_pool.execute(&mut self.linked_components, function)
         }
     } 
 }

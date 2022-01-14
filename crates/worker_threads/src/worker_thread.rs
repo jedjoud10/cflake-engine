@@ -4,7 +4,7 @@ use crate::SharedData;
 pub(crate) static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
 // Create a new thread
-pub fn new<F: Fn() + 'static + Sync + Send, C: 'static, T: 'static>(thread_index: usize, init_function_arc: Arc<Box<F>>, barriers: Arc<(Barrier, Barrier, Barrier)>, shared_data: Arc<RwLock<SharedData<C, T>>>) {
+pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(thread_index: usize, init_function_arc: Arc<Box<F>>, barriers: Arc<(Barrier, Barrier, Barrier)>, shared_data: Arc<RwLock<SharedData<T>>>) {
     std::thread::spawn(move || {
         let init_function = (&*init_function_arc).as_ref();
         init_function();
@@ -18,7 +18,7 @@ pub fn new<F: Fn() + 'static + Sync + Send, C: 'static, T: 'static>(thread_index
             let ptr = ptr.read().unwrap();
             let idx = thread_index;
             let data = &*ptr;
-            let context = unsafe { &*data.context };
+            let function = data.function.as_ref();
             let elements = &*data.elements;
             
             // Calculate the indices
@@ -35,7 +35,7 @@ pub fn new<F: Fn() + 'static + Sync + Send, C: 'static, T: 'static>(thread_index
                     if let Some(&elem) = elem {
                         // Unsafe magic
                         let elem = unsafe { &mut *elem };
-                        (data.function)(context, elem);
+                        function(elem);
                         count += 1;
                     }
                 }
