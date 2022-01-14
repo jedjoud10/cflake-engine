@@ -1,4 +1,5 @@
 // Export
+#![feature(drain_filter)]
 mod game_file;
 mod data;
 mod world;

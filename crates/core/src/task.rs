@@ -21,12 +21,18 @@ impl TaskSenderContext {
         self
     }
     // Send a task to the main thread
-    pub(crate) fn send(self, task: WorldTask) {
-        crate::sender::send_task(task)
+    pub(crate) fn send(&self, task: WorldTask) -> Option<()> {
+        crate::sender::send_task(WorldTaskBatch {
+            combination: WorldTaskCombination::Single(task),
+            timing: self.timing,
+        })
     }
     // Send a batch of tasks to the main thread
-    pub(crate) fn send_batch(self, tasks: Vec<WorldTask>) {
-        todo!()
+    pub(crate) fn send_batch(&self, tasks: Vec<WorldTask>) -> Option<()> {
+        crate::sender::send_task(WorldTaskBatch {
+            combination: WorldTaskCombination::Batch(tasks),
+            timing: self.timing,
+        })
     }
 }
 
@@ -40,7 +46,20 @@ pub enum WorldTask {
     DirectAddComponent(EntityID, ComponentLinkingGroup),
 }
 
+pub(crate) enum WorldTaskCombination {
+    Batch(Vec<WorldTask>),
+    Single(WorldTask),
+}
+
+// A batch of tasks
+pub struct WorldTaskBatch {
+    pub(crate) combination: WorldTaskCombination,
+    // And the timing (unique per batch)
+    pub(crate) timing: WorldTaskTiming,
+}
+
 // Some additional data telling the main thread when it should execute the task
+#[derive(Clone, Copy)]
 pub enum WorldTaskTiming {
     // We should excute the task as soon as possible, so before the next system executes
     Earliest,
