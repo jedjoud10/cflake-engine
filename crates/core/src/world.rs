@@ -1,6 +1,6 @@
 use rendering::PipelineStartData;
 
-use crate::{data::World, GameConfig};
+use crate::{data::World, GameConfig, WorldTaskReceiver};
 
 // World implementation
 impl World {
@@ -10,7 +10,11 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
-            ecs: Default::default(),
+            ecs: ecs::ECSManager::new(|thread_index| {
+                // This is ran on every thread in the ECS thread pool
+                rendering::init_coms();
+                crate::sender::init_coms();
+            }),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
@@ -71,7 +75,7 @@ impl World {
         println!("World init done!");
     }
     // We update the world for one frame
-    pub fn update() {
+    pub fn update(&mut self, task_receiver: &mut WorldTaskReceiver) {
         
     }
     // We must destroy the world

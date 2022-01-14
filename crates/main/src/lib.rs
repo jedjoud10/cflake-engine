@@ -35,12 +35,16 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     let pipeline_data = rendering::pipeline::init_pipeline(&mut glfw, &mut window);
     rendering::pipeline::init_coms();
     // Create the world
+    let mut task_receiver = core::WorldTaskReceiver::new();
     let world = Arc::new(RwLock::new(World::new(author_name, app_name, pipeline_data)));
     // Init the world
     // Calling the callback
     println!("Calling World Initialization callback");
     //defaults::preload_systems();
-    init_world(&*world.read().unwrap());
+    {
+        let world = 
+        init_world(&*world.read().unwrap());
+    }
     while !window.should_close() {        
         {
             // Update the delta_time
@@ -48,8 +52,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
             // Update the de
             let mut world = world.write().unwrap();
             world.time.update(new_time);
-        }
-        // Update the world        
+        }   
         // Get the GLFW events first
         glfw.poll_events();
         let mut world = world.write().unwrap();
@@ -78,6 +81,11 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
                 glfw::WindowEvent::CursorPos(x, y) => world.input.receive_mouse_event(Some((x, y)), None),
                 _ => {}
             }
+        }
+        // We can update the world now
+        {
+            let mut world = world.write().unwrap();
+            world.update(&mut task_receiver);
         }
     }
     // When the window closes and we exit from the game
