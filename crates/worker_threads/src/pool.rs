@@ -16,15 +16,16 @@ pub struct ThreadPool<C, T> {
 } 
 
 impl<C: 'static, T: 'static> ThreadPool<C, T> {
-    // Create a new thread pool
-    pub fn new(max_thread_count: usize) -> Self {
+    // Create a new thread pool using a specific amount of max threads
+    // We can also specify some function that we want to run at the start of each thread creation
+    pub fn new(max_thread_count: usize, start_function: fn(thread_index: usize)) -> Self {
         // Barrier stuff
         let barriers = Arc::new((Barrier::new(max_thread_count+1), Barrier::new(max_thread_count+1), Barrier::new(max_thread_count+1)));
         // Data
         let arc = Arc::new(RwLock::new(SharedData::<C, T>::default()));
         // Create the threads
         for i in 0..max_thread_count {
-            crate::worker_thread::new(i, barriers.clone(), arc.clone());
+            crate::worker_thread::new(i, start_function, barriers.clone(), arc.clone());
         }
         
         Self {

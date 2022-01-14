@@ -9,26 +9,28 @@ use bitfield::Bitfield;
 use ordered_vec::shareable::ShareableOrderedVec;
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
-pub struct ECSManager<C: 'static> {
+pub struct ECSManager<RefContext: 'static, MutContext: 'static> {
     // A vector full of entities. Each entity can get invalidated, but never deleted
     pub(crate) entities: ShareableOrderedVec<Entity>, 
     // Each system, stored in the order they were created
-    systems: Vec<System<C>>,                             
+    systems: Vec<System<RefContext, MutContext>>,                             
     // The components that are valid in the world
     pub(crate) components: AHashMap<ComponentID, RefCell<EnclosedComponent>>, 
     // A thread pool that we will use to parallelize the updating of components
-    pub(crate) pool: worker_threads::ThreadPool<C, LinkedComponents>,
+    pub(crate) pool: worker_threads::ThreadPool<RefContext, LinkedComponents>,
 }
-
-impl<C: 'static> Default for ECSManager<C> {
-    fn default() -> Self {
-        Self { entities: Default::default(), systems: Default::default(), components: Default::default(), pool: worker_threads::ThreadPool::new(8)  }
-    }
-}
-
 
 // Global code for the Entities, Components, and Systems
-impl<C> ECSManager<C> {
+impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext> {
+    // Create a new ECS manager
+    pub fn new(start_function: fn(usize)) -> Self {
+        Self { 
+            entities: Default::default(),
+            systems: Default::default(),
+            components: Default::default(),
+            pool: worker_threads::ThreadPool::new(8, start_function)
+        }
+    }
     /* #region Entities */
     // Get an entity
     pub fn entity(&self, id: &EntityID) -> Result<&Entity, EntityError> {
@@ -39,7 +41,7 @@ impl<C> ECSManager<C> {
         self.entities.get_mut(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
-    pub fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
+    pub fn add_entity(&mut self, mut_context: &MutContext, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
         // Check if the EntityID was not occupied already
         if self.entities.get(id.index as usize).is_some() {
             panic!()
@@ -51,7 +53,7 @@ impl<C> ECSManager<C> {
         self.add_component_group(id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
-    pub fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
+    pub fn remove_entity(&mut self, mut_context: &MutContext, id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate the entity
         let res = self.entities.remove(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id));
         res
@@ -87,20 +89,20 @@ impl<C> ECSManager<C> {
     /* #endregion */
     /* #region Systems */
     // Add a system to our current systems
-    pub fn add_system(&mut self, system: System<C>) {
+    pub fn add_system(&mut self, system: System<RefContext, MutContext>) {
         self.systems.push(system)
     }
     // Get a reference to the ecsmanager's systems.
-    pub fn systems(&self) -> &[System<C>] {
+    pub fn systems(&self) -> &[System<RefContext, MutContext>] {
         self.systems.as_ref()
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems(&self, context: &C) {
+    pub fn run_systems(&self, context: &RefContext, mut_context: &MutContext) {
         // Filter the components for each system
         for system in self.systems.iter() {
             // We don't need to give it &mut self.components because each component is stored in the heap, so we can use unsafe code to mutate it whenever we want
-            system.run_system(context, self);
+            system.run_system(context, mut_context, self);
         }
     }
     /* #endregion */

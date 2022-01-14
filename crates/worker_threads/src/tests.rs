@@ -6,7 +6,7 @@ pub mod test {
     // Just a normal test to see if it crashes or not
     pub fn test() {
         // Test the parralelization
-        let pool = ThreadPool::<(), i32>::new(16);
+        let pool = ThreadPool::<(), i32>::new(16, |_| {});
         let mut numbers = vec![0; 512];
         pool.execute(&mut numbers, &(), |_, _| {});
     }
@@ -14,7 +14,7 @@ pub mod test {
     // Test the speed compared to single threaded
     pub fn speed_test() {
         // Test the parralelization
-        let pool = ThreadPool::<(), i32>::new(8);
+        let pool = ThreadPool::<(), i32>::new(8, |_| {});
         let mut numbers1 = vec![0; 4096];
         // Some sort of expensive calculation
         fn expensive_calculation() -> i32 {

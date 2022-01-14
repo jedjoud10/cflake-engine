@@ -8,7 +8,7 @@ pub struct EntityID {
 }
 impl EntityID {
     // Create a new entity ID using a ShareableOrderedVecState of the entities, something that we can get by the Context<ECSManager>
-    pub fn new<C>(ecs_manager: &ECSManager<C>) -> Self {
+    pub fn new<C, MC>(ecs_manager: &ECSManager<C, MC>) -> Self {
         Self {
             index: ecs_manager.entities.get_next_idx_increment() as u16,
         }

@@ -2,10 +2,11 @@
 pub mod test {
     use crate::{defaults::Name, linked_components::LinkedComponents, ComponentLinkingGroup, ECSManager, Entity, EntityID, System};
 
-    // A test world
-    pub struct World();
+    // Some test contexts
+    pub struct RefContext;
+    pub struct MutContext;
 
-    fn update_components(_context: &World, components: &mut LinkedComponents) {
+    fn update_components(_context: &RefContext, components: &mut LinkedComponents) {
         // Get the component immutably
         let component = components.component::<Name>().unwrap();
         let name = &component.name;
@@ -20,9 +21,10 @@ pub mod test {
     // Simple test to test the ecs
     pub fn test() {
         // Create the main ECS manager, and the Component Manager
-        let mut ecs = ECSManager::default();
-        // Also create the context
-        let world = World();
+        let mut ecs = ECSManager::new(|_| {});
+        // Also create the contextes
+        let ref_context = RefContext;
+        let mut_context = MutContext;
 
         // Make a simple system
         let mut hello_system = System::new();
@@ -38,26 +40,27 @@ pub mod test {
         let id2 = id.clone();
         let id3 = id.clone();
         // The entity is not created yet, so it is null
-        ecs.add_entity(entity, id, group);
+        ecs.add_entity(&mut_context, entity, id, group);
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
-        ecs.run_systems(&world);
-        ecs.run_systems(&world);
-        ecs.run_systems(&world);
-        ecs.run_systems(&world);
+        ecs.run_systems(&ref_context, &mut_context);
+        ecs.run_systems(&ref_context, &mut_context);
+        ecs.run_systems(&ref_context, &mut_context);
+        ecs.run_systems(&ref_context, &mut_context);
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3.clone();
-        ecs.remove_entity(id3).unwrap();
+        ecs.remove_entity(&mut_context, id3).unwrap();
         assert!(ecs.entity(&id4).is_err());
     }
     #[test]
     // Test the parralelization
     pub fn test_parallel() {
         // Create the main ECS manager, and the Component Manager
-        let mut ecs = ECSManager::default();
-        // Also create the context
-        let world = World();
+        let mut ecs = ECSManager::new(|_| {});
+        // Also create the contextes
+        let ref_context = RefContext;
+        let mut_context = MutContext;
 
         // Make a simple system
         let mut hello_system = System::new();
@@ -73,10 +76,10 @@ pub mod test {
             let entity = Entity::new();
             let id = EntityID::new(&ecs);
             // The entity is not created yet, so it is null
-            ecs.add_entity(entity, id, group);
+            ecs.add_entity(&mut_context, entity, id, group);
         }
         // Run the system for two frames
-        ecs.run_systems(&world);
-        ecs.run_systems(&world);
+        ecs.run_systems(&ref_context, &mut_context);
+        ecs.run_systems(&ref_context, &mut_context);
     }
 }

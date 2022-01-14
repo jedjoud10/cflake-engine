@@ -69,5 +69,4 @@ impl LinkedComponents {
         let guard = ComponentWriteGuard::new(component);
         Ok(guard)
     }
-    // Get a component mutably
 }
