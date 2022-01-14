@@ -7,7 +7,7 @@ use crate::{
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
-use rayon::ThreadPool;
+use worker_threads::ThreadPool;
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
 pub struct ECSManager<RefContext: 'static, MutContext: 'static> {
@@ -18,35 +18,22 @@ pub struct ECSManager<RefContext: 'static, MutContext: 'static> {
     // The components that are valid in the world
     pub(crate) components_ids: AHashMap<ComponentID, usize>,
     pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>, 
-    // The rayon thread pool
-    pub(crate) rayon_thread_pool: ThreadPool,
+    // The internal ECS thread pool
+    pub(crate) thread_pool: ThreadPool<RefContext, LinkedComponents>,
 }
 
 // Global code for the Entities, Components, and Systems
 impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext> {
     // Create a new ECS manager
-    pub fn new<F>(start_function: F) -> Self
-        where F: Fn() -> () + Sync + Send + 'static {
+    pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
         // Start the thread pool
-        let boxed = Arc::new(Box::new(start_function));
-        let thread_pool = rayon::ThreadPoolBuilder::new().num_threads(4).thread_name(|x| format!("ECS-Thread {}", x)).spawn_handler(|builder| 
-            {
-                let boxed = boxed.clone();
-                let join_handle = std::thread::spawn(move || { 
-                    // Rayon is extremely cool
-                    let function = (&*boxed).as_ref();
-                    (function)();
-                    builder.run();
-                });
-                Ok(())
-            }
-        ).build().unwrap();
+        let thread_pool = ThreadPool::new(8, start_function);
         Self { 
             entities: Default::default(),
             systems: Default::default(),
             components_ids: Default::default(),
             components: Default::default(),
-            rayon_thread_pool: thread_pool,
+            thread_pool,
         }
     }
     /* #region Entities */

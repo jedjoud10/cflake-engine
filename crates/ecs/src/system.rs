@@ -67,7 +67,6 @@ impl<RefContext: 'static, MutContext: 'static> System<RefContext, MutContext> {
         
         let query = ComponentQuery {
             linked_components: components,
-            thread_pool: &ecs_manager.rayon_thread_pool,
         };
         let run_system_evn = self.run_system;
         // Run the "run system" event

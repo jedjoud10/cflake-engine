@@ -1,8 +1,10 @@
 use std::{cell::RefCell, ffi::c_void, marker::PhantomData};
 
-use crate::{cast_component, cast_component_mut, component_registry, Component, ComponentError, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EntityID, System, Entity};
+use crate::{cast_component, cast_component_mut, component_registry, Component, ComponentError, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EntityID, System, Entity, ECSManager};
 use ahash::AHashMap;
 use bitfield::Bitfield;
+use ordered_vec::simple::OrderedVec;
+use worker_threads::ThreadPool;
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however
 pub struct LinkedComponents {    
@@ -79,32 +81,22 @@ impl LinkedComponents {
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL
 // The components get mutated in parallel, though the system is NOT stored on another thread
-pub struct ComponentQuery<'a> {
+pub struct ComponentQuery {
     // The actual components
     pub(crate) linked_components: Vec<LinkedComponents>,
-    // Thread pool
-    pub(crate) thread_pool: &'a ThreadPool,
 }
-use ordered_vec::simple::OrderedVec;
-use rayon::{iter::{IntoParallelRefIterator, ParallelIterator, IntoParallelIterator}, ThreadPool};
 
-impl<'a> ComponentQuery<'a> {
+impl ComponentQuery {
     // Execute the component query, so we actually update the components
-    pub fn update_all<RefContext: 'static + Sync>(mut self, context: RefContext, function: fn(&RefContext, &mut LinkedComponents), multithreaded: bool) {
+    pub fn update_all<RefContext: 'static, MutContext: 'static>(mut self, context: RefContext, function: fn(&RefContext, &mut LinkedComponents), multithreaded: bool) {
         if !multithreaded {
             // Run it normally
-            let elements = self.linked_components.iter_mut();
-            for (linked_components) in elements {
-                function(&context, linked_components);
+            for mut linked_components in self.linked_components {
+                function(&context, &mut linked_components);
             }
         } else {
             // Run it using multithreading
-            let elements = &mut self.linked_components;
-            // Uhhhhh.... magic?
-            // Rayon shit
-            self.thread_pool.install(|| {
-                elements.into_par_iter().for_each(|x| function(&context, x))
-            })
+            ecs_manager.thread_pool.execute(&mut self.linked_components, &context, function)
         }
     } 
 }

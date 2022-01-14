@@ -4,12 +4,14 @@ use crate::SharedData;
 pub(crate) static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
 // Create a new thread
-pub fn new<C: 'static, T: 'static>(thread_index: usize, barriers: Arc<(Barrier, Barrier, Barrier)>, shared_data: Arc<RwLock<SharedData<C, T>>>) {
+pub fn new<F: Fn() + 'static + Sync + Send, C: 'static, T: 'static>(thread_index: usize, init_function_arc: Arc<Box<F>>, barriers: Arc<(Barrier, Barrier, Barrier)>, shared_data: Arc<RwLock<SharedData<C, T>>>) {
     std::thread::spawn(move || {
-        // Wait until the barrier allows us to continue
+        let init_function = (&*init_function_arc).as_ref();
+        init_function();
         let (barrier, end_barrier, shutdown_barrier) = barriers.as_ref();
         let ptr = shared_data.as_ref();
         loop {
+            // Wait until the barrier allows us to continue
             barrier.wait();
             //println!("Executing thread '{}'", thread_index);
             // Execute the code that was given, if valid

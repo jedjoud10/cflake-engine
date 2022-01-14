@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 ahash = "0.7.6"
 lazy_static = "1.4.0"
-rayon = "1.5.1"
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
+worker_threads = { path = "../worker_threads" }
 others = { path = "../others" }
