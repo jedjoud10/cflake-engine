@@ -1,14 +1,17 @@
-use std::{cell::RefCell, ffi::c_void};
+use std::{cell::RefCell, ffi::c_void, marker::PhantomData};
 
 use crate::{cast_component, cast_component_mut, component_registry, Component, ComponentError, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EntityID, System, Entity};
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use worker_threads::ThreadPool;
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however
-pub struct LinkedComponents<> {
-    pub(crate) entity: *const Entity,
+pub struct LinkedComponents {    
+    // Our linked components
+    pub(crate) components: AHashMap<Bitfield<u32>, *mut EnclosedComponent>
 }
+
+unsafe impl Send for LinkedComponents {}
+unsafe impl Sync for LinkedComponents {}
 
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
@@ -29,15 +32,14 @@ impl LinkedComponents {
             })
             .collect::<AHashMap<Bitfield<u32>, *mut EnclosedComponent>>();
         Self { 
-            components: &entity.components as *const _,
-            entity_id: id.clone()
+            components: filtered_components
         }
     }
 }
 
 impl LinkedComponents {
     // Get a reference to a specific linked component
-    pub fn component<'b, T>(& self) -> Result<ComponentReadGuard<'b, T>, ComponentError>
+    pub fn component<'b, T>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
@@ -45,7 +47,7 @@ impl LinkedComponents {
         // entity_id * 16 + local_component_id
         let id = component_registry::get_component_bitfield::<T>();
         // Kill me
-        let hashmap = unsafe { &*self.components };
+        let hashmap = &self.components;
         let ptr = *hashmap
             .get(&id)
             .ok_or_else(|| ComponentError::new_without_id("Linked component could not be fetched!".to_string()))?;
@@ -56,22 +58,27 @@ impl LinkedComponents {
         Ok(guard)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn component_mut<'b, T>(& mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError>
+    pub fn component_mut<'b, T>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
         let id = component_registry::get_component_bitfield::<T>();
+        dbg!("");
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         // Kill me
-        let hashmap = unsafe { &*self.components };
+        let hashmap = &self.components;
+        dbg!("");
         let ptr = *hashmap
             .get(&id)
             .ok_or_else(|| ComponentError::new_without_id("Linked component could not be fetched!".to_string()))?;
         // Magic
+        dbg!("");
         let component = unsafe { &mut *ptr }.as_mut();
+        dbg!("");
         let component = cast_component_mut::<T>(component)?;
         let guard = ComponentWriteGuard::new(component);
+        dbg!("");
         Ok(guard)
     }
 }
@@ -83,15 +90,13 @@ impl LinkedComponents {
 // The components get mutated in parallel, though the system is NOT stored on another thread
 pub struct ComponentQuery<'a> {
     // The actual components
-    pub(crate) linked_components: &'a AHashMap<EntityID, LinkedComponents>,
-    // A thread pool that is actually stored in the ECS manager
-    // This a pointer
-    pub(crate) pool: *const c_void,
+    pub(crate) linked_components: &'a mut AHashMap<EntityID, LinkedComponents>,
 }
+use rayon::{iter::{IntoParallelRefIterator, ParallelIterator, IntoParallelIterator}};
 
 impl<'a> ComponentQuery<'a> {
     // Execute the component query, so we actually update the components
-    pub fn update_all<RefContext: 'static>(mut self, context: RefContext, function: fn(&RefContext, &mut LinkedComponents), multithreaded: bool) {
+    pub fn update_all<RefContext: 'static + Sync>(mut self, context: RefContext, function: fn(&RefContext, &mut LinkedComponents), multithreaded: bool) {
         if !multithreaded {
             // Run it normally
             let elements = self.linked_components.iter_mut();
@@ -102,9 +107,9 @@ impl<'a> ComponentQuery<'a> {
             // Run it using multithreading
             let elements = &mut self.linked_components;
             // Uhhhhh.... magic?
-            let pool = unsafe { &*(self.pool as *const ThreadPool<RefContext, LinkedComponents>) };
-            let elements = self.linked_components.values_mut().map(|x| x as *mut LinkedComponents).collect::<Vec<_>>();
-            pool.execute(elements, &context, function);
+            let elements = self.linked_components.values_mut().map(|x| x).collect::<Vec<_>>();
+            // Rayon shit
+            elements.into_par_iter().for_each(|x| function(&context, x))
         }
     } 
 }

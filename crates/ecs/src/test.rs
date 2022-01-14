@@ -16,7 +16,9 @@ pub mod test {
                 i += x;
             }
             let mut name = components.component_mut::<Name>().unwrap();
+            dbg!("");
             name.name = i.to_string();
+            dbg!("");
         }, true);        
         
         /*

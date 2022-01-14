@@ -9,8 +9,6 @@ pub struct Entity {
 
     // Component Bitfield
     pub(crate) cbitfield: Bitfield<u32>, 
-    // Our linked components
-    pub(crate) components: AHashMap<Bitfield<u32>, *mut EnclosedComponent>
 }
 
 // ECS time bois
@@ -20,7 +18,6 @@ impl Entity {
         Self {
             id: None,
             cbitfield: Bitfield::default(),
-            components: AHashMap::default(),
         }
     }
 }

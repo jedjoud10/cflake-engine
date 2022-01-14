@@ -16,8 +16,6 @@ pub struct ECSManager<RefContext: 'static, MutContext: 'static> {
     systems: Vec<System<RefContext, MutContext>>,                             
     // The components that are valid in the world
     pub(crate) components: AHashMap<ComponentID, RefCell<EnclosedComponent>>, 
-    // A thread pool that we will use to parallelize the updating of components
-    pub(crate) pool: worker_threads::ThreadPool<RefContext, LinkedComponents>,
 }
 
 // Global code for the Entities, Components, and Systems
@@ -28,8 +26,9 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
             entities: Default::default(),
             systems: Default::default(),
             components: Default::default(),
-            pool: worker_threads::ThreadPool::new(8, start_function)
         }
+        // Start the thread pool
+
     }
     /* #region Entities */
     // Get an entity
@@ -64,9 +63,9 @@ impl<RefContext: 'static, MutContext: 'static> ECSManager<RefContext, MutContext
     fn add_component_group(&mut self, id: EntityID, group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in group.linked_components {
             self.add_component(id, boxed, cbitfield)?;
-        }
+        }        
         // Check if the linked entity is valid to be added into the systems
-        self.systems.iter_mut().for_each(|system| system.check_add_entity(self, group.cbitfield, id));
+        self.systems.iter().for_each(|system| system.check_add_entity(self, group.cbitfield, id));
         Ok(())
     }    
     // Add a specific linked componment to the component manager. Return the said component's ID
