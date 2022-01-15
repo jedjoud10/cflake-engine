@@ -1,12 +1,11 @@
 #[cfg(test)]
 pub mod test {
-    use crate::{defaults::Name, linked_components::{LinkedComponents, ComponentQuery}, ComponentLinkingGroup, ECSManager, Entity, EntityID, System};
+    use crate::{defaults::Name, linked_components::{LinkedComponents, ComponentQuery}, ComponentLinkingGroup, ECSManager, Entity, EntityID, System, event_handler::EventHandler};
 
     // Some test contexts
     #[derive(Clone, Copy)]
     pub struct RefContext;
     pub struct MutContext;
-    static srun_system: fn(RefContext, ComponentQuery) = run_system;
     fn run_system(_context: RefContext, components: ComponentQuery) {
 
         // Transform the _context to RefContext using some magic fuckery
@@ -16,7 +15,7 @@ pub mod test {
             for x in 0..64 {
                 i += x;
             }
-            let name = components.component::<Name>().unwrap();
+            let name = components.component_mut::<Name>().unwrap();
         }, false);        
         
         /*
@@ -37,13 +36,14 @@ pub mod test {
         // Also create the contextes
         let ref_context = RefContext;
         let mut mut_context = MutContext;
-        // Create the main ECS manager, and the Component Manager
+        // Create the main ECS manager, and the Event Handler
+        let mut event_handler = EventHandler::<RefContext>::new();
         let mut ecs = ECSManager::new(|| {});
 
         // Make a simple system
         let mut hello_system = System::new();
         hello_system.link::<Name>();
-        hello_system.set_event(&ref_context, &srun_system);
+        hello_system.set_event(&mut event_handler, run_system);
         ecs.add_system(hello_system);
 
         // Create a simple entity with that component
@@ -58,19 +58,18 @@ pub mod test {
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
-        ecs.run_systems();
-        ecs.run_systems();
-        ecs.run_systems();
-        ecs.run_systems();
+        ecs.run_systems(ref_context, &event_handler);
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3.clone();
         ecs.remove_entity(id3).unwrap();
         assert!(ecs.entity(&id4).is_err());
+        ecs.run_systems(ref_context, &event_handler);
     }
     #[test]
     // Test the parralelization
     pub fn test_parallel() {
         // Create the main ECS manager, and the Component Manager
+        let mut event_handler = EventHandler::<RefContext>::new();
         let mut ecs = ECSManager::new(|| {});
         // Also create the contextes
         let ref_context = RefContext;
@@ -79,7 +78,7 @@ pub mod test {
         // Make a simple system
         let mut hello_system = System::new();
         hello_system.link::<Name>();
-        hello_system.set_event(&ref_context, &srun_system);
+        hello_system.set_event(&mut event_handler, run_system);
         ecs.add_system(hello_system);
 
         // Create a simple entity with that component
@@ -92,10 +91,10 @@ pub mod test {
             ecs.add_entity(entity, id, group);
         }
         // Run the system for two frames    
-        for x in 0..300 {
+        for x in 0..30 {
             let i = std::time::Instant::now();
-            ecs.run_systems();
-            println!("{}", i.elapsed().as_micros());
+            ecs.run_systems(ref_context, &event_handler);
+            println!("{}", i.elapsed().as_millis());
         }    
         //ecs.run_systems(&mut mut_context);
     }

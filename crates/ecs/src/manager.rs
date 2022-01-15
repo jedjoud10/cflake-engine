@@ -2,7 +2,7 @@ use std::{cell::RefCell, sync::Arc};
 
 use crate::{
     identifiers::EntityID,
-    ComponentError, ComponentLinkingGroup, Entity, EntityError, System, ComponentID, EnclosedComponent, linked_components::LinkedComponents,
+    ComponentError, ComponentLinkingGroup, Entity, EntityError, System, ComponentID, EnclosedComponent, linked_components::LinkedComponents, event_handler::EventHandler,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
@@ -58,10 +58,15 @@ impl ECSManager {
         self.add_component_group(id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
+    // When we remove an entity, we also remove it's components, thus updating the systems
     pub fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate the entity
-        let res = self.entities.remove(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id));
-        res
+        let entity = self.entities.remove(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
+        // Also remove it's linked components
+        for component_id in entity.components.iter() {
+            self.remove_component(*component_id).unwrap();
+        }
+        Ok(entity)
     }
     /* #endregion */
     /* #region Components */
@@ -105,9 +110,9 @@ impl ECSManager {
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems(&self) {
+    pub fn run_systems<RefContext: 'static + Clone + Copy>(&self, context: RefContext, event_handler: &EventHandler<RefContext>) {
         for system in self.systems.iter() {
-            system.run_system(self);
+            system.run_system(context, event_handler, self);
         }
     }
     /* #endregion */
