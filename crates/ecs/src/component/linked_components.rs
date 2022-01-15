@@ -6,7 +6,7 @@ use crate::{
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
-use std::{cell::RefCell, ffi::c_void, marker::PhantomData};
+use std::{cell::RefCell};
 use worker_threads::ThreadPool;
 
 // Some linked components that we can mutate or read from in each system
@@ -22,7 +22,7 @@ unsafe impl Sync for LinkedComponents {}
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
     // Theoretically, this should only be done once, when an entity becomes valid for a system
-    pub(crate) fn new(id: &EntityID, entity: &Entity, components: &OrderedVec<RefCell<EnclosedComponent>>, cbitfield: &Bitfield<u32>) -> Self {
+    pub(crate) fn new(entity: &Entity, components: &OrderedVec<RefCell<EnclosedComponent>>) -> Self {
         // Get the components from the world, that fit the cbitfield and the Entity ID
         let filtered_components = entity
             .components
@@ -99,11 +99,9 @@ impl<'a> ComponentQuery<'a> {
             }
         } else {
             // Run it using multithreading
-            /*
-            Multithreading is actually so goddamn slower than optimized single threaded code wtf
+            //Multithreading is actually so goddamn slower than optimized single threaded code wtf
             self.thread_pool.execute(&mut self.linked_components, function)
-            */
-            panic!()
+            //panic!()
         }
     }
 }

@@ -55,7 +55,7 @@ impl ECSManager {
         }
         entity.id = Some(id);
         // Add the entity
-        let idx = self.entities.insert(id.index as usize, entity);
+        let _idx = self.entities.insert(id.index as usize, entity);
         // After doing that, we can safely add the components
         self.add_component_group(id, group).unwrap();
     }
@@ -75,7 +75,7 @@ impl ECSManager {
     // Add a component linking group to the manager
     fn add_component_group(&mut self, id: EntityID, group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in group.linked_components {
-            let idx = self.add_component(id, boxed, cbitfield)?;
+            let idx = self.add_component(boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
             entity.components.push(idx);
         }
@@ -84,7 +84,7 @@ impl ECSManager {
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
-    fn add_component(&mut self, id: EntityID, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
+    fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
         // We must make this a RefCell
         let cell = RefCell::new(boxed);
         let idx = self.components.push_shove(cell);

@@ -1,11 +1,5 @@
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashSet;
 use bitfield::Bitfield;
-use std::{
-    cell::RefCell,
-    ffi::c_void,
-    marker::PhantomData,
-    sync::{Arc, RwLock},
-};
 
 use crate::{
     component::{registry, Component, ComponentQuery, LinkedComponents},
@@ -62,17 +56,16 @@ impl System {
         }
     }
     // Run the system for a single iteration
-    pub fn run_system<Context>(&self, mut context: Context, event_handler: &EventHandler<Context>, ecs_manager: &ECSManager) {
+    pub fn run_system<Context>(&self, context: Context, event_handler: &EventHandler<Context>, ecs_manager: &ECSManager) {
         // These components are filtered for us
         let components = &ecs_manager.components;
-        let i = std::time::Instant::now();
         // Create the component query
         let components = self
             .entities
             .iter()
             .map(|id| {
                 let entity = ecs_manager.entity(id).unwrap();
-                let linked_components = LinkedComponents::new(id, entity, components, &entity.cbitfield);
+                let linked_components = LinkedComponents::new(entity, components);
                 linked_components
             })
             .collect::<Vec<_>>();
@@ -85,6 +78,5 @@ impl System {
             // Run the "run system" event
             run_system_evn(&context, query);
         }
-        //dbg!(i.elapsed());
     }
 }
