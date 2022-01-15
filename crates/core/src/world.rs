@@ -2,10 +2,10 @@ use std::sync::{Arc, RwLock};
 
 use rendering::PipelineStartData;
 
-use crate::{data::World, GameConfig, WorldTaskReceiver, RefContext};
+use crate::{data::World, GameConfig, WorldTaskReceiver, Context};
 
 // World implementation
-impl<'context> World<'context> {
+impl World {
     // Create a new world
     pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineStartData) -> Self  {
         let mut world = World {
@@ -20,7 +20,7 @@ impl<'context> World<'context> {
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
-            pipeline_thread: pipeline_data
+            pipeline_thread: pipeline_data,
         };
         world.init();
         world
@@ -77,11 +77,13 @@ impl<'context> World<'context> {
         println!("World init done!");
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can execute the system
-    pub fn update_start<'world>(&'world self) where 'world: 'context {
+    pub fn update_start(&self, arc: Arc<RwLock<Self>>) {
         // Update the systems
         let (ecs, ecs_event_handler) = &self.ecs;
-        let ref_context = RefContext::convert(self);
+        let ref_context = Context::convert(arc);
         ecs.run_systems(&ref_context, ecs_event_handler);
+        /*
+        */
         /*
         // Create the ref context
         */
@@ -93,5 +95,8 @@ impl<'context> World<'context> {
     // We must destroy the world
     pub fn destroy(&mut self) {
 
+    }
+    pub fn tes<'a>(&'a self) {
+        let test = &self.ui;
     }
 }

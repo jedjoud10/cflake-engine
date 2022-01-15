@@ -5,15 +5,14 @@ extern crate glfw;
 
 // World
 pub use core;
-use core::{World, RefContext};
-use std::{thread::ThreadId, sync::{RwLock, Arc}};
+use core::{World, Context};
+use std::{thread::ThreadId, sync::{RwLock, Arc, RwLockReadGuard}};
 
 // Re-Export
 pub use assets;
 pub use debug;
 pub use defaults;
 pub use ecs;
-use glfw::Context;
 pub use input;
 pub use math;
 pub use others;
@@ -87,8 +86,9 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         }        
         // We can update the world now
         {
+            let cloned = world.clone();
             let world = world.read().unwrap();
-            world.update_start();
+            world.update_start(cloned);
         }
         {
             let mut world = world.write().unwrap();

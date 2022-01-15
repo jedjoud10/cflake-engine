@@ -1,4 +1,4 @@
-use crate::{task::WorldTask, WorldTaskBatch, World, MutContext};
+use crate::{task::WorldTask, WorldTaskBatch, World};
 
 
 // A receiver that we can use to receive tasks from other threads
@@ -30,39 +30,40 @@ impl WorldTaskReceiver {
         }
     }
     // Execute a single task
-    fn execute(&mut self, mut_context: &mut MutContext, task: WorldTask) {
+    fn execute(&mut self, world: &mut World, task: WorldTask) {
         // We will execute the tasks
+        let ecs = &mut world.ecs.0;
         match task {
             WorldTask::AddEntity(entity, id, group) => {
                 // We will add the entity to the world
-                mut_context.ecs.add_entity(entity, id, group);
+                ecs.add_entity(entity, id, group);
             },
             WorldTask::RemoveEntity(id) => {
                 // We will remove the entity from the world
-                mut_context.ecs.remove_entity(id).unwrap();
+                ecs.remove_entity(id).unwrap();
             },
             WorldTask::DirectAddComponent(_, _) => todo!(),
         }
     }
     // We will flush the tasks, and execute them
     // This is called at the end of each system execution, since some tasks might need to execute earlier than others
-    pub fn flush(&mut self, mut_context: &mut MutContext) {
+    pub fn flush(&mut self, world: &mut World) {
         self.batch_tasks.extend(self.rx.try_iter());
         let taken = self.batch_tasks.drain_filter(|x| Self::filter_task_batches(x)).collect::<Vec<_>>();
         for batch in taken {
             match batch.combination {
-                crate::WorldTaskCombination::Batch(tasks) => for task in tasks { self.execute(mut_context, task) },
-                crate::WorldTaskCombination::Single(task) => self.execute(mut_context, task),
+                crate::WorldTaskCombination::Batch(tasks) => for task in tasks { self.execute(world, task) },
+                crate::WorldTaskCombination::Single(task) => self.execute(world, task),
             }
         }
     }
     // Execute immediate
-    pub fn flush_immediate(&mut self, mut_context: &mut MutContext) {
+    pub fn flush_immediate(&mut self, world: &mut World) {
         let batch_tasks = self.rx.try_iter().collect::<Vec<_>>();
         for batch in batch_tasks {
             match batch.combination {
-                crate::WorldTaskCombination::Batch(tasks) => for task in tasks { self.execute(mut_context, task) },
-                crate::WorldTaskCombination::Single(task) => self.execute(mut_context, task),
+                crate::WorldTaskCombination::Batch(tasks) => for task in tasks { self.execute(world, task) },
+                crate::WorldTaskCombination::Single(task) => self.execute(world, task),
             }
         }
     }

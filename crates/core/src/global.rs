@@ -3,7 +3,7 @@ use crate::task::WorldTask;
 // This helps us create tasks
 pub mod tasks {
     use ecs::{Entity, EntityID, ComponentLinkingGroup};
-    use crate::{WorldTask, RefContext, RefTaskSenderContext};
+    use crate::{WorldTask, RefTaskSenderContext};
 
     // Create an AddEntity task and send it
     pub fn add_entity(sender: &RefTaskSenderContext, entity: Entity, id: EntityID, group: ComponentLinkingGroup) -> Option<()> {
