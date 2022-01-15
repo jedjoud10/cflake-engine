@@ -1,6 +1,5 @@
 use std::{
-    marker::PhantomData,
-    sync::{mpsc::SendError, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
 use ecs::{system::EventHandler, ECSManager};
@@ -10,7 +9,7 @@ use others::Time;
 use rendering::{Pipeline, PipelineStartData};
 use ui::UIManager;
 
-use crate::{GameConfig, TaskSenderContext, WorldTask, WorldTaskTiming};
+use crate::{GameConfig, TaskSenderContext, WorldTaskTiming};
 
 // The whole world that stores our managers and data
 pub struct World {

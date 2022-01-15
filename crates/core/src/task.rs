@@ -9,7 +9,7 @@ pub struct TaskSenderContext {
 
 impl TaskSenderContext {
     // New
-    pub fn new(context: &Context) -> Self {
+    pub fn new(_context: &Context) -> Self {
         Self {
             timing: WorldTaskTiming::default(),
         }

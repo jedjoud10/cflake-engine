@@ -85,7 +85,7 @@ impl World {
         let (ecs, ecs_event_handler) = &self.ecs;
         {
             let context = Context::convert(&arc);
-            ecs.run_systems(&context, &ecs_event_handler);
+            ecs.run_systems(&context, ecs_event_handler);
         }
         /*
          */
@@ -94,10 +94,10 @@ impl World {
          */
     }
     // End frame update
-    pub fn update_end(&mut self, task_receiver: &mut WorldTaskReceiver) {}
+    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {}
     // We must destroy the world
     pub fn destroy(&mut self) {}
     pub fn tes<'a>(&'a self) {
-        let test = &self.ui;
+        let _test = &self.ui;
     }
 }
