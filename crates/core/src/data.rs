@@ -10,11 +10,11 @@ use ui::UIManager;
 use crate::{GameConfig, WorldTask, RefTaskSenderContext, WorldTaskTiming};
 
 // The whole world that stores our managers and data
-pub struct World {
+pub struct World<'context> {
     pub input: InputManager,
     pub time: Time,
     pub ui: UIManager,
-    pub ecs: (ECSManager, ecs::EventHandler<RefContext>),
+    pub ecs: (ECSManager, ecs::EventHandler<RefContext<'a>>),
     pub io: SaverLoader,
     pub config: GameConfig,
     pub pipeline: Arc<RwLock<Pipeline>>,
@@ -22,28 +22,28 @@ pub struct World {
 }
 
 // Some context that stores a reference to all of the world managers and data
-pub struct RefContext {
-    pub input: &'static InputManager,
-    pub time: &'static Time,
-    pub ui: &'static UIManager,
-    pub ecs: &'static ECSManager,
-    pub io: &'static SaverLoader,
-    pub config: &'static GameConfig,
-    pub pipeline: &'static Pipeline,
+pub struct RefContext\ {
+    pub input: &'a InputManager,
+    pub time: &'a Time,
+    pub ui: &'a UIManager,
+    pub ecs: &'a ECSManager,
+    pub io: &'a SaverLoader,
+    pub config: &'a GameConfig,
+    pub pipeline: &'a Pipeline,
 }
 
-impl Clone for RefContext {
+impl<'a> Clone for RefContext<'a> {
     fn clone(&self) -> Self {
         Self { input: self.input.clone(), time: self.time.clone(), ui: self.ui.clone(), ecs: self.ecs.clone(), io: self.io.clone(), config: self.config.clone(), pipeline: self.pipeline.clone() }
     }
 }
 
-impl Copy for RefContext {}
+impl<'a> Copy for RefContext<'a> {}
 
-impl RefContext {
+impl<'a> RefContext<'a> {
     // Convert a world into a context, so we can share it around multiple threads
     // We call this whenever we execute the systems
-    pub fn convert(world: &'static World) -> Self {
+    pub fn convert(world: &'a World) -> Self {
         Self {
             input: &world.input,
             time: &world.time,

@@ -5,7 +5,7 @@ use rendering::PipelineStartData;
 use crate::{data::World, GameConfig, WorldTaskReceiver, RefContext};
 
 // World implementation
-impl World {
+impl<'context> World<'context> {
     // Create a new world
     pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineStartData) -> Self  {
         let mut world = World {
@@ -77,13 +77,11 @@ impl World {
         println!("World init done!");
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can execute the system
-    pub fn update_start(&self) {
+    pub fn update_start<'world>(&'world self) where 'world: 'context {
         // Update the systems
         let (ecs, ecs_event_handler) = &self.ecs;
-        {
-            let ref_context = RefContext::convert(self);
-            ecs.run_systems(&ref_context, ecs_event_handler);
-        }
+        let ref_context = RefContext::convert(self);
+        ecs.run_systems(&ref_context, ecs_event_handler);
         /*
         // Create the ref context
         */
@@ -97,5 +95,3 @@ impl World {
 
     }
 }
-
-unsafe impl Sync for World {}
