@@ -1,9 +1,9 @@
 // Macro to automatically implement the traits
-#[macro_export]
+#[macro_export(super)]
 macro_rules! impl_component {
     ($t: ty) => {
         // Main traits implemented
-        impl $crate::Component for $t {
+        impl $crate::component::Component for $t {
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }

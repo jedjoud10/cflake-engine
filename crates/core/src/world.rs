@@ -80,8 +80,10 @@ impl World {
     pub fn update_start(&self, arc: Arc<RwLock<Self>>) {
         // Update the systems
         let (ecs, ecs_event_handler) = &self.ecs;
-        let ref_context = Context::convert(arc);
-        ecs.run_systems(&ref_context, ecs_event_handler);
+        {
+            let context = Context::convert(&arc);
+            ecs.run_systems(&context, &ecs_event_handler);
+        }
         /*
         */
         /*

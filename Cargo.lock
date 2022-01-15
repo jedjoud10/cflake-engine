@@ -107,6 +107,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "cflake-engine"
 version = "0.1.2"
+dependencies = [
+ "main",
+]
 
 [[package]]
 name = "cmake"
@@ -279,13 +282,6 @@ checksum = "73770f8e1fe7d64df17ca66ad28994a0a623ea497fa69486e14984e715c5d174"
 dependencies = [
  "adler32",
  "byteorder",
-]
-
-[[package]]
-name = "dev_game"
-version = "0.1.0"
-dependencies = [
- "main",
 ]
 
 [[package]]

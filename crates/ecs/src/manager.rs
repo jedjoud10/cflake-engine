@@ -1,13 +1,10 @@
 use std::{cell::RefCell, sync::Arc};
-
-use crate::{
-    identifiers::EntityID,
-    ComponentError, ComponentLinkingGroup, Entity, EntityError, System, ComponentID, EnclosedComponent, linked_components::LinkedComponents, event_handler::EventHandler,
-};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use worker_threads::ThreadPool;
+
+use crate::{entity::{Entity, EntityID, ComponentLinkingGroup}, system::{System, EventHandler}, component::{ComponentID, EnclosedComponent, LinkedComponents}, utils::{EntityError, ComponentError}};
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
 pub struct ECSManager {

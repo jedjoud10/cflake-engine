@@ -1,4 +1,4 @@
-use crate::linked_components::ComponentQuery;
+use crate::component::ComponentQuery;
 
 // An event handler that stores all the system events
 pub struct EventHandler<Context> {

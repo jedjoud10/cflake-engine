@@ -5,14 +5,17 @@ extern crate glfw;
 
 // World
 pub use core;
-use core::{World, Context};
+use core::{World, Context, WriteContext};
 use std::{thread::ThreadId, sync::{RwLock, Arc, RwLockReadGuard}};
 
 // Re-Export
 pub use assets;
 pub use debug;
 pub use defaults;
-pub use ecs;
+pub mod ecs {
+    pub use ::ecs::*;
+    pub use core::tasks::ecs::*;    
+}
 pub use input;
 pub use math;
 pub use others;
@@ -23,7 +26,7 @@ pub use veclib;
 
 
 // Load up the OpenGL window and such
-pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(&World)) {
+pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
         .create_window(rendering::WINDOW_SIZE.x as u32, rendering::WINDOW_SIZE.y as u32, app_name, glfw::WindowMode::Windowed)
@@ -43,7 +46,9 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     println!("Calling World Initialization callback");
     //defaults::preload_systems();
     {
-        init_world(&*world.read().unwrap());
+        let mut context = Context::convert(&world);
+        let wcontext = context.write();
+        init_world(wcontext);
     }
     while !window.should_close() {        
         {

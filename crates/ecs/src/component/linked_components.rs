@@ -1,10 +1,11 @@
 use std::{cell::RefCell, ffi::c_void, marker::PhantomData};
-
-use crate::{cast_component, cast_component_mut, component_registry, Component, ComponentError, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EntityID, System, Entity, ECSManager};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 use worker_threads::ThreadPool;
+use crate::{entity::{EntityID, Entity}, utils::ComponentError};
+use super::{EnclosedComponent, ComponentReadGuard, Component, registry, ComponentWriteGuard};
+
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however
 pub struct LinkedComponents {    
@@ -43,7 +44,7 @@ impl LinkedComponents {
     {
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
-        let id = component_registry::get_component_bitfield::<T>();
+        let id = registry::get_component_bitfield::<T>();
         // Kill me
         let hashmap = &self.components;
         let ptr = *hashmap
@@ -51,7 +52,7 @@ impl LinkedComponents {
             .ok_or_else(|| ComponentError::new_without_id("Linked component could not be fetched!".to_string()))?;
         // Magic
         let component = unsafe { &*ptr }.as_ref();
-        let component = cast_component::<T>(component)?;
+        let component = registry::cast_component::<T>(component)?;
         let guard = ComponentReadGuard::new(component);
         Ok(guard)
     }
@@ -60,7 +61,7 @@ impl LinkedComponents {
     where
         T: Component + Send + Sync + 'static,
     {
-        let id = component_registry::get_component_bitfield::<T>();
+        let id = registry::get_component_bitfield::<T>();
         // TODO: Make each entity have a specified amount of components so we can have faster indexing using
         // entity_id * 16 + local_component_id
         // Kill me
@@ -70,7 +71,7 @@ impl LinkedComponents {
             .ok_or_else(|| ComponentError::new_without_id("Linked component could not be fetched!".to_string()))?;
         // Magic
         let component = unsafe { &mut *ptr }.as_mut();
-        let component = cast_component_mut::<T>(component)?;
+        let component = registry::cast_component_mut::<T>(component)?;
         let guard = ComponentWriteGuard::new(component);
         Ok(guard)
     }

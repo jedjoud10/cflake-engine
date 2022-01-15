@@ -1,6 +1,20 @@
 use std::any::Any;
+use bitfield::Bitfield;
+use crate::utils::ComponentError;
 
-use crate::{ComponentError, ComponentID};
+// A ComponentID that will be used to identify components
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+pub struct ComponentID {
+    pub(crate) cbitfield: Bitfield<u32>,
+    pub(crate) idx: usize,
+}
+impl ComponentID {
+    // Create a new component ID
+    pub(crate) fn new(cbitfield: Bitfield<u32>, idx: usize) -> Self {
+        Self { cbitfield, idx }
+    }
+}
+
 // We do a little bit of googling https://stackoverflow.com/questions/26983355/is-there-a-way-to-combine-multiple-traits-in-order-to-define-a-new-trait
 // A component trait that can be added to other components
 pub trait Component: Send + Sync {
@@ -9,29 +23,6 @@ pub trait Component: Send + Sync {
     fn get_component_name() -> String
     where
         Self: Sized;
-}
-
-// Cast a boxed component to a reference of that component
-pub(crate) fn cast_component<'a, T>(linked_component: &'a dyn Component) -> Result<&T, ComponentError>
-where
-    T: Component + Send + Sync + 'static,
-{
-    let component_any: &dyn Any = linked_component.as_any();
-    let reference = component_any
-        .downcast_ref::<T>()
-        .ok_or_else(|| ComponentError::new_without_id("Could not cast component".to_string()))?;
-    Ok(reference)
-}
-// Cast a boxed component to a mutable reference of that component
-pub(crate) fn cast_component_mut<'a, T>(linked_component: &'a mut dyn Component) -> Result<&mut T, ComponentError>
-where
-    T: Component + Send + Sync + 'static,
-{
-    let component_any: &mut dyn Any = linked_component.as_any_mut();
-    let reference_mut = component_any
-        .downcast_mut::<T>()
-        .ok_or_else(|| ComponentError::new_without_id("Could not cast component".to_string()))?;
-    Ok(reference_mut)
 }
 
 // Main type because I don't want to type

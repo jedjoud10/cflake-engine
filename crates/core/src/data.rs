@@ -30,7 +30,7 @@ pub struct Context {
 impl Context {
     // Convert a world into a context, so we can share it around multiple threads
     // We call this whenever we execute the systems
-    pub fn convert(world: Arc<RwLock<World>>) -> Self {
+    pub fn convert(world: &Arc<RwLock<World>>) -> Self {
         Self {
             world: world.clone()
         }
@@ -42,21 +42,21 @@ impl Context {
         }
     }
     // Read
-    pub fn read<'a>(&'a self) -> ReadableContext<'a> {
-        ReadableContext { world: self.world.read().unwrap() }
+    pub fn read<'a>(&'a self) -> ReadContext<'a> {
+        ReadContext { world: self.world.read().unwrap() }
     }
     // Write
-    pub fn write<'a>(&'a mut self) -> WritableContext<'a> {
-        WritableContext { world: self.world.write().unwrap() }
+    pub fn write<'a>(&'a mut self) -> WriteContext<'a> {
+        WriteContext { world: self.world.write().unwrap() }
     }
 }
 
 // A readable world context
-pub struct ReadableContext<'a> {
+pub struct ReadContext<'a> {
     pub(crate) world: RwLockReadGuard<'a, World>
 }
 
-impl<'a> std::ops::Deref for ReadableContext<'a> {
+impl<'a> std::ops::Deref for ReadContext<'a> {
     type Target = World;
 
     fn deref(&self) -> &Self::Target {
@@ -65,11 +65,11 @@ impl<'a> std::ops::Deref for ReadableContext<'a> {
 }
 
 // A writable world context
-pub struct WritableContext<'a> {
+pub struct WriteContext<'a> {
     pub(crate) world: RwLockWriteGuard<'a, World>
 }
 
-impl<'a> std::ops::Deref for WritableContext<'a> {
+impl<'a> std::ops::Deref for WriteContext<'a> {
     type Target = World;
 
     fn deref(&self) -> &Self::Target {
@@ -77,7 +77,7 @@ impl<'a> std::ops::Deref for WritableContext<'a> {
     }
 }
 
-impl<'a> std::ops::DerefMut for WritableContext<'a> {
+impl<'a> std::ops::DerefMut for WriteContext<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut *self.world
     }

@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use bitfield::Bitfield;
 
-use crate::{identifiers::ComponentID, Component, ComponentLinkingError, EnclosedComponent};
+use crate::{component::{ComponentID, Component, EnclosedComponent, registry}, utils::ComponentLinkingError};
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 pub struct ComponentLinkingGroup {
     pub linked_components: AHashMap<Bitfield<u32>, EnclosedComponent>,
@@ -27,7 +27,7 @@ impl ComponentLinkingGroup {
     }
     // Link a component to this entity and also link it's default component dependencies if they are not linked yet
     pub fn link<T: Component + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
-        let cbitfield = crate::registry::get_component_bitfield::<T>();
+        let cbitfield = registry::get_component_bitfield::<T>();
         // Check if we have the component linked on this entity
         if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(cbitfield) {
             // Add the local component to our hashmap
