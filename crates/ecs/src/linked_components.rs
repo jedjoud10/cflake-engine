@@ -102,6 +102,7 @@ impl<'a> ComponentQuery<'a> {
             Multithreading is actually so goddamn slower than optimized single threaded code wtf
             self.thread_pool.execute(&mut self.linked_components, function)
             */
+            panic!()
         }
     } 
 }

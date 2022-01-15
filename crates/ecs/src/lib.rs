@@ -11,6 +11,7 @@ mod macros;
 mod manager;
 pub mod system;
 mod test;
+pub use event_handler::*;
 pub use component::*;
 pub use entity::*;
 pub use error::*;

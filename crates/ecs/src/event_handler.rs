@@ -1,12 +1,12 @@
 use crate::linked_components::ComponentQuery;
 
 // An event handler that stores all the system events
-pub struct EventHandler<RefContext: 'static> {
+pub struct EventHandler<RefContext> {
     // Run events
     run_systems: Vec<fn(RefContext, ComponentQuery)>,
 }
 
-impl<RefContext: 'static> EventHandler<RefContext> {
+impl<RefContext> EventHandler<RefContext> {
     // New
     pub fn new() -> Self {
         Self {

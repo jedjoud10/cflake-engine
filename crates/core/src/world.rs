@@ -1,6 +1,8 @@
+use std::sync::{Arc, RwLock};
+
 use rendering::PipelineStartData;
 
-use crate::{data::World, GameConfig, WorldTaskReceiver};
+use crate::{data::World, GameConfig, WorldTaskReceiver, RefContext};
 
 // World implementation
 impl World {
@@ -10,11 +12,11 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
-            ecs: ecs::ECSManager::new(|thread_index| {
+            ecs: (ecs::ECSManager::new(|| {
                 // This is ran on every thread in the ECS thread pool
                 rendering::init_coms();
                 crate::sender::init_coms();
-            }),
+            }), ecs::EventHandler::new()),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
@@ -74,12 +76,26 @@ impl World {
         
         println!("World init done!");
     }
-    // We update the world for one frame
-    pub fn update(&mut self, task_receiver: &mut WorldTaskReceiver) {
-        
+    // Begin frame update. We also get the Arc<RwLock<World>> so we can execute the system
+    pub fn update_start(&self) {
+        // Update the systems
+        let (ecs, ecs_event_handler) = &self.ecs;
+        {
+            let ref_context = RefContext::convert(self);
+            ecs.run_systems(&ref_context, ecs_event_handler);
+        }
+        /*
+        // Create the ref context
+        */
+    }
+    // End frame update
+    pub fn update_end(&mut self, task_receiver: &mut WorldTaskReceiver) {
+
     }
     // We must destroy the world
     pub fn destroy(&mut self) {
 
     }
 }
+
+unsafe impl Sync for World {}

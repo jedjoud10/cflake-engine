@@ -110,9 +110,9 @@ impl ECSManager {
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems<RefContext: 'static + Clone + Copy>(&self, context: RefContext, event_handler: &EventHandler<RefContext>) {
+    pub fn run_systems<'long: 'short, 'short, RefContext: Clone + Copy + 'short>(&'long self, context: &'short RefContext, event_handler: &EventHandler<RefContext>) {
         for system in self.systems.iter() {
-            system.run_system(context, event_handler, self);
+            system.run_system(context.clone(), event_handler, self);
         }
     }
     /* #endregion */

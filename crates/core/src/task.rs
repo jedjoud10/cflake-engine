@@ -5,7 +5,7 @@ use crate::{RefContext, MutContext};
 // A task sender context that we can use to send tasks to the main thread
 pub struct RefTaskSenderContext {
     // The task timing for this context
-    timing: WorldTaskTiming,
+    pub(crate) timing: WorldTaskTiming,
 }
 
 impl RefTaskSenderContext {

@@ -30,7 +30,7 @@ impl WorldTaskReceiver {
         }
     }
     // Execute a single task
-    fn execute(&mut self, mut_context: &MutContext, task: WorldTask) {
+    fn execute(&mut self, mut_context: &mut MutContext, task: WorldTask) {
         // We will execute the tasks
         match task {
             WorldTask::AddEntity(entity, id, group) => {
@@ -46,7 +46,7 @@ impl WorldTaskReceiver {
     }
     // We will flush the tasks, and execute them
     // This is called at the end of each system execution, since some tasks might need to execute earlier than others
-    pub fn flush(&mut self, mut_context: &MutContext) {
+    pub fn flush(&mut self, mut_context: &mut MutContext) {
         self.batch_tasks.extend(self.rx.try_iter());
         let taken = self.batch_tasks.drain_filter(|x| Self::filter_task_batches(x)).collect::<Vec<_>>();
         for batch in taken {
@@ -57,7 +57,7 @@ impl WorldTaskReceiver {
         }
     }
     // Execute immediate
-    pub fn flush_immediate(&self, mut_context: &MutContext) {
+    pub fn flush_immediate(&mut self, mut_context: &mut MutContext) {
         let batch_tasks = self.rx.try_iter().collect::<Vec<_>>();
         for batch in batch_tasks {
             match batch.combination {

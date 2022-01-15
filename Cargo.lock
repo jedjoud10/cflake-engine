@@ -538,6 +538,7 @@ dependencies = [
  "gl",
  "glfw",
  "input",
+ "lazy_static",
  "math",
  "others",
  "rendering",

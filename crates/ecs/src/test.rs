@@ -58,12 +58,12 @@ pub mod test {
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
-        ecs.run_systems(ref_context, &event_handler);
+        ecs.run_systems(&ref_context, &event_handler);
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3.clone();
         ecs.remove_entity(id3).unwrap();
         assert!(ecs.entity(&id4).is_err());
-        ecs.run_systems(ref_context, &event_handler);
+        ecs.run_systems(&ref_context, &event_handler);
     }
     #[test]
     // Test the parralelization
@@ -93,7 +93,7 @@ pub mod test {
         // Run the system for two frames    
         for x in 0..30 {
             let i = std::time::Instant::now();
-            ecs.run_systems(ref_context, &event_handler);
+            ecs.run_systems(&ref_context, &event_handler);
             println!("{}", i.elapsed().as_millis());
         }    
         //ecs.run_systems(&mut mut_context);

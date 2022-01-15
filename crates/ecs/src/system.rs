@@ -34,7 +34,7 @@ impl System {
         self.cbitfield = self.cbitfield.add(&c);
     }
     // Set the a ref context system event
-    pub fn set_event<RefContext: 'static>(&mut self, event_handler: &mut EventHandler<RefContext>, run_system: fn(RefContext, ComponentQuery)) {
+    pub fn set_event<RefContext>(&mut self, event_handler: &mut EventHandler<RefContext>, run_system: fn(RefContext, ComponentQuery)) {
         event_handler.add_run_event(run_system);
     }
     // Check if we can add an entity (It's cbitfield became adequate for our system or the entity was added from the world)
@@ -51,7 +51,7 @@ impl System {
         }
     }
     // Run the system for a single iteration
-    pub fn run_system<RefContext: 'static>(&self, context: RefContext, event_handler: &EventHandler<RefContext>, ecs_manager: &ECSManager) {
+    pub fn run_system<RefContext>(&self, context: RefContext, event_handler: &EventHandler<RefContext>, ecs_manager: &ECSManager) {
         // These components are filtered for us
         let components = &ecs_manager.components;    
         let i = std::time::Instant::now();

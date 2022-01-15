@@ -3,18 +3,18 @@ use crate::task::WorldTask;
 // This helps us create tasks
 pub mod tasks {
     use ecs::{Entity, EntityID, ComponentLinkingGroup};
-    use crate::{WorldTask, RefContext, TaskSenderContext};
+    use crate::{WorldTask, RefContext, RefTaskSenderContext};
 
     // Create an AddEntity task and send it
-    pub fn add_entity(task_sender_context: &TaskSenderContext, entity: Entity, id: EntityID, group: ComponentLinkingGroup) -> Option<()> {
-        task_sender_context.send(WorldTask::AddEntity(entity, id, group))
+    pub fn add_entity(sender: &RefTaskSenderContext, entity: Entity, id: EntityID, group: ComponentLinkingGroup) -> Option<()> {
+        sender.send(WorldTask::AddEntity(entity, id, group))
     }
     // Create a RemoveEntity task and send it
-    pub fn remove_entity(task_sender_context: &TaskSenderContext, id: EntityID) -> Option<()> {
-        task_sender_context.send(WorldTask::RemoveEntity(id))
+    pub fn remove_entity(sender: &RefTaskSenderContext, id: EntityID) -> Option<()> {
+        sender.send(WorldTask::RemoveEntity(id))
     }
     // Just send a normal task
-    pub fn task(task_sender_context: &TaskSenderContext, task: WorldTask) -> Option<()> {
-        task_sender_context.send(task)
+    pub fn task(sender: &RefTaskSenderContext, task: WorldTask) -> Option<()> {
+        sender.send(task)
     }
 }
