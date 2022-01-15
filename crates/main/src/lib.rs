@@ -5,8 +5,11 @@ extern crate glfw;
 
 // World
 pub use core;
-use core::{World, Context, WriteContext};
-use std::{thread::ThreadId, sync::{RwLock, Arc, RwLockReadGuard}};
+use core::{Context, World, WriteContext};
+use std::{
+    sync::{Arc, RwLock, RwLockReadGuard},
+    thread::ThreadId,
+};
 
 // Re-Export
 pub use assets;
@@ -14,7 +17,7 @@ pub use debug;
 pub use defaults;
 pub mod ecs {
     pub use ::ecs::*;
-    pub use core::tasks::ecs::*;    
+    pub use core::tasks::ecs::*;
 }
 pub use input;
 pub use math;
@@ -23,7 +26,6 @@ pub use rendering;
 pub use terrain;
 pub use ui;
 pub use veclib;
-
 
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>)) {
@@ -40,7 +42,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
     let world = Arc::new(RwLock::new(World::new(author_name, app_name, pipeline_data)));
-    
+
     // Init the world
     // Calling the callback
     println!("Calling World Initialization callback");
@@ -50,14 +52,14 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         let wcontext = context.write();
         init_world(wcontext);
     }
-    while !window.should_close() {        
+    while !window.should_close() {
         {
             // Update the delta_time
             let new_time = glfw.get_time();
             // Update the de
             let mut world = world.write().unwrap();
             world.time.update(new_time);
-        }   
+        }
         // Get the GLFW events first
         glfw.poll_events();
         {
@@ -88,7 +90,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
                     _ => {}
                 }
             }
-        }        
+        }
         // We can update the world now
         {
             let cloned = world.clone();

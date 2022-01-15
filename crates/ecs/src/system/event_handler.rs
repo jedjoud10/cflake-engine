@@ -9,9 +9,7 @@ pub struct EventHandler<Context> {
 impl<Context> EventHandler<Context> {
     // New
     pub fn new() -> Self {
-        Self {
-            run_systems: Vec::new(),
-        }
+        Self { run_systems: Vec::new() }
     }
     // Add an event to the EventHandler
     pub fn add_run_event(&mut self, event: fn(&Context, ComponentQuery)) -> usize {
@@ -20,7 +18,9 @@ impl<Context> EventHandler<Context> {
     }
     // Get the run event for a specific index
     pub fn get_run_event(&self, idx: isize) -> Option<&fn(&Context, ComponentQuery)> {
-        if idx == -1 { return None; }
+        if idx == -1 {
+            return None;
+        }
         self.run_systems.get(idx as usize)
     }
 }

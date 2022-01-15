@@ -1,6 +1,5 @@
 use main::core::World;
 
-
 fn main() {
     // Load up the engine
     main::start("DevJed", "DevGame", preload_assets, init);

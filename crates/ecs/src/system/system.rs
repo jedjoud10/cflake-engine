@@ -1,8 +1,17 @@
-use std::{cell::RefCell, marker::PhantomData, ffi::c_void, sync::{RwLock, Arc}};
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
+use std::{
+    cell::RefCell,
+    ffi::c_void,
+    marker::PhantomData,
+    sync::{Arc, RwLock},
+};
 
-use crate::{entity::EntityID, component::{Component, registry, ComponentQuery, LinkedComponents}, ECSManager};
+use crate::{
+    component::{registry, Component, ComponentQuery, LinkedComponents},
+    entity::EntityID,
+    ECSManager,
+};
 
 use super::EventHandler;
 
@@ -10,7 +19,7 @@ use super::EventHandler;
 pub struct System {
     // Our Component Bitfield
     cbitfield: Bitfield<u32>,
-    // Event indices 
+    // Event indices
     run_event_idx: isize,
     // Events
     entities: AHashSet<EntityID>,
@@ -55,15 +64,19 @@ impl System {
     // Run the system for a single iteration
     pub fn run_system<Context>(&self, mut context: Context, event_handler: &EventHandler<Context>, ecs_manager: &ECSManager) {
         // These components are filtered for us
-        let components = &ecs_manager.components;    
+        let components = &ecs_manager.components;
         let i = std::time::Instant::now();
         // Create the component query
-        let components = self.entities.iter().map(|id| {
-            let entity = ecs_manager.entity(id).unwrap();            
-            let linked_components = LinkedComponents::new(id, entity, components, &entity.cbitfield); 
-            linked_components
-        }).collect::<Vec<_>>();
-        
+        let components = self
+            .entities
+            .iter()
+            .map(|id| {
+                let entity = ecs_manager.entity(id).unwrap();
+                let linked_components = LinkedComponents::new(id, entity, components, &entity.cbitfield);
+                linked_components
+            })
+            .collect::<Vec<_>>();
+
         let query = ComponentQuery {
             linked_components: components,
             thread_pool: &ecs_manager.thread_pool,

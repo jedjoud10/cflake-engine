@@ -1,4 +1,4 @@
-use std::ptr::{null_mut, null};
+use std::ptr::{null, null_mut};
 
 // The data that will be stored in an atomic pointer
 pub struct SharedData<T> {

@@ -1,6 +1,6 @@
-use std::any::Any;
-use bitfield::Bitfield;
 use crate::utils::ComponentError;
+use bitfield::Bitfield;
+use std::any::Any;
 
 // A ComponentID that will be used to identify components
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -27,8 +27,6 @@ pub trait Component: Send + Sync {
 
 // Main type because I don't want to type
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
-
-
 
 // Component ref guards. This can be used to detect whenever we mutate a component
 pub struct ComponentReadGuard<'a, T>

@@ -1,5 +1,5 @@
-use crate::entity::EntityID;
 use crate::component::ComponentID;
+use crate::entity::EntityID;
 use core::fmt;
 
 // An error related to the entities

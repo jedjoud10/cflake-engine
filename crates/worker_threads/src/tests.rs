@@ -29,16 +29,16 @@ pub mod test {
                             l = l.wrapping_add(x.wrapping_sub(z.wrapping_add(w)));
                         }
                     }
-                }    
+                }
             }
             l
         }
         let i = std::time::Instant::now();
-        pool.execute(&mut numbers1, |b| { *b = expensive_calculation() });
+        pool.execute(&mut numbers1, |b| *b = expensive_calculation());
         println!("Took '{}' micros to execute multithreaded code", i.elapsed().as_micros());
 
         let mut numbers2 = vec![0; 1844674];
-        let i = std::time::Instant::now();        
+        let i = std::time::Instant::now();
         for b in numbers2.iter_mut() {
             *b = expensive_calculation()
         }
@@ -59,7 +59,7 @@ pub mod test {
             l
         }
         let mut numbers2 = vec![0; 32768];
-        let i = std::time::Instant::now();        
+        let i = std::time::Instant::now();
         for b in numbers2.iter_mut() {
             *b = expensive_calculation()
         }

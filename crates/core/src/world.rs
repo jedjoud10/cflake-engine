@@ -2,21 +2,24 @@ use std::sync::{Arc, RwLock};
 
 use rendering::PipelineStartData;
 
-use crate::{data::World, GameConfig, WorldTaskReceiver, Context};
+use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineStartData) -> Self  {
+    pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineStartData) -> Self {
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
-            ecs: (ecs::ECSManager::new(|| {
-                // This is ran on every thread in the ECS thread pool
-                rendering::init_coms();
-                crate::sender::init_coms();
-            }), ecs::EventHandler::new()),
+            ecs: (
+                ecs::ECSManager::new(|| {
+                    // This is ran on every thread in the ECS thread pool
+                    rendering::init_coms();
+                    crate::sender::init_coms();
+                }),
+                ecs::system::EventHandler::new(),
+            ),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
@@ -73,7 +76,7 @@ impl World {
         self.config = config;
         // Apply the config file's data to the rendering window
         // TODO
-        
+
         println!("World init done!");
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can execute the system
@@ -85,19 +88,15 @@ impl World {
             ecs.run_systems(&context, &ecs_event_handler);
         }
         /*
-        */
+         */
         /*
         // Create the ref context
-        */
+         */
     }
     // End frame update
-    pub fn update_end(&mut self, task_receiver: &mut WorldTaskReceiver) {
-
-    }
+    pub fn update_end(&mut self, task_receiver: &mut WorldTaskReceiver) {}
     // We must destroy the world
-    pub fn destroy(&mut self) {
-
-    }
+    pub fn destroy(&mut self) {}
     pub fn tes<'a>(&'a self) {
         let test = &self.ui;
     }

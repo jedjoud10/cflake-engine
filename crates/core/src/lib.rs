@@ -1,16 +1,16 @@
 // Export
 #![feature(drain_filter)]
-mod game_file;
 mod data;
-mod world;
+mod game_file;
 mod global;
-mod sender;
 mod receiver;
+mod sender;
 mod task;
-pub use task::*;
-pub use sender::*;
-pub use receiver::*;
-pub use global::*;
-pub use game_file::*;
+mod world;
 pub use data::*;
+pub use game_file::*;
+pub use global::*;
+pub use receiver::*;
+pub use sender::*;
+pub use task::*;
 pub use world::*;

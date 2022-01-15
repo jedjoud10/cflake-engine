@@ -608,7 +608,7 @@ pub struct PipelineStartData {
     pub sbarrier: Arc<Barrier>,
     // A barrier that we can use to sync up with the main thread at the end of each frame
     pub ebarrier: Arc<Barrier>,
-    // The pipeline itself 
+    // The pipeline itself
     pub pipeline: Arc<RwLock<Pipeline>>,
 }
 // Load some defaults
@@ -806,5 +806,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
 
     // Create the pipeline start data
-    PipelineStartData { handle, sbarrier, ebarrier, pipeline }
+    PipelineStartData {
+        handle,
+        sbarrier,
+        ebarrier,
+        pipeline,
+    }
 }

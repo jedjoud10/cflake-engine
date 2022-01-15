@@ -1,5 +1,5 @@
-use ecs::{EntityID, Entity, ComponentLinkingGroup};
-use crate::{Context};
+use crate::Context;
+use ecs::entity::*;
 
 // A task sender context that we can use to send tasks to the main thread
 pub struct TaskSenderContext {
@@ -70,13 +70,12 @@ pub enum WorldTaskTiming {
     // We should execute the task so it would be completed by the 'N'th frame
     ByFrame(u64),
     */
-
-    // Doesn't matter whenever we execute the task, so we should execute it only when we have some spare time 
+    // Doesn't matter whenever we execute the task, so we should execute it only when we have some spare time
     Free,
 }
 
-impl Default for WorldTaskTiming { 
+impl Default for WorldTaskTiming {
     fn default() -> Self {
         Self::Earliest
-    } 
+    }
 }

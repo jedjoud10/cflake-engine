@@ -1,5 +1,4 @@
-use crate::{task::WorldTask, WorldTaskBatch, World};
-
+use crate::{task::WorldTask, World, WorldTaskBatch};
 
 // A receiver that we can use to receive tasks from other threads
 pub struct WorldTaskReceiver {
@@ -15,10 +14,7 @@ impl WorldTaskReceiver {
     pub fn new() -> Self {
         let (tx, rx) = std::sync::mpsc::channel::<WorldTaskBatch>();
         crate::sender::set_global_sender(tx);
-        Self {
-            rx,
-            batch_tasks: Vec::new(),
-        }
+        Self { rx, batch_tasks: Vec::new() }
     }
     // This will return true to each task batch that can be run currently
     fn filter_task_batches(task_batch: &WorldTaskBatch) -> bool {
@@ -37,11 +33,11 @@ impl WorldTaskReceiver {
             WorldTask::AddEntity(entity, id, group) => {
                 // We will add the entity to the world
                 ecs.add_entity(entity, id, group);
-            },
+            }
             WorldTask::RemoveEntity(id) => {
                 // We will remove the entity from the world
                 ecs.remove_entity(id).unwrap();
-            },
+            }
             WorldTask::DirectAddComponent(_, _) => todo!(),
         }
     }
@@ -52,7 +48,11 @@ impl WorldTaskReceiver {
         let taken = self.batch_tasks.drain_filter(|x| Self::filter_task_batches(x)).collect::<Vec<_>>();
         for batch in taken {
             match batch.combination {
-                crate::WorldTaskCombination::Batch(tasks) => for task in tasks { self.execute(world, task) },
+                crate::WorldTaskCombination::Batch(tasks) => {
+                    for task in tasks {
+                        self.execute(world, task)
+                    }
+                }
                 crate::WorldTaskCombination::Single(task) => self.execute(world, task),
             }
         }
@@ -62,7 +62,11 @@ impl WorldTaskReceiver {
         let batch_tasks = self.rx.try_iter().collect::<Vec<_>>();
         for batch in batch_tasks {
             match batch.combination {
-                crate::WorldTaskCombination::Batch(tasks) => for task in tasks { self.execute(world, task) },
+                crate::WorldTaskCombination::Batch(tasks) => {
+                    for task in tasks {
+                        self.execute(world, task)
+                    }
+                }
                 crate::WorldTaskCombination::Single(task) => self.execute(world, task),
             }
         }

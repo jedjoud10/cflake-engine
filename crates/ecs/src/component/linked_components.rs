@@ -1,16 +1,19 @@
-use std::{cell::RefCell, ffi::c_void, marker::PhantomData};
+use super::{registry, Component, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent};
+use crate::{
+    entity::{Entity, EntityID},
+    utils::ComponentError,
+};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
+use std::{cell::RefCell, ffi::c_void, marker::PhantomData};
 use worker_threads::ThreadPool;
-use crate::{entity::{EntityID, Entity}, utils::ComponentError};
-use super::{EnclosedComponent, ComponentReadGuard, Component, registry, ComponentWriteGuard};
 
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however
-pub struct LinkedComponents {    
+pub struct LinkedComponents {
     // Our linked components
-    pub(crate) components: AHashMap<Bitfield<u32>, *mut EnclosedComponent>
+    pub(crate) components: AHashMap<Bitfield<u32>, *mut EnclosedComponent>,
 }
 
 unsafe impl Send for LinkedComponents {}
@@ -21,7 +24,8 @@ impl LinkedComponents {
     // Theoretically, this should only be done once, when an entity becomes valid for a system
     pub(crate) fn new(id: &EntityID, entity: &Entity, components: &OrderedVec<RefCell<EnclosedComponent>>, cbitfield: &Bitfield<u32>) -> Self {
         // Get the components from the world, that fit the cbitfield and the Entity ID
-        let filtered_components = entity.components
+        let filtered_components = entity
+            .components
             .iter()
             .filter_map(|component_id| {
                 // The component is linked to the entity, and we must get the component's pointer
@@ -30,9 +34,7 @@ impl LinkedComponents {
                 Some((component_id.cbitfield, ptr))
             })
             .collect::<AHashMap<Bitfield<u32>, *mut EnclosedComponent>>();
-        Self { 
-            components: filtered_components
-        }
+        Self { components: filtered_components }
     }
 }
 
@@ -77,8 +79,6 @@ impl LinkedComponents {
     }
 }
 
-
-
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL
 // The components get mutated in parallel, though the system is NOT stored on another thread
@@ -105,5 +105,5 @@ impl<'a> ComponentQuery<'a> {
             */
             panic!()
         }
-    } 
+    }
 }

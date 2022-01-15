@@ -1,20 +1,25 @@
-use std::{cell::RefCell, sync::Arc};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
+use std::{cell::RefCell, sync::Arc};
 use worker_threads::ThreadPool;
 
-use crate::{entity::{Entity, EntityID, ComponentLinkingGroup}, system::{System, EventHandler}, component::{ComponentID, EnclosedComponent, LinkedComponents}, utils::{EntityError, ComponentError}};
+use crate::{
+    component::{ComponentID, EnclosedComponent, LinkedComponents},
+    entity::{ComponentLinkingGroup, Entity, EntityID},
+    system::{EventHandler, System},
+    utils::{ComponentError, EntityError},
+};
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
 pub struct ECSManager {
     // A vector full of entities. Each entity can get invalidated, but never deleted
-    pub(crate) entities: ShareableOrderedVec<Entity>, 
+    pub(crate) entities: ShareableOrderedVec<Entity>,
     // Each system, stored in the order they were created
-    systems: Vec<System>,                             
+    systems: Vec<System>,
     // The components that are valid in the world
     pub(crate) components_ids: AHashMap<ComponentID, usize>,
-    pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>, 
+    pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>,
     // The internal ECS thread pool
     pub(crate) thread_pool: ThreadPool<LinkedComponents>,
 }
@@ -25,7 +30,7 @@ impl ECSManager {
     pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
         // Start the thread pool
         let thread_pool = ThreadPool::new(8, start_function);
-        Self { 
+        Self {
             entities: Default::default(),
             systems: Default::default(),
             components_ids: Default::default(),
@@ -73,11 +78,11 @@ impl ECSManager {
             let idx = self.add_component(id, boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
             entity.components.push(idx);
-        }        
+        }
         // Check if the linked entity is valid to be added into the systems
         self.systems.iter_mut().for_each(|system| system.check_add_entity(group.cbitfield, id));
         Ok(())
-    }    
+    }
     // Add a specific linked componment to the component manager. Return the said component's ID
     fn add_component(&mut self, id: EntityID, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
         // We must make this a RefCell
@@ -91,7 +96,10 @@ impl ECSManager {
     // Remove a specified component from the list
     fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
-        let idx = self.components_ids.remove(&id).ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
+        let idx = self
+            .components_ids
+            .remove(&id)
+            .ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
         self.components.remove(idx);
         Ok(())
     }

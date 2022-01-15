@@ -1,20 +1,23 @@
-use std::{sync::{RwLock, Arc, mpsc::SendError, RwLockReadGuard, RwLockWriteGuard}, marker::PhantomData};
+use std::{
+    marker::PhantomData,
+    sync::{mpsc::SendError, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 
-use ecs::{ECSManager};
+use ecs::{system::EventHandler, ECSManager};
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
-use rendering::{PipelineStartData, Pipeline};
+use rendering::{Pipeline, PipelineStartData};
 use ui::UIManager;
 
-use crate::{GameConfig, WorldTask, TaskSenderContext, WorldTaskTiming};
+use crate::{GameConfig, TaskSenderContext, WorldTask, WorldTaskTiming};
 
 // The whole world that stores our managers and data
 pub struct World {
     pub input: InputManager,
     pub time: Time,
     pub ui: UIManager,
-    pub ecs: (ECSManager, ecs::EventHandler<Context>),
+    pub ecs: (ECSManager, EventHandler<Context>),
     pub io: SaverLoader,
     pub config: GameConfig,
     pub pipeline: Arc<RwLock<Pipeline>>,
@@ -31,9 +34,7 @@ impl Context {
     // Convert a world into a context, so we can share it around multiple threads
     // We call this whenever we execute the systems
     pub fn convert(world: &Arc<RwLock<World>>) -> Self {
-        Self {
-            world: world.clone()
-        }
+        Self { world: world.clone() }
     }
     // Create a TaskSenderContext that we can use to send tasks to the main thread
     pub fn new_task_sender(&self) -> TaskSenderContext {
@@ -43,17 +44,21 @@ impl Context {
     }
     // Read
     pub fn read<'a>(&'a self) -> ReadContext<'a> {
-        ReadContext { world: self.world.read().unwrap() }
+        ReadContext {
+            world: self.world.read().unwrap(),
+        }
     }
     // Write
     pub fn write<'a>(&'a mut self) -> WriteContext<'a> {
-        WriteContext { world: self.world.write().unwrap() }
+        WriteContext {
+            world: self.world.write().unwrap(),
+        }
     }
 }
 
 // A readable world context
 pub struct ReadContext<'a> {
-    pub(crate) world: RwLockReadGuard<'a, World>
+    pub(crate) world: RwLockReadGuard<'a, World>,
 }
 
 impl<'a> std::ops::Deref for ReadContext<'a> {
@@ -66,7 +71,7 @@ impl<'a> std::ops::Deref for ReadContext<'a> {
 
 // A writable world context
 pub struct WriteContext<'a> {
-    pub(crate) world: RwLockWriteGuard<'a, World>
+    pub(crate) world: RwLockWriteGuard<'a, World>,
 }
 
 impl<'a> std::ops::Deref for WriteContext<'a> {

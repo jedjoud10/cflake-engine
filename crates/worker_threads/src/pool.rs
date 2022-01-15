@@ -1,8 +1,11 @@
-use std::sync::{Barrier, atomic::{AtomicPtr, Ordering::Relaxed}, Arc, RwLock};
+use std::sync::{
+    atomic::{AtomicPtr, Ordering::Relaxed},
+    Arc, Barrier, RwLock,
+};
 
 use crate::{SharedData, SHUTDOWN};
 
-// A thread pool that contains multiple WorkerThreadInitData, 
+// A thread pool that contains multiple WorkerThreadInitData,
 // so we can send messages to the threads to tell them to execute something, and we will wait until all of them have executed
 pub struct ThreadPool<T> {
     // A barrier that we can use to sync up the threads for execution
@@ -13,13 +16,13 @@ pub struct ThreadPool<T> {
     arc: Arc<RwLock<SharedData<T>>>,
     // The numbers of threads that we have in total
     max_thread_count: usize,
-} 
+}
 
 impl<T: 'static> ThreadPool<T> {
     // Create a new thread pool
     pub fn new<F: Fn() + 'static + Sync + Send>(max_thread_count: usize, init_function: F) -> Self {
         // Barrier stuff
-        let barriers = Arc::new((Barrier::new(max_thread_count+1), Barrier::new(max_thread_count+1), Barrier::new(max_thread_count+1)));
+        let barriers = Arc::new((Barrier::new(max_thread_count + 1), Barrier::new(max_thread_count + 1), Barrier::new(max_thread_count + 1)));
         // Data
         let arc = Arc::new(RwLock::new(SharedData::<T>::default()));
         let init_function_arc = Arc::new(Box::new(init_function));
@@ -27,12 +30,8 @@ impl<T: 'static> ThreadPool<T> {
         for i in 0..max_thread_count {
             crate::worker_thread::new(i, init_function_arc.clone(), barriers.clone(), arc.clone());
         }
-        
-        Self {
-            max_thread_count,
-            barriers,
-            arc,
-        }
+
+        Self { max_thread_count, barriers, arc }
     }
     // Get the maximum numbers of threads that are in the pool
     pub fn max_thread_count(&self) -> usize {

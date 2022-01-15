@@ -1,10 +1,21 @@
-use std::{marker::PhantomData, sync::{atomic::{AtomicPtr, AtomicUsize, AtomicBool, Ordering}, Barrier, Arc, RwLock}};
 use crate::SharedData;
+use std::{
+    marker::PhantomData,
+    sync::{
+        atomic::{AtomicBool, AtomicPtr, AtomicUsize, Ordering},
+        Arc, Barrier, RwLock,
+    },
+};
 // We must shutdown the threads
 pub(crate) static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
 // Create a new thread
-pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(thread_index: usize, init_function_arc: Arc<Box<F>>, barriers: Arc<(Barrier, Barrier, Barrier)>, shared_data: Arc<RwLock<SharedData<T>>>) {
+pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
+    thread_index: usize,
+    init_function_arc: Arc<Box<F>>,
+    barriers: Arc<(Barrier, Barrier, Barrier)>,
+    shared_data: Arc<RwLock<SharedData<T>>>,
+) {
     std::thread::spawn(move || {
         let init_function = (&*init_function_arc).as_ref();
         init_function();
@@ -20,14 +31,14 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(thread_index: usize, ini
             let data = &*ptr;
             let function = data.function.as_ref();
             let elements = &*data.elements;
-            
+
             // Calculate the indices
             let start_idx = idx * data.chunk_size;
-            let end_idx = (idx+1) * data.chunk_size;
+            let end_idx = (idx + 1) * data.chunk_size;
             // If our start index is not in range, we can skip
             //dbg!(start_idx);
             //dbg!(end_idx);
-            if start_idx < elements.len() { 
+            if start_idx < elements.len() {
                 let mut count = 0;
                 for i in start_idx..end_idx {
                     // Execute the function
@@ -41,7 +52,7 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(thread_index: usize, ini
                 }
                 //println!("Finished executing thread '{}', executed '{}'", thread_index, count);
             }
-                
+
             // Check if we must shutdown
             if SHUTDOWN.load(Ordering::Relaxed) {
                 shutdown_barrier.wait();

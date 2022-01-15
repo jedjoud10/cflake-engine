@@ -1,7 +1,7 @@
 use crate::FontChar;
-use ::rendering::{basics::*, pipec, pipeline::*, object::ObjectID};
+use ::rendering::{basics::*, object::ObjectID, pipec, pipeline::*};
 use ascii::AsciiStr;
-use assets::{Asset};
+use assets::Asset;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 // A simple font containing the characters
@@ -54,7 +54,9 @@ impl Font {
                 .set_dimensions(TextureType::Texture2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
                 .set_filter(TextureFilter::Linear)
                 .set_format(TextureFormat::R16R)
-                .set_bytes(self.texture_pixels.clone()), pipeline);
+                .set_bytes(self.texture_pixels.clone()),
+            pipeline,
+        );
     }
     // Turn some text into an array of font chars
     pub fn convert_text_to_font_chars(&self, text: &str) -> Vec<&FontChar> {

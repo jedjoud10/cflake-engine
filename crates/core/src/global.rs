@@ -1,12 +1,12 @@
 // This helps us create tasks
 pub mod tasks {
-    use crate::{WorldTask, TaskSenderContext};
+    use crate::{TaskSenderContext, WorldTask};
 
     // Tasks related only to ECS
     pub mod ecs {
-        use ecs::{Entity, EntityID, ComponentLinkingGroup};
-        use crate::{WorldTask, TaskSenderContext};
-        
+        use crate::{TaskSenderContext, WorldTask};
+        use ecs::entity::*;
+
         // Create an AddEntity task and send it
         pub fn add_entity(sender: &TaskSenderContext, entity: Entity, id: EntityID, group: ComponentLinkingGroup) -> Option<()> {
             sender.send(WorldTask::AddEntity(entity, id, group))

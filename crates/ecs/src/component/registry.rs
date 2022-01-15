@@ -1,13 +1,14 @@
+use crate::utils::ComponentError;
 use bitfield::Bitfield;
 use lazy_static::lazy_static;
 use std::{
+    any::Any,
     collections::HashMap,
     sync::{
         atomic::{AtomicU32, Ordering},
         RwLock,
-    }, any::Any,
+    },
 };
-use crate::utils::ComponentError;
 
 use super::Component;
 // Use to keep track of the component IDs
@@ -58,7 +59,6 @@ pub fn get_component_names_cbitfield(cbitfield: Bitfield<u32>) -> Vec<String> {
     }
     component_names
 }
-
 
 // Cast a boxed component to a reference of that component
 pub(crate) fn cast_component<'a, T>(linked_component: &'a dyn Component) -> Result<&T, ComponentError>

@@ -1,13 +1,13 @@
-use bitfield::Bitfield;
 use crate::{component::ComponentID, ECSManager};
+use bitfield::Bitfield;
 // A simple entity in the world
 #[derive(Clone)]
 pub struct Entity {
     // This entity's ID
-    pub(crate) id: Option<EntityID>,     
+    pub(crate) id: Option<EntityID>,
 
     // Component Bitfield
-    pub(crate) cbitfield: Bitfield<u32>, 
+    pub(crate) cbitfield: Bitfield<u32>,
 
     // Our stored components
     pub(crate) components: Vec<ComponentID>,
