@@ -2,12 +2,12 @@ use ecs::{EntityID, Entity, ComponentLinkingGroup};
 use crate::{Context};
 
 // A task sender context that we can use to send tasks to the main thread
-pub struct RefTaskSenderContext {
+pub struct TaskSenderContext {
     // The task timing for this context
     pub(crate) timing: WorldTaskTiming,
 }
 
-impl RefTaskSenderContext {
+impl TaskSenderContext {
     // New
     pub fn new(context: &Context) -> Self {
         Self {

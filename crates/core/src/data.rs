@@ -7,7 +7,7 @@ use others::Time;
 use rendering::{PipelineStartData, Pipeline};
 use ui::UIManager;
 
-use crate::{GameConfig, WorldTask, RefTaskSenderContext, WorldTaskTiming};
+use crate::{GameConfig, WorldTask, TaskSenderContext, WorldTaskTiming};
 
 // The whole world that stores our managers and data
 pub struct World {
@@ -35,18 +35,50 @@ impl Context {
             world: world.clone()
         }
     }
-    // Create a RefTaskSenderContext that we can use to send tasks to the main thread
-    pub fn create_sender(&self) -> RefTaskSenderContext {
-        RefTaskSenderContext {
+    // Create a TaskSenderContext that we can use to send tasks to the main thread
+    pub fn new_task_sender(&self) -> TaskSenderContext {
+        TaskSenderContext {
             timing: WorldTaskTiming::default(),
         }
     }
-    // Get ref
-    pub fn get<'a>(&self) -> RwLockReadGuard<World> {
-        self.world.read().unwrap()
+    // Read
+    pub fn read<'a>(&'a self) -> ReadableContext<'a> {
+        ReadableContext { world: self.world.read().unwrap() }
     }
-    // Get mut
-    pub fn get_mut<'a>(&mut self) -> RwLockWriteGuard<World> {
-        self.world.write().unwrap()
+    // Write
+    pub fn write<'a>(&'a mut self) -> WritableContext<'a> {
+        WritableContext { world: self.world.write().unwrap() }
+    }
+}
+
+// A readable world context
+pub struct ReadableContext<'a> {
+    pub(crate) world: RwLockReadGuard<'a, World>
+}
+
+impl<'a> std::ops::Deref for ReadableContext<'a> {
+    type Target = World;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.world
+    }
+}
+
+// A writable world context
+pub struct WritableContext<'a> {
+    pub(crate) world: RwLockWriteGuard<'a, World>
+}
+
+impl<'a> std::ops::Deref for WritableContext<'a> {
+    type Target = World;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.world
+    }
+}
+
+impl<'a> std::ops::DerefMut for WritableContext<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut *self.world
     }
 }
