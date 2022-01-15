@@ -2,11 +2,10 @@
 pub mod test {
     use crate::{defaults::Name, linked_components::{LinkedComponents, ComponentQuery}, ComponentLinkingGroup, ECSManager, Entity, EntityID, System, event_handler::EventHandler};
 
-    // Some test contexts
+    // A test context
     #[derive(Clone, Copy)]
-    pub struct RefContext;
-    pub struct MutContext;
-    fn run_system(_context: RefContext, components: ComponentQuery) {
+    pub struct WorldContext;
+    fn run_system(_context: &WorldContext, components: ComponentQuery) {
 
         // Transform the _context to RefContext using some magic fuckery
         
@@ -33,11 +32,10 @@ pub mod test {
     #[test]
     // Simple test to test the ecs
     pub fn test() {
-        // Also create the contextes
-        let ref_context = RefContext;
-        let mut mut_context = MutContext;
+        // Also create the context
+        let context = WorldContext;
         // Create the main ECS manager, and the Event Handler
-        let mut event_handler = EventHandler::<RefContext>::new();
+        let mut event_handler = EventHandler::<WorldContext>::new();
         let mut ecs = ECSManager::new(|| {});
 
         // Make a simple system
@@ -58,22 +56,21 @@ pub mod test {
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
-        ecs.run_systems(&ref_context, &event_handler);
+        ecs.run_systems(&context, &event_handler);
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3.clone();
         ecs.remove_entity(id3).unwrap();
         assert!(ecs.entity(&id4).is_err());
-        ecs.run_systems(&ref_context, &event_handler);
+        ecs.run_systems(&context, &event_handler);
     }
     #[test]
     // Test the parralelization
     pub fn test_parallel() {
         // Create the main ECS manager, and the Component Manager
-        let mut event_handler = EventHandler::<RefContext>::new();
+        let mut event_handler = EventHandler::<WorldContext>::new();
         let mut ecs = ECSManager::new(|| {});
-        // Also create the contextes
-        let ref_context = RefContext;
-        let mut mut_context = MutContext;
+        // Also create the context
+        let context = WorldContext;
 
         // Make a simple system
         let mut hello_system = System::new();
@@ -93,7 +90,7 @@ pub mod test {
         // Run the system for two frames    
         for x in 0..30 {
             let i = std::time::Instant::now();
-            ecs.run_systems(&ref_context, &event_handler);
+            ecs.run_systems(&context, &event_handler);
             println!("{}", i.elapsed().as_millis());
         }    
         //ecs.run_systems(&mut mut_context);

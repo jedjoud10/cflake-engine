@@ -34,7 +34,7 @@ impl System {
         self.cbitfield = self.cbitfield.add(&c);
     }
     // Set the a ref context system event
-    pub fn set_event<RefContext>(&mut self, event_handler: &mut EventHandler<RefContext>, run_system: fn(RefContext, ComponentQuery)) {
+    pub fn set_event<Context>(&mut self, event_handler: &mut EventHandler<Context>, run_system: fn(&Context, ComponentQuery)) {
         event_handler.add_run_event(run_system);
     }
     // Check if we can add an entity (It's cbitfield became adequate for our system or the entity was added from the world)
@@ -51,7 +51,7 @@ impl System {
         }
     }
     // Run the system for a single iteration
-    pub fn run_system<RefContext>(&self, context: RefContext, event_handler: &EventHandler<RefContext>, ecs_manager: &ECSManager) {
+    pub fn run_system<Context>(&self, mut context: Context, event_handler: &EventHandler<Context>, ecs_manager: &ECSManager) {
         // These components are filtered for us
         let components = &ecs_manager.components;    
         let i = std::time::Instant::now();
@@ -68,7 +68,7 @@ impl System {
         };
         if let Some(run_system_evn) = event_handler.get_run_event(self.run_event_idx) {
             // Run the "run system" event
-            run_system_evn(context, query);
+            run_system_evn(&context, query);
         }
         //dbg!(i.elapsed());
     }
