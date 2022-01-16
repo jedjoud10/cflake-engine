@@ -5,14 +5,6 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-name = "engine"
-path = "src/lib.rs"
-
-[[bin]]
-name = "dev_game"
-path = "src/bin.rs"
-
 [dependencies]
 window = { path = "crates\\window" }
 
