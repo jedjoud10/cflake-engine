@@ -163,7 +163,6 @@ impl PipelineRenderer {
             fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
                 // Get the textures from the GPUObjectID
                 let texture = pipeline.get_texture(*texture)?;
-                dbg!(texture);
                 unsafe {
                     gl::BindTexture(texture.target, texture.oid);
                     gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target, texture.oid, 0);
@@ -215,7 +214,7 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, to render the world
-    pub fn renderer_frame(&self, pipeline: &Pipeline) {
+    pub fn render_frame(&self, pipeline: &Pipeline) {
         let _i = std::time::Instant::now();
         for renderer in pipeline.renderers.iter() {
             self.render(pipeline, renderer);
@@ -256,7 +255,6 @@ impl PipelineRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_data.element_buffer_object);
             gl::DrawElements(gl::TRIANGLES, quad_data.triangle_count as i32, gl::UNSIGNED_INT, null());
             gl::BindVertexArray(0);
-            // REMEMBER TO SWAP BUFFERS
         }
     }
     // Update window

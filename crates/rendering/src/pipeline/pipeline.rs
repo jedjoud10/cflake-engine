@@ -217,7 +217,7 @@ impl Pipeline {
 
         // Actually compile the shader now
         println!("\x1b[33mCompiling & Creating Shader {}...\x1b[0m", shader_name);
-        unsafe {
+        let program = unsafe {
             let program = gl::CreateProgram();
 
             // Create & compile the shader sources and link them
@@ -254,8 +254,10 @@ impl Pipeline {
                 gl::DetachShader(program, *shader);
             }
             println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader_name);
-        }
+            program
+        };
         // Add the shader at the end
+        shader.program = program;
         self.shaders.insert(task.1.index.unwrap(), shader);
     }
     // Create a compute shader and cache it
@@ -776,7 +778,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         }
 
         // Setup the pipeline renderer
-        let _renderer = {
+        let mut renderer = {
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
             renderer.initialize(&mut *pipeline);
@@ -795,7 +797,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 sbarrier_clone.wait();
 
                 // We render the world here
-                let _pipeline = pipeline.read().unwrap();
+                let pipeline = pipeline.read().unwrap();
+                renderer.pre_render();
+                renderer.render_frame(&*pipeline);
+                renderer.post_render(&*pipeline);
+                // Do not forget to switch buffers at the end of the frame
+                window.swap_buffers();
 
                 // And we also sync at the end of each frame
                 ebarrier_clone.wait();

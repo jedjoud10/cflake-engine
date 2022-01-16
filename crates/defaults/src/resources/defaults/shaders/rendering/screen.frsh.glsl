@@ -7,7 +7,6 @@ uniform sampler2D depth_texture; // 3
 
 // Ambient sky gradient
 uniform sampler2D default_sky_gradient; // 4
-uniform sampler2D frame_stats; // 5
 
 uniform vec3 directional_light_dir;
 uniform mat4 custom_vp_matrix;
@@ -23,6 +22,7 @@ void main() {
 	vec2 uvs = uv_coordinates;
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
 	color = vec3(uv_coordinates, 0);
+	return;
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
@@ -83,7 +83,4 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
-
-	color = vec3(0, 0, 0);
-	//color = final_color;
 }

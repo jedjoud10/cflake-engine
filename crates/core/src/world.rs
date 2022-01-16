@@ -109,7 +109,4 @@ impl World {
         // Join the render thread now
         start_data.handle.join().unwrap();
     }
-    pub fn tes<'a>(&'a self) {
-        let _test = &self.ui;
-    }
 }

@@ -6,7 +6,7 @@ use crate::{
 use super::Buildable;
 
 // Some OpenGL data for a model
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ModelBuffers {
     // The OpenGL data
     pub vertex_buf: u32,
