@@ -1,12 +1,9 @@
-use core::FrameID;
-
 // Transforms components
 // The transform component
 pub struct Transform {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
     pub scale: veclib::Vector3<f32>,
-    pub update_frame_id: FrameID,
 }
 
 // Default transform
@@ -16,7 +13,6 @@ impl Default for Transform {
             position: veclib::Vector3::ZERO,
             rotation: veclib::Quaternion::IDENTITY,
             scale: veclib::Vector3::ONE,
-            update_frame_id: FrameID::default(),
         }
     }
 }

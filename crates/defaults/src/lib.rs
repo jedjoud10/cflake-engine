@@ -1,10 +1,12 @@
 // Default components
-//pub mod components;
+pub mod components;
 // Default systems
+pub mod template_system;
 /*
-pub mod default_system;
 pub mod systems;
 */
+
+use core::WriteContext;
 
 use assets::preload_asset;
 // Pre-load the default assets
@@ -55,8 +57,11 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png");
     println!("Finished pre-loading default assets!");
 }
-/*
 // Pre-load the default systems
+pub fn preload_system(mut write: WriteContext) {
+    template_system::system(write);
+}
+/*
 pub fn preload_systems() {
     let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
     let (string, csgtree) = interpreter.finalize().unwrap();

@@ -6,13 +6,13 @@ use worker_threads::ThreadPool;
 
 use crate::{
     component::{ComponentID, EnclosedComponent, LinkedComponents},
-    entity::{ComponentLinkingGroup, Entity, EntityID},
-    system::{EventHandler, System},
+    entity::{ComponentLinkingGroup, Entity, EntityID, ComponentUnlinkGroup},
+    system::{EventHandler, System, SystemBuilder},
     utils::{ComponentError, EntityError},
 };
 
 // The Entity Component System manager that will handle everything ECS related (other than the components)
-pub struct ECSManager {
+pub struct ECSManager<Context> {
     // A vector full of entities. Each entity can get invalidated, but never deleted
     pub(crate) entities: ShareableOrderedVec<Entity>,
     // Each system, stored in the order they were created
@@ -22,10 +22,12 @@ pub struct ECSManager {
     pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>,
     // The internal ECS thread pool
     pub(crate) thread_pool: ThreadPool<LinkedComponents>,
+    // Our internal event handler
+    pub(crate) event_handler: EventHandler<Context>,
 }
 
 // Global code for the Entities, Components, and Systems
-impl ECSManager {
+impl<Context> ECSManager<Context> {
     // Create a new ECS manager
     pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
         // Start the thread pool
@@ -36,6 +38,7 @@ impl ECSManager {
             components_ids: Default::default(),
             components: Default::default(),
             thread_pool,
+            event_handler: Default::default(),
         }
     }
     /* #region Entities */
@@ -57,7 +60,7 @@ impl ECSManager {
         // Add the entity
         let _idx = self.entities.insert(id.index as usize, entity);
         // After doing that, we can safely add the components
-        self.add_component_group(id, group).unwrap();
+        self.link_components(id, group).unwrap();
     }
     // Remove an entity from the manager, and return it's value
     // When we remove an entity, we also remove it's components, thus updating the systems
@@ -68,19 +71,56 @@ impl ECSManager {
         for component_id in entity.components.iter() {
             self.remove_component(*component_id).unwrap();
         }
+        // And finally remove the entity from it's systems
+        for system in self.systems.iter_mut() {
+            if system.check_cbitfield(entity.cbitfield) {
+                // Remove the entity, since it was contained in the system
+                system.remove_entity(id);
+            }
+        }
         Ok(entity)
     }
     /* #endregion */
     /* #region Components */
-    // Add a component linking group to the manager
-    fn add_component_group(&mut self, id: EntityID, group: ComponentLinkingGroup) -> Result<(), ComponentError> {
-        for (cbitfield, boxed) in group.linked_components {
+    // Link some components to an entity
+    pub fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
+        for (cbitfield, boxed) in link_group.linked_components {
             let idx = self.add_component(boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
             entity.components.push(idx);
         }
+        // Change the entity's bitfield
+        let entity = self.entity_mut(&id).unwrap();
+        let cbitfield = entity.cbitfield.add(&link_group.cbitfield);
+        entity.cbitfield = cbitfield; 
         // Check if the linked entity is valid to be added into the systems
-        self.systems.iter_mut().for_each(|system| system.check_add_entity(group.cbitfield, id));
+        self.systems.iter_mut().for_each(|system| if system.check_cbitfield(cbitfield) {
+            system.add_entity(id)
+        });
+        Ok(())
+    }
+    // Unlink some components from an entity
+    pub fn unlink_components(&mut self, id: EntityID, unlink_group: ComponentUnlinkGroup) -> Result<(), ComponentError> {
+        // Check if the entity even have these components
+        let entity = self.entity(&id).unwrap();
+        let valid = entity.cbitfield.contains(&unlink_group.removal_cbitfield);
+        if !valid { return Err(ComponentError::new_without_id("The ComponentSplitGroup contains components that do not exist on the original entity!".to_string())) }
+        // Remove the entity from some systems if needed
+        let old = entity.cbitfield;
+        let new = entity.cbitfield.remove(&unlink_group.removal_cbitfield).unwrap();
+        self.systems.iter_mut().for_each(|system| {
+            // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
+            if system.check_cbitfield(old) && !system.check_cbitfield(new) {
+                system.remove_entity(id);
+            }
+        });
+        // Update the entity's components
+        let entity = self.entity_mut(&id).unwrap();
+        let components = entity.components.drain_filter(|component_id| unlink_group.removal_cbitfield.contains(&component_id.cbitfield)).collect::<Vec<_>>();
+        entity.cbitfield = new;
+        for component_id in components {
+            self.remove_component(component_id)?;
+        }
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
@@ -105,8 +145,12 @@ impl ECSManager {
     }
     /* #endregion */
     /* #region Systems */
+    // Create a new system build
+    pub fn create_system_builder<'a>(&'a mut self) -> SystemBuilder<'a, Context> {
+        SystemBuilder::new(self)
+    }
     // Add a system to our current systems
-    pub fn add_system(&mut self, system: System) {
+    pub(crate) fn add_system(&mut self, system: System) {
         self.systems.push(system)
     }
     // Get a reference to the ecsmanager's systems.
@@ -115,9 +159,9 @@ impl ECSManager {
     }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems<'long: 'short, 'short, RefContext: Clone + 'short>(&'long self, context: &'short RefContext, event_handler: &EventHandler<RefContext>) {
+    pub fn run_systems(&self, context: Context) where Context: Clone {
         for system in self.systems.iter() {
-            system.run_system(context.clone(), event_handler, self);
+            system.run_system(context.clone(), &self);
         }
     }
     /* #endregion */

@@ -12,14 +12,12 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
-            ecs: (
-                ecs::ECSManager::new(|| {
+            ecs: ecs::ECSManager::new(|| {
                     // This is ran on every thread in the ECS thread pool
                     rendering::pipeline::init_coms();
                     crate::sender::init_coms();
                 }),
-                ecs::system::EventHandler::new(),
-            ),
+            ecs_event_handler: ecs::system::EventHandler::new(),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
@@ -85,10 +83,9 @@ impl World {
         let start_data = &self.pipeline_thread;
         start_data.sbarrier.wait();
         // Update the systems
-        let (ecs, ecs_event_handler) = &self.ecs;
         {
             let context = Context::convert(&arc);
-            ecs.run_systems(&context, ecs_event_handler);
+            &self.ecs.run_systems(&context, &self.ecs_event_handler);
         }
     }
     // End frame update

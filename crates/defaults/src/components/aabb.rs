@@ -1,4 +1,4 @@
-use ecs::*;
+use ecs::entity::Entity;
 use math;
 
 // An AABB components
@@ -33,18 +33,6 @@ impl AABB {
         // Recalculate the center
         aabb.center = (aabb.min + aabb.max) / 2.0;
         aabb
-    }
-    // Generate the AABB from a renderer entity
-    pub fn from_components(entity: &Entity) -> Self {
-        let transform = core::global::ecs::component::<super::Transform>(entity).unwrap();
-        /*
-        let renderer = entity.get_component::<super::Renderer>(component_manager).unwrap();
-        let aabb = math::bounds::AABB::new_vertices(&renderer.model.vertices);
-        */
-        Self {
-            aabb: Self::offset(math::bounds::AABB::default(), transform),
-            ..Self::default()
-        }
     }
 }
 

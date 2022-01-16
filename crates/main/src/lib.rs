@@ -17,7 +17,7 @@ pub use debug;
 pub use defaults;
 pub mod ecs {
     pub use ::ecs::*;
-    pub use core::tasks::ecs::*;
+    pub use core::tasks::ecs as tasks;
 }
 pub use input;
 pub use math;
@@ -32,8 +32,8 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
         .create_window(
-            rendering::utils::WINDOW_SIZE.x as u32,
-            rendering::utils::WINDOW_SIZE.y as u32,
+            rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
+            rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
             app_name,
             glfw::WindowMode::Windowed,
         )
@@ -53,8 +53,9 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     println!("Calling World Initialization callback");
     {
         let mut context = Context::convert(&world);
-        let wcontext = context.write();
-        init_world(wcontext);
+        // Load the default systems first
+        defaults::preload_system(context.write());
+        init_world(context.write());
     }
     println!("Hello Game World!");
     while !window.should_close() {

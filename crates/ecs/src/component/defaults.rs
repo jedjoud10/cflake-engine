@@ -18,6 +18,12 @@ pub struct Tagged {
     pub tag: String,
 }
 
+impl Tagged {
+    pub fn new(tag: &str) -> Self {
+        Self { tag: tag.to_string() }
+    }
+}
+
 // Load state for entities
 pub enum LoadState {
     Loaded,

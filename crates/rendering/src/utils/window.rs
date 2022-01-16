@@ -1,5 +1,5 @@
 // Get the default width and height of the starting window
-pub const WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
+pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 
 // A window class to organize things
 #[derive(Clone)]
@@ -14,7 +14,7 @@ impl Default for Window {
         Self {
             fullscreen: false,
             vsync: false,
-            dimensions: WINDOW_SIZE,
+            dimensions: DEFAULT_WINDOW_SIZE,
         }
     }
 }

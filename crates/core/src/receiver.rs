@@ -28,7 +28,7 @@ impl WorldTaskReceiver {
     // Execute a single task
     fn execute(&mut self, world: &mut World, task: WorldTask) {
         // We will execute the tasks
-        let ecs = &mut world.ecs.0;
+        let ecs = &mut world.ecs;
         match task {
             WorldTask::AddEntity(entity, id, group) => {
                 // We will add the entity to the world

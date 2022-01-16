@@ -71,8 +71,8 @@ dependencies = [
 
 [[package]]
 name = "bitfield"
-version = "0.2.0"
-source = "git+https://github.com/jedjoud10/bitfield#d6d57ea93ecb68662804b28191799496b49a9e4d"
+version = "0.2.2"
+source = "git+https://github.com/jedjoud10/bitfield#0f4ee6ad8e1d186b3423d06dafe7209e94e0625c"
 
 [[package]]
 name = "bitflags"
@@ -937,9 +937,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.74"
+version = "1.0.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee2bb9cd061c5865d345bb02ca49fcef1391741b672b54a0bf7b679badec3142"
+checksum = "c059c05b48c5c0067d4b4b2b4f0732dd65feb52daf7e0ea09cd87e7dadc1af79"
 dependencies = [
  "itoa",
  "ryu",
