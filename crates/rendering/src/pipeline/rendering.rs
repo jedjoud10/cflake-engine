@@ -1,11 +1,6 @@
 use std::ptr::null;
-
-use crate::{
-    object::ObjectID, pipec, DataType, MaterialFlags, Model, Pipeline, Renderer, Shader, ShaderSettings, ShaderUniformsGroup, ShaderUniformsSettings, Texture, TextureFormat,
-    TextureType,
-};
-
-use super::camera::Camera;
+use crate::{basics::{texture::{Texture, TextureFormat, TextureType}, shader::{Shader, ShaderSettings}, model::Model, uniforms::{ShaderUniformsSettings, ShaderUniformsGroup}, renderer::Renderer, material::MaterialFlags}, pipeline::pipec, utils::DataType, object::ObjectID};
+use super::{camera::Camera, Pipeline};
 
 // Pipeline renderer that will render our world
 #[derive(Default)]
@@ -184,7 +179,7 @@ impl PipelineRenderer {
         self.sky_texture = pipec::construct(
             assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png")
                 .unwrap()
-                .set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge),
+                .set_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
             pipeline,
         );
         /* #endregion */

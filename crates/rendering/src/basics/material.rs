@@ -3,6 +3,10 @@ use crate::object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask};
 use crate::pipeline::*;
 use bitflags::bitflags;
 
+use super::shader::Shader;
+use super::texture::Texture;
+use super::uniforms::ShaderUniformsGroup;
+
 bitflags! {
     pub struct MaterialFlags: u8 {
         const DOUBLE_SIDED = 0b00000001;
@@ -32,12 +36,7 @@ impl Buildable for Material {
         group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
         group.set_f32("normals_strength", 1.0);
         let defaults = pipeline.defaults.as_ref().unwrap();
-        if !group.contains_uniform("diffuse_tex") {
-            group.set_texture("diffuse_tex", defaults.diffuse_tex, 0);
-        }
-        if !group.contains_uniform("normals_tex") {
-            group.set_texture("normals_tex", defaults.normals_tex, 1);
-        }
+        self.set_pre_construct_settings(defaults.diffuse_tex, defaults.normals_tex);
         self.uniforms = group;
         // Set the default rendering shader if no shader was specified
         if !self.shader.valid() {
@@ -76,5 +75,14 @@ impl Material {
     pub fn set_uniforms(mut self, uniforms: ShaderUniformsGroup) -> Self {
         self.uniforms = uniforms;
         self
+    }
+    pub fn set_pre_construct_settings(&mut self, diffuse_tex: ObjectID<Texture>, normals_tex: ObjectID<Texture>) {
+        let group = &mut self.uniforms;
+        if !group.contains_uniform("diffuse_tex") {
+            group.set_texture("diffuse_tex", diffuse_tex, 0);
+        }
+        if !group.contains_uniform("normals_tex") {
+            group.set_texture("normals_tex", normals_tex, 1);
+        }
     }
 }

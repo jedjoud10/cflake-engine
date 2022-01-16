@@ -1,8 +1,8 @@
 use crate::FontChar;
-use ::rendering::{basics::*, object::ObjectID, pipec, pipeline::*};
 use ascii::AsciiStr;
 use assets::Asset;
 use byteorder::{LittleEndian, ReadBytesExt};
+use rendering::{basics::texture::{Texture, TextureType, TextureFilter, TextureFormat}, object::ObjectID, pipeline::{Pipeline, pipec}};
 
 // A simple font containing the characters
 #[derive(Default)]

@@ -6,7 +6,7 @@ use ecs::{system::EventHandler, ECSManager};
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
-use rendering::{Pipeline, PipelineStartData};
+use rendering::{pipeline::{Pipeline, PipelineStartData}};
 use ui::UIManager;
 
 use crate::{GameConfig, TaskSenderContext, WorldTaskTiming};

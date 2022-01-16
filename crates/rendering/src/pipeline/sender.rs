@@ -37,7 +37,7 @@ pub fn init_coms() {
 }
 
 // Send a task using the thread local sender
-pub fn send_task(task: (PipelineTask, TaskID)) -> Result<(), SendError<(PipelineTask, TaskID)>> {
+pub(crate) fn send_task(task: (PipelineTask, TaskID)) -> Result<(), SendError<(PipelineTask, TaskID)>> {
     LOCAL_SENDER.with(|cell| {
         let cell = cell.borrow();
         let sender = (&*cell).as_ref().unwrap();

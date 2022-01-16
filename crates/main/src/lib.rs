@@ -31,7 +31,7 @@ pub use veclib;
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
-        .create_window(rendering::WINDOW_SIZE.x as u32, rendering::WINDOW_SIZE.y as u32, app_name, glfw::WindowMode::Windowed)
+        .create_window(rendering::utils::WINDOW_SIZE.x as u32, rendering::utils::WINDOW_SIZE.y as u32, app_name, glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
     // Pre-load the assets first
     defaults::preload_default_assets();

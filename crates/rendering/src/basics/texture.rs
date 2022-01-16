@@ -2,13 +2,14 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    utils::*,
-    Buildable, Pipeline,
+    utils::*, pipeline::Pipeline,
 };
 use assets::*;
 use bitflags::bitflags;
 use gl;
 use image::{EncodableLayout, GenericImageView};
+
+use super::Buildable;
 
 bitflags! {
     pub struct TextureFlags: u8 {

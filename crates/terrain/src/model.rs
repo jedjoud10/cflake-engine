@@ -1,4 +1,4 @@
-use rendering::basics::Model;
+use rendering::basics::model::Model;
 use std::collections::HashMap;
 
 use crate::ChunkCoords;

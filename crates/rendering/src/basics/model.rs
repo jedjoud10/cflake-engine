@@ -1,7 +1,8 @@
 use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    Buildable,
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask}, pipeline::Pipeline,
 };
+
+use super::Buildable;
 
 // Some OpenGL data for a model
 #[derive(Default)]
@@ -49,7 +50,7 @@ impl Clone for Model {
 impl PipelineObject for Model {}
 
 impl Buildable for Model {
-    fn construct_task(self, pipeline: &crate::Pipeline) -> (PipelineTask, ObjectID<Self>) {
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.materials.get_next_idx_increment();
         let id = ObjectID::new(id);

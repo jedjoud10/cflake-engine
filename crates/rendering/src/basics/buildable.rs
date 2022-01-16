@@ -1,6 +1,6 @@
 use crate::{
     object::{ObjectID, PipelineObject, PipelineTask},
-    Pipeline,
+    pipeline::Pipeline,
 };
 // A buildable trait that can be implemented on Pipeline Objects that can be constructed using crate::pipec::construct()
 pub trait Buildable: PipelineObject

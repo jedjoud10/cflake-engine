@@ -7,7 +7,6 @@ pub mod systems;
 */
 
 use assets::preload_asset;
-use rendering::{Material, Shader, Texture};
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the resources

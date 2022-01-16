@@ -1,4 +1,6 @@
 use crate::basics::*;
+use crate::basics::model::Model;
+use crate::basics::texture::{Texture, TextureFormat, TextureType};
 use crate::utils::*;
 
 use assets::Asset;

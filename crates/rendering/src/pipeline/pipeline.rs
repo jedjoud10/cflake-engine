@@ -1,10 +1,6 @@
 use crate::{
-    compute::{ComputeShader, ComputeShaderExecutionSettings},
     object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskStatus, TaskID},
-    pipec,
-    pipeline::{camera::Camera, sender},
-    Material, Model, ModelBuffers, PipelineRenderer, Renderer, Shader, ShaderSettings, ShaderSource, ShaderSourceType, ShaderUniformsSettings, Texture, TextureFilter,
-    TextureFlags, TextureType, TextureWrapping, Window,
+    pipeline::{camera::Camera, sender, pipec, PipelineRenderer}, basics::{texture::{Texture, TextureType, get_ifd, TextureFilter, TextureWrapping, TextureFlags}, shader::{Shader, ShaderSourceType, ShaderSource, ShaderSettings}, material::Material, model::{Model, ModelBuffers}, renderer::Renderer, uniforms::ShaderUniformsSettings}, advanced::compute::{ComputeShader, ComputeShaderExecutionSettings}, utils::Window,
 };
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
@@ -452,7 +448,7 @@ impl Pipeline {
         if !texture.bytes.is_empty() {
             pointer = texture.bytes.as_ptr() as *const c_void;
         }
-        let ifd = crate::get_ifd(texture._format, texture._type);
+        let ifd = get_ifd(texture._format, texture._type);
 
         // Get the tex_type based on the TextureDimensionType
         let tex_type = match texture.ttype {
@@ -613,7 +609,7 @@ pub struct PipelineStartData {
 }
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
-    use crate::texture::{TextureFilter, TextureType};
+    use crate::basics::texture::{TextureFilter, TextureType};
     use assets::assetc::load;
 
     // Create the default missing texture
@@ -656,7 +652,9 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let shader = pipec::construct(Shader::new(ss).unwrap(), pipeline);
 
     // Create the default material
-    let material = pipec::construct(Material::default().set_shader(shader), pipeline);
+    let mut material = Material::default().set_shader(shader);
+    material.set_pre_construct_settings(missing, normals);
+    let material = pipec::construct_only(material, pipeline);
 
     // Create the default model
     let model = pipec::construct(Model::default(), pipeline);
@@ -707,7 +705,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // Create a simple unsafe wrapper so we can send the glfw and window data to the render thread
     // Window and GLFW wrapper
     struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
-    let wrapper = unsafe {
+    let wrapper = {
         // Create the render wrapper
         let glfw = glfw as *mut glfw::Glfw;
         let window = window as *mut glfw::Window;
@@ -741,6 +739,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             panic!()
         }
 
+        // Set the global sender
+        sender::set_global_sender(tx);
+
         // Create the pipeline
         let pipeline = Pipeline::default();
 
@@ -759,10 +760,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut renderer = PipelineRenderer::default();
             renderer.initialize(&mut *pipeline);
             renderer
-        };
-
-        // Set the global sender
-        sender::set_global_sender(tx);
+        };        
 
         // ---- Finished initializing the Pipeline! ----
         itx.send(pipeline.clone()).unwrap();

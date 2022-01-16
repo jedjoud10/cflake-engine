@@ -1,8 +1,11 @@
 use crate::object::ObjectID;
 use crate::object::{ObjectBuildingTask, PipelineObject, PipelineTask};
+use crate::params::{FADE_IN_SPEED, FADE_OUT_SPEED};
+use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
-use crate::{params::*, Buildable};
 use std::collections::{HashMap, HashSet};
+
+use super::Buildable;
 // Shader source type
 pub(crate) enum ShaderSourceType {
     Vertex,
@@ -65,7 +68,7 @@ pub struct Shader {
 impl PipelineObject for Shader {}
 
 impl Buildable for Shader {
-    fn construct_task(self, pipeline: &crate::Pipeline) -> (PipelineTask, ObjectID<Self>) {
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.shaders.get_next_idx_increment();
         let id = ObjectID::new(id);

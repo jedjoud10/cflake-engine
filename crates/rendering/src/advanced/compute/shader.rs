@@ -1,6 +1,5 @@
 use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    Buildable, ShaderSource,
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask}, basics::{shader::ShaderSource, Buildable},
 };
 
 // A compute shader that can run parallel calculations on the GPU
@@ -13,7 +12,7 @@ pub struct ComputeShader {
 impl PipelineObject for ComputeShader {}
 
 impl Buildable for ComputeShader {
-    fn construct_task(self, pipeline: &crate::Pipeline) -> (PipelineTask, ObjectID<Self>) {
+    fn construct_task(self, pipeline: &crate::pipeline::Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.compute_shaders.get_next_idx_increment();
         let id = ObjectID::new(id);

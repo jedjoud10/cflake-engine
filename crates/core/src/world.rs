@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use rendering::PipelineStartData;
+use rendering::pipeline::PipelineStartData;
 
 use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 
@@ -15,7 +15,7 @@ impl World {
             ecs: (
                 ecs::ECSManager::new(|| {
                     // This is ran on every thread in the ECS thread pool
-                    rendering::init_coms();
+                    rendering::pipeline::init_coms();
                     crate::sender::init_coms();
                 }),
                 ecs::system::EventHandler::new(),

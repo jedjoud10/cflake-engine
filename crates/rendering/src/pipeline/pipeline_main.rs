@@ -2,8 +2,7 @@
 pub mod pipec {
     use crate::{
         object::{ObjectID, PipelineObject, PipelineTask, TaskID},
-        pipeline::sender,
-        Buildable, Pipeline,
+        pipeline::{sender, Pipeline}, basics::Buildable,
     };
 
     // Send a task to the shared pipeline
@@ -17,6 +16,13 @@ pub mod pipec {
     // Create a Pipeline Object, returning it's ObjectID
     pub fn construct<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
         let object = object.pre_construct(pipeline);
+        // Construct it's ID and automatically send it's construction task
+        let (t, id) = object.construct_task(pipeline);
+        task(t, pipeline);
+        id
+    }
+    // Create a Pipeline Object, returning it's ObjectID, but without running it's pre construct
+    pub(crate) fn construct_only<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
         // Construct it's ID and automatically send it's construction task
         let (t, id) = object.construct_task(pipeline);
         task(t, pipeline);

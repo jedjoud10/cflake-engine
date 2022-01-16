@@ -1,9 +1,10 @@
 use bitflags::bitflags;
 
 use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    Buildable, Material, Model,
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask}, pipeline::Pipeline,
 };
+
+use super::{material::Material, model::Model, Buildable};
 // Yup
 bitflags! {
     pub struct RendererFlags: u8 {
@@ -25,13 +26,13 @@ impl PipelineObject for Renderer {}
 ecs::impl_component!(Renderer);
 
 impl Buildable for Renderer {
-    fn construct_task(self, pipeline: &crate::Pipeline) -> (PipelineTask, ObjectID<Self>) {
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
         let id = pipeline.renderers.get_next_idx_increment();
         let id = ObjectID::new(id);
         (PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), id)
     }
-    fn pre_construct(mut self, pipeline: &crate::Pipeline) -> Self {
+    fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
         // We must fill out our model and material if they are empty
         let defaults = pipeline.defaults.as_ref().unwrap();
         if !self.model.valid() {
