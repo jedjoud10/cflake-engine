@@ -3,6 +3,7 @@
 pub mod component;
 pub mod entity;
 mod manager;
+pub mod manager_special;
 pub mod system;
 pub use manager::ECSManager;
 pub mod utils;

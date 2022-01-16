@@ -1,6 +1,6 @@
-use ecs::*;
-use math;
-use rendering::utils::DEFAULT_WINDOW_SIZE;
+use main::ecs::*;
+use main::math;
+use main::rendering::utils::DEFAULT_WINDOW_SIZE;
 // A simple camera component
 pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,
@@ -67,4 +67,4 @@ impl Default for Camera {
     }
 }
 
-ecs::impl_component!(Camera);
+main::ecs::impl_component!(Camera);

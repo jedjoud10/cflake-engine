@@ -108,7 +108,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "cflake-engine"
 version = "0.1.2"
 dependencies = [
- "main",
+ "window",
 ]
 
 [[package]]
@@ -259,18 +259,7 @@ dependencies = [
 name = "defaults"
 version = "0.1.0"
 dependencies = [
- "assets",
- "core",
- "debug",
- "ecs",
- "fonts",
- "input",
- "math",
- "others",
- "physics",
- "rendering",
- "terrain",
- "ui",
+ "main",
  "veclib",
 ]
 
@@ -527,16 +516,19 @@ name = "main"
 version = "0.1.0"
 dependencies = [
  "assets",
+ "bitfield",
  "core",
  "debug",
- "defaults",
  "ecs",
  "gl",
  "glfw",
  "input",
  "lazy_static",
  "math",
+ "network",
+ "ordered_vec",
  "others",
+ "physics",
  "rendering",
  "spin_sleep",
  "terrain",
@@ -1080,6 +1072,18 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "window"
+version = "0.1.0"
+dependencies = [
+ "defaults",
+ "gl",
+ "glfw",
+ "lazy_static",
+ "main",
+ "spin_sleep",
+]
 
 [[package]]
 name = "worker_threads"

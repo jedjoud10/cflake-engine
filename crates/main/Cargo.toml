@@ -10,10 +10,14 @@ edition = "2021"
 glfw = "0.41.0"
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
+ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
+bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 lazy_static = "1.4.0"
 spin_sleep = "1.0.0"
 core = { path = "../core" }
 input = { path = "../input" }
+physics = { path = "../physics" }
+network = { path = "../network" }
 others = { path = "../others" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
@@ -21,5 +25,4 @@ assets = { path = "../assets" }
 debug = { path = "../debug" }
 math = { path = "../math" }
 ui = { path = "../ui" }
-defaults = { path = "../defaults" }
 terrain = { path = "../terrain" }

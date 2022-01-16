@@ -1,10 +1,14 @@
 [package]
-name = "defaults"
+name = "window"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-veclib = { git = "https://github.com/jedjoud10/veclib" }
+glfw = "0.41.0"
+gl = "0.14.0"
+lazy_static = "1.4.0"
+spin_sleep = "1.0.0"
 main = { path = "../main" }
+defaults = { path = "../defaults" }

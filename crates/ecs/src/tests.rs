@@ -2,7 +2,7 @@
 pub mod test {
     use bitfield::Bitfield;
 
-    use crate::{component::{ComponentQuery, Name, Tagged, registry}, ECSManager, entity::{ComponentLinkingGroup, Entity, EntityID, ComponentUnlinkGroup}};
+    use crate::{component::{ComponentQuery, defaults::{Name, Tagged}, registry}, ECSManager, entity::{ComponentLinkingGroup, Entity, EntityID, ComponentUnlinkGroup}};
 
     // A test context
     #[derive(Clone, Copy)]

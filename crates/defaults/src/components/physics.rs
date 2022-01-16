@@ -1,4 +1,4 @@
-use physics::PhysicsObject;
+use main::physics::PhysicsObject;
 
 // A physics component
 #[derive(Default, Clone)]
@@ -15,4 +15,4 @@ impl Physics {
 }
 
 // Main traits implemented
-ecs::impl_component!(Physics);
+main::ecs::impl_component!(Physics);

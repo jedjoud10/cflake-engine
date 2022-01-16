@@ -1,12 +1,11 @@
-use main::core::World;
-
+use window::start;
 fn main() {
     // Load up the engine
-    main::start("DevJed", "DevGame", preload_assets, init);
+    start("DevJed", "DevGame", preload_assets, init);
 }
 pub fn preload_assets() {
     // -----Pre-load the game assets here-----
 }
-pub fn init(world: main::core::WriteContext) {
+pub fn init(world: window::core::WriteContext) {
     // ----Start the world----
 }

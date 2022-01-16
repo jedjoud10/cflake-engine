@@ -47,4 +47,4 @@ impl Transform {
     }
 }
 
-ecs::impl_component!(Transform);
+main::ecs::impl_component!(Transform);

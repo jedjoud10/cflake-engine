@@ -17,7 +17,6 @@ impl World {
                     rendering::pipeline::init_coms();
                     crate::sender::init_coms();
                 }),
-            ecs_event_handler: ecs::system::EventHandler::new(),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
@@ -85,7 +84,7 @@ impl World {
         // Update the systems
         {
             let context = Context::convert(&arc);
-            &self.ecs.run_systems(&context, &self.ecs_event_handler);
+            self.ecs.run_systems(context);
         }
     }
     // End frame update

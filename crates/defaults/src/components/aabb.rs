@@ -1,6 +1,4 @@
-use ecs::entity::Entity;
-use math;
-
+use main::math;
 // An AABB components
 #[derive(Default)]
 pub struct AABB {
@@ -37,4 +35,4 @@ impl AABB {
 }
 
 // Main traits implemented
-ecs::impl_component!(AABB);
+main::ecs::impl_component!(AABB);

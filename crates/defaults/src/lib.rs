@@ -6,9 +6,9 @@ pub mod template_system;
 pub mod systems;
 */
 
-use core::WriteContext;
-
-use assets::preload_asset;
+use main::core::WriteContext;
+use main::assets::preload_asset;
+use main::ecs;
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the resources
@@ -59,7 +59,18 @@ pub fn preload_default_assets() {
 }
 // Pre-load the default systems
 pub fn preload_system(mut write: WriteContext) {
-    template_system::system(write);
+    template_system::system(write.ecs.create_system_builder());
+    let mut group = ecs::entity::ComponentLinkingGroup::new();
+    group.link(ecs::component::defaults::Name::new("Person")).unwrap();
+    let entity = ecs::entity::Entity::new();
+    let id = ecs::entity::EntityID::new(&mut write.ecs);
+    /*
+
+    // We want to read the current time from the world
+    let read_context = context.read();
+    let time = read_context.time.elapsed;
+    //dbg!(time);
+    */
 }
 /*
 pub fn preload_systems() {

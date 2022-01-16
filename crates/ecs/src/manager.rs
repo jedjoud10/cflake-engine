@@ -51,7 +51,7 @@ impl<Context> ECSManager<Context> {
         self.entities.get_mut(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
-    pub fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
+    pub(crate) fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
         // Check if the EntityID was not occupied already
         if self.entities.get(id.index as usize).is_some() {
             panic!()
@@ -64,7 +64,7 @@ impl<Context> ECSManager<Context> {
     }
     // Remove an entity from the manager, and return it's value
     // When we remove an entity, we also remove it's components, thus updating the systems
-    pub fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
+    pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate the entity
         let entity = self.entities.remove(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
         // Also remove it's linked components
@@ -83,7 +83,7 @@ impl<Context> ECSManager<Context> {
     /* #endregion */
     /* #region Components */
     // Link some components to an entity
-    pub fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
+    pub(crate) fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in link_group.linked_components {
             let idx = self.add_component(boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
@@ -100,7 +100,7 @@ impl<Context> ECSManager<Context> {
         Ok(())
     }
     // Unlink some components from an entity
-    pub fn unlink_components(&mut self, id: EntityID, unlink_group: ComponentUnlinkGroup) -> Result<(), ComponentError> {
+    pub(crate) fn unlink_components(&mut self, id: EntityID, unlink_group: ComponentUnlinkGroup) -> Result<(), ComponentError> {
         // Check if the entity even have these components
         let entity = self.entity(&id).unwrap();
         let valid = entity.cbitfield.contains(&unlink_group.removal_cbitfield);
