@@ -1,4 +1,4 @@
-use crate::basics::texture::{TextureShaderAccessType, Texture};
+use crate::basics::texture::{Texture, TextureShaderAccessType};
 
 // Actually set the shader uniforms
 #[allow(temporary_cstring_as_ptr)]

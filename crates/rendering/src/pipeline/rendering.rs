@@ -1,6 +1,18 @@
-use std::ptr::null;
-use crate::{basics::{texture::{Texture, TextureFormat, TextureType}, shader::{Shader, ShaderSettings}, model::Model, uniforms::{ShaderUniformsSettings, ShaderUniformsGroup}, renderer::Renderer, material::MaterialFlags}, pipeline::pipec, utils::DataType, object::ObjectID};
 use super::{camera::Camera, Pipeline};
+use crate::{
+    basics::{
+        material::MaterialFlags,
+        model::Model,
+        renderer::Renderer,
+        shader::{Shader, ShaderSettings},
+        texture::{Texture, TextureFormat, TextureType},
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
+    },
+    object::ObjectID,
+    pipeline::pipec,
+    utils::DataType,
+};
+use std::ptr::null;
 
 // Pipeline renderer that will render our world
 #[derive(Default)]

@@ -2,7 +2,8 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    utils::*, pipeline::Pipeline,
+    pipeline::Pipeline,
+    utils::*,
 };
 use assets::*;
 use bitflags::bitflags;

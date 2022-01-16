@@ -1,6 +1,16 @@
 use crate::{
+    advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
+    basics::{
+        material::Material,
+        model::{Model, ModelBuffers},
+        renderer::Renderer,
+        shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
+        texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
+        uniforms::ShaderUniformsSettings,
+    },
     object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskStatus, TaskID},
-    pipeline::{camera::Camera, sender, pipec, PipelineRenderer}, basics::{texture::{Texture, TextureType, get_ifd, TextureFilter, TextureWrapping, TextureFlags}, shader::{Shader, ShaderSourceType, ShaderSource, ShaderSettings}, material::Material, model::{Model, ModelBuffers}, renderer::Renderer, uniforms::ShaderUniformsSettings}, advanced::compute::{ComputeShader, ComputeShaderExecutionSettings}, utils::Window,
+    pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
+    utils::Window,
 };
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
@@ -760,7 +770,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut renderer = PipelineRenderer::default();
             renderer.initialize(&mut *pipeline);
             renderer
-        };        
+        };
 
         // ---- Finished initializing the Pipeline! ----
         itx.send(pipeline.clone()).unwrap();

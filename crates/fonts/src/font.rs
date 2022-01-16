@@ -2,7 +2,11 @@ use crate::FontChar;
 use ascii::AsciiStr;
 use assets::Asset;
 use byteorder::{LittleEndian, ReadBytesExt};
-use rendering::{basics::texture::{Texture, TextureType, TextureFilter, TextureFormat}, object::ObjectID, pipeline::{Pipeline, pipec}};
+use rendering::{
+    basics::texture::{Texture, TextureFilter, TextureFormat, TextureType},
+    object::ObjectID,
+    pipeline::{pipec, Pipeline},
+};
 
 // A simple font containing the characters
 #[derive(Default)]

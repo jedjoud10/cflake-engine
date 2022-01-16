@@ -1,4 +1,8 @@
-use crate::{object::ObjectID, basics::texture::{TextureType, Texture}, pipeline::Pipeline};
+use crate::{
+    basics::texture::{Texture, TextureType},
+    object::ObjectID,
+    pipeline::Pipeline,
+};
 use std::{
     ffi::c_void,
     sync::{Arc, Mutex},

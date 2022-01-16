@@ -1,8 +1,9 @@
 // Some pipeline commands
 pub mod pipec {
     use crate::{
+        basics::Buildable,
         object::{ObjectID, PipelineObject, PipelineTask, TaskID},
-        pipeline::{sender, Pipeline}, basics::Buildable,
+        pipeline::{sender, Pipeline},
     };
 
     // Send a task to the shared pipeline

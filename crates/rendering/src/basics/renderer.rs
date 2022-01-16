@@ -1,7 +1,8 @@
 use bitflags::bitflags;
 
 use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask}, pipeline::Pipeline,
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    pipeline::Pipeline,
 };
 
 use super::{material::Material, model::Model, Buildable};

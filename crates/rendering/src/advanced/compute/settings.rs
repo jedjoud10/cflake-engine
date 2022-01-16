@@ -1,4 +1,4 @@
-use crate::{object::ObjectID, basics::uniforms::ShaderUniformsGroup};
+use crate::{basics::uniforms::ShaderUniformsGroup, object::ObjectID};
 
 use super::{ComputeShader, ComputeShaderTask};
 

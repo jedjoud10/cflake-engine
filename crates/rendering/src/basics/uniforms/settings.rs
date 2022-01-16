@@ -1,4 +1,4 @@
-use crate::{basics::shader::Shader, object::ObjectID, advanced::compute::ComputeShader, pipeline::Pipeline};
+use crate::{advanced::compute::ComputeShader, basics::shader::Shader, object::ObjectID, pipeline::Pipeline};
 
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
 pub struct ShaderUniformsSettings {

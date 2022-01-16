@@ -1,5 +1,6 @@
 use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask}, basics::{shader::ShaderSource, Buildable},
+    basics::{shader::ShaderSource, Buildable},
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
 };
 
 // A compute shader that can run parallel calculations on the GPU

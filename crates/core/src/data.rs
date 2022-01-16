@@ -1,12 +1,10 @@
-use std::{
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
-};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use ecs::{system::EventHandler, ECSManager};
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
-use rendering::{pipeline::{Pipeline, PipelineStartData}};
+use rendering::pipeline::{Pipeline, PipelineStartData};
 use ui::UIManager;
 
 use crate::{GameConfig, TaskSenderContext, WorldTaskTiming};

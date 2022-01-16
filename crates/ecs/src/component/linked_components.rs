@@ -6,7 +6,7 @@ use crate::{
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
-use std::{cell::RefCell};
+use std::cell::RefCell;
 use worker_threads::ThreadPool;
 
 // Some linked components that we can mutate or read from in each system

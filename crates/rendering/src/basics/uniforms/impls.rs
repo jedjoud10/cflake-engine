@@ -1,4 +1,7 @@
-use crate::{object::ObjectID, basics::texture::{TextureShaderAccessType, Texture}};
+use crate::{
+    basics::texture::{Texture, TextureShaderAccessType},
+    object::ObjectID,
+};
 
 // Some default uniforms that we will set
 #[derive(Clone)]

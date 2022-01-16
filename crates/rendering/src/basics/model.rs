@@ -1,5 +1,6 @@
 use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask}, pipeline::Pipeline,
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    pipeline::Pipeline,
 };
 
 use super::Buildable;
