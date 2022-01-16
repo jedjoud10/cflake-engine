@@ -155,7 +155,7 @@ impl PipelineRenderer {
                 Texture::default()
                     .set_dimensions(dims)
                     .set_format(TextureFormat::DepthComponent32)
-                    .set_data_type(DataType::Float32),
+                    .set_data_type(DataType::F32),
                 pipeline,
             );
 
@@ -163,12 +163,19 @@ impl PipelineRenderer {
             fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
                 // Get the textures from the GPUObjectID
                 let texture = pipeline.get_texture(*texture)?;
+                dbg!(texture);
                 unsafe {
                     gl::BindTexture(texture.target, texture.oid);
                     gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target, texture.oid, 0);
                 }
                 Some(())
             }
+            // Flush
+            pipeline.flush();
+            dbg!(self.diffuse_texture);
+            dbg!(self.normals_texture);
+            dbg!(self.position_texture);
+            dbg!(self.depth_texture);
             bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture, pipeline).unwrap();

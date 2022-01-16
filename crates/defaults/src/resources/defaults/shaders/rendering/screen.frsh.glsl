@@ -83,5 +83,7 @@ void main() {
 	} else if (debug_view == 4) {
 		color = ambient_lighting_color;
 	}
+
+	color = vec3(0, 0, 0);
 	//color = final_color;
 }

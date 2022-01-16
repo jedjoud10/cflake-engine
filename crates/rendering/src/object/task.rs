@@ -21,7 +21,6 @@ pub enum PipelineTask {
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
 
     // Specific pipeline tasks
-    Quit,
 }
 
 // The status for a specific PipelineTask

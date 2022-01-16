@@ -1,9 +1,11 @@
 use lazy_static::lazy_static;
-use std::cell::RefCell;
+use std::cell::{RefCell, Cell};
 use std::sync::mpsc::SendError;
 use std::sync::{mpsc::Sender, Mutex};
 
 use crate::object::{PipelineTask, TaskID};
+
+use super::Pipeline;
 
 // We will store a global sender, that way we can copy it to the other threads using an init coms method
 lazy_static! {
@@ -13,6 +15,7 @@ lazy_static! {
 // Thread local sender
 thread_local! {
     static LOCAL_SENDER: RefCell<Option<Sender<(PipelineTask,TaskID)>>> = RefCell::new(None);
+    static RENDER_THREAD: Cell<bool> = Cell::new(false);
 }
 
 // Set the global sender
@@ -21,8 +24,8 @@ pub(crate) fn set_global_sender(sender: Sender<(PipelineTask, TaskID)>) {
         let mut lock = SENDER.lock().unwrap();
         *lock = Some(sender);
     }
-    // Also set the render's thread thread local sender
-    init_coms();
+    // We cannot send tasks to the pipeline from the render thread itself
+    RENDER_THREAD.with(|cell| cell.set(true));
 }
 
 // Initialize the thread local sender. We must do this after the render pipeline has been fully initialized
@@ -37,10 +40,16 @@ pub fn init_coms() {
 }
 
 // Send a task using the thread local sender
-pub(crate) fn send_task(task: (PipelineTask, TaskID)) -> Result<(), SendError<(PipelineTask, TaskID)>> {
-    LOCAL_SENDER.with(|cell| {
-        let cell = cell.borrow();
-        let sender = (&*cell).as_ref().unwrap();
-        sender.send(task)
-    })
+pub(crate) fn send_task(task: (PipelineTask, TaskID), pipeline: &Pipeline) -> Result<(), SendError<(PipelineTask, TaskID)>> {
+    // IF we are on the render thread, add the task directly
+    if RENDER_THREAD.with(|cell| cell.get()) {
+        pipeline.add_task_internally(task);
+        Ok(())
+    } else {
+        LOCAL_SENDER.with(|cell| {
+            let cell = cell.borrow();
+            let sender = (&*cell).as_ref().unwrap();
+            sender.send(task)
+        })
+    }
 }

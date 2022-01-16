@@ -51,12 +51,12 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     // Init the world
     // Calling the callback
     println!("Calling World Initialization callback");
-    //defaults::preload_systems();
     {
         let mut context = Context::convert(&world);
         let wcontext = context.write();
         init_world(wcontext);
     }
+    println!("Hello Game World!");
     while !window.should_close() {
         {
             // Update the delta_time
@@ -108,7 +108,10 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         }
     }
     // When the window closes and we exit from the game
-    let mut world = world.write().unwrap();
-    world.destroy();
-    println!("\x1b[31mExiting the engine!\x1b[0m");
+    if let Ok(rwlock) = Arc::try_unwrap(world) {
+        println!("Exiting the engine...");
+        let mut world = rwlock.into_inner().unwrap();
+        world.destroy();
+    } else { panic!("Nah bro you mad goofy"); }
+    println!("\x1b[31mThe sense of impending doom is upon us.\x1b[0m");
 }

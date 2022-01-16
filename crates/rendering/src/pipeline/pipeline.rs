@@ -12,14 +12,15 @@ use crate::{
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::Window,
 };
+use ahash::{AHashMap, AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
-    collections::HashSet,
+    collections::{HashSet, HashMap},
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
-    sync::{atomic::AtomicPtr, Arc, Barrier, RwLock},
+    sync::{atomic::{AtomicPtr, AtomicBool, Ordering}, Arc, Barrier, RwLock, Mutex}, cell::RefCell,
 };
 
 // Some default values like the default material or even the default shader
@@ -36,7 +37,7 @@ pub(crate) struct DefaultPipelineObjects {
 #[derive(Default)]
 pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
-    tasks: Vec<(PipelineTask, TaskID)>,
+    pub(crate) tasks: RwLock<ShareableOrderedVec<(PipelineTask, TaskID, PipelineTaskStatus)>>,
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
@@ -49,35 +50,40 @@ pub struct Pipeline {
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub(crate) defaults: Option<DefaultPipelineObjects>,
 
-    // Store the status for all of our tasks
-    pub(crate) task_statuses: ShareableOrderedVec<PipelineTaskStatus>,
     // Store the TaskIDs for tasks that have finished execution from last frame
-    pub(crate) last_frame_task_statuses: HashSet<usize>,
+    pub(crate) last_frame_task_statuses: AHashSet<TaskID>,
     // The current main camera that is rendering the world
     pub(crate) camera: Camera,
     // Our window
     pub window: Window,
-
-    // Should we quit from the render thread?
-    should_quit: bool,
 }
 
 impl Pipeline {
     // Set the buffered tasks from RX messages
-    pub fn add_tasks(&mut self, messages: Vec<(PipelineTask, TaskID)>) {
-        messages.iter().for_each(|(_, id)| {
-            self.task_statuses.insert(id.index, PipelineTaskStatus::Pending);
-        });
-        self.tasks.extend(messages);
+    pub(crate) fn add_tasks(&mut self, messages: Vec<(PipelineTask, TaskID)>) {
+        let mut write = self.tasks.write().unwrap();
+        for (task, id) in messages {
+            write.insert(id.index, (task, id, PipelineTaskStatus::Pending));
+        }
+    }
+    // Add a task interally, through the render thread itself
+    pub(crate) fn add_task_internally(&self, task: (PipelineTask, TaskID)) {
+        let mut write = self.tasks.write().unwrap();
+        write.insert(task.1.index, (task.0, task.1, PipelineTaskStatus::Pending));
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
-    pub fn flush(&mut self) {
+    pub(crate) fn flush(&mut self) {
         // We must take the commands first
-        let tasks = std::mem::take(&mut self.tasks);
-        // Clear
+        let tasks = {
+            let mut tasks_ = self.tasks.write().unwrap();
+            let tasks = &mut *tasks_;
+            let tasks = tasks.clear().into_iter().filter_map(|x| x).collect::<Vec<_>>();
+            tasks            
+        };
+
         self.last_frame_task_statuses.clear();
-        for (task, task_id) in tasks {
+        for (task, task_id, status) in tasks {
             // Now we must execute these tasks
             match task {
                 // Creation tasks
@@ -90,15 +96,11 @@ impl Pipeline {
 
                 PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
                 PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
-
-                // Others
-                PipelineTask::Quit => self.should_quit = false,
             }
 
-            // After executing the tasks, we must remove our current status, and add the index to the valid task statuses
-            let mut status = self.task_statuses.remove(task_id.index).unwrap();
-            status = PipelineTaskStatus::Finished;
-            self.last_frame_task_statuses.insert(task_id.index);
+            // After executing the tasks, add the index to the valid task statuses
+            // status = PipelineTaskStatus::Finished;
+            self.last_frame_task_statuses.insert(task_id);
         }
     }
 
@@ -153,7 +155,7 @@ impl Pipeline {
 
     // Actually update our data
     // Add the renderer
-    pub fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
+    pub(crate) fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
         // Get the renderer data, if it does not exist then use the default renderer data
         let renderer = task.0;
         let defaults = self.defaults.as_ref().unwrap();
@@ -163,13 +165,13 @@ impl Pipeline {
         self.renderers.insert(task.1.index.unwrap(), renderer);
     }
     // Remove the renderer using it's renderer ID
-    pub fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
+    pub(crate) fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
         self.renderers.remove(id.index.unwrap());
     }
     // Update a renderer's matrix
-    pub fn renderer_update_matrix(&mut self, _id: ObjectID<Renderer>, _matrix: veclib::Matrix4x4<f32>) {}
+    pub(crate) fn renderer_update_matrix(&mut self, _id: ObjectID<Renderer>, _matrix: veclib::Matrix4x4<f32>) {}
     // Create a shader and cache it. We do not cache the "subshader" though
-    pub fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
+    pub(crate) fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
         // Compile a single shader source
         fn compile_single_source(source_data: ShaderSource) -> u32 {
             let shader_type: u32;
@@ -257,9 +259,9 @@ impl Pipeline {
         self.shaders.insert(task.1.index.unwrap(), shader);
     }
     // Create a compute shader and cache it
-    pub fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
+    pub(crate) fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
         // Extract the shader
-        let shader = task.0;
+        let mut shader = task.0;
 
         // Actually compile the shader now
         println!("\x1b[33mCompiling & Creating Compute Shader {}...\x1b[0m", shader.source.path);
@@ -292,7 +294,7 @@ impl Pipeline {
             println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", shader.source.path);
             program
         };
-        unsafe {
+        let program = unsafe {
             let program = gl::CreateProgram();
             gl::AttachShader(program, shader_source_program);
             // Finalize the shader and stuff
@@ -319,12 +321,14 @@ impl Pipeline {
             // Detach shader source
             gl::DetachShader(program, shader_source_program);
             println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader.source.path);
-        }
+            program
+        };
         // Add the shader at the end
+        shader.program = program;
         self.compute_shaders.insert(task.1.index.unwrap(), shader);
     }
     // Create a model
-    pub fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
+    pub(crate) fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
         let model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
@@ -435,7 +439,7 @@ impl Pipeline {
         self.models.insert(task.1.index.unwrap(), (model, buffers));
     }
     // Dispose of a model, also remove it from the pipeline
-    pub fn model_dispose(&mut self, id: ObjectID<Model>) {
+    pub(crate) fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Remove the model and it's buffers
         let (_model, mut buffers) = self.models.remove(id.index.unwrap()).unwrap();
         unsafe {
@@ -452,8 +456,8 @@ impl Pipeline {
         }
     }
     // Create a texture
-    pub fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
-        let texture = task.0;
+    pub(crate) fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
+        let mut texture = task.0;
         let mut pointer: *const c_void = null();
         if !texture.bytes.is_empty() {
             pointer = texture.bytes.as_ptr() as *const c_void;
@@ -551,10 +555,11 @@ impl Pipeline {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
         }
         // Add the texture
+        texture.oid = id;
         self.textures.insert(task.1.index.unwrap(), texture);
     }
     // Update the size of a texture
-    pub fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
+    pub(crate) fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
         // Get the GPU texture object
         let texture = self.get_texture(id).unwrap();
         // Check if the current dimension type matches up with the new one
@@ -579,7 +584,7 @@ impl Pipeline {
         }
     }
     // Run a compute shader
-    pub fn compute_run(&mut self, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) {
+    pub(crate) fn compute_run(&mut self, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) {
         // Execute some shader uniforms if we want to
         let group = settings.uniforms;
         if let Some(group) = group {
@@ -600,10 +605,10 @@ impl Pipeline {
         }
     }
     // Create a materail
-    pub fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
+    pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
         self.materials.insert(task.1.index.unwrap(), task.0);
-    }
+    }    
 }
 
 // Data that will be sent back to the main thread after we start the pipeline thread
@@ -614,6 +619,8 @@ pub struct PipelineStartData {
     pub sbarrier: Arc<Barrier>,
     // A barrier that we can use to sync up with the main thread at the end of each frame
     pub ebarrier: Arc<Barrier>,
+    // An atomic we use to shutdown the render thread
+    pub eatomic: Arc<AtomicBool>,
     // The pipeline itself
     pub pipeline: Arc<RwLock<Pipeline>>,
 }
@@ -709,6 +716,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     let ebarrier = Arc::new(Barrier::new(2));
     let ebarrier_clone = ebarrier.clone();
 
+    // An atomic that we use to inform the render thread to exit and shutdown
+    let eatomic = Arc::new(AtomicBool::new(false));
+    let eatomic_clone = eatomic.clone();
+
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
 
@@ -800,7 +811,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 pipeline.flush();
 
                 // Check if we must exit from the render thread
-                if pipeline.should_quit {
+                if eatomic_clone.load(Ordering::Relaxed) {
                     break;
                 }
             }
@@ -818,6 +829,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         handle,
         sbarrier,
         ebarrier,
+        eatomic,
         pipeline,
     }
 }

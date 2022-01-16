@@ -81,22 +81,34 @@ impl World {
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can execute the system
     pub fn update_start(&self, arc: Arc<RwLock<Self>>) {
+        // While we do world logic, start rendering the frame on the other thread
+        let start_data = &self.pipeline_thread;
+        start_data.sbarrier.wait();
         // Update the systems
         let (ecs, ecs_event_handler) = &self.ecs;
         {
             let context = Context::convert(&arc);
             ecs.run_systems(&context, ecs_event_handler);
         }
-        /*
-         */
-        /*
-        // Create the ref context
-         */
     }
     // End frame update
-    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {}
+    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+        // End the frame
+        let start_data = &self.pipeline_thread;
+        start_data.ebarrier.wait();
+    }
     // We must destroy the world
-    pub fn destroy(&mut self) {}
+    pub fn destroy(mut self) {
+        // We update the pipeline's shutdown atomic, telling it to shutdown
+        //let pipeline = self.pipeline.read().unwrap();
+        let start_data = self.pipeline_thread;
+        // Run the render thread loop for one last time
+        start_data.sbarrier.wait();
+        start_data.eatomic.store(true, std::sync::atomic::Ordering::Relaxed);
+        start_data.ebarrier.wait();
+        // Join the render thread now
+        start_data.handle.join().unwrap();
+    }
     pub fn tes<'a>(&'a self) {
         let _test = &self.ui;
     }

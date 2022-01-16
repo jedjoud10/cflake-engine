@@ -19,7 +19,7 @@ impl Asset for Texture {
             .set_bytes(bytes)
             .set_dimensions(TextureType::Texture2D(width, height))
             .set_format(TextureFormat::RGBA8R)
-            .set_data_type(DataType::UByte);
+            .set_data_type(DataType::U8);
         Some(texture)
     }
 }

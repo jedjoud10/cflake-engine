@@ -149,13 +149,13 @@ pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (i32, u32, u32) {
         TextureFormat::DepthComponent16 | TextureFormat::DepthComponent24 | TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT,
     };
     let data_type = match dt {
-        DataType::UByte => gl::UNSIGNED_BYTE,
-        DataType::Byte => gl::BYTE,
-        DataType::UInt16 => gl::UNSIGNED_SHORT,
-        DataType::Int16 => gl::SHORT,
-        DataType::UInt32 => gl::UNSIGNED_INT,
-        DataType::Int32 => gl::INT,
-        DataType::Float32 => gl::FLOAT,
+        DataType::U8 => gl::UNSIGNED_BYTE,
+        DataType::I8 => gl::BYTE,
+        DataType::U16 => gl::UNSIGNED_SHORT,
+        DataType::I16 => gl::SHORT,
+        DataType::U32 => gl::UNSIGNED_INT,
+        DataType::I32 => gl::INT,
+        DataType::F32 => gl::FLOAT,
     };
     (internal_format as i32, format as u32, data_type as u32)
 }
@@ -238,7 +238,7 @@ impl TextureType {
 }
 
 // Access type when binding an image to a compute shader per say
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum TextureShaderAccessType {
     ReadOnly,
     WriteOnly,
@@ -246,6 +246,7 @@ pub enum TextureShaderAccessType {
 }
 
 // A texture
+#[derive(Debug)]
 pub struct Texture {
     // The OpenGL id for this texture
     pub(crate) oid: u32,
@@ -277,8 +278,8 @@ impl Default for Texture {
             oid: 0,
             bytes: Vec::new(),
             _format: TextureFormat::RGBA8R,
-            _type: DataType::UByte,
-            ifd: get_ifd(TextureFormat::RGBA8R, DataType::UByte),
+            _type: DataType::U8,
+            ifd: get_ifd(TextureFormat::RGBA8R, DataType::U8),
             target: gl::TEXTURE_2D,
             flags: TextureFlags::empty(),
             filter: TextureFilter::Linear,

@@ -861,6 +861,7 @@ dependencies = [
 name = "rendering"
 version = "0.1.0"
 dependencies = [
+ "ahash",
  "assets",
  "bitflags",
  "ecs",

@@ -1,6 +1,6 @@
 use super::PipelineObject;
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, fmt::Debug};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
 pub struct ObjectID<T>
@@ -21,6 +21,12 @@ impl<T: PipelineObject> Clone for ObjectID<T> {
 }
 
 impl<T: PipelineObject> Copy for ObjectID<T> {}
+
+impl<T: PipelineObject> Debug for ObjectID<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ObjectID").field("index", &self.index).finish()
+    }
+}
 
 impl<T> Default for ObjectID<T>
 where
@@ -53,7 +59,7 @@ where
 
 // This is an ID for each Task that we dispatch to the render thread.
 // We can use this to detect whenever said task has completed
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TaskID {
     pub(crate) index: usize,
 }

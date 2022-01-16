@@ -1,15 +1,15 @@
 // Simple main OpenGL types
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum DataType {
     // 8 bit
-    UByte,
-    Byte,
+    U8,
+    I8,
     // 16 bit
-    UInt16,
-    Int16,
+    U16,
+    I16,
     // 32 bit
-    UInt32,
-    Int32,
+    U32,
+    I32,
     // FP
-    Float32,
+    F32,
 }

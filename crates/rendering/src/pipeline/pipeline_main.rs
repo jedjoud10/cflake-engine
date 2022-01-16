@@ -9,9 +9,10 @@ pub mod pipec {
     // Send a task to the shared pipeline
     pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {
         // Create a new task ID
-        let id = TaskID::new(pipeline.task_statuses.get_next_idx_increment());
+        let idx = pipeline.tasks.read().unwrap().get_next_idx_increment();
+        let id = TaskID::new(idx);
         // Get the thread local sender
-        sender::send_task((task, id)).unwrap();
+        sender::send_task((task, id), pipeline).unwrap();
         id
     }
     // Create a Pipeline Object, returning it's ObjectID
@@ -39,6 +40,6 @@ pub mod pipec {
     }
     // Detect if a task has executed. If this task did indeed execute, it would be deleted next frame
     pub fn has_task_executed(id: TaskID, pipeline: &Pipeline) -> bool {
-        pipeline.last_frame_task_statuses.contains(&id.index)
+        pipeline.last_frame_task_statuses.contains(&id)
     }
 }
