@@ -41,7 +41,7 @@ pub fn init_coms() {
 
 // Send a task using the thread local sender
 pub(crate) fn send_task(task: (PipelineTask, TaskID), pipeline: &Pipeline) -> Result<(), SendError<(PipelineTask, TaskID)>> {
-    // IF we are on the render thread, add the task directly
+    // If we are on the render thread, add the task directly
     if RENDER_THREAD.with(|cell| cell.get()) {
         pipeline.add_task_internally(task);
         Ok(())

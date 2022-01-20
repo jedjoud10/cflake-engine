@@ -71,13 +71,12 @@ impl World {
         // Then load
         let config: GameConfig = self.io.load("config\\game_config.json");
         self.config = config;
-        // Apply the config file's data to the rendering window
-        // TODO
+        // TODO: Apply the config file's data to the rendering window
 
         println!("World init done!");
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
-    pub fn update_start(world: &Arc<RwLock<Self>>) {
+    pub fn update_start(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // While we do world logic, start rendering the frame on the other thread
         {
             let mut world = world.write().unwrap();
@@ -96,8 +95,23 @@ impl World {
         }        
         {
             let context = Context::convert(world);
-            let world = world.read().unwrap();
-            world.ecs.run_systems(context);
+            let system_count = {
+                let world = world.read().unwrap();
+                world.ecs.systems_count()
+            };
+            // Loop for every system and update it
+            for system_index in 0..system_count {
+                {
+                    let world = world.read().unwrap();
+                    let system = &world.ecs.systems()[system_index];
+                    system.run_system(context.clone(), &world.ecs);
+                }
+                {
+                    // Run the callback after executing a single system
+                    let mut world = world.write().unwrap();
+                    _task_receiver.flush(&mut world);
+                }
+            }
         }
         {
             // Finish update

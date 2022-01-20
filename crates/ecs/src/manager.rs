@@ -157,9 +157,13 @@ impl<Context> ECSManager<Context> {
     pub fn systems(&self) -> &[System] {
         self.systems.as_ref()
     }
+    // Get the number of systems that we have
+    pub fn systems_count(&self) -> usize {
+        self.systems.len()
+    }
     // Run the systems in sync, but their component updates is not
     // For now we will run them on the main thread, until I get my thread pool thingy working
-    pub fn run_systems(&self, context: Context) where Context: Clone {
+    pub(crate) fn run_systems(&self, context: Context) where Context: Clone {
         for system in self.systems.iter() {
             system.run_system(context.clone(), self);
         }

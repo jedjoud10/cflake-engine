@@ -11,6 +11,7 @@ lazy_static! {
 // Thread local sender
 thread_local! {
     static LOCAL_SENDER: RefCell<Option<Sender<WorldTaskBatch>>> = RefCell::new(None);
+    pub(crate) static INTERNAL_TASKS: RefCell<Vec<WorldTaskBatch>> = RefCell::new(Vec::new());
     static MAIN_THREAD: RefCell<bool> = RefCell::new(false);
 }
 
@@ -41,9 +42,13 @@ pub fn init_coms() {
 
 // Send a task using the thread local sender
 pub(crate) fn send_task(task_batch: WorldTaskBatch) -> Option<()> {
-    // We cannot send a task while we are on the main thread
+    // If we are on the main thread, add the task internally
     if MAIN_THREAD.with(|x| *x.borrow()) {
-        return None;
+        INTERNAL_TASKS.with(|x| {
+            let mut internal_tasks = x.borrow_mut();
+            internal_tasks.push(task_batch);
+        });
+        return Some(());
     }
     LOCAL_SENDER.with(|cell| {
         let cell = cell.borrow();

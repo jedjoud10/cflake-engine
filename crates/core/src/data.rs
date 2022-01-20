@@ -7,7 +7,7 @@ use others::Time;
 use rendering::pipeline::{Pipeline, PipelineStartData};
 use ui::UIManager;
 
-use crate::{GameConfig, TaskSenderContext, WorldTaskTiming};
+use crate::{GameConfig, TaskSenderContext};
 
 // The whole world that stores our managers and data
 pub struct World {
@@ -36,7 +36,6 @@ impl Context {
     // Create a TaskSenderContext that we can use to send tasks to the main thread
     pub fn new_task_sender(&self) -> TaskSenderContext {
         TaskSenderContext {
-            timing: WorldTaskTiming::default(),
         }
     }
     // Read
