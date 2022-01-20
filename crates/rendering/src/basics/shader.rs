@@ -4,8 +4,9 @@ use crate::params::{FADE_IN_SPEED, FADE_OUT_SPEED};
 use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
 use std::collections::{HashMap, HashSet};
-
 use super::Buildable;
+use bitflags::bitflags;
+
 // Shader source type
 pub(crate) enum ShaderSourceType {
     Vertex,
@@ -58,12 +59,23 @@ impl ShaderSettings {
     }
 }
 
+// Shader flasg
+bitflags! {
+    pub struct ShaderFlags: u8 {
+        const NONE = 0b00000000;
+        const GENERAL = 0b00000001;
+        const RENDERER = 0b00000010;
+    }
+}
+
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
 pub struct Shader {
     // The OpenGL program linked to this shader
     pub(crate) program: u32,
     // The updated and modified shader sources
     pub(crate) sources: HashMap<String, ShaderSource>,
+    // Some shader flags
+    pub(crate) flags: ShaderFlags,
 }
 impl PipelineObject for Shader {}
 
@@ -76,95 +88,108 @@ impl Buildable for Shader {
     }
 }
 
-impl Shader {
-    // Load the files that need to be included for this specific shader and return the included lines
-    fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
-        // Turn the string into lines
-        let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
-        for (_i, line) in lines.iter_mut().enumerate() {
-            // Check if this is an include statement
-            if line.starts_with("#include ") {
-                // Get the local path of the include file
-                let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace('"', "");
-                let local_path = local_path.trim_start();
+// Load the files that need to be included for this specific shader and return the included lines
+pub(crate) fn load_includes(flags: &mut ShaderFlags, settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
+    // Turn the string into lines
+    let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
+    for (_i, line) in lines.iter_mut().enumerate() {
+        // Check if this is an include statement
+        if line.starts_with("#include ") {
+            // Get the local path of the include file
+            let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace('"', "");
+            let local_path = local_path.trim_start();
 
-                // Load the include function text
-                let text = if !included_paths.contains(&local_path.to_string()) {
-                    // Load the function shader text
-                    included_paths.insert(local_path.to_string());
-                    assets::assetc::load_text(local_path)
-                        .map_err(|_| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
-                } else {
-                    String::new()
-                };
+            // Load the include function text
+            let text = if !included_paths.contains(&local_path.to_string()) {
+                // Load the function shader text
+                included_paths.insert(local_path.to_string());
+                assets::assetc::load_text(local_path)
+                    .map_err(|_| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
+            } else {
+                String::new()
+            };
 
-                // Update the original line
-                *line = text;
-                break;
-            }
-            // External shader code
-            if !settings.external_code.is_empty() && line.trim().starts_with("#include_custom ") {
-                // Get the source
-                let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-                let source_id = &c[2..(c.len() - 2)].to_string().parse::<u8>().unwrap();
-                let source = settings.external_code.get(source_id).unwrap();
-                *line = source.clone();
-                break;
-            }
-            // Impl default types
-            if line.trim().starts_with("#load") {
-                let x = match line.split("#load ").collect::<Vec<&str>>()[1] {
-                    "renderer" => {
-                        *line = "#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string();
-                        Ok(())
-                    }
-                    "renderer_main_start" => {
-                        *line = "#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string();
-                        Ok(())
-                    }
-                    "renderer_life_fade" => {
-                        *line = "#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string();
-                        Ok(())
-                    }
-                    x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
-                };
-                x?;
-                break;
-            }
-            // Constants
-            if line.trim().contains("#constant ") {
-                fn format(line: &String, val: String) -> String {
-                    format!("{} {};", line.trim().split("#constant").next().unwrap(), val)
-                }
-                let x = match line.split("#constant ").collect::<Vec<&str>>()[1] {
-                    "fade_in_speed" => {
-                        *line = format(line, FADE_IN_SPEED.to_string());
-                        Ok(())
-                    }
-                    "fade_out_speed" => {
-                        *line = format(line, FADE_OUT_SPEED.to_string());
-                        Ok(())
-                    }
-                    x => Err(RenderingError::new(format!("Tried to expand #constant, but the given type '{}' is not valid!", x))),
-                };
-                x?;
-                break;
-            }
+            // Update the original line
+            *line = text;
+            break;
         }
-        // Update the source
-        *source = lines.join("\n");
-        // Check if we need to continue expanding the includes
-        let need_to_continue = lines
-            .iter()
-            .any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
-        Ok(need_to_continue)
+        // External shader code
+        if !settings.external_code.is_empty() && line.trim().starts_with("#include_custom ") {
+            // Get the source
+            let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
+            let source_id = &c[2..(c.len() - 2)].to_string().parse::<u8>().unwrap();
+            let source = settings.external_code.get(source_id).unwrap();
+            *line = source.clone();
+            break;
+        }
+        // Impl default types
+        if line.trim().starts_with("#load") {
+            let x = match line.split("#load ").collect::<Vec<&str>>()[1] {
+                // Refactor this
+                "renderer" => {
+                    *line = "#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string();
+                    *flags = ShaderFlags::RENDERER;
+                    Ok(())
+                }
+                "general" => {
+                    *line = "#include defaults\\shaders\\others\\default_impls\\general.func.glsl".to_string();
+                    *flags = ShaderFlags::RENDERER;
+                    Ok(())
+                }
+                "renderer_main_start" => {
+                    *line = "#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string();
+                    if !flags.contains(ShaderFlags::RENDERER) { 
+                        Err(RenderingError::new_str("Tried to expand #load renderer_main_start, but the current shader does not import '#load renderer' in the first place!"))
+                    } else { Ok(()) }
+                }
+                "renderer_life_fade" => {
+                    *line = "#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string();
+                    if !flags.contains(ShaderFlags::RENDERER) { 
+                        Err(RenderingError::new_str("Tried to expand #load renderer_life_fade, but the current shader does not import '#load renderer' in the first place!"))
+                    } else { Ok(()) }
+                }
+                x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
+            };
+            x?;
+            break;
+        }
+        // Constants
+        if line.trim().contains("#constant ") {
+            fn format(line: &String, val: String) -> String {
+                format!("{} {};", line.trim().split("#constant").next().unwrap(), val)
+            }
+            let x = match line.split("#constant ").collect::<Vec<&str>>()[1] {
+                "fade_in_speed" => {
+                    *line = format(line, FADE_IN_SPEED.to_string());
+                    Ok(())
+                }
+                "fade_out_speed" => {
+                    *line = format(line, FADE_OUT_SPEED.to_string());
+                    Ok(())
+                }
+                x => Err(RenderingError::new(format!("Tried to expand #constant, but the given type '{}' is not valid!", x))),
+            };
+            x?;
+            break;
+        }
     }
+    // Update the source
+    *source = lines.join("\n");
+    // Check if we need to continue expanding the includes
+    let need_to_continue = lines
+        .iter()
+        .any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
+    Ok(need_to_continue)
+}
+
+impl Shader {
     // Creates a shader from it's corresponding shader settings
     pub fn new(mut settings: ShaderSettings) -> Result<Self, RenderingError> {
         // Create "self"
         let mut shader = Self {
             program: 0,
             sources: HashMap::default(),
+            flags: ShaderFlags::NONE,
         };
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through the shader sources and edit them
@@ -173,7 +198,7 @@ impl Shader {
         for (source_path, mut source_data) in sources {
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
             // Include the includables until they cannot be included
-            while Self::load_includes(&settings, &mut source_data.text, &mut included_paths)? {
+            while load_includes(&mut shader.flags, &settings, &mut source_data.text, &mut included_paths)? {
                 // We are still including paths
             }
             // Add this shader source to be generated as a subshader

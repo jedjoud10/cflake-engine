@@ -6,7 +6,7 @@ use crate::{
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
         texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
-        uniforms::ShaderUniformsSettings,
+        uniforms::{ShaderUniformsSettings, ShaderUniformsGroup},
     },
     object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskStatus, TaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
@@ -103,7 +103,37 @@ impl Pipeline {
             self.last_frame_task_statuses.insert(task_id);
         }
     }
-
+    // Set the global shader uniforms
+    pub(crate) fn update_global_shader_uniforms(&mut self, time: f64, delta: f64) {
+        for (id, shader) in self.shaders.iter() {
+            // Set the uniforms
+            let mut group = ShaderUniformsGroup::new();
+            group.set_f64("_time", time);
+            group.set_f64("_delta", delta);
+            let id = ShaderUniformsSettings::new(ObjectID::new(id));
+            group.execute(self, id).unwrap();
+        }
+    }
+    // Init update of the Pipeline
+    pub(crate) fn init_update(&mut self) {
+        self.tasks.write().unwrap().init_update();
+        self.materials.init_update();
+        self.models.init_update();
+        self.renderers.init_update();
+        self.shaders.init_update();
+        self.compute_shaders.init_update();
+        self.textures.init_update();
+    }
+    // Finish update of the Pipeline
+    pub(crate) fn finish_update(&mut self) {
+        self.tasks.write().unwrap().finish_update();
+        self.materials.finish_update();
+        self.models.finish_update();
+        self.renderers.finish_update();
+        self.shaders.finish_update();
+        self.compute_shaders.finish_update();
+        self.textures.finish_update();
+    }
     // Get a material using it's respective ID
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
         if let Some(id) = id.id {
@@ -793,6 +823,11 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         loop {
             // This is a single frame
             {
+                let mut pipeline = pipeline.write().unwrap();
+                pipeline.update_global_shader_uniforms(1.0, 0.0);
+                pipeline.init_update();
+            }
+            {
                 // At the start of each frame we must sync up with the main thread
                 sbarrier_clone.wait();
 
@@ -810,6 +845,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
             {
                 let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
+                pipeline.finish_update();
                 let messages = rx.try_iter().collect::<Vec<(PipelineTask, TaskID)>>();
                 // Set the buffer
                 pipeline.add_tasks(messages);

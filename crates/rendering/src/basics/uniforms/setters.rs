@@ -6,6 +6,10 @@ use crate::basics::texture::{Texture, TextureShaderAccessType};
 pub unsafe fn set_f32(index: i32, value: &f32) {
     gl::Uniform1f(index, *value);
 }
+// Set a f64 uniform
+pub unsafe fn set_f64(index: i32, value: &f64) {
+    gl::Uniform1d(index, *value);
+}
 // Set an image that can be modified inside the shader
 pub unsafe fn set_image(texture: &Texture, index: i32, access_type: &TextureShaderAccessType) {
     // Converstion from wrapper to actual opengl values
@@ -38,6 +42,10 @@ pub unsafe fn set_texture(texture: &Texture, index: i32, active_texture_id: &u32
 pub unsafe fn set_vec2f32(index: i32, vec: &veclib::Vector2<f32>) {
     gl::Uniform2f(index, vec[0], vec[1]);
 }
+// Set a vec2 f64 uniform
+pub unsafe fn set_vec2f64(index: i32, vec: &veclib::Vector2<f64>) {
+    gl::Uniform2d(index, vec[0], vec[1]);
+}
 // Set a vec2 i32 uniform
 pub unsafe fn set_vec2i32(index: i32, vec: &veclib::Vector2<i32>) {
     gl::Uniform2i(index, vec[0], vec[1]);
@@ -46,6 +54,10 @@ pub unsafe fn set_vec2i32(index: i32, vec: &veclib::Vector2<i32>) {
 pub unsafe fn set_vec3f32(index: i32, vec: &veclib::Vector3<f32>) {
     gl::Uniform3f(index, vec[0], vec[1], vec[2]);
 }
+// Set a vec3 f64 uniform
+pub unsafe fn set_vec3f64(index: i32, vec: &veclib::Vector3<f64>) {
+    gl::Uniform3d(index, vec[0], vec[1], vec[2]);
+}
 // Set a vec3 i32 uniform
 pub unsafe fn set_vec3i32(index: i32, vec: &veclib::Vector3<i32>) {
     gl::Uniform3i(index, vec[0], vec[1], vec[2]);
@@ -53,6 +65,10 @@ pub unsafe fn set_vec3i32(index: i32, vec: &veclib::Vector3<i32>) {
 // Set a vec4 f32 uniform
 pub unsafe fn set_vec4f32(index: i32, vec: &veclib::Vector4<f32>) {
     gl::Uniform4f(index, vec[0], vec[1], vec[2], vec[3]);
+}
+// Set a vec4 f64 uniform
+pub unsafe fn set_vec4f64(index: i32, vec: &veclib::Vector4<f64>) {
+    gl::Uniform4d(index, vec[0], vec[1], vec[2], vec[3]);
 }
 // Set a vec4 i32 uniform
 pub unsafe fn set_vec4i32(index: i32, vec: &veclib::Vector4<i32>) {

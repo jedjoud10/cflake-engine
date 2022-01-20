@@ -216,7 +216,7 @@ impl PipelineRenderer {
     // Called each frame, to render the world
     pub fn render_frame(&self, pipeline: &Pipeline) {
         let _i = std::time::Instant::now();
-        for renderer in pipeline.renderers.iter() {
+        for (_, renderer) in pipeline.renderers.iter() {
             self.render(pipeline, renderer);
         }
     }

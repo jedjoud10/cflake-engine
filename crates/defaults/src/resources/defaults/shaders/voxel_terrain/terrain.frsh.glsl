@@ -1,5 +1,6 @@
 #version 460 core
 #load renderer
+#load general
 #include "defaults\shaders\voxel_terrain\terrain_shader.func.glsl"
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_normal;

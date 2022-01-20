@@ -10,6 +10,7 @@ pub enum Uniform {
     Bool(veclib::UnsizedVector<bool>),
     I32(veclib::UnsizedVector<i32>),
     F32(veclib::UnsizedVector<f32>),
+    F64(veclib::UnsizedVector<f64>),
     // Matrices
     Mat44F32(veclib::Matrix4x4<f32>),
     // Others

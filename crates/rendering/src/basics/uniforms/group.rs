@@ -42,6 +42,10 @@ impl ShaderUniformsGroup {
     pub fn set_f32(&mut self, name: &str, val: f32) {
         self.uniforms.insert(name.to_string(), Uniform::F32(val.get_unsized()));
     }
+    // Set singular f64 value
+    pub fn set_f64(&mut self, name: &str, val: f64) {
+        self.uniforms.insert(name.to_string(), Uniform::F64(val.get_unsized()));
+    }
     // Set a vector 2 of f32 values
     pub fn set_vec2f32(&mut self, name: &str, val: veclib::Vector2<f32>) {
         self.uniforms.insert(name.to_string(), Uniform::F32(val.get_unsized()));
@@ -111,6 +115,12 @@ impl ShaderUniformsGroup {
                         veclib::UnsizedVector::Vec2(val) => set_vec2f32(index, val),
                         veclib::UnsizedVector::Vec3(val) => set_vec3f32(index, val),
                         veclib::UnsizedVector::Vec4(val) => set_vec4f32(index, val),
+                    },
+                    Uniform::F64(unsized_vector) => match unsized_vector {
+                        veclib::UnsizedVector::Single(val) => set_f64(index, val),
+                        veclib::UnsizedVector::Vec2(val) => set_vec2f64(index, val),
+                        veclib::UnsizedVector::Vec3(val) => set_vec3f64(index, val),
+                        veclib::UnsizedVector::Vec4(val) => set_vec4f64(index, val),
                     },
                     Uniform::Mat44F32(matrix) => set_mat44f32(index, matrix),
                     Uniform::Texture(id, active_texture_id) => {

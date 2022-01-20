@@ -28,6 +28,7 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\dithering.func.glsl");
     // Default impls
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\general.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl");

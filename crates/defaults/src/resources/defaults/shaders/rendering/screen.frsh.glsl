@@ -1,4 +1,5 @@
 #version 460 core
+#load general
 out vec3 color;
 uniform sampler2D diffuse_texture; // 0
 uniform sampler2D normals_texture; // 1
