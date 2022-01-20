@@ -29,7 +29,7 @@ impl LinkedComponents {
             .iter()
             .filter_map(|component_id| {
                 // The component is linked to the entity, and we must get the component's pointer
-                let component = components.get(component_id.idx).unwrap();
+                let component = components.get(component_id.id).unwrap();
                 let ptr = component.as_ptr();
                 Some((component_id.cbitfield, ptr))
             })

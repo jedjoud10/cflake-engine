@@ -72,7 +72,7 @@ dependencies = [
 [[package]]
 name = "bitfield"
 version = "0.2.2"
-source = "git+https://github.com/jedjoud10/bitfield#0f4ee6ad8e1d186b3423d06dafe7209e94e0625c"
+source = "git+https://github.com/jedjoud10/bitfield#b19e8b2733f06e46b14bfba7d39e27bd01aee6c1"
 
 [[package]]
 name = "bitflags"
@@ -498,9 +498,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.112"
+version = "0.2.113"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b03d17f364a3a042d5e5d46b053bbbf82c92c9430c592dd4c064dc6ee997125"
+checksum = "eef78b64d87775463c549fbd80e19249ef436ea3bf1de2a1eb7e717ec7fab1e9"
 
 [[package]]
 name = "log"
@@ -681,8 +681,8 @@ checksum = "da32515d9f6e6e489d7bc9d84c71b060db7247dc035bbe44eac88cf87486d8d5"
 
 [[package]]
 name = "ordered_vec"
-version = "0.2.2"
-source = "git+https://github.com/jedjoud10/ordered_vec#1f441b9d0bbc9cdd297cfb9adbd8c55b47fac2e2"
+version = "0.2.7"
+source = "git+https://github.com/jedjoud10/ordered_vec#212b93f2d061de28e827298aa8bb3218e83bbccb"
 
 [[package]]
 name = "others"
@@ -950,9 +950,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.85"
+version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a684ac3dcd8913827e18cd09a68384ee66c1de24157e3c556c9ab16d85695fb7"
+checksum = "8a65b3f4ffa0092e9887669db0eae07941f023991ab58ea44da8fe8e2d511c6b"
 dependencies = [
  "proc-macro2",
  "quote",

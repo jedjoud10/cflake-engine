@@ -58,10 +58,18 @@ pub mod test {
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
+        ecs.init_update();
         ecs.run_systems(context);
+        ecs.finish_update();
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3.clone();
+        ecs.init_update();
         ecs.remove_entity(id3).unwrap();
+        ecs.finish_update();
+        let should_not_be_the_same = EntityID::new(&ecs);
+        dbg!(id4);
+        dbg!(should_not_be_the_same);
+        assert_ne!(should_not_be_the_same, id4);
         assert!(ecs.entity(&id4).is_err());
         ecs.run_systems(context);        
     }

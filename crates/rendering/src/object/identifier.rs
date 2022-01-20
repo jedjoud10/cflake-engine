@@ -7,14 +7,14 @@ pub struct ObjectID<T>
 where
     T: PipelineObject,
 {
-    pub(crate) index: Option<usize>,
+    pub(crate) id: Option<u64>,
     _phantom: PhantomData<fn() -> T>,
 }
 
 impl<T: PipelineObject> Clone for ObjectID<T> {
     fn clone(&self) -> Self {
         Self {
-            index: self.index,
+            id: self.id,
             _phantom: self._phantom,
         }
     }
@@ -24,7 +24,7 @@ impl<T: PipelineObject> Copy for ObjectID<T> {}
 
 impl<T: PipelineObject> Debug for ObjectID<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ObjectID").field("index", &self.index).finish()
+        f.debug_struct("ObjectID").field("id", &self.id).finish()
     }
 }
 
@@ -34,7 +34,7 @@ where
 {
     fn default() -> Self {
         Self {
-            index: None,
+            id: None,
             _phantom: PhantomData::default(),
         }
     }
@@ -45,15 +45,15 @@ where
     T: PipelineObject,
 {
     // Create a new object ID using an actual index
-    pub fn new(index: usize) -> Self {
+    pub fn new(id: u64) -> Self {
         Self {
-            index: Some(index),
+            id: Some(id),
             _phantom: PhantomData::default(),
         }
     }
     // Check if this ID is even valid LOCALLY
     pub fn valid(&self) -> bool {
-        self.index.is_some()
+        self.id.is_some()
     }
 }
 
@@ -61,12 +61,12 @@ where
 // We can use this to detect whenever said task has completed
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TaskID {
-    pub(crate) index: usize,
+    pub(crate) id: u64,
 }
 
 impl TaskID {
     // Create a new task ID using an actual index
-    pub fn new(index: usize) -> Self {
-        Self { index }
+    pub fn new(id: u64) -> Self {
+        Self { id }
     }
 }

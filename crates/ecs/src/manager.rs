@@ -18,7 +18,7 @@ pub struct ECSManager<Context> {
     // Each system, stored in the order they were created
     systems: Vec<System>,
     // The components that are valid in the world
-    pub(crate) components_ids: AHashMap<ComponentID, usize>,
+    pub(crate) components_ids: AHashMap<ComponentID, u64>,
     pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>,
     // The internal ECS thread pool
     pub(crate) thread_pool: ThreadPool<LinkedComponents>,
@@ -44,21 +44,21 @@ impl<Context> ECSManager<Context> {
     /* #region Entities */
     // Get an entity
     pub fn entity(&self, id: &EntityID) -> Result<&Entity, EntityError> {
-        self.entities.get(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
+        self.entities.get(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Get an entity mutably
     pub fn entity_mut(&mut self, id: &EntityID) -> Result<&mut Entity, EntityError> {
-        self.entities.get_mut(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
+        self.entities.get_mut(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
     pub(crate) fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
         // Check if the EntityID was not occupied already
-        if self.entities.get(id.index as usize).is_some() {
+        if self.entities.get(id.id).is_some() {
             panic!()
         }
         entity.id = Some(id);
         // Add the entity
-        let _idx = self.entities.insert(id.index as usize, entity);
+        let _idx = self.entities.insert(id.id, entity);
         // After doing that, we can safely add the components
         self.link_components(id, group).unwrap();
     }
@@ -66,7 +66,7 @@ impl<Context> ECSManager<Context> {
     // When we remove an entity, we also remove it's components, thus updating the systems
     pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate the entity
-        let entity = self.entities.remove(id.index as usize).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
+        let entity = self.entities.remove(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
         // Also remove it's linked components
         for component_id in entity.components.iter() {
             self.remove_component(*component_id).unwrap();
@@ -161,8 +161,16 @@ impl<Context> ECSManager<Context> {
     // For now we will run them on the main thread, until I get my thread pool thingy working
     pub fn run_systems(&self, context: Context) where Context: Clone {
         for system in self.systems.iter() {
-            system.run_system(context.clone(), &self);
+            system.run_system(context.clone(), self);
         }
     }
     /* #endregion */
+    // Init update of the ECS manager
+    pub fn init_update(&mut self) {
+        self.entities.init_update();
+    }
+    // Finish update of the ECS manager
+    pub fn finish_update(&mut self) {
+        self.entities.finish_update();
+    }
 }

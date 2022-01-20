@@ -28,13 +28,13 @@ impl Entity {
 // An EntityID that will be used to identify entities
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct EntityID {
-    pub index: u16,
+    pub id: u64,
 }
 impl EntityID {
     // Create a new entity ID using a ShareableOrderedVecState of the entities, something that we can get by the Context<ECSManager>
     pub fn new<Context>(ecs_manager: &ECSManager<Context>) -> Self {
         Self {
-            index: ecs_manager.entities.get_next_idx_increment() as u16,
+            id: ecs_manager.entities.get_next_id_increment(),
         }
     }
 }

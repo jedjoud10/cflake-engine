@@ -1,4 +1,4 @@
-use ordered_vec::simple::OrderedVec;
+use ordered_vec::simple::UnversionnedOrderedVec;
 use std::hash::Hash;
 
 use crate::bounds::AABB;
@@ -51,7 +51,7 @@ impl OctreeNode {
         aabb && self.depth < (max_depth - 1)
     }
     // Recursively find the children for this node
-    pub fn find_children_recursive(&self, nodes: &OrderedVec<OctreeNode>) -> Vec<OctreeNode> {
+    pub fn find_children_recursive(&self, nodes: &UnversionnedOrderedVec<OctreeNode>) -> Vec<OctreeNode> {
         let mut list: Vec<OctreeNode> = Vec::new();
         let mut pending: Vec<OctreeNode> = vec![self.clone()];
 
@@ -76,7 +76,7 @@ impl OctreeNode {
         list
     }
     // Subdivide this node into 8 smaller nodes
-    pub fn subdivide(&mut self, nodes: &mut OrderedVec<OctreeNode>) -> Vec<OctreeNode> {
+    pub fn subdivide(&mut self, nodes: &mut UnversionnedOrderedVec<OctreeNode>) -> Vec<OctreeNode> {
         let half_extent = self.half_extent as i64;
         // The outputted nodes
         let mut output: Vec<OctreeNode> = Vec::new();
