@@ -83,15 +83,8 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
             }
         }
         // We can update the world now
-        {
-            let cloned = world.clone();
-            let world = world.read().unwrap();
-            world.update_start(cloned);
-        }
-        {
-            let mut world = world.write().unwrap();
-            world.update_end(&mut task_receiver);
-        }
+        World::update_start(&world);
+        World::update_end(&world, &mut task_receiver);
     }
     // When the window closes and we exit from the game
     if let Ok(rwlock) = Arc::try_unwrap(world) {

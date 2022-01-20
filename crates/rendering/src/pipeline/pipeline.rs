@@ -655,6 +655,8 @@ pub struct PipelineStartData {
     pub eatomic: Arc<AtomicBool>,
     // The pipeline itself
     pub pipeline: Arc<RwLock<Pipeline>>,
+    // Some timing data that we will share with the pipeline
+    pub time: Arc<Mutex<(f64, f64)>>,
 }
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
@@ -752,6 +754,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     let eatomic = Arc::new(AtomicBool::new(false));
     let eatomic_clone = eatomic.clone();
 
+    // Some timing data that we will share with the pipeline
+    let time = Arc::new(Mutex::new((0.0, 0.0)));
+    let time_clone = time.clone();
+
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
 
@@ -821,16 +827,18 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // We must render every frame
         loop {
-            // This is a single frame
-            {
-                let mut pipeline = pipeline.write().unwrap();
-                pipeline.update_global_shader_uniforms(1.0, 0.0);
-                pipeline.init_update();
-            }
             {
                 // At the start of each frame we must sync up with the main thread
                 sbarrier_clone.wait();
-
+            }
+            // This is a single frame
+            {
+                let mut pipeline = pipeline.write().unwrap();
+                let time = time_clone.lock().unwrap();
+                pipeline.update_global_shader_uniforms(time.0, time.1);
+                pipeline.init_update();
+            }
+            {
                 // We render the world here
                 let pipeline = pipeline.read().unwrap();
                 renderer.pre_render();
@@ -874,5 +882,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         ebarrier,
         eatomic,
         pipeline,
+        time,
     }
 }

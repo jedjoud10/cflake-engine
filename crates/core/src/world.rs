@@ -76,22 +76,43 @@ impl World {
 
         println!("World init done!");
     }
-    // Begin frame update. We also get the Arc<RwLock<World>> so we can execute the system
-    pub fn update_start(&self, arc: Arc<RwLock<Self>>) {
+    // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
+    pub fn update_start(world: &Arc<RwLock<Self>>) {
         // While we do world logic, start rendering the frame on the other thread
-        let start_data = &self.pipeline_thread;
-        start_data.sbarrier.wait();
-        // Update the systems
         {
-            let context = Context::convert(&arc);
-            self.ecs.run_systems(context);
+            let mut world = world.write().unwrap();
+            let start_data = &world.pipeline_thread;
+
+            // Update the timings then we can start rendering
+            {
+                let time = &world.pipeline_thread.time;
+                let mut time = time.lock().unwrap();
+                time.0 = world.time.elapsed;
+                time.1 = world.time.delta; 
+                start_data.sbarrier.wait();
+            }
+            // Update the systems
+            world.ecs.init_update();
+        }        
+        {
+            let context = Context::convert(world);
+            let world = world.read().unwrap();
+            world.ecs.run_systems(context);
+        }
+        {
+            // Finish update
+            let mut world = world.write().unwrap();
+            world.ecs.finish_update();
         }
     }
     // End frame update
-    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+    pub fn update_end(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // End the frame
-        let start_data = &self.pipeline_thread;
-        start_data.ebarrier.wait();
+        {
+            let world = world.read().unwrap();
+            let start_data = &world.pipeline_thread;
+            start_data.ebarrier.wait();
+        }
     }
     // We must destroy the world
     pub fn destroy(mut self) {
