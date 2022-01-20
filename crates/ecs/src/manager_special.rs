@@ -1,7 +1,7 @@
 use crate::{ECSManager, entity::{EntityID, Entity, ComponentLinkingGroup, ComponentUnlinkGroup}, utils::{EntityError, ComponentError}};
 
 // Add an entity to the manager, and automatically link it's components
-pub fn add_entity<Context>(ecs: &mut ECSManager<Context>, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
+pub fn add_entity<Context>(ecs: &mut ECSManager<Context>, entity: Entity, id: EntityID, group: ComponentLinkingGroup) {
     ecs.add_entity(entity, id, group)
 }
 // Remove an entity from the manager, and return it's value

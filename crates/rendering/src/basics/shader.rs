@@ -70,7 +70,7 @@ impl PipelineObject for Shader {}
 impl Buildable for Shader {
     fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
-        let id = pipeline.shaders.get_next_idx_increment();
+        let id = pipeline.shaders.get_next_id_increment();
         let id = ObjectID::new(id);
         (PipelineTask::CreateShader(ObjectBuildingTask::<Self>(self, id)), id)
     }

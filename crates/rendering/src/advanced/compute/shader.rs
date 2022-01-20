@@ -15,7 +15,7 @@ impl PipelineObject for ComputeShader {}
 impl Buildable for ComputeShader {
     fn construct_task(self, pipeline: &crate::pipeline::Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
-        let id = pipeline.compute_shaders.get_next_idx_increment();
+        let id = pipeline.compute_shaders.get_next_id_increment();
         let id = ObjectID::new(id);
         (PipelineTask::CreateComputeShader(ObjectBuildingTask::<Self>(self, id)), id)
     }

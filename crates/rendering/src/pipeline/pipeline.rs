@@ -63,13 +63,13 @@ impl Pipeline {
     pub(crate) fn add_tasks(&mut self, messages: Vec<(PipelineTask, TaskID)>) {
         let mut write = self.tasks.write().unwrap();
         for (task, id) in messages {
-            write.insert(id.index, (task, id, PipelineTaskStatus::Pending));
+            write.insert(id.id, (task, id, PipelineTaskStatus::Pending));
         }
     }
     // Add a task interally, through the render thread itself
     pub(crate) fn add_task_internally(&self, task: (PipelineTask, TaskID)) {
         let mut write = self.tasks.write().unwrap();
-        write.insert(task.1.index, (task.0, task.1, PipelineTaskStatus::Pending));
+        write.insert(task.1.id, (task.0, task.1, PipelineTaskStatus::Pending));
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
@@ -106,48 +106,48 @@ impl Pipeline {
 
     // Get a material using it's respective ID
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
-        if let Some(index) = id.index {
-            self.materials.get(index)
+        if let Some(id) = id.id {
+            self.materials.get(id)
         } else {
             None
         }
     }
     // Get a model using it's respective ID
     pub fn get_model(&self, id: ObjectID<Model>) -> Option<&(Model, ModelBuffers)> {
-        if let Some(index) = id.index {
-            self.models.get(index)
+        if let Some(id) = id.id {
+            self.models.get(id)
         } else {
             None
         }
     }
     // Get a renderer using it's respective ID
     pub fn get_renderer(&self, id: ObjectID<Renderer>) -> Option<&Renderer> {
-        if let Some(index) = id.index {
-            self.renderers.get(index)
+        if let Some(id) = id.id {
+            self.renderers.get(id)
         } else {
             None
         }
     }
     // Get a shader using it's respective ID
     pub fn get_shader(&self, id: ObjectID<Shader>) -> Option<&Shader> {
-        if let Some(index) = id.index {
-            self.shaders.get(index)
+        if let Some(id) = id.id {
+            self.shaders.get(id)
         } else {
             None
         }
     }
     // Get a compute shader using it's respective ID
     pub fn get_compute_shader(&self, id: ObjectID<ComputeShader>) -> Option<&ComputeShader> {
-        if let Some(index) = id.index {
-            self.compute_shaders.get(index)
+        if let Some(id) = id.id {
+            self.compute_shaders.get(id)
         } else {
             None
         }
     }
     // Get a texture using it's texture
     pub fn get_texture(&self, id: ObjectID<Texture>) -> Option<&Texture> {
-        if let Some(index) = id.index {
-            self.textures.get(index)
+        if let Some(id) = id.id {
+            self.textures.get(id)
         } else {
             None
         }
@@ -162,11 +162,11 @@ impl Pipeline {
         let _material_id = self.get_material(defaults.material);
         let _model_id = self.get_model(defaults.model);
 
-        self.renderers.insert(task.1.index.unwrap(), renderer);
+        self.renderers.insert(task.1.id.unwrap(), renderer);
     }
     // Remove the renderer using it's renderer ID
     pub(crate) fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
-        self.renderers.remove(id.index.unwrap());
+        self.renderers.remove(id.id.unwrap());
     }
     // Update a renderer's matrix
     pub(crate) fn renderer_update_matrix(&mut self, _id: ObjectID<Renderer>, _matrix: veclib::Matrix4x4<f32>) {}
@@ -258,7 +258,7 @@ impl Pipeline {
         };
         // Add the shader at the end
         shader.program = program;
-        self.shaders.insert(task.1.index.unwrap(), shader);
+        self.shaders.insert(task.1.id.unwrap(), shader);
     }
     // Create a compute shader and cache it
     pub(crate) fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
@@ -327,7 +327,7 @@ impl Pipeline {
         };
         // Add the shader at the end
         shader.program = program;
-        self.compute_shaders.insert(task.1.index.unwrap(), shader);
+        self.compute_shaders.insert(task.1.id.unwrap(), shader);
     }
     // Create a model
     pub(crate) fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
@@ -438,12 +438,12 @@ impl Pipeline {
         }
 
         // Add the model normally and also add it's corresponding buffers
-        self.models.insert(task.1.index.unwrap(), (model, buffers));
+        self.models.insert(task.1.id.unwrap(), (model, buffers));
     }
     // Dispose of a model, also remove it from the pipeline
     pub(crate) fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Remove the model and it's buffers
-        let (_model, mut buffers) = self.models.remove(id.index.unwrap()).unwrap();
+        let (_model, mut buffers) = self.models.remove(id.id.unwrap()).unwrap();
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut buffers.vertex_buf);
@@ -558,7 +558,7 @@ impl Pipeline {
         }
         // Add the texture
         texture.oid = id;
-        self.textures.insert(task.1.index.unwrap(), texture);
+        self.textures.insert(task.1.id.unwrap(), texture);
     }
     // Update the size of a texture
     pub(crate) fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
@@ -609,7 +609,7 @@ impl Pipeline {
     // Create a materail
     pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
-        self.materials.insert(task.1.index.unwrap(), task.0);
+        self.materials.insert(task.1.id.unwrap(), task.0);
     }    
 }
 

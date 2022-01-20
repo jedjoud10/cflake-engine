@@ -53,7 +53,7 @@ impl PipelineObject for Model {}
 impl Buildable for Model {
     fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
         // Create the ID
-        let id = pipeline.materials.get_next_idx_increment();
+        let id = pipeline.materials.get_next_id_increment();
         let id = ObjectID::new(id);
         // Create the task and send it
         (PipelineTask::CreateModel(ObjectBuildingTask::<Self>(self, id)), id)

@@ -302,7 +302,7 @@ impl Buildable for Texture {
             TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
         // Create the ID
-        let id = pipeline.textures.get_next_idx_increment();
+        let id = pipeline.textures.get_next_id_increment();
         let id = ObjectID::new(id);
         // Create a task and send it
         (PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)), id)

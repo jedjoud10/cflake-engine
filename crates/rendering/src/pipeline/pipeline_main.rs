@@ -9,8 +9,8 @@ pub mod pipec {
     // Send a task to the shared pipeline
     pub fn task(task: PipelineTask, pipeline: &Pipeline) -> TaskID {
         // Create a new task ID
-        let idx = pipeline.tasks.read().unwrap().get_next_idx_increment();
-        let id = TaskID::new(idx);
+        let id = pipeline.tasks.read().unwrap().get_next_id_increment();
+        let id = TaskID::new(id);
         // Get the thread local sender
         sender::send_task((task, id), pipeline).unwrap();
         id
