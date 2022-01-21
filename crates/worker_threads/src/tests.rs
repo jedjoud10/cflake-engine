@@ -18,26 +18,17 @@ pub mod test {
     pub fn speed_test() {
         // Test the parralelization
         let pool = ThreadPool::<i32>::new(8, || {});
-        let mut numbers1 = vec![0; 1844674];
+        let mut numbers1 = vec![0; 4];
         // Some sort of expensive calculation
         fn expensive_calculation() -> i32 {
             let mut l: i32 = 0;
-            for x in 0..4096_i32 {
-                for y in 0..4096_i32 {
-                    for z in 0..4096_i32 {
-                        for w in 0..4096_i32 {
-                            l = l.wrapping_add(x.wrapping_sub(z.wrapping_add(w)));
-                        }
-                    }
-                }
-            }
             l
         }
         let i = std::time::Instant::now();
         pool.execute(&mut numbers1, |b| *b = expensive_calculation());
         println!("Took '{}' micros to execute multithreaded code", i.elapsed().as_micros());
 
-        let mut numbers2 = vec![0; 1844674];
+        let mut numbers2 = vec![0; 4];
         let i = std::time::Instant::now();
         for b in numbers2.iter_mut() {
             *b = expensive_calculation()

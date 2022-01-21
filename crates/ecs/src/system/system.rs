@@ -6,8 +6,7 @@ use crate::{
     entity::EntityID,
     ECSManager,
 };
-
-use super::EventHandler;
+use super::{EventHandler, SystemExecutionData};
 
 // A system that updates specific components in parallel
 pub struct System {
@@ -45,10 +44,10 @@ impl System {
             self.entities.remove(&id);
         }
     }
-    // Run the system for a single iteration
-    pub fn run_system<Context>(&self, context: Context, ecs_manager: &ECSManager<Context>) {
+    // Create a SystemExecutionData that we can actually run at a later time
+    pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
         // These components are filtered for us
-        let components = &ecs_manager.components;
+        let components = &ecs_manager.components.lock().unwrap();
         // Create the component query
         let components = self
             .entities
@@ -59,14 +58,12 @@ impl System {
                 linked_components
             })
             .collect::<Vec<_>>();
-
-        let query = ComponentQuery {
-            linked_components: components,
-            thread_pool: &ecs_manager.thread_pool,
-        };
-        if let Some(run_system_evn) = ecs_manager.event_handler.get_run_event(self.run_event_idx) {
-            // Run the "run system" event
-            run_system_evn(context, query);
+        SystemExecutionData {
+            run_event: ecs_manager.event_handler.get_run_event(self.run_event_idx).cloned(),
+            query: ComponentQuery {
+                linked_components: components,
+                thread_pool: ecs_manager.thread_pool.clone(),
+            },
         }
     }
 }

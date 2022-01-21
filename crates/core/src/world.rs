@@ -93,19 +93,21 @@ impl World {
             // Update the systems
             world.ecs.init_update();
         }        
-        {
-            let context = Context::convert(world);
+        {            
             let system_count = {
                 let world = world.read().unwrap();
                 world.ecs.systems_count()
             };
             // Loop for every system and update it
             for system_index in 0..system_count {
-                {
+                let execution_data = {
                     let world = world.read().unwrap();
                     let system = &world.ecs.systems()[system_index];
-                    system.run_system(context.clone(), &world.ecs);
-                }
+                    system.run_system(&world.ecs)
+                };
+                // Actually execute the system now
+                let context = Context::convert(world);
+                execution_data.run(context);
                 {
                     // Run the callback after executing a single system
                     let mut world = world.write().unwrap();

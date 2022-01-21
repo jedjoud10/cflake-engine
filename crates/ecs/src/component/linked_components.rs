@@ -6,7 +6,7 @@ use crate::{
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
-use std::cell::RefCell;
+use std::{cell::{RefCell, UnsafeCell}, sync::{Arc, Mutex}};
 use worker_threads::ThreadPool;
 
 // Some linked components that we can mutate or read from in each system
@@ -22,15 +22,15 @@ unsafe impl Sync for LinkedComponents {}
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
     // Theoretically, this should only be done once, when an entity becomes valid for a system
-    pub(crate) fn new(entity: &Entity, components: &OrderedVec<RefCell<EnclosedComponent>>) -> Self {
+    pub(crate) fn new(entity: &Entity, components: &OrderedVec<UnsafeCell<EnclosedComponent>>) -> Self {
         // Get the components from the world, that fit the cbitfield and the Entity ID
         let filtered_components = entity
             .components
             .iter()
             .filter_map(|component_id| {
                 // The component is linked to the entity, and we must get the component's pointer
-                let component = components.get(component_id.id).unwrap();
-                let ptr = component.as_ptr();
+                let component = &*components.get(component_id.id).unwrap();
+                let ptr = component.get();
                 Some((component_id.cbitfield, ptr))
             })
             .collect::<AHashMap<Bitfield<u32>, *mut EnclosedComponent>>();
@@ -76,32 +76,5 @@ impl LinkedComponents {
         let component = registry::cast_component_mut::<T>(component)?;
         let guard = ComponentWriteGuard::new(component);
         Ok(guard)
-    }
-}
-
-// A struct full of LinkedComponents that we send off to update in parallel
-// This will use the components data given by the world to run all the component updates in PARALLEL
-// The components get mutated in parallel, though the system is NOT stored on another thread
-pub struct ComponentQuery<'a> {
-    // The actual components
-    pub(crate) linked_components: Vec<LinkedComponents>,
-    // Thread pool because I am insane
-    pub(crate) thread_pool: &'a ThreadPool<LinkedComponents>,
-}
-
-impl<'a> ComponentQuery<'a> {
-    // Execute the component query, so we actually update the components
-    pub fn update_all<F: Fn(&mut LinkedComponents) + 'static + Sync + Send>(mut self, function: F, multithreaded: bool) {
-        if !multithreaded {
-            // Run it normally
-            for mut linked_components in self.linked_components {
-                function(&mut linked_components);
-            }
-        } else {
-            // Run it using multithreading
-            //Multithreading is actually so goddamn slower than optimized single threaded code wtf
-            self.thread_pool.execute(&mut self.linked_components, function)
-            //panic!()
-        }
     }
 }

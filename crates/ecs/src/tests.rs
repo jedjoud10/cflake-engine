@@ -16,8 +16,9 @@ pub mod test {
             for x in 0..64 {
                 i += x;
             }
-            let name = components.component_mut::<Name>().unwrap();
-        }, false);        
+            let mut name = components.component_mut::<Name>().unwrap();
+            *name = Name::new("Bob");
+        });        
         
         /*
         let i = std::time::Instant::now();

@@ -1,7 +1,7 @@
-use std::sync::{
+use std::{sync::{
     atomic::{AtomicPtr, Ordering::Relaxed},
     Arc, Barrier, RwLock,
-};
+}, cell::UnsafeCell};
 
 use crate::{SharedData, SHUTDOWN};
 
@@ -40,13 +40,15 @@ impl<T: 'static> ThreadPool<T> {
     // Divide the task between the multiple threads, and invoke them
     pub fn execute<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
         let (barrier, end_barrier, shutdown_barrier) = self.barriers.as_ref();
+        // The main task
+        let task = UnsafeCell::new(task);
         {
             // Update the value, then unlock
             let mut shared_data = self.arc.write().unwrap();
             // Convert the &mut Vec<T> to Vec<*mut T>
             let length = elements.len();
             shared_data.elements = elements.iter_mut().map(|x| x as *mut T).collect::<Vec<_>>();
-            shared_data.function = Box::new(task);
+            shared_data.function = Some(task.get() as *const F);
             // Calculate the chunk size
             shared_data.chunk_size = (length / self.max_thread_count) + 1;
             // Now we can unlock
@@ -57,6 +59,12 @@ impl<T: 'static> ThreadPool<T> {
 
         // We wait until all of them finished
         end_barrier.wait();
+        // We must clear the shared data
+        {
+            // Update the value, then unlock
+            let mut shared_data = self.arc.write().unwrap();
+            shared_data.clear();
+        }
     }
     // Shutdown
     pub fn shutdown(&self) {

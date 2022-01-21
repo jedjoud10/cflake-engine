@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::{RefCell, UnsafeCell}, sync::{Arc, Mutex}};
 use worker_threads::ThreadPool;
 
 use crate::{
@@ -19,9 +19,9 @@ pub struct ECSManager<Context> {
     systems: Vec<System>,
     // The components that are valid in the world
     pub(crate) components_ids: AHashMap<ComponentID, u64>,
-    pub(crate) components: OrderedVec<RefCell<EnclosedComponent>>,
+    pub(crate) components: Mutex<OrderedVec<UnsafeCell<EnclosedComponent>>>,
     // The internal ECS thread pool
-    pub(crate) thread_pool: ThreadPool<LinkedComponents>,
+    pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
     // Our internal event handler
     pub(crate) event_handler: EventHandler<Context>,
 }
@@ -31,7 +31,7 @@ impl<Context> ECSManager<Context> {
     // Create a new ECS manager
     pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
         // Start the thread pool
-        let thread_pool = ThreadPool::new(8, start_function);
+        let thread_pool = Arc::new(Mutex::new(ThreadPool::new(8, start_function)));
         Self {
             entities: Default::default(),
             systems: Default::default(),
@@ -126,8 +126,9 @@ impl<Context> ECSManager<Context> {
     // Add a specific linked componment to the component manager. Return the said component's ID
     fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
         // We must make this a RefCell
-        let cell = RefCell::new(boxed);
-        let idx = self.components.push_shove(cell);
+        //let cell = RefCell::new(boxed);
+        let mut components = self.components.lock().unwrap();
+        let idx = components.push_shove(UnsafeCell::new(boxed));
         // Create a new Component ID
         let id = ComponentID::new(cbitfield, idx);
         self.components_ids.insert(id, idx);
@@ -140,7 +141,8 @@ impl<Context> ECSManager<Context> {
             .components_ids
             .remove(&id)
             .ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
-        self.components.remove(idx);
+        let mut components = self.components.lock().unwrap();
+        components.remove(idx);
         Ok(())
     }
     /* #endregion */
@@ -161,11 +163,11 @@ impl<Context> ECSManager<Context> {
     pub fn systems_count(&self) -> usize {
         self.systems.len()
     }
-    // Run the systems in sync, but their component updates is not
-    // For now we will run them on the main thread, until I get my thread pool thingy working
+    // Run the systems in sync, but their component updates are not
     pub(crate) fn run_systems(&self, context: Context) where Context: Clone {
         for system in self.systems.iter() {
-            system.run_system(context.clone(), self);
+            let execution_data = system.run_system(self);
+            execution_data.run(context.clone());
         }
     }
     /* #endregion */

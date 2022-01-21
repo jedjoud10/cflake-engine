@@ -29,7 +29,8 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
             let ptr = ptr.read().unwrap();
             let idx = thread_index;
             let data = &*ptr;
-            let function = data.function.as_ref();
+            let function = data.function.as_ref().unwrap();
+            let function = unsafe { &**function };
             let elements = &*data.elements;
 
             // Calculate the indices

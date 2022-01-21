@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard}, marker::PhantomData};
 
 use ecs::{system::EventHandler, ECSManager};
 use input::InputManager;
@@ -22,7 +22,6 @@ pub struct World {
 }
 
 // A context that can mutate the world if self is mut
-#[derive(Clone)]
 pub struct Context {
     pub(crate) world: Arc<RwLock<World>>,
 }
@@ -38,6 +37,10 @@ impl Context {
         TaskSenderContext {
         }
     }
+    // Create a ShareableContext that we can send to other threads if they need to access the world
+    pub fn create_shareable_context(& self) -> ShareableContext {
+        ShareableContext { world: self.world.clone() }
+    }
     // Read
     pub fn read<'a>(&'a self) -> ReadContext<'a> {
         ReadContext {
@@ -48,6 +51,20 @@ impl Context {
     pub fn write<'a>(&'a mut self) -> WriteContext<'a> {
         WriteContext {
             world: self.world.write().unwrap(),
+        }
+    }
+}
+
+// A context that we can share around to other threads if they need to access the world
+pub struct ShareableContext {
+    pub(crate) world: Arc<RwLock<World>>,
+}
+
+impl ShareableContext {
+    // Read
+    pub fn read(&self) -> ReadContext {
+        ReadContext {
+            world: self.world.read().unwrap(),
         }
     }
 }

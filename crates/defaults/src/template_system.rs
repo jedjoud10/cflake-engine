@@ -6,11 +6,14 @@ use ecs::system::SystemBuilder;
 
 
 // A simple system that we can use as template
-fn run(context: Context, components: ComponentQuery) {
-    components.update_all(|components| {
+fn run(mut context: Context, components: ComponentQuery) {
+    let share = context.create_shareable_context();
+    components.update_all_threaded(move |components| {
         let name = components.component::<Name>().unwrap();
         dbg!(&name.name);
-    }, false);
+        let time = share.read().time.elapsed;
+        dbg!(time);
+    });
 }
 
 

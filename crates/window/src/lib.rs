@@ -37,11 +37,19 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     // Calling the callback
     println!("Calling World Initialization callback");
     {
-        let mut context = Context::convert(&world);
-        // Load the default systems first
-        let sender = context.new_task_sender();
-        defaults::preload_system(context.write(), sender);
-        init_world(context.write());
+        {
+            let mut context = Context::convert(&world);
+            // Load the default systems first
+            let sender = context.new_task_sender();
+            defaults::preload_system(context.write(), sender);
+            init_world(context.write());
+            // Flush everything and execute all the tasks
+        }
+        {
+            let mut world = world.write().unwrap();
+            task_receiver.flush(&mut world);
+        }
+
     }
     println!("Hello Game World!");
     while !window.should_close() {
