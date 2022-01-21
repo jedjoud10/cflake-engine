@@ -1,4 +1,7 @@
-use main::{math, rendering::{self, object::ObjectID}};
+use main::{
+    math,
+    rendering::{self, object::ObjectID},
+};
 // An Renderer component
 pub struct Renderer {
     pub object_id: ObjectID<rendering::basics::renderer::Renderer>,
@@ -6,9 +9,7 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(renderer_id: ObjectID<rendering::basics::renderer::Renderer>) -> Self {
-        Self {
-            object_id: renderer_id,
-        }
+        Self { object_id: renderer_id }
     }
 }
 

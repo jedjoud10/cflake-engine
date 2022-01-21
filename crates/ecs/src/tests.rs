@@ -2,15 +2,21 @@
 pub mod test {
     use bitfield::Bitfield;
 
-    use crate::{component::{ComponentQuery, defaults::{Name, Tagged}, registry}, ECSManager, entity::{ComponentLinkingGroup, Entity, EntityID, ComponentUnlinkGroup}};
+    use crate::{
+        component::{
+            defaults::{Name, Tagged},
+            registry, ComponentQuery,
+        },
+        entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
+        ECSManager,
+    };
 
     // A test context
     #[derive(Clone, Copy)]
     pub struct WorldContext;
     fn run_system(_context: WorldContext, components: ComponentQuery) {
-
         // Transform the _context to RefContext using some magic fuckery
-        
+
         components.update_all(|components| {
             let mut i = 0;
             for x in 0..64 {
@@ -18,8 +24,8 @@ pub mod test {
             }
             let mut name = components.component_mut::<Name>().unwrap();
             *name = Name::new("Bob");
-        });        
-        
+        });
+
         /*
         let i = std::time::Instant::now();
         components.update_all(RefContext, |context, components| {
@@ -27,7 +33,7 @@ pub mod test {
             for x in 0..1024 {
                 i += x;
             }
-        }, true);        
+        }, true);
         println!("{}", i.elapsed().as_micros());
         */
     }
@@ -42,10 +48,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        builder
-            .link::<Name>()
-            .set_event(run_system)
-            .build();
+        builder.link::<Name>().set_event(run_system).build();
 
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::new();
@@ -72,7 +75,7 @@ pub mod test {
         dbg!(should_not_be_the_same);
         assert_ne!(should_not_be_the_same, id4);
         assert!(ecs.entity(&id4).is_err());
-        ecs.run_systems(context);        
+        ecs.run_systems(context);
     }
     #[test]
     pub fn test_direct() {
@@ -83,13 +86,9 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        builder
-            .link::<Name>()
-            .set_event(run_system)
-            .build();
+        builder.link::<Name>().set_event(run_system).build();
 
-
-        // Add a new entity and play with it's components        
+        // Add a new entity and play with it's components
         let entity = Entity::new();
         let id = EntityID::new(&ecs);
         ecs.add_entity(entity, id, ComponentLinkingGroup::new());

@@ -49,7 +49,6 @@ impl ComponentLinkingGroup {
     }
 }
 
-
 // A collection of omponents that we will remove from the entity
 pub struct ComponentUnlinkGroup {
     pub removal_cbitfield: Bitfield<u32>,
@@ -59,7 +58,7 @@ pub struct ComponentUnlinkGroup {
 impl ComponentUnlinkGroup {
     pub fn new() -> Self {
         Self {
-            removal_cbitfield: Bitfield::<u32>::default()
+            removal_cbitfield: Bitfield::<u32>::default(),
         }
     }
     // Unlink a component from the entity

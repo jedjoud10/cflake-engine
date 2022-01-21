@@ -1,5 +1,5 @@
 use cflake_engine::*;
-use window::{start};
+use window::start;
 fn main() {
     // Load up the engine
     start("DevJed", "DevGame", preload_assets, init);
@@ -16,7 +16,7 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
     let entity = ecs::entity::Entity::new();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
     ecs::tasks::add_entity(&task_sender, entity, id, group).unwrap();
-    
+
     // Create a simple cube
     let mut group = ecs::entity::ComponentLinkingGroup::new();
     let entity = ecs::entity::Entity::new();
@@ -35,5 +35,5 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
     let renderer = defaults::components::Renderer::new(renderer_id);
     group.link(renderer).unwrap();
     // Add the cube
-    ecs::tasks::add_entity(&task_sender, entity, id, group); 
+    ecs::tasks::add_entity(&task_sender, entity, id, group);
 }

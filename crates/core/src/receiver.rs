@@ -1,4 +1,4 @@
-use ecs::manager_special::{remove_entity, add_entity};
+use ecs::manager_special::{add_entity, remove_entity};
 
 use crate::{task::WorldTask, World, WorldTaskBatch, INTERNAL_TASKS};
 

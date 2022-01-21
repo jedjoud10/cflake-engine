@@ -1,4 +1,7 @@
-use std::{sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard}, marker::PhantomData};
+use std::{
+    marker::PhantomData,
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 
 use ecs::{system::EventHandler, ECSManager};
 use input::InputManager;
@@ -34,11 +37,10 @@ impl Context {
     }
     // Create a TaskSenderContext that we can use to send tasks to the main thread
     pub fn new_task_sender(&self) -> TaskSenderContext {
-        TaskSenderContext {
-        }
+        TaskSenderContext {}
     }
     // Create a ShareableContext that we can send to other threads if they need to access the world
-    pub fn create_shareable_context(& self) -> ShareableContext {
+    pub fn create_shareable_context(&self) -> ShareableContext {
         ShareableContext { world: self.world.clone() }
     }
     // Read

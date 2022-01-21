@@ -1,7 +1,10 @@
-use std::{sync::{
-    atomic::{AtomicPtr, Ordering::Relaxed},
-    Arc, Barrier, RwLock,
-}, cell::UnsafeCell};
+use std::{
+    cell::UnsafeCell,
+    sync::{
+        atomic::{AtomicPtr, Ordering::Relaxed},
+        Arc, Barrier, RwLock,
+    },
+};
 
 use crate::{SharedData, SHUTDOWN};
 

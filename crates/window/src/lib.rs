@@ -4,16 +4,16 @@ extern crate gl;
 extern crate glfw;
 
 // World
-pub use main::*;
 pub use defaults;
-use main::core::{Context, World, WriteContext, TaskSenderContext};
+use main::core::{Context, TaskSenderContext, World, WriteContext};
+pub use main::*;
 use std::{
     sync::{Arc, RwLock, RwLockReadGuard},
     thread::ThreadId,
 };
 
 // Load up the OpenGL window and such
-pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>, TaskSenderContext,)) {
+pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>, TaskSenderContext)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
         .create_window(
@@ -50,7 +50,6 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
             let mut world = world.write().unwrap();
             task_receiver.flush(&mut world);
         }
-
     }
     println!("Hello Game World!");
     while !window.should_close() {
@@ -101,6 +100,8 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         println!("Exiting the engine...");
         let mut world = rwlock.into_inner().unwrap();
         world.destroy();
-    } else { panic!("Nah bro you mad goofy"); }
+    } else {
+        panic!("Nah bro you mad goofy");
+    }
     println!("\x1b[31mThe sense of impending doom is upon us.\x1b[0m");
 }

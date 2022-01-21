@@ -13,10 +13,10 @@ impl World {
             time: Default::default(),
             ui: Default::default(),
             ecs: ecs::ECSManager::new(|| {
-                    // This is ran on every thread in the ECS thread pool
-                    rendering::pipeline::init_coms();
-                    crate::sender::init_coms();
-                }),
+                // This is ran on every thread in the ECS thread pool
+                rendering::pipeline::init_coms();
+                crate::sender::init_coms();
+            }),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
@@ -87,15 +87,15 @@ impl World {
                 let time = &world.pipeline_thread.time;
                 let mut time = time.lock().unwrap();
                 time.0 = world.time.elapsed;
-                time.1 = world.time.delta; 
+                time.1 = world.time.delta;
                 start_data.sbarrier.wait();
             }
             // Update the systems
             world.ecs.init_update();
             let delta = world.time.delta as f32;
             world.input.late_update(delta);
-        }        
-        {            
+        }
+        {
             let system_count = {
                 let world = world.read().unwrap();
                 world.ecs.systems_count()

@@ -1,9 +1,8 @@
-use main::ecs;
-use main::core::{Context, WriteContext};
-use ecs::component::*;
 use ecs::component::defaults::*;
+use ecs::component::*;
 use ecs::system::SystemBuilder;
-
+use main::core::{Context, WriteContext};
+use main::ecs;
 
 // A simple system that we can use as template
 fn run(mut context: Context, components: ComponentQuery) {
@@ -16,11 +15,7 @@ fn run(mut context: Context, components: ComponentQuery) {
     });
 }
 
-
-// Create the system    
+// Create the system
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder()
-        .set_event(run)
-        .link::<Name>()
-        .build();
+    write.ecs.create_system_builder().set_event(run).link::<Name>().build();
 }

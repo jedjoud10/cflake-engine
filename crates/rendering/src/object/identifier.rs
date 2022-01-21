@@ -1,6 +1,6 @@
 use super::PipelineObject;
 
-use std::{marker::PhantomData, fmt::Debug};
+use std::{fmt::Debug, marker::PhantomData};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
 pub struct ObjectID<T>

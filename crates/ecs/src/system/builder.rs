@@ -1,8 +1,11 @@
 use bitfield::Bitfield;
 
-use crate::{ECSManager, component::{Component, registry, ComponentQuery}};
+use crate::{
+    component::{registry, Component, ComponentQuery},
+    ECSManager,
+};
 
-use super::{System, EventHandler};
+use super::{EventHandler, System};
 
 // A system builder used to build multiple systems
 pub struct SystemBuilder<'a, Context> {

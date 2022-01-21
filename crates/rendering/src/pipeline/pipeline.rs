@@ -6,7 +6,7 @@ use crate::{
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
         texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
-        uniforms::{ShaderUniformsSettings, ShaderUniformsGroup},
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskStatus, TaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
@@ -16,11 +16,15 @@ use ahash::{AHashMap, AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
-    collections::{HashSet, HashMap},
+    cell::RefCell,
+    collections::{HashMap, HashSet},
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
-    sync::{atomic::{AtomicPtr, AtomicBool, Ordering}, Arc, Barrier, RwLock, Mutex}, cell::RefCell,
+    sync::{
+        atomic::{AtomicBool, AtomicPtr, Ordering},
+        Arc, Barrier, Mutex, RwLock,
+    },
 };
 
 // Some default values like the default material or even the default shader
@@ -79,7 +83,7 @@ impl Pipeline {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
             let tasks = tasks.clear().into_iter().filter_map(|x| x).collect::<Vec<_>>();
-            tasks            
+            tasks
         };
 
         self.last_frame_task_statuses.clear();
@@ -641,7 +645,7 @@ impl Pipeline {
     pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
         self.materials.insert(task.1.id.unwrap(), task.0);
-    }    
+    }
 }
 
 // Data that will be sent back to the main thread after we start the pipeline thread

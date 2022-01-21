@@ -1,10 +1,9 @@
-use main::ecs;
-use main::core::{Context, WriteContext};
-use ecs::component::*;
 use ecs::component::defaults::*;
+use ecs::component::*;
 use ecs::system::SystemBuilder;
+use main::core::{Context, WriteContext};
+use main::ecs;
 use main::input::{Keys, MapType};
-
 
 // The camera system updatel loop
 fn run(context: Context, components: ComponentQuery) {
@@ -27,7 +26,7 @@ fn run(context: Context, components: ComponentQuery) {
     let original_speed = 1.0 + (read.input.get_accumulated_mouse_scroll() * 0.1).powf(2.0);
     let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * read.time.delta as f32;
 
-    // Actually update the velocity    
+    // Actually update the velocity
     // Forward and backward
     if read.input.map_held("camera_forward").0 {
         velocity += -forward * speed;
@@ -57,10 +56,11 @@ fn run(context: Context, components: ComponentQuery) {
         // And don't forget to update the camera matrices
         camera.update_view_matrix(position, new_rotation);
         let world = &*share.read();
-        use main::rendering::pipeline;
         use main::rendering::object;
+        use main::rendering::pipeline;
         let pipeline_camera = main::rendering::pipeline::camera::Camera {
-            position, rotation,
+            position,
+            rotation,
             viewm: camera.view_matrix,
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
@@ -70,10 +70,11 @@ fn run(context: Context, components: ComponentQuery) {
     })
 }
 
-
-// Create the system    
+// Create the system
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder()
+    write
+        .ecs
+        .create_system_builder()
         .set_event(run)
         .link::<crate::components::Camera>()
         .link::<crate::components::Transform>()
@@ -87,17 +88,6 @@ pub fn system(write: &mut WriteContext) {
     write.input.bind_key(Keys::RightShift, "cull_update", MapType::Toggle);
 }
 
-
-
-
-
-
-
-
-
-
-
-
 /*
 use core::global::callbacks::CallbackType::LocalEntityMut;
 
@@ -107,7 +97,7 @@ use others::callbacks::MutCallback;
 
 // Events
 fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
-    
+
 
     // Clone first
     let position = core::global::ecs::component::<crate::components::Transform>(entity).unwrap().position;

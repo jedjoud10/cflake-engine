@@ -1,4 +1,7 @@
-use std::{ptr::{null, null_mut}, sync::RwLock};
+use std::{
+    ptr::{null, null_mut},
+    sync::RwLock,
+};
 
 // The data that will be stored in an atomic pointer
 pub struct SharedData<T> {

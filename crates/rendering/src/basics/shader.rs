@@ -1,11 +1,11 @@
+use super::Buildable;
 use crate::object::ObjectID;
 use crate::object::{ObjectBuildingTask, PipelineObject, PipelineTask};
 use crate::params::{FADE_IN_SPEED, FADE_OUT_SPEED};
 use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
-use std::collections::{HashMap, HashSet};
-use super::Buildable;
 use bitflags::bitflags;
+use std::collections::{HashMap, HashSet};
 
 // Shader source type
 pub(crate) enum ShaderSourceType {
@@ -103,8 +103,7 @@ pub(crate) fn load_includes(flags: &mut ShaderFlags, settings: &ShaderSettings, 
             let text = if !included_paths.contains(&local_path.to_string()) {
                 // Load the function shader text
                 included_paths.insert(local_path.to_string());
-                assets::assetc::load_text(local_path)
-                    .map_err(|_| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
+                assets::assetc::load_text(local_path).map_err(|_| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
             } else {
                 String::new()
             };
@@ -138,15 +137,23 @@ pub(crate) fn load_includes(flags: &mut ShaderFlags, settings: &ShaderSettings, 
                 }
                 "renderer_main_start" => {
                     *line = "#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string();
-                    if !flags.contains(ShaderFlags::RENDERER) { 
-                        Err(RenderingError::new_str("Tried to expand #load renderer_main_start, but the current shader does not import '#load renderer' in the first place!"))
-                    } else { Ok(()) }
+                    if !flags.contains(ShaderFlags::RENDERER) {
+                        Err(RenderingError::new_str(
+                            "Tried to expand #load renderer_main_start, but the current shader does not import '#load renderer' in the first place!",
+                        ))
+                    } else {
+                        Ok(())
+                    }
                 }
                 "renderer_life_fade" => {
                     *line = "#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string();
-                    if !flags.contains(ShaderFlags::RENDERER) { 
-                        Err(RenderingError::new_str("Tried to expand #load renderer_life_fade, but the current shader does not import '#load renderer' in the first place!"))
-                    } else { Ok(()) }
+                    if !flags.contains(ShaderFlags::RENDERER) {
+                        Err(RenderingError::new_str(
+                            "Tried to expand #load renderer_life_fade, but the current shader does not import '#load renderer' in the first place!",
+                        ))
+                    } else {
+                        Ok(())
+                    }
                 }
                 x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
             };

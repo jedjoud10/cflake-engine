@@ -1,12 +1,11 @@
 // Default components
 pub mod components;
 // Default systems
-pub mod template_system;
 pub mod systems;
+pub mod template_system;
 
-
-use main::core::{WriteContext, TaskSenderContext};
 use main::assets::preload_asset;
+use main::core::{TaskSenderContext, WriteContext};
 use main::ecs;
 use systems::camera_system;
 // Pre-load the default assets

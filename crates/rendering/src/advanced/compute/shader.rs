@@ -1,8 +1,12 @@
 use std::collections::HashSet;
 
 use crate::{
-    basics::{shader::{ShaderSource, ShaderSettings, ShaderFlags}, Buildable},
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask}, utils::RenderingError,
+    basics::{
+        shader::{ShaderFlags, ShaderSettings, ShaderSource},
+        Buildable,
+    },
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    utils::RenderingError,
 };
 
 // A compute shader that can run parallel calculations on the GPU

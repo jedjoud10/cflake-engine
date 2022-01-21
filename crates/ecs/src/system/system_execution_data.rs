@@ -1,6 +1,5 @@
 use crate::component::ComponentQuery;
 
-
 // Some data that is created and returned whenever we want to execute a system
 pub struct SystemExecutionData<Context> {
     // The execution event
@@ -14,7 +13,7 @@ impl<Context> SystemExecutionData<Context> {
     pub fn run(mut self, context: Context) {
         if let Some(run_system_evn) = self.run_event {
             // Run the "run system" event
-            run_system_evn(context, self.query);   
-        }        
+            run_system_evn(context, self.query);
+        }
     }
 }

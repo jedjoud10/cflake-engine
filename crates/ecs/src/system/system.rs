@@ -1,12 +1,12 @@
 use ahash::AHashSet;
 use bitfield::Bitfield;
 
+use super::{EventHandler, SystemExecutionData};
 use crate::{
     component::{registry, Component, ComponentQuery, LinkedComponents},
     entity::EntityID,
     ECSManager,
 };
-use super::{EventHandler, SystemExecutionData};
 
 // A system that updates specific components in parallel
 pub struct System {

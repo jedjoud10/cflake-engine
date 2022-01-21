@@ -1,12 +1,15 @@
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
-use std::{cell::{RefCell, UnsafeCell}, sync::{Arc, Mutex}};
+use std::{
+    cell::{RefCell, UnsafeCell},
+    sync::{Arc, Mutex},
+};
 use worker_threads::ThreadPool;
 
 use crate::{
     component::{ComponentID, EnclosedComponent, LinkedComponents},
-    entity::{ComponentLinkingGroup, Entity, EntityID, ComponentUnlinkGroup},
+    entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     system::{EventHandler, System, SystemBuilder},
     utils::{ComponentError, EntityError},
 };
@@ -92,10 +95,12 @@ impl<Context> ECSManager<Context> {
         // Change the entity's bitfield
         let entity = self.entity_mut(&id).unwrap();
         let cbitfield = entity.cbitfield.add(&link_group.cbitfield);
-        entity.cbitfield = cbitfield; 
+        entity.cbitfield = cbitfield;
         // Check if the linked entity is valid to be added into the systems
-        self.systems.iter_mut().for_each(|system| if system.check_cbitfield(cbitfield) {
-            system.add_entity(id)
+        self.systems.iter_mut().for_each(|system| {
+            if system.check_cbitfield(cbitfield) {
+                system.add_entity(id)
+            }
         });
         Ok(())
     }
@@ -104,7 +109,11 @@ impl<Context> ECSManager<Context> {
         // Check if the entity even have these components
         let entity = self.entity(&id).unwrap();
         let valid = entity.cbitfield.contains(&unlink_group.removal_cbitfield);
-        if !valid { return Err(ComponentError::new_without_id("The ComponentSplitGroup contains components that do not exist on the original entity!".to_string())) }
+        if !valid {
+            return Err(ComponentError::new_without_id(
+                "The ComponentSplitGroup contains components that do not exist on the original entity!".to_string(),
+            ));
+        }
         // Remove the entity from some systems if needed
         let old = entity.cbitfield;
         let new = entity.cbitfield.remove(&unlink_group.removal_cbitfield).unwrap();
@@ -116,7 +125,10 @@ impl<Context> ECSManager<Context> {
         });
         // Update the entity's components
         let entity = self.entity_mut(&id).unwrap();
-        let components = entity.components.drain_filter(|component_id| unlink_group.removal_cbitfield.contains(&component_id.cbitfield)).collect::<Vec<_>>();
+        let components = entity
+            .components
+            .drain_filter(|component_id| unlink_group.removal_cbitfield.contains(&component_id.cbitfield))
+            .collect::<Vec<_>>();
         entity.cbitfield = new;
         for component_id in components {
             self.remove_component(component_id)?;
@@ -164,7 +176,10 @@ impl<Context> ECSManager<Context> {
         self.systems.len()
     }
     // Run the systems in sync, but their component updates are not
-    pub(crate) fn run_systems(&self, context: Context) where Context: Clone {
+    pub(crate) fn run_systems(&self, context: Context)
+    where
+        Context: Clone,
+    {
         for system in self.systems.iter() {
             let execution_data = system.run_system(self);
             execution_data.run(context.clone());

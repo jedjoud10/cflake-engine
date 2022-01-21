@@ -1,9 +1,8 @@
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 use worker_threads::ThreadPool;
 
 use super::LinkedComponents;
-
 
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL
