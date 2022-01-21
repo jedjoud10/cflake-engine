@@ -15,7 +15,14 @@ bitflags! {
     }
 }
 
+impl Default for RendererFlags {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
 // A component that will be linked to entities that are renderable
+#[derive(Default)]
 pub struct Renderer {
     pub model: ObjectID<Model>,
     pub material: ObjectID<Material>,
@@ -55,6 +62,11 @@ impl Renderer {
     // With a specific material
     pub fn set_material(mut self, material: ObjectID<Material>) -> Self {
         self.material = material;
+        self
+    }
+    // Set the model matrix for this renderer
+    pub fn set_matrix(mut self, matrix: veclib::Matrix4x4<f32>) -> Self {
+        self.matrix = matrix;
         self
     }
     // Add a flag to our flags

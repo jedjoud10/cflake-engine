@@ -40,7 +40,7 @@ impl Buildable for Material {
         self.uniforms = group;
         // Set the default rendering shader if no shader was specified
         if !self.shader.valid() {
-            self.shader = defaults.shader
+            self.shader = defaults.shader;
         }
         self
     }

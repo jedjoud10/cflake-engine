@@ -699,8 +699,8 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
 
     // Create the default rendering shader
     let ss = ShaderSettings::default()
-        .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
-        .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl");
+        .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
+        .source("defaults\\shaders\\rendering\\default.frsh.glsl");
     let shader = pipec::construct(Shader::new(ss).unwrap(), pipeline);
 
     // Create the default material
@@ -722,12 +722,13 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
 // Initialize GLFW and the Window
 fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
     // Set the type of events that we want to listen to
+    window.make_current();
     window.set_key_polling(true);
     window.set_cursor_pos_polling(true);
+    window.set_cursor_mode(glfw::CursorMode::Disabled);
     window.set_scroll_polling(true);
     window.set_size_polling(true);
     glfw.set_swap_interval(glfw::SwapInterval::None);
-    window.make_current();
 }
 // Initialize OpenGL
 unsafe fn init_opengl() {

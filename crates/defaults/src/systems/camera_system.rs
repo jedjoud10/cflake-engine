@@ -25,7 +25,7 @@ fn run(context: Context, components: ComponentQuery) {
 
     // Custom speed
     let original_speed = 1.0 + (read.input.get_accumulated_mouse_scroll() * 0.1).powf(2.0);
-    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0;
+    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * read.time.delta as f32;
 
     // Actually update the velocity    
     // Forward and backward

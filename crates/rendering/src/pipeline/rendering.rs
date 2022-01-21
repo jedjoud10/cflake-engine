@@ -32,7 +32,6 @@ pub struct PipelineRenderer {
 
     // Others
     sky_texture: ObjectID<Texture>,
-    camera_data: Camera,
 }
 /*
 // Render a renderer using wireframe
@@ -78,12 +77,11 @@ impl PipelineRenderer {
         let model_matrix = &renderer.matrix;
 
         // Calculate the mvp matrix
-        let mvp_matrix: veclib::Matrix4x4<f32> = pipeline.camera.projm * camera.viewm * *model_matrix;
+        let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
 
         // Pass the MVP and the model matrix to the shader
         let mut group = material.uniforms.clone();
         let settings = ShaderUniformsSettings::new(material.shader);
-
         group.set_mat44f32("mvp_matrix", mvp_matrix);
         group.set_mat44f32("model_matrix", *model_matrix);
         group.set_mat44f32("view_matrix", camera.viewm);

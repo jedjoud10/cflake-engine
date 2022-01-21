@@ -19,7 +19,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         .create_window(
             rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
             rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
-            app_name,
+            &format!("'{}', by '{}'", app_name, author_name),
             glfw::WindowMode::Windowed,
         )
         .expect("Failed to create GLFW window.");

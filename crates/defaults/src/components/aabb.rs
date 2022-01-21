@@ -1,5 +1,5 @@
 use main::math;
-// An AABB components
+// An AABB component
 #[derive(Default)]
 pub struct AABB {
     pub aabb: math::bounds::AABB,
