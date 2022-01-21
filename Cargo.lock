@@ -856,7 +856,6 @@ dependencies = [
  "ahash",
  "assets",
  "bitflags",
- "ecs",
  "gl",
  "glfw",
  "image",

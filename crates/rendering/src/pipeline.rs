@@ -1,4 +1,4 @@
-mod camera;
+pub mod camera;
 mod pipeline;
 mod pipeline_main;
 pub mod rendering;

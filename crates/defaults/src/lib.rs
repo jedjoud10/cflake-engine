@@ -2,13 +2,13 @@
 pub mod components;
 // Default systems
 pub mod template_system;
-/*
 pub mod systems;
-*/
+
 
 use main::core::{WriteContext, TaskSenderContext};
 use main::assets::preload_asset;
 use main::ecs;
+use systems::camera_system;
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the resources
@@ -60,12 +60,8 @@ pub fn preload_default_assets() {
 }
 // Pre-load the default systems
 pub fn preload_system(mut write: WriteContext, task_sender: TaskSenderContext) {
-    template_system::system(write.ecs.create_system_builder());
-    let mut group = ecs::entity::ComponentLinkingGroup::new();
-    group.link(ecs::component::defaults::Name::new("Person")).unwrap();
-    let entity = ecs::entity::Entity::new();
-    let id = ecs::entity::EntityID::new(&mut write.ecs);
-    ecs::tasks::add_entity(&task_sender, entity, id, group).unwrap();
+    template_system::system(&mut write);
+    camera_system::system(&mut write);
     /*
 
     // We want to read the current time from the world

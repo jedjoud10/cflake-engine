@@ -92,6 +92,8 @@ impl World {
             }
             // Update the systems
             world.ecs.init_update();
+            let delta = world.time.delta as f32;
+            world.input.late_update(delta);
         }        
         {            
             let system_count = {

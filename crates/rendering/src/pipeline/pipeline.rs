@@ -96,6 +96,7 @@ impl Pipeline {
 
                 PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
                 PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
+                PipelineTask::UpdateCamera(camera) => self.camera = camera,
             }
 
             // After executing the tasks, add the index to the valid task statuses

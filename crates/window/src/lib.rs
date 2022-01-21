@@ -5,15 +5,15 @@ extern crate glfw;
 
 // World
 pub use main::*;
-use defaults;
-use main::core::{Context, World, WriteContext};
+pub use defaults;
+use main::core::{Context, World, WriteContext, TaskSenderContext};
 use std::{
     sync::{Arc, RwLock, RwLockReadGuard},
     thread::ThreadId,
 };
 
 // Load up the OpenGL window and such
-pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>)) {
+pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>, TaskSenderContext,)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
         .create_window(
@@ -42,7 +42,8 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
             // Load the default systems first
             let sender = context.new_task_sender();
             defaults::preload_system(context.write(), sender);
-            init_world(context.write());
+            let sender = context.new_task_sender();
+            init_world(context.write(), sender);
             // Flush everything and execute all the tasks
         }
         {

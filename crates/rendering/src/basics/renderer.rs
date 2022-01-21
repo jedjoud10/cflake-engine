@@ -24,7 +24,6 @@ pub struct Renderer {
 }
 
 impl PipelineObject for Renderer {}
-ecs::impl_component!(Renderer);
 
 impl Buildable for Renderer {
     fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {

@@ -22,8 +22,6 @@ uniform float test;
 void main() {
 	vec2 uvs = uv_coordinates;
 	ivec2 pixel = ivec2(uv_coordinates * resolution);
-	color = vec3(uv_coordinates, 0);
-	return;
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;

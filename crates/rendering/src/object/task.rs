@@ -1,7 +1,7 @@
 use super::{ObjectID, PipelineObject};
 use crate::{
     advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
-    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture, Buildable},
+    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture, Buildable}, pipeline::camera::Camera,
 };
 
 // A task to create an object
@@ -19,6 +19,7 @@ pub enum PipelineTask {
     // Update tasks
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
+    UpdateCamera(Camera),
 
     // Specific pipeline tasks
 }
