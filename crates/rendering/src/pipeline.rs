@@ -5,5 +5,5 @@ pub mod rendering;
 mod sender;
 pub use pipeline::*;
 pub use pipeline_main::*;
-pub use rendering::*;
+pub use self::rendering::*;
 pub use sender::*;

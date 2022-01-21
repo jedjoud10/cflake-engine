@@ -6,4 +6,4 @@ mod physics;
 pub use angular::*;
 pub use linear::*;
 pub use object::*;
-pub use physics::*;
+pub use self::physics::*;
