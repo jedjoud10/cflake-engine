@@ -1,5 +1,6 @@
 // Export
 #![feature(drain_filter)]
+#![feature(hash_drain_filter)]
 pub mod component;
 pub mod entity;
 mod manager;

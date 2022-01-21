@@ -10,7 +10,7 @@ pub fn add_entity<Context>(ecs: &mut ECSManager<Context>, entity: Entity, id: En
 }
 // Remove an entity from the manager, and return it's value
 // When we remove an entity, we also remove it's components, thus updating the systems
-pub fn remove_entity<Context>(ecs: &mut ECSManager<Context>, id: EntityID) -> Result<Entity, EntityError> {
+pub fn remove_entity<Context>(ecs: &mut ECSManager<Context>, id: EntityID) -> Result<(), EntityError> {
     ecs.remove_entity(id)
 }
 // Link some components to an entity

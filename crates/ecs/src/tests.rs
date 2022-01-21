@@ -48,7 +48,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        builder.link::<Name>().set_event(run_system).build();
+        builder.link::<Name>().set_run_event(run_system).build();
 
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::new();
@@ -86,7 +86,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        builder.link::<Name>().set_event(run_system).build();
+        builder.link::<Name>().set_run_event(run_system).build();
 
         // Add a new entity and play with it's components
         let entity = Entity::new();

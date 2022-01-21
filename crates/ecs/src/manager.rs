@@ -65,21 +65,26 @@ impl<Context> ECSManager<Context> {
         // After doing that, we can safely add the components
         self.link_components(id, group).unwrap();
     }
-    // Remove an entity from the manager, and return it's value
-    // When we remove an entity, we also remove it's components, thus updating the systems
-    pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<Entity, EntityError> {
+    // Remove an entity, but not immediately
+    pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {        
+        let entity = self.entity(&id)?;
+        let cbitfield = entity.cbitfield;
+        // And finally remove the entity from it's systems
+        for system in self.systems.iter_mut() {
+            if system.check_cbitfield(cbitfield) {
+                // Remove the entity, since it was contained in the system
+                system.remove_entity(id);
+            }
+        }
+        Ok(())
+    }
+    // Remove an entity internally, and immediately
+    fn remove_entity_internal(&mut self, id: EntityID) -> Result<Entity, EntityError> {
         // Invalidate the entity
         let entity = self.entities.remove(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
         // Also remove it's linked components
         for component_id in entity.components.iter() {
             self.remove_component(*component_id).unwrap();
-        }
-        // And finally remove the entity from it's systems
-        for system in self.systems.iter_mut() {
-            if system.check_cbitfield(entity.cbitfield) {
-                // Remove the entity, since it was contained in the system
-                system.remove_entity(id);
-            }
         }
         Ok(entity)
     }
@@ -87,6 +92,7 @@ impl<Context> ECSManager<Context> {
     /* #region Components */
     // Link some components to an entity
     pub(crate) fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
+        if 
         for (cbitfield, boxed) in link_group.linked_components {
             let idx = self.add_component(boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
@@ -193,5 +199,15 @@ impl<Context> ECSManager<Context> {
     // Finish update of the ECS manager
     pub fn finish_update(&mut self) {
         self.entities.finish_update();
+        // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the entity
+        let removed_entities = { 
+            let mut lock = self.entities_to_remove.lock().unwrap();
+            lock
+                .drain_filter(|id, count| *count == 0)
+                .collect::<Vec<_>>()
+        };
+        for (id, _) in removed_entities {
+            self.remove_entity_internal(id).unwrap();
+        }
     }
 }

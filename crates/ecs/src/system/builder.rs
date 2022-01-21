@@ -27,9 +27,19 @@ impl<'a, Context> SystemBuilder<'a, Context> {
         self.system.cbitfield = self.system.cbitfield.add(&c);
         self
     }
-    // Set the run event of this system
-    pub fn set_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
-        self.system.run_event_idx = self.ecs_manager.event_handler.add_run_event(evn) as isize;
+    // Set the "Run System" event of this system
+    pub fn set_run_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
+        self.system.evn_run = Some(self.ecs_manager.event_handler.add_run_event(evn));
+        self
+    }
+    // Set the "Added Entity" event of this system
+    pub fn set_added_entity_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
+        self.system.evn_added_entity = Some(self.ecs_manager.event_handler.add_added_entity_event(evn));
+        self
+    }
+    // Set the "Removed Entity" event of this system
+    pub fn set_removed_entity_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
+        self.system.evn_removed_entity = Some(self.ecs_manager.event_handler.add_removed_entity_event(evn));
         self
     }
     // Build this system and add it to the ECS manager
