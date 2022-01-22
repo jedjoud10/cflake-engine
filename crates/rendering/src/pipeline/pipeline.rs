@@ -202,7 +202,10 @@ impl Pipeline {
         self.renderers.remove(id.id.unwrap());
     }
     // Update a renderer's matrix
-    pub(crate) fn renderer_update_matrix(&mut self, _id: ObjectID<Renderer>, _matrix: veclib::Matrix4x4<f32>) {}
+    pub(crate) fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
+        let renderer = self.renderers.get_mut(id.id.unwrap()).unwrap();
+        renderer.matrix = matrix;
+    }
     // Create a shader and cache it. We do not cache the "subshader" though
     pub(crate) fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
         // Compile a single shader source

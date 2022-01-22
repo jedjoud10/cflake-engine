@@ -30,14 +30,8 @@ impl PipelineObject for Material {}
 
 impl Buildable for Material {
     fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
-        // Create some default uniforms
-        let mut group = ShaderUniformsGroup::new();
-        group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
-        group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
-        group.set_f32("normals_strength", 1.0);
         let defaults = pipeline.defaults.as_ref().unwrap();
         self.set_pre_construct_settings(defaults.diffuse_tex, defaults.normals_tex);
-        self.uniforms = group;
         // Set the default rendering shader if no shader was specified
         if !self.shader.valid() {
             self.shader = defaults.shader;
@@ -78,6 +72,10 @@ impl Material {
     }
     pub fn set_pre_construct_settings(&mut self, diffuse_tex: ObjectID<Texture>, normals_tex: ObjectID<Texture>) {
         let group = &mut self.uniforms;
+        // Create some default uniforms
+        group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
+        group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
+        group.set_f32("normals_strength", 1.0);
         if !group.contains_uniform("diffuse_tex") {
             group.set_texture("diffuse_tex", diffuse_tex, 0);
         }

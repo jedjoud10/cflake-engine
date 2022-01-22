@@ -1,80 +1,47 @@
-use core::global::{self, callbacks::CallbackType::*};
-use std::collections::{HashMap, HashSet};
+use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery, rendering};
 
-use ecs::{EntityID, SystemData, SystemEventType};
-use others::callbacks::{MutCallback, OwnedCallback, RefCallback};
-use rendering::RendererFlags;
-
-// Create a renderer from an entity
-fn create_renderer(data: &mut SystemData<()>, entity_id: EntityID, irenderer: &rendering::Renderer, transform: &crate::components::Transform) {
-    // The entity is pending
-    let data = (irenderer.clone(), transform.calculate_matrix());
-    let result = rendering::pipec::task(rendering::RenderTask::RendererAdd(data));
-    result.with_callback(
-        RenderingGPUObjectCallback(OwnedCallback::new(move |(_, id)| {
-            global::ecs::entity_mut(
-                entity_id,
-                LocalEntityMut(MutCallback::new(move |entity| {
-                    if let Ok(x) = global::ecs::component_mut::<crate::components::Renderer>(entity) {
-                        // Update the entity's renderer
-                        x.internal_renderer.index = Some(id);
-                    }
-                }))
-                .create(),
-            );
-        }))
-        .create(),
-    );
-}
-
-// Add the renderer in the render pipeline renderer
-fn entity_added(data: &mut SystemData<()>, entity: &ecs::Entity) {
-    // Get the internal renderer
-    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
-    let irenderer = &renderer.internal_renderer;
-    // Get the transform, and make sure it's matrix is valid
-    let transform = global::ecs::component::<crate::components::Transform>(entity).unwrap();
-    // First of all, check if we must auto-add this renderer and check if we have a valid model
-    create_renderer(data, entity.id, irenderer, transform);
-}
-// Remove the renderer from the pipeline renderer
-fn entity_removed(data: &mut SystemData<()>, entity: &ecs::Entity) {
-    let renderer = global::ecs::component::<crate::components::Renderer>(entity).unwrap();
-    let index = renderer.internal_renderer.index;
-    // Check if the renderer was created on the Render Thread first
-    if let Option::Some(index) = index {
-        rendering::pipec::task(rendering::RenderTask::RendererRemove(index));
-    }
-}
-// Send the updated data from the entity to the render pipeline as commands
-fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
-    let renderer = core::global::ecs::component::<crate::components::Renderer>(entity).unwrap();
-    let irenderer = &renderer.internal_renderer;
-    let transform = core::global::ecs::component::<crate::components::Transform>(entity).unwrap();
-    // Only update the transform if we need to
-    if transform.update_frame_id != renderer.update_frame_id {
-        match renderer.internal_renderer.index {
-            Some(index) => {
-                rendering::pipec::task(rendering::RenderTask::RendererUpdateTransform(index, transform.calculate_matrix()));
-            }
-            None => {}
+// The rendering system update loop
+fn run(context: Context, query: ComponentQuery) {
+    let share = context.share();
+    // For each renderer, we must update it's pipeline transform and other values
+    query.update_all(move |components| {
+        let read = share.read();
+        let pipeline = read.pipeline.read().unwrap();
+        let renderer = components.component::<crate::components::Renderer>().unwrap();
+        let transform = components.component::<crate::components::Transform>().unwrap();
+        let renderer_object_id = &renderer.object_id;
+        if renderer_object_id.valid() {
+            // Update the values if our renderer is valid
+            rendering::pipeline::pipec::task(rendering::object::PipelineTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix()), &*pipeline);
         }
-    }
+    }) 
 }
 
-// Create the default system
-pub fn system() {
-    core::global::ecs::add_system((), || {
-        // Create a system
-        let mut system = ecs::System::new();
-        // Link some components to the system
-        system.link::<crate::components::Renderer>();
-        system.link::<crate::components::Transform>();
-        // And link the events
-        system.event(SystemEventType::EntityAdded(entity_added));
-        system.event(SystemEventType::EntityUpdate(entity_update));
-        system.event(SystemEventType::EntityRemoved(entity_removed));
-        // Return the newly made system
-        system
-    });
+// An event fired whenever we add multiple new renderer entities
+fn added_entities(context: Context, query: ComponentQuery) {
+    let share = context.share();
+    // For each renderer, we must create it's pipeline renderer construction task
+    query.update_all(move |components| {
+        // Get the pipeline first
+        let read = share.read();
+        let pipeline = read.pipeline.read().unwrap();
+        
+        // Get the CPU renderer that we must construct
+        let mut renderer = components.component_mut::<crate::components::Renderer>().unwrap();
+        let cpu_renderer = renderer.renderer.take().unwrap();
+        let object_id = rendering::pipeline::pipec::construct(cpu_renderer, &*pipeline);
+        renderer.object_id = object_id;
+    })  
+}
+
+// Create the rendering system
+pub fn system(write: &mut WriteContext) {
+    write
+        .ecs
+        .create_system_builder()
+        .set_run_event(run)
+        .set_added_entities_event(added_entities)
+        .link::<crate::components::Renderer>()
+        .link::<crate::components::Transform>()
+        .build();
 }

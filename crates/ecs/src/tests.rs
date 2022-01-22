@@ -128,8 +128,8 @@ pub mod test {
         builder
             .link::<Name>()
             .set_run_event(internal_run)
-            .set_removed_entity_event(internal_remove_entity)
-            .set_added_entity_event(internal_add_entity)
+            .set_removed_entities_event(internal_remove_entity)
+            .set_added_entities_event(internal_add_entity)
             .build();
 
         // Add a new entity and play with it's components

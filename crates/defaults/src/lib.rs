@@ -7,7 +7,7 @@ pub mod template_system;
 use main::assets::preload_asset;
 use main::core::{TaskSenderContext, WriteContext};
 
-use systems::camera_system;
+use systems::{camera_system, physics_system, rendering_system};
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the resources
@@ -61,6 +61,8 @@ pub fn preload_default_assets() {
 pub fn preload_system(mut write: WriteContext, _task_sender: TaskSenderContext) {
     template_system::system(&mut write);
     camera_system::system(&mut write);
+    physics_system::system(&mut write);
+    rendering_system::system(&mut write);
     /*
 
     // We want to read the current time from the world

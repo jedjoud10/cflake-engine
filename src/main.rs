@@ -23,6 +23,7 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
     let id = ecs::entity::EntityID::new(&mut write.ecs);
     let matrix = defaults::components::Transform::default().calculate_matrix();
     group.link_default::<defaults::components::Transform>().unwrap();
+    group.link_default::<defaults::components::Physics>().unwrap();
 
     // Create it's model
     let pipeline = write.pipeline.read().unwrap();

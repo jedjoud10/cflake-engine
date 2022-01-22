@@ -10,7 +10,7 @@ use crate::{
 use super::{ShaderUniformsSettings, Uniform};
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct ShaderUniformsGroup {
     pub(crate) uniforms: HashMap<String, Uniform>,
 }

@@ -31,12 +31,12 @@ impl<'a, Context> SystemBuilder<'a, Context> {
         self
     }
     // Set the "Added Entity" event of this system
-    pub fn set_added_entity_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
+    pub fn set_added_entities_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
         self.system.evn_added_entity = Some(self.ecs_manager.event_handler.add_added_entity_event(evn));
         self
     }
     // Set the "Removed Entity" event of this system
-    pub fn set_removed_entity_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
+    pub fn set_removed_entities_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
         self.system.evn_removed_entity = Some(self.ecs_manager.event_handler.add_removed_entity_event(evn));
         self
     }

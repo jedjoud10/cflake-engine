@@ -8,7 +8,7 @@ pub struct PhysicsObject {
     pub(crate) angular: AngularPhysics,
     // A locally stored transform
     pub(crate) position: veclib::Vector3<f32>,
-    pub(crate) quaternion: veclib::Quaternion<f32>,
+    pub(crate) rotation: veclib::Quaternion<f32>,
 }
 
 impl PhysicsObject {
@@ -27,6 +27,14 @@ impl PhysicsObject {
     }
     // Get the stored rotation
     pub fn get_rotation(&self) -> &veclib::Quaternion<f32> {
-        &self.quaternion
+        &self.rotation
+    }
+    // Set the physics object's position.
+    pub fn set_position(&mut self, position: veclib::Vector3<f32>) {
+        self.position = position;
+    }
+    // Set the physics object's rotation.
+    pub fn set_rotation(&mut self, rotation: veclib::Quaternion<f32>) {
+        self.rotation = rotation;
     }
 }

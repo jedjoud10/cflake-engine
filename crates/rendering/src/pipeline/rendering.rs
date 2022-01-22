@@ -169,10 +169,6 @@ impl PipelineRenderer {
             }
             // Flush
             pipeline.flush();
-            dbg!(self.diffuse_texture);
-            dbg!(self.normals_texture);
-            dbg!(self.position_texture);
-            dbg!(self.depth_texture);
             bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture, pipeline).unwrap();
