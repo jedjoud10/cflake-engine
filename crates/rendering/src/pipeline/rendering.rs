@@ -66,14 +66,14 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
 */
 impl PipelineRenderer {
     // Render a single renderere
-    fn render(&self, pipeline: &Pipeline, renderer: &Renderer) {
+    fn render(&self, pipeline: &Pipeline, renderer: &Renderer) -> Option<()> {
         // Pipeline data
         let camera = &pipeline.camera;
-        let material = pipeline.get_material(renderer.material).unwrap();
+        let material = pipeline.get_material(renderer.material)?;
 
         // The shader will always be valid
-        let _shader = pipeline.get_shader(material.shader).unwrap();
-        let model = pipeline.get_model(renderer.model).unwrap();
+        let _shader = pipeline.get_shader(material.shader)?;
+        let model = pipeline.get_model(renderer.model)?;
         let model_matrix = &renderer.matrix;
 
         // Calculate the mvp matrix
@@ -96,7 +96,7 @@ impl PipelineRenderer {
         */
 
         // Update the uniforms
-        group.execute(pipeline, settings).unwrap();
+        group.execute(pipeline, settings)?;
 
         unsafe {
             // Enable / Disable vertex culling for double sided materials
@@ -111,6 +111,7 @@ impl PipelineRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.1.element_buffer_object);
             gl::DrawElements(gl::TRIANGLES, model.1.triangle_count as i32, gl::UNSIGNED_INT, null());
         }
+        Some(())
     }
     // Initialize this new pipeline renderer
     pub fn initialize(&mut self, pipeline: &mut Pipeline) {
@@ -210,8 +211,9 @@ impl PipelineRenderer {
     // Called each frame, to render the world
     pub fn render_frame(&self, pipeline: &Pipeline) {
         let _i = std::time::Instant::now();
-        for (_, renderer) in pipeline.renderers.iter() {
-            self.render(pipeline, renderer);
+        for (id, renderer) in pipeline.renderers.iter() {
+            let result = self.render(pipeline, renderer);
+            if result.is_none() { println!("Could not render object with ID '{}'!", id); }
         }
     }
     // Post-render event

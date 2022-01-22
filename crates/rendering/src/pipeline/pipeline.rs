@@ -87,6 +87,7 @@ impl Pipeline {
         self.last_frame_task_statuses.clear();
         for (task, task_id, _status) in tasks {
             // Now we must execute these tasks
+            dbg!(&task);
             match task {
                 // Creation tasks
                 PipelineTask::CreateTexture(t) => self.texture_create(t),

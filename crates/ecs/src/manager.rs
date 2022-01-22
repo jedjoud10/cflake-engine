@@ -92,6 +92,10 @@ impl<Context> ECSManager<Context> {
         }
         Ok(())
     }
+    // Count the number of valid entities in the ECS manager
+    pub fn count_entities(&self) -> usize {
+        self.entities.count()
+    }
     /* #endregion */
     /* #region Components */
     // Link some components to an entity

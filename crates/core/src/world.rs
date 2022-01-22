@@ -32,7 +32,6 @@ impl World {
         self.input.create_key_cache();
         self.input.bind_key(input::Keys::F4, "toggle_console", input::MapType::Button);
         self.input.bind_key(input::Keys::Enter, "enter", input::MapType::Button);
-        self.input.bind_key(input::Keys::F2, "debug", input::MapType::Button);
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);
@@ -92,8 +91,7 @@ impl World {
             }
             // Update the systems
             world.ecs.init_update();
-            let delta = world.time.delta as f32;
-            world.input.late_update(delta);
+            let delta = world.time.delta as f32;            
         }
         {
             let system_count = {
@@ -127,9 +125,11 @@ impl World {
     pub fn update_end(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // End the frame
         {
-            let world = world.read().unwrap();
+            let mut world = world.write().unwrap();
             let start_data = &world.pipeline_thread;
             start_data.ebarrier.wait();
+            let delta = world.time.delta as f32;
+            world.input.late_update(delta);
         }
     }
     // We must destroy the world

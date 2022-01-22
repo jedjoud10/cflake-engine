@@ -18,22 +18,25 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
     ecs::tasks::add_entity(&task_sender, entity, id, group).unwrap();
 
     // Create a simple cube
-    let mut group = ecs::entity::ComponentLinkingGroup::new();
-    let entity = ecs::entity::Entity::new();
-    let id = ecs::entity::EntityID::new(&mut write.ecs);
-    let matrix = defaults::components::Transform::default().calculate_matrix();
-    group.link_default::<defaults::components::Transform>().unwrap();
-    group.link_default::<defaults::components::Physics>().unwrap();
-
-    // Create it's model
-    let pipeline = write.pipeline.read().unwrap();
-    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\cube.mdl3d").unwrap();
-    let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
-
-    // Create it's renderer
-    let renderer = rendering::basics::renderer::Renderer::default().set_model(model_id).set_matrix(matrix);
-    let renderer = defaults::components::Renderer::new(renderer);
-    group.link(renderer).unwrap();
-    // Add the cube
-    ecs::tasks::add_entity(&task_sender, entity, id, group);
+    for x in 0..10 {
+        let mut group = ecs::entity::ComponentLinkingGroup::new();
+        let entity = ecs::entity::Entity::new();
+        let id = ecs::entity::EntityID::new(&mut write.ecs);
+        let matrix = defaults::components::Transform::default().calculate_matrix();
+        group.link_default::<defaults::components::Transform>().unwrap();
+        group.link_default::<defaults::components::Physics>().unwrap();
+        
+        // Create it's model
+        let pipeline = write.pipeline.read().unwrap();
+        let mut model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\cube.mdl3d").unwrap();
+        let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
+        dbg!(model_id);
+        
+        // Create it's renderer
+        let renderer = rendering::basics::renderer::Renderer::default().set_model(model_id).set_matrix(matrix);
+        let renderer = defaults::components::Renderer::new(renderer);
+        group.link(renderer).unwrap();
+        // Add the cube
+        ecs::tasks::add_entity(&task_sender, entity, id, group);
+    }
 }
