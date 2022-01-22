@@ -2,19 +2,22 @@ use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery, render
 
 // The rendering system update loop
 fn run(context: Context, query: ComponentQuery) {
-    let share = context.share();
     // For each renderer, we must update it's pipeline transform and other values
-    query.update_all(move |components| {
-        let read = share.read();
-        let pipeline = read.pipeline.read().unwrap();
+    let read = context.read();
+    let pipeline = read.pipeline.read().unwrap();
+    let i = std::time::Instant::now();
+    let tasks = query.update_all_map(move |components| {
         let renderer = components.component::<crate::components::Renderer>().unwrap();
         let transform = components.component::<crate::components::Transform>().unwrap();
         let renderer_object_id = &renderer.object_id;
         if renderer_object_id.valid() {
             // Update the values if our renderer is valid
-            rendering::pipeline::pipec::task(rendering::object::PipelineTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix()), &*pipeline);
-        }
-    }) 
+            Some(rendering::object::PipelineTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix()))
+        } else { None }
+    });
+
+    // Since we have all the tasks, we can send them as a batch
+    rendering::pipeline::pipec::task_batch(tasks, &*pipeline);
 }
 
 // An event fired whenever we add multiple new renderer entities

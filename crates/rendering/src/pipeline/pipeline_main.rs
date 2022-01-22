@@ -1,11 +1,16 @@
 // Some pipeline commands
 pub mod pipec {
+    use std::sync::atomic::Ordering;
+
     use crate::{
         basics::Buildable,
         object::{ObjectID, PipelineObject, PipelineTask, TrackingTaskID, PipelineTaskCombination},
         pipeline::{sender, Pipeline},
     };
-
+    // Debug some pipeline data
+    pub fn set_debugging(debugging: bool, pipeline: &Pipeline) {
+        pipeline.debugging.store(debugging, Ordering::Relaxed);
+    }
     // Send a task to the shared pipeline
     pub fn task(task: PipelineTask, pipeline: &Pipeline) {
         sender::send_task(PipelineTaskCombination::Single(task), pipeline).unwrap();

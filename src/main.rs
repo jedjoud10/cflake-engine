@@ -18,8 +18,8 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
     ecs::tasks::add_entity(&task_sender, entity, id, group).unwrap();
 
     // Create a simple cube
-    for x in 0..40 {
-        for y in 0..40 {
+    for x in 0..2 {
+        for y in 0..2 {
             let mut group = ecs::entity::ComponentLinkingGroup::new();
             let entity = ecs::entity::Entity::new();
             let id = ecs::entity::EntityID::new(&mut write.ecs);

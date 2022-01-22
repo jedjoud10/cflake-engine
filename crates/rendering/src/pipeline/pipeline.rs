@@ -57,6 +57,8 @@ pub struct Pipeline {
     pub(crate) camera: Camera,
     // Our window
     pub window: Window,
+    // Atomic used to debug some data
+    pub(crate) debugging: AtomicBool,
 }
 
 impl Pipeline {
@@ -840,6 +842,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // We must render every frame
         loop {
+            let i = std::time::Instant::now();
             {
                 // At the start of each frame we must sync up with the main thread
                 sbarrier_clone.wait();
@@ -873,6 +876,11 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
                 // Execute the tasks
                 pipeline.flush();
+
+                // Debug if needed
+                if pipeline.debugging.load(Ordering::Relaxed) {
+                    println!("Pipeline Frame Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+                }
 
                 // Check if we must exit from the render thread
                 if eatomic_clone.load(Ordering::Relaxed) {

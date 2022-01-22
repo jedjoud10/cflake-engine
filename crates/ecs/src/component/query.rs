@@ -24,6 +24,18 @@ impl ComponentQuery {
             }
         }
     }
+    // Update all the components consecutively, on the main thread, but while also mapping each element and returning a new vector
+    pub fn update_all_map<U, F: Fn(&mut LinkedComponents) -> Option<U> + 'static>(self, function: F) -> Vec<U> {
+        // Make a new vector the size of self.linked_components
+        let mut output_vec = Vec::with_capacity(self.linked_components.as_ref().map(|x| x.len()).unwrap_or_default());
+        if let Some(vec) = self.linked_components {
+            for mut linked_components in vec {
+                let output = function(&mut linked_components);
+                if let Some(output) = output { output_vec.push(output); }
+            }
+        }
+        output_vec
+    }
     // Update all the components in parallel, on multiple worker threads
     pub fn update_all_threaded<F: Fn(&mut LinkedComponents) + 'static + Sync + Send>(self, function: F) {
         if let Some(mut vec) = self.linked_components {

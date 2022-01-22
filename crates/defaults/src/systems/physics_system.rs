@@ -14,7 +14,6 @@ fn run(context: Context, query: ComponentQuery) {
         let mut physics = components.component_mut::<crate::components::Physics>().unwrap();
         let object = &mut physics.object;
         object.set_position(position); object.set_rotation(rotation);
-        object.set_velocity(veclib::vec3(0.1, 0.0, 0.0));
         object.update(delta);
         let (position, rotation) = (*object.get_position(), *object.get_rotation());
         // Apply the physics' object new transform to our current transform

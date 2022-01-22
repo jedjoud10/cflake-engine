@@ -4,6 +4,7 @@ use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery, input:
 fn run(context: Context, _query: ComponentQuery) {
     // Check if we need to debug
     let read = context.read();
+    let pipeline = read.pipeline.read().unwrap();
     if read.input.map_pressed("debug") {
         // Debug some data
         println!("Component count: '{}'", read.ecs.count_components());
@@ -13,7 +14,8 @@ fn run(context: Context, _query: ComponentQuery) {
             "Time: '{}', Delta Time: '{}', FPS: '{}'",
             read.time.elapsed, read.time.delta, 1.0 / read.time.delta
         );
-    }
+        main::rendering::pipeline::pipec::set_debugging(true, &*pipeline);
+    } else { main::rendering::pipeline::pipec::set_debugging(false, &*pipeline); }
 }
 // Create the debugging system
 pub fn system(write: &mut WriteContext) {
