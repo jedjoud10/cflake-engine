@@ -95,7 +95,6 @@ pub mod test {
         let context = WorldContext;
 
         // Make a simple system
-
         fn internal_run(_context: WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
                 let mut name = components.component_mut::<Name>().unwrap();
@@ -138,5 +137,22 @@ pub mod test {
         ecs.finish_update();
         // After this execution, the dangling components should have been removed
         assert_eq!(ecs.count_components(), 0);
+    }
+    #[test]
+    pub fn test_global_component() {
+        // Also create the context
+        let context = WorldContext;
+        struct GlobalComponentTest {
+            pub test_value: i32,
+        }
+        crate::impl_system_component!(GlobalComponentTest);
+        // Create the main ECS manager
+        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+
+        // Make a simple system
+        let builder = ecs.create_system_builder();
+        builder.link::<Name>().set_run_event(run_system).build();
+
+        ecs.run_systems(context);
     }
 }

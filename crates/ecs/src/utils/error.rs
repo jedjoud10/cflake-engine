@@ -55,6 +55,31 @@ impl std::error::Error for ComponentError {
     }
 }
 
+// An error related to the global components
+#[derive(Debug)]
+pub struct GlobalComponentError {
+    details: String,
+}
+
+impl GlobalComponentError {
+    pub fn new(msg: String) -> Self {
+        Self { details: msg }
+    }
+}
+
+impl fmt::Display for GlobalComponentError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl std::error::Error for GlobalComponentError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+
 // An error related to the linkage of the components
 #[derive(Debug)]
 pub struct ComponentLinkingError {

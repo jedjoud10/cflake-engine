@@ -1,6 +1,6 @@
 use crate::{
-    component::{registry, Component, ComponentQuery},
-    ECSManager,
+    component::{registry, Component, ComponentQuery, GlobalComponent},
+    ECSManager, utils::GlobalComponentError,
 };
 
 use super::System;
@@ -24,6 +24,11 @@ impl<'a, Context> SystemBuilder<'a, Context> {
         let c = registry::get_component_bitfield::<U>();
         self.system.cbitfield = self.system.cbitfield.add(&c);
         self
+    }
+    // Add a system component to the world globally, but we act as if it is contained in the system
+    pub fn add_global_component<U: GlobalComponent + 'static>(mut self, sc: U) -> Result<Self, GlobalComponentError> {
+        let result = self.ecs_manager.add_global_component(sc);
+        result.map(|x| self)
     }
     // Set the "Run System" event of this system
     pub fn set_run_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
