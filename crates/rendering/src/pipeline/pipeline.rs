@@ -8,7 +8,7 @@ use crate::{
         texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskStatus, TaskID},
+    object::{ObjectBuildingTask, ObjectID, PipelineTask, TrackingTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::Window,
 };
@@ -39,7 +39,8 @@ pub(crate) struct DefaultPipelineObjects {
 #[derive(Default)]
 pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
-    pub(crate) tasks: RwLock<ShareableOrderedVec<(PipelineTask, TaskID, PipelineTaskStatus)>>,
+    pub(crate) tasks: RwLock<Vec<(PipelineTask, Option<TrackingTaskID>)>>,
+    pub(crate) completed_tasks: AHashSet<TrackingTaskID>,
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
@@ -52,8 +53,6 @@ pub struct Pipeline {
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub(crate) defaults: Option<DefaultPipelineObjects>,
 
-    // Store the TaskIDs for tasks that have finished execution from last frame
-    pub(crate) last_frame_task_statuses: AHashSet<TaskID>,
     // The current main camera that is rendering the world
     pub(crate) camera: Camera,
     // Our window
@@ -62,16 +61,16 @@ pub struct Pipeline {
 
 impl Pipeline {
     // Set the buffered tasks from RX messages
-    pub(crate) fn add_tasks(&mut self, messages: Vec<(PipelineTask, TaskID)>) {
+    pub(crate) fn add_tasks(&mut self, messages: Vec<(PipelineTask, Option<TrackingTaskID>)>) {
         let mut write = self.tasks.write().unwrap();
         for (task, id) in messages {
-            write.insert(id.id, (task, id, PipelineTaskStatus::Pending));
+            write.push((task, id));
         }
     }
     // Add a task interally, through the render thread itself
-    pub(crate) fn add_task_internally(&self, task: (PipelineTask, TaskID)) {
+    pub(crate) fn add_task_internally(&self, task: (PipelineTask, Option<TrackingTaskID>)) {
         let mut write = self.tasks.write().unwrap();
-        write.insert(task.1.id, (task.0, task.1, PipelineTaskStatus::Pending));
+        write.push(task);
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
@@ -80,14 +79,12 @@ impl Pipeline {
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
-
-            tasks.clear().into_iter().flatten().collect::<Vec<_>>()
+            std::mem::take(tasks)
         };
 
-        self.last_frame_task_statuses.clear();
-        for (task, task_id, _status) in tasks {
+        self.completed_tasks.clear();
+        for (task, task_id) in tasks {
             // Now we must execute these tasks
-            dbg!(&task);
             match task {
                 // Creation tasks
                 PipelineTask::CreateTexture(t) => self.texture_create(t),
@@ -101,10 +98,10 @@ impl Pipeline {
                 PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
                 PipelineTask::UpdateCamera(camera) => self.camera = camera,
             }
-
-            // After executing the tasks, add the index to the valid task statuses
-            // status = PipelineTaskStatus::Finished;
-            self.last_frame_task_statuses.insert(task_id);
+            // We have executed this task, so we must add it to our "completed tasks" list
+            if let Some(task_id) = task_id {
+                self.completed_tasks.insert(task_id);
+            }
         }
     }
     // Set the global shader uniforms
@@ -120,7 +117,6 @@ impl Pipeline {
     }
     // Init update of the Pipeline
     pub(crate) fn init_update(&mut self) {
-        self.tasks.write().unwrap().init_update();
         self.materials.init_update();
         self.models.init_update();
         self.renderers.init_update();
@@ -130,7 +126,6 @@ impl Pipeline {
     }
     // Finish update of the Pipeline
     pub(crate) fn finish_update(&mut self) {
-        self.tasks.write().unwrap().finish_update();
         self.materials.finish_update();
         self.models.finish_update();
         self.renderers.finish_update();
@@ -368,6 +363,7 @@ impl Pipeline {
     }
     // Create a model
     pub(crate) fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
+        dbg!("Add model");
         let model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
@@ -748,7 +744,7 @@ unsafe fn init_opengl() {
 pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
-    let (tx, rx) = std::sync::mpsc::channel::<(PipelineTask, TaskID)>(); // Main to render
+    let (tx, rx) = std::sync::mpsc::channel::<(PipelineTask, Option<TrackingTaskID>)>(); // Main to render
 
     // Barrier so we can sync with the main thread at the start of each frame
     let sbarrier = Arc::new(Barrier::new(2));
@@ -862,7 +858,8 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             {
                 let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
                 pipeline.finish_update();
-                let messages = rx.try_iter().collect::<Vec<(PipelineTask, TaskID)>>();
+                let messages = rx.try_iter().collect::<Vec<(PipelineTask, Option<TrackingTaskID>)>>();
+                dbg!(messages.len());
                 // Set the buffer
                 pipeline.add_tasks(messages);
 

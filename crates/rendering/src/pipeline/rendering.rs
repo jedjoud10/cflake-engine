@@ -69,10 +69,10 @@ impl PipelineRenderer {
     fn render(&self, pipeline: &Pipeline, renderer: &Renderer) -> Option<()> {
         // Pipeline data
         let camera = &pipeline.camera;
-        let material = pipeline.get_material(renderer.material)?;
+        let material = pipeline.get_material(renderer.material).unwrap();
 
         // The shader will always be valid
-        let _shader = pipeline.get_shader(material.shader)?;
+        let _shader = pipeline.get_shader(material.shader).unwrap();
         let model = pipeline.get_model(renderer.model)?;
         let model_matrix = &renderer.matrix;
 
@@ -96,7 +96,7 @@ impl PipelineRenderer {
         */
 
         // Update the uniforms
-        group.execute(pipeline, settings)?;
+        group.execute(pipeline, settings).unwrap();
 
         unsafe {
             // Enable / Disable vertex culling for double sided materials
@@ -213,7 +213,7 @@ impl PipelineRenderer {
         let _i = std::time::Instant::now();
         for (id, renderer) in pipeline.renderers.iter() {
             let result = self.render(pipeline, renderer);
-            if result.is_none() { println!("Could not render object with ID '{}'!", id); }
+            //if result.is_none() { println!("Could not render object with ID '{}'!", id); }
         }
     }
     // Post-render event

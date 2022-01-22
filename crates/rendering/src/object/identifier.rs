@@ -1,6 +1,6 @@
 use super::PipelineObject;
 
-use std::{fmt::Debug, marker::PhantomData};
+use std::{fmt::Debug, marker::PhantomData, sync::atomic::{AtomicU64, Ordering}};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
 pub struct ObjectID<T>
@@ -57,16 +57,17 @@ where
     }
 }
 
-// This is an ID for each Task that we dispatch to the render thread.
-// We can use this to detect whenever said task has completed
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TaskID {
+static TRACKING_TASK_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+// A tracking TaskID that we can use to check wether a specific task has executed or not
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct TrackingTaskID {
     pub(crate) id: u64,
 }
 
-impl TaskID {
-    // Create a new task ID using an actual index
-    pub fn new(id: u64) -> Self {
-        Self { id }
+impl TrackingTaskID {
+    // Create a new task ID by incrementing the global TrackingTaskID
+    pub fn new() -> Self {
+        Self { id: TRACKING_TASK_ID_COUNTER.fetch_add(1, Ordering::Relaxed) }
     }
 }

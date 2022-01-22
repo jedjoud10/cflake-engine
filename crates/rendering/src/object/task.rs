@@ -39,10 +39,3 @@ impl std::fmt::Debug for PipelineTask {
         }
     }
 }
-
-// The status for a specific PipelineTask
-pub enum PipelineTaskStatus {
-    Pending,
-    Running,
-    Finished,
-}
