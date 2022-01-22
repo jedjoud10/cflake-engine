@@ -98,7 +98,7 @@ impl World {
         {
             let system_count = {
                 let world = world.read().unwrap();
-                world.ecs.systems_count()
+                world.ecs.count_systems()
             };
             // Loop for every system and update it
             for system_index in 0..system_count {

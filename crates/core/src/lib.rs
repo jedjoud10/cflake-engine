@@ -1,4 +1,5 @@
 // Export
+#![feature(negative_impls)]
 #![feature(drain_filter)]
 mod data;
 mod game_file;

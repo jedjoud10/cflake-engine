@@ -25,9 +25,13 @@ pub struct World {
 }
 
 // A context that can mutate the world if self is mut
+#[derive(Clone)]
 pub struct Context {
     pub(crate) world: Arc<RwLock<World>>,
 }
+
+impl !Send for Context {}
+impl !Sync for Context {}
 
 impl Context {
     // Convert a world into a context, so we can share it around multiple threads
@@ -40,7 +44,7 @@ impl Context {
         TaskSenderContext {}
     }
     // Create a ShareableContext that we can send to other threads if they need to access the world
-    pub fn create_shareable_context(&self) -> ShareableContext {
+    pub fn share(&self) -> ShareableContext {
         ShareableContext { world: self.world.clone() }
     }
     // Read

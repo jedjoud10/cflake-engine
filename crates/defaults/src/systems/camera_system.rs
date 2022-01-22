@@ -46,7 +46,7 @@ fn run(context: Context, components: ComponentQuery) {
         velocity += -up * speed;
     }
     // Update the camera values now
-    let share = context.create_shareable_context();
+    let share = context.share();
     components.update_all(move |linked_components| {
         let mut transform = linked_components.component_mut::<crate::components::Transform>().unwrap();
         transform.position += velocity;
@@ -75,7 +75,7 @@ pub fn system(write: &mut WriteContext) {
     write
         .ecs
         .create_system_builder()
-        .set_event(run)
+        .set_run_event(run)
         .link::<crate::components::Camera>()
         .link::<crate::components::Transform>()
         .build();
