@@ -78,7 +78,7 @@ impl World {
     pub fn update_start(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // While we do world logic, start rendering the frame on the other thread
         {
-            let mut world = world.write().unwrap();
+            let world = world.write().unwrap();
             let start_data = &world.pipeline_thread;
 
             // Update the timings then we can start rendering
@@ -89,9 +89,6 @@ impl World {
                 time.1 = world.time.delta;
                 start_data.sbarrier.wait();
             }
-            // Update the systems
-            world.ecs.init_update();
-            let delta = world.time.delta as f32;            
         }
         {
             let system_count = {

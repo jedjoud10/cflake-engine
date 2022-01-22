@@ -42,18 +42,13 @@ pub mod test {
         let id2 = id;
         let id3 = id;
         // The entity is not created yet, so it is null
-        ecs.init_update();
         ecs.add_entity(entity, id, group);
-        ecs.finish_update();
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
-        ecs.init_update();
         ecs.run_systems(context);
-        ecs.finish_update();
         // Remove the entity and check if the corresponding ID's became invalid
         let id4 = id3;
-        ecs.init_update();
         ecs.remove_entity(id3).unwrap();
         ecs.finish_update();
         let should_not_be_the_same = EntityID::new(&ecs);
@@ -61,7 +56,6 @@ pub mod test {
         dbg!(should_not_be_the_same);
         assert_ne!(should_not_be_the_same, id4);
         assert!(ecs.entity(&id4).is_err());
-        ecs.init_update();
         ecs.run_systems(context);
         ecs.finish_update();
     }
@@ -140,7 +134,6 @@ pub mod test {
         ecs.add_entity(entity, id, group);
         ecs.run_systems(context);
         ecs.remove_entity(id).unwrap();
-        ecs.init_update();
         ecs.run_systems(context);
         ecs.finish_update();
         // After this execution, the dangling components should have been removed

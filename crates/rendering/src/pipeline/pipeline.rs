@@ -27,7 +27,9 @@ use std::{
 
 // Some default values like the default material or even the default shader
 pub(crate) struct DefaultPipelineObjects {
-    pub(crate) diffuse_tex: ObjectID<Texture>,
+    pub(crate) missing_tex: ObjectID<Texture>,
+    pub(crate) black: ObjectID<Texture>,
+    pub(crate) white: ObjectID<Texture>,
     pub(crate) normals_tex: ObjectID<Texture>,
     pub(crate) shader: ObjectID<Shader>,
     pub(crate) material: ObjectID<Material>,
@@ -126,24 +128,6 @@ impl Pipeline {
             let id = ShaderUniformsSettings::new(ObjectID::new(id));
             group.execute(self, id).unwrap();
         }
-    }
-    // Init update of the Pipeline
-    pub(crate) fn init_update(&mut self) {
-        self.materials.init_update();
-        self.models.init_update();
-        self.renderers.init_update();
-        self.shaders.init_update();
-        self.compute_shaders.init_update();
-        self.textures.init_update();
-    }
-    // Finish update of the Pipeline
-    pub(crate) fn finish_update(&mut self) {
-        self.materials.finish_update();
-        self.models.finish_update();
-        self.renderers.finish_update();
-        self.shaders.finish_update();
-        self.compute_shaders.finish_update();
-        self.textures.finish_update();
     }
     // Get a material using it's respective ID
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
@@ -681,7 +665,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap(), pipeline);
 
     // Create the default white texture
-    let _white = pipec::construct(
+    let white = pipec::construct(
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
@@ -691,7 +675,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     );
 
     // Create the default black texture
-    let _black = pipec::construct(
+    let black = pipec::construct(
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
@@ -718,14 +702,16 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
 
     // Create the default material
     let mut material = Material::default().set_shader(shader);
-    material.set_pre_construct_settings(missing, normals);
+    material.set_pre_construct_settings(missing, black, normals);
     let material = pipec::construct_only(material, pipeline);
 
     // Create the default model
     let model = pipec::construct(Model::default(), pipeline);
 
     DefaultPipelineObjects {
-        diffuse_tex: missing,
+        missing_tex: missing,
+        black,
+        white,
         normals_tex: normals,
         shader,
         material,
@@ -852,7 +838,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let mut pipeline = pipeline.write().unwrap();
                 let time = time_clone.lock().unwrap();
                 pipeline.update_global_shader_uniforms(time.0, time.1);
-                pipeline.init_update();
             }
             {
                 // We render the world here
@@ -869,7 +854,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
             {
                 let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
-                pipeline.finish_update();
                 let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
                 // Set the buffer
                 pipeline.add_tasks(messages);

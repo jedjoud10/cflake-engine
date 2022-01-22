@@ -30,3 +30,19 @@ pub enum PipelineTaskCombination {
     SingleTracked(PipelineTask, TrackingTaskID),
     Batch(Vec<PipelineTask>),
 }
+
+impl std::fmt::Debug for PipelineTask {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CreateTexture(arg0) => f.debug_tuple("CreateTexture").finish(),
+            Self::CreateMaterial(arg0) => f.debug_tuple("CreateMaterial").finish(),
+            Self::CreateShader(arg0) => f.debug_tuple("CreateShader").finish(),
+            Self::CreateComputeShader(arg0) => f.debug_tuple("CreateComputeShader").finish(),
+            Self::CreateModel(arg0) => f.debug_tuple("CreateModel").finish(),
+            Self::CreateRenderer(arg0) => f.debug_tuple("CreateRenderer").finish(),
+            Self::RunComputeShader(arg0, arg1) => f.debug_tuple("RunComputeShader").finish(),
+            Self::UpdateRendererMatrix(arg0, arg1) => f.debug_tuple("UpdateRendererMatrix").finish(),
+            Self::UpdateCamera(arg0) => f.debug_tuple("UpdateCamera").finish(),
+        }
+    }
+}

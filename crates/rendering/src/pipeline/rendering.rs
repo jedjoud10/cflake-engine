@@ -22,6 +22,7 @@ pub struct PipelineRenderer {
 
     // Our deferred textures
     diffuse_texture: ObjectID<Texture>,
+    emissive_texture: ObjectID<Texture>,
     normals_texture: ObjectID<Texture>,
     position_texture: ObjectID<Texture>,
     depth_texture: ObjectID<Texture>,
@@ -129,6 +130,7 @@ impl PipelineRenderer {
         };
         // Load the quad model
         self.quad_model = pipec::construct(quad, pipeline);
+        println!("Quad model {:?}", self.quad_model);
 
         // Load the screen shader
         let ss = ShaderSettings::default()
@@ -144,7 +146,9 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F), pipeline);
+            self.diffuse_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB16R), pipeline);
+            // Create the emissive render texture
+            self.emissive_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F), pipeline);
             // Create the normals render texture
             self.normals_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS), pipeline);
             // Create the position render texture
@@ -171,10 +175,11 @@ impl PipelineRenderer {
             // Flush
             pipeline.flush();
             bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
-            bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture, pipeline).unwrap();
-            bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT1, &self.emissive_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT2, &self.normals_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT3, &self.position_texture, pipeline).unwrap();
             bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture, pipeline).unwrap();
-            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2];
+            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
             gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
 
             // Check if the frame buffer is okay
@@ -229,14 +234,16 @@ impl PipelineRenderer {
         group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
         // Textures
         group.set_texture("diffuse_texture", self.diffuse_texture, 0);
-        group.set_texture("normals_texture", self.normals_texture, 1);
-        group.set_texture("position_texture", self.position_texture, 2);
-        group.set_texture("depth_texture", self.depth_texture, 3);
-        group.set_texture("default_sky_gradient", self.sky_texture, 4);
+        group.set_texture("emissive_texture", self.emissive_texture, 1);
+        group.set_texture("normals_texture", self.normals_texture, 2);
+        group.set_texture("position_texture", self.position_texture, 3);
+        group.set_texture("depth_texture", self.depth_texture, 4);
+        group.set_texture("default_sky_gradient", self.sky_texture, 5);
         let vp_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
         group.set_mat44f32("custom_vp_matrix", vp_m);
         // Other params
         group.set_vec3f32("camera_pos", camera.position);
+        group.set_vec3f32("camera_dir", camera.rotation.mul_point(veclib::Vector3::Z));
 
         // Update the uniform settings
         let settings = ShaderUniformsSettings::new(self.screenshader);

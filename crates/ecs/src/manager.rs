@@ -200,13 +200,8 @@ impl<Context> ECSManager<Context> {
         }
     }
     /* #endregion */
-    // Init update of the ECS manager
-    pub fn init_update(&mut self) {
-        self.entities.init_update();
-    }
     // Finish update of the ECS manager
     pub fn finish_update(&mut self) {
-        self.entities.finish_update();
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the entity
         let removed_entities = {
             let mut lock = self.entities_to_remove.lock().unwrap();
