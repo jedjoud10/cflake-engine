@@ -77,25 +77,31 @@ impl Pipeline {
         write.push(task);
     }
     // Execute a single task
-    fn execute_task(&mut self, task: PipelineTask) {
+    fn execute_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTask) {
         // Now we must execute these tasks
         match task {
             // Creation tasks
-            PipelineTask::CreateTexture(t) => self.texture_create(t),
-            PipelineTask::CreateMaterial(t) => self.material_create(t),
-            PipelineTask::CreateShader(t) => self.shader_create(t),
-            PipelineTask::CreateModel(t) => self.model_create(t),
-            PipelineTask::CreateRenderer(t) => self.renderer_create(t),
-            PipelineTask::CreateComputeShader(t) => self.compute_create(t),
+            PipelineTask::CreateTexture(id) => self.texture_create(id),
+            PipelineTask::CreateMaterial(id) => self.material_create(id),
+            PipelineTask::CreateShader(id) => self.shader_create(id),
+            PipelineTask::CreateModel(id) => self.model_create(id),
+            PipelineTask::CreateRenderer(id) => self.renderer_create(id),
+            PipelineTask::CreateComputeShader(id) => self.compute_create(id),
         
             PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
+            PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
+            
+            // Window tasks
+            PipelineTask::UpdateWindowDimensions(new_dimensions) => self.update_window_dimensions(renderer, new_dimensions),
+            PipelineTask::SetWindowFullscreen(fullscreen) => self.set_window_fullscreen(fullscreen),
+            PipelineTask::SetWindowVSync(vsync) => self.set_window_vsync(vsync),
         }
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
-    pub(crate) fn flush(&mut self) {
+    pub(crate) fn flush(&mut self, renderer: &mut PipelineRenderer) {
         // We must take the commands first
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
@@ -106,14 +112,14 @@ impl Pipeline {
         self.completed_tasks.clear();
         for task in tasks {
             match task {
-                PipelineTaskCombination::Single(task) => self.execute_task(task),
+                PipelineTaskCombination::Single(task) => self.execute_task(renderer, task),
                 PipelineTaskCombination::SingleTracked(task, task_id) => {
                     // Execute the task and set it's state to completed
                     self.completed_tasks.insert(task_id);
                 },
                 PipelineTaskCombination::Batch(batch) => {
                     // Execute all the tasks
-                    for task in batch { self.execute_task(task); }
+                    for task in batch { self.execute_task(renderer, task); }
                 },
             }
         }
@@ -173,6 +179,55 @@ impl Pipeline {
     pub fn get_texture(&self, id: ObjectID<Texture>) -> Option<&Texture> {
         if let Some(id) = id.id {
             self.textures.get(id)
+        } else {
+            None
+        }
+    }
+    // Mutable
+    // Get a mutable material using it's respective ID
+    pub(crate) fn get_material_mut(&mut self, id: ObjectID<Material>) -> Option<&mut Material> {
+        if let Some(id) = id.id {
+            self.materials.get_mut(id)
+        } else {
+            None
+        }
+    }
+    // Get a mutable model using it's respective ID
+    pub(crate) fn get_model_mut(&mut self, id: ObjectID<Model>) -> Option<&mut (Model, ModelBuffers)> {
+        if let Some(id) = id.id {
+            self.models.get_mut(id)
+        } else {
+            None
+        }
+    }
+    // Get a renderer using it's respective ID
+    pub(crate) fn get_renderer_mut(&mut self, id: ObjectID<Renderer>) -> Option<&mut Renderer> {
+        if let Some(id) = id.id {
+            self.renderers.get_mut(id)
+        } else {
+            None
+        }
+    }
+    // Get a shader using it's respective ID
+    pub(crate) fn get_shader_mut(&mut self, id: ObjectID<Shader>) -> Option<&mut Shader> {
+        if let Some(id) = id.id {
+            self.shaders.get_mut(id)
+        } else {
+            None
+        }
+    }
+    // Get a compute shader using it's respective ID
+    pub(crate) fn get_compute_shader_mut(&mut self, id: ObjectID<ComputeShader>) -> Option<&mut ComputeShader> {
+        if let Some(id) = id.id {
+            self.compute_shaders.get_mut(id)
+        } else {
+            None
+        }
+    }
+    // Get a texture using it's texture
+    pub(crate) fn get_texture_mut(&mut self, id: ObjectID<Texture>) -> Option<&mut Texture> {
+        if let Some(id) = id.id {
+            self.textures.get_mut(id)
         } else {
             None
         }
@@ -589,10 +644,12 @@ impl Pipeline {
         self.textures.insert(task.1.id.unwrap(), texture);
     }
     // Update the size of a texture
+    // PS: This also clears the texture
     pub(crate) fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
         // Get the GPU texture object
-        let texture = self.get_texture(id).unwrap();
+        let texture = self.get_texture_mut(id).unwrap();
         // Check if the current dimension type matches up with the new one
+        texture.ttype = tt;
         let ifd = texture.ifd;
         // This is a normal texture getting resized
         unsafe {
@@ -638,6 +695,19 @@ impl Pipeline {
     pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
         self.materials.insert(task.1.id.unwrap(), task.0);
+    }
+    // Update the window dimensions
+    fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
+        self.window.dimensions = new_dimensions;
+        renderer.update_window_dimensions(new_dimensions, self);
+    }
+    // Enable or disable fullscreen
+    fn set_window_fullscreen(&mut self, fullscreen: bool) {
+        todo!()
+    }
+    // Enable or disable vsync
+    fn set_window_vsync(&mut self, vsync: bool) {
+        todo!()
     }
 }
 
@@ -815,7 +885,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         }
 
         // Setup the pipeline renderer
-        let renderer = {
+        let mut renderer = {
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
             renderer.initialize(&mut *pipeline);
@@ -859,7 +929,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 pipeline.add_tasks(messages);
 
                 // Execute the tasks
-                pipeline.flush();
+                pipeline.flush(&mut renderer);
 
                 // Debug if needed
                 if pipeline.debugging.load(Ordering::Relaxed) {

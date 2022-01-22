@@ -74,6 +74,11 @@ impl World {
 
         println!("World init done!");
     }
+    // Resize window event
+    pub fn resize_window_event(&mut self, new_dimensions: veclib::Vector2<u16>) {
+        let pipeline = self.pipeline.read().unwrap();
+        rendering::pipeline::pipec::task(rendering::object::PipelineTask::UpdateWindowDimensions(new_dimensions), &*pipeline);
+    }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
     pub fn update_start(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // While we do world logic, start rendering the frame on the other thread

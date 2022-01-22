@@ -78,10 +78,9 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
                             window.set_should_close(true);
                         }
                     }
-                    glfw::WindowEvent::Size(_x, _y) => {
-                        // Size
-                        //core::world::resize_window_event(x as u16, y as u16, world);
-                    }
+                    glfw::WindowEvent::Size(x, y) => {
+                        world.resize_window_event(veclib::Vector2::new(x as u16, y as u16))
+                    },
                     glfw::WindowEvent::Scroll(_, scroll) => world.input.receive_mouse_event(None, Some(scroll)),
                     glfw::WindowEvent::CursorPos(x, y) => world.input.receive_mouse_event(Some((x, y)), None),
                     _ => {}

@@ -8,7 +8,7 @@ use crate::{
         texture::{Texture, TextureFormat, TextureType},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::ObjectID,
+    object::{ObjectID, PipelineTask},
     pipeline::pipec,
     utils::DataType,
 };
@@ -173,7 +173,7 @@ impl PipelineRenderer {
                 Some(())
             }
             // Flush
-            pipeline.flush();
+            pipeline.flush(self);
             bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT1, &self.emissive_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT2, &self.normals_texture, pipeline).unwrap();
@@ -203,7 +203,7 @@ impl PipelineRenderer {
         /* #endregion */
 
         // We must always flush to make sure we execute the tasks internally
-        pipeline.flush();
+        pipeline.flush(self);
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
     // Pre-render event
@@ -261,15 +261,14 @@ impl PipelineRenderer {
         }
     }
     // Update window
-    pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
+    pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &Pipeline) {
         // Update the size of each texture that is bound to the framebuffer
         let _dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
-        /*
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims)).wait_execution();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims)).wait_execution();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims)).wait_execution();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims)).wait_execution();
-        */
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.diffuse_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.emissive_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.normals_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.position_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.depth_texture, _dims), pipeline);
         unsafe {
             gl::Viewport(0, 0, window_dimensions.x as i32, window_dimensions.y as i32);
         }

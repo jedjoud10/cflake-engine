@@ -20,8 +20,12 @@ pub enum PipelineTask {
     // Update tasks
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
+    UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
     UpdateCamera(Camera),
     // Specific pipeline tasks
+    UpdateWindowDimensions(veclib::Vector2<u16>),
+    SetWindowFullscreen(bool),
+    SetWindowVSync(bool),
 }
 
 // Bruh
@@ -29,20 +33,4 @@ pub enum PipelineTaskCombination {
     Single(PipelineTask),
     SingleTracked(PipelineTask, TrackingTaskID),
     Batch(Vec<PipelineTask>),
-}
-
-impl std::fmt::Debug for PipelineTask {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::CreateTexture(arg0) => f.debug_tuple("CreateTexture").finish(),
-            Self::CreateMaterial(arg0) => f.debug_tuple("CreateMaterial").finish(),
-            Self::CreateShader(arg0) => f.debug_tuple("CreateShader").finish(),
-            Self::CreateComputeShader(arg0) => f.debug_tuple("CreateComputeShader").finish(),
-            Self::CreateModel(arg0) => f.debug_tuple("CreateModel").finish(),
-            Self::CreateRenderer(arg0) => f.debug_tuple("CreateRenderer").finish(),
-            Self::RunComputeShader(arg0, arg1) => f.debug_tuple("RunComputeShader").finish(),
-            Self::UpdateRendererMatrix(arg0, arg1) => f.debug_tuple("UpdateRendererMatrix").finish(),
-            Self::UpdateCamera(arg0) => f.debug_tuple("UpdateCamera").finish(),
-        }
-    }
 }

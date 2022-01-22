@@ -52,8 +52,12 @@ fn run(context: Context, components: ComponentQuery) {
         let (position, rotation) = (transform.position, transform.rotation);
         let mut camera = linked_components.component_mut::<crate::components::Camera>().unwrap();
         // And don't forget to update the camera matrices
-        camera.update_view_matrix(position, new_rotation);
         let world = &*share.read();
+        // Load the pipeline since we need to get the window settings
+        let pipeline = world.pipeline.read().unwrap();
+        camera.update_aspect_ratio(pipeline.window.dimensions);
+        camera.update_view_matrix(position, new_rotation);
+        
         use main::rendering::object;
         use main::rendering::pipeline;
         let pipeline_camera = main::rendering::pipeline::camera::Camera {
@@ -63,7 +67,6 @@ fn run(context: Context, components: ComponentQuery) {
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
         };
-        let pipeline = world.pipeline.read().unwrap();
         pipeline::pipec::task(object::PipelineTask::UpdateCamera(pipeline_camera), &*pipeline);
     })
 }

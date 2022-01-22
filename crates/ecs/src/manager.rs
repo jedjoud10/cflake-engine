@@ -8,7 +8,7 @@ use std::{
 use worker_threads::ThreadPool;
 
 use crate::{
-    component::{ComponentID, EnclosedComponent, LinkedComponents},
+    component::{ComponentID, EnclosedComponent, LinkedComponents, Component, registry::{self, cast_component_mut}},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     system::{EventHandler, System, SystemBuilder},
     utils::{ComponentError, EntityError},
@@ -169,6 +169,27 @@ impl<Context> ECSManager<Context> {
     // Count the number of valid components in the ECS manager
     pub fn count_components(&self) -> usize {
         self.components.lock().unwrap().count()
+    }
+    // Get all the components in the ECS manager that are of a certain type
+    // This does not return dangling components
+    pub fn get_all_components<T: Component + 'static>(&mut self) -> Vec<&mut T> {
+        let cbtifield = registry::get_component_bitfield::<T>();
+        // Loop through every entity, getting it's global component index
+        let component_indices = self.entities.iter_elements().flat_map(|entity| entity.components.iter().filter_map(|component_id| {
+            let valid = component_id.cbitfield == cbtifield;
+            valid.then_some(component_id.id)
+        }));
+        // Now we can retrieve each component
+        let lock = self.components.lock().unwrap();
+        let components = component_indices.map(|component_idx| {
+            let cell = lock.get(component_idx).unwrap();
+            let boxed = unsafe { &mut *cell.get() };
+            let refc = &mut **boxed;
+            // Some casting
+            let component = cast_component_mut::<T>(refc).unwrap(); 
+            component
+        }).collect::<Vec<&mut T>>();
+        components
     }
     /* #endregion */
     /* #region Systems */

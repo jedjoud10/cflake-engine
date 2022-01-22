@@ -32,7 +32,6 @@ pub mod pipec {
         let object = object.pre_construct(pipeline);
         // Construct it's ID and automatically send it's construction task
         let (t, id) = object.construct_task(pipeline);
-        dbg!(&t);
         task(t, pipeline);
         dbg!(id);
         id

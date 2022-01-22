@@ -1,5 +1,6 @@
 // Export
 #![feature(drain_filter)]
+#![feature(bool_to_option)]
 #![feature(hash_drain_filter)]
 pub mod component;
 pub mod entity;
