@@ -1,13 +1,13 @@
 use std::{cell::UnsafeCell, sync::Mutex};
 
-use ahash::AHashSet;
+use ahash::{AHashSet, AHashMap};
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 
 use super::{EventHandler, SystemExecutionData};
 use crate::{
     component::{registry, Component, ComponentQuery, LinkedComponents, EnclosedComponent},
-    entity::EntityID,
+    entity::{EntityID, Entity},
     ECSManager,
 };
 
@@ -67,13 +67,7 @@ impl System {
         let removed_entities = lock.1.drain();
         // We must decrement the counter for each removed entity
         let mut entities_to_remove_ecs_manager = ecs_manager.entities_to_remove.lock().unwrap();
-        let removed_entities = removed_entities.map(|x| {
-            // Decrement the counter
-            let counter = entities_to_remove_ecs_manager.get_mut(&x).unwrap();
-            *counter -= 1;
-            x
-        });
-        let removed_components = Self::get_linked_components(&self.evn_removed_entity, components, removed_entities, ecs_manager);
+        let removed_components = Self::get_linked_components_removed(&mut *entities_to_remove_ecs_manager, &self.evn_removed_entity, components, removed_entities, ecs_manager);
         let added_entities = lock.0.drain();
         let added_components = Self::get_linked_components(&self.evn_added_entity, components, added_entities, ecs_manager);
         SystemExecutionData {
@@ -107,6 +101,23 @@ impl System {
                 linked_components
             })
             .collect::<Vec<_>>();
+            Some(components)
+        } else { None }
+    }
+
+    // Get linked components for removed entities that we must call their removed event
+    fn get_linked_components_removed<Context, T: Iterator<Item = EntityID>>(lock: &mut AHashMap<EntityID, (Entity, usize)>, evn: &Option<usize>, components: &OrderedVec<UnsafeCell<EnclosedComponent>>, entities: T, ecs_manager: &ECSManager<Context>) -> Option<Vec<LinkedComponents>> {
+        if evn.is_some() {             
+            let components = entities.map(|id| {
+                // Decrement the counter
+                let (entity, counter) = lock.get_mut(&id).unwrap();
+                dbg!(&counter);
+                *counter -= 1;
+                dbg!(&counter);
+                let (entity, count) = lock.get(&id).unwrap();
+                let linked_components = LinkedComponents::new(entity, components);
+                linked_components
+            }).collect::<Vec<_>>();
             Some(components)
         } else { None }
     }

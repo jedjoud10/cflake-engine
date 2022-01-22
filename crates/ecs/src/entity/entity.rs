@@ -11,6 +11,9 @@ pub struct Entity {
 
     // Our stored components
     pub(crate) components: Vec<ComponentID>,
+
+    // The current entity state
+    pub(crate) state: EntityState,
 }
 
 // ECS time bois
@@ -21,7 +24,20 @@ impl Entity {
             id: None,
             cbitfield: Bitfield::default(),
             components: Vec::new(),
+            state: EntityState::Valid,
         }
+    }
+    // Turns an &Entity into an Option<&Entity>, and returns None if the current EntityState is set to Removed
+    pub fn validity(&self) -> Option<&Entity> {
+        if let EntityState::Valid = self.state {
+            Some(self)
+        } else { None }
+    }
+    // Turns an &Entity into an Option<&Entity>, and returns None if the current EntityState is set to Removed
+    pub fn validity_mut(&mut self) -> Option<&mut Entity> {
+        if let EntityState::Valid = self.state {
+            Some(self)
+        } else { None }
     }
 }
 
@@ -37,4 +53,14 @@ impl EntityID {
             id: ecs_manager.entities.get_next_id_increment(),
         }
     }
+}
+
+// An entity state that defines how the entity is doing
+#[derive(Clone)]
+pub enum EntityState {
+    // The entity is valid and it exists
+    Valid,
+
+    // The entity is going to be removed next frame, so we cannot do anything with it anymore
+    Removed,
 }

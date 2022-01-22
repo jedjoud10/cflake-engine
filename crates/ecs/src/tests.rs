@@ -16,26 +16,10 @@ pub mod test {
     pub struct WorldContext;
     fn run_system(_context: WorldContext, components: ComponentQuery) {
         // Transform the _context to RefContext using some magic fuckery
-
         components.update_all(|components| {
-            let mut i = 0;
-            for x in 0..64 {
-                i += x;
-            }
             let mut name = components.component_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         });
-
-        /*
-        let i = std::time::Instant::now();
-        components.update_all(RefContext, |context, components| {
-            let mut i = 0;
-            for x in 0..1024 {
-                i += x;
-            }
-        }, true);
-        println!("{}", i.elapsed().as_micros());
-        */
     }
 
     #[test]
@@ -58,7 +42,9 @@ pub mod test {
         let id2 = id.clone();
         let id3 = id.clone();
         // The entity is not created yet, so it is null
+        ecs.init_update();
         ecs.add_entity(entity, id, group);
+        ecs.finish_update();
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
@@ -75,7 +61,9 @@ pub mod test {
         dbg!(should_not_be_the_same);
         assert_ne!(should_not_be_the_same, id4);
         assert!(ecs.entity(&id4).is_err());
+        ecs.init_update();
         ecs.run_systems(context);
+        ecs.finish_update();
     }
     #[test]
     pub fn test_direct() {
@@ -104,5 +92,53 @@ pub mod test {
         group.unlink::<Tagged>().unwrap();
         ecs.unlink_components(id, group).unwrap();
         assert_eq!(ecs.entity(&id).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
+    }
+    #[test]
+    pub fn test_events() {
+        // Create the main ECS manager
+        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+        // Also create the context
+        let context = WorldContext;
+
+        // Make a simple system
+        
+        fn internal_run(_context: WorldContext, components: ComponentQuery) {
+            components.update_all(|components| {
+                let mut name = components.component_mut::<Name>().unwrap();
+                dbg!("Internal Run");
+                assert_eq!(*name.name, "John".to_string());
+                *name = Name::new("Bob");
+            });
+        }
+        fn internal_remove_entity(_context: WorldContext, components: ComponentQuery) {
+            components.update_all(|components| {
+                let name = components.component_mut::<Name>().unwrap();
+                dbg!("Internal Remove Entity Run");
+                assert_eq!(*name.name, "Bob".to_string());
+            });
+        }
+        fn internal_add_entity(_context: WorldContext, components: ComponentQuery) {
+            components.update_all(|components| {
+                let name = components.component_mut::<Name>().unwrap();
+                dbg!("Internal Add Entity Run");
+                assert_eq!(*name.name, "John".to_string());
+            });
+        }
+        let builder = ecs.create_system_builder();
+        builder.link::<Name>().set_run_event(internal_run).set_removed_entity_event(internal_remove_entity).set_added_entity_event(internal_add_entity).build();
+
+        // Add a new entity and play with it's components
+        let entity = Entity::new();
+        let id = EntityID::new(&ecs);
+        let mut group = ComponentLinkingGroup::new();
+        group.link::<Name>(Name::new("John")).unwrap();        
+        ecs.add_entity(entity, id, group);
+        ecs.run_systems(context);
+        ecs.remove_entity(id).unwrap();
+        ecs.init_update();
+        ecs.run_systems(context);
+        ecs.finish_update();
+        // After this execution, the dangling components should have been removed
+        assert_eq!(ecs.count_components(), 0);
     }
 }

@@ -1,10 +1,14 @@
 use crate::impl_component;
 
-// Create some default components
-
 // A name component that can be added to named entities
 pub struct Name {
     pub name: String,
+}
+
+impl Default for Name {
+    fn default() -> Self {
+        Self { name: "Unnamed".to_string() }
+    }
 }
 
 impl Name {
@@ -18,6 +22,12 @@ pub struct Tagged {
     pub tag: String,
 }
 
+impl Default for Tagged {
+    fn default() -> Self {
+        Self { tag: "Untagged".to_string() }
+    }
+}
+
 impl Tagged {
     pub fn new(tag: &str) -> Self {
         Self { tag: tag.to_string() }
@@ -28,6 +38,12 @@ impl Tagged {
 pub enum LoadState {
     Loaded,
     Unloaded,
+}
+
+impl Default for LoadState {
+    fn default() -> Self {
+        Self::Unloaded
+    }
 }
 
 impl_component!(Name);

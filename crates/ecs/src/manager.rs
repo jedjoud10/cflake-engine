@@ -3,7 +3,7 @@ use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
     cell::{RefCell, UnsafeCell},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex}, collections::hash_map::Entry,
 };
 use worker_threads::ThreadPool;
 
@@ -14,14 +14,14 @@ use crate::{
     utils::{ComponentError, EntityError},
 };
 
-// The Entity Component System manager that will handle everything ECS related (other than the components)
+// The Entity Component System manager that will handle everything ECS related
 pub struct ECSManager<Context> {
-    // A vector full of entities. Each entity can get invalidated, but never deleted
+    // A vector full of entitie
     pub(crate) entities: ShareableOrderedVec<Entity>,
+    pub entities_to_remove: Mutex<AHashMap<EntityID, (Entity, usize)>>,
     // Each system, stored in the order they were created
     systems: Vec<System>,
     // The components that are valid in the world
-    pub(crate) components_ids: AHashMap<ComponentID, u64>,
     pub(crate) components: Mutex<OrderedVec<UnsafeCell<EnclosedComponent>>>,
     // The internal ECS thread pool
     pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
@@ -37,8 +37,8 @@ impl<Context> ECSManager<Context> {
         let thread_pool = Arc::new(Mutex::new(ThreadPool::new(8, start_function)));
         Self {
             entities: Default::default(),
+            entities_to_remove: Default::default(),
             systems: Default::default(),
-            components_ids: Default::default(),
             components: Default::default(),
             thread_pool,
             event_handler: Default::default(),
@@ -65,34 +65,37 @@ impl<Context> ECSManager<Context> {
         // After doing that, we can safely add the components
         self.link_components(id, group).unwrap();
     }
-    // Remove an entity, but not immediately
-    pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {        
-        let entity = self.entity(&id)?;
+    // Remove an entity, but keep it's components alive until all systems have been notified
+    pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {     
+        // Invalidate the entity
+        let entity = self.entities.remove(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;  
         let cbitfield = entity.cbitfield;
         // And finally remove the entity from it's systems
+        let mut lock = self.entities_to_remove.lock().unwrap();
+        lock.insert(id, (entity, 0));
         for system in self.systems.iter_mut() {
             if system.check_cbitfield(cbitfield) {
                 // Remove the entity, since it was contained in the system
                 system.remove_entity(id);
+                dbg!();
+                let counter = &mut lock.get_mut(&id).unwrap().1;
+                *counter += 1;
             }
         }
         Ok(())
     }
-    // Remove an entity internally, and immediately
-    fn remove_entity_internal(&mut self, id: EntityID) -> Result<Entity, EntityError> {
-        // Invalidate the entity
-        let entity = self.entities.remove(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
+    // Remove the dangling components that have been linked to an entity that we already removed
+    fn remove_dangling_components(&mut self, entity: &Entity) -> Result<(), ComponentError> {
         // Also remove it's linked components
         for component_id in entity.components.iter() {
-            self.remove_component(*component_id).unwrap();
-        }
-        Ok(entity)
+            self.remove_component(*component_id)?;
+        };
+        Ok(())
     }
     /* #endregion */
     /* #region Components */
     // Link some components to an entity
     pub(crate) fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
-        if 
         for (cbitfield, boxed) in link_group.linked_components {
             let idx = self.add_component(boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
@@ -149,19 +152,18 @@ impl<Context> ECSManager<Context> {
         let idx = components.push_shove(UnsafeCell::new(boxed));
         // Create a new Component ID
         let id = ComponentID::new(cbitfield, idx);
-        self.components_ids.insert(id, idx);
         Ok(id)
     }
     // Remove a specified component from the list
     fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
-        let idx = self
-            .components_ids
-            .remove(&id)
-            .ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
         let mut components = self.components.lock().unwrap();
-        components.remove(idx);
+        components.remove(id.id).ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
         Ok(())
+    }
+    // Count the number of valid components in the ECS manager
+    pub fn count_components(&self) -> usize {
+        self.components.lock().unwrap().count()
     }
     /* #endregion */
     /* #region Systems */
@@ -178,10 +180,11 @@ impl<Context> ECSManager<Context> {
         self.systems.as_ref()
     }
     // Get the number of systems that we have
-    pub fn systems_count(&self) -> usize {
+    pub fn count_systems(&self) -> usize {
         self.systems.len()
     }
     // Run the systems in sync, but their component updates are not
+    // Used only for testing
     pub(crate) fn run_systems(&self, context: Context)
     where
         Context: Clone,
@@ -203,11 +206,12 @@ impl<Context> ECSManager<Context> {
         let removed_entities = { 
             let mut lock = self.entities_to_remove.lock().unwrap();
             lock
-                .drain_filter(|id, count| *count == 0)
+                .drain_filter(|id, (entity, count)| *count == 0)
                 .collect::<Vec<_>>()
         };
-        for (id, _) in removed_entities {
-            self.remove_entity_internal(id).unwrap();
+        // Remove the dangling components
+        for (id, (entity, count)) in removed_entities {
+            self.remove_dangling_components(&entity).unwrap();
         }
     }
 }
