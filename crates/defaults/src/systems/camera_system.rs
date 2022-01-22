@@ -5,7 +5,7 @@ use main::core::{Context, WriteContext};
 use main::ecs;
 use main::input::{Keys, MapType};
 
-// The camera system updatel loop
+// The camera system update loop
 fn run(context: Context, components: ComponentQuery) {
     let read = context.read();
     // Rotate the camera around

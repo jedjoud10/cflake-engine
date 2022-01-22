@@ -1,13 +1,13 @@
 use std::{cell::UnsafeCell, sync::Mutex};
 
-use ahash::{AHashSet, AHashMap};
+use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 
 use super::{EventHandler, SystemExecutionData};
 use crate::{
-    component::{registry, Component, ComponentQuery, LinkedComponents, EnclosedComponent},
-    entity::{EntityID, Entity},
+    component::{registry, Component, ComponentQuery, EnclosedComponent, LinkedComponents},
+    entity::{Entity, EntityID},
     ECSManager,
 };
 
@@ -63,7 +63,7 @@ impl System {
         let components = &ecs_manager.components.lock().unwrap();
         // Create the component queries
         let all_components = Self::get_linked_components(&self.evn_run, components, self.entities.iter().cloned(), ecs_manager);
-        let mut lock = self.changed_entities.lock().unwrap();        
+        let mut lock = self.changed_entities.lock().unwrap();
         let removed_entities = lock.1.drain();
         // We must decrement the counter for each removed entity
         let mut entities_to_remove_ecs_manager = ecs_manager.entities_to_remove.lock().unwrap();
@@ -79,7 +79,7 @@ impl System {
             evn_run_query: ComponentQuery {
                 linked_components: all_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-            }, 
+            },
             evn_added_entity_query: ComponentQuery {
                 linked_components: added_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
@@ -87,38 +87,55 @@ impl System {
             evn_removed_entity_query: ComponentQuery {
                 linked_components: removed_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-            } 
+            },
         }
     }
 
     // Get linked components for a vector full of entity IDs
-    fn get_linked_components<Context, T: Iterator<Item = EntityID>>(evn: &Option<usize>, components: &OrderedVec<UnsafeCell<EnclosedComponent>>, entities: T, ecs_manager: &ECSManager<Context>) -> Option<Vec<LinkedComponents>> {
-        if evn.is_some() { 
+    fn get_linked_components<Context, T: Iterator<Item = EntityID>>(
+        evn: &Option<usize>,
+        components: &OrderedVec<UnsafeCell<EnclosedComponent>>,
+        entities: T,
+        ecs_manager: &ECSManager<Context>,
+    ) -> Option<Vec<LinkedComponents>> {
+        if evn.is_some() {
             let components = entities
-            .map(|id| {
-                let entity = ecs_manager.entity(&id).unwrap();
-                let linked_components = LinkedComponents::new(entity, components);
-                linked_components
-            })
-            .collect::<Vec<_>>();
+                .map(|id| {
+                    let entity = ecs_manager.entity(&id).unwrap();
+                    let linked_components = LinkedComponents::new(entity, components);
+                    linked_components
+                })
+                .collect::<Vec<_>>();
             Some(components)
-        } else { None }
+        } else {
+            None
+        }
     }
 
     // Get linked components for removed entities that we must call their removed event
-    fn get_linked_components_removed<Context, T: Iterator<Item = EntityID>>(lock: &mut AHashMap<EntityID, (Entity, usize)>, evn: &Option<usize>, components: &OrderedVec<UnsafeCell<EnclosedComponent>>, entities: T, ecs_manager: &ECSManager<Context>) -> Option<Vec<LinkedComponents>> {
-        if evn.is_some() {             
-            let components = entities.map(|id| {
-                // Decrement the counter
-                let (entity, counter) = lock.get_mut(&id).unwrap();
-                dbg!(&counter);
-                *counter -= 1;
-                dbg!(&counter);
-                let (entity, count) = lock.get(&id).unwrap();
-                let linked_components = LinkedComponents::new(entity, components);
-                linked_components
-            }).collect::<Vec<_>>();
+    fn get_linked_components_removed<Context, T: Iterator<Item = EntityID>>(
+        lock: &mut AHashMap<EntityID, (Entity, usize)>,
+        evn: &Option<usize>,
+        components: &OrderedVec<UnsafeCell<EnclosedComponent>>,
+        entities: T,
+        ecs_manager: &ECSManager<Context>,
+    ) -> Option<Vec<LinkedComponents>> {
+        if evn.is_some() {
+            let components = entities
+                .map(|id| {
+                    // Decrement the counter
+                    let (entity, counter) = lock.get_mut(&id).unwrap();
+                    dbg!(&counter);
+                    *counter -= 1;
+                    dbg!(&counter);
+                    let (entity, count) = lock.get(&id).unwrap();
+                    let linked_components = LinkedComponents::new(entity, components);
+                    linked_components
+                })
+                .collect::<Vec<_>>();
             Some(components)
-        } else { None }
+        } else {
+            None
+        }
     }
 }

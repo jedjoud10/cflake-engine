@@ -9,7 +9,7 @@ pub struct EventHandler<Context> {
 
 impl<Context> Default for EventHandler<Context> {
     fn default() -> Self {
-        Self { 
+        Self {
             evn_run_system: Default::default(),
             evn_added_entity: Default::default(),
             evn_removed_entity: Default::default(),
@@ -35,14 +35,26 @@ impl<Context> EventHandler<Context> {
     }
     // Get the "Run System" event for a specific index
     pub fn get_run_event(&self, idx: Option<usize>) -> Option<&fn(Context, ComponentQuery)> {
-        if let Some(idx) = idx { self.evn_run_system.get(idx) } else { None }
+        if let Some(idx) = idx {
+            self.evn_run_system.get(idx)
+        } else {
+            None
+        }
     }
     // Get the "Added Entity" event for a specific index
     pub fn get_added_entity_event(&self, idx: Option<usize>) -> Option<&fn(Context, ComponentQuery)> {
-        if let Some(idx) = idx { self.evn_added_entity.get(idx) } else { None }
+        if let Some(idx) = idx {
+            self.evn_added_entity.get(idx)
+        } else {
+            None
+        }
     }
     // Get the "Removed Entity" event for a specific index
     pub fn get_removed_entity_event(&self, idx: Option<usize>) -> Option<&fn(Context, ComponentQuery)> {
-        if let Some(idx) = idx { self.evn_removed_entity.get(idx) } else { None }
+        if let Some(idx) = idx {
+            self.evn_removed_entity.get(idx)
+        } else {
+            None
+        }
     }
 }

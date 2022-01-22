@@ -3,7 +3,8 @@ use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
     cell::{RefCell, UnsafeCell},
-    sync::{Arc, Mutex}, collections::hash_map::Entry,
+    collections::hash_map::Entry,
+    sync::{Arc, Mutex},
 };
 use worker_threads::ThreadPool;
 
@@ -66,9 +67,9 @@ impl<Context> ECSManager<Context> {
         self.link_components(id, group).unwrap();
     }
     // Remove an entity, but keep it's components alive until all systems have been notified
-    pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {     
+    pub(crate) fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {
         // Invalidate the entity
-        let entity = self.entities.remove(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;  
+        let entity = self.entities.remove(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
         let cbitfield = entity.cbitfield;
         // And finally remove the entity from it's systems
         let mut lock = self.entities_to_remove.lock().unwrap();
@@ -89,7 +90,7 @@ impl<Context> ECSManager<Context> {
         // Also remove it's linked components
         for component_id in entity.components.iter() {
             self.remove_component(*component_id)?;
-        };
+        }
         Ok(())
     }
     /* #endregion */
@@ -158,7 +159,9 @@ impl<Context> ECSManager<Context> {
     fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
         let mut components = self.components.lock().unwrap();
-        components.remove(id.id).ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
+        components
+            .remove(id.id)
+            .ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
         Ok(())
     }
     // Count the number of valid components in the ECS manager
@@ -203,11 +206,9 @@ impl<Context> ECSManager<Context> {
     pub fn finish_update(&mut self) {
         self.entities.finish_update();
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the entity
-        let removed_entities = { 
+        let removed_entities = {
             let mut lock = self.entities_to_remove.lock().unwrap();
-            lock
-                .drain_filter(|id, (entity, count)| *count == 0)
-                .collect::<Vec<_>>()
+            lock.drain_filter(|id, (entity, count)| *count == 0).collect::<Vec<_>>()
         };
         // Remove the dangling components
         for (id, (entity, count)) in removed_entities {

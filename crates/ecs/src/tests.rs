@@ -101,7 +101,7 @@ pub mod test {
         let context = WorldContext;
 
         // Make a simple system
-        
+
         fn internal_run(_context: WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
                 let mut name = components.component_mut::<Name>().unwrap();
@@ -125,13 +125,18 @@ pub mod test {
             });
         }
         let builder = ecs.create_system_builder();
-        builder.link::<Name>().set_run_event(internal_run).set_removed_entity_event(internal_remove_entity).set_added_entity_event(internal_add_entity).build();
+        builder
+            .link::<Name>()
+            .set_run_event(internal_run)
+            .set_removed_entity_event(internal_remove_entity)
+            .set_added_entity_event(internal_add_entity)
+            .build();
 
         // Add a new entity and play with it's components
         let entity = Entity::new();
         let id = EntityID::new(&ecs);
         let mut group = ComponentLinkingGroup::new();
-        group.link::<Name>(Name::new("John")).unwrap();        
+        group.link::<Name>(Name::new("John")).unwrap();
         ecs.add_entity(entity, id, group);
         ecs.run_systems(context);
         ecs.remove_entity(id).unwrap();

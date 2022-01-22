@@ -31,13 +31,17 @@ impl Entity {
     pub fn validity(&self) -> Option<&Entity> {
         if let EntityState::Valid = self.state {
             Some(self)
-        } else { None }
+        } else {
+            None
+        }
     }
     // Turns an &Entity into an Option<&Entity>, and returns None if the current EntityState is set to Removed
     pub fn validity_mut(&mut self) -> Option<&mut Entity> {
         if let EntityState::Valid = self.state {
             Some(self)
-        } else { None }
+        } else {
+            None
+        }
     }
 }
 

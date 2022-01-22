@@ -3,7 +3,7 @@ mod pipeline;
 mod pipeline_main;
 pub mod rendering;
 mod sender;
+pub use self::rendering::*;
 pub use pipeline::*;
 pub use pipeline_main::*;
-pub use self::rendering::*;
 pub use sender::*;
