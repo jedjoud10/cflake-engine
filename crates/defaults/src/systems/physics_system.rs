@@ -1,39 +1,30 @@
-use core::global::callbacks::CallbackType::LocalEntityMut;
-use ecs::SystemData;
-use others::callbacks::{MutCallback, NullCallback};
-// Update the entities
-fn entity_update(data: &mut SystemData<()>, entity: &ecs::Entity) {
-    // Update the physics
-    core::global::ecs::entity_mut(
-        entity.id,
-        LocalEntityMut(MutCallback::new(|entity| {
-            // Get the transform position and rotation
-            let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
-            let (mut position, mut rotation) = (transform.position, transform.rotation);
-            let physics = core::global::ecs::component_mut::<crate::components::Physics>(entity).unwrap();
-            let physics_object = &mut physics.object;
-            // Apply the physics step on the position and rotation
-            physics_object.update(&mut position, &mut rotation, core::global::timings::delta() as f32);
-            let transform = core::global::ecs::component_mut::<crate::components::Transform>(entity).unwrap();
-            // Update the new position and rotation in the transform
-            transform.position = position;
-            transform.rotation = rotation;
-        }))
-        .create(),
-    );
+use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery};
+
+// The physics system update loop
+fn run(context: Context, query: ComponentQuery) {
+    let read = context.read();
+    // Get the world's delta time
+    let delta = read.time.delta as f32;
+
+    // For each physics object, we must update the internal physics values and apply them to our transform
+    query.update_all_threaded(move |components| {
+        let mut physics = components.component_mut::<crate::components::Physics>().unwrap();
+        let object = &mut physics.object;
+        object.update(delta);
+        let (position, rotation) = (*object.get_position(), *object.get_rotation());
+        // Apply the physics' object new transform to our current transform
+        let mut transform = components.component_mut::<crate::components::Transform>().unwrap();
+        transform.position = position; transform.rotation = rotation;
+    })
 }
 
 // Create the physics system
-pub fn system() {
-    core::global::ecs::add_system((), || {
-        // Create a system
-        let mut system = ecs::System::new();
-        // Link some components to the system
-        system.link::<crate::components::Transform>();
-        system.link::<crate::components::Physics>();
-        // And link the events
-        system.event(ecs::SystemEventType::EntityUpdate(entity_update));
-        // Return the newly made system
-        system
-    });
+pub fn system(write: &mut WriteContext) {
+    write
+        .ecs
+        .create_system_builder()
+        .set_run_event(run)
+        .link::<crate::components::Transform>()
+        .link::<crate::components::Physics>()
+        .build()
 }

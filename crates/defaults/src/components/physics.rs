@@ -3,7 +3,7 @@ use main::physics::PhysicsObject;
 // A physics component
 #[derive(Default, Clone)]
 pub struct Physics {
-    pub object: PhysicsObject,
+    pub(crate) object: PhysicsObject,
 }
 
 // Influence the internal physics object through here

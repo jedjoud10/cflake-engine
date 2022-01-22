@@ -1,5 +1,4 @@
 use ecs::component::*;
-
 use main::core::{Context, WriteContext};
 use main::ecs;
 use main::input::{Keys, MapType};
@@ -69,7 +68,7 @@ fn run(context: Context, components: ComponentQuery) {
     })
 }
 
-// Create the system
+// Create the camera system
 pub fn system(write: &mut WriteContext) {
     write
         .ecs

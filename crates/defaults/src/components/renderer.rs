@@ -1,12 +1,17 @@
 use main::rendering::{self, object::ObjectID};
 // An Renderer component
 pub struct Renderer {
+    // The CPU renderer that we will store until we send the construction task
+    pub renderer: Option<rendering::basics::renderer::Renderer>,
+
+    // The returned Object ID for our Renderer that is stored on the GPU Pipeline
     pub object_id: ObjectID<rendering::basics::renderer::Renderer>,
 }
 
 impl Renderer {
-    pub fn new(renderer_id: ObjectID<rendering::basics::renderer::Renderer>) -> Self {
-        Self { object_id: renderer_id }
+    // Create a new renderer component using a CPU renderer object
+    pub fn new(renderer: rendering::basics::renderer::Renderer) -> Self {
+        Self { renderer: Some(renderer), object_id: ObjectID::default() }
     }
 }
 

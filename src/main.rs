@@ -31,8 +31,7 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
 
     // Create it's renderer
     let renderer = rendering::basics::renderer::Renderer::default().set_model(model_id).set_matrix(matrix);
-    let renderer_id = rendering::pipeline::pipec::construct(renderer, &*pipeline);
-    let renderer = defaults::components::Renderer::new(renderer_id);
+    let renderer = defaults::components::Renderer::new(renderer);
     group.link(renderer).unwrap();
     // Add the cube
     ecs::tasks::add_entity(&task_sender, entity, id, group);
