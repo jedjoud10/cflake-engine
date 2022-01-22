@@ -47,8 +47,8 @@ impl Font {
         let char = self
             .chars
             .get((ascii_code - ASCII_FIRST_CHAR_OFFSET) as usize)
-            .expect(format!("Couldn't get character {}", &ascii_code).as_str());
-        return char;
+            .unwrap_or_else(|| panic!("Couldn't get character {}", &ascii_code));
+        char
     }
     // Create the actual texture from the raw pixel bitmap data we have
     pub fn create_texture(&mut self, pipeline: &Pipeline) {
@@ -67,7 +67,7 @@ impl Font {
         let ascii_str = AsciiStr::from_ascii(text).unwrap();
         let chars = ascii_str.as_bytes();
         let font_chars = chars.iter().map(|&x| self.get_char(x)).collect::<Vec<&FontChar>>();
-        return font_chars;
+        font_chars
     }
     // Set the font parameters for this text
     pub fn set_font_parameter(&self) {}
@@ -90,7 +90,7 @@ impl Asset for Font {
         output_font.atlas_dimensions = veclib::Vector2::new(width, height);
         let pixel_num: u32 = width as u32 * height as u32;
         // Read the pixels, one by one
-        for i in 0..pixel_num {
+        for _i in 0..pixel_num {
             let pixel = reader.read_u8().unwrap();
             output_font.texture_pixels.push(pixel);
         }
@@ -99,7 +99,7 @@ impl Asset for Font {
         let font_char_num = reader.read_u8().unwrap();
 
         // Read the chars
-        for i in 0..font_char_num {
+        for _i in 0..font_char_num {
             // Get the data back
             let loaded_char = FontChar {
                 id: reader.read_u8().unwrap(),

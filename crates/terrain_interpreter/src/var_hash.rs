@@ -1,6 +1,5 @@
 use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
+    hash::{Hasher},
 };
 
 // Some passed data
@@ -14,13 +13,13 @@ impl PassedData {
     // Combine two passed datas into a singular one
     pub fn combine(first: Self, second: Self) -> Self {
         // Combine the two passed data's
-        match first.custom_shape_identifier.or_else(|| second.custom_shape_identifier) {
+        match first.custom_shape_identifier.or(second.custom_shape_identifier) {
             Some(x) => {
                 let mut clone = first;
                 clone.custom_shape_identifier = Some(x);
-                return clone;
+                clone
             }
-            None => return first,
+            None => first,
         }
     }
 }

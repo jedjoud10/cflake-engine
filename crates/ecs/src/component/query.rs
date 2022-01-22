@@ -16,7 +16,7 @@ pub struct ComponentQuery {
 
 impl ComponentQuery {
     // Update all the components consecutively, on the main thread
-    pub fn update_all<F: Fn(&mut LinkedComponents) + 'static>(mut self, function: F) {
+    pub fn update_all<F: Fn(&mut LinkedComponents) + 'static>(self, function: F) {
         // Run it normally
         if let Some(vec) = self.linked_components {
             for mut linked_components in vec {
@@ -25,7 +25,7 @@ impl ComponentQuery {
         }
     }
     // Update all the components in parallel, on multiple worker threads
-    pub fn update_all_threaded<F: Fn(&mut LinkedComponents) + 'static + Sync + Send>(mut self, function: F) {
+    pub fn update_all_threaded<F: Fn(&mut LinkedComponents) + 'static + Sync + Send>(self, function: F) {
         if let Some(mut vec) = self.linked_components {
             let thread_pool = self.thread_pool.lock().unwrap();
             thread_pool.execute(&mut vec, function);

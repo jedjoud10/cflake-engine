@@ -1,6 +1,6 @@
-use ecs::component::defaults::*;
+
 use ecs::component::*;
-use ecs::system::SystemBuilder;
+
 use main::core::{Context, WriteContext};
 use main::ecs;
 use main::input::{Keys, MapType};

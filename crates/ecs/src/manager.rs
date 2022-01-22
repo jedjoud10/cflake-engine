@@ -2,8 +2,7 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
-    cell::{RefCell, UnsafeCell},
-    collections::hash_map::Entry,
+    cell::{UnsafeCell},
     sync::{Arc, Mutex},
 };
 use worker_threads::ThreadPool;
@@ -208,10 +207,10 @@ impl<Context> ECSManager<Context> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the entity
         let removed_entities = {
             let mut lock = self.entities_to_remove.lock().unwrap();
-            lock.drain_filter(|id, (entity, count)| *count == 0).collect::<Vec<_>>()
+            lock.drain_filter(|_id, (_entity, count)| *count == 0).collect::<Vec<_>>()
         };
         // Remove the dangling components
-        for (id, (entity, count)) in removed_entities {
+        for (_id, (entity, _count)) in removed_entities {
             self.remove_dangling_components(&entity).unwrap();
         }
     }

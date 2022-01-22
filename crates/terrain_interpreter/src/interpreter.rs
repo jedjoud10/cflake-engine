@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 
 use math::constructive_solid_geometry::CSGTree;
 
@@ -50,7 +50,7 @@ impl Interpreter {
             .set_scale(0.003)
             .new(&[p], &mut interpreter)
             .unwrap();
-        let c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
+        let _c = DensityOperation::Addition.new(&[shape, d], &mut interpreter).unwrap();
         interpreter
     }
     // Add a specific node to the system
@@ -95,7 +95,7 @@ impl Interpreter {
             return None;
         }
         // We are going to use the last node as the final node
-        let final_density_varhash = self.vars.last().unwrap().clone();
+        let final_density_varhash = *self.vars.last().unwrap();
         // Check if the supplied varhash is a of type "density"
         match &final_density_varhash._type {
             VarHashType::Density => {
@@ -127,7 +127,7 @@ impl Interpreter {
                 getter.inputs[local_index] = *self.vars.get(*global_index).unwrap();
             }
             let output_var = self.vars.get_mut(x).unwrap();
-            let new_input_ranges = getter.inputs_indices.iter().map(|x| input_ranges.get(x).unwrap().clone()).collect::<Vec<(f32, f32)>>();
+            let new_input_ranges = getter.inputs_indices.iter().map(|x| *input_ranges.get(x).unwrap()).collect::<Vec<(f32, f32)>>();
             // Gotta calculate the range first
             let range = node.node_interpreter.calculate_range(&getter, new_input_ranges);
             input_ranges.insert(output_var.index, range);
@@ -149,6 +149,6 @@ impl Interpreter {
         // The index for this node is "0"
         let var_hash = self.vars.get(1).unwrap();
         let node = self.nodes.get(1).unwrap();
-        (*var_hash, &node, &node.node_interpreter)
+        (*var_hash, node, &node.node_interpreter)
     }
 }

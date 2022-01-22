@@ -1,9 +1,8 @@
 use std::{
-    marker::PhantomData,
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use ecs::{system::EventHandler, ECSManager};
+use ecs::{ECSManager};
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;

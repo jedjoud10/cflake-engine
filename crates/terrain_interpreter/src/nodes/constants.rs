@@ -6,7 +6,7 @@ pub enum Constants {
 }
 
 impl NodeInterpreter for Constants {
-    fn get_node_string(&self, getter: &VarHashGetter) -> Result<String, InterpreterError> {
+    fn get_node_string(&self, _getter: &VarHashGetter) -> Result<String, InterpreterError> {
         // Get the GLSL name of the operation and combine with the two inputs
         Ok(match self {
             Constants::Float(x) => format!("{}", x),

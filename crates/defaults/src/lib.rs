@@ -6,7 +6,7 @@ pub mod template_system;
 
 use main::assets::preload_asset;
 use main::core::{TaskSenderContext, WriteContext};
-use main::ecs;
+
 use systems::camera_system;
 // Pre-load the default assets
 pub fn preload_default_assets() {
@@ -58,7 +58,7 @@ pub fn preload_default_assets() {
     println!("Finished pre-loading default assets!");
 }
 // Pre-load the default systems
-pub fn preload_system(mut write: WriteContext, task_sender: TaskSenderContext) {
+pub fn preload_system(mut write: WriteContext, _task_sender: TaskSenderContext) {
     template_system::system(&mut write);
     camera_system::system(&mut write);
     /*

@@ -1,6 +1,6 @@
 use super::{node::OctreeNode, octree::Octree};
-use ordered_vec::simple::{OrderedVec, UnversionnedOrderedVec};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use ordered_vec::simple::{UnversionnedOrderedVec};
+use rayon::iter::{ParallelIterator};
 use std::collections::{HashMap, HashSet};
 
 // An advanced octree with incremental generation and twin nodes

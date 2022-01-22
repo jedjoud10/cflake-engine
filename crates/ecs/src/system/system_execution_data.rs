@@ -27,7 +27,7 @@ impl<Context> SystemExecutionData<Context> {
         }
 
         if let Some(run_system_evn) = self.evn_run {
-            run_system_evn(context.clone(), self.evn_run_query);
+            run_system_evn(context, self.evn_run_query);
         }
     }
 }

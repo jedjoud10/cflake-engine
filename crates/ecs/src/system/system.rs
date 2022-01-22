@@ -4,9 +4,9 @@ use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 
-use super::{EventHandler, SystemExecutionData};
+use super::{SystemExecutionData};
 use crate::{
-    component::{registry, Component, ComponentQuery, EnclosedComponent, LinkedComponents},
+    component::{ComponentQuery, EnclosedComponent, LinkedComponents},
     entity::{Entity, EntityID},
     ECSManager,
 };
@@ -102,8 +102,8 @@ impl System {
             let components = entities
                 .map(|id| {
                     let entity = ecs_manager.entity(&id).unwrap();
-                    let linked_components = LinkedComponents::new(entity, components);
-                    linked_components
+                    
+                    LinkedComponents::new(entity, components)
                 })
                 .collect::<Vec<_>>();
             Some(components)
@@ -118,19 +118,19 @@ impl System {
         evn: &Option<usize>,
         components: &OrderedVec<UnsafeCell<EnclosedComponent>>,
         entities: T,
-        ecs_manager: &ECSManager<Context>,
+        _ecs_manager: &ECSManager<Context>,
     ) -> Option<Vec<LinkedComponents>> {
         if evn.is_some() {
             let components = entities
                 .map(|id| {
                     // Decrement the counter
-                    let (entity, counter) = lock.get_mut(&id).unwrap();
+                    let (_entity, counter) = lock.get_mut(&id).unwrap();
                     dbg!(&counter);
                     *counter -= 1;
                     dbg!(&counter);
-                    let (entity, count) = lock.get(&id).unwrap();
-                    let linked_components = LinkedComponents::new(entity, components);
-                    linked_components
+                    let (entity, _count) = lock.get(&id).unwrap();
+                    
+                    LinkedComponents::new(entity, components)
                 })
                 .collect::<Vec<_>>();
             Some(components)

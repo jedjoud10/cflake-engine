@@ -8,8 +8,7 @@ pub use defaults;
 use main::core::{Context, TaskSenderContext, World, WriteContext};
 pub use main::*;
 use std::{
-    sync::{Arc, RwLock, RwLockReadGuard},
-    thread::ThreadId,
+    sync::{Arc, RwLock},
 };
 
 // Load up the OpenGL window and such
@@ -81,7 +80,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
                             window.set_should_close(true);
                         }
                     }
-                    glfw::WindowEvent::Size(x, y) => {
+                    glfw::WindowEvent::Size(_x, _y) => {
                         // Size
                         //core::world::resize_window_event(x as u16, y as u16, world);
                     }
@@ -98,7 +97,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     // When the window closes and we exit from the game
     if let Ok(rwlock) = Arc::try_unwrap(world) {
         println!("Exiting the engine...");
-        let mut world = rwlock.into_inner().unwrap();
+        let world = rwlock.into_inner().unwrap();
         world.destroy();
     } else {
         panic!("Nah bro you mad goofy");

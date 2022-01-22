@@ -17,17 +17,17 @@ impl Noise {
     // Set strength
     pub fn set_strength(mut self, strength: f32) -> Self {
         self.strength = strength;
-        return self;
+        self
     }
     // Set scale
     pub fn set_scale(mut self, scale: f32) -> Self {
         self.scale = scale;
-        return self;
+        self
     }
     // Set inverted
     pub fn set_inverted(mut self, inverted: bool) -> Self {
         self.inverted = inverted;
-        return self;
+        self
     }
 }
 // Some noise type
@@ -64,13 +64,13 @@ impl NodeInterpreter for Noise {
             NoiseType::VoronoiDistance2 => todo!(),
             NoiseType::VoronoiCell => format!("voronoi({} * {}).z * {}", input.get_name(), self.scale, strength),
         }
-        .to_string();
+        ;
         Ok(main)
     }
     fn get_output_type(&self, _inputs: &VarHashGetter) -> crate::var_hash::VarHashType {
         crate::var_hash::VarHashType::Density
     }
-    fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) {
+    fn calculate_range(&self, _getter: &VarHashGetter, _input_ranges: Vec<(f32, f32)>) -> (f32, f32) {
         (-self.strength, self.strength)
     }
 }

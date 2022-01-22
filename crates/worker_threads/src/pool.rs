@@ -1,7 +1,7 @@
 use std::{
     cell::UnsafeCell,
     sync::{
-        atomic::{AtomicPtr, Ordering::Relaxed},
+        atomic::{Ordering::Relaxed},
         Arc, Barrier, RwLock,
     },
 };
@@ -42,7 +42,7 @@ impl<T: 'static> ThreadPool<T> {
     }
     // Divide the task between the multiple threads, and invoke them
     pub fn execute<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
-        let (barrier, end_barrier, shutdown_barrier) = self.barriers.as_ref();
+        let (barrier, end_barrier, _shutdown_barrier) = self.barriers.as_ref();
         // The main task
         let task = UnsafeCell::new(task);
         {

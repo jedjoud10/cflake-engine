@@ -28,7 +28,7 @@ impl NodeInterpreter for DensityOperation {
     fn get_output_type(&self, _getter: &VarHashGetter) -> crate::var_hash::VarHashType {
         crate::var_hash::VarHashType::Density
     }
-    fn calculate_range(&self, getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) {
+    fn calculate_range(&self, _getter: &VarHashGetter, input_ranges: Vec<(f32, f32)>) -> (f32, f32) {
         // Depends on the density operation
         match self {
             DensityOperation::Union => {
@@ -40,8 +40,8 @@ impl NodeInterpreter for DensityOperation {
                 // Take the maximum and minimum
                 let (x1, y1) = input_ranges[0];
                 let (x2, y2) = input_ranges[1];
-                let new_range = (f32::min(x1, x2), f32::max(y1, y2));
-                new_range
+                
+                (f32::min(x1, x2), f32::max(y1, y2))
             }
             DensityOperation::Subtraction => todo!(),
         }

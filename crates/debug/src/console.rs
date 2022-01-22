@@ -16,9 +16,9 @@ impl Console {
         // Clear the sent command
         self.sent_command = None;
         // Get the current command's name
-        let name = text.split(" ").nth(0)?;
+        let name = text.split(' ').next()?;
         // Get the inputs
-        let inputs = text.split(" ").collect::<Vec<&str>>()[1..].to_vec();
+        let inputs = text.split(' ').collect::<Vec<&str>>()[1..].to_vec();
 
         // The final command
         let mut final_command: Option<Command> = None;
@@ -28,7 +28,7 @@ impl Console {
                 let mut final_assossiated_inputs: Vec<CommandInput> = Vec::new();
                 for associated_input in command.inputs.iter() {
                     // Get the name and the actual value
-                    let index = inputs.iter().position(|x| x.to_string() == associated_input.short_name)?;
+                    let index = inputs.iter().position(|x| *x == associated_input.short_name)?;
 
                     // Get the value
                     let value: CommandInputEnum = {
@@ -87,7 +87,7 @@ impl Console {
         match self.sent_command.clone() {
             Some(a) => {
                 // Check if this is the right command
-                if a.name == command_name.to_string() {
+                if a.name == *command_name {
                     let output = Some(a);
                     self.sent_command = None;
                     output
@@ -113,7 +113,7 @@ pub struct Command {
 impl Command {
     // Create a new template command with a name and associated inputs
     pub fn new(name: &str, inputs: Vec<CommandInput>) -> Self {
-        return Self { name: name.to_string(), inputs };
+        Self { name: name.to_string(), inputs }
     }
     // Get a specific input from the command
     pub fn get_input(&self, input_short_name: &str) -> Option<&CommandInputEnum> {
@@ -134,10 +134,10 @@ pub struct CommandInput {
 impl CommandInput {
     // Create a new command input
     pub fn new<T: CommandInputTrait>(name: &str) -> Self {
-        return CommandInput {
+        CommandInput {
             short_name: name.to_string(),
             input: T::get_default_input(),
-        };
+        }
     }
 }
 

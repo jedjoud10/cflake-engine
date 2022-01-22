@@ -1,8 +1,7 @@
 use crate::SharedData;
 use std::{
-    marker::PhantomData,
     sync::{
-        atomic::{AtomicBool, AtomicPtr, AtomicUsize, Ordering},
+        atomic::{AtomicBool, Ordering},
         Arc, Barrier, RwLock,
     },
 };

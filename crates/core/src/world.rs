@@ -133,7 +133,7 @@ impl World {
         }
     }
     // We must destroy the world
-    pub fn destroy(mut self) {
+    pub fn destroy(self) {
         // We update the pipeline's shutdown atomic, telling it to shutdown
         //let pipeline = self.pipeline.read().unwrap();
         let start_data = self.pipeline_thread;

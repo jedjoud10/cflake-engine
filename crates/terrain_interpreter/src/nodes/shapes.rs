@@ -19,19 +19,19 @@ impl NodeInterpreter for Shape {
         Ok(match self.internal_shape.internal_shape {
             math::shapes::ShapeType::Cube(half_extent) => format!("sdBox({}, {})", position_string, format!("vec3({}, {}, {})", half_extent.x, half_extent.y, half_extent.z)),
             math::shapes::ShapeType::Sphere(radius) => format!("sdSphere({}, {})", position_string, radius),
-            math::shapes::ShapeType::AxisPlane(axis, (offset_min, offset_max)) => match axis {
+            math::shapes::ShapeType::AxisPlane(axis, (offset_min, _offset_max)) => match axis {
                 veclib::Vec3Axis::X => format!("pos.x - {}", offset_min),
                 veclib::Vec3Axis::Y => format!("pos.y - {}", offset_min),
                 veclib::Vec3Axis::Z => format!("pos.z - {}", offset_min),
             },
         }
-        .to_string())
+        )
     }
     fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Density
     }
     // Update the csg tree
-    fn update_csgtree(&self, passed_data: &mut PassedData, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, self_range: (f32, f32)) {
+    fn update_csgtree(&self, passed_data: &mut PassedData, getter: &VarHashGetter, csgtree: &mut math::constructive_solid_geometry::CSGTree, _self_range: (f32, f32)) {
         // Since we are a CSG shape ourselves, add it to the csgtree with "Union" csg type
         let mut shape = self.clone();
         shape.csg_type = math::csg::CSGType::Union;

@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+
 
 use ordered_vec::simple::UnversionnedOrderedVec;
 
 use crate::ButtonState;
-use crate::CoordinateType;
+
 use crate::Element;
 use crate::ElementType;
 
@@ -36,7 +36,7 @@ impl Root {
         // Add the element to the root node
         root.add_element(root_elem);
         root.root_depth = root_depth;
-        return root;
+        root
     }
     // Add an element to the tree
     pub fn add_element(&mut self, mut element: Element) -> usize {
@@ -48,15 +48,15 @@ impl Root {
         let element_id = self.elements.push_shove(element);
         // Attach this element to the root element
         Element::attach(self, 0, vec![element_id]);
-        return element_id;
+        element_id
     }
     // Remove an element from the three, and recursively remove it's children
     pub fn remove_element(&mut self, element: Element) {
         // Get all the children from this element, recursively
-        let mut output_elem_indices: Vec<usize> = Vec::new();
+        let _output_elem_indices: Vec<usize> = Vec::new();
         let mut elems_to_evaluate: Vec<usize> = Vec::new();
         elems_to_evaluate.extend(element.children);
-        while elems_to_evaluate.len() > 0 {
+        while !elems_to_evaluate.is_empty() {
             // We need to get the children of this element
             let elem = self.elements.get(elems_to_evaluate[0]).unwrap();
             let children = elem.children.clone();
@@ -82,14 +82,14 @@ impl Root {
             ElementType::Button(ref state) => state,
             _ => &ButtonState::Released,
         };
-        return state;
+        state
     }
     // Set the text of a text element
     pub fn set_text_state(&mut self, element_id: usize, text: &str) {
         // Get the element mutably
         let elem = self.elements.get_mut(element_id).unwrap();
         match elem.element_type {
-            ElementType::Text(ref mut last_text, font_size) => {
+            ElementType::Text(ref mut last_text, _font_size) => {
                 // Set the text
                 *last_text = text.to_string();
             }

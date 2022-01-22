@@ -39,8 +39,8 @@ pub mod test {
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::new();
         let id = EntityID::new(&ecs);
-        let id2 = id.clone();
-        let id3 = id.clone();
+        let id2 = id;
+        let id3 = id;
         // The entity is not created yet, so it is null
         ecs.init_update();
         ecs.add_entity(entity, id, group);
@@ -52,7 +52,7 @@ pub mod test {
         ecs.run_systems(context);
         ecs.finish_update();
         // Remove the entity and check if the corresponding ID's became invalid
-        let id4 = id3.clone();
+        let id4 = id3;
         ecs.init_update();
         ecs.remove_entity(id3).unwrap();
         ecs.finish_update();

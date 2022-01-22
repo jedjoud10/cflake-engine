@@ -1,16 +1,15 @@
 use super::{registry, Component, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent};
 use crate::{
-    entity::{Entity, EntityID},
+    entity::{Entity},
     utils::ComponentError,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 use std::{
-    cell::{RefCell, UnsafeCell},
-    sync::{Arc, Mutex},
+    cell::{UnsafeCell},
 };
-use worker_threads::ThreadPool;
+
 
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however

@@ -47,45 +47,45 @@ impl Default for Element {
 impl Element {
     // Create a new element with default parameters
     pub fn new() -> Self {
-        return Self::default();
+        Self::default()
     }
     // Set the coordinate system for this element
     pub fn set_coordinate_system(mut self, coordinate_type: CoordinateType) -> Self {
         self.coordinate_type = coordinate_type;
-        return self;
+        self
     }
     // Set the position of the element
     pub fn set_position(mut self, position: veclib::Vector2<f32>) -> Self {
         self.position = position;
-        return self;
+        self
     }
     // Set the size of the element
     pub fn set_size(mut self, size: veclib::Vector2<f32>) -> Self {
         self.size = size;
-        return self;
+        self
     }
     // Set the text of the element
     pub fn set_text(mut self, text: &str, font_size: f32) -> Self {
         // Set the type of element
         self.element_type = ElementType::Text(text.to_string(), font_size);
-        return self;
+        self
     }
     // Set the color of the element
     pub fn set_color(mut self, color: veclib::Vector4<f32>) -> Self {
         self.color = color;
-        return self;
+        self
     }
     // Set the visibility of the element
     pub fn set_visible(mut self, visible: bool) -> Self {
         self.visible = visible;
-        return self;
+        self
     }
     // Recursively get the children of this element
     pub fn get_children_recursive(&self, root: &Root) -> Vec<usize> {
         let mut elements: Vec<&Element> = Vec::new();
         let mut final_elements_ids: Vec<usize> = Vec::new();
         // Borrow the elements recursively
-        while elements.len() > 0 {
+        while !elements.is_empty() {
             // Get the elements from this and add them
             let current_element = elements.get(0).unwrap();
             let mut children: Vec<&Element> = Vec::new();
@@ -98,7 +98,7 @@ impl Element {
                 elements.extend(children);
             }
         }
-        return final_elements_ids;
+        final_elements_ids
     }
 
     // ----Update functions----
@@ -136,7 +136,7 @@ impl Element {
     // Attach children to this element
     pub fn attach(root: &mut Root, id: usize, children: Vec<usize>) {
         // Get the parent's visibility
-        let parent_visible = root.get_element(id).visible.clone();
+        let parent_visible = root.get_element(id).visible;
         // Update the parent id of the children
         for &child_element_id in children.iter() {
             // Get the child element and update it

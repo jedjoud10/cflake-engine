@@ -9,8 +9,8 @@ use super::Voxel;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::thread;
-use std::time::Duration;
+
+
 use std::time::Instant;
 
 // Inverse of lerp
@@ -22,7 +22,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
-    let i = Instant::now();
+    let _i = Instant::now();
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
@@ -31,7 +31,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
                 // Leading Voxel
-                let lv = &voxels[i + DATA_OFFSET_TABLE[0]];
+                let _lv = &voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
                 case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
@@ -135,9 +135,9 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
         transform_y_local,
     );
     TModel {
-        model: model,
-        skirts_model: skirts_model,
-        coords: coords,
+        model,
+        skirts_model,
+        coords,
     }
 }
 
@@ -352,7 +352,7 @@ pub fn create_triangle(
 ) -> Vec<SkirtVertex> {
     // Check if the local index is one of the interpolated ones
     let skirt_vertices = li
-        .into_iter()
+        .iter()
         .map(|i| {
             // Calculate the position and normal
             let (vertex, &normal) = match *i {
@@ -375,7 +375,7 @@ pub fn create_triangle(
                 }
             };
             // Return
-            SkirtVertex { position: vertex, normal: normal }
+            SkirtVertex { position: vertex, normal }
         })
         .collect::<Vec<SkirtVertex>>();
     skirt_vertices

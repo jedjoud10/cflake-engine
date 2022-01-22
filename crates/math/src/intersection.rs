@@ -19,12 +19,12 @@ impl Intersection {
     pub fn aabb_axis_plane(aabb: &bounds::AABB, plane: &crate::shapes::Shape) -> bool {
         match plane.internal_shape {
             shapes::ShapeType::AxisPlane(axis, (min_offset, max_offset)) => {
-                let b = match axis {
+                
+                match axis {
                     veclib::Vec3Axis::X => (aabb.min.x < max_offset && min_offset < aabb.max.x),
                     veclib::Vec3Axis::Y => (aabb.min.y < max_offset && min_offset < aabb.max.y),
                     veclib::Vec3Axis::Z => (aabb.min.z < max_offset && min_offset < aabb.max.z),
-                };
-                b
+                }
             }
             _ => todo!(), /* This is not a fucking axis plane you dumbass*/
         }
@@ -63,7 +63,8 @@ impl Intersection {
     // CSG shape and an abb
     pub fn csgshape_aabb(csgshape: &crate::csg::CSGShape, aabb: &bounds::AABB) -> bool {
         let center = csgshape.internal_shape.center;
-        let intersection = match csgshape.internal_shape.internal_shape {
+        
+        match csgshape.internal_shape.internal_shape {
             shapes::ShapeType::Cube(half_extent) => {
                 // Lol let's use the function that I already made kek
                 let csg_aabb = crate::bounds::AABB::new_center_halfextent(center, half_extent);
@@ -77,8 +78,7 @@ impl Intersection {
                 // Axis-plane and AABB
                 Self::aabb_axis_plane(aabb, &csgshape.internal_shape)
             }
-        };
-        intersection
+        }
     }
     // CSG tree and an aabb
     pub fn csgtree_aabb(csgtree: &crate::csg::CSGTree, aabb: &bounds::AABB) -> bool {

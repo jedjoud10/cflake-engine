@@ -36,7 +36,7 @@ impl Transform {
     }
     // Get the forward vector from this transform
     pub fn get_forward_vector(&self) -> veclib::Vector3<f32> {
-        return self.rotation.mul_point(-veclib::Vector3::Z);
+        self.rotation.mul_point(-veclib::Vector3::Z)
     }
 }
 

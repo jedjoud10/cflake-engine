@@ -21,7 +21,7 @@ pub mod test {
         let mut numbers1 = vec![0; 4];
         // Some sort of expensive calculation
         fn expensive_calculation() -> i32 {
-            let mut l: i32 = 0;
+            let l: i32 = 0;
             l
         }
         let i = std::time::Instant::now();

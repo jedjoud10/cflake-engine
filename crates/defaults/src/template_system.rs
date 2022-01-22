@@ -1,11 +1,11 @@
 use ecs::component::defaults::*;
 use ecs::component::*;
-use ecs::system::SystemBuilder;
+
 use main::core::{Context, WriteContext};
 use main::ecs;
 
 // A simple system that we can use as template
-fn run(mut context: Context, components: ComponentQuery) {
+fn run(context: Context, components: ComponentQuery) {
     let share = context.share();
     components.update_all_threaded(move |components| {
         let name = components.component::<Name>().unwrap();

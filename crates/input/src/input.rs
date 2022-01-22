@@ -130,12 +130,12 @@ impl InputManager {
             (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0)),
         ]));
         // Unwrap each value
-        let cache = cache.iter().map(|(key, val)| (key.clone(), val.unwrap())).collect::<HashMap<Keys, i32>>();
+        let cache = cache.iter().map(|(key, val)| (*key, val.unwrap())).collect::<HashMap<Keys, i32>>();
         self.scancode_cache = cache;
     }
     // Get the key scancode using the cache that we have
     fn get_key_scancode(&self, key: Keys) -> Option<&i32> {
-        return self.scancode_cache.get(&key);
+        self.scancode_cache.get(&key)
     }
     // Convert a key to it's string literal
     fn convert_key_to_string(&self, key: Keys) -> String {
@@ -247,7 +247,7 @@ impl InputManager {
         let output = self.full_sentence.as_ref().unwrap().clone();
         self.full_sentence = None;
         self.update = true;
-        return output;
+        output
     }
     // Toggle the registering of the keys as a literal string
     pub fn toggle_keys_reg(&mut self) -> Option<String> {
@@ -255,12 +255,12 @@ impl InputManager {
             Some(string) => {
                 // Stop registering
                 self.stop_keys_reg();
-                return Some(string);
+                Some(string)
             }
             None => {
                 // Start registering
                 self.start_keys_reg();
-                return None;
+                None
             }
         }
     }
@@ -270,10 +270,10 @@ impl InputManager {
         if self.full_sentence.is_some() && action_type == 0 {
             match self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode) {
                 Some(x) => {
-                    let key = x.0.clone();
+                    let key = *x.0;
                     let mut new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
                     if let Keys::Backspace = key {
-                        if new_string.len() > 0 {
+                        if !new_string.is_empty() {
                             new_string.remove(new_string.len() - 1);
                         }
                     }
@@ -305,7 +305,7 @@ impl InputManager {
     // Binds a key to a specific mapping
     pub fn bind_key(&mut self, key: Keys, map_name: &str, _map_type: MapType) {
         // Check if the binding exists
-        let key_scancode = self.get_key_scancode(key).unwrap().clone();
+        let key_scancode = *self.get_key_scancode(key).unwrap();
         if !self.bindings.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
             self.bindings.insert(map_name.to_string(), key_scancode);

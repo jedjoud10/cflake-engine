@@ -19,7 +19,7 @@ impl ErrorLogger {
         self.errors.push(error_string);
     }
     // Actually log the errors to the log file
-    pub fn log_errors(&self, saver_loader: &mut SaverLoader) {
+    pub fn log_errors(&self, _saver_loader: &mut SaverLoader) {
         //saver_loader.save_string("", string)
     }
 }

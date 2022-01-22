@@ -1,5 +1,4 @@
 use main::{
-    math,
     rendering::{self, object::ObjectID},
 };
 // An Renderer component

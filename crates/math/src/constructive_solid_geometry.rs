@@ -55,7 +55,7 @@ impl CSGShape {
             },
             ShapeType::Sphere(radius) => match expand_method {
                 ExpandMethod::Factor(x) => *radius += x,
-                ExpandMethod::Vector(x) => todo!(),
+                ExpandMethod::Vector(_x) => todo!(),
             },
             ShapeType::AxisPlane(axis, (min_offset, max_offset)) => match expand_method {
                 ExpandMethod::Factor(x) => {
@@ -98,12 +98,12 @@ impl CSGTree {
     // Get a specific node using a custom identifier
     pub fn get_custom(&self, identifier: CSGCustomIdentifier) -> Option<&CSGShape> {
         let index = *self.identifier_hashmap.get(&identifier)?;
-        return self.get(index);
+        self.get(index)
     }
     // Get a specific node mutably, using a custom identifier
     pub fn get_custom_mut(&mut self, identifier: CSGCustomIdentifier) -> Option<&mut CSGShape> {
         let index = *self.identifier_hashmap.get(&identifier)?;
-        return self.get_mut(index);
+        self.get_mut(index)
     }
     // Get a specific node
     pub fn get(&self, node_index: usize) -> Option<&CSGShape> {

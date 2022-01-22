@@ -12,12 +12,10 @@ use crate::{
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::Window,
 };
-use ahash::{AHashMap, AHashSet};
+use ahash::{AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
-    cell::RefCell,
-    collections::{HashMap, HashSet},
     ffi::{c_void, CString},
     mem::size_of,
     ptr::null,
@@ -82,12 +80,12 @@ impl Pipeline {
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
-            let tasks = tasks.clear().into_iter().filter_map(|x| x).collect::<Vec<_>>();
-            tasks
+            
+            tasks.clear().into_iter().flatten().collect::<Vec<_>>()
         };
 
         self.last_frame_task_statuses.clear();
-        for (task, task_id, status) in tasks {
+        for (task, task_id, _status) in tasks {
             // Now we must execute these tasks
             match task {
                 // Creation tasks
@@ -110,7 +108,7 @@ impl Pipeline {
     }
     // Set the global shader uniforms
     pub(crate) fn update_global_shader_uniforms(&mut self, time: f64, delta: f64) {
-        for (id, shader) in self.shaders.iter() {
+        for (id, _shader) in self.shaders.iter() {
             // Set the uniforms
             let mut group = ShaderUniformsGroup::new();
             group.set_f64("_time", time);
@@ -820,7 +818,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         }
 
         // Setup the pipeline renderer
-        let mut renderer = {
+        let renderer = {
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
             renderer.initialize(&mut *pipeline);
