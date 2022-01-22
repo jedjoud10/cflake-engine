@@ -8,7 +8,7 @@ use crate::{
         texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{ObjectBuildingTask, ObjectID, PipelineTask, TrackingTaskID},
+    object::{ObjectBuildingTask, ObjectID, PipelineTask, TrackingTaskID, PipelineTaskCombination},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::Window,
 };
@@ -39,7 +39,7 @@ pub(crate) struct DefaultPipelineObjects {
 #[derive(Default)]
 pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
-    pub(crate) tasks: RwLock<Vec<(PipelineTask, Option<TrackingTaskID>)>>,
+    pub(crate) tasks: RwLock<Vec<PipelineTaskCombination>>,
     pub(crate) completed_tasks: AHashSet<TrackingTaskID>,
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
@@ -61,16 +61,33 @@ pub struct Pipeline {
 
 impl Pipeline {
     // Set the buffered tasks from RX messages
-    pub(crate) fn add_tasks(&mut self, messages: Vec<(PipelineTask, Option<TrackingTaskID>)>) {
+    pub(crate) fn add_tasks(&mut self, messages: Vec<PipelineTaskCombination>) {
         let mut write = self.tasks.write().unwrap();
-        for (task, id) in messages {
-            write.push((task, id));
+        for task in messages {
+            write.push(task);
         }
     }
     // Add a task interally, through the render thread itself
-    pub(crate) fn add_task_internally(&self, task: (PipelineTask, Option<TrackingTaskID>)) {
+    pub(crate) fn add_task_internally(&self, task: PipelineTaskCombination) {
         let mut write = self.tasks.write().unwrap();
         write.push(task);
+    }
+    // Execute a single task
+    fn execute_task(&mut self, task: PipelineTask) {
+        // Now we must execute these tasks
+        match task {
+            // Creation tasks
+            PipelineTask::CreateTexture(t) => self.texture_create(t),
+            PipelineTask::CreateMaterial(t) => self.material_create(t),
+            PipelineTask::CreateShader(t) => self.shader_create(t),
+            PipelineTask::CreateModel(t) => self.model_create(t),
+            PipelineTask::CreateRenderer(t) => self.renderer_create(t),
+            PipelineTask::CreateComputeShader(t) => self.compute_create(t),
+        
+            PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
+            PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
+            PipelineTask::UpdateCamera(camera) => self.camera = camera,
+        }
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
@@ -83,24 +100,17 @@ impl Pipeline {
         };
 
         self.completed_tasks.clear();
-        for (task, task_id) in tasks {
-            // Now we must execute these tasks
+        for task in tasks {
             match task {
-                // Creation tasks
-                PipelineTask::CreateTexture(t) => self.texture_create(t),
-                PipelineTask::CreateMaterial(t) => self.material_create(t),
-                PipelineTask::CreateShader(t) => self.shader_create(t),
-                PipelineTask::CreateModel(t) => self.model_create(t),
-                PipelineTask::CreateRenderer(t) => self.renderer_create(t),
-                PipelineTask::CreateComputeShader(t) => self.compute_create(t),
-
-                PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
-                PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
-                PipelineTask::UpdateCamera(camera) => self.camera = camera,
-            }
-            // We have executed this task, so we must add it to our "completed tasks" list
-            if let Some(task_id) = task_id {
-                self.completed_tasks.insert(task_id);
+                PipelineTaskCombination::Single(task) => self.execute_task(task),
+                PipelineTaskCombination::SingleTracked(task, task_id) => {
+                    // Execute the task and set it's state to completed
+                    self.completed_tasks.insert(task_id);
+                },
+                PipelineTaskCombination::Batch(batch) => {
+                    // Execute all the tasks
+                    for task in batch { self.execute_task(task); }
+                },
             }
         }
     }
@@ -363,7 +373,6 @@ impl Pipeline {
     }
     // Create a model
     pub(crate) fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
-        dbg!("Add model");
         let model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
@@ -744,7 +753,7 @@ unsafe fn init_opengl() {
 pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
-    let (tx, rx) = std::sync::mpsc::channel::<(PipelineTask, Option<TrackingTaskID>)>(); // Main to render
+    let (tx, rx) = std::sync::mpsc::channel::<PipelineTaskCombination>(); // Main to render
 
     // Barrier so we can sync with the main thread at the start of each frame
     let sbarrier = Arc::new(Barrier::new(2));
@@ -858,8 +867,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             {
                 let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
                 pipeline.finish_update();
-                let messages = rx.try_iter().collect::<Vec<(PipelineTask, Option<TrackingTaskID>)>>();
-                dbg!(messages.len());
+                let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
                 // Set the buffer
                 pipeline.add_tasks(messages);
 

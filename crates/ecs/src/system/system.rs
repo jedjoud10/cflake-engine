@@ -125,9 +125,7 @@ impl System {
                 .map(|id| {
                     // Decrement the counter
                     let (_entity, counter) = lock.get_mut(&id).unwrap();
-                    dbg!(&counter);
                     *counter -= 1;
-                    dbg!(&counter);
                     let (entity, _count) = lock.get(&id).unwrap();
 
                     LinkedComponents::new(entity, components)

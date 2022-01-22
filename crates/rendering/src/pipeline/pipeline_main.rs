@@ -2,22 +2,26 @@
 pub mod pipec {
     use crate::{
         basics::Buildable,
-        object::{ObjectID, PipelineObject, PipelineTask, TrackingTaskID},
+        object::{ObjectID, PipelineObject, PipelineTask, TrackingTaskID, PipelineTaskCombination},
         pipeline::{sender, Pipeline},
     };
 
     // Send a task to the shared pipeline
     pub fn task(task: PipelineTask, pipeline: &Pipeline) {
-        sender::send_task((task, None), pipeline).unwrap();
+        sender::send_task(PipelineTaskCombination::Single(task), pipeline).unwrap();
+    }
+    // Send a batch of tasks all at the same time
+    pub fn task_batch(batch: Vec<PipelineTask>, pipeline: &Pipeline) {
+        sender::send_task(PipelineTaskCombination::Batch(batch), pipeline).unwrap();
     }
     // Send a task to the shared pipeline, but also return it's tracking ID
     pub fn task_tracker(task: PipelineTask, pipeline: &Pipeline) -> TrackingTaskID {
         // Create a tracking task ID for this task 
         let id = TrackingTaskID::new();
         // Get the thread local sender
-        sender::send_task((task, Some(id)), pipeline).unwrap();
+        sender::send_task(PipelineTaskCombination::SingleTracked(task, id), pipeline).unwrap();
         id
-    }
+    }    
     // Create a Pipeline Object, returning it's ObjectID
     pub fn construct<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
         let object = object.pre_construct(pipeline);

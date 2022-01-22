@@ -77,7 +77,6 @@ impl<Context> ECSManager<Context> {
             if system.check_cbitfield(cbitfield) {
                 // Remove the entity, since it was contained in the system
                 system.remove_entity(id);
-                dbg!();
                 let counter = &mut lock.get_mut(&id).unwrap().1;
                 *counter += 1;
             }
