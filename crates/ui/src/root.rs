@@ -1,5 +1,3 @@
-
-
 use ordered_vec::simple::UnversionnedOrderedVec;
 
 use crate::ButtonState;

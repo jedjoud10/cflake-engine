@@ -1,4 +1,4 @@
-use super::{Pipeline};
+use super::Pipeline;
 use crate::{
     basics::{
         material::MaterialFlags,

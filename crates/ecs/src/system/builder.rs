@@ -1,11 +1,9 @@
-
-
 use crate::{
     component::{registry, Component, ComponentQuery},
     ECSManager,
 };
 
-use super::{System};
+use super::System;
 
 // A system builder used to build multiple systems
 pub struct SystemBuilder<'a, Context> {

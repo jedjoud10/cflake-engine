@@ -1,4 +1,4 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 use math::constructive_solid_geometry::CSGTree;
 

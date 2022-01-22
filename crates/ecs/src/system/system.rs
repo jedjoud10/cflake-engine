@@ -4,7 +4,7 @@ use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 
-use super::{SystemExecutionData};
+use super::SystemExecutionData;
 use crate::{
     component::{ComponentQuery, EnclosedComponent, LinkedComponents},
     entity::{Entity, EntityID},
@@ -102,7 +102,7 @@ impl System {
             let components = entities
                 .map(|id| {
                     let entity = ecs_manager.entity(&id).unwrap();
-                    
+
                     LinkedComponents::new(entity, components)
                 })
                 .collect::<Vec<_>>();
@@ -129,7 +129,7 @@ impl System {
                     *counter -= 1;
                     dbg!(&counter);
                     let (entity, _count) = lock.get(&id).unwrap();
-                    
+
                     LinkedComponents::new(entity, components)
                 })
                 .collect::<Vec<_>>();

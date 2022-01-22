@@ -24,8 +24,7 @@ impl NodeInterpreter for Shape {
                 veclib::Vec3Axis::Y => format!("pos.y - {}", offset_min),
                 veclib::Vec3Axis::Z => format!("pos.z - {}", offset_min),
             },
-        }
-        )
+        })
     }
     fn get_output_type(&self, _getter: &VarHashGetter) -> VarHashType {
         VarHashType::Density

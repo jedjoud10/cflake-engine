@@ -1,4 +1,3 @@
-
 use main::math;
 use main::rendering::utils::DEFAULT_WINDOW_SIZE;
 // A simple camera component

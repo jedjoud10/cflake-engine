@@ -40,7 +40,7 @@ impl NodeInterpreter for DensityOperation {
                 // Take the maximum and minimum
                 let (x1, y1) = input_ranges[0];
                 let (x2, y2) = input_ranges[1];
-                
+
                 (f32::min(x1, x2), f32::max(y1, y2))
             }
             DensityOperation::Subtraction => todo!(),

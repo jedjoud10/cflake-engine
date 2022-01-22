@@ -2,7 +2,7 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
-    cell::{UnsafeCell},
+    cell::UnsafeCell,
     sync::{Arc, Mutex},
 };
 use worker_threads::ThreadPool;

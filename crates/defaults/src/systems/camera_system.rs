@@ -1,4 +1,3 @@
-
 use ecs::component::*;
 
 use main::core::{Context, WriteContext};

@@ -12,7 +12,7 @@ use crate::{
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::Window,
 };
-use ahash::{AHashSet};
+use ahash::AHashSet;
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
@@ -80,7 +80,7 @@ impl Pipeline {
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
-            
+
             tasks.clear().into_iter().flatten().collect::<Vec<_>>()
         };
 

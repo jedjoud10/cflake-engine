@@ -1,6 +1,4 @@
-use std::{
-    hash::{Hasher},
-};
+use std::hash::Hasher;
 
 // Some passed data
 #[derive(Clone, Copy, Default, Debug)]

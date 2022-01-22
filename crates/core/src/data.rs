@@ -1,8 +1,6 @@
-use std::{
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
-};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use ecs::{ECSManager};
+use ecs::ECSManager;
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;

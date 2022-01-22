@@ -1,4 +1,3 @@
-
 use platform_dirs::AppDirs;
 
 use std::{
@@ -40,7 +39,7 @@ impl SaverLoader {
         // Load the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
-        
+
         serde_json::from_reader(reader).unwrap()
     }
     // Save a struct to a file

@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod test {
-    
 
     use crate::preload_asset;
 

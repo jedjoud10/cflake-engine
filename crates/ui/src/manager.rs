@@ -1,10 +1,8 @@
-use std::{
-    collections::HashMap,
-};
+use std::collections::HashMap;
 
 use fonts::FontManager;
 
-use crate::{Root};
+use crate::Root;
 
 // The UI manager, it can contain multiple UI roots, and switch between them
 #[derive(Default)]

@@ -7,9 +7,7 @@ extern crate glfw;
 pub use defaults;
 use main::core::{Context, TaskSenderContext, World, WriteContext};
 pub use main::*;
-use std::{
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>, TaskSenderContext)) {

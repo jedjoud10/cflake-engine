@@ -1,9 +1,6 @@
 use std::{
     cell::UnsafeCell,
-    sync::{
-        atomic::{Ordering::Relaxed},
-        Arc, Barrier, RwLock,
-    },
+    sync::{atomic::Ordering::Relaxed, Arc, Barrier, RwLock},
 };
 
 use crate::{SharedData, SHUTDOWN};

@@ -1,9 +1,7 @@
 use crate::SharedData;
-use std::{
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Barrier, RwLock,
-    },
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Barrier, RwLock,
 };
 // We must shutdown the threads
 pub(crate) static SHUTDOWN: AtomicBool = AtomicBool::new(false);

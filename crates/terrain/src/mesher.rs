@@ -10,7 +10,6 @@ use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-
 use std::time::Instant;
 
 // Inverse of lerp
@@ -134,11 +133,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
         |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
         transform_y_local,
     );
-    TModel {
-        model,
-        skirts_model,
-        coords,
-    }
+    TModel { model, skirts_model, coords }
 }
 
 // Skirt vertex

@@ -1,5 +1,3 @@
-
-
 // The data that will be stored in an atomic pointer
 pub struct SharedData<T> {
     // Elements, and the fn pointer

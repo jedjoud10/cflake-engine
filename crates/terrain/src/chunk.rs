@@ -1,6 +1,6 @@
 use math::octrees::OctreeNode;
 
-use crate::{VoxelData};
+use crate::VoxelData;
 
 // The data that will be used to store the position/scale of the chunk
 #[derive(Default, Clone, Copy, Debug)]

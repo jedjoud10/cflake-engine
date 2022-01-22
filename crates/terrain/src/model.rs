@@ -1,6 +1,5 @@
 use rendering::basics::model::Model;
 
-
 use crate::ChunkCoords;
 // A custom terrain model
 pub struct TModel {

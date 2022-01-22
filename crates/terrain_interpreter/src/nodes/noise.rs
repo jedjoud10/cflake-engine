@@ -63,8 +63,7 @@ impl NodeInterpreter for Noise {
             NoiseType::VoronoiDistance => format!("voronoi({} * {}).x * {}", input.get_name(), self.scale, strength),
             NoiseType::VoronoiDistance2 => todo!(),
             NoiseType::VoronoiCell => format!("voronoi({} * {}).z * {}", input.get_name(), self.scale, strength),
-        }
-        ;
+        };
         Ok(main)
     }
     fn get_output_type(&self, _inputs: &VarHashGetter) -> crate::var_hash::VarHashType {

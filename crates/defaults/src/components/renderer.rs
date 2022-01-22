@@ -1,6 +1,4 @@
-use main::{
-    rendering::{self, object::ObjectID},
-};
+use main::rendering::{self, object::ObjectID};
 // An Renderer component
 pub struct Renderer {
     pub object_id: ObjectID<rendering::basics::renderer::Renderer>,
