@@ -121,7 +121,7 @@ fn main() {
                     }
                 }
                 if best_distance != f32::MAX {
-                    best_distance = best_distance.max(1.41421) - 1.41421;
+                    best_distance = best_distance.max(std::f32::consts::SQRT_2) - std::f32::consts::SQRT_2;
                     // Turn the distance into a number with a range of 0, 1
                     let factor = (best_distance / MAX_SDF_WIDTH).clamp(0.0, 1.0) + 0.5;
                     (factor * 255.0) as u8
