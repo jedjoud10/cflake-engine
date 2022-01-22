@@ -4,6 +4,8 @@ mod camera;
 mod physics;
 mod renderer;
 mod transforms;
+mod terrain;
+pub use self::terrain::*;
 pub use self::physics::*;
 pub use aabb::*;
 pub use camera::*;
