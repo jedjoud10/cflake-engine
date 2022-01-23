@@ -10,7 +10,7 @@ pub use main::*;
 use std::sync::{Arc, RwLock};
 
 // Load up the OpenGL window and such
-pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>, TaskSenderContext)) {
+pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     let (mut window, events) = glfw
         .create_window(
@@ -37,10 +37,8 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         {
             let mut context = Context::convert(&world);
             // Load the default systems first
-            let sender = context.new_task_sender();
-            defaults::preload_system(context.write(), sender);
-            let sender = context.new_task_sender();
-            init_world(context.write(), sender);
+            defaults::preload_system(context.write());
+            init_world(context.write());
             // Flush everything and execute all the tasks
         }
         {

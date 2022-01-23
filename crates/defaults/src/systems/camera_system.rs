@@ -70,20 +70,14 @@ fn run(context: Context, components: ComponentQuery) {
     })
 }
 
-// This event is ran whenever we add a new camera to the world
-fn added_entities(context: Context, query: ComponentQuery) {
-}
-
 // Create the camera system
 pub fn system(write: &mut WriteContext) {
     write
         .ecs
         .create_system_builder()
         .set_run_event(run)
-        .set_added_entities_event(added_entities)
         .link::<crate::components::Camera>()
         .link::<crate::components::Transform>()
-        .add_access_state::<main::core::GlobalWorldData>()
         .build();
     write.input.bind_key(Keys::W, "camera_forward", MapType::Button);
     write.input.bind_key(Keys::S, "camera_backwards", MapType::Button);

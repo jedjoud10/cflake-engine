@@ -7,7 +7,7 @@ fn main() {
 pub fn preload_assets() {
     // -----Pre-load the game assets here-----
 }
-pub fn init(mut write: window::core::WriteContext, task_sender: window::core::TaskSenderContext) {
+pub fn init(mut write: window::core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::new();
@@ -15,7 +15,7 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::new();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
-    ecs::tasks::add_entity(&task_sender, entity, id, group).unwrap();
+    write.ecs.add_entity(entity, id, group).unwrap();
 
 
 
@@ -52,7 +52,7 @@ pub fn init(mut write: window::core::WriteContext, task_sender: window::core::Ta
             let renderer = defaults::components::Renderer::new(renderer);
             group.link(renderer).unwrap();
             // Add the cube
-            ecs::tasks::add_entity(&task_sender, entity, id, group);
+            write.ecs.add_entity(entity, id, group);
         }
     }
 }

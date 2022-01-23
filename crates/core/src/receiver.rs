@@ -1,5 +1,3 @@
-use ecs::manager_special::{add_entity, remove_entity};
-
 use crate::{task::WorldTask, World, WorldTaskBatch, INTERNAL_TASKS};
 
 // A receiver that we can use to receive tasks from other threads
@@ -25,13 +23,18 @@ impl WorldTaskReceiver {
         match task {
             WorldTask::AddEntity(entity, id, group) => {
                 // We will add the entity to the world
-                add_entity(ecs, entity, id, group);
+                ecs.add_entity(entity, id, group).unwrap();
             }
             WorldTask::RemoveEntity(id) => {
                 // We will remove the entity from the world
-                remove_entity(ecs, id).unwrap();
+                ecs.remove_entity(id).unwrap();
             }
-            WorldTask::DirectAddComponent(_, _) => todo!(),
+            WorldTask::DirectLinkComponents(id, link_group) => {
+                ecs.link_components(id, link_group).unwrap();
+            },
+            WorldTask::DirectRemoveComponents(id, unlink_group) => {
+                ecs.unlink_components(id, unlink_group).unwrap();
+            }
         }
     }
     // We will flush the tasks, and execute them

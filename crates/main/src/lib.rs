@@ -7,15 +7,8 @@ pub use core;
 pub use debug;
 pub use network;
 pub use physics;
-pub mod ecs {
-    pub use ::ecs::component;
-    pub use ::ecs::entity;
-    pub use ::ecs::impl_component;
-    pub use ::ecs::system;
-    pub use ::ecs::utils;
-    pub use ::ecs::ECSManager;
-    pub use core::tasks::ecs as tasks;
-}
+pub use ecs;
+pub use core::tasks;
 pub use input;
 pub use math;
 pub use others;

@@ -36,10 +36,6 @@ impl Context {
     pub fn convert(world: &Arc<RwLock<World>>) -> Self {
         Self { world: world.clone() }
     }
-    // Create a TaskSenderContext that we can use to send tasks to the main thread
-    pub fn new_task_sender(&self) -> TaskSenderContext {
-        TaskSenderContext {}
-    }
     // Create a ShareableContext that we can send to other threads if they need to access the world
     pub fn share(&self) -> ShareableContext {
         ShareableContext { world: self.world.clone() }
@@ -69,6 +65,10 @@ impl ShareableContext {
         ReadContext {
             world: self.world.read().unwrap(),
         }
+    }
+    // Create a sender that we can use to send multiple tasks the main thread
+    pub fn sender(&self) -> TaskSenderContext {
+        TaskSenderContext(())
     }
 }
 
@@ -108,8 +108,6 @@ impl<'a> std::ops::DerefMut for WriteContext<'a> {
 pub struct GlobalWorldData {
     // The direction of the sun
     pub light_dir: veclib::Vector3<f32>,
-    // The current main camera component ID
-    pub main_camera: ComponentID,
 }
 
 ecs::impl_component!(GlobalWorldData);

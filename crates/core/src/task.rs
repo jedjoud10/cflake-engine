@@ -1,14 +1,11 @@
-use crate::Context;
+use crate::{Context, ShareableContext};
 use ecs::entity::*;
 
 // A task sender context that we can use to send tasks to the main thread
-pub struct TaskSenderContext {}
+// We can only create this using the ShareableContext
+pub struct TaskSenderContext(pub(crate) ());
 
 impl TaskSenderContext {
-    // New
-    pub fn new(_context: &Context) -> Self {
-        Self {}
-    }
     // Send a task to the main thread
     pub(crate) fn send(&self, task: WorldTask) -> Option<()> {
         crate::sender::send_task(WorldTaskBatch {
@@ -30,7 +27,8 @@ pub enum WorldTask {
     AddEntity(Entity, EntityID, ComponentLinkingGroup),
     RemoveEntity(EntityID),
     // Component linking tasks
-    DirectAddComponent(EntityID, ComponentLinkingGroup),
+    DirectLinkComponents(EntityID, ComponentLinkingGroup),
+    DirectRemoveComponents(EntityID, ComponentUnlinkGroup),
 }
 
 pub(crate) enum WorldTaskCombination {

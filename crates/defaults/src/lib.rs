@@ -58,7 +58,7 @@ pub fn preload_default_assets() {
     println!("Finished pre-loading default assets!");
 }
 // Pre-load the default systems
-pub fn preload_system(mut write: WriteContext, _task_sender: TaskSenderContext) {
+pub fn preload_system(mut write: WriteContext) {
     template_system::system(&mut write);
     camera_system::system(&mut write);
     physics_system::system(&mut write);

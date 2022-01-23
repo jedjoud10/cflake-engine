@@ -146,15 +146,17 @@ pub mod test {
             pub test_value: i32,
         }
         impl_component!(GlobalComponentTest);
+        struct GlobalComponentTest2 {
+        }
+        impl_component!(GlobalComponentTest2);
         // Create the main ECS manager
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
-
-        ecs.add_global_component(GlobalComponentTest { test_value: 10 }).unwrap();
-
         // Make a simple system
         fn internal_run(_context: WorldContext, query: ComponentQuery) {
         }
 
+        assert!(ecs.global::<GlobalComponentTest>().is_ok());
+        assert!(ecs.global::<GlobalComponentTest2>().is_err());
         let builder = ecs.create_system_builder();
         builder.link::<Name>().set_run_event(internal_run).build();
         ecs.run_systems(context);
