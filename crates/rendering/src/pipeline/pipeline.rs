@@ -94,9 +94,8 @@ impl Pipeline {
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
             
             // Window tasks
-            PipelineTask::UpdateWindowDimensions(new_dimensions) => self.update_window_dimensions(renderer, new_dimensions),
-            PipelineTask::SetWindowFullscreen(fullscreen) => self.set_window_fullscreen(fullscreen),
-            PipelineTask::SetWindowVSync(vsync) => self.set_window_vsync(vsync),
+            PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
+            PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused)
         }
     }
     // Flush all the buffered tasks, and execute them
@@ -697,17 +696,51 @@ impl Pipeline {
         self.materials.insert(task.1.id.unwrap(), task.0);
     }
     // Update the window dimensions
-    fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
+    fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
         self.window.dimensions = new_dimensions;
         renderer.update_window_dimensions(new_dimensions, self);
     }
+    // Set the focus state for our window
+    fn set_window_focus_state(&mut self, focused: bool) { self.window.focused = focused; }
     // Enable or disable fullscreen
-    fn set_window_fullscreen(&mut self, fullscreen: bool) {
-        todo!()
+    fn set_window_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, fullscreen: bool) {
+        self.window.fullscreen = fullscreen;
+        dbg!(fullscreen);
+        if fullscreen {
+            // Set the glfw window as a fullscreen window
+            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                let videomode = monitor.unwrap().get_video_mode().unwrap();
+                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, Some(videomode.refresh_rate));
+
+                /*
+                unsafe {
+                    // Update the OpenGL viewport
+                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+                }
+                */
+            });
+        } else {
+            /*
+            // Set the glfw window as a windowed window
+            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
+                let videomode = monitor.unwrap().get_video_mode().unwrap();
+                let default_window_size = crate::utils::DEFAULT_WINDOW_SIZE;
+                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.x as u32, default_window_size.y as u32, Some(videomode.refresh_rate));
+                unsafe {
+                    // Update the OpenGL viewport
+                    gl::Viewport(0, 0, default_window_size.x as i32, default_window_size.y as i32);
+                }
+            });
+            */
+        }
     }
     // Enable or disable vsync
-    fn set_window_vsync(&mut self, vsync: bool) {
-        todo!()
+    fn set_window_vsync(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, vsync: bool) {
+        if vsync {
+            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+        } else {
+            glfw.set_swap_interval(glfw::SwapInterval::None);
+        }
     }
 }
 
@@ -832,7 +865,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
 
-    // Create a simple unsafe wrapper so we can send the glfw and window data to the render thread
     // Window and GLFW wrapper
     struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
     let wrapper = {

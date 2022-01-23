@@ -6,7 +6,6 @@ fn run(mut context: Context, query: ComponentQuery) {
     let mut write = context.write();
     // Get the camera position
     let camera_pos = write.ecs.global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
-    dbg!(camera_pos);
     let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // Generate the chunks if needed

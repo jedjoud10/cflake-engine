@@ -33,7 +33,6 @@ pub mod pipec {
         // Construct it's ID and automatically send it's construction task
         let (t, id) = object.construct_task(pipeline);
         task(t, pipeline);
-        dbg!(id);
         id
     }
     // Create a Pipeline Object, returning it's ObjectID, but without running it's pre construct

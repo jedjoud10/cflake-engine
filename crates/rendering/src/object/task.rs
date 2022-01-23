@@ -23,9 +23,8 @@ pub enum PipelineTask {
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
     UpdateCamera(Camera),
     // Specific pipeline tasks
-    UpdateWindowDimensions(veclib::Vector2<u16>),
-    SetWindowFullscreen(bool),
-    SetWindowVSync(bool),
+    SetWindowDimension(veclib::Vector2<u16>),
+    SetWindowFocusState(bool),
 }
 
 // Bruh

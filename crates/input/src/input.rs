@@ -278,6 +278,22 @@ impl InputManager {
             false
         }
     }
+    // Check if the toggle state of the map has changed
+    pub fn map_toggle_changed(&self, name: &str) -> bool {
+        if self.bindings.contains_key(&name.to_string()) {
+            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
+            if self.keys.contains_key(key_scancode) {
+                match self.keys.get(key_scancode).unwrap().0 {
+                    KeyStatus::Pressed => true,
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {
         if self.bindings.contains_key(&name.to_string()) {
