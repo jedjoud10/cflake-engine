@@ -8,7 +8,7 @@ use std::{
 use worker_threads::ThreadPool;
 
 use crate::{
-    component::{ComponentID, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents, Component, registry::{self, cast_component_mut}, GlobalComponent},
+    component::{ComponentID, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents, Component, registry::{self, cast_component_mut}},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     system::{EventHandler, System, SystemBuilder},
     utils::{ComponentError, EntityError, GlobalComponentError},
@@ -24,7 +24,7 @@ pub struct ECSManager<Context> {
     // The components that are valid in the world
     pub(crate) components: Mutex<OrderedVec<UnsafeCell<EnclosedComponent>>>,
     // Some global components
-    pub(crate) global_components: AHashMap<Bitfield<u32>, UnsafeCell<EnclosedGlobalComponent>>,
+    pub(crate) global_components: Arc<Mutex<AHashMap<Bitfield<u32>, UnsafeCell<EnclosedGlobalComponent>>>>,
     // The internal ECS thread pool
     pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
     // Our internal event handler
@@ -174,7 +174,7 @@ impl<Context> ECSManager<Context> {
     }
     // Get all the components in the ECS manager that are of a certain type
     // This does not return dangling components
-    pub fn get_all_components<T: Component + 'static>(&mut self) -> Vec<&mut T> {
+    pub fn get_all_components<T: Component + Send + Sync + 'static>(&mut self) -> Vec<&mut T> {
         let cbtifield = registry::get_component_bitfield::<T>();
         // Loop through every entity, getting it's global component index
         let component_indices = self.entities.iter_elements().flat_map(|entity| entity.components.iter().filter_map(|component_id| {
@@ -196,11 +196,12 @@ impl<Context> ECSManager<Context> {
     /* #endregion */
     /* #region System Components */
     // Add a global component to the ECS manager
-    pub fn add_global_component<U: GlobalComponent + 'static>(&mut self, sc: U) -> Result<(), GlobalComponentError> {
+    pub fn add_global_component<U: Component + Send + Sync + 'static>(&mut self, sc: U) -> Result<(), GlobalComponentError> {
         // UnsafeCell moment
         let boxed = Box::new(sc);
-        let bitfield = registry::get_global_component_bitfield::<U>();
-        self.global_components.insert(bitfield, UnsafeCell::new(boxed));
+        let bitfield = registry::get_component_bitfield::<U>();
+        let mut lock = self.global_components.lock().unwrap();
+        lock.insert(bitfield, UnsafeCell::new(boxed));
         Ok(())
     }
     

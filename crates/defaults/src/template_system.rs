@@ -5,9 +5,9 @@ use main::core::{Context, WriteContext};
 use main::ecs;
 
 // A simple system that we can use as template
-fn run(context: Context, components: ComponentQuery) {
+fn run(context: Context, query: ComponentQuery) {
     let share = context.share();
-    components.update_all_threaded(move |components| {
+    query.update_all_threaded(move |components| {
         let name = components.component::<Name>().unwrap();
         dbg!(&name.name);
         let time = share.read().time.elapsed;

@@ -4,7 +4,7 @@ use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 
-use super::{SystemExecutionData, SystemData};
+use super::{SystemExecutionData};
 use crate::{
     component::{ComponentQuery, EnclosedComponent, LinkedComponents, StoredGlobalComponents},
     entity::{Entity, EntityID},
@@ -21,9 +21,6 @@ pub struct System {
     pub(crate) evn_added_entity: Option<usize>,
     pub(crate) evn_removed_entity: Option<usize>,
 
-    // Some system data if we want
-    pub(crate) system_data: Option<Box<dyn SystemData>>,
-
     entities: AHashSet<EntityID>,
     // Added, Removed
     changed_entities: Mutex<(AHashSet<EntityID>, AHashSet<EntityID>)>,
@@ -37,7 +34,6 @@ impl Default for System {
             evn_run: None,
             evn_added_entity: None,
             evn_removed_entity: None,
-            system_data: None,
             entities: AHashSet::new(),
             changed_entities: Mutex::new((AHashSet::new(), AHashSet::new())),
         }
@@ -83,8 +79,8 @@ impl System {
         let added_entities = lock.0.drain();
         let added_components = Self::get_linked_components(&self.evn_added_entity, components, added_entities, ecs_manager);
         // Get the global components for this system. We can cache this later
-        let stored_global_components = if self.global_component_access_cbitfield.empty() { None} 
-        else { Some(StoredGlobalComponents::new(self.global_component_access_cbitfield, &ecs_manager.global_components)) };
+        let stored_global_components = if self.global_component_access_cbitfield.empty() { None }
+        else { Some(StoredGlobalComponents::new(self.global_component_access_cbitfield, &ecs_manager)) };
         SystemExecutionData {
             // Events
             evn_run: ecs_manager.event_handler.get_run_event(self.evn_run).cloned(),

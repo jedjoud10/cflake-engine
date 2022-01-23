@@ -19,7 +19,7 @@ pub struct ComponentQuery {
 impl ComponentQuery {
     // Get the stored global component so we can access them
     pub fn get_global_components(&mut self) -> Option<&mut StoredGlobalComponents> {
-        None
+        self.stored_global_components.as_mut()
     }
     // Update all the components consecutively, on the main thread
     pub fn update_all<F: Fn(&mut LinkedComponents) + 'static>(self, function: F) {

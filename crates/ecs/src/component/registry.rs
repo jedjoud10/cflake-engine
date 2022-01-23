@@ -10,13 +10,11 @@ use std::{
     },
 };
 
-use super::{Component, GlobalComponent};
+use super::Component;
 // Use to keep track of the component IDs
 lazy_static! {
     static ref NEXT_REGISTERED_COMPONENT_ID: AtomicU32 = AtomicU32::new(1);
-    static ref NEXT_REGISTERED_GLOBAL_COMPONENT_ID: AtomicU32 = AtomicU32::new(1);
     static ref REGISTERED_COMPONENTS: RwLock<HashMap<String, Bitfield<u32>>> = RwLock::new(HashMap::new());
-    static ref REGISTERED_GLOBAL_COMPONENTS: RwLock<HashMap<String, Bitfield<u32>>> = RwLock::new(HashMap::new());
 }
 
 // Register a specific component
@@ -77,62 +75,6 @@ where
 pub(crate) fn cast_component_mut<'a, T>(linked_component: &'a mut dyn Component) -> Result<&mut T, ComponentError>
 where
     T: Component + Send + Sync + 'static,
-{
-    let component_any: &mut dyn Any = linked_component.as_any_mut();
-    let reference_mut = component_any
-        .downcast_mut::<T>()
-        .ok_or_else(|| ComponentError::new_without_id("Could not cast component".to_string()))?;
-    Ok(reference_mut)
-}
-
-
-// Register a specific global component
-pub fn register_global_component<T: GlobalComponent + Sized>() -> Bitfield<u32> {
-    // Register the component
-    let mut rc = REGISTERED_GLOBAL_COMPONENTS.write().unwrap();
-    // Make a copy of the id before the bit shift
-    let id = NEXT_REGISTERED_GLOBAL_COMPONENT_ID.load(Ordering::Relaxed);
-
-    let component_id = Bitfield::<u32>::from_num(id);
-    rc.insert(T::get_component_name(), component_id);
-    // Bit shift to the left
-    NEXT_REGISTERED_GLOBAL_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
-    println!("{} {}", T::get_component_name(), component_id);
-    // Return the component ID before the bit shift
-    component_id
-}
-// Get the bitfield ID of a specific global component
-pub fn get_global_component_bitfield<T: GlobalComponent>() -> Bitfield<u32> {
-    if is_global_component_registered::<T>() {
-        // Simple read
-        let rc = REGISTERED_GLOBAL_COMPONENTS.read().unwrap();
-        rc[&T::get_component_name()]
-    } else {
-        // Register if it wasn't registered yet
-        register_global_component::<T>()
-    }
-}
-// Checks if a specific global component is registered
-pub fn is_global_component_registered<T: GlobalComponent>() -> bool {
-    let rc = REGISTERED_GLOBAL_COMPONENTS.read().unwrap();
-    rc.contains_key(&T::get_component_name())
-}
-
-// Cast a boxed global component to a reference of that global component
-pub(crate) fn cast_global_component<'a, T>(linked_component: &'a dyn GlobalComponent) -> Result<&T, ComponentError>
-where
-    T: GlobalComponent + 'static,
-{
-    let component_any: &dyn Any = linked_component.as_any();
-    let reference = component_any
-        .downcast_ref::<T>()
-        .ok_or_else(|| ComponentError::new_without_id("Could not cast component".to_string()))?;
-    Ok(reference)
-}
-// Cast a boxed global component to a mutable reference of that global component
-pub(crate) fn cast_global_component_mut<'a, T>(linked_component: &'a mut dyn GlobalComponent) -> Result<&mut T, ComponentError>
-where
-    T: GlobalComponent + 'static,
 {
     let component_any: &mut dyn Any = linked_component.as_any_mut();
     let reference_mut = component_any

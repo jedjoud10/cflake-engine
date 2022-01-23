@@ -145,7 +145,6 @@ pub mod test {
         struct GlobalComponentTest {
             pub test_value: i32,
         }
-        crate::impl_system_component!(GlobalComponentTest);
         // Create the main ECS manager
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
 

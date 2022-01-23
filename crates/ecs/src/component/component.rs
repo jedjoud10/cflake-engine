@@ -16,16 +16,7 @@ impl ComponentID {
 
 // We do a little bit of googling https://stackoverflow.com/questions/26983355/is-there-a-way-to-combine-multiple-traits-in-order-to-define-a-new-trait
 // A component trait that can be added to other components
-pub trait Component: Send + Sync {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-    fn get_component_name() -> String
-    where
-        Self: Sized;
-}
-
-// A component trait that can be added to some data that can be accessed from anywhere on the main thread
-pub trait GlobalComponent {
+pub trait Component {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn get_component_name() -> String
@@ -35,7 +26,7 @@ pub trait GlobalComponent {
 
 // Main type because I don't want to type
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
-pub type EnclosedGlobalComponent = Box<dyn GlobalComponent>;
+pub type EnclosedGlobalComponent = Box<dyn Component + Sync + Send>;
 
 // Component ref guards. This can be used to detect whenever we mutate a component
 pub struct ComponentReadGuard<'a, T>
@@ -95,72 +86,6 @@ where
 impl<'a, T> std::ops::DerefMut for ComponentWriteGuard<'a, T>
 where
     T: Component,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.borrow_mut
-    }
-}
-
-
-// Same thing but for global components
-// Global Component ref guards. This can be used to detect whenever we mutate a global component
-pub struct GlobalComponentReadGuard<'a, T>
-where
-    T: GlobalComponent,
-{
-    borrow: &'a T,
-}
-
-impl<'a, T> GlobalComponentReadGuard<'a, T>
-where
-    T: GlobalComponent,
-{
-    pub fn new(borrow: &'a T) -> Self {
-        Self { borrow }
-    }
-}
-
-impl<'a, T> std::ops::Deref for GlobalComponentReadGuard<'a, T>
-where
-    T: GlobalComponent,
-{
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.borrow
-    }
-}
-// Component mut guard
-pub struct GlobalComponentWriteGuard<'a, T>
-where
-    T: GlobalComponent,
-{
-    borrow_mut: &'a mut T,
-}
-
-impl<'a, T> GlobalComponentWriteGuard<'a, T>
-where
-    T: GlobalComponent,
-{
-    pub fn new(borrow_mut: &'a mut T) -> Self {
-        Self { borrow_mut }
-    }
-}
-
-impl<'a, T> std::ops::Deref for GlobalComponentWriteGuard<'a, T>
-where
-    T: GlobalComponent,
-{
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.borrow_mut
-    }
-}
-
-impl<'a, T> std::ops::DerefMut for GlobalComponentWriteGuard<'a, T>
-where
-    T: GlobalComponent,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.borrow_mut
