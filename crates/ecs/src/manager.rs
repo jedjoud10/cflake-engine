@@ -8,10 +8,10 @@ use std::{
 use worker_threads::ThreadPool;
 
 use crate::{
-    component::{ComponentID, EnclosedComponent, LinkedComponents, Component, registry::{self, cast_component_mut}},
+    component::{ComponentID, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents, Component, registry::{self, cast_component_mut}},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     system::{EventHandler, System, SystemBuilder},
-    utils::{ComponentError, EntityError},
+    utils::{ComponentError, EntityError, GlobalComponentError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -23,6 +23,8 @@ pub struct ECSManager<Context> {
     systems: Vec<System>,
     // The components that are valid in the world
     pub(crate) components: Mutex<OrderedVec<UnsafeCell<EnclosedComponent>>>,
+    // Some global components
+    pub(crate) global_components: Arc<Mutex<AHashMap<Bitfield<u32>, UnsafeCell<EnclosedGlobalComponent>>>>,
     // The internal ECS thread pool
     pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
     // Our internal event handler
@@ -40,6 +42,7 @@ impl<Context> ECSManager<Context> {
             entities_to_remove: Default::default(),
             systems: Default::default(),
             components: Default::default(),
+            global_components: Default::default(),
             thread_pool,
             event_handler: Default::default(),
         }
@@ -149,8 +152,7 @@ impl<Context> ECSManager<Context> {
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
     fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
-        // We must make this a RefCell
-        //let cell = RefCell::new(boxed);
+        // UnsafeCell moment
         let mut components = self.components.lock().unwrap();
         let idx = components.push_shove(UnsafeCell::new(boxed));
         // Create a new Component ID
@@ -172,7 +174,7 @@ impl<Context> ECSManager<Context> {
     }
     // Get all the components in the ECS manager that are of a certain type
     // This does not return dangling components
-    pub fn get_all_components<T: Component + 'static>(&mut self) -> Vec<&mut T> {
+    pub fn get_all_components<T: Component + Send + Sync + 'static>(&mut self) -> Vec<&mut T> {
         let cbtifield = registry::get_component_bitfield::<T>();
         // Loop through every entity, getting it's global component index
         let component_indices = self.entities.iter_elements().flat_map(|entity| entity.components.iter().filter_map(|component_id| {
@@ -191,6 +193,18 @@ impl<Context> ECSManager<Context> {
         }).collect::<Vec<&mut T>>();
         components
     }
+    /* #endregion */
+    /* #region System Components */
+    // Add a global component to the ECS manager
+    pub fn add_global_component<U: Component + Send + Sync + 'static>(&mut self, sc: U) -> Result<(), GlobalComponentError> {
+        // UnsafeCell moment
+        let boxed = Box::new(sc);
+        let bitfield = registry::get_component_bitfield::<U>();
+        let mut lock = self.global_components.lock().unwrap();
+        lock.insert(bitfield, UnsafeCell::new(boxed));
+        Ok(())
+    }
+    
     /* #endregion */
     /* #region Systems */
     // Create a new system build

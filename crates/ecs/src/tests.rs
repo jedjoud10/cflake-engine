@@ -8,7 +8,7 @@ pub mod test {
             registry, ComponentQuery,
         },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
-        ECSManager,
+        ECSManager, impl_component,
     };
 
     // A test context
@@ -95,7 +95,6 @@ pub mod test {
         let context = WorldContext;
 
         // Make a simple system
-
         fn internal_run(_context: WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
                 let mut name = components.component_mut::<Name>().unwrap();
@@ -138,5 +137,31 @@ pub mod test {
         ecs.finish_update();
         // After this execution, the dangling components should have been removed
         assert_eq!(ecs.count_components(), 0);
+    }
+    #[test]
+    pub fn test_global_component() {
+        // Also create the context
+        let context = WorldContext;
+        struct GlobalComponentTest {
+            pub test_value: i32,
+        }
+        impl_component!(GlobalComponentTest);
+        // Create the main ECS manager
+        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+
+        ecs.add_global_component(GlobalComponentTest { test_value: 10 }).unwrap();
+
+        // Make a simple system
+        fn internal_run(_context: WorldContext, mut query: ComponentQuery) {
+            let global = query.get_global_components().unwrap();
+            let component = global.global_component::<GlobalComponentTest>().unwrap();
+            assert_eq!(component.test_value, 10);
+            query.update_all(|components| {
+            });
+        }
+
+        let builder = ecs.create_system_builder();
+        builder.link::<Name>().set_run_event(internal_run).add_access_state::<GlobalComponentTest>().build();
+        ecs.run_systems(context);
     }
 }

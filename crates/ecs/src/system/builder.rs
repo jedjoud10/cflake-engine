@@ -1,6 +1,6 @@
 use crate::{
     component::{registry, Component, ComponentQuery},
-    ECSManager,
+    ECSManager, utils::GlobalComponentError,
 };
 
 use super::System;
@@ -23,6 +23,11 @@ impl<'a, Context> SystemBuilder<'a, Context> {
     pub fn link<U: Component>(mut self) -> Self {
         let c = registry::get_component_bitfield::<U>();
         self.system.cbitfield = self.system.cbitfield.add(&c);
+        self
+    }
+    // Tell the underlying system that we can acess this specifc Global Component
+    pub fn add_access_state<U: Component>(mut self) -> Self {
+        self.system.add_access_state(registry::get_component_bitfield::<U>());
         self
     }
     // Set the "Run System" event of this system

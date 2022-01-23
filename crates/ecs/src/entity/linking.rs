@@ -20,7 +20,7 @@ impl ComponentLinkingGroup {
         }
     }
     // Link a component to this entity and automatically set it to the default variable
-    pub fn link_default<T: Component + Default + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
+    pub fn link_default<T: Component + Send + Sync + Default + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
         // Simple wrapper around the default link component
         self.link(T::default())
     }
@@ -29,7 +29,7 @@ impl ComponentLinkingGroup {
         self.linked_components.contains_key(&id.cbitfield)
     }
     // Link a component to this entity and also link it's default component dependencies if they are not linked yet
-    pub fn link<T: Component + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
+    pub fn link<T: Component + Send + Sync + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
         let cbitfield = registry::get_component_bitfield::<T>();
         // Check if we have the component linked on this entity
         if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(cbitfield) {

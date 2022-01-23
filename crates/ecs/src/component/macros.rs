@@ -1,5 +1,5 @@
 // Macro to automatically implement the traits
-#[macro_export(super)]
+#[macro_export]
 macro_rules! impl_component {
     ($t: ty) => {
         // Main traits implemented

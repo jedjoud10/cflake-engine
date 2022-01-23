@@ -16,7 +16,7 @@ impl ComponentID {
 
 // We do a little bit of googling https://stackoverflow.com/questions/26983355/is-there-a-way-to-combine-multiple-traits-in-order-to-define-a-new-trait
 // A component trait that can be added to other components
-pub trait Component: Send + Sync {
+pub trait Component {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn get_component_name() -> String
@@ -26,6 +26,7 @@ pub trait Component: Send + Sync {
 
 // Main type because I don't want to type
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
+pub type EnclosedGlobalComponent = Box<dyn Component + Sync + Send>;
 
 // Component ref guards. This can be used to detect whenever we mutate a component
 pub struct ComponentReadGuard<'a, T>
