@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use ecs::ECSManager;
+use ecs::{ECSManager, entity::EntityID, component::ComponentID};
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
@@ -103,3 +103,13 @@ impl<'a> std::ops::DerefMut for WriteContext<'a> {
         &mut *self.world
     }
 }
+
+// A global component that contains some world data
+pub struct GlobalWorldData {
+    // The direction of the sun
+    pub light_dir: veclib::Vector3<f32>,
+    // The current main camera component ID
+    pub main_camera: ComponentID,
+}
+
+ecs::impl_component!(GlobalWorldData);

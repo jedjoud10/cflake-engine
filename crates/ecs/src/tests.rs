@@ -153,7 +153,7 @@ pub mod test {
 
         // Make a simple system
         fn internal_run(_context: WorldContext, mut query: ComponentQuery) {
-            let global = query.get_global_components().unwrap();
+            let global = query.get_global_components();
             let component = global.global_component::<GlobalComponentTest>().unwrap();
             assert_eq!(component.test_value, 10);
             query.update_all(|components| {

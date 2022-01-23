@@ -18,11 +18,11 @@ pub struct ComponentQuery {
 
 impl ComponentQuery {
     // Get the stored global component so we can access them
-    pub fn get_global_components(&mut self) -> Option<&mut StoredGlobalComponents> {
+    pub fn get_global_components(&mut self) -> StoredGlobalComponents {
         self.stored_global_components.as_mut()
     }
     // Update all the components consecutively, on the main thread
-    pub fn update_all<F: Fn(&mut LinkedComponents) + 'static>(self, function: F) {
+    pub fn update_all<F: FnMut(&mut LinkedComponents)>(self, mut function: F) {
         // Run it normally
         if let Some(vec) = self.linked_components {
             for mut linked_components in vec {
@@ -31,7 +31,7 @@ impl ComponentQuery {
         }
     }
     // Update all the components consecutively, on the main thread, but while also mapping each element and returning a new vector
-    pub fn update_all_map<U, F: Fn(&mut LinkedComponents) -> Option<U> + 'static>(self, function: F) -> Vec<U> {
+    pub fn update_all_map<U, F: FnMut(&mut LinkedComponents) -> Option<U>>(self,mut function: F) -> Vec<U> {
         // Make a new vector the size of self.linked_components
         let mut output_vec = Vec::with_capacity(self.linked_components.as_ref().map(|x| x.len()).unwrap_or_default());
         if let Some(vec) = self.linked_components {

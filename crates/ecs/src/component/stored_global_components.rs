@@ -10,14 +10,12 @@ use std::{cell::UnsafeCell, sync::{Mutex, Arc}};
 pub struct StoredGlobalComponents {
     // Our stored global components
     pub(crate) global_components: Arc<Mutex<AHashMap<Bitfield<u32>, UnsafeCell<EnclosedGlobalComponent>>>>,
-    pub(crate) global_access_cbitfield: Bitfield<u32>,
 }
 
 impl StoredGlobalComponents {
     // Create some stored global components using the global_component_access_cbitfield of a specific system and the global components
-    pub(crate) fn new<Context>(global_access_cbitfield: Bitfield<u32>, ecs_manager: &ECSManager<Context>) -> Self {
+    pub(crate) fn new<Context>(ecs_manager: &ECSManager<Context>) -> Self {
         Self {
-            global_access_cbitfield,
             global_components: ecs_manager.global_components.clone(),
         }
     }

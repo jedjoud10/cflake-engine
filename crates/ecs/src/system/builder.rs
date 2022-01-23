@@ -25,11 +25,6 @@ impl<'a, Context> SystemBuilder<'a, Context> {
         self.system.cbitfield = self.system.cbitfield.add(&c);
         self
     }
-    // Tell the underlying system that we can acess this specifc Global Component
-    pub fn add_access_state<U: Component>(mut self) -> Self {
-        self.system.add_access_state(registry::get_component_bitfield::<U>());
-        self
-    }
     // Set the "Run System" event of this system
     pub fn set_run_event(mut self, evn: fn(Context, ComponentQuery)) -> Self {
         self.system.evn_run = Some(self.ecs_manager.event_handler.add_run_event(evn));

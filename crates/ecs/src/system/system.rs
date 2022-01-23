@@ -14,8 +14,6 @@ use crate::{
 // A system that updates specific components in parallel
 pub struct System {
     pub(crate) cbitfield: Bitfield<u32>,
-    // A bitfield indicating what global components we have access to
-    pub(crate) global_component_access_cbitfield: Bitfield<u32>,
     // Events
     pub(crate) evn_run: Option<usize>,
     pub(crate) evn_added_entity: Option<usize>,
@@ -30,7 +28,6 @@ impl Default for System {
     fn default() -> Self {
         System {
             cbitfield: Bitfield::<u32>::default(),
-            global_component_access_cbitfield: Bitfield::<u32>::default(),
             evn_run: None,
             evn_added_entity: None,
             evn_removed_entity: None,
@@ -60,10 +57,6 @@ impl System {
             lock.1.insert(id);
         }
     }
-    // Update our global component cbitfield so we can access (read/write) the component
-    pub(crate) fn add_access_state(&mut self, cbitfield: Bitfield<u32>) {
-        self.global_component_access_cbitfield = self.global_component_access_cbitfield.add(&cbitfield);
-    }
     // Create a SystemExecutionData that we can actually run at a later time
     // TODO: Optimize this shit
     pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
@@ -79,8 +72,7 @@ impl System {
         let added_entities = lock.0.drain();
         let added_components = Self::get_linked_components(&self.evn_added_entity, components, added_entities, ecs_manager);
         // Get the global components for this system. We can cache this later
-        let stored_global_components = if self.global_component_access_cbitfield.empty() { None }
-        else { Some(StoredGlobalComponents::new(self.global_component_access_cbitfield, &ecs_manager)) };
+        let stored_global_components = StoredGlobalComponents::new(ecs_manager);
         SystemExecutionData {
             // Events
             evn_run: ecs_manager.event_handler.get_run_event(self.evn_run).cloned(),
