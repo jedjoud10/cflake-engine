@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use worker_threads::ThreadPool;
 
-use super::{LinkedComponents, StoredGlobalComponents};
+use super::{LinkedComponents};
 
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL
@@ -10,17 +10,11 @@ use super::{LinkedComponents, StoredGlobalComponents};
 pub struct ComponentQuery {
     // The actual components
     pub(crate) linked_components: Option<Vec<LinkedComponents>>,
-    // We will also pass it all the global components that we need for this system
-    pub(crate) stored_global_components: Option<StoredGlobalComponents>,
     // Thread pool because I am insane
     pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
 }
 
 impl ComponentQuery {
-    // Get the stored global component so we can access them
-    pub fn get_global_components(&mut self) -> StoredGlobalComponents {
-        self.stored_global_components.as_mut()
-    }
     // Update all the components consecutively, on the main thread
     pub fn update_all<F: FnMut(&mut LinkedComponents)>(self, mut function: F) {
         // Run it normally

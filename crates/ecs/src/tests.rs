@@ -152,16 +152,11 @@ pub mod test {
         ecs.add_global_component(GlobalComponentTest { test_value: 10 }).unwrap();
 
         // Make a simple system
-        fn internal_run(_context: WorldContext, mut query: ComponentQuery) {
-            let global = query.get_global_components();
-            let component = global.global_component::<GlobalComponentTest>().unwrap();
-            assert_eq!(component.test_value, 10);
-            query.update_all(|components| {
-            });
+        fn internal_run(_context: WorldContext, query: ComponentQuery) {
         }
 
         let builder = ecs.create_system_builder();
-        builder.link::<Name>().set_run_event(internal_run).add_access_state::<GlobalComponentTest>().build();
+        builder.link::<Name>().set_run_event(internal_run).build();
         ecs.run_systems(context);
     }
 }

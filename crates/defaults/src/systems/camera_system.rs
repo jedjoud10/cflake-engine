@@ -72,7 +72,6 @@ fn run(context: Context, components: ComponentQuery) {
 
 // This event is ran whenever we add a new camera to the world
 fn added_entities(context: Context, query: ComponentQuery) {
-    let global_components = query.get_global_components().unwrap();
 }
 
 // Create the camera system

@@ -6,7 +6,7 @@ use ordered_vec::simple::OrderedVec;
 
 use super::{SystemExecutionData};
 use crate::{
-    component::{ComponentQuery, EnclosedComponent, LinkedComponents, StoredGlobalComponents},
+    component::{ComponentQuery, EnclosedComponent, LinkedComponents},
     entity::{Entity, EntityID},
     ECSManager,
 };
@@ -71,8 +71,6 @@ impl System {
         let removed_components = Self::get_linked_components_removed(&mut *entities_to_remove_ecs_manager, &self.evn_removed_entity, components, removed_entities, ecs_manager);
         let added_entities = lock.0.drain();
         let added_components = Self::get_linked_components(&self.evn_added_entity, components, added_entities, ecs_manager);
-        // Get the global components for this system. We can cache this later
-        let stored_global_components = StoredGlobalComponents::new(ecs_manager);
         SystemExecutionData {
             // Events
             evn_run: ecs_manager.event_handler.get_run_event(self.evn_run).cloned(),
@@ -82,17 +80,14 @@ impl System {
             evn_run_query: ComponentQuery {
                 linked_components: all_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-                stored_global_components: stored_global_components.clone()
             },
             evn_added_entity_query: ComponentQuery {
                 linked_components: added_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-                stored_global_components: stored_global_components.clone()
             },
             evn_removed_entity_query: ComponentQuery {
                 linked_components: removed_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-                stored_global_components: stored_global_components
             },
         }
     }

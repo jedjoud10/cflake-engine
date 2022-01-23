@@ -8,7 +8,7 @@ use std::{
 use worker_threads::ThreadPool;
 
 use crate::{
-    component::{ComponentID, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents, Component, registry::{self, cast_component_mut}},
+    component::{ComponentID, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents, Component, registry::{self, cast_component_mut}, ComponentReadGuard, ComponentWriteGuard},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     system::{EventHandler, System, SystemBuilder},
     utils::{ComponentError, EntityError, GlobalComponentError},
@@ -194,7 +194,11 @@ impl<Context> ECSManager<Context> {
         components
     }
     /* #endregion */
-    /* #region System Components */
+    /* #region Global Components */
+    // The reason why we can access global components but not normal components:
+    // Since the normal components might be mutated in multiple threads, we cannot read from multiple components at the same time or we might cause UB.
+    // However, global components will NEVER be mutated in multiple threads at the same time, so we can be 100% sure that we will never (hopefully) cause UB
+
     // Add a global component to the ECS manager
     pub fn add_global_component<U: Component + Send + Sync + 'static>(&mut self, sc: U) -> Result<(), GlobalComponentError> {
         // UnsafeCell moment
@@ -203,6 +207,33 @@ impl<Context> ECSManager<Context> {
         let mut lock = self.global_components.lock().unwrap();
         lock.insert(bitfield, UnsafeCell::new(boxed));
         Ok(())
+    }
+    // Get a reference to a specific global component
+    pub fn global_component<'b, T: Component + Send + Sync + 'static>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError> {
+        let id = registry::get_component_bitfield::<T>();
+        // Kill me
+        let hashmap = self.global_components.lock().unwrap();
+        let ptr = hashmap
+            .get(&id)
+            .ok_or_else( || ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
+        // Magic
+        let component = unsafe { &*ptr.get() }.as_ref();
+        let component = registry::cast_component::<T>(component)?;
+        let guard = ComponentReadGuard::new(component);
+        Ok(guard)
+    }
+    // Get a mutable reference to a specific global component
+    pub fn global_component_mut<'b, T: Component + Send + Sync + 'static>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError> {
+        let id = registry::get_component_bitfield::<T>();
+        let hashmap = self.global_components.lock().unwrap();
+        let ptr = hashmap
+            .get(&id)
+            .ok_or_else( || ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
+        // Magic
+        let component = unsafe { &mut *ptr.get() }.as_mut();
+        let component = registry::cast_component_mut::<T>(component)?;
+        let guard = ComponentWriteGuard::new(component);
+        Ok(guard)
     }
     
     /* #endregion */

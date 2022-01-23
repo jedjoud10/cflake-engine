@@ -24,7 +24,7 @@ pub struct World {
 // A context that can mutate the world if self is mut
 #[derive(Clone)]
 pub struct Context {
-    pub(crate) world: Arc<RwLock<World>>,
+    world: Arc<RwLock<World>>,
 }
 
 impl !Send for Context {}
@@ -60,7 +60,7 @@ impl Context {
 
 // A context that we can share around to other threads if they need to access the world
 pub struct ShareableContext {
-    pub(crate) world: Arc<RwLock<World>>,
+    world: Arc<RwLock<World>>,
 }
 
 impl ShareableContext {
@@ -74,7 +74,7 @@ impl ShareableContext {
 
 // A readable world context
 pub struct ReadContext<'a> {
-    pub(crate) world: RwLockReadGuard<'a, World>,
+    world: RwLockReadGuard<'a, World>,
 }
 
 impl<'a> std::ops::Deref for ReadContext<'a> {
@@ -87,7 +87,7 @@ impl<'a> std::ops::Deref for ReadContext<'a> {
 
 // A writable world context
 pub struct WriteContext<'a> {
-    pub(crate) world: RwLockWriteGuard<'a, World>,
+    world: RwLockWriteGuard<'a, World>,
 }
 
 impl<'a> std::ops::Deref for WriteContext<'a> {
