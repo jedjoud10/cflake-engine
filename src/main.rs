@@ -1,5 +1,4 @@
 use cflake_engine::*;
-use window::start;
 fn main() {
     // Load up the engine
     start("DevJed", "DevGame", preload_assets, init);
@@ -7,7 +6,7 @@ fn main() {
 pub fn preload_assets() {
     // -----Pre-load the game assets here-----
 }
-pub fn init(mut write: window::core::WriteContext) {
+pub fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::new();

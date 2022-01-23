@@ -10,15 +10,15 @@ use crate::{
     },
     object::{ObjectBuildingTask, ObjectID, PipelineTask, TrackingTaskID, PipelineTaskCombination},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
-    utils::Window,
+    utils::{Window, RenderWrapper},
 };
 use ahash::AHashSet;
-use glfw::Context;
+use glfw::{Context, WindowMode};
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
     ffi::{c_void, CString},
     mem::size_of,
-    ptr::null,
+    ptr::{null, null_mut},
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
@@ -702,46 +702,7 @@ impl Pipeline {
     }
     // Set the focus state for our window
     fn set_window_focus_state(&mut self, focused: bool) { self.window.focused = focused; }
-    // Enable or disable fullscreen
-    fn set_window_fullscreen(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, fullscreen: bool) {
-        self.window.fullscreen = fullscreen;
-        dbg!(fullscreen);
-        if fullscreen {
-            // Set the glfw window as a fullscreen window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let videomode = monitor.unwrap().get_video_mode().unwrap();
-                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, Some(videomode.refresh_rate));
-
-                /*
-                unsafe {
-                    // Update the OpenGL viewport
-                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-                }
-                */
-            });
-        } else {
-            /*
-            // Set the glfw window as a windowed window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let videomode = monitor.unwrap().get_video_mode().unwrap();
-                let default_window_size = crate::utils::DEFAULT_WINDOW_SIZE;
-                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.x as u32, default_window_size.y as u32, Some(videomode.refresh_rate));
-                unsafe {
-                    // Update the OpenGL viewport
-                    gl::Viewport(0, 0, default_window_size.x as i32, default_window_size.y as i32);
-                }
-            });
-            */
-        }
-    }
-    // Enable or disable vsync
-    fn set_window_vsync(&mut self, glfw: &mut glfw::Glfw, window: &mut glfw::Window, vsync: bool) {
-        if vsync {
-            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-        } else {
-            glfw.set_swap_interval(glfw::SwapInterval::None);
-        }
-    }
+    
 }
 
 // Data that will be sent back to the main thread after we start the pipeline thread
@@ -821,17 +782,6 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         model,
     }
 }
-// Initialize GLFW and the Window
-fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-    // Set the type of events that we want to listen to
-    window.make_current();
-    window.set_key_polling(true);
-    window.set_cursor_pos_polling(true);
-    window.set_cursor_mode(glfw::CursorMode::Disabled);
-    window.set_scroll_polling(true);
-    window.set_size_polling(true);
-    glfw.set_swap_interval(glfw::SwapInterval::None);
-}
 // Initialize OpenGL
 unsafe fn init_opengl() {
     gl::Viewport(0, 0, 1280, 720);
@@ -865,15 +815,15 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
 
-    // Window and GLFW wrapper
-    struct RenderWrapper(AtomicPtr<glfw::Glfw>, AtomicPtr<glfw::Window>);
+    // The main thread will not own the glfw context, and we will send it to the render thread instead
+    unsafe { glfw::ffi::glfwMakeContextCurrent(null_mut()) }
+
+    // Window and GLFW wrapper    
     let wrapper = {
         // Create the render wrapper
         let glfw = glfw as *mut glfw::Glfw;
-        let window = window as *mut glfw::Window;
-        unsafe impl Send for RenderWrapper {}
-        unsafe impl Sync for RenderWrapper {}
-        RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window))
+        let window = window as *mut glfw::Window;        
+        Arc::new(RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window)))
     };
 
     // Actually make the render thread
@@ -888,9 +838,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
             gl::load_with(|s| window.get_proc_address(s) as *const _);
         }
-
-        // Init Glfw and OpenGL
-        init_glfw(glfw, window);
         if gl::Viewport::is_loaded() {
             unsafe {
                 init_opengl();
@@ -900,6 +847,8 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             /* NON */
             panic!()
         }
+        // Window wrapper
+        let window_wrapper = Window::new(wrapper.clone());
 
         // Set the global sender
         sender::set_global_sender(tx);
@@ -913,6 +862,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         // Load the default objects
         {
             let mut pipeline = pipeline.write().unwrap();
+            pipeline.window = window_wrapper;
             pipeline.defaults = Some(load_defaults(&*pipeline));
         }
 
@@ -981,7 +931,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     println!("Waiting for RenderThread init confirmation...");
     let pipeline = irx.recv().unwrap();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
-
+    /*
+    glfw.with_primary_monitor_mut(|glfw, monitor| {
+        let videomode = monitor.unwrap().get_video_mode().unwrap();
+        window.set_monitor(WindowMode::Windowed, 0, 0, videomode.width, videomode.height, Some(videomode.refresh_rate));
+    });
+    */
     // Create the pipeline start data
     PipelineStartData {
         handle,

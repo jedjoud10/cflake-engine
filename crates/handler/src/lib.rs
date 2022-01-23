@@ -9,6 +9,19 @@ use main::core::{Context, TaskSenderContext, World, WriteContext};
 pub use main::*;
 use std::sync::{Arc, RwLock};
 
+// Initialize GLFW and the Window
+fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
+    // Set the type of events that we want to listen to
+    use glfw::Context as GlfwContext;
+    window.make_current();
+    window.set_key_polling(true);
+    window.set_cursor_pos_polling(true);
+    window.set_cursor_mode(glfw::CursorMode::Disabled);
+    window.set_scroll_polling(true);
+    window.set_size_polling(true);
+    glfw.set_swap_interval(glfw::SwapInterval::None);
+}
+
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
@@ -20,6 +33,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
             glfw::WindowMode::Windowed,
         )
         .expect("Failed to create GLFW window.");
+    init_glfw(&mut glfw, &mut window);
     // Pre-load the assets first
     defaults::preload_default_assets();
     preload_assets();

@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-window = { path = "crates\\window" }
+handler = { path = "crates\\handler" }
 
 [workspace]
 members = [
@@ -15,7 +15,7 @@ members = [
     "crates\\debug",
     "crates\\defaults",
     "crates\\ecs",
-    "crates\\window",
+    "crates\\handler",
     "crates\\font_generator",
     "crates\\fonts",
     "crates\\input",
