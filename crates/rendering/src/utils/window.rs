@@ -10,7 +10,9 @@ pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 pub struct Window {
     pub dimensions: veclib::Vector2<u16>,
     pub focused: bool,
+    pub(crate) vsync: AtomicBool,
     pub wrapper: Arc<RenderWrapper>,
+    pub(crate) update: AtomicBool,
 }
 
 impl Window {
@@ -18,6 +20,8 @@ impl Window {
     pub fn new(wrapper: Arc<RenderWrapper>) -> Self {
         Self {
             dimensions: DEFAULT_WINDOW_SIZE,
+            vsync: AtomicBool::new(false),
+            update: AtomicBool::new(false),
             focused: false,
             wrapper
         }
@@ -54,12 +58,7 @@ impl Window {
         if !others::on_main_thread() {
             panic!("We cannot update the window settings if we are not on the main thead!");
         }
-        let (glfw, window) = (self.wrapper.0.load(Ordering::Relaxed), self.wrapper.1.load(Ordering::Relaxed));
-        let (glfw, window) = unsafe { (&mut *glfw, &mut *window) };
-        if vsync {
-            glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-        } else {
-            glfw.set_swap_interval(glfw::SwapInterval::None);
-        }
+        self.update.store(true, Ordering::Relaxed);
+        self.vsync.store(vsync, Ordering::Relaxed);
     }
 }

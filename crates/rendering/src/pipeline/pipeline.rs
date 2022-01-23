@@ -122,6 +122,18 @@ impl Pipeline {
                 },
             }
         }
+
+        // Update the window if needed
+        let update_window = self.window.update.load(Ordering::Relaxed);
+        if update_window {
+            let (glfw, window) = (self.window.wrapper.0.load(Ordering::Relaxed), self.window.wrapper.1.load(Ordering::Relaxed));
+            let (glfw, window) = unsafe { (&mut *glfw, &mut *window) };
+            if self.window.vsync.load(Ordering::Relaxed) {
+                glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+            } else {
+                glfw.set_swap_interval(glfw::SwapInterval::None);
+            }
+        }
     }
     // Set the global shader uniforms
     pub(crate) fn update_global_shader_uniforms(&mut self, time: f64, delta: f64) {
