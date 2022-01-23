@@ -19,7 +19,7 @@ pub struct AdvancedOctree {
 }
 
 // Code
-// TODO: Multithread this
+// TODO: Multithread this and completely rewrite it. Remember: K.I.S.S principle
 impl AdvancedOctree {
     // New
     pub fn new(octree: Octree, subdivide_twin_rule: fn(&OctreeNode, &veclib::Vector3<f32>, f32, u8) -> bool) -> Self {
@@ -68,7 +68,6 @@ impl AdvancedOctree {
     ) -> Option<(
         Vec<OctreeNode>, // Added nodes
         Vec<OctreeNode>, // Removed nodes
-        Vec<OctreeNode>, // Total nodes
     )> {
         let root_node = self.internal_octree.get_root_node();
         let t = std::time::Instant::now();
@@ -90,11 +89,11 @@ impl AdvancedOctree {
                     let y = Self::calculate_combined_nodes(x, target, &self.internal_octree.nodes, lod_factor, self.internal_octree.depth);
                     added_nodes = y.clone().into_iter().collect();
                     self.combined_nodes = y;
-                    return Some((added_nodes.clone(), Vec::new(), added_nodes));
+                    return Some((added_nodes.clone(), Vec::new()));
                 }
                 None => {
                     self.combined_nodes = added_nodes.iter().cloned().collect();
-                    return Some((added_nodes.clone(), Vec::new(), added_nodes));
+                    return Some((added_nodes.clone(), Vec::new()));
                 }
             }
         }
@@ -188,11 +187,10 @@ impl AdvancedOctree {
         let old_hashset = &self.combined_nodes;
 
         // Now actually detect the removed / added nodes
-        let total = new_hashset.clone().into_iter().collect();
         let removed_nodes = old_hashset.difference(&new_hashset).cloned().collect();
         let added_nodes = new_hashset.difference(old_hashset).cloned().collect();
         self.combined_nodes = new_hashset;
         self.position = *target;
-        Some((added_nodes, removed_nodes, total))
+        Some((added_nodes, removed_nodes))
     }
 }

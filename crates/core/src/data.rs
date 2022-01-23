@@ -103,11 +103,3 @@ impl<'a> std::ops::DerefMut for WriteContext<'a> {
         &mut *self.world
     }
 }
-
-// A global component that contains some world data
-pub struct GlobalWorldData {
-    // The direction of the sun
-    pub light_dir: veclib::Vector3<f32>,
-}
-
-ecs::impl_component!(GlobalWorldData);

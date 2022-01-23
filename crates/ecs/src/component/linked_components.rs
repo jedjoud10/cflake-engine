@@ -1,5 +1,5 @@
 use super::{registry, Component, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent};
-use crate::{entity::Entity, utils::ComponentError};
+use crate::{entity::{Entity, EntityID}, utils::ComponentError};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
@@ -10,6 +10,7 @@ use std::cell::UnsafeCell;
 pub struct LinkedComponents {
     // Our linked components
     pub(crate) components: AHashMap<Bitfield<u32>, *mut EnclosedComponent>,
+    pub entity_id: EntityID,
 }
 
 unsafe impl Send for LinkedComponents {}
@@ -30,7 +31,7 @@ impl LinkedComponents {
                 Some((component_id.cbitfield, ptr))
             })
             .collect::<AHashMap<Bitfield<u32>, *mut EnclosedComponent>>();
-        Self { components: filtered_components }
+        Self { components: filtered_components, entity_id: entity.id.unwrap() }
     }
 }
 

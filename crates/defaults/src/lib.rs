@@ -1,5 +1,7 @@
 // Default components
 pub mod components;
+// Default globals
+pub mod globals;
 // Default systems
 pub mod systems;
 pub mod template_system;
@@ -7,7 +9,7 @@ pub mod template_system;
 use main::assets::preload_asset;
 use main::core::{TaskSenderContext, WriteContext};
 
-use systems::{camera_system, physics_system, rendering_system, debugging_system};
+use systems::{camera_system, physics_system, rendering_system, debugging_system, terrain};
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the resources
@@ -64,13 +66,11 @@ pub fn preload_system(mut write: WriteContext) {
     physics_system::system(&mut write);
     rendering_system::system(&mut write);
     debugging_system::system(&mut write);
-    /*
+    // Terrain
+    terrain::chunk_system::system(&mut write);
 
-    // We want to read the current time from the world
-    let read_context = context.read();
-    let time = read_context.time.elapsed;
-    //dbg!(time);
-    */
+    // We gotta add the global world data
+    write.ecs.add_global(crate::globals::GlobalWorldData::default());
 }
 /*
 pub fn preload_systems() {

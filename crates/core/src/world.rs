@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use ecs::{entity::EntityID, component::ComponentID};
 use rendering::pipeline::PipelineStartData;
 
-use crate::{data::World, Context, GameConfig, WorldTaskReceiver, GlobalWorldData};
+use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 
 // World implementation
 impl World {
@@ -72,12 +72,6 @@ impl World {
         let config: GameConfig = self.io.load("config\\game_config.json");
         self.config = config;
         // TODO: Apply the config file's data to the rendering window
-
-        // Create some default global world data
-        let ecs = &mut self.ecs; 
-        ecs.add_global(GlobalWorldData {
-            light_dir: veclib::Vector3::<f32>::ONE.normalized(),
-        }).unwrap();
         println!("World init done!");
 
     }

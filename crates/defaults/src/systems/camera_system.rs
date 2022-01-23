@@ -4,10 +4,10 @@ use main::ecs;
 use main::input::{Keys, MapType};
 
 // The camera system update loop
-fn run(context: Context, components: ComponentQuery) {
-    let read = context.read();
+fn run(mut context: Context, components: ComponentQuery) {
+    let mut write = context.write();
     // Rotate the camera around
-    let mouse_pos = read.input.get_accumulated_mouse_position();
+    let mouse_pos = write.input.get_accumulated_mouse_position();
     const SENSIVITY: f32 = 0.001;
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
@@ -21,26 +21,26 @@ fn run(context: Context, components: ComponentQuery) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 1.0 + (read.input.get_accumulated_mouse_scroll() * 0.1).powf(2.0);
-    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * read.time.delta as f32;
+    let original_speed = 1.0 + (write.input.get_accumulated_mouse_scroll() * 0.1).powf(2.0);
+    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * write.time.delta as f32;
 
     // Actually update the velocity
     // Forward and backward
-    if read.input.map_held("camera_forward").0 {
+    if write.input.map_held("camera_forward").0 {
         velocity += -forward * speed;
-    } else if read.input.map_held("camera_backwards").0 {
+    } else if write.input.map_held("camera_backwards").0 {
         velocity += forward * speed;
     }
     // Left and right
-    if read.input.map_held("camera_right").0 {
+    if write.input.map_held("camera_right").0 {
         velocity += right * speed;
-    } else if read.input.map_held("camera_left").0 {
+    } else if write.input.map_held("camera_left").0 {
         velocity += -right * speed;
     }
     // Up and down
-    if read.input.map_held("camera_up").0 {
+    if write.input.map_held("camera_up").0 {
         velocity += up * speed;
-    } else if read.input.map_held("camera_down").0 {
+    } else if write.input.map_held("camera_down").0 {
         velocity += -up * speed;
     }
     // Update the camera values now
@@ -51,9 +51,8 @@ fn run(context: Context, components: ComponentQuery) {
         let (position, rotation) = (transform.position, transform.rotation);
         let mut camera = linked_components.component_mut::<crate::components::Camera>().unwrap();
         // And don't forget to update the camera matrices
-        let world = &*read;
         // Load the pipeline since we need to get the window settings
-        let pipeline = world.pipeline.read().unwrap();
+        let pipeline = write.pipeline.read().unwrap();
         camera.update_aspect_ratio(pipeline.window.dimensions);
         camera.update_view_matrix(position, new_rotation);
         
@@ -67,6 +66,11 @@ fn run(context: Context, components: ComponentQuery) {
             clip_planes: camera.clip_planes,
         };
         pipeline::pipec::task(object::PipelineTask::UpdateCamera(pipeline_camera), &*pipeline);
+        drop(pipeline);
+
+        // If we are the main camera, we must update our position in the global
+        let mut global = write.ecs.global_mut::<crate::globals::GlobalWorldData>().unwrap();
+        global.camera_pos = position;
     })
 }
 
