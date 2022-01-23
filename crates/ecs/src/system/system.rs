@@ -4,7 +4,7 @@ use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 
-use super::SystemExecutionData;
+use super::{SystemExecutionData, SystemData};
 use crate::{
     component::{ComponentQuery, EnclosedComponent, LinkedComponents, StoredGlobalComponents},
     entity::{Entity, EntityID},
@@ -21,6 +21,9 @@ pub struct System {
     pub(crate) evn_added_entity: Option<usize>,
     pub(crate) evn_removed_entity: Option<usize>,
 
+    // Some system data if we want
+    pub(crate) system_data: Option<Box<dyn SystemData>>,
+
     entities: AHashSet<EntityID>,
     // Added, Removed
     changed_entities: Mutex<(AHashSet<EntityID>, AHashSet<EntityID>)>,
@@ -34,6 +37,7 @@ impl Default for System {
             evn_run: None,
             evn_added_entity: None,
             evn_removed_entity: None,
+            system_data: None,
             entities: AHashSet::new(),
             changed_entities: Mutex::new((AHashSet::new(), AHashSet::new())),
         }
@@ -65,6 +69,7 @@ impl System {
         self.global_component_access_cbitfield = self.global_component_access_cbitfield.add(&cbitfield);
     }
     // Create a SystemExecutionData that we can actually run at a later time
+    // TODO: Optimize this shit
     pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
         // These components are filtered for us
         let components = &ecs_manager.components.lock().unwrap();
