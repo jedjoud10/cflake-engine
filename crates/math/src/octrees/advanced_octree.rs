@@ -89,11 +89,11 @@ impl AdvancedOctree {
                     let y = Self::calculate_combined_nodes(x, target, &self.internal_octree.nodes, lod_factor, self.internal_octree.depth);
                     added_nodes = y.clone().into_iter().collect();
                     self.combined_nodes = y;
-                    return Some((added_nodes.clone(), Vec::new()));
+                    return Some((added_nodes, Vec::new()));
                 }
                 None => {
                     self.combined_nodes = added_nodes.iter().cloned().collect();
-                    return Some((added_nodes.clone(), Vec::new()));
+                    return Some((added_nodes, Vec::new()));
                 }
             }
         }

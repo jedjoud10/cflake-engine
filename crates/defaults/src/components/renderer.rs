@@ -11,7 +11,10 @@ pub struct Renderer {
 impl Renderer {
     // Create a new renderer component using a CPU renderer object
     pub fn new(renderer: rendering::basics::renderer::Renderer) -> Self {
-        Self { renderer: Some(renderer), object_id: ObjectID::default() }
+        Self {
+            renderer: Some(renderer),
+            object_id: ObjectID::default(),
+        }
     }
 }
 

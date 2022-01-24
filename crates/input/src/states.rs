@@ -1,8 +1,10 @@
-
 // State for a button map
 #[derive(Clone, Copy)]
 pub enum ButtonState {
-    Pressed, Released, Held, Nothing
+    Pressed,
+    Released,
+    Held,
+    Nothing,
 }
 
 impl Default for ButtonState {
@@ -14,7 +16,8 @@ impl Default for ButtonState {
 // State for a toggle map
 #[derive(Clone, Copy)]
 pub enum ToggleState {
-    On, Off
+    On,
+    Off,
 }
 
 impl ToggleState {

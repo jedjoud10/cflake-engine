@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-thread_local! {    
+thread_local! {
     static MAIN_THREAD: Cell<bool> = Cell::new(false);
 }
 

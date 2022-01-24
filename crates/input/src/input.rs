@@ -1,8 +1,8 @@
 use multimap::MultiMap;
 
-use crate::{MapState, ButtonState, ToggleState};
 use super::Keys;
-use std::collections::{HashMap, HashSet};
+use crate::{ButtonState, MapState, ToggleState};
+use std::collections::HashMap;
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Get binding:
@@ -13,7 +13,7 @@ pub struct InputManager {
 
     // "W" -> ["forward_map", "launch_map"]
     keys: MultiMap<Keys, String>,
-    
+
     // Others
     cache: HashMap<i32, Keys>,
 
@@ -44,20 +44,19 @@ impl InputManager {
     // Called whenever the mous scroll changes
     pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f64) {
         self.last_mouse_scroll += scroll_delta;
-
     }
     // This should be ran at the start of every frame, before we poll any glfw events
-    pub fn late_update(&mut self, delta_time: f32) {
-        for (map_name, (map_state, changed)) in self.maps.iter_mut() {
+    pub fn late_update(&mut self, _delta_time: f32) {
+        for (_map_name, (map_state, changed)) in self.maps.iter_mut() {
             // Reset the map state if needed
             *changed = false;
             match map_state {
                 MapState::Button(button_state) => match button_state {
                     ButtonState::Pressed => *button_state = ButtonState::Held,
                     ButtonState::Released => *button_state = ButtonState::Nothing,
-                    _ => {},
+                    _ => {}
                 },
-                _ => {},
+                _ => {}
             }
         }
     }
@@ -72,7 +71,9 @@ impl InputManager {
     // When we receive a key event from glfw
     pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) -> Option<()> {
         // This is not a valid action event
-        if action_type != 0 && action_type != 1 { return None; }
+        if action_type != 0 && action_type != 1 {
+            return None;
+        }
         let key = self.cache.get(&key_scancode)?;
         let maps_to_update = self.keys.get_vec(key)?;
         // Update each map now
@@ -124,21 +125,54 @@ impl InputManager {
 impl InputManager {
     // Returns true when the map is pressed
     pub fn map_pressed(&self, name: &str) -> bool {
-        self.maps.get(name).and_then(|(map_state, _)| if let MapState::Button(button_state) = map_state {
-            if let ButtonState::Pressed = button_state { Some(()) } else { None }
-        } else { None }).is_some()
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(button_state) = map_state {
+                    if let ButtonState::Pressed = button_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .is_some()
     }
     // Returns true when the map is being held
     pub fn map_held(&self, name: &str) -> bool {
-        self.maps.get(name).and_then(|(map_state, _)| if let MapState::Button(button_state) = map_state {
-            if let ButtonState::Held = button_state { Some(()) } else { None }
-        } else { None }).is_some()
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(button_state) = map_state {
+                    if let ButtonState::Held = button_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .is_some()
     }
     // Returns true when the map has been released
     pub fn map_released(&self, name: &str) -> bool {
-        self.maps.get(name).and_then(|(map_state, _)| if let MapState::Button(button_state) = map_state {
-            if let ButtonState::Released = button_state { Some(()) } else { None }
-        } else { None }).is_some()
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(button_state) = map_state {
+                    if let ButtonState::Released = button_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .is_some()
     }
     // Check if a map changed
     pub fn map_changed(&self, name: &str) -> bool {
@@ -146,8 +180,19 @@ impl InputManager {
     }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {
-        self.maps.get(name).and_then(|(map_state, _)| if let MapState::Toggle(toggle_state) = map_state {
-            if let ToggleState::On = toggle_state { Some(()) } else { None }
-        } else { None }).is_some()
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Toggle(toggle_state) = map_state {
+                    if let ToggleState::On = toggle_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .is_some()
     }
 }

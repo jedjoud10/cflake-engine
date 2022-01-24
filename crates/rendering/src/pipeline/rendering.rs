@@ -216,8 +216,8 @@ impl PipelineRenderer {
     // Called each frame, to render the world
     pub fn render_frame(&self, pipeline: &Pipeline) {
         let _i = std::time::Instant::now();
-        for (id, renderer) in pipeline.renderers.iter() {
-            let result = self.render(pipeline, renderer);
+        for (_id, renderer) in pipeline.renderers.iter() {
+            let _result = self.render(pipeline, renderer);
             //if result.is_none() { println!("Could not render object with ID '{}'!", id); }
         }
     }

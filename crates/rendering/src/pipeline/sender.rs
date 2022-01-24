@@ -3,7 +3,7 @@ use std::cell::{Cell, RefCell};
 use std::sync::mpsc::SendError;
 use std::sync::{mpsc::Sender, Mutex};
 
-use crate::object::{PipelineTask, TrackingTaskID, PipelineTaskCombination};
+use crate::object::PipelineTaskCombination;
 
 use super::Pipeline;
 

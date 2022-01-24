@@ -8,7 +8,7 @@ pub mod test {
             registry, ComponentQuery,
         },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
-        ECSManager, impl_component,
+        impl_component, ECSManager,
     };
 
     // A test context
@@ -146,14 +146,12 @@ pub mod test {
             pub test_value: i32,
         }
         impl_component!(GlobalComponentTest);
-        struct GlobalComponentTest2 {
-        }
+        struct GlobalComponentTest2 {}
         impl_component!(GlobalComponentTest2);
         // Create the main ECS manager
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
         // Make a simple system
-        fn internal_run(_context: WorldContext, query: ComponentQuery) {
-        }
+        fn internal_run(_context: WorldContext, _query: ComponentQuery) {}
 
         assert!(ecs.global::<GlobalComponentTest>().is_ok());
         assert!(ecs.global::<GlobalComponentTest2>().is_err());

@@ -1,4 +1,3 @@
-use crate::{Context, ShareableContext};
 use ecs::entity::*;
 
 // A task sender context that we can use to send tasks to the main thread

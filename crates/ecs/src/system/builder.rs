@@ -1,6 +1,6 @@
 use crate::{
     component::{registry, Component, ComponentQuery},
-    ECSManager, utils::GlobalComponentError,
+    ECSManager,
 };
 
 use super::System;

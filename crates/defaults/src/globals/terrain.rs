@@ -1,6 +1,22 @@
+use main::{
+    ecs::{entity::EntityID, impl_component},
+    math::{
+        self,
+        octrees::{AdvancedOctree, Octree, OctreeNode},
+    },
+    rendering::{
+        advanced::compute::ComputeShader,
+        basics::{
+            shader::ShaderSettings,
+            texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
+        },
+        object::ObjectID,
+        pipeline::pipec,
+        utils::DataType,
+    },
+    terrain::{ChunkCoords, MAIN_CHUNK_SIZE},
+};
 use std::collections::HashMap;
-use main::{terrain::{ChunkCoords, MAIN_CHUNK_SIZE}, ecs::{entity::EntityID, impl_component}, math::{self, octrees::{OctreeNode, Octree, AdvancedOctree}}, rendering::{ object::ObjectID, basics::{texture::{Texture, TextureType, TextureFilter, TextureWrapping, TextureFormat}, shader::{ShaderSettings, Shader}}, advanced::compute::ComputeShader, pipeline::pipec, utils::DataType}};
-
 
 // The global terrain component that can be added at the start of the game
 pub struct Terrain {
@@ -31,9 +47,7 @@ impl Terrain {
 
         // Load the compute shader
         let (string, csgtree) = interpreter.finalize().unwrap();
-        let ss = ShaderSettings::default()
-            .external_code(0, string)
-            .source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
+        let ss = ShaderSettings::default().external_code(0, string).source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
         let compute_shader = ComputeShader::new(ss).unwrap();
         let compute_shader = pipec::construct(compute_shader, pipeline);
 
@@ -59,7 +73,7 @@ impl Terrain {
             .set_data_type(DataType::U8)
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(TextureWrapping::ClampToBorder);
-        
+
         // Now we actually need to construct the texture
         let voxel_texture = pipec::construct(voxel_texture, pipeline);
         let material_texture = pipec::construct(material_texture, pipeline);
@@ -71,7 +85,7 @@ impl Terrain {
 
             compute_shader,
             voxel_texture,
-            material_texture
+            material_texture,
         }
     }
 }

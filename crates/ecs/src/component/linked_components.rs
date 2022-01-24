@@ -1,5 +1,8 @@
 use super::{registry, Component, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent};
-use crate::{entity::{Entity, EntityID}, utils::ComponentError};
+use crate::{
+    entity::{Entity, EntityID},
+    utils::ComponentError,
+};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
@@ -31,7 +34,10 @@ impl LinkedComponents {
                 Some((component_id.cbitfield, ptr))
             })
             .collect::<AHashMap<Bitfield<u32>, *mut EnclosedComponent>>();
-        Self { components: filtered_components, entity_id: entity.id.unwrap() }
+        Self {
+            components: filtered_components,
+            entity_id: entity.id.unwrap(),
+        }
     }
 }
 

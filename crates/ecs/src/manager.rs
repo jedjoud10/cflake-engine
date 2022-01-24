@@ -8,7 +8,10 @@ use std::{
 use worker_threads::ThreadPool;
 
 use crate::{
-    component::{ComponentID, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents, Component, registry::{self, cast_component_mut}, ComponentReadGuard, ComponentWriteGuard},
+    component::{
+        registry::{self, cast_component_mut},
+        Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents,
+    },
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     system::{EventHandler, System, SystemBuilder},
     utils::{ComponentError, EntityError, GlobalComponentError},
@@ -178,21 +181,25 @@ impl<Context> ECSManager<Context> {
     pub fn get_all_components<T: Component + Send + Sync + 'static>(&mut self) -> Vec<&mut T> {
         let cbtifield = registry::get_component_bitfield::<T>();
         // Loop through every entity, getting it's global component index
-        let component_indices = self.entities.iter_elements().flat_map(|entity| entity.components.iter().filter_map(|component_id| {
-            let valid = component_id.cbitfield == cbtifield;
-            valid.then_some(component_id.id)
-        }));
+        let component_indices = self.entities.iter_elements().flat_map(|entity| {
+            entity.components.iter().filter_map(|component_id| {
+                let valid = component_id.cbitfield == cbtifield;
+                valid.then_some(component_id.id)
+            })
+        });
         // Now we can retrieve each component
         let lock = self.components.lock().unwrap();
-        let components = component_indices.map(|component_idx| {
-            let cell = lock.get(component_idx).unwrap();
-            let boxed = unsafe { &mut *cell.get() };
-            let refc = &mut **boxed;
-            // Some casting
-            let component = cast_component_mut::<T>(refc).unwrap(); 
-            component
-        }).collect::<Vec<&mut T>>();
-        components
+
+        component_indices
+            .map(|component_idx| {
+                let cell = lock.get(component_idx).unwrap();
+                let boxed = unsafe { &mut *cell.get() };
+                let refc = &mut **boxed;
+                // Some casting
+                let component = cast_component_mut::<T>(refc).unwrap();
+                component
+            })
+            .collect::<Vec<&mut T>>()
     }
     /* #endregion */
     /* #region Globals */
@@ -216,7 +223,7 @@ impl<Context> ECSManager<Context> {
         let hashmap = self.globals.lock().unwrap();
         let ptr = hashmap
             .get(&id)
-            .ok_or_else( || ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
+            .ok_or_else(|| ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
         // Magic
         let component = unsafe { &*ptr.get() }.as_ref();
         let component = registry::cast_component::<T>(component)?;
@@ -229,14 +236,14 @@ impl<Context> ECSManager<Context> {
         let hashmap = self.globals.lock().unwrap();
         let ptr = hashmap
             .get(&id)
-            .ok_or_else( || ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
+            .ok_or_else(|| ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
         // Magic
         let component = unsafe { &mut *ptr.get() }.as_mut();
         let component = registry::cast_component_mut::<T>(component)?;
         let guard = ComponentWriteGuard::new(component);
         Ok(guard)
     }
-    
+
     /* #endregion */
     /* #region Systems */
     // Create a new system build

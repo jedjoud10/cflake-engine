@@ -79,7 +79,6 @@ impl std::error::Error for GlobalComponentError {
     }
 }
 
-
 // An error related to the linkage of the components
 #[derive(Debug)]
 pub struct ComponentLinkingError {

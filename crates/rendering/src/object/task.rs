@@ -14,7 +14,7 @@ pub enum PipelineTask {
     CreateMaterial(ObjectBuildingTask<Material>),
     CreateShader(ObjectBuildingTask<Shader>),
     CreateComputeShader(ObjectBuildingTask<ComputeShader>),
-    CreateModel(ObjectBuildingTask<Model>,),
+    CreateModel(ObjectBuildingTask<Model>),
     CreateRenderer(ObjectBuildingTask<Renderer>),
 
     // Update tasks

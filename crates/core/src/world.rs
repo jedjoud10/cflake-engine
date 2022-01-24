@@ -1,6 +1,5 @@
 use std::sync::{Arc, RwLock};
 
-use ecs::{entity::EntityID, component::ComponentID};
 use rendering::pipeline::PipelineStartData;
 
 use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
@@ -70,7 +69,6 @@ impl World {
         self.config = config;
         // TODO: Apply the config file's data to the rendering window
         println!("World init done!");
-
     }
     // Resize window event
     pub fn resize_window_event(&mut self, new_dimensions: veclib::Vector2<u16>) {

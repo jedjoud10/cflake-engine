@@ -1,11 +1,15 @@
-use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery, rendering};
+use main::{
+    core::{Context, WriteContext},
+    ecs::component::ComponentQuery,
+    rendering,
+};
 
 // The rendering system update loop
 fn run(context: Context, query: ComponentQuery) {
     // For each renderer, we must update it's pipeline transform and other values
     let read = context.read();
     let pipeline = read.pipeline.read().unwrap();
-    let i = std::time::Instant::now();
+    let _i = std::time::Instant::now();
     let tasks = query.update_all_map(move |components| {
         let renderer = components.component::<crate::components::Renderer>().unwrap();
         let transform = components.component::<crate::components::Transform>().unwrap();
@@ -13,7 +17,9 @@ fn run(context: Context, query: ComponentQuery) {
         if renderer_object_id.valid() {
             // Update the values if our renderer is valid
             Some(rendering::object::PipelineTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix()))
-        } else { None }
+        } else {
+            None
+        }
     });
 
     // Since we have all the tasks, we can send them as a batch
@@ -28,13 +34,13 @@ fn added_entities(context: Context, query: ComponentQuery) {
         // Get the pipeline first
         let read = share.read();
         let pipeline = read.pipeline.read().unwrap();
-        
+
         // Get the CPU renderer that we must construct
         let mut renderer = components.component_mut::<crate::components::Renderer>().unwrap();
         let cpu_renderer = renderer.renderer.take().unwrap();
         let object_id = rendering::pipeline::pipec::construct(cpu_renderer, &*pipeline);
         renderer.object_id = object_id;
-    })  
+    })
 }
 
 // Create the rendering system

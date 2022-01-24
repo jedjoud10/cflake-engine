@@ -8,12 +8,12 @@ use crate::{
         texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{ObjectBuildingTask, ObjectID, PipelineTask, TrackingTaskID, PipelineTaskCombination},
+    object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, TrackingTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
-    utils::{Window, RenderWrapper},
+    utils::{RenderWrapper, Window},
 };
 use ahash::AHashSet;
-use glfw::{Context, WindowMode};
+use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
     ffi::{c_void, CString},
@@ -87,15 +87,15 @@ impl Pipeline {
             PipelineTask::CreateModel(id) => self.model_create(id),
             PipelineTask::CreateRenderer(id) => self.renderer_create(id),
             PipelineTask::CreateComputeShader(id) => self.compute_create(id),
-        
+
             PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
-            
+
             // Window tasks
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
-            PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused)
+            PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused),
         }
     }
     // Flush all the buffered tasks, and execute them
@@ -112,14 +112,16 @@ impl Pipeline {
         for task in tasks {
             match task {
                 PipelineTaskCombination::Single(task) => self.execute_task(renderer, task),
-                PipelineTaskCombination::SingleTracked(task, task_id) => {
+                PipelineTaskCombination::SingleTracked(_task, task_id) => {
                     // Execute the task and set it's state to completed
                     self.completed_tasks.insert(task_id);
-                },
+                }
                 PipelineTaskCombination::Batch(batch) => {
                     // Execute all the tasks
-                    for task in batch { self.execute_task(renderer, task); }
-                },
+                    for task in batch {
+                        self.execute_task(renderer, task);
+                    }
+                }
             }
         }
 
@@ -127,7 +129,7 @@ impl Pipeline {
         let update_window = self.window.update.load(Ordering::Relaxed);
         if update_window {
             let (glfw, window) = (self.window.wrapper.0.load(Ordering::Relaxed), self.window.wrapper.1.load(Ordering::Relaxed));
-            let (glfw, window) = unsafe { (&mut *glfw, &mut *window) };
+            let (glfw, _window) = unsafe { (&mut *glfw, &mut *window) };
             if self.window.vsync.load(Ordering::Relaxed) {
                 glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
             } else {
@@ -713,8 +715,9 @@ impl Pipeline {
         renderer.update_window_dimensions(new_dimensions, self);
     }
     // Set the focus state for our window
-    fn set_window_focus_state(&mut self, focused: bool) { self.window.focused = focused; }
-    
+    fn set_window_focus_state(&mut self, focused: bool) {
+        self.window.focused = focused;
+    }
 }
 
 // Data that will be sent back to the main thread after we start the pipeline thread
@@ -830,18 +833,18 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // The main thread will not own the glfw context, and we will send it to the render thread instead
     unsafe { glfw::ffi::glfwMakeContextCurrent(null_mut()) }
 
-    // Window and GLFW wrapper    
+    // Window and GLFW wrapper
     let wrapper = {
         // Create the render wrapper
         let glfw = glfw as *mut glfw::Glfw;
-        let window = window as *mut glfw::Window;        
+        let window = window as *mut glfw::Window;
         Arc::new(RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window)))
     };
 
     // Actually make the render thread
     let handle = std::thread::spawn(move || {
         // Start OpenGL
-        let glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
+        let _glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
         let window = unsafe { &mut *wrapper.1.load(std::sync::atomic::Ordering::Relaxed) };
         // Initialize OpenGL
         println!("Initializing OpenGL...");

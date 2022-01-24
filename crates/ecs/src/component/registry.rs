@@ -5,7 +5,7 @@ use std::{
     any::Any,
     collections::HashMap,
     sync::{
-        atomic::{AtomicU32, Ordering, AtomicU8},
+        atomic::{AtomicU32, Ordering},
         RwLock,
     },
 };

@@ -1,4 +1,7 @@
-use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery};
+use main::{
+    core::{Context, WriteContext},
+    ecs::component::ComponentQuery,
+};
 
 // The physics system update loop
 fn run(context: Context, query: ComponentQuery) {
@@ -13,12 +16,14 @@ fn run(context: Context, query: ComponentQuery) {
         let (position, rotation) = (transform.position, transform.rotation);
         let mut physics = components.component_mut::<crate::components::Physics>().unwrap();
         let object = &mut physics.object;
-        object.set_position(position); object.set_rotation(rotation);
+        object.set_position(position);
+        object.set_rotation(rotation);
         object.update(delta);
         let (position, rotation) = (*object.get_position(), *object.get_rotation());
         // Apply the physics' object new transform to our current transform
         let mut transform = components.component_mut::<crate::components::Transform>().unwrap();
-        transform.position = position; transform.rotation = rotation;
+        transform.position = position;
+        transform.rotation = rotation;
     })
 }
 

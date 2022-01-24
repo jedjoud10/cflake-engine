@@ -1,4 +1,7 @@
-use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use super::RenderWrapper;
 
@@ -23,7 +26,7 @@ impl Window {
             vsync: AtomicBool::new(false),
             update: AtomicBool::new(false),
             focused: false,
-            wrapper
+            wrapper,
         }
     }
     // These methods MUST be called on the main thread
@@ -39,16 +42,34 @@ impl Window {
             // Set the glfw window as a fullscreen window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let videomode = monitor.unwrap().get_video_mode().unwrap();
-                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, Some(videomode.refresh_rate));
-                unsafe { gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32); }
+                window.set_monitor(
+                    glfw::WindowMode::FullScreen(monitor.unwrap()),
+                    0,
+                    0,
+                    videomode.width,
+                    videomode.height,
+                    Some(videomode.refresh_rate),
+                );
+                unsafe {
+                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
+                }
             });
         } else {
             // Set the glfw window as a windowed window
             glfw.with_primary_monitor_mut(|_glfw2, monitor| {
                 let videomode = monitor.unwrap().get_video_mode().unwrap();
                 let default_window_size = crate::utils::DEFAULT_WINDOW_SIZE;
-                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, default_window_size.x as u32, default_window_size.y as u32, Some(videomode.refresh_rate));
-                unsafe { gl::Viewport(0, 0, default_window_size.x as i32, default_window_size.y as i32); }
+                window.set_monitor(
+                    glfw::WindowMode::Windowed,
+                    50,
+                    50,
+                    default_window_size.x as u32,
+                    default_window_size.y as u32,
+                    Some(videomode.refresh_rate),
+                );
+                unsafe {
+                    gl::Viewport(0, 0, default_window_size.x as i32, default_window_size.y as i32);
+                }
             });
         }
     }

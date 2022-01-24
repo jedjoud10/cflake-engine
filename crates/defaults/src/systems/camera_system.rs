@@ -55,7 +55,7 @@ fn run(mut context: Context, components: ComponentQuery) {
         let pipeline = write.pipeline.read().unwrap();
         camera.update_aspect_ratio(pipeline.window.dimensions);
         camera.update_view_matrix(position, new_rotation);
-        
+
         use main::rendering::object;
         use main::rendering::pipeline;
         let pipeline_camera = main::rendering::pipeline::camera::Camera {

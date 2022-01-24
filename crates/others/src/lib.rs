@@ -1,5 +1,5 @@
 // Export
-mod utils;
 mod time;
-pub use utils::*;
+mod utils;
 pub use time::Time;
+pub use utils::*;

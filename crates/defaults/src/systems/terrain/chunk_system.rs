@@ -1,7 +1,11 @@
-use main::{ecs::component::ComponentQuery, core::{Context, WriteContext}, terrain::DEFAULT_LOD_FACTOR};
+use main::{
+    core::{Context, WriteContext},
+    ecs::component::ComponentQuery,
+    terrain::DEFAULT_LOD_FACTOR,
+};
 
 // The chunk systems' update loop
-fn run(mut context: Context, query: ComponentQuery) {
+fn run(mut context: Context, _query: ComponentQuery) {
     // Get the global terrain component
     let mut write = context.write();
     // Get the camera position
@@ -11,17 +15,12 @@ fn run(mut context: Context, query: ComponentQuery) {
         // Generate the chunks if needed
         let octree = &mut terrain.octree;
 
-        if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, DEFAULT_LOD_FACTOR) {
+        if let Some((_added, _removed)) = octree.generate_incremental_octree(&camera_pos, DEFAULT_LOD_FACTOR) {
             // We have moved, thus the chunks need to be regenerated
-
         }
     }
 }
-// Create a chunk system 
+// Create a chunk system
 pub fn system(write: &mut WriteContext) {
-    write
-        .ecs
-        .create_system_builder()
-        .set_run_event(run)
-        .build()
+    write.ecs.create_system_builder().set_run_event(run).build()
 }

@@ -129,6 +129,6 @@ pub(crate) fn create_key_cache() -> HashMap<i32, Keys> {
         (glfw::Key::get_scancode(&glfw::Key::Num0), Keys::NUM0),
     ]);
     // Unwrap each value
-    let cache = cache.into_iter().map(|(key, val)| (key.unwrap(), val)).collect::<HashMap<i32, Keys>>();
-    cache
+
+    cache.into_iter().map(|(key, val)| (key.unwrap(), val)).collect::<HashMap<i32, Keys>>()
 }

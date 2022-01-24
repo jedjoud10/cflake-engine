@@ -4,7 +4,7 @@ use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 
-use super::{SystemExecutionData};
+use super::SystemExecutionData;
 use crate::{
     component::{ComponentQuery, EnclosedComponent, LinkedComponents},
     entity::{Entity, EntityID},

@@ -4,7 +4,7 @@ pub mod pipec {
 
     use crate::{
         basics::Buildable,
-        object::{ObjectID, PipelineObject, PipelineTask, TrackingTaskID, PipelineTaskCombination},
+        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, TrackingTaskID},
         pipeline::{sender, Pipeline},
     };
     // Debug some pipeline data
@@ -21,12 +21,12 @@ pub mod pipec {
     }
     // Send a task to the shared pipeline, but also return it's tracking ID
     pub fn task_tracker(task: PipelineTask, pipeline: &Pipeline) -> TrackingTaskID {
-        // Create a tracking task ID for this task 
+        // Create a tracking task ID for this task
         let id = TrackingTaskID::new();
         // Get the thread local sender
         sender::send_task(PipelineTaskCombination::SingleTracked(task, id), pipeline).unwrap();
         id
-    }    
+    }
     // Create a Pipeline Object, returning it's ObjectID
     pub fn construct<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
         let object = object.pre_construct(pipeline);

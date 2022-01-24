@@ -31,7 +31,7 @@ impl WorldTaskReceiver {
             }
             WorldTask::DirectLinkComponents(id, link_group) => {
                 ecs.link_components(id, link_group).unwrap();
-            },
+            }
             WorldTask::DirectRemoveComponents(id, unlink_group) => {
                 ecs.unlink_components(id, unlink_group).unwrap();
             }

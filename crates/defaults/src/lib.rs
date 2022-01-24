@@ -1,7 +1,6 @@
-
 use main::assets::preload_asset;
-use main::core::{TaskSenderContext, WriteContext};
-use systems::{camera_system, physics_system, rendering_system, debugging_system, terrain, window_system};
+use main::core::WriteContext;
+use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, window_system};
 // Default components
 pub mod components;
 // Default globals

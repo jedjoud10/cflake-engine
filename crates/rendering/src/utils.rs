@@ -1,12 +1,12 @@
 mod assets_impls;
 mod error;
 mod main_types;
+mod render_wrapper;
 mod utils;
 mod window;
-mod render_wrapper;
-pub use render_wrapper::*;
 pub use assets_impls::*;
 pub use error::*;
 pub use main_types::*;
+pub use render_wrapper::*;
 pub use utils::*;
 pub use window::*;

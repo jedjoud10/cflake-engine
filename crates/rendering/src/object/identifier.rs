@@ -1,6 +1,10 @@
 use super::PipelineObject;
 
-use std::{fmt::Debug, marker::PhantomData, sync::atomic::{AtomicU64, Ordering}};
+use std::{
+    fmt::Debug,
+    marker::PhantomData,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
 pub struct ObjectID<T>
@@ -68,6 +72,8 @@ pub struct TrackingTaskID {
 impl TrackingTaskID {
     // Create a new task ID by incrementing the global TrackingTaskID
     pub fn new() -> Self {
-        Self { id: TRACKING_TASK_ID_COUNTER.fetch_add(1, Ordering::Relaxed) }
+        Self {
+            id: TRACKING_TASK_ID_COUNTER.fetch_add(1, Ordering::Relaxed),
+        }
     }
 }
