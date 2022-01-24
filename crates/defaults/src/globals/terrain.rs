@@ -47,7 +47,7 @@ impl Terrain {
 
         // Load the compute shader
         let (string, csgtree) = interpreter.finalize().unwrap();
-        let ss = ShaderSettings::default().external_code(0, string).source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
+        let ss = ShaderSettings::default().external_code("voxel_interpreter", string).source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
         let compute_shader = ComputeShader::new(ss).unwrap();
         let compute_shader = pipec::construct(compute_shader, pipeline);
 

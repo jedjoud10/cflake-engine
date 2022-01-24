@@ -15,24 +15,22 @@ pub fn init(mut write: core::WriteContext) {
     let entity = ecs::entity::Entity::new();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
     write.ecs.add_entity(entity, id, group).unwrap();
+    let pipeline_ = write.pipeline.clone();
+    let pipeline = pipeline_.read().unwrap();
 
     // Create it's model
-    let (model_id, material, _texture, _texture2) = {
-        let pipeline = write.pipeline.read().unwrap();
-        let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\cube.mdl3d").unwrap();
-        let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
+    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\cube.mdl3d").unwrap();
+    let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
 
-        // Create it's material
-        let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_diffuse.png").unwrap();
-        let texture = rendering::pipeline::pipec::construct(texture, &*pipeline);
+    // Create it's material
+    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_diffuse.png").unwrap();
+    let texture = rendering::pipeline::pipec::construct(texture, &*pipeline);
 
-        let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_normal.png").unwrap();
-        let texture2 = rendering::pipeline::pipec::construct(texture2, &*pipeline);
+    let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_normal.png").unwrap();
+    let texture2 = rendering::pipeline::pipec::construct(texture2, &*pipeline);
 
-        let material = rendering::basics::material::Material::default().set_diffuse_texture(texture).set_normals_texture(texture2);
-        let material = rendering::pipeline::pipec::construct(material, &*pipeline);
-        (model_id, material, texture, texture2)
-    };
+    let material = rendering::basics::material::Material::default().set_diffuse_texture(texture).set_normals_texture(texture2);
+    let material = rendering::pipeline::pipec::construct(material, &*pipeline);
 
     // Create a simple cube
     for x in 0..2 {
@@ -54,7 +52,11 @@ pub fn init(mut write: core::WriteContext) {
             let renderer = defaults::components::Renderer::new(renderer);
             group.link(renderer).unwrap();
             // Add the cube
-            write.ecs.add_entity(entity, id, group);
+            write.ecs.add_entity(entity, id, group).unwrap();
         }
     }
+
+    // Add the terrain
+    let terrain = defaults::globals::Terrain::new(3, terrain::interpreter::Interpreter::default_basic(), &*pipeline);
+    write.ecs.add_global(terrain).unwrap();
 }

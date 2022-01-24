@@ -8,20 +8,18 @@ pub struct Voxel {
     pub material_id: u8, // Voxel material
 }
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap
-pub struct VoxelData {
-    pub voxels: Box<[Voxel]>,
-}
+pub struct VoxelData(Box<[Voxel]>);
 
 impl Index<usize> for VoxelData {
     type Output = Voxel;
 
     fn index(&self, index: usize) -> &Self::Output {
-        self.voxels.get(index).unwrap()
+        self.0.get(index).unwrap()
     }
 }
 
 impl IndexMut<usize> for VoxelData {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.voxels.get_mut(index).unwrap()
+        self.0.get_mut(index).unwrap()
     }
 }

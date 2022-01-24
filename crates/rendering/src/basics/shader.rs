@@ -27,14 +27,14 @@ pub(crate) struct ShaderSource {
 #[derive(Default)]
 pub struct ShaderSettings {
     // Some external code that we can
-    pub(crate) external_code: HashMap<u8, String>,
+    pub(crate) external_code: HashMap<String, String>,
     pub(crate) sources: HashMap<String, ShaderSource>,
 }
 
 impl ShaderSettings {
     // Load some external code that can be loading using specific include points
-    pub fn external_code(mut self, id: u8, string: String) -> Self {
-        self.external_code.insert(id, string);
+    pub fn external_code(mut self, id: &str, string: String) -> Self {
+        self.external_code.insert(id.to_string(), string);
         self
     }
     // Load a shader source
@@ -116,7 +116,7 @@ pub(crate) fn load_includes(flags: &mut ShaderFlags, settings: &ShaderSettings, 
         if !settings.external_code.is_empty() && line.trim().starts_with("#include_custom ") {
             // Get the source
             let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-            let source_id = &c[2..(c.len() - 2)].to_string().parse::<u8>().unwrap();
+            let source_id = &c[2..(c.len() - 2)].to_string();
             let source = settings.external_code.get(source_id).unwrap();
             *line = source.clone();
             break;

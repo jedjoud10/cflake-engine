@@ -21,7 +21,6 @@ pub struct Interpreter {
 
 impl Default for Interpreter {
     fn default() -> Self {
-        // Create the default starter node
         Self {
             nodes: Vec::new(),
             used_nodes: Vec::new(),
@@ -34,8 +33,8 @@ impl Default for Interpreter {
 
 // Add nodes
 impl Interpreter {
-    // Default pre-generated
-    pub fn new_pregenerated() -> Self {
+    // Default pre-generated basic terrain
+    pub fn default_basic() -> Self {
         // Create the interpreter system
         let mut interpreter = Interpreter::default();
         // Add the default pos.y nodes
