@@ -11,8 +11,8 @@ use main::rendering::pipeline::pipec;
 fn run(context: Context, query: ComponentQuery) {
     let read = context.read();
     let pipeline = read.pipeline.read().unwrap();
-    if read.input.map_changed("toggle_fullscreen") { pipeline.window.set_fullscreen(read.input.map_toggled("toggle_fullscreen")); dbg!() }
-    if read.input.map_changed("toggle_vsync") { pipeline.window.set_vsync(read.input.map_toggled("toggle_vsync")); dbg!() }
+    if read.input.map_changed("toggle_fullscreen") { pipeline.window.set_fullscreen(read.input.map_toggled("toggle_fullscreen")); }
+    if read.input.map_changed("toggle_vsync") { pipeline.window.set_vsync(read.input.map_toggled("toggle_vsync")); }
 }
 
 // Create a system that'll allow us to disable/enable fullscreen and vsync
