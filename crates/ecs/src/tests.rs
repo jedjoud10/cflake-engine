@@ -150,6 +150,7 @@ pub mod test {
         impl_component!(GlobalComponentTest2);
         // Create the main ECS manager
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
+        ecs.add_global(GlobalComponentTest { test_value: 10 }).unwrap();
         // Make a simple system
         fn internal_run(_context: WorldContext, _query: ComponentQuery) {}
 
