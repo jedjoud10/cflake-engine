@@ -7,7 +7,7 @@ use main::input::{Keys, MapType};
 fn run(mut context: Context, components: ComponentQuery) {
     let mut write = context.write();
     // Rotate the camera around
-    let mouse_pos = write.input.get_accumulated_mouse_position();
+    let mouse_pos = write.input.get_mouse_position();
     const SENSIVITY: f32 = 0.001;
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
@@ -83,11 +83,11 @@ pub fn system(write: &mut WriteContext) {
         .link::<crate::components::Camera>()
         .link::<crate::components::Transform>()
         .build();
-    write.input.bind_key(Keys::W, "camera_forward", MapType::Button);
-    write.input.bind_key(Keys::S, "camera_backwards", MapType::Button);
-    write.input.bind_key(Keys::D, "camera_right", MapType::Button);
-    write.input.bind_key(Keys::A, "camera_left", MapType::Button);
-    write.input.bind_key(Keys::Space, "camera_up", MapType::Button);
-    write.input.bind_key(Keys::LeftShift, "camera_down", MapType::Button);
-    write.input.bind_key(Keys::RightShift, "cull_update", MapType::Toggle);
+    write.input.bind_key(Keys::W, "camera_forward");
+    write.input.bind_key(Keys::S, "camera_backwards");
+    write.input.bind_key(Keys::D, "camera_right");
+    write.input.bind_key(Keys::A, "camera_left");
+    write.input.bind_key(Keys::Space, "camera_up");
+    write.input.bind_key(Keys::LeftShift, "camera_down");
+    write.input.bind_key(Keys::RightShift, "cull_update");
 }

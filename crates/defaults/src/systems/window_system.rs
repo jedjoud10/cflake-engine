@@ -4,7 +4,6 @@ use ecs::component::*;
 use main::core::{Context, WriteContext};
 use main::ecs;
 use main::input::Keys;
-use main::input::MapType::Toggle;
 use main::rendering::object::PipelineTask;
 use main::rendering::pipeline::pipec;
 
@@ -23,6 +22,6 @@ pub fn system(write: &mut WriteContext) {
         .create_system_builder()
         .set_run_event(run)
         .build();
-    write.input.bind_key(Keys::F5, "toggle_fullscreen", Toggle);
-    write.input.bind_key(Keys::F6, "toggle_vsync", Toggle);
+    write.input.bind_key_toggle(Keys::F5, "toggle_fullscreen");
+    write.input.bind_key_toggle(Keys::F6, "toggle_vsync");
 }

@@ -30,9 +30,6 @@ impl World {
     fn init(&mut self) {
         println!("Initializing world...");
         // Load the default stuff
-        self.input.create_key_cache();
-        self.input.bind_key(input::Keys::F4, "toggle_console", input::MapType::Button);
-        self.input.bind_key(input::Keys::Enter, "enter", input::MapType::Button);
 
         // Create some default UI that prints some default info to the screen
         let mut root = ui::Root::new(1);

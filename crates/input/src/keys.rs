@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 // Keys enums
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 #[allow(dead_code)]
@@ -61,4 +63,72 @@ pub enum Keys {
     NUM7,
     NUM8,
     NUM9,
+}
+
+// Create the key scancode cache
+pub(crate) fn create_key_cache() -> HashMap<i32, Keys> {
+    let cache: HashMap<Option<i32>, Keys> = HashMap::<Option<i32>, Keys>::from([
+        (glfw::Key::get_scancode(&glfw::Key::Escape), Keys::Escape),
+        (glfw::Key::get_scancode(&glfw::Key::Enter), Keys::Enter),
+        (glfw::Key::get_scancode(&glfw::Key::LeftShift), Keys::LeftShift),
+        (glfw::Key::get_scancode(&glfw::Key::LeftControl), Keys::LeftControl),
+        (glfw::Key::get_scancode(&glfw::Key::RightShift), Keys::RightShift),
+        (glfw::Key::get_scancode(&glfw::Key::RightControl), Keys::RightControl),
+        (glfw::Key::get_scancode(&glfw::Key::Space), Keys::Space),
+        (glfw::Key::get_scancode(&glfw::Key::Minus), Keys::Minus),
+        (glfw::Key::get_scancode(&glfw::Key::Period), Keys::Period),
+        (glfw::Key::get_scancode(&glfw::Key::Comma), Keys::Comma),
+        (glfw::Key::get_scancode(&glfw::Key::Backspace), Keys::Backspace),
+        (glfw::Key::get_scancode(&glfw::Key::A), Keys::A),
+        (glfw::Key::get_scancode(&glfw::Key::B), Keys::B),
+        (glfw::Key::get_scancode(&glfw::Key::C), Keys::C),
+        (glfw::Key::get_scancode(&glfw::Key::D), Keys::D),
+        (glfw::Key::get_scancode(&glfw::Key::E), Keys::E),
+        (glfw::Key::get_scancode(&glfw::Key::F), Keys::F),
+        (glfw::Key::get_scancode(&glfw::Key::G), Keys::G),
+        (glfw::Key::get_scancode(&glfw::Key::H), Keys::H),
+        (glfw::Key::get_scancode(&glfw::Key::I), Keys::I),
+        (glfw::Key::get_scancode(&glfw::Key::J), Keys::J),
+        (glfw::Key::get_scancode(&glfw::Key::K), Keys::K),
+        (glfw::Key::get_scancode(&glfw::Key::L), Keys::L),
+        (glfw::Key::get_scancode(&glfw::Key::M), Keys::M),
+        (glfw::Key::get_scancode(&glfw::Key::N), Keys::N),
+        (glfw::Key::get_scancode(&glfw::Key::O), Keys::O),
+        (glfw::Key::get_scancode(&glfw::Key::P), Keys::P),
+        (glfw::Key::get_scancode(&glfw::Key::Q), Keys::Q),
+        (glfw::Key::get_scancode(&glfw::Key::R), Keys::R),
+        (glfw::Key::get_scancode(&glfw::Key::S), Keys::S),
+        (glfw::Key::get_scancode(&glfw::Key::T), Keys::T),
+        (glfw::Key::get_scancode(&glfw::Key::U), Keys::U),
+        (glfw::Key::get_scancode(&glfw::Key::V), Keys::V),
+        (glfw::Key::get_scancode(&glfw::Key::W), Keys::W),
+        (glfw::Key::get_scancode(&glfw::Key::X), Keys::X),
+        (glfw::Key::get_scancode(&glfw::Key::Y), Keys::Y),
+        (glfw::Key::get_scancode(&glfw::Key::Z), Keys::Z),
+        (glfw::Key::get_scancode(&glfw::Key::F1), Keys::F1),
+        (glfw::Key::get_scancode(&glfw::Key::F2), Keys::F2),
+        (glfw::Key::get_scancode(&glfw::Key::F3), Keys::F3),
+        (glfw::Key::get_scancode(&glfw::Key::F4), Keys::F4),
+        (glfw::Key::get_scancode(&glfw::Key::F5), Keys::F5),
+        (glfw::Key::get_scancode(&glfw::Key::F6), Keys::F6),
+        (glfw::Key::get_scancode(&glfw::Key::F7), Keys::F7),
+        (glfw::Key::get_scancode(&glfw::Key::F8), Keys::F8),
+        (glfw::Key::get_scancode(&glfw::Key::F9), Keys::F9),
+        (glfw::Key::get_scancode(&glfw::Key::F10), Keys::F10),
+        (glfw::Key::get_scancode(&glfw::Key::F11), Keys::F11),
+        (glfw::Key::get_scancode(&glfw::Key::F12), Keys::F12),
+        (glfw::Key::get_scancode(&glfw::Key::Num1), Keys::NUM1),
+        (glfw::Key::get_scancode(&glfw::Key::Num2), Keys::NUM2),
+        (glfw::Key::get_scancode(&glfw::Key::Num3), Keys::NUM3),
+        (glfw::Key::get_scancode(&glfw::Key::Num4), Keys::NUM4),
+        (glfw::Key::get_scancode(&glfw::Key::Num5), Keys::NUM5),
+        (glfw::Key::get_scancode(&glfw::Key::Num6), Keys::NUM6),
+        (glfw::Key::get_scancode(&glfw::Key::Num7), Keys::NUM7),
+        (glfw::Key::get_scancode(&glfw::Key::Num8), Keys::NUM8),
+        (glfw::Key::get_scancode(&glfw::Key::Num9), Keys::NUM9),
+        (glfw::Key::get_scancode(&glfw::Key::Num0), Keys::NUM0),
+    ]);
+    // Unwrap each value
+    let cache = cache.into_iter().map(|(key, val)| (key.unwrap(), val)).collect::<HashMap<i32, Keys>>();
+    cache
 }
