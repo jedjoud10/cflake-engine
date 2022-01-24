@@ -1,7 +1,7 @@
 use ecs::component::*;
 use main::core::{Context, WriteContext};
 use main::ecs;
-use main::input::{Keys, MapType};
+use main::input::Keys;
 
 // The camera system update loop
 fn run(mut context: Context, components: ComponentQuery) {
@@ -21,26 +21,26 @@ fn run(mut context: Context, components: ComponentQuery) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 1.0 + (write.input.get_accumulated_mouse_scroll() * 0.1).powf(2.0);
+    let original_speed = 1.0 + (write.input.get_mouse_scroll() as f32 * 0.1).powf(2.0);
     let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * write.time.delta as f32;
 
     // Actually update the velocity
     // Forward and backward
-    if write.input.map_held("camera_forward").0 {
+    if write.input.map_held("camera_forward") {
         velocity += -forward * speed;
-    } else if write.input.map_held("camera_backwards").0 {
+    } else if write.input.map_held("camera_backwards") {
         velocity += forward * speed;
     }
     // Left and right
-    if write.input.map_held("camera_right").0 {
+    if write.input.map_held("camera_right") {
         velocity += right * speed;
-    } else if write.input.map_held("camera_left").0 {
+    } else if write.input.map_held("camera_left") {
         velocity += -right * speed;
     }
     // Up and down
-    if write.input.map_held("camera_up").0 {
+    if write.input.map_held("camera_up") {
         velocity += up * speed;
-    } else if write.input.map_held("camera_down").0 {
+    } else if write.input.map_held("camera_down") {
         velocity += -up * speed;
     }
     // Update the camera values now

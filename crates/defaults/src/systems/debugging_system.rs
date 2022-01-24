@@ -1,4 +1,4 @@
-use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery, input::{Keys, MapType}};
+use main::{core::{WriteContext, Context}, ecs::component::ComponentQuery, input::Keys};
 
 // The debugging system's update loop
 fn run(context: Context, _query: ComponentQuery) {
@@ -25,5 +25,5 @@ pub fn system(write: &mut WriteContext) {
         .set_run_event(run)
         .build();
     // Set some debugging keybinds
-    write.input.bind_key(Keys::F1, "debug", MapType::Button);
+    write.input.bind_key(Keys::F1, "debug");
 }

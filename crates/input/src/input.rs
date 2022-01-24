@@ -43,7 +43,7 @@ impl InputManager {
     }
     // Called whenever the mous scroll changes
     pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f64) {
-        self.last_mouse_scroll = scroll_delta;
+        self.last_mouse_scroll += scroll_delta;
 
     }
     // This should be ran at the start of every frame, before we poll any glfw events
@@ -70,12 +70,14 @@ impl InputManager {
         self.last_mouse_scroll
     }
     // When we receive a key event from glfw
-    pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
-        let key = self.cache.get(&key_scancode).unwrap();
-        let maps_to_update = self.keys.get_vec(key).unwrap();
+    pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) -> Option<()> {
+        // This is not a valid action event
+        if action_type != 0 && action_type != 1 { return None; }
+        let key = self.cache.get(&key_scancode)?;
+        let maps_to_update = self.keys.get_vec(key)?;
         // Update each map now
         for map_name in maps_to_update {
-            let (map, changed) = self.maps.get_mut(map_name).unwrap();
+            let (map, changed) = self.maps.get_mut(map_name)?;
             *changed = true;
             match action_type {
                 0 => {
@@ -95,21 +97,25 @@ impl InputManager {
                 _ => {}
             }
         }
-        
+        Some(())
     }
     // Binds a key to a specific mapping, making it a button
     pub fn bind_key(&mut self, key: Keys, map_name: &str) {
         // Check if the binding exists
         if !self.maps.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
-            self.maps.insert(map_name.to_string(), (MapState::Button(ButtonState::default()), false));
+            let map_name = map_name.to_string();
+            self.maps.insert(map_name.clone(), (MapState::Button(ButtonState::default()), false));
+            self.keys.insert(key, map_name);
         }
     }
     pub fn bind_key_toggle(&mut self, key: Keys, map_name: &str) {
         // Check if the binding exists
         if !self.maps.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
-            self.maps.insert(map_name.to_string(), (MapState::Toggle(ToggleState::default()), false));
+            let map_name = map_name.to_string();
+            self.maps.insert(map_name.clone(), (MapState::Toggle(ToggleState::default()), false));
+            self.keys.insert(key, map_name);
         }
     }
 }
