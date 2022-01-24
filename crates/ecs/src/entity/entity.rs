@@ -47,14 +47,19 @@ impl Entity {
 
 // An EntityID that will be used to identify entities
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
-pub struct EntityID {
-    pub id: u64,
+pub struct EntityID(pub u64);
+
+impl std::fmt::Display for EntityID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#X}", self.0)
+    }
 }
+
 impl EntityID {
     // Create a new entity ID using a ShareableOrderedVecState of the entities, something that we can get by the Context<ECSManager>
     pub fn new<Context>(ecs_manager: &ECSManager<Context>) -> Self {
         Self {
-            id: ecs_manager.entities.get_next_id_increment(),
+            0: ecs_manager.entities.get_next_id_increment(),
         }
     }
 }

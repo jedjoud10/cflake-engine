@@ -1,7 +1,7 @@
 use main::{
     core::{Context, WriteContext},
     ecs::{component::ComponentQuery, self, entity::EntityID},
-    terrain::{DEFAULT_LOD_FACTOR, ChunkCoords}, math::octrees::OctreeNode,
+    terrain::{DEFAULT_LOD_FACTOR, ChunkCoords},
 };
 
 // Add a single chunk to the world
@@ -26,6 +26,7 @@ fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) ->
 
     // Add the entity to the world
     write.ecs.add_entity(entity, id, group).unwrap();
+    println!("Spawn chunk at {} with EntityID: {}", coords.center, id);
     id
 }
 // Remove a single chunk

@@ -53,21 +53,21 @@ impl<Context> ECSManager<Context> {
     /* #region Entities */
     // Get an entity
     pub fn entity(&self, id: &EntityID) -> Result<&Entity, EntityError> {
-        self.entities.get(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
+        self.entities.get(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Get an entity mutably
     pub fn entity_mut(&mut self, id: &EntityID) -> Result<&mut Entity, EntityError> {
-        self.entities.get_mut(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
+        self.entities.get_mut(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
     pub fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) -> Result<(), EntityError> {
         // Check if the EntityID was not occupied already
-        if self.entities.get(id.id).is_some() {
+        if self.entities.get(id.0).is_some() {
             return Err(EntityError::new("Tried adding entity, but the EntityID was already occupied!".to_string(), id));
         }
         entity.id = Some(id);
         // Add the entity
-        let _idx = self.entities.insert(id.id, entity);
+        let _idx = self.entities.insert(id.0, entity);
         // After doing that, we can safely add the components
         self.link_components(id, group).unwrap();
         Ok(())
@@ -75,7 +75,7 @@ impl<Context> ECSManager<Context> {
     // Remove an entity, but keep it's components alive until all systems have been notified
     pub fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {
         // Invalidate the entity
-        let entity = self.entities.remove(id.id).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
+        let entity = self.entities.remove(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
         let cbitfield = entity.cbitfield;
         // And finally remove the entity from it's systems
         let mut lock = self.entities_to_remove.lock().unwrap();
