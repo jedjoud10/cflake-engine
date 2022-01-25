@@ -106,7 +106,8 @@ impl Pipeline {
     fn execute_tracked_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
-            PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(tracking_id, id, settings),
+            PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
+            PipelineTrackedTask::FillTexture(id, bytecount_per_pixel, bytes) => self.fill_texture(id, bytecount_per_pixel, bytes),
         };
 
         // Add the tracked ID to our pipeline
@@ -296,7 +297,7 @@ impl Pipeline {
 
     // Actually update our data
     // Add the renderer
-    pub(crate) fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
+    fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
         // Get the renderer data, if it does not exist then use the default renderer data
         let renderer = task.0;
         let defaults = self.defaults.as_ref().unwrap();
@@ -306,16 +307,16 @@ impl Pipeline {
         self.renderers.insert(task.1.id.unwrap(), renderer);
     }
     // Remove the renderer using it's renderer ID
-    pub(crate) fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
+    fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
         self.renderers.remove(id.id.unwrap());
     }
     // Update a renderer's matrix
-    pub(crate) fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
+    fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
         let renderer = self.renderers.get_mut(id.id.unwrap()).unwrap();
         renderer.matrix = matrix;
     }
     // Create a shader and cache it. We do not cache the "subshader" though
-    pub(crate) fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
+    fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
         // Compile a single shader source
         fn compile_single_source(source_data: ShaderSource) -> u32 {
             let shader_type: u32;
@@ -405,7 +406,7 @@ impl Pipeline {
         self.shaders.insert(task.1.id.unwrap(), shader);
     }
     // Create a compute shader and cache it
-    pub(crate) fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
+    fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
         // Extract the shader
         let mut shader = task.0;
 
@@ -474,7 +475,7 @@ impl Pipeline {
         self.compute_shaders.insert(task.1.id.unwrap(), shader);
     }
     // Create a model
-    pub(crate) fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
+    fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
         let model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
@@ -585,7 +586,7 @@ impl Pipeline {
         self.models.insert(task.1.id.unwrap(), (model, buffers));
     }
     // Dispose of a model, also remove it from the pipeline
-    pub(crate) fn model_dispose(&mut self, id: ObjectID<Model>) {
+    fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Remove the model and it's buffers
         let (_model, mut buffers) = self.models.remove(id.id.unwrap()).unwrap();
         unsafe {
@@ -602,7 +603,7 @@ impl Pipeline {
         }
     }
     // Create a texture
-    pub(crate) fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
+    fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
         let mut texture = task.0;
         let mut pointer: *const c_void = null();
         if !texture.bytes.is_empty() {
@@ -706,7 +707,7 @@ impl Pipeline {
     }
     // Update the size of a texture
     // PS: This also clears the texture
-    pub(crate) fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
+    fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
         // Get the GPU texture object
         let texture = self.get_texture_mut(id).unwrap();
         // Check if the current dimension type matches up with the new one
@@ -732,7 +733,7 @@ impl Pipeline {
         }
     }
     // Run a compute shader, and return it's GlTracker
-    pub(crate) fn compute_run(&mut self, tracking_id: TrackedTaskID, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) -> GlTracker {
+    fn compute_run(&mut self, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) -> GlTracker {
         // Execute some shader uniforms if we want to
         let group = settings.uniforms;
         if let Some(group) = group {
@@ -746,10 +747,38 @@ impl Pipeline {
         // Create the GlTracker and send the DispatchCompute command
         GlTracker::new(|| unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
+            dbg!("Dispath compute");
+        })
+    }
+    // Reads the bytes from a GPU texture and copy them to a vector
+    fn fill_texture(&mut self, id: ObjectID<Texture>, bytecount_per_pixel: usize, bytes: Arc<Mutex<Vec<u8>>>) -> GlTracker {
+        let texture = self.get_texture(id).unwrap();
+        // Get the length of the vector
+        let length: usize = match texture.ttype {
+            TextureType::Texture1D(x) => (x as usize),
+            TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
+            TextureType::Texture2DArray(_, _, _) => todo!(),
+        };
+        // Get the byte size
+        let byte_length = bytecount_per_pixel * length;
+
+        // Create the vector
+        let mut pixels: Vec<u8> = vec![0; byte_length];
+        // Actually read the pixels
+        GlTracker::new(|| unsafe {
+            // Bind the buffer before reading
+            gl::BindTexture(texture.target, texture.oid);
+            let (_internal_format, format, data_type) = texture.ifd;
+            gl::GetTexImage(texture.target, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
+            // Update the vector that was given using the AtomicPtr
+            let mut new_bytes = bytes.as_ref().lock().unwrap();
+            *new_bytes = pixels;
+            dbg!("Fill texture compute");
         })
     }
     // Create a materail
-    pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
+    fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
         self.materials.insert(task.1.id.unwrap(), task.0);
     }

@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use super::{ObjectID, PipelineObject, TrackedTaskID};
 use crate::{
     advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
@@ -29,6 +31,7 @@ pub enum PipelineTask {
 // A task that can be sent to the render thread, but we can also check if it has finished executing
 pub enum PipelineTrackedTask {
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
+    FillTexture(ObjectID<Texture>, usize, Arc<Mutex<Vec<u8>>>),
 }
 
 // Bruh

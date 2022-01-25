@@ -1,5 +1,3 @@
-use super::TrackedTaskID;
-
 // A wrapper around an OpenGL fence, so we can check wether or not some GPU command has finished executing 
 pub(crate) struct GlTracker {
     // An OpenGL fence object
