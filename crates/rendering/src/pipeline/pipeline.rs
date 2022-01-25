@@ -744,9 +744,9 @@ impl Pipeline {
         let axii = settings.axii;
         
         // Create the GlTracker and send the DispatchCompute command
-        GlTracker::new(|_| unsafe {
+        GlTracker::new(|| unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-        }, tracking_id)
+        })
     }
     // Create a materail
     pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {

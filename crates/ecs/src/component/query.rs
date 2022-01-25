@@ -24,6 +24,16 @@ impl ComponentQuery {
             }
         }
     }
+    // Update all the components consecutively, on the main thread, but we can break out from the inner loop whenever we pass it an Option::None at the end
+    pub fn update_all_breakable<F: FnMut(&mut LinkedComponents) -> Option<()>>(self, mut function: F) {
+        // Run it normally
+        if let Some(vec) = self.linked_components {
+            for mut linked_components in vec {
+                let opt = function(&mut linked_components);
+                if opt.is_none() { break; }
+            }
+        }
+    }
     // Update all the components consecutively, on the main thread, but while also mapping each element and returning a new vector
     pub fn update_all_map<U, F: FnMut(&mut LinkedComponents) -> Option<U>>(self, mut function: F) -> Vec<U> {
         // Make a new vector the size of self.linked_components
