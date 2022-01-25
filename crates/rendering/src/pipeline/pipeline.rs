@@ -45,7 +45,8 @@ pub struct Pipeline {
 
     // Keep track of the GlTrackers and their corresponding ID
     gltrackers: AHashMap<TrackedTaskID, GlTracker>,
-    pub(crate) completed_tracked_tasks: AHashSet<TrackedTaskID>,
+    completed_tracked_tasks: AHashSet<TrackedTaskID>,
+    pub(crate) completed_finalizers: AHashSet<TrackedTaskID>, 
 
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
@@ -111,11 +112,23 @@ impl Pipeline {
         // Add the tracked ID to our pipeline
         self.gltrackers.insert(tracking_id, gltracker);
     }
+    // Finalizer for the tracked task
+    fn handle_tracked_finalizer(&mut self, tracking_id: TrackedTaskID, requirements: Vec<TrackedTaskID>) {
+        // Add the finalizer since all the required tasks have finished executing
+        self.completed_finalizers.insert(tracking_id);
+        // And clean the old tasks
+        for require in requirements {
+            self.completed_tracked_tasks.remove(&require);
+        }
+    }
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, renderer: &mut PipelineRenderer) {
+        // Also check each GlTracker and check if it finished executing
+        let completed = self.gltrackers.drain_filter(|id, tracker| tracker.completed()).collect::<Vec<_>>();
+        // Clean the completed tracked finalizers
+        self.completed_finalizers.clear();
         // Always flush during the update
         self.flush(renderer);
-        // Also check each GlTracker and check if it finished executing
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
@@ -124,7 +137,22 @@ impl Pipeline {
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
-            std::mem::take(tasks)
+            // If we have a tracked task that requires the execution of another tracked task, we must check if the latter has completed executing
+            let tasks = tasks.drain_filter(|task| match task {
+                PipelineTaskCombination::SingleTracked(_, _, require) => {
+                    // If the requirement is null, that means that we don't need it
+                    let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) { None } else { Some(()) });
+                    valid.is_none()
+                },
+                PipelineTaskCombination::SingleTrackedFinalizer(_, requirements) => {
+                    // Check each task
+                    if requirements.is_empty() { panic!(); }
+                    let valid = requirements.into_iter().all(|x| self.completed_tracked_tasks.contains(&x));
+                    valid
+                },
+                _ => true,
+            }).collect::<Vec<_>>();
+            tasks
         };
 
         for task in tasks {
@@ -137,8 +165,8 @@ impl Pipeline {
                     }
                 }
 
-                // Execute the tracking tasks asyncrhonously
-                PipelineTaskCombination::SingleTracked(task, tracking_id) => self.execute_tracked_task(renderer, task, tracking_id)
+                PipelineTaskCombination::SingleTracked(task, tracking_id, _) => self.execute_tracked_task(renderer, task, tracking_id),
+                PipelineTaskCombination::SingleTrackedFinalizer(tracking_id, requirements) => self.handle_tracked_finalizer(tracking_id, requirements)
             }
         }
 
