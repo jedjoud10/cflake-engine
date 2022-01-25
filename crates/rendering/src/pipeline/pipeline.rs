@@ -8,11 +8,11 @@ use crate::{
         texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, TrackingTaskID},
+    object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask, GlTracker},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::{RenderWrapper, Window},
 };
-use ahash::AHashSet;
+use ahash::{AHashSet, AHashMap};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
@@ -41,8 +41,12 @@ pub(crate) struct DefaultPipelineObjects {
 #[derive(Default)]
 pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
-    pub(crate) tasks: RwLock<Vec<PipelineTaskCombination>>,
-    pub(crate) completed_tasks: AHashSet<TrackingTaskID>,
+    tasks: RwLock<Vec<PipelineTaskCombination>>,
+
+    // Keep track of the GlTrackers and their corresponding ID
+    gltrackers: AHashMap<TrackedTaskID, GlTracker>,
+    pub(crate) completed_tracked_tasks: AHashSet<TrackedTaskID>,
+
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
@@ -88,7 +92,6 @@ impl Pipeline {
             PipelineTask::CreateRenderer(id) => self.renderer_create(id),
             PipelineTask::CreateComputeShader(id) => self.compute_create(id),
 
-            PipelineTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
@@ -97,6 +100,22 @@ impl Pipeline {
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
             PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused),
         }
+    }
+    // Execute a single tracked task, but also create a respective OpenGL fence for said task
+    fn execute_tracked_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
+        // Create a corresponding GlTracker for this task
+        let gltracker = match task {
+            PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(tracking_id, id, settings),
+        };
+
+        // Add the tracked ID to our pipeline
+        self.gltrackers.insert(tracking_id, gltracker);
+    }
+    // Called each frame during the "free-zone"
+    pub(crate) fn update(&mut self, renderer: &mut PipelineRenderer) {
+        // Always flush during the update
+        self.flush(renderer);
+        // Also check each GlTracker and check if it finished executing
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
@@ -108,20 +127,18 @@ impl Pipeline {
             std::mem::take(tasks)
         };
 
-        self.completed_tasks.clear();
         for task in tasks {
             match task {
                 PipelineTaskCombination::Single(task) => self.execute_task(renderer, task),
-                PipelineTaskCombination::SingleTracked(_task, task_id) => {
-                    // Execute the task and set it's state to completed
-                    self.completed_tasks.insert(task_id);
-                }
                 PipelineTaskCombination::Batch(batch) => {
                     // Execute all the tasks
                     for task in batch {
                         self.execute_task(renderer, task);
                     }
                 }
+
+                // Execute the tracking tasks asyncrhonously
+                PipelineTaskCombination::SingleTracked(task, tracking_id) => self.execute_tracked_task(renderer, task, tracking_id)
             }
         }
 
@@ -683,8 +700,8 @@ impl Pipeline {
             }
         }
     }
-    // Run a compute shader
-    pub(crate) fn compute_run(&mut self, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) {
+    // Run a compute shader, and return it's GlTracker
+    pub(crate) fn compute_run(&mut self, tracking_id: TrackedTaskID, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) -> GlTracker {
         // Execute some shader uniforms if we want to
         let group = settings.uniforms;
         if let Some(group) = group {
@@ -694,15 +711,11 @@ impl Pipeline {
         }
         // Dispatch the compute shader for execution
         let axii = settings.axii;
-        unsafe {
+        
+        // Create the GlTracker and send the DispatchCompute command
+        GlTracker::new(|_| unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-            // Force the execution and result of the compute shader. THIS IS NOT IDEAL
-            gl::Finish();
-        }
-        // Run the tasks
-        for task in settings.tasks {
-            task.execute(self);
-        }
+        }, tracking_id)
     }
     // Create a materail
     pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
@@ -926,7 +939,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 pipeline.add_tasks(messages);
 
                 // Execute the tasks
-                pipeline.flush(&mut renderer);
+                pipeline.update(&mut renderer);
 
                 // Debug if needed
                 if pipeline.debugging.load(Ordering::Relaxed) {

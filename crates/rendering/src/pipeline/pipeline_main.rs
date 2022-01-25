@@ -4,7 +4,7 @@ pub mod pipec {
 
     use crate::{
         basics::Buildable,
-        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, TrackingTaskID},
+        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask},
         pipeline::{sender, Pipeline},
     };
     // Debug some pipeline data
@@ -19,12 +19,11 @@ pub mod pipec {
     pub fn task_batch(batch: Vec<PipelineTask>, pipeline: &Pipeline) {
         sender::send_task(PipelineTaskCombination::Batch(batch), pipeline).unwrap();
     }
-    // Send a task to the shared pipeline, but also return it's tracking ID
-    pub fn task_tracker(task: PipelineTask, pipeline: &Pipeline) -> TrackingTaskID {
-        // Create a tracking task ID for this task
-        let id = TrackingTaskID::new();
-        // Get the thread local sender
-        sender::send_task(PipelineTaskCombination::SingleTracked(task, id), pipeline).unwrap();
+    // Send a tracking task
+    pub fn tracking_task(tracking_task: PipelineTrackedTask, pipeline: &Pipeline) -> TrackedTaskID {
+        // We must create a tracking task ID for this task
+        let id = TrackedTaskID::new();
+        sender::send_task(PipelineTaskCombination::SingleTracked(tracking_task, id), pipeline).unwrap();
         id
     }
     // Create a Pipeline Object, returning it's ObjectID
@@ -42,15 +41,8 @@ pub mod pipec {
         task(t, pipeline);
         id
     }
-    // Create a Pipeline Object, but also return it's TrackingTaskID, so we can detect whenever the task has executed
-    pub fn construct_return_tracker<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> (TrackingTaskID, ObjectID<T>) {
-        let object = object.pre_construct(pipeline);
-        // Construct it's ID and automatically send it's construction task
-        let (t, id) = object.construct_task(pipeline);
-        (task_tracker(t, pipeline), id)
-    }
-    // Detect if a task has executed
-    pub fn has_task_executed(id: TrackingTaskID, pipeline: &Pipeline) -> bool {
-        pipeline.completed_tasks.contains(&id)
+    // Detect if a tracking task has executed
+    pub fn has_task_executed(id: TrackedTaskID, pipeline: &Pipeline) -> bool {
+        pipeline.completed_tracked_tasks.contains(&id)
     }
 }

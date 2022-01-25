@@ -1,4 +1,4 @@
-use super::{ObjectID, PipelineObject, TrackingTaskID};
+use super::{ObjectID, PipelineObject, TrackedTaskID};
 use crate::{
     advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
     basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture, Buildable},
@@ -18,7 +18,6 @@ pub enum PipelineTask {
     CreateRenderer(ObjectBuildingTask<Renderer>),
 
     // Update tasks
-    RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
     UpdateCamera(Camera),
@@ -27,9 +26,17 @@ pub enum PipelineTask {
     SetWindowFocusState(bool),
 }
 
+// A task that can be sent to the render thread, but we can also check if it has finished executing
+pub enum PipelineTrackedTask {
+    RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
+}
+
 // Bruh
 pub enum PipelineTaskCombination {
+    // Normal tasks
     Single(PipelineTask),
-    SingleTracked(PipelineTask, TrackingTaskID),
     Batch(Vec<PipelineTask>),
+
+    // Tracking task
+    SingleTracked(PipelineTrackedTask, TrackedTaskID)
 }
