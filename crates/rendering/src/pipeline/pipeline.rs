@@ -22,7 +22,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    },
+    }, collections::HashMap,
 };
 
 // Some default values like the default material or even the default shader
@@ -43,9 +43,10 @@ pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
     tasks: RwLock<Vec<PipelineTaskCombination>>,
 
-    // Keep track of the GlTrackers and their corresponding ID
+    // Keep track of the GlTrackers
     gltrackers: AHashMap<TrackedTaskID, GlTracker>,
-    pub(crate) completed_tracked_tasks: AHashSet<TrackedTaskID>,
+    completed_tracked_tasks: AHashSet<TrackedTaskID>,
+    pub(crate) completed_finalizer_tracked_tasks: AHashSet<TrackedTaskID>,
 
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
@@ -101,8 +102,12 @@ impl Pipeline {
             PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused),
         }
     }
+    // Check if the awaiting tracked task of a tracked task have fully completed
+    fn awaits_completed(&self, awaits: &Vec<TrackedTaskID>) -> bool {
+        awaits.iter().all(|id| self.completed_tracked_tasks.contains(id)) || awaits.is_empty()
+    }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
+    fn execute_tracked_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID, awaiting_ids: Vec<TrackedTaskID>) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(tracking_id, id, settings),
@@ -111,11 +116,42 @@ impl Pipeline {
         // Add the tracked ID to our pipeline
         self.gltrackers.insert(tracking_id, gltracker);
     }
+    // Finalizer
+    fn handle_phantom_finalizer(&mut self, tracking_id: TrackedTaskID, awaiting_ids: Vec<TrackedTaskID>) {
+        // This should always return true
+        let test = self.awaits_completed(&awaiting_ids);
+
+        // We can safely remove the tasks now, since all of them have completed
+        for awaiting_id in awaiting_ids.iter() {
+            self.gltrackers.remove(awaiting_id).unwrap();
+            self.completed_tracked_tasks.remove(awaiting_id);
+        }
+        self.completed_finalizer_tracked_tasks.insert(tracking_id);
+    }
+    // Check the finalized phantom trackers
+    fn check_finalized_phantom_trackers(&mut self) {
+        self.completed_finalizer_tracked_tasks.clear()
+    }
+    // Check each GlTracker and set it's state to completed if it's corresponding GPU command completed
+    fn check_gltrackers(&mut self) {
+        let drained = self.gltrackers.drain_filter(|id, gltracker| {
+            // Detect if the GlTracker completed it's task, and if it did, we can remove it from the list
+            gltracker.completed()
+        });
+
+        // We have completed these tasks
+        for (id, gltracker) in drained {
+            // Set this task as completed
+            self.completed_tracked_tasks.insert(id);
+        }
+    } 
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, renderer: &mut PipelineRenderer) {
+        // Also check each GlTracker and check if it finished executing
+        self.check_gltrackers();
+        self.check_finalized_phantom_trackers();
         // Always flush during the update
         self.flush(renderer);
-        // Also check each GlTracker and check if it finished executing
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
@@ -124,7 +160,12 @@ impl Pipeline {
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
-            std::mem::take(tasks)
+            // Take only the tasks that we want
+            tasks.drain_filter(|task| match task {
+                PipelineTaskCombination::SingleTrackedAwaits(_, _, awaits) => self.awaits_completed(awaits),
+                PipelineTaskCombination::SingleTrackedPhantomFinalizer(_, awaits) => self.awaits_completed(awaits),
+                _ => true,
+            }).collect::<Vec<_>>()
         };
 
         for task in tasks {
@@ -138,7 +179,8 @@ impl Pipeline {
                 }
 
                 // Execute the tracking tasks asyncrhonously
-                PipelineTaskCombination::SingleTracked(task, tracking_id) => self.execute_tracked_task(renderer, task, tracking_id)
+                PipelineTaskCombination::SingleTrackedAwaits(task, tracking_id, awaiting_ids) => self.execute_tracked_task(renderer, task, tracking_id, awaiting_ids),
+                PipelineTaskCombination::SingleTrackedPhantomFinalizer(tracking_id, awaiting_ids) => self.handle_phantom_finalizer(tracking_id, awaiting_ids),
             }
         }
 

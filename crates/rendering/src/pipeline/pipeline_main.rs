@@ -19,13 +19,6 @@ pub mod pipec {
     pub fn task_batch(batch: Vec<PipelineTask>, pipeline: &Pipeline) {
         sender::send_task(PipelineTaskCombination::Batch(batch), pipeline).unwrap();
     }
-    // Send a tracking task
-    pub fn tracking_task(tracking_task: PipelineTrackedTask, pipeline: &Pipeline) -> TrackedTaskID {
-        // We must create a tracking task ID for this task
-        let id = TrackedTaskID::new();
-        sender::send_task(PipelineTaskCombination::SingleTracked(tracking_task, id), pipeline).unwrap();
-        id
-    }
     // Create a Pipeline Object, returning it's ObjectID
     pub fn construct<T: PipelineObject + Buildable>(object: T, pipeline: &Pipeline) -> ObjectID<T> {
         let object = object.pre_construct(pipeline);
@@ -41,8 +34,8 @@ pub mod pipec {
         task(t, pipeline);
         id
     }
-    // Detect if a tracking task has executed
-    pub fn has_task_executed(id: TrackedTaskID, pipeline: &Pipeline) -> bool {
-        pipeline.completed_tracked_tasks.contains(&id)
+    // Detect if a finalizer phantom tracked task has completed
+    pub(crate) fn completed_phantom_tracked_task(id: TrackedTaskID, pipeline: &Pipeline) -> bool {
+        pipeline.completed_finalizer_tracked_tasks.contains(&id)
     }
 }

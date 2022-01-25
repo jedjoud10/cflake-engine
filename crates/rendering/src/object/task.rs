@@ -38,5 +38,11 @@ pub enum PipelineTaskCombination {
     Batch(Vec<PipelineTask>),
 
     // Tracking task
-    SingleTracked(PipelineTrackedTask, TrackedTaskID)
+    SingleTrackedAwaits(PipelineTrackedTask, TrackedTaskID, Vec<TrackedTaskID>),
+    SingleTrackedPhantomFinalizer(TrackedTaskID, Vec<TrackedTaskID>),
+    // Compute Shader (Self: 0, Awaits: [])
+    // Fill Texture 1 (Self: 1, Awaits: [0])
+    // Fill Texture 2 (Self: 2, Awaits: [0])
+    // Edit Pixels Texture 2 (Self: 3, Awaits: [2])
+    // Phantom Finalizer (Self: 4, Awaits: [0, 0, 2]) 
 }
