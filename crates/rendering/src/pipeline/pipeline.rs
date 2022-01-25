@@ -125,6 +125,9 @@ impl Pipeline {
     pub(crate) fn update(&mut self, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
         let completed = self.gltrackers.drain_filter(|id, tracker| tracker.completed()).collect::<Vec<_>>();
+        for (id, _) in completed {
+            self.completed_tracked_tasks.insert(id);
+        } 
         // Clean the completed tracked finalizers
         self.completed_finalizers.clear();
         // Always flush during the update
