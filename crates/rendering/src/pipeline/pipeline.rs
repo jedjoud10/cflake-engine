@@ -133,35 +133,6 @@ impl Pipeline {
             self.completed_tracked_tasks.remove(&require);
         }
     }
-    // Finalizer
-    fn handle_phantom_finalizer(&mut self, tracking_id: TrackedTaskID, awaiting_ids: Vec<TrackedTaskID>) {
-        // This should always return true
-        let test = self.awaits_completed(&awaiting_ids);
-
-        // We can safely remove the tasks now, since all of them have completed
-        for awaiting_id in awaiting_ids.iter() {
-            self.gltrackers.remove(awaiting_id).unwrap();
-            self.completed_tracked_tasks.remove(awaiting_id);
-        }
-        self.completed_finalizer_tracked_tasks.insert(tracking_id);
-    }
-    // Check the finalized phantom trackers
-    fn check_finalized_phantom_trackers(&mut self) {
-        self.completed_finalizer_tracked_tasks.clear()
-    }
-    // Check each GlTracker and set it's state to completed if it's corresponding GPU command completed
-    fn check_gltrackers(&mut self) {
-        let drained = self.gltrackers.drain_filter(|id, gltracker| {
-            // Detect if the GlTracker completed it's task, and if it did, we can remove it from the list
-            gltracker.completed()
-        });
-
-        // We have completed these tasks
-        for (id, gltracker) in drained {
-            // Set this task as completed
-            self.completed_tracked_tasks.insert(id);
-        }
-    } 
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
