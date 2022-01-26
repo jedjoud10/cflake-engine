@@ -9,7 +9,7 @@ use crate::{
         renderer::Renderer,
         shader::Shader,
         texture::{Texture, TextureReadBytes, TextureWriteBytes},
-        Buildable,
+        Buildable, transfer::Transfer,
     },
     pipeline::camera::Camera,
 };
@@ -38,8 +38,8 @@ pub enum PipelineTask {
 // A task that can be sent to the render thread, but we can also check if it has finished executing
 pub enum PipelineTrackedTask {
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
-    TextureReadBytes(ObjectID<Texture>, TextureReadBytes),
-    TextureWriteBytes(ObjectID<Texture>, TextureWriteBytes),
+    TextureReadBytes(ObjectID<Texture>, Transfer<TextureReadBytes>),
+    TextureWriteBytes(ObjectID<Texture>, Transfer<TextureWriteBytes>),
 }
 
 // Bruh
@@ -50,6 +50,7 @@ pub enum PipelineTaskCombination {
 
     // Tracking task
     SingleTracked(PipelineTrackedTask, TrackedTaskID, Option<TrackedTaskID>),
-    SingleTrackedFinalizer(TrackedTaskID, Vec<TrackedTaskID>), // Compute Shader (Self: 0)
-                                                               // Finalizer (Self: 1, Requires: [0])
+    SingleTrackedFinalizer(TrackedTaskID, Vec<TrackedTaskID>), 
+    // Compute Shader (Self: 0)
+    // Finalizer (Self: 1, Requires: [0])
 }

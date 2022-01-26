@@ -6,7 +6,7 @@ use crate::{
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureReadBytes, TextureType, TextureWrapping},
-        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings}, transfer::Transfer,
     },
     object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
@@ -806,7 +806,7 @@ impl Pipeline {
         )
     }
     // Read the bytes from a texture
-    fn fill_texture(&mut self, id: ObjectID<Texture>, read: TextureReadBytes) -> GlTracker {
+    fn fill_texture(&mut self, id: ObjectID<Texture>, read: Transfer<TextureReadBytes>) -> GlTracker {
         // Actually read the pixels
         GlTracker::new(
             |pipeline| unsafe {
@@ -824,6 +824,7 @@ impl Pipeline {
                 let mut vec = vec![0_u8; byte_count];
                 gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
                 gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+                let read = read.0;
                 let mut cpu_bytes = read.cpu_bytes.as_ref().lock().unwrap();
                 *cpu_bytes = vec;
             },

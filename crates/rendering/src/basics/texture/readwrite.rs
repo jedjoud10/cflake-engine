@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex};
+
+use crate::basics::transfer::{Transferable, Transfer};
 // Used to help reading back the bytes from a texture that can be read from
 #[derive(Default, Clone)]
 pub struct TextureReadBytes {
@@ -21,5 +23,18 @@ impl TextureReadBytes {
     }
 }
 
+impl Transferable for TextureReadBytes {
+    fn transfer(&self) -> Transfer<Self> {
+        Transfer(self.clone())
+    }
+}
+
 // Used to help writing the bytes to a writable texture
+#[derive(Default, Clone)]
 pub struct TextureWriteBytes {}
+
+impl Transferable for TextureWriteBytes {
+    fn transfer(&self) -> Transfer<Self> {
+        Transfer(self.clone())
+    }
+}

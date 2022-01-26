@@ -1,6 +1,6 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData}, rendering::{advanced::compute::ComputeShaderExecutionSettings, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
+    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData}, rendering::{advanced::compute::ComputeShaderExecutionSettings, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
 };
 
 // Start generating the voxel data for a specific chunk
@@ -26,9 +26,11 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Create this for the next step
     let read_densities = TextureReadBytes::default();
     let read_materials = TextureReadBytes::default();
+    let read_densities_transfer = read_densities.transfer();
+    let read_materials_transfer = read_materials.transfer();
     
-    let read_densities_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.density_texture, read_densities.clone()), Some(execution), pipeline);
-    let read_materials_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.material_texture, read_materials.clone()), Some(execution), pipeline);
+    let read_densities_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.density_texture, read_densities_transfer), Some(execution), pipeline);
+    let read_materials_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.material_texture, read_materials_transfer), Some(execution), pipeline);
     
     // Combine the tasks to make a finalizer one
     let main = pipec::tracked_finalizer(vec![execution, read_densities_tracked_id, read_materials_tracked_id], pipeline).unwrap();
@@ -37,6 +39,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
+    /*
     println!("Finished voxel data generation!");
     // Load the read containers that we passed to the pipeline
     let (main, id, (read_densities, read_materials)) = terrain.generating.take().unwrap();
@@ -120,7 +123,6 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline,
         }))
         .create(),
     );
-    */
     // Keep track of the min and max values
     let mut min = f32::MAX;
     let mut max = f32::MIN;
@@ -146,7 +148,6 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline,
         x.1 = false;
         return;
     };
-    */
 
     // Flatten using the custom size of MAIN_CHUNK_SIZE+2
     fn custom_flatten(x: usize, y: usize, z: usize) -> usize {
@@ -176,6 +177,8 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline,
     );
     */
     // Tell the main system data that we finished the voxel generation for this specific chunk
+    */
+    */
 }
 
 

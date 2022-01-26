@@ -6,4 +6,5 @@ pub mod model;
 pub mod renderer;
 pub mod shader;
 pub mod texture;
+pub mod transfer;
 pub mod uniforms;
