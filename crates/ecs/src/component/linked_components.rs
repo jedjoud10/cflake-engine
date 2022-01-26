@@ -14,7 +14,9 @@ pub struct LinkedComponents {
     // Our linked components
     pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
     pub(crate) linked: *const AHashMap<Bitfield<u32>, u64>,
-    pub id: EntityID,
+
+    // This ID can either be the valid entity ID or the ID of a removed entity that is stored in our temporary OrderedVec
+    pub id: u64,
 }
 
 unsafe impl Sync for LinkedComponents {}
@@ -23,11 +25,27 @@ unsafe impl Send for LinkedComponents {}
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
     // Theoretically, this should only be done once, when an entity becomes valid for a system
-    pub(crate) fn new<Context>(entity: &Entity, ecs_manager: &ECSManager<Context>) -> Self {
+    pub(crate) fn new(entity: &Entity, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
         Self {
-            components: ecs_manager.components.clone(),
+            components,
             linked: &entity.components as *const _,
-            id: entity.id.unwrap(),
+            id: entity.id.unwrap().0,
+        }
+    }
+
+    pub(crate) fn new_direct(id: EntityID, linked: &AHashMap<Bitfield<u32>, u64>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+        Self {
+            components,
+            linked: linked as *const _,
+            id: id.0,
+        }
+    }
+
+    pub(crate) fn new_dead(id: u64, linked: &AHashMap<Bitfield<u32>, u64>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+        Self {
+            components,
+            linked: linked as *const _,
+            id,
         }
     }
 }

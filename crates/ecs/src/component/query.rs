@@ -31,10 +31,10 @@ impl ComponentQuery {
                 ComponentQueryIterType::ArcHashMap(arc) => {
                     let mut lock = arc.lock().unwrap();
                     for (_, linked_components) in lock.iter_mut() {
-                        function(&mut linked_components);
+                        function(linked_components);
                     }
                 },
-                ComponentQueryIterType::Vec(mut vec) => for mut linked_components in vec {
+                ComponentQueryIterType::Vec(vec) => for mut linked_components in vec {
                     function(&mut linked_components);
                 },
             }
@@ -48,11 +48,11 @@ impl ComponentQuery {
                 ComponentQueryIterType::ArcHashMap(arc) => {
                     let mut lock = arc.lock().unwrap();
                     for (_, linked_components) in lock.iter_mut() {
-                        let opt = function(&mut linked_components);
+                        let opt = function(linked_components);
                         if opt.is_none() { break; }
                     }
                 },
-                ComponentQueryIterType::Vec(mut vec) => for mut linked_components in vec {
+                ComponentQueryIterType::Vec(vec) => for mut linked_components in vec {
                     let opt = function(&mut linked_components);
                     if opt.is_none() { break; }
                 },
@@ -62,26 +62,24 @@ impl ComponentQuery {
     // Update all the components consecutively, on the main thread, but while also mapping each element and returning a new vector that may or may not contain each element
     pub fn update_all_map_filter<U, F: FnMut(&mut LinkedComponents) -> Option<U>>(self, mut function: F) -> Option<Vec<U>> {
         let output_vec = if let Some(_type) = self.linked_components {
-            let len = match _type {
+            let len = match &_type {
                 ComponentQueryIterType::ArcHashMap(x) => x.lock().unwrap().len(),
                 ComponentQueryIterType::Vec(x) => x.len(),
             };
             // Create the output vector that will store the mapped values
-            let mut output_vec = Vec::with_capacity(self.linked_components.as_ref().map(|x| len).unwrap_or_default());
+            let mut output_vec = Vec::with_capacity(len);
 
             match _type {
                 ComponentQueryIterType::ArcHashMap(arc) => {
                     let mut lock = arc.lock().unwrap();
                     for (_, linked_components) in lock.iter_mut() {
-                        let output = function(&mut linked_components);
+                        let output = function(linked_components);
                         if let Some(output) = output { output_vec.push(output); }
                     }
                 },
-                ComponentQueryIterType::Vec(mut vec) => for mut linked_components in vec {
-                    for linked_components in vec.iter_mut() {
-                        let output = function(&mut linked_components);
-                        if let Some(output) = output { output_vec.push(output); }
-                    }
+                ComponentQueryIterType::Vec(vec) => for mut linked_components in vec {
+                    let output = function(&mut linked_components);
+                    if let Some(output) = output { output_vec.push(output); }
                 },
             }   
             Some(output_vec)
@@ -90,10 +88,19 @@ impl ComponentQuery {
     }
     // Update all the components in parallel, on multiple worker threads
     pub fn update_all_threaded<F: Fn(&mut LinkedComponents) + 'static + Sync + Send>(self, function: F) {
-        if let Some(lock) = self.linked_components {
-            let mut vec = lock.lock().unwrap();
+        if let Some(_type) = self.linked_components {
             let thread_pool = self.thread_pool.lock().unwrap();
-            thread_pool.execute(&mut vec, function);
+            match _type {
+                ComponentQueryIterType::ArcHashMap(arc) => {
+                    let mut lock = arc.lock().unwrap();
+                    let vec = lock.iter_mut().map(|(_, x)| x as *mut LinkedComponents).collect::<Vec<_>>();
+                    thread_pool.execute_vec_ptr(vec, function);
+                },
+                ComponentQueryIterType::Vec(mut vec) => {
+                    let vec = vec.iter_mut().map(|x| x as *mut LinkedComponents).collect::<Vec<_>>();
+                    thread_pool.execute_vec_ptr(vec, function);
+                },
+            }
         }
     }
 }

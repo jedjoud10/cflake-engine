@@ -3,7 +3,7 @@ use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
     cell::UnsafeCell,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock}, collections::BTreeMap,
 };
 use worker_threads::ThreadPool;
 
@@ -21,7 +21,7 @@ use crate::{
 pub struct ECSManager<Context> {
     // A vector full of entitie
     pub(crate) entities: ShareableOrderedVec<Entity>,
-    pub entities_to_remove: Mutex<AHashMap<EntityID, (Entity, usize)>>,
+    pub entities_to_remove: Mutex<OrderedVec<(Entity, u64, usize)>>,
     // Each system, stored in the order they were created
     systems: Vec<System>,
     // The components that are valid in the world
@@ -82,12 +82,15 @@ impl<Context> ECSManager<Context> {
         let cbitfield = entity.cbitfield;
         // And finally remove the entity from it's systems
         let mut lock = self.entities_to_remove.lock().unwrap();
-        lock.insert(id, (entity, 0));
+        let removed_id = lock.get_next_id();
+        lock.push_shove((entity, removed_id, 0));
+        // Get the pointer to the new entity components
+
         for system in self.systems.iter_mut() {
             if system.check_cbitfield(cbitfield) {
                 // Remove the entity, since it was contained in the system
-                system.remove_entity(id);
-                let counter = &mut lock.get_mut(&id).unwrap().1;
+                let (entity, _, counter) = lock.get_mut(removed_id).unwrap();
+                system.remove_entity(id, LinkedComponents::new_dead(removed_id, &entity.components, self.components.clone()));
                 *counter += 1;
             }
         }
@@ -115,15 +118,21 @@ impl<Context> ECSManager<Context> {
             entity.components.insert(cbitfield, component_id.idx);
         }
         // Change the entity's bitfield
+        let components = self.components.clone();
         let entity = self.entity_mut(&id).unwrap();
         let cbitfield = entity.cbitfield.add(&link_group.cbitfield);
         entity.cbitfield = cbitfield;
+        drop(entity);
+        let entity = self.entity(&id).unwrap();
+        let linked = &entity.components;
         // Check if the linked entity is valid to be added into the systems
-        self.systems.iter_mut().for_each(|system| {
+        for system in self.systems.iter() {
             if system.check_cbitfield(cbitfield) {
-                system.add_entity(id)
+                let lc1 = LinkedComponents::new_direct(id, linked, components.clone());
+                let lc2 = LinkedComponents::new_direct(id, linked, components.clone());
+                system.add_entity(id, lc1, lc2);
             }
-        });
+        }
         Ok(())
     }
     // Unlink some components from an entity
@@ -139,10 +148,10 @@ impl<Context> ECSManager<Context> {
         // Remove the entity from some systems if needed
         let old = entity.cbitfield;
         let new = entity.cbitfield.remove(&unlink_group.removal_cbitfield).unwrap();
-        self.systems.iter_mut().for_each(|system| {
+        self.systems.iter().for_each(|system| {
             // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
             if system.check_cbitfield(old) && !system.check_cbitfield(new) {
-                system.remove_entity(id);
+                system.remove_entity(id, LinkedComponents::new(entity, self.components.clone()));
             }
         });
         // Update the entity's components
@@ -259,10 +268,10 @@ impl<Context> ECSManager<Context> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the entity
         let removed_entities = {
             let mut lock = self.entities_to_remove.lock().unwrap();
-            lock.drain_filter(|_id, (_entity, count)| *count == 0).collect::<Vec<_>>()
+            lock.my_drain(|_, (_, _, count)| *count == 0).collect::<Vec<_>>()
         };
         // Remove the dangling components
-        for (_id, (entity, _count)) in removed_entities {
+        for (_, (entity, _, _)) in removed_entities {
             self.remove_dangling_components(&entity).unwrap();
         }
     }

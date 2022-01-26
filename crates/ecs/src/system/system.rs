@@ -6,7 +6,7 @@ use ordered_vec::simple::OrderedVec;
 
 use super::SystemExecutionData;
 use crate::{
-    component::{ComponentQuery, EnclosedComponent, LinkedComponents},
+    component::{ComponentQuery, EnclosedComponent, LinkedComponents, ComponentQueryIterType},
     entity::{Entity, EntityID},
     ECSManager,
 };
@@ -46,15 +46,15 @@ impl System {
         cbitfield.contains(&self.cbitfield)
     }
     // Add an entity
-    pub(crate) fn add_entity(&mut self, id: EntityID, linked_components: LinkedComponents, linked_components2: LinkedComponents) {
+    pub(crate) fn add_entity(&self, id: EntityID, linked_components: LinkedComponents, linked_components2: LinkedComponents) {
         let mut lock = self.linked_components.lock().unwrap();
         let id = lock.insert(id, linked_components);
         let mut lock = self.added.lock().unwrap();
         lock.push(linked_components2);
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
-    pub(crate) fn remove_entity(&mut self, id: EntityID, linked_components: LinkedComponents) {
-        let lock = self.linked_components.lock().unwrap();
+    pub(crate) fn remove_entity(&self, id: EntityID, linked_components: LinkedComponents) {
+        let mut lock = self.linked_components.lock().unwrap();
         if lock.contains_key(&id) {
             lock.remove(&id);
             let mut removed_lock = self.removed.lock().unwrap();
@@ -66,29 +66,28 @@ impl System {
         // These components are filtered for us
         let components = &ecs_manager.components.read().unwrap();
         // Create the component queries
-        let all_components = self.evn_run.map(|_| self.linked_components);
+        let all_components = self.evn_run.map(|_| ComponentQueryIterType::ArcHashMap(self.linked_components.clone()));
 
-        let added_entities = self.evn_added_entity.map(|_| {
+        let added_components = self.evn_added_entity.map(|_| {
             // Clear the "added" vector and return it's elements
             let mut added = self.added.lock().unwrap();
-            std::mem::take(&mut *added)
+            ComponentQueryIterType::Vec(std::mem::take(&mut *added))
         });
 
         // Do a bit of decrementing
-        let removed_entities = {
+        let removed_components = {
             let removed = self.removed.lock().unwrap();
             let mut lock = ecs_manager.entities_to_remove.lock().unwrap();
             for component in removed.iter() {
                 // Decrement the counter
-                let (_entity, counter) = lock.get_mut(&component.id).unwrap();
+                let (_entity, _removed_id, counter) = lock.get_mut(component.id).unwrap();
                 *counter -= 1;
-                let (entity, _count) = lock.get(&component.id).unwrap();
             }
             drop(removed);
             self.evn_removed_entity.map(|_| {
                 // Clear the "removed" vector and return it's elements
                 let mut removed = self.removed.lock().unwrap();
-                std::mem::take(&mut *removed)
+                ComponentQueryIterType::Vec(std::mem::take(&mut *removed))
             })
         };
         SystemExecutionData {
