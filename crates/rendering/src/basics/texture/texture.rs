@@ -157,4 +157,13 @@ impl Texture {
             ..Texture::default()
         }
     }
+    // Count the numbers of pixels that this texture can contain
+    pub fn count_pixels(&self) -> usize {
+        match self.ttype {
+            TextureType::Texture1D(x) => (x as usize),
+            TextureType::Texture2D(x, y) => (x as usize * y as usize),
+            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
+            TextureType::Texture2DArray(x, y, z) => (x as usize * y as usize * z as usize),
+        }
+    }
 }

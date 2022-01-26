@@ -5,7 +5,7 @@ use crate::{
         model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
-        texture::{get_ifd, Texture, TextureFilter, TextureType, TextureWrapping, TextureAccessType, calculate_size_bytes},
+        texture::{get_ifd, Texture, TextureFilter, TextureType, TextureWrapping, TextureAccessType, calculate_size_bytes, TextureReadBytes},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask, GlTracker},
@@ -36,6 +36,12 @@ pub(crate) struct DefaultPipelineObjects {
     pub(crate) model: ObjectID<Model>,
 }
 
+// Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
+pub(crate) struct InternalPipeline {
+    // Keep track of the GlTrackers and their corresponding ID
+    gltrackers: AHashMap<TrackedTaskID, GlTracker>,
+}
+
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that times
 #[derive(Default)]
@@ -43,8 +49,7 @@ pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
     tasks: RwLock<Vec<PipelineTaskCombination>>,
 
-    // Keep track of the GlTrackers and their corresponding ID
-    gltrackers: AHashMap<TrackedTaskID, GlTracker>,
+    // Tracked tasks
     completed_tracked_tasks: AHashSet<TrackedTaskID>,
     pub(crate) completed_finalizers: AHashSet<TrackedTaskID>, 
 
@@ -107,7 +112,8 @@ impl Pipeline {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
-            PipelineTrackedTask::FillTexture(id, bytecount_per_pixel, bytes) => self.fill_texture(id, bytecount_per_pixel, bytes),
+            PipelineTrackedTask::TextureReadBytes(id, read) => self.fill_texture(id, read),
+            PipelineTrackedTask::TextureWriteBytes(id, write) => todo!(),
         };
 
         // Add the tracked ID to our pipeline
@@ -622,15 +628,7 @@ impl Pipeline {
             pointer = texture.bytes.as_ptr() as *const c_void;
         }
         let ifd = get_ifd(texture._format, texture._type);
-        // Get the number of pixels in this texture
-        let pixel_count = match texture.ttype {
-            TextureType::Texture1D(x) => x as usize,
-            TextureType::Texture2D(x, y) => (x as usize) * (y as usize),
-            TextureType::Texture3D(x, y, z) => (x as usize) * (y as usize) * (z as usize),
-            TextureType::Texture2DArray(x, y, z) => (x as usize) * (y as usize) * (z as usize),
-        };
-
-        let bytes_count = calculate_size_bytes(&texture._format, pixel_count);
+        let bytes_count = calculate_size_bytes(&texture._format, texture.count_pixels());
 
         // Get the tex_type based on the TextureDimensionType
         let tex_type = match texture.ttype {
@@ -715,7 +713,9 @@ impl Pipeline {
             let mut pbo = 0_u32;
             unsafe { 
                 gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
                 gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, 0);
             }
             texture.read_pbo = Some(pbo);
         } else if texture.cpu_access.contains(TextureAccessType::WRITE) {
@@ -723,7 +723,9 @@ impl Pipeline {
             let mut pbo = 0_u32;
             unsafe { 
                 gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
                 gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
             }
             texture.write_pbo = Some(pbo);
         }
@@ -790,18 +792,11 @@ impl Pipeline {
             dbg!("Dispath compute");
         })
     }
-    // Reads the bytes from a GPU texture and copy them to a vector
-    fn fill_texture(&mut self, id: ObjectID<Texture>, bytecount_per_pixel: usize, bytes: Arc<Mutex<Vec<u8>>>) -> GlTracker {
-        let texture = self.get_texture(id).unwrap();
-        // Get the length of the vector
-        let length: usize = match texture.ttype {
-            TextureType::Texture1D(x) => (x as usize),
-            TextureType::Texture2D(x, y) => (x as usize * y as usize),
-            TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
-            TextureType::Texture2DArray(_, _, _) => todo!(),
-        };
+    // Read the bytes from a texture
+    fn fill_texture(&mut self, id: ObjectID<Texture>, read: TextureReadBytes) -> GlTracker {
+        let texture = self.get_texture(id).unwrap();        
         // Get the byte size
-        let byte_length = bytecount_per_pixel * length;
+        let byte_length = calculate_size_bytes(&texture._format, texture.count_pixels());
 
         // Create the vector
         let mut pixels: Vec<u8> = vec![0; byte_length];
@@ -813,7 +808,7 @@ impl Pipeline {
             gl::GetTexImage(texture.target, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
             // Update the vector that was given using the AtomicPtr
             let mut new_bytes = bytes.as_ref().lock().unwrap();
-            *new_bytes = pixels;
+            *new_bytes = pixels;+
             dbg!("Fill texture compute");
         })
     }
@@ -850,7 +845,6 @@ pub struct PipelineStartData {
 }
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
-    use crate::basics::texture::{TextureFilter, TextureType};
     use assets::assetc::load;
 
     // Create the default missing texture
