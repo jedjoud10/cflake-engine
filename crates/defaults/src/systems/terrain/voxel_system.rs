@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use main::{
     core::{Context, WriteContext},
     ecs::{component::ComponentQuery, self, entity::EntityID},
@@ -14,6 +12,7 @@ fn run(mut context: Context, query: ComponentQuery) {
         let pipeline = write.pipeline.read().unwrap();
         if write.time.frame_count < 600 { return; }
         if terrain.generating.is_none()  {
+            use std::sync::{Arc, Mutex};
             use main::rendering::advanced::compute::ComputeShaderExecutionSettings;
             use main::rendering::pipeline::pipec;
             use main::rendering::object::PipelineTrackedTask;

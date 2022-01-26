@@ -2,7 +2,7 @@ use std::{collections::HashMap, ffi::CString};
 use veclib::Vector;
 
 use crate::{
-    basics::texture::{Texture, TextureShaderAccessType},
+    basics::texture::{Texture, TextureAccessType},
     object::ObjectID,
     pipeline::Pipeline,
 };
@@ -75,8 +75,8 @@ impl ShaderUniformsGroup {
         self.uniforms.insert(name.to_string(), Uniform::Texture(val, active_texture_id));
     }
     // Set a "image" uniform
-    pub fn set_image(&mut self, name: &str, val: ObjectID<Texture>, access_type: TextureShaderAccessType) {
-        self.uniforms.insert(name.to_string(), Uniform::Image(val, access_type));
+    pub fn set_image(&mut self, name: &str, val: ObjectID<Texture>, access: TextureAccessType) {
+        self.uniforms.insert(name.to_string(), Uniform::Image(val, access));
     }
     // Check if we have a specific uniform store
     pub fn contains_uniform(&self, name: &str) -> bool {

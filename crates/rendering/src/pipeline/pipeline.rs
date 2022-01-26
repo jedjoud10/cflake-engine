@@ -5,7 +5,7 @@ use crate::{
         model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
-        texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
+        texture::{get_ifd, Texture, TextureFilter, TextureType, TextureWrapping, TextureAccessType, calculate_size_bytes},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask, GlTracker},
@@ -604,12 +604,33 @@ impl Pipeline {
     }
     // Create a texture
     fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
+        // Guess how many mipmap levels a texture with a specific maximum coordinate can have
+        fn guess_mipmap_levels(i: usize) -> usize {
+            let mut x: f32 = i as f32;
+            let mut num: usize = 0;
+            while x > 1.0 {
+                // Repeatedly divide by 2
+                x /= 2.0;
+                num += 1;
+            }
+            num
+        }
+
         let mut texture = task.0;
         let mut pointer: *const c_void = null();
         if !texture.bytes.is_empty() {
             pointer = texture.bytes.as_ptr() as *const c_void;
         }
         let ifd = get_ifd(texture._format, texture._type);
+        // Get the number of pixels in this texture
+        let pixel_count = match texture.ttype {
+            TextureType::Texture1D(x) => x as usize,
+            TextureType::Texture2D(x, y) => (x as usize) * (y as usize),
+            TextureType::Texture3D(x, y, z) => (x as usize) * (y as usize) * (z as usize),
+            TextureType::Texture2DArray(x, y, z) => (x as usize) * (y as usize) * (z as usize),
+        };
+
+        let bytes_count = calculate_size_bytes(&texture._format, pixel_count);
 
         // Get the tex_type based on the TextureDimensionType
         let tex_type = match texture.ttype {
@@ -639,7 +660,7 @@ impl Pipeline {
                 TextureType::Texture2DArray(width, height, depth) => {
                     gl::TexStorage3D(
                         tex_type,
-                        Texture::guess_mipmap_levels(width.max(height) as usize) as i32,
+                        guess_mipmap_levels(width.max(height) as usize) as i32,
                         ifd.0 as u32,
                         width as i32,
                         height as i32,
@@ -668,7 +689,7 @@ impl Pipeline {
         }
 
         // The texture is already bound to the TEXTURE_2D
-        if texture.flags.contains(TextureFlags::MIPMAPS) {
+        if texture.mipmaps {
             // Create the mipmaps
             unsafe {
                 gl::GenerateMipmap(tex_type);
@@ -686,6 +707,25 @@ impl Pipeline {
                     }
                 }
             }
+        }
+
+        // Create the Upload / Download PBOs if needed
+        if texture.cpu_access.contains(TextureAccessType::READ) {
+            // Create a download PBO
+            let mut pbo = 0_u32;
+            unsafe { 
+                gl::GenBuffers(1, &mut pbo);
+                gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
+            }
+            texture.read_pbo = Some(pbo);
+        } else if texture.cpu_access.contains(TextureAccessType::WRITE) {
+            // Create an upload PBO
+            let mut pbo = 0_u32;
+            unsafe { 
+                gl::GenBuffers(1, &mut pbo);
+                gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
+            }
+            texture.write_pbo = Some(pbo);
         }
 
         // Set the wrap mode for the texture (Mipmapped or not)
@@ -814,7 +854,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     use assets::assetc::load;
 
     // Create the default missing texture
-    let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap(), pipeline);
+    let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().set_mipmaps(true)).unwrap(), pipeline);
 
     // Create the default white texture
     let white = pipec::construct(
@@ -822,7 +862,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![255, 255, 255, 255])
-            .enable_mipmaps(),
+            .set_mipmaps(true),
         pipeline,
     );
 
@@ -832,7 +872,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![0, 0, 0, 255])
-            .enable_mipmaps(),
+            .set_mipmaps(true),
         pipeline,
     );
 
@@ -842,7 +882,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![127, 128, 255, 255])
-            .enable_mipmaps(),
+            .set_mipmaps(true),
         pipeline,
     );
 

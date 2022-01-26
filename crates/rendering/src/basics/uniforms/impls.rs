@@ -1,5 +1,5 @@
 use crate::{
-    basics::texture::{Texture, TextureShaderAccessType},
+    basics::texture::{Texture, TextureAccessType},
     object::ObjectID,
 };
 
@@ -16,5 +16,5 @@ pub enum Uniform {
     // Others
     Texture(ObjectID<Texture>, u32),
     // Compute sheit
-    Image(ObjectID<Texture>, TextureShaderAccessType),
+    Image(ObjectID<Texture>, TextureAccessType),
 }
