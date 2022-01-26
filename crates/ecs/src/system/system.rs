@@ -62,36 +62,34 @@ impl System {
             lock.remove(&id);
             let mut removed_lock = self.removed.lock().unwrap();
             removed_lock.push(linked_components);
-        }
+        }        
     }
     // Create a SystemExecutionData that we can actually run at a later time
     pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
-        // These components are filtered for us
-        let components = &ecs_manager.components.read().unwrap();
         // Create the component queries
         let all_components = self.evn_run.map(|_| ComponentQueryIterType::ArcHashMap(self.linked_components.clone()));
 
-        let added_components = self.evn_added_entity.map(|_| {
-            // Clear the "added" vector and return it's elements
+
+        // Get the added components
+        let added_components = {
+            // We must ALWAYS take it
             let mut added = self.added.lock().unwrap();
-            ComponentQueryIterType::Vec(std::mem::take(&mut *added))
-        });
+            let vec = std::mem::take(&mut *added);
+            self.evn_added_entity.map(|_| ComponentQueryIterType::Vec(vec))
+        };
 
         // Do a bit of decrementing
         let removed_components = {
-            let removed = self.removed.lock().unwrap();
+            let mut removed = self.removed.lock().unwrap();
             let mut lock = ecs_manager.entities_to_remove.lock().unwrap();
             for component in removed.iter() {
                 // Decrement the counter
                 let (_entity, _removed_id, counter) = lock.get_mut(component.id).unwrap();
                 *counter -= 1;
             }
-            drop(removed);
-            self.evn_removed_entity.map(|_| {
-                // Clear the "removed" vector and return it's elements
-                let mut removed = self.removed.lock().unwrap();
-                ComponentQueryIterType::Vec(std::mem::take(&mut *removed))
-            })
+            // Clear the "removed" vector and return it's elements
+            let vec = std::mem::take(&mut *removed);
+            self.evn_removed_entity.map(|_| ComponentQueryIterType::Vec(vec))
         };
         SystemExecutionData {
             // Events

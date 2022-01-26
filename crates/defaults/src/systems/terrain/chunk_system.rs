@@ -29,8 +29,11 @@ fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) ->
 }
 // Remove a single chunk
 fn remove_chunk(write: &mut WriteContext, id: EntityID) {
-    // Remove the chunk entity at that specific EntityID
-    write.ecs.remove_entity(id).unwrap();
+    // Make sure that the chunk entity even exists
+    if write.ecs.entity(&id).is_ok() {
+        // Remove the chunk entity at that specific EntityID
+        write.ecs.remove_entity(id).unwrap();
+    }
 }
 
 // The chunk systems' update loop
