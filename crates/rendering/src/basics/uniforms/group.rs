@@ -2,15 +2,15 @@ use std::{collections::HashMap, ffi::CString};
 use veclib::Vector;
 
 use crate::{
-    basics::texture::{Texture, TextureAccessType},
+    basics::{texture::{Texture, TextureAccessType}, transfer::Transfer},
     object::ObjectID,
-    pipeline::Pipeline,
+    pipeline::Pipeline, advanced::atomic::{AtomicCounter, ClearCondition},
 };
 
 use super::{ShaderUniformsSettings, Uniform};
 
 // Each shader will contain a "shader excecution group" that will contain uniforms that must be sent to the GPU when that shader gets run
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Clone)]
 pub struct ShaderUniformsGroup {
     pub(crate) uniforms: HashMap<String, Uniform>,
 }
@@ -78,6 +78,10 @@ impl ShaderUniformsGroup {
     pub fn set_image(&mut self, name: &str, val: ObjectID<Texture>, access: TextureAccessType) {
         self.uniforms.insert(name.to_string(), Uniform::Image(val, access));
     }
+    // Set a "atomic counter" uniform
+    pub fn set_atomic(&mut self, name: &str, val: Transfer<AtomicCounter>, binding: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::Counter(val, binding));
+    }
     // Check if we have a specific uniform store
     pub fn contains_uniform(&self, name: &str) -> bool {
         self.uniforms.contains_key(name)
@@ -126,13 +130,23 @@ impl ShaderUniformsGroup {
                     Uniform::Texture(id, active_texture_id) => {
                         // We need to know the texture target first
                         let texture = pipeline.get_texture(*id)?;
-                        set_texture(texture, index, active_texture_id);
+                        set_texture(index, texture, active_texture_id);
                     }
                     Uniform::Image(id, access_type) => {
                         // We need to know the texture target first
                         let texture = pipeline.get_texture(*id)?;
-                        set_image(texture, index, access_type);
+                        set_image(index, texture, access_type);
                     }
+                    Uniform::Counter(transfer, binding) => {
+                        // If this is the first time we execute the shader that contains this atomic counter, we must initialize the counter as a valid buffer
+                        pipeline.atomic_counter_create(transfer);
+                        // Also clear the atomic counter before the shader execution if needed
+                        match transfer.0.condition {
+                            ClearCondition::BeforeShaderExecution => transfer.0.set(0),
+                            _ => {},
+                        }
+                        set_atomic(index, &transfer.0, binding);
+                    },
                 }
             }
         }

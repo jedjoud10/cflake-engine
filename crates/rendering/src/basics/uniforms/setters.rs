@@ -1,4 +1,6 @@
-use crate::basics::texture::{Texture, TextureAccessType};
+use std::mem::size_of;
+
+use crate::{basics::texture::{Texture, TextureAccessType}, advanced::atomic::AtomicCounter};
 
 // Actually set the shader uniforms
 #[allow(temporary_cstring_as_ptr)]
@@ -11,7 +13,7 @@ pub unsafe fn set_f64(index: i32, value: &f64) {
     gl::Uniform1d(index, *value);
 }
 // Set an image that can be modified inside the shader
-pub unsafe fn set_image(texture: &Texture, index: i32, access_type: &TextureAccessType) {
+pub unsafe fn set_image(index: i32, texture: &Texture, access_type: &TextureAccessType) {
     // Converstion from wrapper to actual opengl values
     let new_access_type: u32 = {
         if access_type.is_all() {
@@ -38,7 +40,7 @@ pub unsafe fn set_mat44f32(index: i32, matrix: &veclib::Matrix4x4<f32>) {
     gl::UniformMatrix4fv(index, 1, gl::FALSE, ptr);
 }
 // Set a texture
-pub unsafe fn set_texture(texture: &Texture, index: i32, active_texture_id: &u32) {
+pub unsafe fn set_texture(index: i32, texture: &Texture, active_texture_id: &u32) {
     gl::ActiveTexture(active_texture_id + 33984);
     gl::BindTexture(texture.target, texture.oid);
     gl::Uniform1i(index, *active_texture_id as i32);
@@ -94,4 +96,10 @@ pub unsafe fn set_vec3bool(index: i32, val: &veclib::Vector3<bool>) {
 // Set a vec4 boolean
 pub unsafe fn set_vec4bool(index: i32, val: &veclib::Vector4<bool>) {
     gl::Uniform4i(index, val[0] as i32, val[1] as i32, val[2] as i32, val[3] as i32);
+}
+// Set an atomic counter
+pub unsafe fn set_atomic(index: i32, val: &AtomicCounter, binding: &u32) {
+    let oid = val.oid.load(std::sync::atomic::Ordering::Relaxed);
+    gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
+    gl::BindBufferRange(gl::ATOMIC_COUNTER_BUFFER, index as u32, oid, 0, size_of::<u32>() as isize);
 }

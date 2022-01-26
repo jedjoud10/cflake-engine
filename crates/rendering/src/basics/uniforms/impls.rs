@@ -1,10 +1,10 @@
 use crate::{
-    basics::texture::{Texture, TextureAccessType},
-    object::ObjectID,
+    basics::{texture::{Texture, TextureAccessType}, transfer::Transfer},
+    object::ObjectID, advanced::atomic::AtomicCounter,
 };
 
 // Some default uniforms that we will set
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Uniform {
     // These are types that are in Unsized Vectors, vectors that could be a single value, or 2, or 3, or 4
     Bool(veclib::UnsizedVector<bool>),
@@ -17,4 +17,5 @@ pub enum Uniform {
     Texture(ObjectID<Texture>, u32),
     // Compute sheit
     Image(ObjectID<Texture>, TextureAccessType),
+    Counter(Transfer<AtomicCounter>, u32),
 }

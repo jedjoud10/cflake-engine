@@ -214,7 +214,7 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, to render the world
-    pub fn render_frame(&self, pipeline: &Pipeline) {
+    pub fn render_frame(&mut self, pipeline: &Pipeline) {
         let _i = std::time::Instant::now();
         for (_id, renderer) in pipeline.renderers.iter() {
             let _result = self.render(pipeline, renderer);
@@ -222,7 +222,7 @@ impl PipelineRenderer {
         }
     }
     // Post-render event
-    pub fn post_render(&self, pipeline: &Pipeline) {
+    pub fn post_render(&mut self, pipeline: &Pipeline) {
         // Get the pipeline data
         let dimensions = pipeline.window.dimensions;
         let camera = &pipeline.camera;

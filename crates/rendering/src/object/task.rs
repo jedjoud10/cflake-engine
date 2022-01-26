@@ -25,7 +25,6 @@ pub enum PipelineTask {
     CreateComputeShader(ObjectBuildingTask<ComputeShader>),
     CreateModel(ObjectBuildingTask<Model>),
     CreateRenderer(ObjectBuildingTask<Renderer>),
-
     // Update tasks
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
@@ -46,6 +45,7 @@ pub enum PipelineTrackedTask {
 pub enum PipelineTaskCombination {
     // Normal tasks
     Single(PipelineTask),
+    SingleReqTracked(PipelineTask, TrackedTaskID),
     Batch(Vec<PipelineTask>),
 
     // Tracking task

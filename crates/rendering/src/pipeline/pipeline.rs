@@ -1,5 +1,5 @@
 use crate::{
-    advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
+    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::AtomicCounter},
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
@@ -156,6 +156,10 @@ impl Pipeline {
             // If we have a tracked task that requires the execution of another tracked task, we must check if the latter has completed executing
             let tasks = tasks
                 .drain_filter(|task| match task {
+                    PipelineTaskCombination::SingleReqTracked(_, require) => {
+                        // Only let this task through if the required tracked task completed first
+                        self.completed_tracked_tasks.contains(require) || self.completed_finalizers.contains(require)
+                    },
                     PipelineTaskCombination::SingleTracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
                         let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) || self.completed_finalizers.contains(&x) { None } else { Some(()) });
@@ -178,6 +182,7 @@ impl Pipeline {
         for task in tasks {
             match task {
                 PipelineTaskCombination::Single(task) => self.execute_task(renderer, task),
+                PipelineTaskCombination::SingleReqTracked(task, _) => self.execute_task(renderer, task),
                 PipelineTaskCombination::Batch(batch) => {
                     // Execute all the tasks
                     for task in batch {
@@ -835,6 +840,25 @@ impl Pipeline {
     fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
         self.materials.insert(task.1.id.unwrap(), task.0);
+    }
+    // Create an atomic counter buffer that we can use inside fragment and compute shaders
+    pub(crate) fn atomic_counter_create(&self, atomic: &Transfer<AtomicCounter>) {
+        let atomic = &atomic.0;
+        let oid = atomic.oid.load(Ordering::Relaxed);
+        if oid != 0 { /* The atomic counter was already created! */ return; }
+        // Create the OpenGL atomic buffer 
+        let mut buffer = 0_u32;
+        unsafe {
+            gl::GenBuffers(1, &mut buffer);
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buffer);
+            gl::BufferData(gl::ATOMIC_COUNTER_BUFFER, size_of::<u32>() as isize, null(), gl::DYNAMIC_DRAW);
+            let reset = 0_u32;
+            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize, reset as *const u32 as *const c_void);
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+        }
+        // Set the new values
+        atomic.set(0);
+        atomic.oid.store(buffer, Ordering::Relaxed);
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
