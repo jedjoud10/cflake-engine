@@ -38,7 +38,7 @@ impl ComponentError {
     pub fn new(msg: String, id: ComponentID) -> Self {
         Self { details: msg, id: Some(id) }
     }
-    pub fn new_without_id(msg: String) -> Self {
+    pub const fn new_without_id(msg: String) -> Self {
         Self { details: msg, id: None }
     }
 }

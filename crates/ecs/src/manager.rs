@@ -3,7 +3,7 @@ use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
     cell::UnsafeCell,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
 };
 use worker_threads::ThreadPool;
 
@@ -25,7 +25,7 @@ pub struct ECSManager<Context> {
     // Each system, stored in the order they were created
     systems: Vec<System>,
     // The components that are valid in the world
-    pub(crate) components: Mutex<OrderedVec<UnsafeCell<EnclosedComponent>>>,
+    pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
     // Some global components
     pub(crate) globals: Arc<Mutex<AHashMap<Bitfield<u32>, UnsafeCell<EnclosedGlobalComponent>>>>,
     // The internal ECS thread pool
@@ -33,6 +33,9 @@ pub struct ECSManager<Context> {
     // Our internal event handler
     pub(crate) event_handler: EventHandler<Context>,
 }
+
+unsafe impl<Context> Sync for ECSManager<Context> {} 
+unsafe impl<Context> Send for ECSManager<Context> {} 
 
 // Global code for the Entities, Components, and Systems
 impl<Context> ECSManager<Context> {
@@ -93,8 +96,8 @@ impl<Context> ECSManager<Context> {
     // Remove the dangling components that have been linked to an entity that we already removed
     fn remove_dangling_components(&mut self, entity: &Entity) -> Result<(), ComponentError> {
         // Also remove it's linked components
-        for component_id in entity.components.iter() {
-            self.remove_component(*component_id)?;
+        for (cbitfield, idx) in entity.components.iter() {
+            self.remove_component(ComponentID::new(*cbitfield, *idx))?;
         }
         Ok(())
     }
@@ -107,9 +110,9 @@ impl<Context> ECSManager<Context> {
     // Link some components to an entity
     pub fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in link_group.linked_components {
-            let idx = self.add_component(boxed, cbitfield)?;
+            let (component_id, ptr) = self.add_component(boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
-            entity.components.push(idx);
+            entity.components.insert(cbitfield, component_id.idx);
         }
         // Change the entity's bitfield
         let entity = self.entity_mut(&id).unwrap();
@@ -146,60 +149,37 @@ impl<Context> ECSManager<Context> {
         let entity = self.entity_mut(&id).unwrap();
         let components = entity
             .components
-            .drain_filter(|component_id| unlink_group.removal_cbitfield.contains(&component_id.cbitfield))
+            .drain_filter(|cbitfield, idx| unlink_group.removal_cbitfield.contains(&cbitfield))
             .collect::<Vec<_>>();
         entity.cbitfield = new;
-        for component_id in components {
-            self.remove_component(component_id)?;
+        for (cbitfield, idx) in components {
+            self.remove_component(ComponentID::new(cbitfield, idx))?;
         }
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
-    fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<ComponentID, ComponentError> {
+    fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<(ComponentID, *mut EnclosedComponent), ComponentError> {
         // UnsafeCell moment
-        let mut components = self.components.lock().unwrap();
-        let idx = components.push_shove(UnsafeCell::new(boxed));
+        let mut components = self.components.write().unwrap();
+        let cell = UnsafeCell::new(boxed);
+        let ptr = cell.get();
+        let idx = components.push_shove(cell);
         // Create a new Component ID
         let id = ComponentID::new(cbitfield, idx);
-        Ok(id)
+        Ok((id, ptr))
     }
     // Remove a specified component from the list
     fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
-        let mut components = self.components.lock().unwrap();
+        let mut components = self.components.write().unwrap();
         components
-            .remove(id.id)
+            .remove(id.idx)
             .ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
         Ok(())
     }
     // Count the number of valid components in the ECS manager
     pub fn count_components(&self) -> usize {
-        self.components.lock().unwrap().count()
-    }
-    // Get all the components in the ECS manager that are of a certain type
-    // This does not return dangling components
-    pub fn get_all_components<T: Component + Send + Sync + 'static>(&mut self) -> Vec<&mut T> {
-        let cbtifield = registry::get_component_bitfield::<T>();
-        // Loop through every entity, getting it's global component index
-        let component_indices = self.entities.iter_elements().flat_map(|entity| {
-            entity.components.iter().filter_map(|component_id| {
-                let valid = component_id.cbitfield == cbtifield;
-                valid.then_some(component_id.id)
-            })
-        });
-        // Now we can retrieve each component
-        let lock = self.components.lock().unwrap();
-
-        component_indices
-            .map(|component_idx| {
-                let cell = lock.get(component_idx).unwrap();
-                let boxed = unsafe { &mut *cell.get() };
-                let refc = &mut **boxed;
-                // Some casting
-                let component = cast_component_mut::<T>(refc).unwrap();
-                component
-            })
-            .collect::<Vec<&mut T>>()
+        self.components.read().unwrap().count()
     }
     /* #endregion */
     /* #region Globals */

@@ -17,8 +17,8 @@ pub mod test {
     fn run_system(_context: WorldContext, components: ComponentQuery) {
         // Transform the _context to RefContext using some magic fuckery
         components.update_all(|components| {
-            let mut name = components.component_mut::<Name>().unwrap();
-            *name = Name::new("Bob");
+            let mut name = components.component::<Name>().unwrap();
+            //*name = Name::new("Bob");
         });
     }
 

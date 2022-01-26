@@ -1,4 +1,5 @@
-use crate::{component::ComponentID, ECSManager};
+use crate::{component::{ComponentID, EnclosedComponent}, ECSManager};
+use ahash::AHashMap;
 use bitfield::Bitfield;
 // A simple entity in the world
 #[derive(Clone)]
@@ -10,11 +11,11 @@ pub struct Entity {
     pub(crate) cbitfield: Bitfield<u32>,
 
     // Our stored components
-    pub(crate) components: Vec<ComponentID>,
-
-    // The current entity state
-    pub(crate) state: EntityState,
+    pub(crate) components: AHashMap<Bitfield<u32>, u64>,
 }
+
+unsafe impl Sync for Entity {}
+unsafe impl Send for Entity {}
 
 // ECS time bois
 impl Entity {
@@ -23,24 +24,7 @@ impl Entity {
         Self {
             id: None,
             cbitfield: Bitfield::default(),
-            components: Vec::new(),
-            state: EntityState::Valid,
-        }
-    }
-    // Turns an &Entity into an Option<&Entity>, and returns None if the current EntityState is set to Removed
-    pub fn validity(&self) -> Option<&Entity> {
-        if let EntityState::Valid = self.state {
-            Some(self)
-        } else {
-            None
-        }
-    }
-    // Turns an &Entity into an Option<&Entity>, and returns None if the current EntityState is set to Removed
-    pub fn validity_mut(&mut self) -> Option<&mut Entity> {
-        if let EntityState::Valid = self.state {
-            Some(self)
-        } else {
-            None
+            components: AHashMap::new(),
         }
     }
 }
@@ -62,14 +46,4 @@ impl EntityID {
             0: ecs_manager.entities.get_next_id_increment(),
         }
     }
-}
-
-// An entity state that defines how the entity is doing
-#[derive(Clone)]
-pub enum EntityState {
-    // The entity is valid and it exists
-    Valid,
-
-    // The entity is going to be removed next frame, so we cannot do anything with it anymore
-    Removed,
 }

@@ -61,7 +61,7 @@ impl System {
     // TODO: Optimize this shit
     pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
         // These components are filtered for us
-        let components = &ecs_manager.components.lock().unwrap();
+        let components = &ecs_manager.components.read().unwrap();
         // Create the component queries
         let all_components = Self::get_linked_components(&self.evn_run, components, self.entities.iter().cloned(), ecs_manager);
         let mut lock = self.changed_entities.lock().unwrap();
@@ -100,13 +100,15 @@ impl System {
         ecs_manager: &ECSManager<Context>,
     ) -> Option<Vec<LinkedComponents>> {
         if evn.is_some() {
+            let i = std::time::Instant::now();
             let components = entities
                 .map(|id| {
                     let entity = ecs_manager.entity(&id).unwrap();
 
-                    LinkedComponents::new(entity, components)
+                    LinkedComponents::new(entity, ecs_manager)
                 })
                 .collect::<Vec<_>>();
+            dbg!(i.elapsed().as_micros());
             Some(components)
         } else {
             None
@@ -119,7 +121,7 @@ impl System {
         evn: &Option<usize>,
         components: &OrderedVec<UnsafeCell<EnclosedComponent>>,
         entities: T,
-        _ecs_manager: &ECSManager<Context>,
+        ecs_manager: &ECSManager<Context>,
     ) -> Option<Vec<LinkedComponents>> {
         if evn.is_some() {
             let components = entities
@@ -129,7 +131,7 @@ impl System {
                     *counter -= 1;
                     let (entity, _count) = lock.get(&id).unwrap();
 
-                    LinkedComponents::new(entity, components)
+                    LinkedComponents::new(entity, ecs_manager)
                 })
                 .collect::<Vec<_>>();
             Some(components)
