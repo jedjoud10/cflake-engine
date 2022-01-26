@@ -50,7 +50,6 @@ fn run(mut context: Context, query: ComponentQuery) {
         if !global.generating {
             println!("Finish: {}", write.time.frame_count);
             let test = global.reader.take().unwrap().fill_vec::<(u8, u8, u8, u8)>().unwrap();
-            dbg!(test.len());
         }
     }
 }

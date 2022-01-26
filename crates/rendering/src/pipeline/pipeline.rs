@@ -132,7 +132,7 @@ impl Pipeline {
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
-        let completed = internal.gltrackers.drain_filter(|id, tracker| tracker.completed()).collect::<Vec<_>>();
+        let completed = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
         for (id, _) in completed {
             self.completed_tracked_tasks.insert(id);
         } 
@@ -788,28 +788,30 @@ impl Pipeline {
         let axii = settings.axii;
         
         // Create the GlTracker and send the DispatchCompute command
-        GlTracker::new(|| unsafe {
+        GlTracker::new(|_| unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-            dbg!("Dispathing compute...");
-        }, || { dbg!("Completed compute execution!"); })
+        }, |_| { }, self)
     }
     // Read the bytes from a texture
     fn fill_texture(&mut self, id: ObjectID<Texture>, read: TextureReadBytes) -> GlTracker {
-        let texture = self.get_texture(id).unwrap();        
-        // Get the byte size
-        let byte_length = calculate_size_bytes(&texture._format, texture.count_pixels());
-
-        // Create the vector
-        let mut pixels: Vec<u8> = vec![0; byte_length];
         // Actually read the pixels
-        GlTracker::new(|| unsafe {
-            // Bind the buffer before reading
+        GlTracker::new(|pipeline| unsafe {
+            // Bind the buffer before reading   
+            let texture = pipeline.get_texture(id).unwrap();      
             gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
             gl::BindTexture(texture.target, texture.oid);
             let (_internal_format, format, data_type) = texture.ifd;
-            gl::GetTexImage(texture.target, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
-            dbg!("Reading texture...");
-        }, || { dbg!("Completed reading texture!"); })
+            gl::GetTexImage(texture.target, 0, format, data_type, null_mut());
+        }, move |pipeline| unsafe { 
+            // Gotta create a mapped buffer
+            let texture = pipeline.get_texture(id).unwrap();      
+            let byte_count = calculate_size_bytes(&texture._format, texture.count_pixels());
+            let mut vec = vec![0_u8; byte_count];
+            gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
+            gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+            let mut cpu_bytes = read.cpu_bytes.as_ref().lock().unwrap();
+            *cpu_bytes = vec; 
+        }, self)
     }
     // Create a materail
     fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
