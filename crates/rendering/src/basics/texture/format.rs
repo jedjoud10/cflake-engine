@@ -2,7 +2,6 @@ use std::mem::size_of;
 
 use crate::utils::DataType;
 
-
 // The texture format
 #[derive(Clone, Copy, Debug)]
 pub enum TextureFormat {
@@ -160,8 +159,8 @@ pub(crate) fn calculate_size_bytes(format: &TextureFormat, pixel_count: usize) -
         TextureFormat::R32I | TextureFormat::R32F | TextureFormat::DepthComponent32 => size_of::<u32>(),
         TextureFormat::RG32I | TextureFormat::RG32F => size_of::<u32>() * 2,
         TextureFormat::RGB32I | TextureFormat::RGB32F => size_of::<u32>() * 3,
-        TextureFormat::RGBA32I | TextureFormat::RGBA32F => size_of::<u32>() * 4, 
-        
+        TextureFormat::RGBA32I | TextureFormat::RGBA32F => size_of::<u32>() * 4,
+
         TextureFormat::DepthComponent24 => 6,
     };
     bytes_per_pixel * pixel_count

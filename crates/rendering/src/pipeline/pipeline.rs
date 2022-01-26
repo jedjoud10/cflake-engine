@@ -5,14 +5,14 @@ use crate::{
         model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
-        texture::{get_ifd, Texture, TextureFilter, TextureType, TextureWrapping, TextureAccessType, calculate_size_bytes, TextureReadBytes},
+        texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureReadBytes, TextureType, TextureWrapping},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask, GlTracker},
+    object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::{RenderWrapper, Window},
 };
-use ahash::{AHashSet, AHashMap};
+use ahash::{AHashMap, AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
@@ -52,7 +52,7 @@ pub struct Pipeline {
 
     // Tracked tasks
     completed_tracked_tasks: AHashSet<TrackedTaskID>,
-    pub(crate) completed_finalizers: AHashSet<TrackedTaskID>, 
+    pub(crate) completed_finalizers: AHashSet<TrackedTaskID>,
 
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
@@ -135,7 +135,7 @@ impl Pipeline {
         let completed = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
         for (id, _) in completed {
             self.completed_tracked_tasks.insert(id);
-        } 
+        }
         // Clean the completed tracked finalizers
         self.completed_finalizers.clear();
         // Always flush during the update
@@ -149,20 +149,24 @@ impl Pipeline {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
             // If we have a tracked task that requires the execution of another tracked task, we must check if the latter has completed executing
-            let tasks = tasks.drain_filter(|task| match task {
-                PipelineTaskCombination::SingleTracked(_, _, require) => {
-                    // If the requirement is null, that means that we don't need it
-                    let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) { None } else { Some(()) });
-                    valid.is_none()
-                },
-                PipelineTaskCombination::SingleTrackedFinalizer(_, requirements) => {
-                    // Check each task
-                    if requirements.is_empty() { panic!(); }
-                    let valid = requirements.into_iter().all(|x| self.completed_tracked_tasks.contains(&x));
-                    valid
-                },
-                _ => true,
-            }).collect::<Vec<_>>();
+            let tasks = tasks
+                .drain_filter(|task| match task {
+                    PipelineTaskCombination::SingleTracked(_, _, require) => {
+                        // If the requirement is null, that means that we don't need it
+                        let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) { None } else { Some(()) });
+                        valid.is_none()
+                    }
+                    PipelineTaskCombination::SingleTrackedFinalizer(_, requirements) => {
+                        // Check each task
+                        if requirements.is_empty() {
+                            panic!();
+                        }
+                        let valid = requirements.into_iter().all(|x| self.completed_tracked_tasks.contains(&x));
+                        valid
+                    }
+                    _ => true,
+                })
+                .collect::<Vec<_>>();
             tasks
         };
 
@@ -177,7 +181,7 @@ impl Pipeline {
                 }
 
                 PipelineTaskCombination::SingleTracked(task, tracking_id, _) => self.execute_tracked_task(internal, renderer, task, tracking_id),
-                PipelineTaskCombination::SingleTrackedFinalizer(tracking_id, requirements) => self.handle_tracked_finalizer(tracking_id, requirements)
+                PipelineTaskCombination::SingleTrackedFinalizer(tracking_id, requirements) => self.handle_tracked_finalizer(tracking_id, requirements),
             }
         }
 
@@ -712,7 +716,7 @@ impl Pipeline {
         if texture.cpu_access.contains(TextureAccessType::READ) {
             // Create a download PBO
             let mut pbo = 0_u32;
-            unsafe { 
+            unsafe {
                 gl::GenBuffers(1, &mut pbo);
                 gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
                 gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
@@ -722,7 +726,7 @@ impl Pipeline {
         } else if texture.cpu_access.contains(TextureAccessType::WRITE) {
             // Create an upload PBO
             let mut pbo = 0_u32;
-            unsafe { 
+            unsafe {
                 gl::GenBuffers(1, &mut pbo);
                 gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
                 gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
@@ -786,32 +790,40 @@ impl Pipeline {
         }
         // Dispatch the compute shader for execution
         let axii = settings.axii;
-        
+
         // Create the GlTracker and send the DispatchCompute command
-        GlTracker::new(|_| unsafe {
-            gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-        }, |_| { }, self)
+        GlTracker::new(
+            |_| unsafe {
+                gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
+            },
+            |_| {},
+            self,
+        )
     }
     // Read the bytes from a texture
     fn fill_texture(&mut self, id: ObjectID<Texture>, read: TextureReadBytes) -> GlTracker {
         // Actually read the pixels
-        GlTracker::new(|pipeline| unsafe {
-            // Bind the buffer before reading   
-            let texture = pipeline.get_texture(id).unwrap();      
-            gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
-            gl::BindTexture(texture.target, texture.oid);
-            let (_internal_format, format, data_type) = texture.ifd;
-            gl::GetTexImage(texture.target, 0, format, data_type, null_mut());
-        }, move |pipeline| unsafe { 
-            // Gotta create a mapped buffer
-            let texture = pipeline.get_texture(id).unwrap();      
-            let byte_count = calculate_size_bytes(&texture._format, texture.count_pixels());
-            let mut vec = vec![0_u8; byte_count];
-            gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
-            gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
-            let mut cpu_bytes = read.cpu_bytes.as_ref().lock().unwrap();
-            *cpu_bytes = vec; 
-        }, self)
+        GlTracker::new(
+            |pipeline| unsafe {
+                // Bind the buffer before reading
+                let texture = pipeline.get_texture(id).unwrap();
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
+                gl::BindTexture(texture.target, texture.oid);
+                let (_internal_format, format, data_type) = texture.ifd;
+                gl::GetTexImage(texture.target, 0, format, data_type, null_mut());
+            },
+            move |pipeline| unsafe {
+                // Gotta create a mapped buffer
+                let texture = pipeline.get_texture(id).unwrap();
+                let byte_count = calculate_size_bytes(&texture._format, texture.count_pixels());
+                let mut vec = vec![0_u8; byte_count];
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
+                gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+                let mut cpu_bytes = read.cpu_bytes.as_ref().lock().unwrap();
+                *cpu_bytes = vec;
+            },
+            self,
+        )
     }
     // Create a materail
     fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
@@ -983,7 +995,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // Create the Arc and RwLock for the pipeline
         let pipeline = Arc::new(RwLock::new(pipeline));
-
 
         // Load the default objects
         {

@@ -1,5 +1,5 @@
+use super::ComputeShader;
 use crate::{basics::uniforms::ShaderUniformsGroup, object::ObjectID};
-use super::{ComputeShader};
 
 // Some compute shader settings that we can use whenever we want to execute a compute shader
 pub struct ComputeShaderExecutionSettings {
@@ -14,11 +14,7 @@ pub struct ComputeShaderExecutionSettings {
 impl ComputeShaderExecutionSettings {
     // Create some new compute shader execution settings
     pub fn new(id: ObjectID<ComputeShader>, axii: (u16, u16, u16)) -> Self {
-        Self {
-            id,
-            axii,
-            uniforms: None,
-        }
+        Self { id, axii, uniforms: None }
     }
     // Set the uniforms
     pub fn set_uniforms(mut self, uniforms: ShaderUniformsGroup) -> Self {

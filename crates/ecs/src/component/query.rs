@@ -30,7 +30,9 @@ impl ComponentQuery {
         if let Some(vec) = self.linked_components {
             for mut linked_components in vec {
                 let opt = function(&mut linked_components);
-                if opt.is_none() { break; }
+                if opt.is_none() {
+                    break;
+                }
             }
         }
     }

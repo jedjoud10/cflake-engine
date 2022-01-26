@@ -4,7 +4,7 @@ pub mod pipec {
 
     use crate::{
         basics::Buildable,
-        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask},
+        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
         pipeline::{sender, Pipeline},
     };
     // Debug some pipeline data
@@ -41,7 +41,9 @@ pub mod pipec {
         // This TrackedTaskID might be not finalized, so we must handle that case
         if id.1 {
             Some(pipeline.completed_finalizers.contains(&id))
-        } else { None }        
+        } else {
+            None
+        }
     }
     // Create a tracked task with a requirement
     pub fn tracked_task(task: PipelineTrackedTask, req: Option<TrackedTaskID>, pipeline: &Pipeline) -> TrackedTaskID {
@@ -54,10 +56,11 @@ pub mod pipec {
     pub fn tracked_finalizer(reqs: Vec<TrackedTaskID>, pipeline: &Pipeline) -> Option<TrackedTaskID> {
         // Must be the partial version and not the finalized version
         let partial_valid = reqs.iter().all(|x| !x.1);
-        if !partial_valid { return None; }
+        if !partial_valid {
+            return None;
+        }
         let id = TrackedTaskID::new(true);
         sender::send_task(PipelineTaskCombination::SingleTrackedFinalizer(id, reqs), pipeline).unwrap();
         Some(id)
     }
-    
 }

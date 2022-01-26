@@ -3,7 +3,14 @@ use std::sync::{Arc, Mutex};
 use super::{ObjectID, PipelineObject, TrackedTaskID};
 use crate::{
     advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
-    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::{Texture, TextureReadBytes, TextureWriteBytes}, Buildable},
+    basics::{
+        material::Material,
+        model::Model,
+        renderer::Renderer,
+        shader::Shader,
+        texture::{Texture, TextureReadBytes, TextureWriteBytes},
+        Buildable,
+    },
     pipeline::camera::Camera,
 };
 
@@ -43,8 +50,6 @@ pub enum PipelineTaskCombination {
 
     // Tracking task
     SingleTracked(PipelineTrackedTask, TrackedTaskID, Option<TrackedTaskID>),
-    SingleTrackedFinalizer(TrackedTaskID, Vec<TrackedTaskID>)
-    // Compute Shader (Self: 0)
-    // Finalizer (Self: 1, Requires: [0])
-
+    SingleTrackedFinalizer(TrackedTaskID, Vec<TrackedTaskID>), // Compute Shader (Self: 0)
+                                                               // Finalizer (Self: 1, Requires: [0])
 }

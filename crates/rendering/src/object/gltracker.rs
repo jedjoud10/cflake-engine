@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::pipeline::Pipeline;
 
-// A wrapper around an OpenGL fence, so we can check wether or not some GPU command has finished executing 
+// A wrapper around an OpenGL fence, so we can check wether or not some GPU command has finished executing
 pub(crate) struct GlTracker {
     // An OpenGL fence object
     fence: *const gl::types::__GLsync,
@@ -17,7 +17,7 @@ impl GlTracker {
         // Create the fence object
         let fence = unsafe {
             // Flush first
-            gl::Flush(); 
+            gl::Flush();
             // Call the function
             start(pipeline);
             // Then finally create the fence
@@ -33,11 +33,11 @@ impl GlTracker {
     // Check wether the corresponding fence object has completed
     pub fn completed(&self, pipeline: &Pipeline) -> bool {
         let result = unsafe {
-            let res = gl::ClientWaitSync(self. fence, gl::SYNC_FLUSH_COMMANDS_BIT, 0);
+            let res = gl::ClientWaitSync(self.fence, gl::SYNC_FLUSH_COMMANDS_BIT, 0);
             // Delete the fence since we won't use it anymore
             gl::DeleteSync(self.fence);
             res
-        };        
+        };
 
         // Check
         let completed = result == gl::ALREADY_SIGNALED || result == gl::CONDITION_SATISFIED;
@@ -45,7 +45,9 @@ impl GlTracker {
         if completed {
             let mut callback = self.callback.borrow_mut();
             let callback = callback.take();
-            if let Some(callback) = callback { callback(pipeline); }
+            if let Some(callback) = callback {
+                callback(pipeline);
+            }
         }
 
         completed

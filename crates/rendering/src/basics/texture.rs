@@ -1,8 +1,8 @@
-mod texture;
-mod settings;
 mod format;
 mod readwrite;
-pub use readwrite::*;
-pub use texture::*;
-pub use settings::*;
+mod settings;
+mod texture;
 pub use format::*;
+pub use readwrite::*;
+pub use settings::*;
+pub use texture::*;

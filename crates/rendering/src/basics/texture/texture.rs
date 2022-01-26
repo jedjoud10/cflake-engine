@@ -1,3 +1,4 @@
+use crate::basics::Buildable;
 use crate::{
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
     pipeline::Pipeline,
@@ -6,9 +7,8 @@ use crate::{
 use assets::*;
 use gl;
 use image::{EncodableLayout, GenericImageView};
-use crate::basics::Buildable;
 
-use super::{TextureFormat, TextureFilter, TextureWrapping, TextureType, TextureAccessType, get_ifd};
+use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping};
 
 // A texture
 #[derive(Debug)]
@@ -36,7 +36,8 @@ pub struct Texture {
     // How we access this texture on the CPU
     pub(crate) cpu_access: TextureAccessType,
     // And the corresponding upload / download PBOs,
-    pub(crate) write_pbo: Option<u32>, pub(crate) read_pbo: Option<u32>,
+    pub(crate) write_pbo: Option<u32>,
+    pub(crate) read_pbo: Option<u32>,
     // Should we generate mipmaps for this texture
     pub mipmaps: bool,
 }
@@ -56,7 +57,8 @@ impl Default for Texture {
             wrap_mode: TextureWrapping::Repeat,
             ttype: TextureType::Texture2D(0, 0),
             cpu_access: TextureAccessType::all(),
-            write_pbo: None, read_pbo: None,
+            write_pbo: None,
+            read_pbo: None,
             mipmaps: false,
         }
     }
@@ -118,7 +120,7 @@ impl Texture {
     pub fn writable(mut self) -> Self {
         self.cpu_access.insert(TextureAccessType::WRITE);
         self
-    }    
+    }
     // Set mipmaps
     pub fn set_mipmaps(mut self, enabled: bool) -> Self {
         self.mipmaps = enabled;

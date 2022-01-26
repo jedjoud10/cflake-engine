@@ -1,7 +1,8 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::ComponentQuery, self, entity::EntityID},
-    terrain::{DEFAULT_LOD_FACTOR, ChunkCoords}, rendering::basics::texture::TextureReadBytes,
+    ecs::{self, component::ComponentQuery, entity::EntityID},
+    rendering::basics::texture::TextureReadBytes,
+    terrain::{ChunkCoords, DEFAULT_LOD_FACTOR},
 };
 
 // The voxel systems' update loop

@@ -1,5 +1,7 @@
-use main::{terrain::{ChunkCoords, VoxelData}, ecs};
-
+use main::{
+    ecs,
+    terrain::{ChunkCoords, VoxelData},
+};
 
 // A component that will be added to well... chunks
 pub struct Chunk {

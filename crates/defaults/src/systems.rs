@@ -4,7 +4,7 @@ pub mod debugging_system;
 pub mod physics_system;
 pub mod rendering_system;
 pub mod terrain;
-pub mod window_system;
 pub mod test_system;
+pub mod window_system;
 //pub mod command_system;
 //pub mod ui_system;

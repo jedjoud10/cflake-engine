@@ -4,7 +4,7 @@ use crate::basics::texture::{Texture, TextureFormat, TextureType};
 use crate::utils::*;
 
 use assets::Asset;
-use image::{GenericImageView, EncodableLayout};
+use image::{EncodableLayout, GenericImageView};
 
 // All the Asset trait implementations are here
 // One for the textures

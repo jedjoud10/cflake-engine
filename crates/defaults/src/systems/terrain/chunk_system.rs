@@ -1,7 +1,7 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::ComponentQuery, self, entity::EntityID},
-    terrain::{DEFAULT_LOD_FACTOR, ChunkCoords},
+    ecs::{self, component::ComponentQuery, entity::EntityID},
+    terrain::{ChunkCoords, DEFAULT_LOD_FACTOR},
 };
 
 // Add a single chunk to the world
@@ -15,9 +15,7 @@ fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) ->
     // Transform
     let position = veclib::Vector3::<f32>::from(coords.position);
     let scale = veclib::Vector3::ONE * ((coords.size / octree_size) as f32);
-    let transform = crate::components::Transform::default()
-        .with_position(position)
-        .with_scale(scale);
+    let transform = crate::components::Transform::default().with_position(position).with_scale(scale);
     group.link::<crate::components::Transform>(transform).unwrap();
 
     // Chunk
@@ -47,7 +45,7 @@ fn run(mut context: Context, _query: ComponentQuery) {
         let octree = &mut terrain.octree;
         if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, DEFAULT_LOD_FACTOR) {
             // We have moved, thus the chunks need to be regenerated
-            
+
             // Only add the chunks that are leaf nodes in the octree
             for node in added {
                 if node.children_indices.is_none() {
@@ -56,7 +54,7 @@ fn run(mut context: Context, _query: ComponentQuery) {
                     let id = add_chunk(&mut write, terrain.octree.internal_octree.size, coords);
                     terrain.chunks.insert(coords, id);
                 }
-            } 
+            }
 
             // Remove chunks only if we already generated them
             for node in removed {

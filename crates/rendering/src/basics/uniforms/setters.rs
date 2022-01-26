@@ -14,10 +14,15 @@ pub unsafe fn set_f64(index: i32, value: &f64) {
 pub unsafe fn set_image(texture: &Texture, index: i32, access_type: &TextureAccessType) {
     // Converstion from wrapper to actual opengl values
     let new_access_type: u32 = {
-        if access_type.is_all() { gl::READ_WRITE }
-        else if access_type.contains(TextureAccessType::READ) { gl::READ_ONLY }
-        else if access_type.contains(TextureAccessType::WRITE) { gl::WRITE_ONLY }
-        else { panic!() }
+        if access_type.is_all() {
+            gl::READ_WRITE
+        } else if access_type.contains(TextureAccessType::READ) {
+            gl::READ_ONLY
+        } else if access_type.contains(TextureAccessType::WRITE) {
+            gl::WRITE_ONLY
+        } else {
+            panic!()
+        }
     };
     let unit = index as u32;
     gl::BindTexture(texture.target, texture.oid);
