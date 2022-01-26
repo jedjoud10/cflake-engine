@@ -1,12 +1,16 @@
-use super::{registry, Component, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, ComponentID};
+use super::{registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent};
 use crate::{
     entity::{Entity, EntityID},
-    utils::ComponentError, ECSManager,
+    utils::ComponentError,
+    ECSManager,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
-use std::{cell::UnsafeCell, sync::{Arc, Mutex, RwLock}};
+use std::{
+    cell::UnsafeCell,
+    sync::{Arc, Mutex, RwLock},
+};
 
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however
@@ -59,14 +63,12 @@ impl LinkedComponents {
     pub fn component<'b, T>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
-    {        
+    {
         // Get the UnsafeCell
         let id = registry::get_component_bitfield::<T>();
         let idx = unsafe { &*self.linked }.get(&id).ok_or(invalid_err())?;
         let hashmap = self.components.read().map_err(|_| invalid_err())?;
-        let cell = hashmap
-            .get(*idx)
-            .ok_or_else(|| invalid_err())?;
+        let cell = hashmap.get(*idx).ok_or_else(|| invalid_err())?;
 
         // Then get it's pointer and do black magic
         let ptr = cell.get();
@@ -86,9 +88,7 @@ impl LinkedComponents {
         let id = registry::get_component_bitfield::<T>();
         let idx = unsafe { &*self.linked }.get(&id).ok_or(invalid_err())?;
         let hashmap = self.components.read().map_err(|_| invalid_err())?;
-        let cell = hashmap
-            .get(*idx)
-            .ok_or_else(|| invalid_err())?;
+        let cell = hashmap.get(*idx).ok_or_else(|| invalid_err())?;
 
         // Then get it's pointer and do black magic
         let ptr = cell.get();

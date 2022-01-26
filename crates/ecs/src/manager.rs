@@ -3,7 +3,8 @@ use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
     cell::UnsafeCell,
-    sync::{Arc, Mutex, RwLock}, collections::BTreeMap,
+    collections::BTreeMap,
+    sync::{Arc, Mutex, RwLock},
 };
 use worker_threads::ThreadPool;
 
@@ -34,8 +35,8 @@ pub struct ECSManager<Context> {
     pub(crate) event_handler: EventHandler<Context>,
 }
 
-unsafe impl<Context> Sync for ECSManager<Context> {} 
-unsafe impl<Context> Send for ECSManager<Context> {} 
+unsafe impl<Context> Sync for ECSManager<Context> {}
+unsafe impl<Context> Send for ECSManager<Context> {}
 
 // Global code for the Entities, Components, and Systems
 impl<Context> ECSManager<Context> {

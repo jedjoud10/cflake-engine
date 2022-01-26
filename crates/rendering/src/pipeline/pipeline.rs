@@ -16,13 +16,14 @@ use ahash::{AHashMap, AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
+    collections::HashMap,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::{null, null_mut},
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    }, collections::HashMap,
+    },
 };
 
 // Some default values like the default material or even the default shader

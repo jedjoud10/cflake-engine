@@ -7,6 +7,7 @@ use crate::entity::EntityID;
 
 use super::LinkedComponents;
 
+// An enum that stores either a reference to a hashmap or an owned vector. We will use this to iterate through every LinkedComponents
 pub enum ComponentQueryIterType {
     ArcHashMap(Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>),
     Vec(Vec<LinkedComponents>),
@@ -33,10 +34,12 @@ impl ComponentQuery {
                     for (_, linked_components) in lock.iter_mut() {
                         function(linked_components);
                     }
-                },
-                ComponentQueryIterType::Vec(vec) => for mut linked_components in vec {
-                    function(&mut linked_components);
-                },
+                }
+                ComponentQueryIterType::Vec(vec) => {
+                    for mut linked_components in vec {
+                        function(&mut linked_components);
+                    }
+                }
             }
         }
     }
@@ -49,13 +52,19 @@ impl ComponentQuery {
                     let mut lock = arc.lock().unwrap();
                     for (_, linked_components) in lock.iter_mut() {
                         let opt = function(linked_components);
-                        if opt.is_none() { break; }
+                        if opt.is_none() {
+                            break;
+                        }
                     }
-                },
-                ComponentQueryIterType::Vec(vec) => for mut linked_components in vec {
-                    let opt = function(&mut linked_components);
-                    if opt.is_none() { break; }
-                },
+                }
+                ComponentQueryIterType::Vec(vec) => {
+                    for mut linked_components in vec {
+                        let opt = function(&mut linked_components);
+                        if opt.is_none() {
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -74,16 +83,24 @@ impl ComponentQuery {
                     let mut lock = arc.lock().unwrap();
                     for (_, linked_components) in lock.iter_mut() {
                         let output = function(linked_components);
-                        if let Some(output) = output { output_vec.push(output); }
+                        if let Some(output) = output {
+                            output_vec.push(output);
+                        }
                     }
-                },
-                ComponentQueryIterType::Vec(vec) => for mut linked_components in vec {
-                    let output = function(&mut linked_components);
-                    if let Some(output) = output { output_vec.push(output); }
-                },
-            }   
+                }
+                ComponentQueryIterType::Vec(vec) => {
+                    for mut linked_components in vec {
+                        let output = function(&mut linked_components);
+                        if let Some(output) = output {
+                            output_vec.push(output);
+                        }
+                    }
+                }
+            }
             Some(output_vec)
-        } else { None };
+        } else {
+            None
+        };
         output_vec
     }
     // Update all the components in parallel, on multiple worker threads
@@ -95,11 +112,11 @@ impl ComponentQuery {
                     let mut lock = arc.lock().unwrap();
                     let vec = lock.iter_mut().map(|(_, x)| x as *mut LinkedComponents).collect::<Vec<_>>();
                     thread_pool.execute_vec_ptr(vec, function);
-                },
+                }
                 ComponentQueryIterType::Vec(mut vec) => {
                     let vec = vec.iter_mut().map(|x| x as *mut LinkedComponents).collect::<Vec<_>>();
                     thread_pool.execute_vec_ptr(vec, function);
-                },
+                }
             }
         }
     }
