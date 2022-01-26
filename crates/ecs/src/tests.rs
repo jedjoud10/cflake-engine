@@ -17,8 +17,8 @@ pub mod test {
     fn run_system(_context: WorldContext, components: ComponentQuery) {
         // Transform the _context to RefContext using some magic fuckery
         components.update_all(|components| {
-            let mut name = components.component::<Name>().unwrap();
-            //*name = Name::new("Bob");
+            let mut name = components.component_mut::<Name>().unwrap();
+            *name = Name::new("Bob");
         });
     }
 
@@ -58,6 +58,41 @@ pub mod test {
         assert!(ecs.entity(&id4).is_err());
         ecs.run_systems(context);
         ecs.finish_update();
+    }
+    #[test]
+    // Multithreaded stress test
+    pub fn multithreaded_test() {
+        // Also create the context
+        let context = WorldContext;
+        // Create the main ECS manager
+        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+
+        // Make a simple system
+        let builder = ecs.create_system_builder();
+        fn internal_run(_context: WorldContext, components: ComponentQuery) {
+            // Transform the _context to RefContext using some magic fuckery
+            components.update_all_threaded(|components| {
+                let mut name = components.component_mut::<Name>().unwrap();
+                *name = Name::new("Bob");
+            });
+        }
+        builder.link::<Name>().set_run_event(internal_run).build();
+
+        // Create 10k entities
+        for x in 0..10_000 {            
+            // Create a simple entity with that component
+            let mut group = ComponentLinkingGroup::new();
+            group.link(Name::new("Person")).unwrap();
+            let entity = Entity::new();
+            let id = EntityID::new(&ecs);
+            // The entity is not created yet, so it is null
+            ecs.add_entity(entity, id, group).unwrap();
+        }
+        for x in 0..10 { 
+            let i = std::time::Instant::now();
+            ecs.run_systems(context);
+            println!("Took {}µs to update", i.elapsed().as_micros())
+        }        
     }
     #[test]
     pub fn test_direct() {

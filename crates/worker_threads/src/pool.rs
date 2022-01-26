@@ -37,20 +37,20 @@ impl<T: 'static> ThreadPool<T> {
     pub fn max_thread_count(&self) -> usize {
         self.max_thread_count
     }
-    // Divide the task between the multiple threads, and invoke them
-    pub fn execute<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
+
+
+    // Execute the thread pool using the vector filled with pointers and with a custom chunk size
+    pub fn execute_raw<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: Vec<*mut T>, chunk_size: usize, task: F) {
         let (barrier, end_barrier, _shutdown_barrier) = self.barriers.as_ref();
         // The main task
         let task = UnsafeCell::new(task);
         {
             // Update the value, then unlock
             let mut shared_data = self.arc.write().unwrap();
-            // Convert the &mut Vec<T> to Vec<*mut T>
-            let length = elements.len();
-            shared_data.elements = elements.iter_mut().map(|x| x as *mut T).collect::<Vec<_>>();
+            shared_data.elements = elements;
             shared_data.function = Some(task.get() as *const F);
             // Calculate the chunk size
-            shared_data.chunk_size = (length / self.max_thread_count) + 1;
+            shared_data.chunk_size = chunk_size;
             // Now we can unlock
         }
         barrier.wait();
@@ -65,6 +65,16 @@ impl<T: 'static> ThreadPool<T> {
             let mut shared_data = self.arc.write().unwrap();
             shared_data.clear();
         }
+    }
+    // Execute the thread pool using the vector filled with pointers. We will guess the approppriate chunk size
+    pub fn execute_vec_ptr<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: Vec<*mut T>, task: F) {
+        let length = elements.len();
+        self.execute_raw(elements, (length / self.max_thread_count) + 1, task);
+    }
+    // Execute the thread pool using a vector filled with mutable refences to the elements. We will guess the appropriate chunk size
+    pub fn execute<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
+        let elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
+        self.execute_vec_ptr(elements, task);
     }
     // Shutdown
     pub fn shutdown(&self) {

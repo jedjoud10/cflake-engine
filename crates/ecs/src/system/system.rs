@@ -1,4 +1,4 @@
-use std::{cell::UnsafeCell, sync::Mutex};
+use std::{cell::UnsafeCell, sync::{Mutex, Arc}};
 
 use ahash::{AHashMap, AHashSet};
 use bitfield::Bitfield;
@@ -6,7 +6,7 @@ use ordered_vec::simple::OrderedVec;
 
 use super::SystemExecutionData;
 use crate::{
-    component::{ComponentQuery, EnclosedComponent, LinkedComponents},
+    component::{ComponentQuery, EnclosedComponent, LinkedComponents, ComponentQueryIterType},
     entity::{Entity, EntityID},
     ECSManager,
 };
@@ -19,10 +19,10 @@ pub struct System {
     pub(crate) evn_added_entity: Option<usize>,
     pub(crate) evn_removed_entity: Option<usize>,
 
-    // The entities that are valid for this system and their corresponding linked components
-    entities: AHashMap<EntityID, LinkedComponents>,
+    linked_components: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
     // Added, Removed
-    changed_entities: Mutex<(AHashSet<EntityID>, AHashSet<EntityID>)>,
+    added: Mutex<Vec<LinkedComponents>>,
+    removed: Mutex<Vec<LinkedComponents>>,
 }
 
 impl Default for System {
@@ -32,8 +32,9 @@ impl Default for System {
             evn_run: None,
             evn_added_entity: None,
             evn_removed_entity: None,
-            entities: Default::default(),
-            changed_entities: Default::default(),
+            linked_components: Default::default(),
+            added: Default::default(),
+            removed: Default::default(),
         }
     }
 }
@@ -45,33 +46,50 @@ impl System {
         cbitfield.contains(&self.cbitfield)
     }
     // Add an entity
-    pub(crate) fn add_entity<Context>(&mut self, id: EntityID, ecs_manager: &ECSManager<Context>) {
-        self.entities.insert(id, LinkedComponents::new(id, ecs_manager));
-        let mut lock = self.changed_entities.lock().unwrap();
-        lock.0.insert(id);
+    pub(crate) fn add_entity(&self, id: EntityID, linked_components: LinkedComponents, linked_components2: LinkedComponents) {
+        let mut lock = self.linked_components.lock().unwrap();
+        let id = lock.insert(id, linked_components);
+        let mut lock = self.added.lock().unwrap();
+        lock.push(linked_components2);
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
-    pub(crate) fn remove_entity(&mut self, id: EntityID) {
-        if self.entities.contains_key(&id) {
-            self.entities.remove(&id);
-            let mut lock = self.changed_entities.lock().unwrap();
-            lock.1.insert(id);
+    pub(crate) fn remove_entity(&self, id: EntityID, linked_components: LinkedComponents) {
+        let mut lock = self.linked_components.lock().unwrap();
+        if lock.contains_key(&id) {
+            lock.remove(&id);
+            let mut removed_lock = self.removed.lock().unwrap();
+            removed_lock.push(linked_components);
         }
     }
     // Create a SystemExecutionData that we can actually run at a later time
-    // TODO: Optimize this shit
     pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
         // These components are filtered for us
         let components = &ecs_manager.components.read().unwrap();
         // Create the component queries
-        let all_components = Self::get_linked_components(&self.evn_run, self.entities.iter().cloned(), ecs_manager);
-        let mut lock = self.changed_entities.lock().unwrap();
-        let removed_entities = lock.1.drain();
-        // We must decrement the counter for each removed entity
-        let mut entities_to_remove_ecs_manager = ecs_manager.entities_to_remove.lock().unwrap();
-        let removed_components = Self::get_linked_components_removed(&mut *entities_to_remove_ecs_manager, &self.evn_removed_entity, components, removed_entities, ecs_manager);
-        let added_entities = lock.0.drain();
-        let added_components = Self::get_linked_components(&self.evn_added_entity, components, added_entities, ecs_manager);
+        let all_components = self.evn_run.map(|_| ComponentQueryIterType::ArcHashMap(self.linked_components.clone()));
+
+        let added_components = self.evn_added_entity.map(|_| {
+            // Clear the "added" vector and return it's elements
+            let mut added = self.added.lock().unwrap();
+            ComponentQueryIterType::Vec(std::mem::take(&mut *added))
+        });
+
+        // Do a bit of decrementing
+        let removed_components = {
+            let removed = self.removed.lock().unwrap();
+            let mut lock = ecs_manager.entities_to_remove.lock().unwrap();
+            for component in removed.iter() {
+                // Decrement the counter
+                let (_entity, _removed_id, counter) = lock.get_mut(component.id).unwrap();
+                *counter -= 1;
+            }
+            drop(removed);
+            self.evn_removed_entity.map(|_| {
+                // Clear the "removed" vector and return it's elements
+                let mut removed = self.removed.lock().unwrap();
+                ComponentQueryIterType::Vec(std::mem::take(&mut *removed))
+            })
+        };
         SystemExecutionData {
             // Events
             evn_run: ecs_manager.event_handler.get_run_event(self.evn_run).cloned(),
@@ -90,52 +108,6 @@ impl System {
                 linked_components: removed_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
             },
-        }
-    }
-
-    // Get linked components for a vector full of entity IDs
-    fn get_linked_components<Context, T: Iterator<Item = EntityID>>(
-        evn: &Option<usize>,
-        entities: T,
-        ecs_manager: &ECSManager<Context>,
-    ) -> Option<Vec<LinkedComponents>> {
-        if evn.is_some() {
-            let i = std::time::Instant::now();
-            let components = entities
-                .map(|id| {
-                    let entity = ecs_manager.entity(&id).unwrap();
-
-                    LinkedComponents::new(entity, ecs_manager)
-                })
-                .collect::<Vec<_>>();
-            dbg!(i.elapsed().as_micros());
-            Some(components)
-        } else {
-            None
-        }
-    }
-
-    // Get linked components for removed entities that we must call their removed event
-    fn get_linked_components_removed<Context, T: Iterator<Item = EntityID>>(
-        lock: &mut AHashMap<EntityID, (Entity, usize)>,
-        evn: &Option<usize>,
-        entities: T,
-        ecs_manager: &ECSManager<Context>,
-    ) -> Option<Vec<LinkedComponents>> {
-        if evn.is_some() {
-            let components = entities
-                .map(|id| {
-                    // Decrement the counter
-                    let (_entity, counter) = lock.get_mut(&id).unwrap();
-                    *counter -= 1;
-                    let (entity, _count) = lock.get(&id).unwrap();
-
-                    LinkedComponents::new(entity, ecs_manager)
-                })
-                .collect::<Vec<_>>();
-            Some(components)
-        } else {
-            None
         }
     }
 }
