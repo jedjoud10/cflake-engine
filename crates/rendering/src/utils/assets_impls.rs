@@ -4,6 +4,7 @@ use crate::basics::texture::{Texture, TextureFormat, TextureType};
 use crate::utils::*;
 
 use assets::Asset;
+use image::{EncodableLayout, GenericImageView};
 
 // All the Asset trait implementations are here
 // One for the textures
@@ -12,8 +13,17 @@ impl Asset for Texture {
     where
         Self: Sized,
     {
+        // Read bytes
+        pub fn read_bytes(metadata: &assets::AssetMetadata) -> (Vec<u8>, u16, u16) {
+            // Load this texture from the bytes
+            let png_bytes = metadata.bytes.as_bytes();
+            let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+            // Flip
+            let image = image.flipv();
+            (image.to_bytes(), image.width() as u16, image.height() as u16)
+        }
         // Load this texture from the bytes
-        let (bytes, width, height) = Self::read_bytes(data);
+        let (bytes, width, height) = read_bytes(data);
         // Return a texture with the default parameters
         let texture = self
             .set_bytes(bytes)

@@ -1,7 +1,16 @@
+use std::sync::{Arc, Mutex};
+
 use super::{ObjectID, PipelineObject, TrackedTaskID};
 use crate::{
     advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
-    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture, Buildable},
+    basics::{
+        material::Material,
+        model::Model,
+        renderer::Renderer,
+        shader::Shader,
+        texture::{Texture, TextureReadBytes, TextureWriteBytes},
+        Buildable,
+    },
     pipeline::camera::Camera,
 };
 
@@ -29,6 +38,8 @@ pub enum PipelineTask {
 // A task that can be sent to the render thread, but we can also check if it has finished executing
 pub enum PipelineTrackedTask {
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
+    TextureReadBytes(ObjectID<Texture>, TextureReadBytes),
+    TextureWriteBytes(ObjectID<Texture>, TextureWriteBytes),
 }
 
 // Bruh
@@ -38,11 +49,7 @@ pub enum PipelineTaskCombination {
     Batch(Vec<PipelineTask>),
 
     // Tracking task
-    SingleTrackedAwaits(PipelineTrackedTask, TrackedTaskID, Vec<TrackedTaskID>),
-    SingleTrackedPhantomFinalizer(TrackedTaskID, Vec<TrackedTaskID>),
-    // Compute Shader (Self: 0, Awaits: [])
-    // Fill Texture 1 (Self: 1, Awaits: [0])
-    // Fill Texture 2 (Self: 2, Awaits: [0])
-    // Edit Pixels Texture 2 (Self: 3, Awaits: [2])
-    // Phantom Finalizer (Self: 4, Awaits: [0, 0, 2]) 
+    SingleTracked(PipelineTrackedTask, TrackedTaskID, Option<TrackedTaskID>),
+    SingleTrackedFinalizer(TrackedTaskID, Vec<TrackedTaskID>), // Compute Shader (Self: 0)
+                                                               // Finalizer (Self: 1, Requires: [0])
 }

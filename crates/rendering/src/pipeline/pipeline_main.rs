@@ -4,7 +4,7 @@ pub mod pipec {
 
     use crate::{
         basics::Buildable,
-        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask},
+        object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
         pipeline::{sender, Pipeline},
     };
     // Debug some pipeline data
@@ -34,8 +34,33 @@ pub mod pipec {
         task(t, pipeline);
         id
     }
-    // Detect if a finalizer phantom tracked task has completed
-    pub(crate) fn completed_phantom_tracked_task(id: TrackedTaskID, pipeline: &Pipeline) -> bool {
-        pipeline.completed_finalizer_tracked_tasks.contains(&id)
+
+    // Tracked Tasks
+    // Detect if a tracking task has executed
+    pub fn has_task_executed(id: TrackedTaskID, pipeline: &Pipeline) -> Option<bool> {
+        // This TrackedTaskID might be not finalized, so we must handle that case
+        if id.1 {
+            Some(pipeline.completed_finalizers.contains(&id))
+        } else {
+            None
+        }
+    }
+    // Create a tracked task with a requirement
+    pub fn tracked_task(task: PipelineTrackedTask, req: Option<TrackedTaskID>, pipeline: &Pipeline) -> TrackedTaskID {
+        // Create a new ID for ourselves
+        let id = TrackedTaskID::new(false);
+        sender::send_task(PipelineTaskCombination::SingleTracked(task, id, req), pipeline).unwrap();
+        id
+    }
+    // Make a finalizer that we can actually use to check if some tasks have all executed
+    pub fn tracked_finalizer(reqs: Vec<TrackedTaskID>, pipeline: &Pipeline) -> Option<TrackedTaskID> {
+        // Must be the partial version and not the finalized version
+        let partial_valid = reqs.iter().all(|x| !x.1);
+        if !partial_valid {
+            return None;
+        }
+        let id = TrackedTaskID::new(true);
+        sender::send_task(PipelineTaskCombination::SingleTrackedFinalizer(id, reqs), pipeline).unwrap();
+        Some(id)
     }
 }

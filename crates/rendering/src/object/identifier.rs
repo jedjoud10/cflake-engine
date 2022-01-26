@@ -65,15 +65,14 @@ static TRACKING_TASK_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 // A tracking TaskID that we can use to check wether a specific task has executed or not
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct TrackedTaskID {
-    pub(crate) id: u64,
-}
+pub struct TrackedTaskID(pub(crate) u64, pub(crate) bool);
 
 impl TrackedTaskID {
     // Create a new task ID by incrementing the global TrackingTaskID
-    pub fn new() -> Self {
+    pub fn new(is_valid_for_checks: bool) -> Self {
         Self {
-            id: TRACKING_TASK_ID_COUNTER.fetch_add(1, Ordering::Relaxed),
+            0: TRACKING_TASK_ID_COUNTER.fetch_add(1, Ordering::Relaxed),
+            1: is_valid_for_checks,
         }
     }
 }

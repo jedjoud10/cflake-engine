@@ -1,6 +1,6 @@
 use main::assets::preload_asset;
 use main::core::WriteContext;
-use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, window_system};
+use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, test_system, window_system};
 // Default components
 pub mod components;
 // Default globals
@@ -27,6 +27,7 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\dithering.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\others\\template_compute.cmpt.glsl");
     // Default impls
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\general.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer.func.glsl");
@@ -66,8 +67,10 @@ pub fn preload_system(mut write: WriteContext) {
     rendering_system::system(&mut write);
     debugging_system::system(&mut write);
     window_system::system(&mut write);
+    test_system::system(&mut write);
     // Terrain
     terrain::chunk_system::system(&mut write);
+    terrain::voxel_system::system(&mut write);
 
     // We gotta add the global world data
     write.ecs.add_global(crate::globals::GlobalWorldData::default()).unwrap();

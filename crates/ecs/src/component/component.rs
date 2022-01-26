@@ -5,12 +5,12 @@ use std::any::Any;
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct ComponentID {
     pub(crate) cbitfield: Bitfield<u32>,
-    pub(crate) id: u64,
+    pub(crate) idx: u64,
 }
 impl ComponentID {
     // Create a new component ID
     pub(crate) fn new(cbitfield: Bitfield<u32>, id: u64) -> Self {
-        Self { cbitfield, id }
+        Self { cbitfield, idx: id }
     }
 }
 

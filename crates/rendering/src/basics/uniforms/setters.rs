@@ -1,4 +1,4 @@
-use crate::basics::texture::{Texture, TextureShaderAccessType};
+use crate::basics::texture::{Texture, TextureAccessType};
 
 // Actually set the shader uniforms
 #[allow(temporary_cstring_as_ptr)]
@@ -11,13 +11,18 @@ pub unsafe fn set_f64(index: i32, value: &f64) {
     gl::Uniform1d(index, *value);
 }
 // Set an image that can be modified inside the shader
-pub unsafe fn set_image(texture: &Texture, index: i32, access_type: &TextureShaderAccessType) {
+pub unsafe fn set_image(texture: &Texture, index: i32, access_type: &TextureAccessType) {
     // Converstion from wrapper to actual opengl values
-    let new_access_type: u32;
-    match access_type {
-        TextureShaderAccessType::ReadOnly => new_access_type = gl::READ_ONLY,
-        TextureShaderAccessType::WriteOnly => new_access_type = gl::WRITE_ONLY,
-        TextureShaderAccessType::ReadWrite => new_access_type = gl::READ_WRITE,
+    let new_access_type: u32 = {
+        if access_type.is_all() {
+            gl::READ_WRITE
+        } else if access_type.contains(TextureAccessType::READ) {
+            gl::READ_ONLY
+        } else if access_type.contains(TextureAccessType::WRITE) {
+            gl::WRITE_ONLY
+        } else {
+            panic!()
+        }
     };
     let unit = index as u32;
     gl::BindTexture(texture.target, texture.oid);

@@ -5,14 +5,14 @@ use crate::{
         model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
-        texture::{get_ifd, Texture, TextureFilter, TextureFlags, TextureType, TextureWrapping},
+        texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureReadBytes, TextureType, TextureWrapping},
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, TrackedTaskID, PipelineTrackedTask, GlTracker},
+    object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::{RenderWrapper, Window},
 };
-use ahash::{AHashSet, AHashMap};
+use ahash::{AHashMap, AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
@@ -36,6 +36,13 @@ pub(crate) struct DefaultPipelineObjects {
     pub(crate) model: ObjectID<Model>,
 }
 
+// Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
+#[derive(Default)]
+pub(crate) struct InternalPipeline {
+    // Keep track of the GlTrackers and their corresponding ID
+    gltrackers: AHashMap<TrackedTaskID, GlTracker>,
+}
+
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
 // This is only updated at the end of each frame, so we don't have to worry about reading it from multiple threads since no one will be writing to it at that times
 #[derive(Default)]
@@ -43,10 +50,9 @@ pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
     tasks: RwLock<Vec<PipelineTaskCombination>>,
 
-    // Keep track of the GlTrackers
-    gltrackers: AHashMap<TrackedTaskID, GlTracker>,
+    // Tracked tasks
     completed_tracked_tasks: AHashSet<TrackedTaskID>,
-    pub(crate) completed_finalizer_tracked_tasks: AHashSet<TrackedTaskID>,
+    pub(crate) completed_finalizers: AHashSet<TrackedTaskID>,
 
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
@@ -107,14 +113,25 @@ impl Pipeline {
         awaits.iter().all(|id| self.completed_tracked_tasks.contains(id)) || awaits.is_empty()
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID, awaiting_ids: Vec<TrackedTaskID>) {
+    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
-            PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(tracking_id, id, settings),
+            PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
+            PipelineTrackedTask::TextureReadBytes(id, read) => self.fill_texture(id, read),
+            PipelineTrackedTask::TextureWriteBytes(id, write) => todo!(),
         };
 
         // Add the tracked ID to our pipeline
-        self.gltrackers.insert(tracking_id, gltracker);
+        internal.gltrackers.insert(tracking_id, gltracker);
+    }
+    // Finalizer for the tracked task
+    fn handle_tracked_finalizer(&mut self, tracking_id: TrackedTaskID, requirements: Vec<TrackedTaskID>) {
+        // Add the finalizer since all the required tasks have finished executing
+        self.completed_finalizers.insert(tracking_id);
+        // And clean the old tasks
+        for require in requirements {
+            self.completed_tracked_tasks.remove(&require);
+        }
     }
     // Finalizer
     fn handle_phantom_finalizer(&mut self, tracking_id: TrackedTaskID, awaiting_ids: Vec<TrackedTaskID>) {
@@ -146,26 +163,44 @@ impl Pipeline {
         }
     } 
     // Called each frame during the "free-zone"
-    pub(crate) fn update(&mut self, renderer: &mut PipelineRenderer) {
+    pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
-        self.check_gltrackers();
-        self.check_finalized_phantom_trackers();
+        let completed = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
+        for (id, _) in completed {
+            self.completed_tracked_tasks.insert(id);
+        }
+        // Clean the completed tracked finalizers
+        self.completed_finalizers.clear();
         // Always flush during the update
-        self.flush(renderer);
+        self.flush(internal, renderer);
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
-    pub(crate) fn flush(&mut self, renderer: &mut PipelineRenderer) {
+    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // We must take the commands first
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
             let tasks = &mut *tasks_;
-            // Take only the tasks that we want
-            tasks.drain_filter(|task| match task {
-                PipelineTaskCombination::SingleTrackedAwaits(_, _, awaits) => self.awaits_completed(awaits),
-                PipelineTaskCombination::SingleTrackedPhantomFinalizer(_, awaits) => self.awaits_completed(awaits),
-                _ => true,
-            }).collect::<Vec<_>>()
+            // If we have a tracked task that requires the execution of another tracked task, we must check if the latter has completed executing
+            let tasks = tasks
+                .drain_filter(|task| match task {
+                    PipelineTaskCombination::SingleTracked(_, _, require) => {
+                        // If the requirement is null, that means that we don't need it
+                        let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) { None } else { Some(()) });
+                        valid.is_none()
+                    }
+                    PipelineTaskCombination::SingleTrackedFinalizer(_, requirements) => {
+                        // Check each task
+                        if requirements.is_empty() {
+                            panic!();
+                        }
+                        let valid = requirements.into_iter().all(|x| self.completed_tracked_tasks.contains(&x));
+                        valid
+                    }
+                    _ => true,
+                })
+                .collect::<Vec<_>>();
+            tasks
         };
 
         for task in tasks {
@@ -178,9 +213,8 @@ impl Pipeline {
                     }
                 }
 
-                // Execute the tracking tasks asyncrhonously
-                PipelineTaskCombination::SingleTrackedAwaits(task, tracking_id, awaiting_ids) => self.execute_tracked_task(renderer, task, tracking_id, awaiting_ids),
-                PipelineTaskCombination::SingleTrackedPhantomFinalizer(tracking_id, awaiting_ids) => self.handle_phantom_finalizer(tracking_id, awaiting_ids),
+                PipelineTaskCombination::SingleTracked(task, tracking_id, _) => self.execute_tracked_task(internal, renderer, task, tracking_id),
+                PipelineTaskCombination::SingleTrackedFinalizer(tracking_id, requirements) => self.handle_tracked_finalizer(tracking_id, requirements),
             }
         }
 
@@ -307,7 +341,7 @@ impl Pipeline {
 
     // Actually update our data
     // Add the renderer
-    pub(crate) fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
+    fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
         // Get the renderer data, if it does not exist then use the default renderer data
         let renderer = task.0;
         let defaults = self.defaults.as_ref().unwrap();
@@ -317,16 +351,16 @@ impl Pipeline {
         self.renderers.insert(task.1.id.unwrap(), renderer);
     }
     // Remove the renderer using it's renderer ID
-    pub(crate) fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
+    fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
         self.renderers.remove(id.id.unwrap());
     }
     // Update a renderer's matrix
-    pub(crate) fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
+    fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
         let renderer = self.renderers.get_mut(id.id.unwrap()).unwrap();
         renderer.matrix = matrix;
     }
     // Create a shader and cache it. We do not cache the "subshader" though
-    pub(crate) fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
+    fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
         // Compile a single shader source
         fn compile_single_source(source_data: ShaderSource) -> u32 {
             let shader_type: u32;
@@ -416,7 +450,7 @@ impl Pipeline {
         self.shaders.insert(task.1.id.unwrap(), shader);
     }
     // Create a compute shader and cache it
-    pub(crate) fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
+    fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
         // Extract the shader
         let mut shader = task.0;
 
@@ -485,7 +519,7 @@ impl Pipeline {
         self.compute_shaders.insert(task.1.id.unwrap(), shader);
     }
     // Create a model
-    pub(crate) fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
+    fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
         let model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
@@ -596,7 +630,7 @@ impl Pipeline {
         self.models.insert(task.1.id.unwrap(), (model, buffers));
     }
     // Dispose of a model, also remove it from the pipeline
-    pub(crate) fn model_dispose(&mut self, id: ObjectID<Model>) {
+    fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Remove the model and it's buffers
         let (_model, mut buffers) = self.models.remove(id.id.unwrap()).unwrap();
         unsafe {
@@ -613,13 +647,26 @@ impl Pipeline {
         }
     }
     // Create a texture
-    pub(crate) fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
+    fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
+        // Guess how many mipmap levels a texture with a specific maximum coordinate can have
+        fn guess_mipmap_levels(i: usize) -> usize {
+            let mut x: f32 = i as f32;
+            let mut num: usize = 0;
+            while x > 1.0 {
+                // Repeatedly divide by 2
+                x /= 2.0;
+                num += 1;
+            }
+            num
+        }
+
         let mut texture = task.0;
         let mut pointer: *const c_void = null();
         if !texture.bytes.is_empty() {
             pointer = texture.bytes.as_ptr() as *const c_void;
         }
         let ifd = get_ifd(texture._format, texture._type);
+        let bytes_count = calculate_size_bytes(&texture._format, texture.count_pixels());
 
         // Get the tex_type based on the TextureDimensionType
         let tex_type = match texture.ttype {
@@ -649,7 +696,7 @@ impl Pipeline {
                 TextureType::Texture2DArray(width, height, depth) => {
                     gl::TexStorage3D(
                         tex_type,
-                        Texture::guess_mipmap_levels(width.max(height) as usize) as i32,
+                        guess_mipmap_levels(width.max(height) as usize) as i32,
                         ifd.0 as u32,
                         width as i32,
                         height as i32,
@@ -678,7 +725,7 @@ impl Pipeline {
         }
 
         // The texture is already bound to the TEXTURE_2D
-        if texture.flags.contains(TextureFlags::MIPMAPS) {
+        if texture.mipmaps {
             // Create the mipmaps
             unsafe {
                 gl::GenerateMipmap(tex_type);
@@ -696,6 +743,29 @@ impl Pipeline {
                     }
                 }
             }
+        }
+
+        // Create the Upload / Download PBOs if needed
+        if texture.cpu_access.contains(TextureAccessType::READ) {
+            // Create a download PBO
+            let mut pbo = 0_u32;
+            unsafe {
+                gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
+                gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, 0);
+            }
+            texture.read_pbo = Some(pbo);
+        } else if texture.cpu_access.contains(TextureAccessType::WRITE) {
+            // Create an upload PBO
+            let mut pbo = 0_u32;
+            unsafe {
+                gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
+                gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
+            }
+            texture.write_pbo = Some(pbo);
         }
 
         // Set the wrap mode for the texture (Mipmapped or not)
@@ -717,7 +787,7 @@ impl Pipeline {
     }
     // Update the size of a texture
     // PS: This also clears the texture
-    pub(crate) fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
+    fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
         // Get the GPU texture object
         let texture = self.get_texture_mut(id).unwrap();
         // Check if the current dimension type matches up with the new one
@@ -743,7 +813,7 @@ impl Pipeline {
         }
     }
     // Run a compute shader, and return it's GlTracker
-    pub(crate) fn compute_run(&mut self, tracking_id: TrackedTaskID, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) -> GlTracker {
+    fn compute_run(&mut self, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) -> GlTracker {
         // Execute some shader uniforms if we want to
         let group = settings.uniforms;
         if let Some(group) = group {
@@ -753,14 +823,43 @@ impl Pipeline {
         }
         // Dispatch the compute shader for execution
         let axii = settings.axii;
-        
+
         // Create the GlTracker and send the DispatchCompute command
-        GlTracker::new(|_| unsafe {
-            gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-        }, tracking_id)
+        GlTracker::new(
+            |_| unsafe {
+                gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
+            },
+            |_| {},
+            self,
+        )
+    }
+    // Read the bytes from a texture
+    fn fill_texture(&mut self, id: ObjectID<Texture>, read: TextureReadBytes) -> GlTracker {
+        // Actually read the pixels
+        GlTracker::new(
+            |pipeline| unsafe {
+                // Bind the buffer before reading
+                let texture = pipeline.get_texture(id).unwrap();
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
+                gl::BindTexture(texture.target, texture.oid);
+                let (_internal_format, format, data_type) = texture.ifd;
+                gl::GetTexImage(texture.target, 0, format, data_type, null_mut());
+            },
+            move |pipeline| unsafe {
+                // Gotta create a mapped buffer
+                let texture = pipeline.get_texture(id).unwrap();
+                let byte_count = calculate_size_bytes(&texture._format, texture.count_pixels());
+                let mut vec = vec![0_u8; byte_count];
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
+                gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+                let mut cpu_bytes = read.cpu_bytes.as_ref().lock().unwrap();
+                *cpu_bytes = vec;
+            },
+            self,
+        )
     }
     // Create a materail
-    pub(crate) fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
+    fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
         // Just add the material internally
         self.materials.insert(task.1.id.unwrap(), task.0);
     }
@@ -792,11 +891,10 @@ pub struct PipelineStartData {
 }
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
-    use crate::basics::texture::{TextureFilter, TextureType};
     use assets::assetc::load;
 
     // Create the default missing texture
-    let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().enable_mipmaps()).unwrap(), pipeline);
+    let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().set_mipmaps(true)).unwrap(), pipeline);
 
     // Create the default white texture
     let white = pipec::construct(
@@ -804,7 +902,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![255, 255, 255, 255])
-            .enable_mipmaps(),
+            .set_mipmaps(true),
         pipeline,
     );
 
@@ -814,7 +912,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![0, 0, 0, 255])
-            .enable_mipmaps(),
+            .set_mipmaps(true),
         pipeline,
     );
 
@@ -824,7 +922,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![127, 128, 255, 255])
-            .enable_mipmaps(),
+            .set_mipmaps(true),
         pipeline,
     );
 
@@ -925,6 +1023,8 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // Create the pipeline
         let pipeline = Pipeline::default();
+        // Create an internal pipeline as well
+        let mut internal = InternalPipeline::default();
 
         // Create the Arc and RwLock for the pipeline
         let pipeline = Arc::new(RwLock::new(pipeline));
@@ -940,7 +1040,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         let mut renderer = {
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
-            renderer.initialize(&mut *pipeline);
+            renderer.initialize(&mut internal, &mut *pipeline);
             renderer
         };
 
@@ -981,7 +1081,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 pipeline.add_tasks(messages);
 
                 // Execute the tasks
-                pipeline.update(&mut renderer);
+                pipeline.update(&mut internal, &mut renderer);
 
                 // Debug if needed
                 if pipeline.debugging.load(Ordering::Relaxed) {

@@ -10,11 +10,11 @@ use main::{
             shader::ShaderSettings,
             texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
         },
-        object::ObjectID,
+        object::{ObjectID, TrackedTaskID},
         pipeline::pipec,
         utils::DataType,
     },
-    terrain::{ChunkCoords, MAIN_CHUNK_SIZE},
+    terrain::{ChunkCoords, VoxelData, MAIN_CHUNK_SIZE},
 };
 use std::collections::HashMap;
 
@@ -26,6 +26,7 @@ pub struct Terrain {
     pub csgtree: math::csg::CSGTree,
 
     // Voxel Generation
+    pub generating: Option<TrackedTaskID>,
     pub compute_shader: ObjectID<ComputeShader>,
     pub voxel_texture: ObjectID<Texture>,
     pub material_texture: ObjectID<Texture>,
@@ -47,7 +48,9 @@ impl Terrain {
 
         // Load the compute shader
         let (string, csgtree) = interpreter.finalize().unwrap();
-        let ss = ShaderSettings::default().external_code("voxel_interpreter", string).source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
+        let ss = ShaderSettings::default()
+            .external_code("voxel_interpreter", string)
+            .source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
         let compute_shader = ComputeShader::new(ss).unwrap();
         let compute_shader = pipec::construct(compute_shader, pipeline);
 
@@ -83,6 +86,7 @@ impl Terrain {
             chunks: HashMap::default(),
             csgtree,
 
+            generating: None,
             compute_shader,
             voxel_texture,
             material_texture,
