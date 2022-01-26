@@ -1,4 +1,4 @@
-use super::Pipeline;
+use super::{Pipeline, InternalPipeline};
 use crate::{
     basics::{
         material::MaterialFlags,
@@ -115,7 +115,7 @@ impl PipelineRenderer {
         Some(())
     }
     // Initialize this new pipeline renderer
-    pub fn initialize(&mut self, pipeline: &mut Pipeline) {
+    pub fn initialize(&mut self, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
         println!("Initializing the pipeline renderer...");
         // Create the quad model that we will use to render the whole screen
         use veclib::{vec2, vec3};
@@ -173,7 +173,7 @@ impl PipelineRenderer {
                 Some(())
             }
             // Flush
-            pipeline.flush(self);
+            pipeline.flush(internal, self);
             bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT1, &self.emissive_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT2, &self.normals_texture, pipeline).unwrap();
@@ -203,7 +203,7 @@ impl PipelineRenderer {
         /* #endregion */
 
         // We must always flush to make sure we execute the tasks internally
-        pipeline.flush(self);
+        pipeline.flush(internal, self);
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
     // Pre-render event

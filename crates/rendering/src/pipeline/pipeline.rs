@@ -37,6 +37,7 @@ pub(crate) struct DefaultPipelineObjects {
 }
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
+#[derive(Default)]
 pub(crate) struct InternalPipeline {
     // Keep track of the GlTrackers and their corresponding ID
     gltrackers: AHashMap<TrackedTaskID, GlTracker>,
@@ -108,7 +109,7 @@ impl Pipeline {
         }
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
+    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
@@ -117,7 +118,7 @@ impl Pipeline {
         };
 
         // Add the tracked ID to our pipeline
-        self.gltrackers.insert(tracking_id, gltracker);
+        internal.gltrackers.insert(tracking_id, gltracker);
     }
     // Finalizer for the tracked task
     fn handle_tracked_finalizer(&mut self, tracking_id: TrackedTaskID, requirements: Vec<TrackedTaskID>) {
@@ -129,20 +130,20 @@ impl Pipeline {
         }
     }
     // Called each frame during the "free-zone"
-    pub(crate) fn update(&mut self, renderer: &mut PipelineRenderer) {
+    pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
-        let completed = self.gltrackers.drain_filter(|id, tracker| tracker.completed()).collect::<Vec<_>>();
+        let completed = internal.gltrackers.drain_filter(|id, tracker| tracker.completed()).collect::<Vec<_>>();
         for (id, _) in completed {
             self.completed_tracked_tasks.insert(id);
         } 
         // Clean the completed tracked finalizers
         self.completed_finalizers.clear();
         // Always flush during the update
-        self.flush(renderer);
+        self.flush(internal, renderer);
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
-    pub(crate) fn flush(&mut self, renderer: &mut PipelineRenderer) {
+    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // We must take the commands first
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
@@ -175,7 +176,7 @@ impl Pipeline {
                     }
                 }
 
-                PipelineTaskCombination::SingleTracked(task, tracking_id, _) => self.execute_tracked_task(renderer, task, tracking_id),
+                PipelineTaskCombination::SingleTracked(task, tracking_id, _) => self.execute_tracked_task(internal, renderer, task, tracking_id),
                 PipelineTaskCombination::SingleTrackedFinalizer(tracking_id, requirements) => self.handle_tracked_finalizer(tracking_id, requirements)
             }
         }
@@ -789,8 +790,8 @@ impl Pipeline {
         // Create the GlTracker and send the DispatchCompute command
         GlTracker::new(|| unsafe {
             gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-            dbg!("Dispath compute");
-        })
+            dbg!("Dispathing compute...");
+        }, || { dbg!("Completed compute execution!"); })
     }
     // Read the bytes from a texture
     fn fill_texture(&mut self, id: ObjectID<Texture>, read: TextureReadBytes) -> GlTracker {
@@ -809,8 +810,8 @@ impl Pipeline {
             // Update the vector that was given using the AtomicPtr
             let mut new_bytes = bytes.as_ref().lock().unwrap();
             *new_bytes = pixels;+
-            dbg!("Fill texture compute");
-        })
+            dbg!("Reading texture...");
+        }, || { dbg!("Completed reading texture!") })
     }
     // Create a materail
     fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
@@ -977,9 +978,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // Create the pipeline
         let pipeline = Pipeline::default();
+        // Create an internal pipeline as well
+        let mut internal = InternalPipeline::default();
 
         // Create the Arc and RwLock for the pipeline
         let pipeline = Arc::new(RwLock::new(pipeline));
+
 
         // Load the default objects
         {
@@ -992,7 +996,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         let mut renderer = {
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
-            renderer.initialize(&mut *pipeline);
+            renderer.initialize(&mut internal, &mut *pipeline);
             renderer
         };
 
@@ -1033,7 +1037,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 pipeline.add_tasks(messages);
 
                 // Execute the tasks
-                pipeline.update(&mut renderer);
+                pipeline.update(&mut internal, &mut renderer);
 
                 // Debug if needed
                 if pipeline.debugging.load(Ordering::Relaxed) {
