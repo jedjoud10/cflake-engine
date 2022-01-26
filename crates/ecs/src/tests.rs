@@ -70,11 +70,13 @@ pub mod test {
         // Make a simple system
         let builder = ecs.create_system_builder();
         fn internal_run(_context: WorldContext, components: ComponentQuery) {
+            /*
             // Transform the _context to RefContext using some magic fuckery
             components.update_all_threaded(|components| {
                 let mut name = components.component_mut::<Name>().unwrap();
                 *name = Name::new("Bob");
             });
+            */
         }
         builder.link::<Name>().set_run_event(internal_run).build();
 

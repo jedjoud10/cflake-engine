@@ -20,7 +20,7 @@ pub struct LinkedComponents {
     pub(crate) linked: AHashMap<Bitfield<u32>, u64>,
 
     // This ID can either be the valid entity ID or the ID of a removed entity that is stored in our temporary OrderedVec
-    pub id: u64,
+    pub id: (u64, bool),
 }
 
 unsafe impl Sync for LinkedComponents {}
@@ -33,7 +33,7 @@ impl LinkedComponents {
         Self {
             components,
             linked: entity.components.clone(),
-            id: entity.id.unwrap().0,
+            id: (entity.id.unwrap().0, true),
         }
     }
 
@@ -41,7 +41,7 @@ impl LinkedComponents {
         Self {
             components,
             linked: linked.clone(),
-            id: id.0,
+            id: (id.0, true),
         }
     }
 
@@ -49,7 +49,7 @@ impl LinkedComponents {
         Self {
             components,
             linked: linked.clone(),
-            id,
+            id: (id, false),
         }
     }
 }
@@ -59,14 +59,28 @@ fn invalid_err() -> ComponentError {
     ComponentError::new_without_id("Linked component could not be fetched!".to_string())
 }
 impl LinkedComponents {
+    // Get the entity ID of our corresponding entity
+    pub fn get_entity_id(&self) -> Option<EntityID> {
+        if !self.id.1 { return None }
+        Some(EntityID(self.id.0))
+    }
+    // Get the component ID of a specific component that this entity has
+    pub fn get_component_id<T>(&self) -> Option<ComponentID>
+    where
+        T: Component + Send + Sync + 'static,
+    {
+        let cbitfield = registry::get_component_bitfield::<T>();
+        let idx = self.linked.get(&cbitfield)?;
+        Some(ComponentID::new(cbitfield, *idx))
+    }
     // Get a reference to a specific linked component
     pub fn component<'b, T>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
         // Get the UnsafeCell
-        let id = registry::get_component_bitfield::<T>();
-        let idx = unsafe { &*self.linked }.get(&id).ok_or(invalid_err())?;
+        let cbitfield = registry::get_component_bitfield::<T>();
+        let idx = self.linked.get(&cbitfield).ok_or(invalid_err())?;
         let hashmap = self.components.read().map_err(|_| invalid_err())?;
         let cell = hashmap.get(*idx).ok_or_else(|| invalid_err())?;
 
@@ -85,8 +99,8 @@ impl LinkedComponents {
         T: Component + Send + Sync + 'static,
     {
         // Get the UnsafeCell
-        let id = registry::get_component_bitfield::<T>();
-        let idx = unsafe { &*self.linked }.get(&id).ok_or(invalid_err())?;
+        let cbitfield = registry::get_component_bitfield::<T>();
+        let idx = self.linked.get(&cbitfield).ok_or(invalid_err())?;
         let hashmap = self.components.read().map_err(|_| invalid_err())?;
         let cell = hashmap.get(*idx).ok_or_else(|| invalid_err())?;
 

@@ -10,7 +10,7 @@ use super::LinkedComponents;
 // An enum that stores either a reference to a hashmap or an owned vector. We will use this to iterate through every LinkedComponents
 pub enum ComponentQueryIterType {
     ArcHashMap(Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>),
-    Vec(Vec<LinkedComponents>),
+    HashMap(AHashMap<EntityID, LinkedComponents>),
 }
 
 // A struct full of LinkedComponents that we send off to update in parallel
@@ -24,6 +24,22 @@ pub struct ComponentQuery {
 }
 
 impl ComponentQuery {
+    // Update a single linked component from this query using it's respective entity ID
+    pub fn update<F: FnMut(&mut LinkedComponents)>(self, id: EntityID, mut function: F) {
+        if let Some(_type) = self.linked_components {
+            match _type {
+                ComponentQueryIterType::ArcHashMap(arc) => {
+                    let mut lock = arc.lock().unwrap();
+                    let linked = lock.get_mut(&id);
+                    if let Some(linked) = linked { function(linked); }
+                }
+                ComponentQueryIterType::HashMap(mut hashmap) => {
+                    let linked = hashmap.get_mut(&id);
+                    if let Some(linked) = linked { function(linked); }
+                }
+            }
+        }
+    }
     // Update all the components consecutively, on the main thread
     pub fn update_all<F: FnMut(&mut LinkedComponents)>(self, mut function: F) {
         // Run it normally
@@ -35,8 +51,8 @@ impl ComponentQuery {
                         function(linked_components);
                     }
                 }
-                ComponentQueryIterType::Vec(vec) => {
-                    for mut linked_components in vec {
+                ComponentQueryIterType::HashMap(hashmap) => {
+                    for (_, mut linked_components) in hashmap {
                         function(&mut linked_components);
                     }
                 }
@@ -57,8 +73,8 @@ impl ComponentQuery {
                         }
                     }
                 }
-                ComponentQueryIterType::Vec(vec) => {
-                    for mut linked_components in vec {
+                ComponentQueryIterType::HashMap(hashmap) => {
+                    for (_, mut linked_components) in hashmap {
                         let opt = function(&mut linked_components);
                         if opt.is_none() {
                             break;
@@ -73,7 +89,7 @@ impl ComponentQuery {
         let output_vec = if let Some(_type) = self.linked_components {
             let len = match &_type {
                 ComponentQueryIterType::ArcHashMap(x) => x.lock().unwrap().len(),
-                ComponentQueryIterType::Vec(x) => x.len(),
+                ComponentQueryIterType::HashMap(x) => x.len(),
             };
             // Create the output vector that will store the mapped values
             let mut output_vec = Vec::with_capacity(len);
@@ -88,8 +104,8 @@ impl ComponentQuery {
                         }
                     }
                 }
-                ComponentQueryIterType::Vec(vec) => {
-                    for mut linked_components in vec {
+                ComponentQueryIterType::HashMap(hashmap) => {
+                    for (_, mut linked_components) in hashmap {
                         let output = function(&mut linked_components);
                         if let Some(output) = output {
                             output_vec.push(output);
@@ -113,8 +129,8 @@ impl ComponentQuery {
                     let vec = lock.iter_mut().map(|(_, x)| x as *mut LinkedComponents).collect::<Vec<_>>();
                     thread_pool.execute_vec_ptr(vec, function);
                 }
-                ComponentQueryIterType::Vec(mut vec) => {
-                    let vec = vec.iter_mut().map(|x| x as *mut LinkedComponents).collect::<Vec<_>>();
+                ComponentQueryIterType::HashMap(mut hashmap) => {
+                    let vec = hashmap.iter_mut().map(|(_, x)| x as *mut LinkedComponents).collect::<Vec<_>>();
                     thread_pool.execute_vec_ptr(vec, function);
                 }
             }

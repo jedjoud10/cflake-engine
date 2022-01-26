@@ -158,7 +158,7 @@ impl Pipeline {
                 .drain_filter(|task| match task {
                     PipelineTaskCombination::SingleTracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
-                        let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) { None } else { Some(()) });
+                        let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) || self.completed_finalizers.contains(&x) { None } else { Some(()) });
                         valid.is_none()
                     }
                     PipelineTaskCombination::SingleTrackedFinalizer(_, requirements) => {

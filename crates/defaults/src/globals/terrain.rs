@@ -1,5 +1,5 @@
 use main::{
-    ecs::{entity::EntityID, impl_component},
+    ecs::{entity::EntityID, impl_component, component::ComponentID},
     math::{
         self,
         octrees::{AdvancedOctree, Octree, OctreeNode},
@@ -8,7 +8,7 @@ use main::{
         advanced::compute::ComputeShader,
         basics::{
             shader::ShaderSettings,
-            texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
+            texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping, TextureReadBytes},
         },
         object::{ObjectID, TrackedTaskID},
         pipeline::pipec,
@@ -26,9 +26,9 @@ pub struct Terrain {
     pub csgtree: math::csg::CSGTree,
 
     // Voxel Generation
-    pub generating: Option<TrackedTaskID>,
+    pub generating: Option<(TrackedTaskID, EntityID, (TextureReadBytes, TextureReadBytes))>,
     pub compute_shader: ObjectID<ComputeShader>,
-    pub voxel_texture: ObjectID<Texture>,
+    pub density_texture: ObjectID<Texture>,
     pub material_texture: ObjectID<Texture>,
 }
 
@@ -88,7 +88,7 @@ impl Terrain {
 
             generating: None,
             compute_shader,
-            voxel_texture,
+            density_texture: voxel_texture,
             material_texture,
         }
     }

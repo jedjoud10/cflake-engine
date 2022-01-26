@@ -1,8 +1,8 @@
-// Some voxel data that is generated in the first pass of the compute shader
-struct Voxel {
+// The density voxel only contains the density at a specific location
+struct DensityVoxel {
     float density;
 };
+// The material voxel can contain the type of material and some tint for a specific voxel
 struct MaterialVoxel {
-    int shader_id;
     int material_id;
 };
