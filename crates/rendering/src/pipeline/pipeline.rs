@@ -804,14 +804,12 @@ impl Pipeline {
         // Actually read the pixels
         GlTracker::new(|| unsafe {
             // Bind the buffer before reading
+            gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
             gl::BindTexture(texture.target, texture.oid);
             let (_internal_format, format, data_type) = texture.ifd;
             gl::GetTexImage(texture.target, 0, format, data_type, pixels.as_mut_ptr() as *mut c_void);
-            // Update the vector that was given using the AtomicPtr
-            let mut new_bytes = bytes.as_ref().lock().unwrap();
-            *new_bytes = pixels;+
             dbg!("Reading texture...");
-        }, || { dbg!("Completed reading texture!") })
+        }, || { dbg!("Completed reading texture!"); })
     }
     // Create a materail
     fn material_create(&mut self, task: ObjectBuildingTask<Material>) {

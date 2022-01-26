@@ -115,7 +115,7 @@ impl PipelineRenderer {
         Some(())
     }
     // Initialize this new pipeline renderer
-    pub fn initialize(&mut self, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
+    pub(crate) fn initialize(&mut self, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
         println!("Initializing the pipeline renderer...");
         // Create the quad model that we will use to render the whole screen
         use veclib::{vec2, vec3};
