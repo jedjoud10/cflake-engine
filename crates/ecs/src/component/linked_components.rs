@@ -14,7 +14,7 @@ pub struct LinkedComponents {
     // Our linked components
     pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
     pub(crate) linked: *const AHashMap<Bitfield<u32>, u64>,
-    pub entity_id: EntityID,
+    pub id: EntityID,
 }
 
 unsafe impl Sync for LinkedComponents {}
@@ -27,7 +27,7 @@ impl LinkedComponents {
         Self {
             components: ecs_manager.components.clone(),
             linked: &entity.components as *const _,
-            entity_id: entity.id.unwrap(),
+            id: entity.id.unwrap(),
         }
     }
 }
