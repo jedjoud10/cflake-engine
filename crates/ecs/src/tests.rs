@@ -71,7 +71,7 @@ pub mod test {
         let builder = ecs.create_system_builder();
         fn internal_run(_context: WorldContext, components: ComponentQuery) {
             // Transform the _context to RefContext using some magic fuckery
-            components.update_all_threaded(|components| {
+            components.update_all(|components| {
                 let mut name = components.component_mut::<Name>().unwrap();
                 *name = Name::new("Bob");
             });
@@ -88,7 +88,11 @@ pub mod test {
             // The entity is not created yet, so it is null
             ecs.add_entity(entity, id, group).unwrap();
         }
-        for x in 0..10 { ecs.run_systems(context); }        
+        for x in 0..10 { 
+            let i = std::time::Instant::now();
+            ecs.run_systems(context);
+            println!("Took {}µs to update", i.elapsed().as_micros())
+        }        
     }
     #[test]
     pub fn test_direct() {
