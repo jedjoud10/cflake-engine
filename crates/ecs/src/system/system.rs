@@ -19,7 +19,8 @@ pub struct System {
     pub(crate) evn_added_entity: Option<usize>,
     pub(crate) evn_removed_entity: Option<usize>,
 
-    entities: AHashSet<EntityID>,
+    // The entities that are valid for this system and their corresponding linked components
+    entities: AHashMap<EntityID, LinkedComponents>,
     // Added, Removed
     changed_entities: Mutex<(AHashSet<EntityID>, AHashSet<EntityID>)>,
 }
@@ -31,8 +32,8 @@ impl Default for System {
             evn_run: None,
             evn_added_entity: None,
             evn_removed_entity: None,
-            entities: AHashSet::new(),
-            changed_entities: Mutex::new((AHashSet::new(), AHashSet::new())),
+            entities: Default::default(),
+            changed_entities: Default::default(),
         }
     }
 }
@@ -44,14 +45,14 @@ impl System {
         cbitfield.contains(&self.cbitfield)
     }
     // Add an entity
-    pub(crate) fn add_entity(&mut self, id: EntityID) {
-        self.entities.insert(id);
+    pub(crate) fn add_entity<Context>(&mut self, id: EntityID, ecs_manager: &ECSManager<Context>) {
+        self.entities.insert(id, LinkedComponents::new(id, ecs_manager));
         let mut lock = self.changed_entities.lock().unwrap();
         lock.0.insert(id);
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
     pub(crate) fn remove_entity(&mut self, id: EntityID) {
-        if self.entities.contains(&id) {
+        if self.entities.contains_key(&id) {
             self.entities.remove(&id);
             let mut lock = self.changed_entities.lock().unwrap();
             lock.1.insert(id);
@@ -63,7 +64,7 @@ impl System {
         // These components are filtered for us
         let components = &ecs_manager.components.read().unwrap();
         // Create the component queries
-        let all_components = Self::get_linked_components(&self.evn_run, components, self.entities.iter().cloned(), ecs_manager);
+        let all_components = Self::get_linked_components(&self.evn_run, self.entities.iter().cloned(), ecs_manager);
         let mut lock = self.changed_entities.lock().unwrap();
         let removed_entities = lock.1.drain();
         // We must decrement the counter for each removed entity
@@ -95,7 +96,6 @@ impl System {
     // Get linked components for a vector full of entity IDs
     fn get_linked_components<Context, T: Iterator<Item = EntityID>>(
         evn: &Option<usize>,
-        components: &OrderedVec<UnsafeCell<EnclosedComponent>>,
         entities: T,
         ecs_manager: &ECSManager<Context>,
     ) -> Option<Vec<LinkedComponents>> {
@@ -119,7 +119,6 @@ impl System {
     fn get_linked_components_removed<Context, T: Iterator<Item = EntityID>>(
         lock: &mut AHashMap<EntityID, (Entity, usize)>,
         evn: &Option<usize>,
-        components: &OrderedVec<UnsafeCell<EnclosedComponent>>,
         entities: T,
         ecs_manager: &ECSManager<Context>,
     ) -> Option<Vec<LinkedComponents>> {

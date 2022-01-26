@@ -121,7 +121,7 @@ impl<Context> ECSManager<Context> {
         // Check if the linked entity is valid to be added into the systems
         self.systems.iter_mut().for_each(|system| {
             if system.check_cbitfield(cbitfield) {
-                system.add_entity(id)
+                system.add_entity(id, self)
             }
         });
         Ok(())

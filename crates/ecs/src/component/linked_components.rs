@@ -23,7 +23,8 @@ unsafe impl Send for LinkedComponents {}
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
     // Theoretically, this should only be done once, when an entity becomes valid for a system
-    pub(crate) fn new<Context>(entity: &Entity, ecs_manager: &ECSManager<Context>) -> Self {
+    pub(crate) fn new<Context>(id: EntityID, ecs_manager: &ECSManager<Context>) -> Self {
+        let entity = ecs_manager.entity(&id).unwrap();
         Self {
             components: ecs_manager.components.clone(),
             linked: &entity.components as *const _,
