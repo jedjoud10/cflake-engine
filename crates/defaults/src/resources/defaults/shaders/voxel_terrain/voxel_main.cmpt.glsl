@@ -13,10 +13,10 @@ layout(binding = 2) uniform atomic_uint negative_counter;
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
 layout(location = 4) uniform int chunk_size;
-layout(location = 5) uniform int depth;
+layout(location = 5) uniform float isoline;
 
 // Generate the voxel data here
-void get_voxel(vec3 pos, int depth, out DensityVoxel density, out MaterialVoxel material) {
+void get_voxel(vec3 pos, out DensityVoxel density, out MaterialVoxel material) {
     int material_id = 0;
 
     #include_custom {"voxel_interpreter"}
@@ -37,7 +37,7 @@ void main() {
     // Create the pixel value    
     DensityVoxel density = DensityVoxel(0.0);
     MaterialVoxel material = MaterialVoxel(0);
-    get_voxel(pos, depth, density, material);   
+    get_voxel(pos, density, material);   
 
     // Write the voxel pixel
     vec4 pixel = vec4(density.density, 0.0, 0.0, 0.0);        
@@ -47,6 +47,10 @@ void main() {
     vec4 material_pixel = vec4(material.material_id/255.0, 0, 0, 0);
     imageStore(material_image, pixel_coords, material_pixel);  
 
-    atomicCounterIncrement(positive_counter);
-    atomicCounterIncrement(negative_counter);
+    // Add to the atomic counters
+    if (density.density < isoline) {
+        atomicCounterIncrement(negative_counter);
+    } else {
+        atomicCounterIncrement(positive_counter);
+    }
 }

@@ -140,6 +140,11 @@ impl ShaderUniformsGroup {
                     Uniform::CounterGroup(id, binding) => {
                         // Get the atomic counter and bing it
                         let atomic = pipeline.get_atomic_group(*id)?;
+                        // Clear the atomic if needed
+                        if let ClearCondition::BeforeShaderExecution = atomic.condition {
+                            pipeline.clear_atomic_group(atomic);
+                        } 
+
                         set_atomic(index, atomic, binding);
                     },
                 }

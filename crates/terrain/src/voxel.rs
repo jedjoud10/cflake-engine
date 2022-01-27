@@ -4,7 +4,6 @@ use std::ops::{Index, IndexMut};
 #[derive(Default, Clone, Copy)]
 pub struct Voxel {
     pub density: f32,
-    pub normal: veclib::Vector3<f32>,
     pub material_id: u8,
 }
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap

@@ -1,6 +1,6 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData, Voxel}, rendering::{advanced::{compute::ComputeShaderExecutionSettings, atomic::{AtomicGroup, AtomicGroupRead}}, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
+    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData, Voxel, ISOLINE}, rendering::{advanced::{compute::ComputeShaderExecutionSettings, atomic::{AtomicGroup, AtomicGroupRead}}, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
 };
 
 use crate::globals::TerrainGenerationData;
@@ -9,11 +9,12 @@ use crate::globals::TerrainGenerationData;
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
     // Create the compute shader execution settings and execute the compute shader
     let compute = terrain.compute_shader;
-    const AXIS: u16 = (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1;    
+    const AXIS: u16 = 1;    
     // Set the uniforms for the compute shader as well
     let mut group = ShaderUniformsGroup::new();
     group.set_image("density_image", terrain.density_texture, TextureAccessType::WRITE);
     group.set_image("material_image", terrain.material_texture, TextureAccessType::WRITE);
+    group.set_f32("isoline", ISOLINE);
 
     // Chunk specific uniforms
     let chunk_coords = chunk.coords;

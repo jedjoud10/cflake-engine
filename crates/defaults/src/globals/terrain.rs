@@ -5,7 +5,7 @@ use main::{
         octrees::{AdvancedOctree, Octree, OctreeNode},
     },
     rendering::{
-        advanced::{compute::ComputeShader, atomic::{AtomicGroup, AtomicGroupRead}},
+        advanced::{compute::ComputeShader, atomic::{AtomicGroup, AtomicGroupRead, ClearCondition}},
         basics::{
             shader::ShaderSettings,
             texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping, TextureReadBytes},
@@ -73,9 +73,9 @@ impl Terrain {
         // Create the voxel texture
         let voxel_texture = Texture::default()
             .set_dimensions(TextureType::Texture3D(
-                (MAIN_CHUNK_SIZE + 2) as u16,
-                (MAIN_CHUNK_SIZE + 2) as u16,
-                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 1) as u16,
+                (MAIN_CHUNK_SIZE + 1) as u16,
+                (MAIN_CHUNK_SIZE + 1) as u16,
             ))
             .set_format(TextureFormat::R32F)
             .set_data_type(DataType::F32)
@@ -83,9 +83,9 @@ impl Terrain {
             .set_wrapping_mode(TextureWrapping::ClampToBorder);
         let material_texture = Texture::default()
             .set_dimensions(TextureType::Texture3D(
-                (MAIN_CHUNK_SIZE + 2) as u16,
-                (MAIN_CHUNK_SIZE + 2) as u16,
-                (MAIN_CHUNK_SIZE + 2) as u16,
+                (MAIN_CHUNK_SIZE + 1) as u16,
+                (MAIN_CHUNK_SIZE + 1) as u16,
+                (MAIN_CHUNK_SIZE + 1) as u16,
             ))
             .set_format(TextureFormat::RG8I)
             .set_data_type(DataType::U8)
@@ -97,7 +97,7 @@ impl Terrain {
         let material_texture = pipec::construct(material_texture, pipeline);
 
         // Also construct the atomic
-        let atomic = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap(), pipeline);
+        let atomic = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), pipeline);
 
         Self {
             octree,

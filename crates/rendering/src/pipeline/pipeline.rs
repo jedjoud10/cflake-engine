@@ -100,7 +100,7 @@ impl Pipeline {
             PipelineTask::CreateModel(id) => self.model_create(id),
             PipelineTask::CreateRenderer(id) => self.renderer_create(id),
             PipelineTask::CreateComputeShader(id) => self.compute_create(id),
-            PipelineTask::CreateAtomicGroup(id) => self.atomic_counter_group_create(id),
+            PipelineTask::CreateAtomicGroup(id) => self.atomic_group_create(id),
 
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
@@ -858,21 +858,30 @@ impl Pipeline {
         self.materials.insert(task.1.id.unwrap(), task.0);
     }
     // Create an atomic counter buffer that we can use inside fragment and compute shaders
-    fn atomic_counter_group_create(&mut self, task: ObjectBuildingTask<AtomicGroup>) {
+    fn atomic_group_create(&mut self, task: ObjectBuildingTask<AtomicGroup>) {
         let mut atomic = task.0;
         // Create the OpenGL atomic buffer 
         let mut buffer = 0_u32;
         unsafe {
             gl::GenBuffers(1, &mut buffer);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buffer);
-            gl::BufferData(gl::ATOMIC_COUNTER_BUFFER, size_of::<u32>() as isize, null(), gl::DYNAMIC_DRAW);
-            let reset = 0_u32;
-            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize, reset as *const u32 as *const c_void);
+            gl::BufferData(gl::ATOMIC_COUNTER_BUFFER, size_of::<u32>() as isize * atomic.defaults.len() as isize, null(), gl::DYNAMIC_DRAW);
+            let reset = atomic.defaults.as_ptr();
+            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * atomic.defaults.len() as isize, reset as *const c_void);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
         atomic.oid = buffer;
         // Add the atomic
         self.atomics.insert(task.1.id.unwrap(), atomic);
+    }
+    // Clear an atomic group
+    pub(crate) fn clear_atomic_group(&self, atomic: &AtomicGroup) {
+        unsafe {
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic.oid);
+            let reset = atomic.defaults.as_ptr();
+            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * atomic.defaults.len() as isize, reset as *const c_void);
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+        }
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, transfer: Transfer<AtomicGroupRead>) -> GlTracker {
@@ -884,11 +893,12 @@ impl Pipeline {
             let mut counts: [u32; 4] = [0, 0, 0, 0];
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
             gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * atomic.defaults.len() as isize, counts.as_mut_ptr() as *mut c_void);
-            
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
             // Now store the atomic counters' values
             let mut cpu_counters_lock = transfer.0.inner.lock().unwrap();
             let cpu_counters = &mut *cpu_counters_lock;
             cpu_counters.clear();
+            dbg!(&counts);
             cpu_counters.try_extend_from_slice(&counts).unwrap();
         }, |_| {}, self)        
     }
@@ -1130,12 +1140,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     println!("Waiting for RenderThread init confirmation...");
     let pipeline = irx.recv().unwrap();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
-    /*
-    glfw.with_primary_monitor_mut(|glfw, monitor| {
-        let videomode = monitor.unwrap().get_video_mode().unwrap();
-        window.set_monitor(WindowMode::Windowed, 0, 0, videomode.width, videomode.height, Some(videomode.refresh_rate));
-    });
-    */
     // Create the pipeline start data
     PipelineStartData {
         handle,
