@@ -13,7 +13,6 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Set the uniforms for the compute shader as well
     let mut group = ShaderUniformsGroup::new();
     group.set_image("density_image", terrain.density_texture, TextureAccessType::WRITE);
-    group.set_image("material_image", terrain.material_texture, TextureAccessType::WRITE);
 
     // Chunk specific uniforms
     let chunk_coords = chunk.coords;
@@ -55,7 +54,7 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline,
     let data = terrain.generating.take().unwrap();
 
     // Load the actual voxels now
-    let voxel_pixels = data.texture_reads.0.fill_vec::<f32>().unwrap();
+    let voxel_pixels = data.texture_reads.0.fill_vec::<veclib::Vector4<f32>>().unwrap();
     let material_pixels = data.texture_reads.1.fill_vec::<veclib::Vector2<u8>>().unwrap();
     // Create the voxel data on the heap since it's going to be pretty big
     let voxels = voxel_pixels

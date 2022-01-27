@@ -48,7 +48,7 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\noises\\simplex.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\noises\\voronoi.func.glsl");
     // Voxel terrain
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel_base.cmpt.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\data.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_shader.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");

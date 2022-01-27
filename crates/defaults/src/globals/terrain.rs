@@ -63,29 +63,26 @@ impl Terrain {
 
         // Load the compute shader
         let ss = ShaderSettings::default()
-            .source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
+            .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER);
         let compute_shader = ComputeShader::new(ss).unwrap();
         let compute_shader = pipec::construct(compute_shader, pipeline);
 
         // Create le textures
+        let texture_dimensions = TextureType::Texture3D(
+            (MAIN_CHUNK_SIZE + 2) as u16,
+            (MAIN_CHUNK_SIZE + 2) as u16,
+            (MAIN_CHUNK_SIZE + 2) as u16,
+        );
         // Create the voxel texture
         let voxel_texture = Texture::default()
-            .set_dimensions(TextureType::Texture3D(
-                (MAIN_CHUNK_SIZE + 1) as u16,
-                (MAIN_CHUNK_SIZE + 1) as u16,
-                (MAIN_CHUNK_SIZE + 1) as u16,
-            ))
-            .set_format(TextureFormat::R32F)
+            .set_dimensions(texture_dimensions)
+            .set_format(TextureFormat::RGBA32F)
             .set_data_type(DataType::F32)
             .set_filter(TextureFilter::Nearest)
             .set_mipmaps(false)
             .set_wrapping_mode(TextureWrapping::ClampToBorder);
         let material_texture = Texture::default()
-            .set_dimensions(TextureType::Texture3D(
-                (MAIN_CHUNK_SIZE + 1) as u16,
-                (MAIN_CHUNK_SIZE + 1) as u16,
-                (MAIN_CHUNK_SIZE + 1) as u16,
-            ))
+            .set_dimensions(texture_dimensions)
             .set_format(TextureFormat::RG8I)
             .set_data_type(DataType::U8)
             .set_filter(TextureFilter::Nearest)
