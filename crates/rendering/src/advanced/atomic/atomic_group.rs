@@ -49,7 +49,7 @@ impl Buildable for AtomicGroup {
 
 impl AtomicGroup {
     // Create a new atomic counter with some predefined values
-    pub fn new(mut vals: &[u32]) -> Option<Self> {
+    pub fn new(vals: &[u32]) -> Option<Self> {
         let mut arrayvec = ArrayVec::<u32, 4>::new();
         arrayvec.try_extend_from_slice(vals).ok()?;
         Some(Self {

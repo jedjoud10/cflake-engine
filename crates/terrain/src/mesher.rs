@@ -1,7 +1,6 @@
 use crate::ChunkCoords;
 use crate::TModel;
 use crate::VoxelData;
-use crate::ISOLINE;
 use crate::MAIN_CHUNK_SIZE;
 use super::tables::*;
 use super::Voxel;
@@ -33,14 +32,14 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                 let _lv = &voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density >= ISOLINE) as u8) * 8;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density >= ISOLINE) as u8) * 16;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density >= ISOLINE) as u8) * 32;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density >= ISOLINE) as u8) * 64;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density >= ISOLINE) as u8) * 128;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= 0.0) as u8) * 1;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= 0.0) as u8) * 2;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= 0.0) as u8) * 4;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density >= 0.0) as u8) * 8;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density >= 0.0) as u8) * 16;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density >= 0.0) as u8) * 32;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density >= 0.0) as u8) * 64;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density >= 0.0) as u8) * 128;
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -66,7 +65,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation {
-                            inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
+                            inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32)
                         } else {
                             0.5
                         };
@@ -182,8 +181,8 @@ pub fn calculate_marching_square_case(
         .into_iter()
         .map(|x| {
             let local_voxel = voxels[i + density_offset[x]];
-            // Increase the case index if we have some voxels that are below the isoline
-            if local_voxel.density <= ISOLINE {
+            // Increase the case index if we have some voxels that are below the 0.0
+            if local_voxel.density <= 0.0 {
                 case |= 2_u8.pow(x as u32);
             }
             local_voxel
@@ -205,9 +204,9 @@ pub fn calculate_marching_square_case(
             let voxel1 = voxels[i + density_offset[two_voxels[0] as usize]];
             let voxel2 = voxels[i + density_offset[two_voxels[1] as usize]];
             // Check if the edge is intersecting the surface
-            if (voxel1.density <= ISOLINE) ^ (voxel2.density <= ISOLINE) {
+            if (voxel1.density <= 0.0) ^ (voxel2.density <= 0.0) {
                 let value: f32 = if interpolation {
-                    inverse_lerp(voxel1.density, voxel2.density, ISOLINE as f32)
+                    inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32)
                 } else {
                     0.5
                 };

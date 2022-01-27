@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, mem::size_of};
 
 use crate::basics::transfer::{Transferable, Transfer};
 // Used to help reading back the bytes from a texture that can be read from
@@ -18,7 +18,8 @@ impl TextureReadBytes {
         }
         // We must now convert the bytes into the vector full of pixels
         let mut clone_test = std::mem::ManuallyDrop::new(bytes);
-        let vec = unsafe { Vec::from_raw_parts(clone_test.as_mut_ptr() as *mut U, clone_test.len(), clone_test.len()) };
+        let new_len = clone_test.len() / size_of::<U>();
+        let vec = unsafe { Vec::from_raw_parts(clone_test.as_mut_ptr() as *mut U, new_len, new_len) };
         Some(vec)
     }
 }

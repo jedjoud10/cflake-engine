@@ -57,6 +57,6 @@ pub fn init(mut write: core::WriteContext) {
     }
 
     // Add the terrain
-    let terrain = defaults::globals::Terrain::new(5, terrain::interpreter::Interpreter::default_basic(), &*pipeline);
+    let terrain = defaults::globals::Terrain::new(3, terrain::interpreter::Interpreter::default_basic(), &*pipeline);
     write.ecs.add_global(terrain).unwrap();
 }

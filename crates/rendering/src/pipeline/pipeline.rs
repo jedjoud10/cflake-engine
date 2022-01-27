@@ -812,7 +812,6 @@ impl Pipeline {
             // Create some shader uniforms settings that we can use
             let settings = ShaderUniformsSettings::new_compute(id);
             group.execute(self, settings).unwrap();
-            dbg!("Good");
         }
         // Dispatch the compute shader for execution
         let axii = settings.axii;
@@ -898,7 +897,6 @@ impl Pipeline {
             let mut cpu_counters_lock = transfer.0.inner.lock().unwrap();
             let cpu_counters = &mut *cpu_counters_lock;
             cpu_counters.clear();
-            dbg!(&counts);
             cpu_counters.try_extend_from_slice(&counts).unwrap();
         }, |_| {}, self)        
     }

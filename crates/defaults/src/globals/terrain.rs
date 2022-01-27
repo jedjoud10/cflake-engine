@@ -80,6 +80,7 @@ impl Terrain {
             .set_format(TextureFormat::R32F)
             .set_data_type(DataType::F32)
             .set_filter(TextureFilter::Nearest)
+            .set_mipmaps(false)
             .set_wrapping_mode(TextureWrapping::ClampToBorder);
         let material_texture = Texture::default()
             .set_dimensions(TextureType::Texture3D(
@@ -90,6 +91,7 @@ impl Terrain {
             .set_format(TextureFormat::RG8I)
             .set_data_type(DataType::U8)
             .set_filter(TextureFilter::Nearest)
+            .set_mipmaps(false)
             .set_wrapping_mode(TextureWrapping::ClampToBorder);
 
         // Now we actually need to construct the textures

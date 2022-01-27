@@ -99,7 +99,6 @@ pub unsafe fn set_vec4bool(index: i32, val: &veclib::Vector4<bool>) {
 }
 // Set an atomic counter
 pub unsafe fn set_atomic(index: i32, val: &AtomicGroup, binding: &u32) {
-    dbg!();
     gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, val.oid);
     gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, *binding as u32, val.oid);
     //gl::BindBufferRange(gl::ATOMIC_COUNTER_BUFFER, index as u32, oid, 0, size_of::<u32>() as isize);

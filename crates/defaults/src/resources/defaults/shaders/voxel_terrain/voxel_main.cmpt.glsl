@@ -26,7 +26,7 @@ void get_voxel(vec3 pos, out DensityVoxel density, out MaterialVoxel material) {
 }
 
 void main() {
-    // Get the pixel coord
+    // Get the pixel coord#include_custom {"voxel_interpreter"}
     ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);
 
     // Get the position
@@ -48,9 +48,11 @@ void main() {
     imageStore(material_image, pixel_coords, material_pixel);  
 
     // Add to the atomic counters
-    if (density.density < isoline) {
-        atomicCounterIncrement(negative_counter);
-    } else {
-        atomicCounterIncrement(positive_counter);
+    if (all(lessThan(pixel_coords, ivec3(33, 33, 33)))) {
+        if (density.density <= 0.0) {
+            atomicCounterIncrement(negative_counter);
+        } else {
+            atomicCounterIncrement(positive_counter);
+        }
     }
 }
