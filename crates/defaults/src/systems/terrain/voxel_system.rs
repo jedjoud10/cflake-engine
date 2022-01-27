@@ -17,7 +17,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 
     // Chunk specific uniforms
     let chunk_coords = chunk.coords;
-    group.set_i32("chunk_size", (MAIN_CHUNK_SIZE + 1) as i32);
+    group.set_i32("chunk_size", (MAIN_CHUNK_SIZE + 2) as i32);
     group.set_vec3f32("node_pos", veclib::Vector3::<f32>::from(chunk_coords.position));
     group.set_i32("node_size", chunk_coords.size as i32);
     group.set_i32("depth", chunk_coords.depth as i32);

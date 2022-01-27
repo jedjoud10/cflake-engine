@@ -1016,16 +1016,7 @@ dependencies = [
  "others",
  "rayon",
  "rendering",
- "terrain_interpreter",
  "ui",
- "veclib",
-]
-
-[[package]]
-name = "terrain_interpreter"
-version = "0.1.0"
-dependencies = [
- "math",
  "veclib",
 ]
 

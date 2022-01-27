@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-terrain_interpreter = { path = "../terrain_interpreter" }
 rayon = "1.5.1"
 math = { path = "../math" }
 ui = { path = "../ui" }

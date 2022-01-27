@@ -27,7 +27,6 @@ members = [
     "crates\\physics",
     "crates\\rendering",
     "crates\\terrain",
-    "crates\\terrain_interpreter",
     "crates\\ui",
     "crates\\worker_threads"
 ]

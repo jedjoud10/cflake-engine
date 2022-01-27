@@ -35,7 +35,6 @@ pub struct Terrain {
     // Chunk generation
     pub octree: AdvancedOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
-    pub csgtree: math::csg::CSGTree,
     pub material: ObjectID<Material>,
 
     // Voxel Generation
@@ -50,7 +49,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a new terrain component
-    pub fn new(material: ObjectID<Material>, octree_depth: u8, mut interpreter: main::terrain::interpreter::Interpreter, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
+    pub fn new(material: ObjectID<Material>, octree_depth: u8, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
         // Check if a an already existing node could be subdivided even more
         fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
             let c: veclib::Vector3<f32> = node.get_center().into();
@@ -63,9 +62,7 @@ impl Terrain {
         let octree = AdvancedOctree::new(internal_octree, can_node_subdivide_twin);
 
         // Load the compute shader
-        let (string, csgtree) = interpreter.finalize().unwrap();
         let ss = ShaderSettings::default()
-            .external_code("voxel_interpreter", string)
             .source(main::terrain::DEFAULT_TERRAIN_COMPUTE_SHADER);
         let compute_shader = ComputeShader::new(ss).unwrap();
         let compute_shader = pipec::construct(compute_shader, pipeline);
@@ -106,7 +103,6 @@ impl Terrain {
         Self {
             octree,
             chunks: HashMap::default(),
-            csgtree,
             material,
 
             generating: None,
