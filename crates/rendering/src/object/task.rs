@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use super::{ObjectID, PipelineObject, TrackedTaskID};
 use crate::{
-    advanced::compute::{ComputeShader, ComputeShaderExecutionSettings},
+    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::AtomicCounter},
     basics::{
         material::Material,
         model::Model,
@@ -39,6 +39,7 @@ pub enum PipelineTrackedTask {
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
     TextureReadBytes(ObjectID<Texture>, Transfer<TextureReadBytes>),
     TextureWriteBytes(ObjectID<Texture>, Transfer<TextureWriteBytes>),
+    ReadAtomicCounter(Transfer<AtomicCounter>),
 }
 
 // Bruh

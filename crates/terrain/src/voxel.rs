@@ -8,7 +8,7 @@ pub struct Voxel {
     pub material_id: u8,
 }
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap
-pub struct VoxelData(Box<[Voxel]>);
+pub struct VoxelData(pub Box<[Voxel]>);
 
 impl Index<usize> for VoxelData {
     type Output = Voxel;

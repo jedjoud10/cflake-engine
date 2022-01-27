@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::CString};
+use std::{collections::HashMap, ffi::{CString, c_void}, sync::atomic::Ordering};
 use veclib::Vector;
 
 use crate::{

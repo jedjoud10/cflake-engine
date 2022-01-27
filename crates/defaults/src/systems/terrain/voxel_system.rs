@@ -1,14 +1,13 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData}, rendering::{advanced::compute::ComputeShaderExecutionSettings, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
+    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData, Voxel}, rendering::{advanced::{compute::ComputeShaderExecutionSettings, atomic::AtomicCounter}, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
 };
 
 // Start generating the voxel data for a specific chunk
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
     // Create the compute shader execution settings and execute the compute shader
     let compute = terrain.compute_shader;
-    const AXIS: u16 = (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1;
-    let execution_settings = ComputeShaderExecutionSettings::new(compute, (AXIS, AXIS, AXIS));
+    const AXIS: u16 = (MAIN_CHUNK_SIZE + 2) as u16 / 8 + 1;    
     // Set the uniforms for the compute shader as well
     let mut group = ShaderUniformsGroup::new();
     group.set_image("density_image", terrain.density_texture, TextureAccessType::WRITE);
@@ -21,17 +20,25 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     group.set_i32("node_size", chunk_coords.size as i32);
     group.set_i32("depth", chunk_coords.depth as i32);
 
-    // Now we can execute the compute shader and the read bytes command
-    let execution = pipec::tracked_task(PipelineTrackedTask::RunComputeShader(compute, execution_settings), None, pipeline);
     // Create this for the next step
     let read_densities = TextureReadBytes::default();
     let read_materials = TextureReadBytes::default();
     let read_densities_transfer = read_densities.transfer();
     let read_materials_transfer = read_materials.transfer();
+    let positive_counter_transfer = terrain.positive_counter.transfer();
+    let negative_counter_transfer = terrain.negative_counter.transfer();
+    // Set the atomic counter
+    group.set_atomic("positive_counter", positive_counter_transfer, 2);
+    group.set_atomic("negative_counter", negative_counter_transfer, 3);
+
+    // Now we can execute the compute shader and the read bytes command
+    let execution_settings = ComputeShaderExecutionSettings::new(compute, (AXIS, AXIS, AXIS)).set_uniforms(group);
+    let execution = pipec::tracked_task(PipelineTrackedTask::RunComputeShader(compute, execution_settings), None, pipeline);
     
     let read_densities_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.density_texture, read_densities_transfer), Some(execution), pipeline);
     let read_materials_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.material_texture, read_materials_transfer), Some(execution), pipeline);
     
+
     // Combine the tasks to make a finalizer one
     let main = pipec::tracked_finalizer(vec![execution, read_densities_tracked_id, read_materials_tracked_id], pipeline).unwrap();
     terrain.generating = Some((main, id, (read_densities, read_materials)));
@@ -39,22 +46,26 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    /*
     println!("Finished voxel data generation!");
     // Load the read containers that we passed to the pipeline
-    let (main, id, (read_densities, read_materials)) = terrain.generating.take().unwrap();
+    let (main, id, (read_densities, read_materials)) = terrain.generating.as_ref().unwrap();
 
     // Load the actual voxels now
-    let voxel_pixels = read_densities.fill_vec::<f32>().unwrap();
-    let material_pixels = read_materials.fill_vec::<veclib::Vector2<u8>>().unwrap();
+    //let voxel_pixels = read_densities.fill_vec::<f32>().unwrap();
+    //let material_pixels = read_materials.fill_vec::<veclib::Vector2<u8>>().unwrap();
     
     // Keep track of the min and max values
     let mut min = f32::MAX;
     let mut max = f32::MIN;
     // Create the voxel data on the heap since it's going to be pretty big
-    let mut local_data: Box<[(f32, u8)]> = vec![(0.0, 0, 0); (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)].into_boxed_slice();
+    let mut local_data: Box<[(f32, u8)]> = vec![(0.0, 0); (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)].into_boxed_slice();
     let mut voxel_data: VoxelData = VoxelData(vec![Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)].into_boxed_slice());
+    let positive = terrain.positive_counter.get();
+    let negative = terrain.negative_counter.get();
 
+    println!("{} {}", positive, negative);
+
+    /*
     // 
     for (i, density) in voxel_pixels.into_iter().enumerate() {
         let material: veclib::Vector2<u8> = material_pixels[i];

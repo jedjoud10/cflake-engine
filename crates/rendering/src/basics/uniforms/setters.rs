@@ -101,5 +101,6 @@ pub unsafe fn set_vec4bool(index: i32, val: &veclib::Vector4<bool>) {
 pub unsafe fn set_atomic(index: i32, val: &AtomicCounter, binding: &u32) {
     let oid = val.oid.load(std::sync::atomic::Ordering::Relaxed);
     gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
-    gl::BindBufferRange(gl::ATOMIC_COUNTER_BUFFER, index as u32, oid, 0, size_of::<u32>() as isize);
+    gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, *binding as u32, oid);
+    //gl::BindBufferRange(gl::ATOMIC_COUNTER_BUFFER, index as u32, oid, 0, size_of::<u32>() as isize);
 }

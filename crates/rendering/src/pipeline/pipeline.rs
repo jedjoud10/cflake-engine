@@ -109,10 +109,6 @@ impl Pipeline {
             PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused),
         }
     }
-    // Check if the awaiting tracked task of a tracked task have fully completed
-    fn awaits_completed(&self, awaits: &Vec<TrackedTaskID>) -> bool {
-        awaits.iter().all(|id| self.completed_tracked_tasks.contains(id)) || awaits.is_empty()
-    }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
     fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
         // Create a corresponding GlTracker for this task
@@ -797,6 +793,7 @@ impl Pipeline {
             // Create some shader uniforms settings that we can use
             let settings = ShaderUniformsSettings::new_compute(id);
             group.execute(self, settings).unwrap();
+            dbg!("Good");
         }
         // Dispatch the compute shader for execution
         let axii = settings.axii;
@@ -859,6 +856,17 @@ impl Pipeline {
         // Set the new values
         atomic.set(0);
         atomic.oid.store(buffer, Ordering::Relaxed);
+    }
+    // Read the value of an atomic counter by reading it's buffer data and setting it
+    pub(crate) fn atomic_couter_read(&self, transfer: &Transfer<AtomicCounter>) {
+        // Read the value of the atomic from the buffer, and update the shared AtomicCounter's inner value
+        let oid = transfer.0.oid.load(Ordering::Relaxed);
+        let mut count = 0_u32;
+        unsafe {
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
+            gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize, (&mut count) as *mut u32 as *mut c_void);
+        }
+        transfer.0.set(count);
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
