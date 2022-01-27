@@ -15,15 +15,6 @@ layout(location = 3) uniform int node_size;
 layout(location = 4) uniform int chunk_size;
 layout(location = 5) uniform float isoline;
 
-// Generate the voxel data here
-void get_voxel(vec3 pos, out DensityVoxel density, out MaterialVoxel material) {
-    int material_id = 0;
-
-    // Write the result
-    density = DensityVoxel(pos.y + sin(pos.x / 10) * 10.0);
-    material = MaterialVoxel(material_id);
-}
-
 void main() {
     // Get the pixel coord#include_custom {"voxel_interpreter"}
     ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);

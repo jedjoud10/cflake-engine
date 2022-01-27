@@ -127,11 +127,11 @@ impl Model {
             let a = self.vertices.get(i1 as usize).unwrap();
             let b = self.vertices.get(i2 as usize).unwrap();
             let c = self.vertices.get(i3 as usize).unwrap();
-
+            
             // Calculate
             let d1 = b - a;
             let d2 = c - a;
-            let cross = veclib::Vector3::<f32>::cross(d1, d2);
+            let cross = veclib::Vector3::<f32>::cross(d1, d2).normalized();
 
             // Add the face normal to our local vertices
             vertex_normals[i1 as usize] += cross;

@@ -6,3 +6,9 @@ struct DensityVoxel {
 struct MaterialVoxel {
     int material_id;
 };
+
+// Generate the voxel data at the specified position
+void get_voxel(vec3 pos, out DensityVoxel density, out MaterialVoxel material) {
+    density = DensityVoxel(pos.y + sin(pos.x / 10) * 10.0);
+    material = MaterialVoxel(0);
+}

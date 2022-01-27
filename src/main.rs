@@ -19,7 +19,7 @@ pub fn init(mut write: core::WriteContext) {
     let pipeline = pipeline_.read().unwrap();
 
     // Create it's model
-    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\cube.mdl3d").unwrap();
+    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
     let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
 
     // Create it's material
@@ -79,6 +79,6 @@ pub fn init(mut write: core::WriteContext) {
 
 
     // Add the terrain
-    let terrain = defaults::globals::Terrain::new(material, 3, &*pipeline);
+    let terrain = defaults::globals::Terrain::new(material, 6, &*pipeline);
     write.ecs.add_global(terrain).unwrap();
 }

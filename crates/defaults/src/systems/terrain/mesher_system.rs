@@ -21,7 +21,7 @@ fn run(mut context: Context, query: ComponentQuery) {
                 chunk.valid_model = true;
                 let voxels = chunk.voxel_data.as_ref().unwrap();
                 let coords = chunk.coords;
-                let model = main::terrain::mesher::generate_model(voxels, coords, true);
+                let model = main::terrain::mesher::generate_model(voxels, coords, true, false);
 
                 // Create the actual pipeline model now
                 let skirts = model.skirts_model;
