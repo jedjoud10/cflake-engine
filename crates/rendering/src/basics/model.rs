@@ -84,7 +84,7 @@ impl Model {
         self.tangents.extend(other.tangents.into_iter());
         self
     }
-    // Comebine a model with this one
+    // Combine a model with this one
     // NOTE: This assumes that the second model uses vertices from the first model
     pub fn combine_smart(mut self, other: Self) -> Self {
         self.triangles.extend(other.triangles.into_iter());

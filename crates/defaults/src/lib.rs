@@ -71,6 +71,7 @@ pub fn preload_system(mut write: WriteContext) {
     // Terrain
     terrain::chunk_system::system(&mut write);
     terrain::voxel_system::system(&mut write);
+    terrain::mesher_system::system(&mut write);
 
     // We gotta add the global world data
     write.ecs.add_global(crate::globals::GlobalWorldData::default()).unwrap();

@@ -307,6 +307,7 @@ dependencies = [
  "ahash",
  "bitfield",
  "lazy_static",
+ "no_deadlocks",
  "ordered_vec",
  "others",
  "worker_threads",

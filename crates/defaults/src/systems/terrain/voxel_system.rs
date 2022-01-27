@@ -73,71 +73,11 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline,
     
     let positive = data.atomic_read.get(0).unwrap();
     let negative = data.atomic_read.get(1).unwrap();
-    if positive > 0 && negative > 0 {
-        println!("{} {}", positive, negative);
-    }
+    // Check if we have a valid surface that we can create a mesh out of
+    let valid_surface = positive > 0 && negative > 0;
 
     chunk.voxel_data = Some(voxel_data);
-
-    /*
-    // 
-    
-    // Keep track of the min and max values
-    let mut min = f32::MAX;
-    let mut max = f32::MIN;
-    // Turn the pixels into the data
-    let mut voxel_data: VoxelData = VoxelData {
-        voxels: vec![Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)].into_boxed_slice(),
-    };
-    // If there is no surface, no need to waste time
-    /*
-    let surface = min.signum() != max.signum();
-    if !surface {
-        data.results.insert(chunk_coords, Some(None));
-        /*
-        println!(
-            "Finished voxel generation for Chunk {}, took {}ms (Async {}ms). [NO VALID SURFACE FOUND]",
-            chunk_coords.center,
-            i.elapsed().as_millis(),
-            i1
-        );
-        */
-        // We finished generating data on this compute shader
-        let x = data.computes.get_mut(compute_index).unwrap();
-        x.1 = false;
-        return;
-    };
-
-    // Flatten using the custom size of MAIN_CHUNK_SIZE+2
-    fn custom_flatten(x: usize, y: usize, z: usize) -> usize {
-        x + (y * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)) + (z * (MAIN_CHUNK_SIZE + 2))
-    }
-    // Calculate the voxel normal
-    for x in 0..(MAIN_CHUNK_SIZE + 1) {
-        for y in 0..(MAIN_CHUNK_SIZE + 1) {
-            for z in 0..(MAIN_CHUNK_SIZE + 1) {
-                let i = custom_flatten(x, y, z);
-                // Normal
-                let voxel = Voxel {
-                    density: y as f32 - 10.0,
-                    normal: veclib::Vector3::default(),
-                    material_id: 0,
-                };
-                voxel_data.voxels[terrain::utils::flatten((x, y, z))] = voxel;
-            }
-        }
-    }
-    /*
-    println!(
-        "Finished voxel generation for Chunk {}, took {}ms (Async {}ms)",
-        chunk_coords.center,
-        i.elapsed().as_millis(),
-        i1
-    );
-    */
-    // Tell the main system data that we finished the voxel generation for this specific chunk
-    */
-    */
+    chunk.valid_surface = valid_surface;
 }
 
 
