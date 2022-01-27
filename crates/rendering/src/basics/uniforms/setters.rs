@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use crate::{basics::texture::{Texture, TextureAccessType}, advanced::atomic::AtomicCounter};
+use crate::{basics::texture::{Texture, TextureAccessType}, advanced::atomic::AtomicGroup};
 
 // Actually set the shader uniforms
 #[allow(temporary_cstring_as_ptr)]
@@ -98,9 +98,8 @@ pub unsafe fn set_vec4bool(index: i32, val: &veclib::Vector4<bool>) {
     gl::Uniform4i(index, val[0] as i32, val[1] as i32, val[2] as i32, val[3] as i32);
 }
 // Set an atomic counter
-pub unsafe fn set_atomic(index: i32, val: &AtomicCounter, binding: &u32) {
-    let oid = val.oid.load(std::sync::atomic::Ordering::Relaxed);
-    gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
-    gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, *binding as u32, oid);
+pub unsafe fn set_atomic(index: i32, val: &AtomicGroup, binding: &u32) {
+    gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, val.oid);
+    gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, *binding as u32, val.oid);
     //gl::BindBufferRange(gl::ATOMIC_COUNTER_BUFFER, index as u32, oid, 0, size_of::<u32>() as isize);
 }

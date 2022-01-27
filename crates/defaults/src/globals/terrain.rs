@@ -5,7 +5,7 @@ use main::{
         octrees::{AdvancedOctree, Octree, OctreeNode},
     },
     rendering::{
-        advanced::{compute::ComputeShader, atomic::AtomicCounter},
+        advanced::{compute::ComputeShader, atomic::AtomicGroup},
         basics::{
             shader::ShaderSettings,
             texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping, TextureReadBytes},
@@ -30,8 +30,8 @@ pub struct Terrain {
     pub compute_shader: ObjectID<ComputeShader>,
     pub density_texture: ObjectID<Texture>,
     pub material_texture: ObjectID<Texture>,
-    pub positive_counter: AtomicCounter,
-    pub negative_counter: AtomicCounter,
+    pub positive_counter: AtomicGroup,
+    pub negative_counter: AtomicGroup,
 }
 
 impl Terrain {
@@ -92,8 +92,8 @@ impl Terrain {
             compute_shader,
             density_texture: voxel_texture,
             material_texture,
-            positive_counter: AtomicCounter::default(),
-            negative_counter: AtomicCounter::default(),
+            positive_counter: AtomicGroup::default(),
+            negative_counter: AtomicGroup::default(),
         }
     }
 }

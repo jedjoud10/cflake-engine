@@ -4,7 +4,7 @@ use veclib::Vector;
 use crate::{
     basics::{texture::{Texture, TextureAccessType}, transfer::Transfer},
     object::ObjectID,
-    pipeline::Pipeline, advanced::atomic::{AtomicCounter, ClearCondition},
+    pipeline::Pipeline, advanced::atomic::{AtomicGroup, ClearCondition},
 };
 
 use super::{ShaderUniformsSettings, Uniform};
@@ -78,9 +78,9 @@ impl ShaderUniformsGroup {
     pub fn set_image(&mut self, name: &str, val: ObjectID<Texture>, access: TextureAccessType) {
         self.uniforms.insert(name.to_string(), Uniform::Image(val, access));
     }
-    // Set a "atomic counter" uniform
-    pub fn set_atomic(&mut self, name: &str, val: Transfer<AtomicCounter>, binding: u32) {
-        self.uniforms.insert(name.to_string(), Uniform::Counter(val, binding));
+    // Set an atomic group uniform
+    pub fn set_atomic_group(&mut self, name: &str, val: ObjectID<AtomicGroup>, binding: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::CounterGroup(val, binding));
     }
     // Check if we have a specific uniform store
     pub fn contains_uniform(&self, name: &str) -> bool {
@@ -137,15 +137,10 @@ impl ShaderUniformsGroup {
                         let texture = pipeline.get_texture(*id)?;
                         set_image(index, texture, access_type);
                     }
-                    Uniform::Counter(transfer, binding) => {
-                        // If this is the first time we execute the shader that contains this atomic counter, we must initialize the counter as a valid buffer
-                        pipeline.atomic_counter_create(transfer);
-                        // Also clear the atomic counter before the shader execution if needed
-                        match transfer.0.condition {
-                            ClearCondition::BeforeShaderExecution => transfer.0.set(0),
-                            _ => {},
-                        }
-                        set_atomic(index, &transfer.0, binding);
+                    Uniform::CounterGroup(id, binding) => {
+                        // Get the atomic counter and bing it
+                        let atomic = pipeline.get_atomic_group(*id)?;
+                        set_atomic(index, atomic, binding);
                     },
                 }
             }

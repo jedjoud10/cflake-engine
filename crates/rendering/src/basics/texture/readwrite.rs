@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::basics::transfer::{Transferable, Transfer};
 // Used to help reading back the bytes from a texture that can be read from
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct TextureReadBytes {
     // The shared bytes that have been sent from the main thread that we must update
     pub(crate) cpu_bytes: Arc<Mutex<Vec<u8>>>,
@@ -25,7 +25,9 @@ impl TextureReadBytes {
 
 impl Transferable for TextureReadBytes {
     fn transfer(&self) -> Transfer<Self> {
-        Transfer(self.clone())
+        Transfer(Self {
+            cpu_bytes: self.cpu_bytes.clone()
+        })
     }
 }
 

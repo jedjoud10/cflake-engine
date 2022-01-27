@@ -1,6 +1,6 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData, Voxel}, rendering::{advanced::{compute::ComputeShaderExecutionSettings, atomic::AtomicCounter}, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
+    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData, Voxel}, rendering::{advanced::{compute::ComputeShaderExecutionSettings, atomic::AtomicGroup}, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
 };
 
 // Start generating the voxel data for a specific chunk

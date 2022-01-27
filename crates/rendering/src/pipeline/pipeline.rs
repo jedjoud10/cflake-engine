@@ -1,5 +1,5 @@
 use crate::{
-    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::AtomicCounter},
+    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::{AtomicGroup, AtomicCounterGroupRead}},
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
@@ -63,6 +63,7 @@ pub struct Pipeline {
     pub(crate) shaders: ShareableOrderedVec<Shader>,
     pub(crate) compute_shaders: ShareableOrderedVec<ComputeShader>,
     pub(crate) textures: ShareableOrderedVec<Texture>,
+    pub(crate) atomics: ShareableOrderedVec<AtomicGroup>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub(crate) defaults: Option<DefaultPipelineObjects>,
@@ -99,10 +100,12 @@ impl Pipeline {
             PipelineTask::CreateModel(id) => self.model_create(id),
             PipelineTask::CreateRenderer(id) => self.renderer_create(id),
             PipelineTask::CreateComputeShader(id) => self.compute_create(id),
+            PipelineTask::CreateAtomicGroup(id) => self.atomic_counter_group_create(id),
 
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
+            PipelineTask::ReadAtomicGroup(id, transfer) => self.atomic_group_read(id, transfer),
 
             // Window tasks
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
@@ -254,10 +257,18 @@ impl Pipeline {
             None
         }
     }
-    // Get a texture using it's texture
+    // Get a texture using it's respective ID
     pub fn get_texture(&self, id: ObjectID<Texture>) -> Option<&Texture> {
         if let Some(id) = id.id {
             self.textures.get(id)
+        } else {
+            None
+        }
+    }
+    // Get an atomic group using it's respective ID
+    pub fn get_atomic_group(&self, id: ObjectID<AtomicGroup>) -> Option<&AtomicGroup> {
+        if let Some(id) = id.id {
+            self.atomics.get(id)
         } else {
             None
         }
@@ -279,7 +290,7 @@ impl Pipeline {
             None
         }
     }
-    // Get a renderer using it's respective ID
+    // Get a mutable renderer using it's respective ID
     pub(crate) fn get_renderer_mut(&mut self, id: ObjectID<Renderer>) -> Option<&mut Renderer> {
         if let Some(id) = id.id {
             self.renderers.get_mut(id)
@@ -287,7 +298,7 @@ impl Pipeline {
             None
         }
     }
-    // Get a shader using it's respective ID
+    // Get a mutable shader using it's respective ID
     pub(crate) fn get_shader_mut(&mut self, id: ObjectID<Shader>) -> Option<&mut Shader> {
         if let Some(id) = id.id {
             self.shaders.get_mut(id)
@@ -295,7 +306,7 @@ impl Pipeline {
             None
         }
     }
-    // Get a compute shader using it's respective ID
+    // Get a mutable compute shader using it's respective ID
     pub(crate) fn get_compute_shader_mut(&mut self, id: ObjectID<ComputeShader>) -> Option<&mut ComputeShader> {
         if let Some(id) = id.id {
             self.compute_shaders.get_mut(id)
@@ -303,10 +314,18 @@ impl Pipeline {
             None
         }
     }
-    // Get a texture using it's texture
+    // Get a mutable texture using it's respective ID
     pub(crate) fn get_texture_mut(&mut self, id: ObjectID<Texture>) -> Option<&mut Texture> {
         if let Some(id) = id.id {
             self.textures.get_mut(id)
+        } else {
+            None
+        }
+    }
+    // Get an mutable atomic group using it's respective ID
+    pub fn get_atomic_group_mut(&mut self, id: ObjectID<AtomicGroup>) -> Option<&mut AtomicGroup> {
+        if let Some(id) = id.id {
+            self.atomics.get_mut(id)
         } else {
             None
         }
@@ -839,7 +858,7 @@ impl Pipeline {
         self.materials.insert(task.1.id.unwrap(), task.0);
     }
     // Create an atomic counter buffer that we can use inside fragment and compute shaders
-    pub(crate) fn atomic_counter_create(&self, atomic: &Transfer<AtomicCounter>) {
+    fn atomic_counter_group_create(&self, task: ObjectBuildingTask<AtomicGroup>) {
         let atomic = &atomic.0;
         let oid = atomic.oid.load(Ordering::Relaxed);
         if oid != 0 { /* The atomic counter was already created! */ return; }
@@ -857,10 +876,11 @@ impl Pipeline {
         atomic.set(0);
         atomic.oid.store(buffer, Ordering::Relaxed);
     }
-    // Read the value of an atomic counter by reading it's buffer data and setting it
-    pub(crate) fn atomic_couter_read(&self, transfer: &Transfer<AtomicCounter>) {
-        // Read the value of the atomic from the buffer, and update the shared AtomicCounter's inner value
-        let oid = transfer.0.oid.load(Ordering::Relaxed);
+    // Read the value of an atomic group by reading it's buffer data and update the transfer
+    pub fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, transfer: Transfer<AtomicCounterGroupRead>) {
+        // Get the atomic group object first
+        // Read the value of the atomic from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
+        let oid = transfer.0.oid;
         let mut count = 0_u32;
         unsafe {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);

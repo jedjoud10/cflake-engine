@@ -1,6 +1,6 @@
 use crate::{
     basics::{texture::{Texture, TextureAccessType}, transfer::Transfer},
-    object::ObjectID, advanced::atomic::AtomicCounter,
+    object::ObjectID, advanced::atomic::AtomicGroup,
 };
 
 // Some default uniforms that we will set
@@ -17,5 +17,5 @@ pub enum Uniform {
     Texture(ObjectID<Texture>, u32),
     // Compute sheit
     Image(ObjectID<Texture>, TextureAccessType),
-    Counter(Transfer<AtomicCounter>, u32),
+    CounterGroup(ObjectID<AtomicGroup>, u32),
 }
