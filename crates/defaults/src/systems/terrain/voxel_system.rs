@@ -1,7 +1,9 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData, Voxel}, rendering::{advanced::{compute::ComputeShaderExecutionSettings, atomic::AtomicGroup}, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
+    ecs::{component::{ComponentQuery, ComponentID}, entity::EntityID}, terrain::{ChunkCoords, MAIN_CHUNK_SIZE, VoxelData, Voxel}, rendering::{advanced::{compute::ComputeShaderExecutionSettings, atomic::{AtomicGroup, AtomicGroupRead}}, basics::{uniforms::ShaderUniformsGroup, texture::{TextureAccessType, TextureReadBytes}, transfer::Transferable}, pipeline::{pipec, Pipeline}, object::PipelineTrackedTask},
 };
+
+use crate::globals::TerrainGenerationData;
 
 // Start generating the voxel data for a specific chunk
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
@@ -23,13 +25,12 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Create this for the next step
     let read_densities = TextureReadBytes::default();
     let read_materials = TextureReadBytes::default();
+    let read_counters = AtomicGroupRead::default();
     let read_densities_transfer = read_densities.transfer();
     let read_materials_transfer = read_materials.transfer();
-    let positive_counter_transfer = terrain.positive_counter.transfer();
-    let negative_counter_transfer = terrain.negative_counter.transfer();
+    let read_counters_transfer = read_counters.transfer();
     // Set the atomic counter
-    group.set_atomic("positive_counter", positive_counter_transfer, 2);
-    group.set_atomic("negative_counter", negative_counter_transfer, 3);
+    group.set_atomic_group("_", terrain.counters, 2);
 
     // Now we can execute the compute shader and the read bytes command
     let execution_settings = ComputeShaderExecutionSettings::new(compute, (AXIS, AXIS, AXIS)).set_uniforms(group);
@@ -37,18 +38,23 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     
     let read_densities_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.density_texture, read_densities_transfer), Some(execution), pipeline);
     let read_materials_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.material_texture, read_materials_transfer), Some(execution), pipeline);
-    
+    let read_counters_tracked_id = pipec::tracked_task(PipelineTrackedTask::AtomicGroupRead(terrain.counters, read_counters_transfer), Some(execution), pipeline);
 
     // Combine the tasks to make a finalizer one
-    let main = pipec::tracked_finalizer(vec![execution, read_densities_tracked_id, read_materials_tracked_id], pipeline).unwrap();
-    terrain.generating = Some((main, id, (read_densities, read_materials)));
+    let main = pipec::tracked_finalizer(vec![execution, read_densities_tracked_id, read_materials_tracked_id, read_counters_tracked_id], pipeline).unwrap();
+    terrain.generating = Some(TerrainGenerationData {
+        main_id: main,
+        chunk_id: id,
+        texture_reads: (read_densities, read_materials),
+        atomic_read: read_counters,
+    });
     println!("Dispatched voxel generation!");
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
     println!("Finished voxel data generation!");
     // Load the read containers that we passed to the pipeline
-    let (main, id, (read_densities, read_materials)) = terrain.generating.as_ref().unwrap();
+    let data = terrain.generating.as_ref().unwrap();
 
     // Load the actual voxels now
     //let voxel_pixels = read_densities.fill_vec::<f32>().unwrap();
@@ -60,8 +66,8 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline,
     // Create the voxel data on the heap since it's going to be pretty big
     let mut local_data: Box<[(f32, u8)]> = vec![(0.0, 0); (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2)].into_boxed_slice();
     let mut voxel_data: VoxelData = VoxelData(vec![Voxel::default(); (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)].into_boxed_slice());
-    let positive = terrain.positive_counter.get();
-    let negative = terrain.negative_counter.get();
+    let positive = data.atomic_read.get(0).unwrap();
+    let negative = data.atomic_read.get(1).unwrap();
 
     println!("{} {}", positive, negative);
 
@@ -216,9 +222,9 @@ fn run(mut context: Context, query: ComponentQuery) {
             })
         } else {
             // We must check if we have finished generating or not
-            if pipec::has_task_executed(terrain.generating.as_ref().unwrap().0, &*pipeline).unwrap() {
+            if pipec::has_task_executed(terrain.generating.as_ref().unwrap().main_id, &*pipeline).unwrap() {
                 // We will now update the chunk data to store our new voxel data
-                let id = terrain.generating.as_ref().unwrap().1;
+                let id = terrain.generating.as_ref().unwrap().chunk_id;
                 query.update(id, |components| {
                     // Get our chunk and set it's new data
                     let mut chunk = components.component_mut::<crate::components::Chunk>().unwrap();

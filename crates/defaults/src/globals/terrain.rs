@@ -21,13 +21,13 @@ use std::collections::HashMap;
 // Some data that we store whenever we are generating the voxels
 pub struct TerrainGenerationData {
     // The ID of the main tracked task 
-    main_id: TrackedTaskID,
+    pub main_id: TrackedTaskID,
     // The Entity ID of the chunk that we are generating this voxel data for
-    chunk_id: EntityID, 
+    pub chunk_id: EntityID, 
 
     // Reading the data back
-    texture_reads: (TextureReadBytes, TextureReadBytes),
-    atomic_reads: (AtomicGroupRead, AtomicGroupRead)
+    pub texture_reads: (TextureReadBytes, TextureReadBytes),
+    pub atomic_read: AtomicGroupRead
 }
 
 // The global terrain component that can be added at the start of the game
@@ -44,8 +44,7 @@ pub struct Terrain {
     pub density_texture: ObjectID<Texture>,
     pub material_texture: ObjectID<Texture>,
     // Atomics
-    pub positive_counter: ObjectID<AtomicGroup>,
-    pub negative_counter: ObjectID<AtomicGroup>,
+    pub counters: ObjectID<AtomicGroup>,
 }
 
 impl Terrain {
@@ -93,9 +92,12 @@ impl Terrain {
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(TextureWrapping::ClampToBorder);
 
-        // Now we actually need to construct the texture
+        // Now we actually need to construct the textures
         let voxel_texture = pipec::construct(voxel_texture, pipeline);
         let material_texture = pipec::construct(material_texture, pipeline);
+
+        // Also construct the atomic
+        let atomic = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap(), pipeline);
 
         Self {
             octree,
@@ -106,8 +108,7 @@ impl Terrain {
             compute_shader,
             density_texture: voxel_texture,
             material_texture,
-            positive_counter: AtomicGroup::default(),
-            negative_counter: AtomicGroup::default(),
+            counters: atomic
         }
     }
 }

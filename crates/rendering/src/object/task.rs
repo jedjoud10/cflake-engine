@@ -30,7 +30,6 @@ pub enum PipelineTask {
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
     UpdateCamera(Camera),
-    ReadAtomicGroup(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
     // Specific pipeline tasks
     SetWindowDimension(veclib::Vector2<u16>),
     SetWindowFocusState(bool),
@@ -41,6 +40,7 @@ pub enum PipelineTrackedTask {
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
     TextureReadBytes(ObjectID<Texture>, Transfer<TextureReadBytes>),
     TextureWriteBytes(ObjectID<Texture>, Transfer<TextureWriteBytes>),
+    AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
 }
 
 // Bruh
