@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use super::{ObjectID, PipelineObject, TrackedTaskID};
 use crate::{
-    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::{AtomicGroup, AtomicCounterGroupRead}},
+    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::{AtomicGroup, AtomicGroupRead}},
     basics::{
         material::Material,
         model::Model,
@@ -30,7 +30,7 @@ pub enum PipelineTask {
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
     UpdateCamera(Camera),
-    ReadAtomicGroup(ObjectID<AtomicGroup>, Transfer<AtomicCounterGroupRead>),
+    ReadAtomicGroup(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
     // Specific pipeline tasks
     SetWindowDimension(veclib::Vector2<u16>),
     SetWindowFocusState(bool),

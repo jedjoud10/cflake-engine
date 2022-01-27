@@ -1,5 +1,5 @@
 use crate::{
-    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::{AtomicGroup, AtomicCounterGroupRead}},
+    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::{AtomicGroup, AtomicGroupRead}},
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
@@ -858,10 +858,8 @@ impl Pipeline {
         self.materials.insert(task.1.id.unwrap(), task.0);
     }
     // Create an atomic counter buffer that we can use inside fragment and compute shaders
-    fn atomic_counter_group_create(&self, task: ObjectBuildingTask<AtomicGroup>) {
-        let atomic = &atomic.0;
-        let oid = atomic.oid.load(Ordering::Relaxed);
-        if oid != 0 { /* The atomic counter was already created! */ return; }
+    fn atomic_counter_group_create(&mut self, task: ObjectBuildingTask<AtomicGroup>) {
+        let mut atomic = task.0;
         // Create the OpenGL atomic buffer 
         let mut buffer = 0_u32;
         unsafe {
@@ -872,21 +870,26 @@ impl Pipeline {
             gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize, reset as *const u32 as *const c_void);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
-        // Set the new values
-        atomic.set(0);
-        atomic.oid.store(buffer, Ordering::Relaxed);
+        atomic.oid = buffer;
+        // Add the atomic
+        self.atomics.insert(task.1.id.unwrap(), atomic);
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
-    pub fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, transfer: Transfer<AtomicCounterGroupRead>) {
+    pub fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, transfer: Transfer<AtomicGroupRead>) {
         // Get the atomic group object first
-        // Read the value of the atomic from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
-        let oid = transfer.0.oid;
-        let mut count = 0_u32;
+        let atomic = self.get_atomic_group(id).unwrap();
+        // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
+        let oid = atomic.oid;
+        let mut counts: [u32; 4] = [0, 0, 0, 0];
         unsafe {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
-            gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize, (&mut count) as *mut u32 as *mut c_void);
+            gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * atomic.defaults.len() as isize, counts.as_mut_ptr() as *mut c_void);
         }
-        transfer.0.set(count);
+        // Now store the atomic counters' values
+        let mut cpu_counters_lock = transfer.0.inner.lock().unwrap();
+        let cpu_counters = &mut *cpu_counters_lock;
+        cpu_counters.clear();
+        cpu_counters.try_extend_from_slice(&counts).unwrap();
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {

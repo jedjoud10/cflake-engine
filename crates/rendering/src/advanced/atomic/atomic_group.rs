@@ -1,5 +1,6 @@
 use std::sync::{atomic::{AtomicU32, Ordering, AtomicU8}, Arc};
 use crate::{basics::{transfer::{Transferable, Transfer}, Buildable}, object::{PipelineObject, ObjectID, PipelineTask, ObjectBuildingTask}};
+use arrayvec::ArrayVec;
 
 // The clear condition telling us when we should clear the atomic counter
 #[derive(Clone)]
@@ -15,16 +16,19 @@ pub struct AtomicGroup {
     // The OpenGL ID for the atomic counter buffer
     pub(crate) oid: u32,
     // Some predefined values that we can set before we execute the shader
-    pub(crate) defaults: Vec<u32>,
+    // This also stores the number of valid atomics that we have
+    pub(crate) defaults: ArrayVec<u32, 4>,
     // When should we clear this atomic buffer?
     pub(crate) condition: ClearCondition, 
 }
 
 impl Default for AtomicGroup {
     fn default() -> Self {
+        let mut arrayvec = ArrayVec::<u32, 4>::new();
+        arrayvec.push(0);
         Self { 
             oid: 0,
-            defaults: Vec::new(),
+            defaults: arrayvec,
             condition: ClearCondition::DontClear
         }
     }
@@ -45,12 +49,14 @@ impl Buildable for AtomicGroup {
 
 impl AtomicGroup {
     // Create a new atomic counter with some predefined values
-    pub fn new(vals: Vec<u32>) -> Self {
-        Self {
+    pub fn new(mut vals: &[u32]) -> Option<Self> {
+        let mut arrayvec = ArrayVec::<u32, 4>::new();
+        arrayvec.try_extend_from_slice(vals).ok()?;
+        Some(Self {
             oid: 0,
-            defaults: vals,
+            defaults: arrayvec,
             condition: ClearCondition::DontClear
-        }
+        })
     }
     // Set the clear condition
     pub fn set_clear_condition(mut self, condition: ClearCondition) -> Self {

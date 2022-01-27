@@ -5,7 +5,7 @@ use main::{
         octrees::{AdvancedOctree, Octree, OctreeNode},
     },
     rendering::{
-        advanced::{compute::ComputeShader, atomic::AtomicGroup},
+        advanced::{compute::ComputeShader, atomic::{AtomicGroup, AtomicGroupRead}},
         basics::{
             shader::ShaderSettings,
             texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping, TextureReadBytes},
@@ -18,6 +18,18 @@ use main::{
 };
 use std::collections::HashMap;
 
+// Some data that we store whenever we are generating the voxels
+pub struct TerrainGenerationData {
+    // The ID of the main tracked task 
+    main_id: TrackedTaskID,
+    // The Entity ID of the chunk that we are generating this voxel data for
+    chunk_id: EntityID, 
+
+    // Reading the data back
+    texture_reads: (TextureReadBytes, TextureReadBytes),
+    atomic_reads: (AtomicGroupRead, AtomicGroupRead)
+}
+
 // The global terrain component that can be added at the start of the game
 pub struct Terrain {
     // Chunk generation
@@ -26,12 +38,14 @@ pub struct Terrain {
     pub csgtree: math::csg::CSGTree,
 
     // Voxel Generation
-    pub generating: Option<(TrackedTaskID, EntityID, (TextureReadBytes, TextureReadBytes))>,
+    pub generating: Option<TerrainGenerationData>,
     pub compute_shader: ObjectID<ComputeShader>,
+    // Textures
     pub density_texture: ObjectID<Texture>,
     pub material_texture: ObjectID<Texture>,
-    pub positive_counter: AtomicGroup,
-    pub negative_counter: AtomicGroup,
+    // Atomics
+    pub positive_counter: ObjectID<AtomicGroup>,
+    pub negative_counter: ObjectID<AtomicGroup>,
 }
 
 impl Terrain {
