@@ -6,8 +6,8 @@
 #include "defaults\shaders\voxel_terrain\data.func.glsl"
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(binding = 0) writeonly uniform image3D material_image;
-layout(binding = 1) writeonly uniform image3D density_image;
+layout(binding = 0) writeonly uniform image3D density_image;
+layout(binding = 1) writeonly uniform image3D material_image;
 layout(binding = 2) uniform atomic_uint positive_counter;
 layout(binding = 2) uniform atomic_uint negative_counter;
 layout(location = 2) uniform vec3 node_pos;
@@ -19,9 +19,8 @@ layout(location = 5) uniform float isoline;
 void get_voxel(vec3 pos, out DensityVoxel density, out MaterialVoxel material) {
     int material_id = 0;
 
-    #include_custom {"voxel_interpreter"}
     // Write the result
-    density = DensityVoxel(final_density);
+    density = DensityVoxel(pos.y + sin(pos.x / 10) * 10.0);
     material = MaterialVoxel(material_id);
 }
 

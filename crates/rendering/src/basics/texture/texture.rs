@@ -136,28 +136,39 @@ impl Texture {
         self.wrap_mode = wrapping_mode;
         self
     }
-    // Create a texture array from multiple texture paths (They must have the same dimensions!)
-    pub fn create_texturearray(texture_paths: Vec<&str>, width: u16, height: u16) -> Texture {
-        // Load the textures
-        let mut bytes: Vec<Vec<u8>> = Vec::new();
-        for x in &texture_paths {
-            // Load this texture from the bytes
-            let assetcacher = assets::assetc::asset_cacher();
-            let metadata = assetcacher.cached_metadata.get(*x).unwrap();
-            let png_bytes = metadata.bytes.as_bytes();
-            let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
-            // Resize the image so it fits the dimension criteria
-            let image = image.resize_exact(width as u32, height as u32, image::imageops::FilterType::Gaussian);
-            // Flip
-            let image = image.flipv();
-            let bytesa = image.to_bytes();
-            bytes.push(bytesa);
+    // Zip up all the pixel bytes from multiple textures
+    pub fn pack_bytes(textures: &Vec<&Texture>) -> Option<Vec<u8>> {
+        // Load the bytes
+        let mut bytes: Vec<u8> = Vec::new();
+        let width = textures.get(0)?.ttype.get_width();
+        let height = textures.get(0)?.ttype.get_height();
+        for texture in textures {
+            // Check if we have the same settings
+            if texture.ttype.get_height() != height || texture.ttype.get_width() != width { return None; } 
+            bytes.extend(texture.bytes.iter());
         }
-        Texture {
-            bytes: bytes.into_iter().flatten().collect::<Vec<u8>>(),
-            ttype: TextureType::Texture2DArray(width, height, texture_paths.len() as u16),
+        Some(bytes)
+    }
+    // Convert an array of CPU textures to a TextureArray
+    // This will use the settings of the first texture in the array
+    pub fn convert_texturearray(textures: Vec<&Texture>) -> Option<Texture> {       
+        let width = textures.get(0)?.ttype.get_width();
+        let height = textures.get(0)?.ttype.get_height();
+        Some(Texture {
+            bytes: Self::pack_bytes(&textures)?,
+            ttype: TextureType::Texture2DArray(width, height, textures.len() as u16),
             ..Texture::default()
-        }
+        })
+    }
+    // Convert an array of CPU textures to a 3D Texture
+    pub fn convert_3d(textures: Vec<&Texture>) -> Option<Texture> {
+        let width = textures.get(0)?.ttype.get_width();
+        let height = textures.get(0)?.ttype.get_height();
+        Some(Texture {
+            bytes: Self::pack_bytes(&textures)?,
+            ttype: TextureType::Texture3D(width, height, textures.len() as u16),
+            ..Texture::default()
+        })
     }
     // Count the numbers of pixels that this texture can contain
     pub fn count_pixels(&self) -> usize {

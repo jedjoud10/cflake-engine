@@ -87,7 +87,6 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                             e.insert(model.vertices.len() as u32);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
-                            model.colors.push(veclib::Vector3::ONE);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
@@ -325,7 +324,6 @@ pub fn solve_marching_squares(
     for x in skirt_vertices {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(x.position);
-        model.colors.push(veclib::Vector3::ONE);
     }
 }
 // Create a marching squares triangle between 3 skirt voxels

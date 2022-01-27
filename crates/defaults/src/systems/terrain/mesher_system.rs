@@ -22,24 +22,26 @@ fn run(mut context: Context, query: ComponentQuery) {
                 let voxels = chunk.voxel_data.as_ref().unwrap();
                 let coords = chunk.coords;
                 let model = main::terrain::mesher::generate_model(voxels, coords, true);
-                println!("Create model for chunk {}", chunk.coords.center);
 
                 // Create the actual pipeline model now
                 let skirts = model.skirts_model;
                 let model = model.model;
                 // Combine the models first
-                let model = Model::combine(model, skirts);
+                let mut model = Model::combine(model, skirts);
+                
+                // Make sure the model has all valid field
+                model.generate_normals();
 
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);
-                Some(model_id)                
+                Some(model_id)
             } else { None };
             drop(chunk);
 
             if let Some(model_id) = model_id {
                 // Create a linking group that contains the renderer
                 let mut group = ComponentLinkingGroup::new();
-                let renderer = main::rendering::basics::renderer::Renderer::default().set_model(model_id);
+                let renderer = main::rendering::basics::renderer::Renderer::default().set_model(model_id).set_material(terrain.material);
                 group.link(crate::components::Renderer::new(renderer)).unwrap();
                 write.ecs.link_components(id, group).unwrap();
             }

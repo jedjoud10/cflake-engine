@@ -121,14 +121,19 @@ impl<Context> ECSManager<Context> {
         // Change the entity's bitfield
         let components = self.components.clone();
         let entity = self.entity_mut(&id).unwrap();
-        let cbitfield = entity.cbitfield.add(&link_group.cbitfield);
-        entity.cbitfield = cbitfield;
+
+        // Diff
+        let old = entity.cbitfield;
+        let new = entity.cbitfield.add(&link_group.cbitfield);
+        entity.cbitfield = new;
         drop(entity);
+
         let entity = self.entity(&id).unwrap();
         let linked = &entity.components;
         // Check if the linked entity is valid to be added into the systems
         for system in self.systems.iter() {
-            if system.check_cbitfield(cbitfield) {
+            // If the entity wasn't inside the system before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the system
+            if system.check_cbitfield(new) && !system.check_cbitfield(old) {
                 let lc1 = LinkedComponents::new_direct(id, linked, components.clone());
                 let lc2 = LinkedComponents::new_direct(id, linked, components.clone());
                 system.add_entity(id, lc1, lc2);

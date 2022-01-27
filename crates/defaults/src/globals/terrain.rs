@@ -8,7 +8,7 @@ use main::{
         advanced::{compute::ComputeShader, atomic::{AtomicGroup, AtomicGroupRead, ClearCondition}},
         basics::{
             shader::ShaderSettings,
-            texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping, TextureReadBytes},
+            texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping, TextureReadBytes}, material::Material,
         },
         object::{ObjectID, TrackedTaskID},
         pipeline::pipec,
@@ -36,6 +36,7 @@ pub struct Terrain {
     pub octree: AdvancedOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
     pub csgtree: math::csg::CSGTree,
+    pub material: ObjectID<Material>,
 
     // Voxel Generation
     pub generating: Option<TerrainGenerationData>,
@@ -49,7 +50,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a new terrain component
-    pub fn new(octree_depth: u8, mut interpreter: main::terrain::interpreter::Interpreter, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
+    pub fn new(material: ObjectID<Material>, octree_depth: u8, mut interpreter: main::terrain::interpreter::Interpreter, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
         // Check if a an already existing node could be subdivided even more
         fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
             let c: veclib::Vector3<f32> = node.get_center().into();
@@ -101,10 +102,12 @@ impl Terrain {
         // Also construct the atomic
         let atomic = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), pipeline);
 
+        
         Self {
             octree,
             chunks: HashMap::default(),
             csgtree,
+            material,
 
             generating: None,
             compute_shader,

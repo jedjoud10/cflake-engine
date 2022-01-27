@@ -27,14 +27,14 @@ use std::{
 };
 
 // Some default values like the default material or even the default shader
-pub(crate) struct DefaultPipelineObjects {
-    pub(crate) missing_tex: ObjectID<Texture>,
-    pub(crate) black: ObjectID<Texture>,
-    pub(crate) white: ObjectID<Texture>,
-    pub(crate) normals_tex: ObjectID<Texture>,
-    pub(crate) shader: ObjectID<Shader>,
-    pub(crate) material: ObjectID<Material>,
-    pub(crate) model: ObjectID<Model>,
+pub struct DefaultPipelineObjects {
+    pub missing_tex: ObjectID<Texture>,
+    pub black: ObjectID<Texture>,
+    pub white: ObjectID<Texture>,
+    pub normals_tex: ObjectID<Texture>,
+    pub shader: ObjectID<Shader>,
+    pub material: ObjectID<Material>,
+    pub model: ObjectID<Model>,
 }
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
@@ -66,7 +66,7 @@ pub struct Pipeline {
     pub(crate) atomics: ShareableOrderedVec<AtomicGroup>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
-    pub(crate) defaults: Option<DefaultPipelineObjects>,
+    pub defaults: Option<DefaultPipelineObjects>,
 
     // The current main camera that is rendering the world
     pub(crate) camera: Camera,

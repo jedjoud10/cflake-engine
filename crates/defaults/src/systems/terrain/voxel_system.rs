@@ -48,18 +48,15 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         texture_reads: (read_densities, read_materials),
         atomic_read: read_counters,
     });
-    println!("Dispatched voxel generation!");
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    println!("Finished voxel data generation!");
     // Load the read containers that we passed to the pipeline
     let data = terrain.generating.take().unwrap();
 
     // Load the actual voxels now
     let voxel_pixels = data.texture_reads.0.fill_vec::<f32>().unwrap();
     let material_pixels = data.texture_reads.1.fill_vec::<veclib::Vector2<u8>>().unwrap();
-    
     // Create the voxel data on the heap since it's going to be pretty big
     let voxels = voxel_pixels
         .into_iter()

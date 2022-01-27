@@ -1,7 +1,7 @@
 use std::ops::{Index, IndexMut};
 
 // Just a simple voxel
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct Voxel {
     pub density: f32,
     pub material_id: u8,

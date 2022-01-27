@@ -47,7 +47,7 @@ pub fn init(mut write: core::WriteContext) {
             // Create it's renderer
             let renderer = rendering::basics::renderer::Renderer::default()
                 .set_model(model_id)
-                .set_material(material)
+                //.set_material(material)
                 .set_matrix(matrix);
             let renderer = defaults::components::Renderer::new(renderer);
             group.link(renderer).unwrap();
@@ -56,7 +56,29 @@ pub fn init(mut write: core::WriteContext) {
         }
     }
 
+    // Load a terrain material
+    // Load the shader first
+    let ss = rendering::basics::shader::ShaderSettings::default()
+        .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
+        .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
+    let shader = rendering::pipeline::pipec::construct(rendering::basics::shader::Shader::new(ss).unwrap(), &*pipeline);
+    // Then the textures
+    let white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
+    let normal_map =  pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
+    let diffuse = rendering::basics::texture::Texture::convert_3d(vec![white]).unwrap();
+    let normals = rendering::basics::texture::Texture::convert_3d(vec![normal_map]).unwrap();
+
+    let diffuse = rendering::pipeline::pipec::construct(diffuse, &*pipeline);
+    let normals = rendering::pipeline::pipec::construct(normals, &*pipeline);
+
+    let material = rendering::basics::material::Material::default()
+        .set_diffuse_texture(diffuse)
+        .set_normals_texture(normals)
+        .set_shader(shader);
+    let material = rendering::pipeline::pipec::construct(material, &*pipeline);
+
+
     // Add the terrain
-    let terrain = defaults::globals::Terrain::new(3, terrain::interpreter::Interpreter::default_basic(), &*pipeline);
+    let terrain = defaults::globals::Terrain::new(material, 3, terrain::interpreter::Interpreter::default_basic(), &*pipeline);
     write.ecs.add_global(terrain).unwrap();
 }

@@ -42,6 +42,7 @@ fn run(mut context: Context, _query: ComponentQuery) {
     let mut write = context.write();
     // Get the camera position
     let camera_pos = write.ecs.global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
+    let camera_pos = veclib::Vector3::ZERO;
     let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // Generate the chunks if needed

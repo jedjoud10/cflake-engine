@@ -307,7 +307,6 @@ dependencies = [
  "ahash",
  "bitfield",
  "lazy_static",
- "no_deadlocks",
  "ordered_vec",
  "others",
  "worker_threads",
@@ -528,9 +527,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.113"
+version = "0.2.115"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eef78b64d87775463c549fbd80e19249ef436ea3bf1de2a1eb7e717ec7fab1e9"
+checksum = "0a8d982fa7a96a000f6ec4cfe966de9703eccde29750df2bb8949da91b0e818d"
 
 [[package]]
 name = "log"
@@ -721,7 +720,7 @@ checksum = "da32515d9f6e6e489d7bc9d84c71b060db7247dc035bbe44eac88cf87486d8d5"
 [[package]]
 name = "ordered_vec"
 version = "0.3.2"
-source = "git+https://github.com/jedjoud10/ordered_vec#2c36f23a5b8e63e29e5fdf1f461f1836414394ab"
+source = "git+https://github.com/jedjoud10/ordered_vec#ecf4af79eb985bc4e4121b7b1e94618c3cff2abd"
 
 [[package]]
 name = "others"
@@ -904,6 +903,7 @@ dependencies = [
  "no_deadlocks",
  "ordered_vec",
  "others",
+ "smallvec",
  "veclib",
 ]
 
@@ -948,18 +948,18 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
-version = "1.0.135"
+version = "1.0.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cf9235533494ea2ddcdb794665461814781c53f19d87b76e571a1c35acbad2b"
+checksum = "ce31e24b01e1e524df96f1c2fdd054405f8d7376249a5110886fb4b658484789"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.135"
+version = "1.0.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dcde03d87d4c973c04be249e7d8f0b35db1c848c487bd43032808e59dd8328d"
+checksum = "08597e7152fcd306f41838ed3e37be9eaeed2b61c42e2117266a554fab4662f9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -976,6 +976,12 @@ dependencies = [
  "ryu",
  "serde",
 ]
+
+[[package]]
+name = "smallvec"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2dd574626839106c320a323308629dcb1acfc96e32a8cba364ddc61ac23ee83"
 
 [[package]]
 name = "spin_sleep"
@@ -1053,8 +1059,8 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "veclib"
-version = "0.2.5"
-source = "git+https://github.com/jedjoud10/veclib#140fe997ad818885e6d834686543887839ff1166"
+version = "0.2.6"
+source = "git+https://github.com/jedjoud10/veclib#5309e94420076679452d7ceb08ff87a1d273c6c5"
 
 [[package]]
 name = "vector-map"
