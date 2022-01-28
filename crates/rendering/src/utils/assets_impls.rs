@@ -18,12 +18,14 @@ impl Asset for Texture {
             // Load this texture from the bytes
             let png_bytes = metadata.bytes.as_bytes();
             let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+            let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
             // Flip
             let image = image.flipv();
             (image.to_bytes(), image.width() as u16, image.height() as u16)
         }
         // Load this texture from the bytes
         let (bytes, width, height) = read_bytes(data);
+
         // Return a texture with the default parameters
         let texture = self
             .set_bytes(bytes)
