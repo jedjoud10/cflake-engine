@@ -45,6 +45,7 @@ pub enum PipelineTask {
 pub enum PipelineTrackedTask {
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
     TextureReadBytes(ObjectID<Texture>, Transfer<ReadBytes>),
+    ShaderStorageReadBytes(ObjectID<ShaderStorage>, Transfer<ReadBytes>),
     AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
 }
 

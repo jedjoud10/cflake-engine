@@ -18,6 +18,7 @@ use crate::{
     utils::{RenderWrapper, Window},
 };
 use ahash::{AHashMap, AHashSet};
+use gl::MAP_INVALIDATE_RANGE_BIT;
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
@@ -123,7 +124,8 @@ impl Pipeline {
         let gltracker = match task {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
             PipelineTrackedTask::TextureReadBytes(id, read) => self.fill_texture(id, read),
-            PipelineTrackedTask::AtomicGroupRead(id, transfer) => self.atomic_group_read(id, transfer),
+            PipelineTrackedTask::ShaderStorageReadBytes(id, read) => self.shader_storage_read(id, read),
+            PipelineTrackedTask::AtomicGroupRead(id, read) => self.atomic_group_read(id, read),
         };
 
         // Add the tracked ID to our pipeline
@@ -946,7 +948,7 @@ impl Pipeline {
         }
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
-    fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, transfer: Transfer<AtomicGroupRead>) -> GlTracker {
+    fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, read: Transfer<AtomicGroupRead>) -> GlTracker {
         GlTracker::new(
             |pipeline| unsafe {
                 // Get the atomic group object first
@@ -963,7 +965,7 @@ impl Pipeline {
                 );
                 gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
                 // Now store the atomic counters' values
-                let mut cpu_counters_lock = transfer.0.inner.lock().unwrap();
+                let mut cpu_counters_lock = read.0.inner.lock().unwrap();
                 let cpu_counters = &mut *cpu_counters_lock;
                 cpu_counters.clear();
                 cpu_counters.try_extend_from_slice(&counts).unwrap();
@@ -987,6 +989,35 @@ impl Pipeline {
             };
             gl::BufferData(gl::SHADER_STORAGE_BUFFER, shader_storage.byte_size as isize, data_ptr, shader_storage.usage.convert());
         }
+    }
+    // Read some bytes from an SSBO
+    fn shader_storage_read(&self, id: ObjectID<ShaderStorage>, read: Transfer<ReadBytes>) -> GlTracker {
+        GlTracker::new(
+            |pipeline| unsafe {
+                // Bind the buffer before reading
+                let shader_storage = pipeline.get_shader_storage(id).unwrap();
+                gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
+                gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
+                // If we have a range, we can use it
+                let range = read.0.range;
+                let bytes = if let Some(range) = range {
+                    // Read using specific range
+                    let offset = range.start;
+                    let size = range.end - range.start;
+                    // Since we use a range, make a vector that can only hold that range
+                    let mut vec = Vec::<u8>::with_capacity(size);
+                    gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, offset as isize, size as isize, vec.as_mut_ptr() as *mut c_void);
+                    vec
+                } else {
+                    // Read the whole buffer
+                    let mut vec = Vec::<u8>::with_capacity(shader_storage.byte_size as usize);
+                    gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, 0, shader_storage.byte_size as isize, vec.as_mut_ptr() as *mut c_void);
+                    vec
+                };
+                // Now store the shader storage's bytes
+                let mut output_bytes = read.0.bytes.lock().unwrap();
+                *output_bytes = bytes;
+            }, |_| {}, self)
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
