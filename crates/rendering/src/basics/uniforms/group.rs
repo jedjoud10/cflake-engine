@@ -6,7 +6,7 @@ use std::{
 use veclib::Vector;
 
 use crate::{
-    advanced::atomic::{AtomicGroup, ClearCondition},
+    advanced::{atomic::{AtomicGroup, ClearCondition}, shaderstorage::ShaderStorage},
     basics::{
         texture::{Texture, TextureAccessType},
         transfer::Transfer,
@@ -89,6 +89,10 @@ impl ShaderUniformsGroup {
     // Set an atomic group uniform
     pub fn set_atomic_group(&mut self, name: &str, val: ObjectID<AtomicGroup>, binding: u32) {
         self.uniforms.insert(name.to_string(), Uniform::CounterGroup(val, binding));
+    }
+    // Set a shader storage uniform
+    pub fn set_shader_storage(&mut self, name: &str, val: ObjectID<ShaderStorage>, binding: u32) {
+        self.uniforms.insert(name.to_string(), Uniform::ShaderStorage(val, binding));
     }
     // Check if we have a specific uniform store
     pub fn contains_uniform(&self, name: &str) -> bool {

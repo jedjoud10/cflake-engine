@@ -27,24 +27,24 @@ impl Buildable for ShaderStorage {
 
 impl ShaderStorage {
     // Create a new empty shader storage
-    pub fn new<T: Sized>(frequency: UpdateFrequency, access: AccessType) -> Self {
+    pub fn new<T: Sized>(frequency: UpdateFrequency, access: AccessType, byte_size: usize) -> Self {
         Self {
             oid: 0,
             usage: UsageType { frequency, access }, 
             bytes: Vec::new(),   
-            byte_size: std::mem::size_of::<T>(),      
+            byte_size,      
         }
     }
     // Create a new shader storage with some default data
     // Type T must have a repr(C) layout
-    pub fn new_default<T: Sized>(frequency: UpdateFrequency, access: AccessType, default: T) -> Self {
+    pub fn new_default<T: Sized>(frequency: UpdateFrequency, access: AccessType, default: T, byte_size: usize) -> Self {
         let borrow = &default;
-        let slice = unsafe { std::slice::from_raw_parts::<u8>(borrow as *const T as *const u8, std::mem::size_of::<T>()) };
+        let slice = unsafe { std::slice::from_raw_parts::<u8>(borrow as *const T as *const u8, byte_size) };
         Self {
             oid: 0,
             usage: UsageType { frequency, access },
             bytes: slice.to_vec(),
-            byte_size: std::mem::size_of::<T>(),
+            byte_size,
         }
     }
 }

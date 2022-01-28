@@ -950,7 +950,7 @@ impl Pipeline {
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, read: Transfer<AtomicGroupRead>) -> GlTracker {
         GlTracker::new(
-            |pipeline| unsafe {
+            move |pipeline| unsafe {
                 // Get the atomic group object first
                 let atomic = self.get_atomic_group(id).unwrap();
                 // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
@@ -989,11 +989,13 @@ impl Pipeline {
             };
             gl::BufferData(gl::SHADER_STORAGE_BUFFER, shader_storage.byte_size as isize, data_ptr, shader_storage.usage.convert());
         }
+
+        self.shader_storage.insert(task.1.id.unwrap(), shader_storage);
     }
     // Read some bytes from an SSBO
     fn shader_storage_read(&self, id: ObjectID<ShaderStorage>, read: Transfer<ReadBytes>) -> GlTracker {
         GlTracker::new(
-            |pipeline| unsafe {
+            move |pipeline| unsafe {
                 // Bind the buffer before reading
                 let shader_storage = pipeline.get_shader_storage(id).unwrap();
                 gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
@@ -1005,12 +1007,12 @@ impl Pipeline {
                     let offset = range.start;
                     let size = range.end - range.start;
                     // Since we use a range, make a vector that can only hold that range
-                    let mut vec = Vec::<u8>::with_capacity(size);
+                    let mut vec = vec![0; size as usize];
                     gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, offset as isize, size as isize, vec.as_mut_ptr() as *mut c_void);
                     vec
                 } else {
                     // Read the whole buffer
-                    let mut vec = Vec::<u8>::with_capacity(shader_storage.byte_size as usize);
+                    let mut vec = vec![0; shader_storage.byte_size as usize];
                     gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, 0, shader_storage.byte_size as isize, vec.as_mut_ptr() as *mut c_void);
                     vec
                 };
