@@ -123,7 +123,8 @@ impl Terrain {
             material,
 
             generating: None,
-            compute_shader,
+            base_compute,
+            second_compute,
             base_texture,
             material_texture,
             normals_texture,

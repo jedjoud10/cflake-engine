@@ -17,10 +17,9 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool) -> TModel {
+pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
-    let _i = Instant::now();
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
@@ -102,36 +101,38 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
     }
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
-    // Create the X skirt
-    calculate_skirt(
-        voxels,
-        interpolation,
-        false,
-        DENSITY_OFFSET_X,
-        &mut skirts_model,
-        |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
-        transform_x_local,
-    );
-    // Create the Z skirt
-    calculate_skirt(
-        voxels,
-        interpolation,
-        true,
-        DENSITY_OFFSET_Z,
-        &mut skirts_model,
-        |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
-        transform_z_local,
-    );
-    // Create the Y skirt
-    calculate_skirt(
-        voxels,
-        interpolation,
-        true,
-        DENSITY_OFFSET_Y,
-        &mut skirts_model,
-        |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
-        transform_y_local,
-    );
+    if skirts {
+        // Create the X skirt
+        calculate_skirt(
+            voxels,
+            interpolation,
+            false,
+            DENSITY_OFFSET_X,
+            &mut skirts_model,
+            |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
+            transform_x_local,
+        );
+        // Create the Z skirt
+        calculate_skirt(
+            voxels,
+            interpolation,
+            true,
+            DENSITY_OFFSET_Z,
+            &mut skirts_model,
+            |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
+            transform_z_local,
+        );
+        // Create the Y skirt
+        calculate_skirt(
+            voxels,
+            interpolation,
+            true,
+            DENSITY_OFFSET_Y,
+            &mut skirts_model,
+            |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
+            transform_y_local,
+        );
+    }    
     TModel { model, skirts_model, coords }
 }
 
