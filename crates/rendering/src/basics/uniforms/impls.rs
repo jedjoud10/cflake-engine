@@ -1,5 +1,5 @@
 use crate::{
-    advanced::atomic::AtomicGroup,
+    advanced::{atomic::AtomicGroup, shaderstorage::ShaderStorage},
     basics::{
         texture::{Texture, TextureAccessType},
         transfer::Transfer,
@@ -22,4 +22,5 @@ pub enum Uniform {
     // Compute sheit
     Image(ObjectID<Texture>, TextureAccessType),
     CounterGroup(ObjectID<AtomicGroup>, u32),
+    ShaderStorage(ObjectID<ShaderStorage>, u32),
 }

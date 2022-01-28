@@ -28,3 +28,45 @@ impl DataType {
         }
     }
 }
+
+// How we will access a buffer object
+pub enum AccessType {
+    Write,
+    Read,
+    Pass,
+}
+// How frequently we will update the data of a buffer object
+pub enum UpdateFrequency {
+    Static,
+    Dynamic,
+    Stream,
+}
+
+// How we will use a buffer
+pub struct UsageType {
+    pub access: AccessType,
+    pub frequency: UpdateFrequency,
+}
+
+impl UsageType {
+    // Convert this UsageType to a valid OpenGL enum
+    pub fn convert(&self) -> u32 {
+        match self.access {
+            AccessType::Write => match self.frequency {
+                UpdateFrequency::Static => gl::STATIC_DRAW,
+                UpdateFrequency::Dynamic => gl::DYNAMIC_DRAW,
+                UpdateFrequency::Stream => gl::STREAM_DRAW,
+            },
+            AccessType::Read => match self.frequency {
+                UpdateFrequency::Static => gl::STATIC_READ,
+                UpdateFrequency::Dynamic => gl::DYNAMIC_READ,
+                UpdateFrequency::Stream => gl::STREAM_READ,
+            },
+            AccessType::Pass => match self.frequency {
+                UpdateFrequency::Static => gl::STATIC_COPY,
+                UpdateFrequency::Dynamic => gl::DYNAMIC_COPY,
+                UpdateFrequency::Stream => gl::STREAM_COPY,
+            },
+        }
+    }
+}

@@ -4,18 +4,18 @@ use std::{
 };
 
 use crate::basics::transfer::{Transfer, Transferable};
-// Used to help reading back the bytes from a texture that can be read from
+// Used to help reading back the bytes from OpenGL storage
 #[derive(Default)]
-pub struct TextureReadBytes {
+pub struct ReadBytes {
     // The shared bytes that have been sent from the main thread that we must update
-    pub(crate) cpu_bytes: Arc<Mutex<Vec<u8>>>,
+    pub(crate) bytes: Arc<Mutex<Vec<u8>>>,
 }
 
-impl TextureReadBytes {
+impl ReadBytes {
     // Fill a vector of type elements using the appropriate bytes
     pub fn fill_vec<U: Default + Clone>(self) -> Option<Vec<U>> {
         // Read the bytes
-        let bytes = Arc::try_unwrap(self.cpu_bytes).ok()?.into_inner().ok()?;
+        let bytes = Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?;
         if bytes.len() == 0 {
             return None;
         }
@@ -27,20 +27,10 @@ impl TextureReadBytes {
     }
 }
 
-impl Transferable for TextureReadBytes {
+impl Transferable for ReadBytes {
     fn transfer(&self) -> Transfer<Self> {
         Transfer(Self {
-            cpu_bytes: self.cpu_bytes.clone(),
+            bytes: self.bytes.clone(),
         })
-    }
-}
-
-// Used to help writing the bytes to a writable texture
-#[derive(Default, Clone)]
-pub struct TextureWriteBytes {}
-
-impl Transferable for TextureWriteBytes {
-    fn transfer(&self) -> Transfer<Self> {
-        Transfer(self.clone())
     }
 }

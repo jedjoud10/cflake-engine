@@ -4,14 +4,15 @@ use super::{ObjectID, PipelineObject, TrackedTaskID};
 use crate::{
     advanced::{
         atomic::{AtomicGroup, AtomicGroupRead},
-        compute::{ComputeShader, ComputeShaderExecutionSettings},
+        compute::{ComputeShader, ComputeShaderExecutionSettings}, shaderstorage::ShaderStorage,
     },
     basics::{
         material::Material,
         model::Model,
         renderer::Renderer,
         shader::Shader,
-        texture::{Texture, TextureReadBytes, TextureWriteBytes},
+        texture::{Texture},
+        readwrite::ReadBytes,
         transfer::Transfer,
         Buildable,
     },
@@ -30,6 +31,7 @@ pub enum PipelineTask {
     CreateModel(ObjectBuildingTask<Model>),
     CreateRenderer(ObjectBuildingTask<Renderer>),
     CreateAtomicGroup(ObjectBuildingTask<AtomicGroup>),
+    CreateShaderStorage(ObjectBuildingTask<ShaderStorage>),
     // Update tasks
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
@@ -42,8 +44,7 @@ pub enum PipelineTask {
 // A task that can be sent to the render thread, but we can also check if it has finished executing
 pub enum PipelineTrackedTask {
     RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
-    TextureReadBytes(ObjectID<Texture>, Transfer<TextureReadBytes>),
-    TextureWriteBytes(ObjectID<Texture>, Transfer<TextureWriteBytes>),
+    TextureReadBytes(ObjectID<Texture>, Transfer<ReadBytes>),
     AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
 }
 

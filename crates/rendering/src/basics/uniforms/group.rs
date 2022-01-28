@@ -146,14 +146,18 @@ impl ShaderUniformsGroup {
                         set_image(index, texture, access_type);
                     }
                     Uniform::CounterGroup(id, binding) => {
-                        // Get the atomic counter and bing it
+                        // Get the atomic counter and bind it
                         let atomic = pipeline.get_atomic_group(*id)?;
                         // Clear the atomic if needed
                         if let ClearCondition::BeforeShaderExecution = atomic.condition {
                             pipeline.clear_atomic_group(atomic);
                         }
-
                         set_atomic(index, atomic, binding);
+                    }
+                    Uniform::ShaderStorage(id, binding) => {
+                        // Get the shader storage and bind it
+                        let shader_storage = pipeline.get_shader_storage(*id)?;
+                        set_shader_storage(index, shader_storage, binding);
                     }
                 }
             }

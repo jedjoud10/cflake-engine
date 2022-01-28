@@ -1,16 +1,17 @@
 use crate::{
     advanced::{
         atomic::{AtomicGroup, AtomicGroupRead},
-        compute::{ComputeShader, ComputeShaderExecutionSettings},
+        compute::{ComputeShader, ComputeShaderExecutionSettings}, shaderstorage::ShaderStorage,
     },
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
-        texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureReadBytes, TextureType, TextureWrapping},
+        texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
+        readwrite::ReadBytes,
     },
     object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
@@ -20,7 +21,6 @@ use ahash::{AHashMap, AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
-    collections::HashMap,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::{null, null_mut},
@@ -68,6 +68,7 @@ pub struct Pipeline {
     pub(crate) compute_shaders: ShareableOrderedVec<ComputeShader>,
     pub(crate) textures: ShareableOrderedVec<Texture>,
     pub(crate) atomics: ShareableOrderedVec<AtomicGroup>,
+    pub(crate) shader_storage: ShareableOrderedVec<ShaderStorage>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub defaults: Option<DefaultPipelineObjects>,
@@ -105,6 +106,7 @@ impl Pipeline {
             PipelineTask::CreateRenderer(id) => self.renderer_create(id),
             PipelineTask::CreateComputeShader(id) => self.compute_create(id),
             PipelineTask::CreateAtomicGroup(id) => self.atomic_group_create(id),
+            PipelineTask::CreateShaderStorage(id) => self.shader_storage_create(id),
 
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
@@ -122,7 +124,6 @@ impl Pipeline {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
             PipelineTrackedTask::TextureReadBytes(id, read) => self.fill_texture(id, read),
             PipelineTrackedTask::AtomicGroupRead(id, transfer) => self.atomic_group_read(id, transfer),
-            PipelineTrackedTask::TextureWriteBytes(id, write) => todo!(),
         };
 
         // Add the tracked ID to our pipeline
@@ -283,9 +284,18 @@ impl Pipeline {
             None
         }
     }
+    // Get a shader storage using it's respective ID
+    pub fn get_shader_storage(&self, id: ObjectID<ShaderStorage>) -> Option<&ShaderStorage> {
+        if let Some(id) = id.id {
+            self.shader_storage.get(id)
+        } else {
+            None
+        }
+    }
+    
     // Mutable
     // Get a mutable material using it's respective ID
-    pub(crate) fn get_material_mut(&mut self, id: ObjectID<Material>) -> Option<&mut Material> {
+    pub fn get_material_mut(&mut self, id: ObjectID<Material>) -> Option<&mut Material> {
         if let Some(id) = id.id {
             self.materials.get_mut(id)
         } else {
@@ -293,7 +303,7 @@ impl Pipeline {
         }
     }
     // Get a mutable model using it's respective ID
-    pub(crate) fn get_model_mut(&mut self, id: ObjectID<Model>) -> Option<&mut (Model, ModelBuffers)> {
+    pub fn get_model_mut(&mut self, id: ObjectID<Model>) -> Option<&mut (Model, ModelBuffers)> {
         if let Some(id) = id.id {
             self.models.get_mut(id)
         } else {
@@ -301,7 +311,7 @@ impl Pipeline {
         }
     }
     // Get a mutable renderer using it's respective ID
-    pub(crate) fn get_renderer_mut(&mut self, id: ObjectID<Renderer>) -> Option<&mut Renderer> {
+    pub fn get_renderer_mut(&mut self, id: ObjectID<Renderer>) -> Option<&mut Renderer> {
         if let Some(id) = id.id {
             self.renderers.get_mut(id)
         } else {
@@ -309,7 +319,7 @@ impl Pipeline {
         }
     }
     // Get a mutable shader using it's respective ID
-    pub(crate) fn get_shader_mut(&mut self, id: ObjectID<Shader>) -> Option<&mut Shader> {
+    pub fn get_shader_mut(&mut self, id: ObjectID<Shader>) -> Option<&mut Shader> {
         if let Some(id) = id.id {
             self.shaders.get_mut(id)
         } else {
@@ -317,7 +327,7 @@ impl Pipeline {
         }
     }
     // Get a mutable compute shader using it's respective ID
-    pub(crate) fn get_compute_shader_mut(&mut self, id: ObjectID<ComputeShader>) -> Option<&mut ComputeShader> {
+    pub fn get_compute_shader_mut(&mut self, id: ObjectID<ComputeShader>) -> Option<&mut ComputeShader> {
         if let Some(id) = id.id {
             self.compute_shaders.get_mut(id)
         } else {
@@ -325,17 +335,25 @@ impl Pipeline {
         }
     }
     // Get a mutable texture using it's respective ID
-    pub(crate) fn get_texture_mut(&mut self, id: ObjectID<Texture>) -> Option<&mut Texture> {
+    pub fn get_texture_mut(&mut self, id: ObjectID<Texture>) -> Option<&mut Texture> {
         if let Some(id) = id.id {
             self.textures.get_mut(id)
         } else {
             None
         }
     }
-    // Get an mutable atomic group using it's respective ID
+    // Get a mutable atomic group using it's respective ID
     pub fn get_atomic_group_mut(&mut self, id: ObjectID<AtomicGroup>) -> Option<&mut AtomicGroup> {
         if let Some(id) = id.id {
             self.atomics.get_mut(id)
+        } else {
+            None
+        }
+    }
+    // Get a mutable shader storage using it's respective ID
+    pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
+        if let Some(id) = id.id {
+            self.shader_storage.get_mut(id)
         } else {
             None
         }
@@ -856,7 +874,7 @@ impl Pipeline {
         )
     }
     // Read the bytes from a texture
-    fn fill_texture(&mut self, id: ObjectID<Texture>, read: Transfer<TextureReadBytes>) -> GlTracker {
+    fn fill_texture(&mut self, id: ObjectID<Texture>, read: Transfer<ReadBytes>) -> GlTracker {
         // Actually read the pixels
         GlTracker::new(
             |pipeline| unsafe {
@@ -875,7 +893,7 @@ impl Pipeline {
                 gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
                 gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
                 let read = read.0;
-                let mut cpu_bytes = read.cpu_bytes.as_ref().lock().unwrap();
+                let mut cpu_bytes = read.bytes.as_ref().lock().unwrap();
                 *cpu_bytes = vec;
             },
             self,
@@ -953,6 +971,22 @@ impl Pipeline {
             |_| {},
             self,
         )
+    }
+    // Create a new SSBO
+    fn shader_storage_create(&mut self, task: ObjectBuildingTask<ShaderStorage>) {
+        // Create the SSBO
+        let mut shader_storage = task.0;
+        unsafe {
+            gl::GenBuffers(1, &mut shader_storage.oid);
+            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
+            // Get the default data if we need to
+            let data_ptr = if !shader_storage.bytes.is_empty() { 
+                shader_storage.bytes.as_ptr() as *const c_void
+            } else {
+                null() as *const c_void
+            };
+            gl::BufferData(gl::SHADER_STORAGE_BUFFER, shader_storage.byte_size as isize, data_ptr, shader_storage.usage.convert());
+        }
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
