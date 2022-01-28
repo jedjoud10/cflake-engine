@@ -21,6 +21,9 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     group.set_i32("node_size", chunk_coords.size as i32);
     group.set_i32("depth", chunk_coords.depth as i32);
 
+    // Also create the uniforms for out second compute shader
+    
+
     // Create this for the next step
     let read_densities = TextureReadBytes::default();
     let read_materials = TextureReadBytes::default();
