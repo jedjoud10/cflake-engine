@@ -20,20 +20,16 @@ pub fn init(mut write: core::WriteContext) {
 
     // Create it's model
     let mut model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
-    model.custom.allocate::<f32, f32>(model.vertices.len(), rendering::utils::DataType::F32);
-    for x in 0..model.vertices.len() {
-        model.custom.add::<f32, f32>(x as f32 / model.vertices.len() as f32);
-    }
     let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
 
     // Create it's material
-    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_diffuse.png").unwrap();
+    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_diffuse.png").unwrap().set_mipmaps(true);
     let texture = rendering::pipeline::pipec::construct(texture, &*pipeline);
 
-    let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_normal.png").unwrap();
+    let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_normal.png").unwrap().set_mipmaps(true);
     let texture2 = rendering::pipeline::pipec::construct(texture2, &*pipeline);
 
-    let material = rendering::basics::material::Material::default().set_diffuse_texture(texture).set_normals_texture(texture2);
+    let material = rendering::basics::material::Material::default().set_diffuse_texture(texture).set_normals_texture(texture2).set_uv_scale(veclib::Vector2::ONE * 100.0);
     let material = rendering::pipeline::pipec::construct(material, &*pipeline);
 
     // Create a simple cube
@@ -51,7 +47,7 @@ pub fn init(mut write: core::WriteContext) {
             // Create it's renderer
             let renderer = rendering::basics::renderer::Renderer::default()
                 .set_model(model_id)
-                //.set_material(material)
+                .set_material(material)
                 .set_matrix(matrix);
             let renderer = defaults::components::Renderer::new(renderer);
             group.link(renderer).unwrap();

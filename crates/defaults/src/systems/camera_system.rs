@@ -21,7 +21,7 @@ fn run(mut context: Context, components: ComponentQuery) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 1.0 + (write.input.get_mouse_scroll() as f32 * 0.1).powf(2.0);
+    let original_speed = 0.1 + (write.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
     let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * write.time.delta as f32;
 
     // Actually update the velocity

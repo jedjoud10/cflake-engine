@@ -4,7 +4,6 @@ layout(location = 1) in vec3 model_normal;
 layout(location = 2) in vec4 model_tangent;
 layout(location = 3) in vec2 model_uv;
 layout(location = 4) in vec3 model_color;
-layout(location = 5) in float test;
 uniform mat4 mvp_matrix;
 uniform mat4 model_matrix;
 out vec3 m_normal;
@@ -31,5 +30,5 @@ void main() {
 	vec3 n = m_normal;
 	tbn = mat3(t, b, n);
 	m_uv = model_uv;
-	m_color = model_color * test;
+	m_color = model_color;
 }

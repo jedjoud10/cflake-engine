@@ -1,12 +1,14 @@
 use std::{fmt::Debug, any::TypeId};
 
+use veclib::{VectorElemCount, Vector};
+
 use crate::{
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
     pipeline::Pipeline,
     basics::Buildable,
 };
 
-use super::CustomVertexDataBuffer;
+use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
 
 
 // Some OpenGL data for a model
@@ -37,7 +39,7 @@ pub struct Model {
     pub tangents: Vec<veclib::Vector4<f32>>,
     pub uvs: Vec<veclib::Vector2<f32>>,
     pub colors: Vec<veclib::Vector3<f32>>,
-    pub custom: CustomVertexDataBuffer,
+    pub(crate) custom: Option<StoredCustomVertexDataBuffer>,
 
 
     // Triangles
@@ -136,5 +138,21 @@ impl Model {
 
         // Update our normals
         self.normals = vertex_normals;
+    }
+    // Add some custom vertex data
+    pub fn set_custom<T, U: Vector<T> + VectorElemCount>(&mut self, custom_vertex_buffer: CustomVertexDataBuffer<T, U>) {
+        // We gotta serialize the data now, in native endian
+        let ptr = custom_vertex_buffer.inner.as_ptr();
+        let byte_size = std::mem::size_of::<U>();
+        let total_len = byte_size * custom_vertex_buffer.inner.len();
+        let slice: &[u8] = unsafe { std::slice::from_raw_parts(ptr as *const u8, total_len) };
+        let vec = slice.to_vec();
+        self.custom = Some(
+            StoredCustomVertexDataBuffer {
+                inner: vec,
+                size_per_component: U::ELEM_COUNT,
+                _type: custom_vertex_buffer._type,
+            }
+        )
     }
 }
