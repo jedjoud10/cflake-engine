@@ -591,7 +591,7 @@ impl Pipeline {
                 // Custom data moment
                 gl::GenBuffers(1, &mut buffers.custom_vertex_data);
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                let vec = model.custom.inner.as_ref().unwrap();
+                let (vec, _, _) = model.custom.inner.as_ref().unwrap();
                 let byte_len = vec.len() as isize;
                 let ptr = vec.as_ptr() as *const c_void;
                 gl::BufferData(
@@ -633,10 +633,10 @@ impl Pipeline {
             if model.custom.valid() {
                 // Vertex custom attribute
                 let size_per_component = model.custom.size_pre_component as i32;
-                dbg!(size_per_component);
+                let (_, _, _data_type) = model.custom.inner.as_ref().unwrap();
                 gl::EnableVertexAttribArray(5);
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                gl::VertexAttribPointer(5, size_per_component, gl::UNSIGNED_BYTE, gl::FALSE, 0, null());
+                gl::VertexAttribPointer(5, size_per_component, _data_type.convert(), gl::FALSE, 0, null());
             }
             // Unbind
             gl::BindVertexArray(0);
