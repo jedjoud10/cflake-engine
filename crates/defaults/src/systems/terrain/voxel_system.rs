@@ -8,11 +8,11 @@ use crate::globals::TerrainGenerationData;
 // Start generating the voxel data for a specific chunk
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
     // Create the compute shader execution settings and execute the compute shader
-    let compute = terrain.compute_shader;
+    let compute = terrain.base_compute;
     const AXIS: u16 = (MAIN_CHUNK_SIZE + 1) as u16 / 8 + 1;  
     // Set the uniforms for the compute shader as well
     let mut group = ShaderUniformsGroup::new();
-    group.set_image("density_image", terrain.density_texture, TextureAccessType::WRITE);
+    group.set_image("base_image", terrain.base_texture, TextureAccessType::WRITE);
 
     // Chunk specific uniforms
     let chunk_coords = chunk.coords;

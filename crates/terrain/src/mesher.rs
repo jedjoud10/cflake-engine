@@ -1,17 +1,15 @@
 use crate::ChunkCoords;
 use crate::TModel;
-use crate::TempVoxelData;
+use crate::VoxelData;
 use crate::MAIN_CHUNK_SIZE;
+
 use super::tables::*;
-use super::TempVoxel;
+use super::Voxel;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+
 use std::time::Instant;
-
-const ISOLINE: u16 = u16::MAX / 2;
-
-// Optimize this.
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -19,7 +17,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &TempVoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> TModel {
+pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
     let _i = Instant::now();
@@ -34,14 +32,14 @@ pub fn generate_model(voxels: &TempVoxelData, coords: ChunkCoords, interpolation
                 let _lv = &voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= ISOLINE) as u8) * 1;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= ISOLINE) as u8) * 2;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= ISOLINE) as u8) * 4;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density >= ISOLINE) as u8) * 8;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density >= ISOLINE) as u8) * 16;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density >= ISOLINE) as u8) * 32;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density >= ISOLINE) as u8) * 64;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density >= ISOLINE) as u8) * 128;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= 0.0) as u8) * 1;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= 0.0) as u8) * 2;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= 0.0) as u8) * 4;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density >= 0.0) as u8) * 8;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density >= 0.0) as u8) * 16;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density >= 0.0) as u8) * 32;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density >= 0.0) as u8) * 64;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density >= 0.0) as u8) * 128;
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -67,7 +65,7 @@ pub fn generate_model(voxels: &TempVoxelData, coords: ChunkCoords, interpolation
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation {
-                            inverse_lerp(voxel1.density as f32, voxel2.density as f32, ISOLINE as f32)
+                            inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32)
                         } else {
                             0.5
                         };
@@ -76,8 +74,7 @@ pub fn generate_model(voxels: &TempVoxelData, coords: ChunkCoords, interpolation
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         // Get the normal
-                        let normal: veclib::Vector3<f32> = veclib::Vector3::<f32>::lerp(voxel1.normal.into(), voxel2.normal.into(), value.clamp(0.0, 1.0));
-                        let normal = (normal - 128.0) / 255.0;
+                        let normal: veclib::Vector3<f32> = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value.clamp(0.0, 1.0));
 
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32) = (
@@ -92,7 +89,8 @@ pub fn generate_model(voxels: &TempVoxelData, coords: ChunkCoords, interpolation
                             e.insert(model.vertices.len() as u32);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
-                            model.normals.push(normal);
+                            model.normals.push(normal.normalized());
+                            model.colors.push(veclib::Vector3::ONE);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
@@ -104,44 +102,43 @@ pub fn generate_model(voxels: &TempVoxelData, coords: ChunkCoords, interpolation
     }
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
-    if skirts {
-        // Create the X skirt
-        calculate_skirt(
-            voxels,
-            interpolation,
-            false,
-            DENSITY_OFFSET_X,
-            &mut skirts_model,
-            |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
-            transform_x_local,
-        );
-        // Create the Z skirt
-        calculate_skirt(
-            voxels,
-            interpolation,
-            true,
-            DENSITY_OFFSET_Z,
-            &mut skirts_model,
-            |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
-            transform_z_local,
-        );
-        // Create the Y skirt
-        calculate_skirt(
-            voxels,
-            interpolation,
-            true,
-            DENSITY_OFFSET_Y,
-            &mut skirts_model,
-            |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
-            transform_y_local,
-        );
-    }
+    // Create the X skirt
+    calculate_skirt(
+        voxels,
+        interpolation,
+        false,
+        DENSITY_OFFSET_X,
+        &mut skirts_model,
+        |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
+        transform_x_local,
+    );
+    // Create the Z skirt
+    calculate_skirt(
+        voxels,
+        interpolation,
+        true,
+        DENSITY_OFFSET_Z,
+        &mut skirts_model,
+        |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
+        transform_z_local,
+    );
+    // Create the Y skirt
+    calculate_skirt(
+        voxels,
+        interpolation,
+        true,
+        DENSITY_OFFSET_Y,
+        &mut skirts_model,
+        |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
+        transform_y_local,
+    );
     TModel { model, skirts_model, coords }
 }
 
 // Skirt vertex
 pub struct SkirtVertex {
     pub position: veclib::Vector3<f32>,
+    pub normal: veclib::Vector3<f32>,
 }
 
 // Generate a whole skirt using a specific
@@ -178,7 +175,7 @@ pub fn calculate_marching_square_case(
     voxels: &VoxelData,
     interpolation: bool,
     density_offset: [usize; 4],
-) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<veclib::Vector2<f32>>; 4])> {
+) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4])> {
     // Get the position
     let p = veclib::Vector2::new(x as f32, y as f32);
     // Get the marching cube case
@@ -203,7 +200,7 @@ pub fn calculate_marching_square_case(
     let mut local_voxels: [Voxel; 4] = [Voxel::default(); 4];
     local_voxels.copy_from_slice(&local_voxels1[0..4]);
     // Get the interpolated voxels
-    let local_interpolated_voxels1: Vec<Option<veclib::Vector2<f32>>> = (0..4)
+    let local_interpolated_voxels1: Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>> = (0..4)
         .into_iter()
         .map(|x| {
             // This is for every edge
@@ -217,17 +214,19 @@ pub fn calculate_marching_square_case(
                 } else {
                     0.5
                 };
+                // Interpolate between the two voxels
+                let normal = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
                 // We must get the local offset of these two voxels
                 let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
                 let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
                 let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
-                Some(offset)
+                Some((normal, offset))
             } else {
                 None
             }
         })
-        .collect::<Vec<Option<veclib::Vector2<f32>>>>();
-    let mut local_interpolated_voxels: [Option<veclib::Vector2<f32>>; 4] = [None; 4];
+        .collect::<Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>>>();
+    let mut local_interpolated_voxels: [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4] = [None; 4];
     local_interpolated_voxels.copy_from_slice(&local_interpolated_voxels1[0..4]);
     Some((case, p, local_voxels, local_interpolated_voxels))
     // Solve the case
@@ -238,7 +237,7 @@ pub fn solve_marching_squares(
     case: u8,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<veclib::Vector2<f32>>],
+    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
     model: &mut Model,
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
@@ -332,6 +331,8 @@ pub fn solve_marching_squares(
     for x in skirt_vertices {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(x.position);
+        model.normals.push(x.normal.normalized());
+        model.colors.push(veclib::Vector3::ONE);
     }
 }
 // Create a marching squares triangle between 3 skirt voxels
@@ -339,7 +340,7 @@ pub fn create_triangle(
     slice: usize,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<(veclib::Vector2<f32>)>],
+    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
     li: &[usize; 3],
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) -> Vec<SkirtVertex> {
@@ -348,18 +349,19 @@ pub fn create_triangle(
         .iter()
         .map(|i| {
             // Calculate the position and normal
-            let vertex = match *i {
+            let (vertex, &normal) = match *i {
                 1 | 3 | 5 | 7 => {
                     // Interpolated
                     let transformed_index = (*i - 1) / 2;
-                    let v = (tf)(slice, &ilv[transformed_index].unwrap(), &offset);
-                    v
+                    let v = (tf)(slice, &ilv[transformed_index].unwrap().1, &offset);
+                    let n = &ilv[transformed_index].as_ref().unwrap().0;
+                    (v, n)
                 }
                 0 | 2 | 4 | 6 => {
                     // Not interpolated
                     let transformed_index = (*i) / 2;
                     let v = (tf)(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
-                    v
+                    (v, &lv[transformed_index].normal)
                 }
                 _ => {
                     /* The bruh funny */
@@ -367,7 +369,7 @@ pub fn create_triangle(
                 }
             };
             // Return
-            SkirtVertex { position: vertex }
+            SkirtVertex { position: vertex, normal }
         })
         .collect::<Vec<SkirtVertex>>();
     skirt_vertices

@@ -8,10 +8,9 @@ struct BaseVoxel {
 // The material voxel can contain the type of material and some tint for a specific voxel.
 // This is generated on the second pass
 struct MaterialVoxel {
-    int diffuse;
-    int normal_map;
-    vec4 tint;
-    vec4 normal;
+    uint diffuse;
+    uint normal_map;
+    vec3 normal;
 };
 
 // Generate the base voxel at the specified location
@@ -26,6 +25,5 @@ void get_voxel(vec3 pos, out BaseVoxel base) {
 void get_material(vec3 pos, BaseVoxel base, out MaterialVoxel material) {
     material.diffuse = 0;
     material.normal_map = 0;
-    material.tint = vec4(0, 0, 0, 0);
-    material.normal = vec4(0, 0, 0, 0);
+    material.normal = vec3(0, 0, 0);
 }
