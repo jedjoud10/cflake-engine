@@ -628,8 +628,16 @@ impl Pipeline {
                 // Vertex color attribute
                 gl::EnableVertexAttribArray(4);
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
+                gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
             }
-            gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
+            if model.custom.valid() {
+                // Vertex custom attribute
+                let size_per_component = model.custom.size_pre_component as i32;
+                dbg!(size_per_component);
+                gl::EnableVertexAttribArray(5);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
+                gl::VertexAttribPointer(5, size_per_component, gl::UNSIGNED_BYTE, gl::FALSE, 0, null());
+            }
             // Unbind
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
@@ -650,6 +658,7 @@ impl Pipeline {
             gl::DeleteBuffers(1, &mut buffers.tangent_buf);
             gl::DeleteBuffers(1, &mut buffers.color_buf);
             gl::DeleteBuffers(1, &mut buffers.element_buffer_object);
+            gl::DeleteBuffers(1, &mut buffers.custom_vertex_data);
 
             // Delete the vertex array
             gl::DeleteVertexArrays(1, &mut buffers.vertex_array_object);

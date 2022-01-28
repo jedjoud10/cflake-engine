@@ -19,7 +19,11 @@ pub fn init(mut write: core::WriteContext) {
     let pipeline = pipeline_.read().unwrap();
 
     // Create it's model
-    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
+    let mut model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
+    model.custom.allocate::<f32, veclib::Vector2<f32>>(model.vertices.len());
+    for x in 0..model.vertices.len() {
+        model.custom.add::<f32, veclib::Vector2<f32>>(veclib::Vector2::<f32>::new(1.0, 0.0));
+    }
     let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
 
     // Create it's material

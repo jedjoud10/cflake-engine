@@ -62,9 +62,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "backtrace"
-version = "0.3.63"
+version = "0.3.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "321629d8ba6513061f26707241fa9bc89524ff1cd7a915a97ef0c62c666ce1b6"
+checksum = "5e121dee8023ce33ab248d9ce1493df03c3b38a659b240096fcbd7048ff9c31f"
 dependencies = [
  "addr2line",
  "cc",
@@ -1050,8 +1050,8 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "veclib"
-version = "0.2.6"
-source = "git+https://github.com/jedjoud10/veclib#5309e94420076679452d7ceb08ff87a1d273c6c5"
+version = "0.2.8"
+source = "git+https://github.com/jedjoud10/veclib#eb1073bb6b9131f2f5431e17faf808d10ffbc54f"
 
 [[package]]
 name = "vector-map"
