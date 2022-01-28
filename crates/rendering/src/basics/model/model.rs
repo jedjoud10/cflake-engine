@@ -1,15 +1,14 @@
-use std::{fmt::Debug, any::TypeId};
+use std::{any::TypeId, fmt::Debug};
 
-use veclib::{VectorElemCount, Vector};
+use veclib::{Vector, VectorElemCount};
 
 use crate::{
+    basics::Buildable,
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
     pipeline::Pipeline,
-    basics::Buildable,
 };
 
 use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
-
 
 // Some OpenGL data for a model
 #[derive(Default, Debug)]
@@ -40,7 +39,6 @@ pub struct Model {
     pub uvs: Vec<veclib::Vector2<f32>>,
     pub colors: Vec<veclib::Vector3<f32>>,
     pub(crate) custom: Option<StoredCustomVertexDataBuffer>,
-
 
     // Triangles
     pub triangles: Vec<u32>,
@@ -109,17 +107,17 @@ impl Model {
     // Procedurally generate the normals for this model
     pub fn generate_normals(&mut self) {
         // First, loop through every triangle and calculate it's face normal
-        // Then loop through every vertex and average out the face normals of the adjacent triangles  
+        // Then loop through every vertex and average out the face normals of the adjacent triangles
 
         let mut vertex_normals: Vec<veclib::Vector3<f32>> = vec![veclib::Vector3::ZERO; self.vertices.len()];
-        for i in 0..(self.triangles.len()/3) {
+        for i in 0..(self.triangles.len() / 3) {
             // Calculate the face normal
-            let (i1, i2, i3) = (self.triangles[i*3], self.triangles[i*3+1], self.triangles[i*3+2]);
+            let (i1, i2, i3) = (self.triangles[i * 3], self.triangles[i * 3 + 1], self.triangles[i * 3 + 2]);
             // Get the actual vertices
             let a = self.vertices.get(i1 as usize).unwrap();
             let b = self.vertices.get(i2 as usize).unwrap();
             let c = self.vertices.get(i3 as usize).unwrap();
-            
+
             // Calculate
             let d1 = b - a;
             let d2 = c - a;
@@ -147,12 +145,10 @@ impl Model {
         let total_len = byte_size * custom_vertex_buffer.inner.len();
         let slice: &[u8] = unsafe { std::slice::from_raw_parts(ptr as *const u8, total_len) };
         let vec = slice.to_vec();
-        self.custom = Some(
-            StoredCustomVertexDataBuffer {
-                inner: vec,
-                size_per_component: U::ELEM_COUNT,
-                _type: custom_vertex_buffer._type,
-            }
-        )
+        self.custom = Some(StoredCustomVertexDataBuffer {
+            inner: vec,
+            size_per_component: U::ELEM_COUNT,
+            _type: custom_vertex_buffer._type,
+        })
     }
 }

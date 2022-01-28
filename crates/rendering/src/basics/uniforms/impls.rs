@@ -1,6 +1,10 @@
 use crate::{
-    basics::{texture::{Texture, TextureAccessType}, transfer::Transfer},
-    object::ObjectID, advanced::atomic::AtomicGroup,
+    advanced::atomic::AtomicGroup,
+    basics::{
+        texture::{Texture, TextureAccessType},
+        transfer::Transfer,
+    },
+    object::ObjectID,
 };
 
 // Some default uniforms that we will set

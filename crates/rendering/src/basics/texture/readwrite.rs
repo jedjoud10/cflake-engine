@@ -1,6 +1,9 @@
-use std::{sync::{Arc, Mutex}, mem::size_of};
+use std::{
+    mem::size_of,
+    sync::{Arc, Mutex},
+};
 
-use crate::basics::transfer::{Transferable, Transfer};
+use crate::basics::transfer::{Transfer, Transferable};
 // Used to help reading back the bytes from a texture that can be read from
 #[derive(Default)]
 pub struct TextureReadBytes {
@@ -27,7 +30,7 @@ impl TextureReadBytes {
 impl Transferable for TextureReadBytes {
     fn transfer(&self) -> Transfer<Self> {
         Transfer(Self {
-            cpu_bytes: self.cpu_bytes.clone()
+            cpu_bytes: self.cpu_bytes.clone(),
         })
     }
 }

@@ -1,10 +1,18 @@
-use std::{collections::HashMap, ffi::{CString, c_void}, sync::atomic::Ordering};
+use std::{
+    collections::HashMap,
+    ffi::{c_void, CString},
+    sync::atomic::Ordering,
+};
 use veclib::Vector;
 
 use crate::{
-    basics::{texture::{Texture, TextureAccessType}, transfer::Transfer},
+    advanced::atomic::{AtomicGroup, ClearCondition},
+    basics::{
+        texture::{Texture, TextureAccessType},
+        transfer::Transfer,
+    },
     object::ObjectID,
-    pipeline::Pipeline, advanced::atomic::{AtomicGroup, ClearCondition},
+    pipeline::Pipeline,
 };
 
 use super::{ShaderUniformsSettings, Uniform};
@@ -143,10 +151,10 @@ impl ShaderUniformsGroup {
                         // Clear the atomic if needed
                         if let ClearCondition::BeforeShaderExecution = atomic.condition {
                             pipeline.clear_atomic_group(atomic);
-                        } 
+                        }
 
                         set_atomic(index, atomic, binding);
-                    },
+                    }
                 }
             }
         }

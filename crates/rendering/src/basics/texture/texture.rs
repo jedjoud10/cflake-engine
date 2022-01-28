@@ -144,14 +144,16 @@ impl Texture {
         let height = textures.get(0)?.ttype.get_height();
         for texture in textures {
             // Check if we have the same settings
-            if texture.ttype.get_height() != height || texture.ttype.get_width() != width { return None; } 
+            if texture.ttype.get_height() != height || texture.ttype.get_width() != width {
+                return None;
+            }
             bytes.extend(texture.bytes.iter());
         }
         Some(bytes)
     }
     // Convert an array of CPU textures to a TextureArray
     // This will use the settings of the first texture in the array
-    pub fn convert_texturearray(textures: Vec<&Texture>) -> Option<Texture> {       
+    pub fn convert_texturearray(textures: Vec<&Texture>) -> Option<Texture> {
         let width = textures.get(0)?.ttype.get_width();
         let height = textures.get(0)?.ttype.get_height();
         Some(Texture {

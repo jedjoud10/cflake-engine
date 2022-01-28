@@ -61,7 +61,9 @@ fn invalid_err() -> ComponentError {
 impl LinkedComponents {
     // Get the entity ID of our corresponding entity
     pub fn get_entity_id(&self) -> Option<EntityID> {
-        if !self.id.1 { return None }
+        if !self.id.1 {
+            return None;
+        }
         Some(EntityID(self.id.0))
     }
     // Get the component ID of a specific component that this entity has

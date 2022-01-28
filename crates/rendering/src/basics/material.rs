@@ -27,7 +27,11 @@ pub struct Material {
 
 impl Default for Material {
     fn default() -> Self {
-        let mut me = Self { shader: Default::default(), flags: Default::default(), uniforms: Default::default() };
+        let mut me = Self {
+            shader: Default::default(),
+            flags: Default::default(),
+            uniforms: Default::default(),
+        };
         // Create some default uniforms
         let group = &mut me.uniforms;
         group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
@@ -107,7 +111,7 @@ impl Material {
         self.uniforms.set_vec3f32("tint", tint);
         self
     }
-    // Set the normal map's strength 
+    // Set the normal map's strength
     pub fn set_normals_strength(mut self, strength: f32) -> Self {
         self.uniforms.set_f32("normals_strength", strength);
         self
@@ -119,7 +123,7 @@ impl Material {
     }
 
     pub fn set_pre_construct_settings(&mut self, diffuse_tex: ObjectID<Texture>, emissive_tex: ObjectID<Texture>, normals_tex: ObjectID<Texture>) {
-        let group = &mut self.uniforms;        
+        let group = &mut self.uniforms;
         if !group.contains_uniform("diffuse_tex") {
             group.set_texture("diffuse_tex", diffuse_tex, 0);
         }

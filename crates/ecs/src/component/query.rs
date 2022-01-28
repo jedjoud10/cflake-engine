@@ -31,11 +31,15 @@ impl ComponentQuery {
                 ComponentQueryIterType::ArcHashMap(arc) => {
                     let mut lock = arc.lock().unwrap();
                     let linked = lock.get_mut(&id);
-                    if let Some(linked) = linked { function(linked); }
+                    if let Some(linked) = linked {
+                        function(linked);
+                    }
                 }
                 ComponentQueryIterType::HashMap(mut hashmap) => {
                     let linked = hashmap.get_mut(&id);
-                    if let Some(linked) = linked { function(linked); }
+                    if let Some(linked) = linked {
+                        function(linked);
+                    }
                 }
             }
         }

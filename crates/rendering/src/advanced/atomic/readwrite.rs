@@ -1,8 +1,11 @@
-use std::sync::{atomic::{AtomicU32, Ordering}, Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicU32, Ordering},
+    Arc, Mutex,
+};
 
 use arrayvec::ArrayVec;
 
-use crate::basics::transfer::{Transferable, Transfer};
+use crate::basics::transfer::{Transfer, Transferable};
 
 // A transferable type that we can use to read back the value of a specific atomic group
 #[derive(Default, Clone)]
@@ -10,7 +13,6 @@ pub struct AtomicGroupRead {
     // The inner value that we will set with the atomic counters' uints
     pub(crate) inner: Arc<Mutex<ArrayVec<u32, 4>>>,
 }
-
 
 impl AtomicGroupRead {
     // Read back the value of a single atomic using it's atomic index
@@ -23,8 +25,6 @@ impl AtomicGroupRead {
 
 impl Transferable for AtomicGroupRead {
     fn transfer(&self) -> Transfer<Self> {
-        Transfer(Self {
-            inner: self.inner.clone()
-        })
+        Transfer(Self { inner: self.inner.clone() })
     }
 }

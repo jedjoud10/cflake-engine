@@ -1,6 +1,15 @@
-use std::sync::{atomic::{AtomicU32, Ordering, AtomicU8}, Arc};
-use crate::{basics::{transfer::{Transferable, Transfer}, Buildable}, object::{PipelineObject, ObjectID, PipelineTask, ObjectBuildingTask}};
+use crate::{
+    basics::{
+        transfer::{Transfer, Transferable},
+        Buildable,
+    },
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+};
 use arrayvec::ArrayVec;
+use std::sync::{
+    atomic::{AtomicU32, AtomicU8, Ordering},
+    Arc,
+};
 
 // The clear condition telling us when we should clear the atomic counter
 #[derive(Clone)]
@@ -19,23 +28,22 @@ pub struct AtomicGroup {
     // This also stores the number of valid atomics that we have
     pub(crate) defaults: ArrayVec<u32, 4>,
     // When should we clear this atomic buffer?
-    pub(crate) condition: ClearCondition, 
+    pub(crate) condition: ClearCondition,
 }
 
 impl Default for AtomicGroup {
     fn default() -> Self {
         let mut arrayvec = ArrayVec::<u32, 4>::new();
         arrayvec.push(0);
-        Self { 
+        Self {
             oid: 0,
             defaults: arrayvec,
-            condition: ClearCondition::DontClear
+            condition: ClearCondition::DontClear,
         }
     }
 }
 
-impl PipelineObject for AtomicGroup {
-}
+impl PipelineObject for AtomicGroup {}
 
 impl Buildable for AtomicGroup {
     fn construct_task(self, pipeline: &crate::pipeline::Pipeline) -> (crate::object::PipelineTask, crate::object::ObjectID<Self>) {
@@ -55,7 +63,7 @@ impl AtomicGroup {
         Some(Self {
             oid: 0,
             defaults: arrayvec,
-            condition: ClearCondition::DontClear
+            condition: ClearCondition::DontClear,
         })
     }
     // Set the clear condition

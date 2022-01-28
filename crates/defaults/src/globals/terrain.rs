@@ -1,14 +1,18 @@
 use main::{
-    ecs::{entity::EntityID, impl_component, component::ComponentID},
+    ecs::{component::ComponentID, entity::EntityID, impl_component},
     math::{
         self,
         octrees::{AdvancedOctree, Octree, OctreeNode},
     },
     rendering::{
-        advanced::{compute::ComputeShader, atomic::{AtomicGroup, AtomicGroupRead, ClearCondition}},
+        advanced::{
+            atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
+            compute::ComputeShader,
+        },
         basics::{
+            material::Material,
             shader::ShaderSettings,
-            texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping, TextureReadBytes}, material::Material,
+            texture::{Texture, TextureFilter, TextureFormat, TextureReadBytes, TextureType, TextureWrapping},
         },
         object::{ObjectID, TrackedTaskID},
         pipeline::pipec,
@@ -20,14 +24,14 @@ use std::collections::HashMap;
 
 // Some data that we store whenever we are generating the voxels
 pub struct TerrainGenerationData {
-    // The ID of the main tracked task 
+    // The ID of the main tracked task
     pub main_id: TrackedTaskID,
     // The Entity ID of the chunk that we are generating this voxel data for
-    pub chunk_id: EntityID, 
+    pub chunk_id: EntityID,
 
     // Reading the data back
     pub texture_reads: (TextureReadBytes, TextureReadBytes),
-    pub atomic_read: AtomicGroupRead
+    pub atomic_read: AtomicGroupRead,
 }
 
 // The global terrain component that can be added at the start of the game
@@ -64,27 +68,17 @@ impl Terrain {
         let octree = AdvancedOctree::new(internal_octree, can_node_subdivide_twin);
 
         // Load the compute shader
-        let ss = ShaderSettings::default()
-            .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER);
+        let ss = ShaderSettings::default().source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER);
         let base_compute = ComputeShader::new(ss).unwrap();
         let base_compute = pipec::construct(base_compute, pipeline);
 
-        let ss = ShaderSettings::default()
-            .source(main::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER);
+        let ss = ShaderSettings::default().source(main::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER);
         let second_compute = ComputeShader::new(ss).unwrap();
         let second_compute = pipec::construct(second_compute, pipeline);
 
         // Create le textures
-        let texture_dimensions = TextureType::Texture3D(
-            (MAIN_CHUNK_SIZE + 2) as u16,
-            (MAIN_CHUNK_SIZE + 2) as u16,
-            (MAIN_CHUNK_SIZE + 2) as u16,
-        );
-        let texture_dimension_minus_one = TextureType::Texture3D(
-            (MAIN_CHUNK_SIZE + 1) as u16,
-            (MAIN_CHUNK_SIZE + 1) as u16,
-            (MAIN_CHUNK_SIZE + 1) as u16,
-        );
+        let texture_dimensions = TextureType::Texture3D((MAIN_CHUNK_SIZE + 2) as u16, (MAIN_CHUNK_SIZE + 2) as u16, (MAIN_CHUNK_SIZE + 2) as u16);
+        let texture_dimension_minus_one = TextureType::Texture3D((MAIN_CHUNK_SIZE + 1) as u16, (MAIN_CHUNK_SIZE + 1) as u16, (MAIN_CHUNK_SIZE + 1) as u16);
         // Create the textures
         let base_texture = Texture::default()
             .set_dimensions(texture_dimensions)
@@ -116,7 +110,6 @@ impl Terrain {
         // Also construct the atomic
         let atomic = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), pipeline);
 
-        
         Self {
             octree,
             chunks: HashMap::default(),
@@ -128,7 +121,7 @@ impl Terrain {
             base_texture,
             material_texture,
             normals_texture,
-            counters: atomic
+            counters: atomic,
         }
     }
 }

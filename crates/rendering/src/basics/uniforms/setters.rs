@@ -1,6 +1,9 @@
 use std::mem::size_of;
 
-use crate::{basics::texture::{Texture, TextureAccessType}, advanced::atomic::AtomicGroup};
+use crate::{
+    advanced::atomic::AtomicGroup,
+    basics::texture::{Texture, TextureAccessType},
+};
 
 // Actually set the shader uniforms
 #[allow(temporary_cstring_as_ptr)]

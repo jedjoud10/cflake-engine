@@ -63,11 +63,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         let voxel1 = &voxels[index1];
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = if interpolation {
-                            inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32)
-                        } else {
-                            0.5
-                        };
+                        let value: f32 = if interpolation { inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32) } else { 0.5 };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
@@ -132,7 +128,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
             |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
             transform_y_local,
         );
-    }    
+    }
     TModel { model, skirts_model, coords }
 }
 
@@ -210,11 +206,7 @@ pub fn calculate_marching_square_case(
             let voxel2 = voxels[i + density_offset[two_voxels[1] as usize]];
             // Check if the edge is intersecting the surface
             if (voxel1.density <= 0.0) ^ (voxel2.density <= 0.0) {
-                let value: f32 = if interpolation {
-                    inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32)
-                } else {
-                    0.5
-                };
+                let value: f32 = if interpolation { inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32) } else { 0.5 };
                 // Interpolate between the two voxels
                 let normal = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
                 // We must get the local offset of these two voxels

@@ -9,7 +9,6 @@ pub struct Chunk {
     pub voxel_data: Option<VoxelData>,
     pub valid_surface: bool,
     pub valid_model: bool,
-
 }
 
 // Main traits implemented
@@ -18,7 +17,7 @@ ecs::impl_component!(Chunk);
 impl Chunk {
     // New
     pub fn new(coords: ChunkCoords) -> Self {
-        Self { 
+        Self {
             coords,
             voxel_data: None,
             valid_surface: false,

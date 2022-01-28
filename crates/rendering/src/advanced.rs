@@ -1,2 +1,2 @@
-pub mod compute;
 pub mod atomic;
+pub mod compute;

@@ -1,10 +1,9 @@
 use core::slice;
-use std::{any::TypeId, mem::size_of, marker::PhantomData};
+use std::{any::TypeId, marker::PhantomData, mem::size_of};
 
-use veclib::{UnsizedVector, Vector, VectorElemCount, SupportedValue};
+use veclib::{SupportedValue, UnsizedVector, Vector, VectorElemCount};
 
 use crate::utils::DataType;
-
 
 // A stored custom verted data buffer
 pub(crate) struct StoredCustomVertexDataBuffer {

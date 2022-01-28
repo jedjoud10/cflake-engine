@@ -1,12 +1,16 @@
 use crate::{
-    advanced::{compute::{ComputeShader, ComputeShaderExecutionSettings}, atomic::{AtomicGroup, AtomicGroupRead}},
+    advanced::{
+        atomic::{AtomicGroup, AtomicGroupRead},
+        compute::{ComputeShader, ComputeShaderExecutionSettings},
+    },
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureReadBytes, TextureType, TextureWrapping},
-        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings}, transfer::Transfer,
+        transfer::Transfer,
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
@@ -104,7 +108,7 @@ impl Pipeline {
 
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
-            PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),            
+            PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
 
             // Window tasks
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
@@ -158,10 +162,16 @@ impl Pipeline {
                     PipelineTaskCombination::SingleReqTracked(_, require) => {
                         // Only let this task through if the required tracked task completed first
                         self.completed_tracked_tasks.contains(require) || self.completed_finalizers.contains(require)
-                    },
+                    }
                     PipelineTaskCombination::SingleTracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
-                        let valid = require.and_then(|x| if self.completed_tracked_tasks.contains(&x) || self.completed_finalizers.contains(&x) { None } else { Some(()) });
+                        let valid = require.and_then(|x| {
+                            if self.completed_tracked_tasks.contains(&x) || self.completed_finalizers.contains(&x) {
+                                None
+                            } else {
+                                Some(())
+                            }
+                        });
                         valid.is_none()
                     }
                     PipelineTaskCombination::SingleTrackedFinalizer(_, requirements) => {
@@ -594,12 +604,7 @@ impl Pipeline {
                 let vec = &model.custom.as_ref().unwrap().inner;
                 let byte_len = vec.len() as isize;
                 let ptr = vec.as_ptr() as *const c_void;
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    byte_len,
-                    ptr,
-                    gl::STATIC_DRAW,
-                );
+                gl::BufferData(gl::ARRAY_BUFFER, byte_len, ptr, gl::STATIC_DRAW);
             }
 
             // Create the vertex attrib arrays
@@ -884,14 +889,24 @@ impl Pipeline {
     // Create an atomic counter buffer that we can use inside fragment and compute shaders
     fn atomic_group_create(&mut self, task: ObjectBuildingTask<AtomicGroup>) {
         let mut atomic = task.0;
-        // Create the OpenGL atomic buffer 
+        // Create the OpenGL atomic buffer
         let mut buffer = 0_u32;
         unsafe {
             gl::GenBuffers(1, &mut buffer);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buffer);
-            gl::BufferData(gl::ATOMIC_COUNTER_BUFFER, size_of::<u32>() as isize * atomic.defaults.len() as isize, null(), gl::DYNAMIC_DRAW);
+            gl::BufferData(
+                gl::ATOMIC_COUNTER_BUFFER,
+                size_of::<u32>() as isize * atomic.defaults.len() as isize,
+                null(),
+                gl::DYNAMIC_DRAW,
+            );
             let reset = atomic.defaults.as_ptr();
-            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * atomic.defaults.len() as isize, reset as *const c_void);
+            gl::BufferSubData(
+                gl::ATOMIC_COUNTER_BUFFER,
+                0,
+                size_of::<u32>() as isize * atomic.defaults.len() as isize,
+                reset as *const c_void,
+            );
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
         atomic.oid = buffer;
@@ -903,27 +918,41 @@ impl Pipeline {
         unsafe {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic.oid);
             let reset = atomic.defaults.as_ptr();
-            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * atomic.defaults.len() as isize, reset as *const c_void);
+            gl::BufferSubData(
+                gl::ATOMIC_COUNTER_BUFFER,
+                0,
+                size_of::<u32>() as isize * atomic.defaults.len() as isize,
+                reset as *const c_void,
+            );
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, transfer: Transfer<AtomicGroupRead>) -> GlTracker {
-        GlTracker::new(|pipeline| unsafe {
-            // Get the atomic group object first
-            let atomic = self.get_atomic_group(id).unwrap();
-            // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
-            let oid = atomic.oid;
-            let mut counts: [u32; 4] = [0, 0, 0, 0];
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
-            gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * atomic.defaults.len() as isize, counts.as_mut_ptr() as *mut c_void);
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-            // Now store the atomic counters' values
-            let mut cpu_counters_lock = transfer.0.inner.lock().unwrap();
-            let cpu_counters = &mut *cpu_counters_lock;
-            cpu_counters.clear();
-            cpu_counters.try_extend_from_slice(&counts).unwrap();
-        }, |_| {}, self)        
+        GlTracker::new(
+            |pipeline| unsafe {
+                // Get the atomic group object first
+                let atomic = self.get_atomic_group(id).unwrap();
+                // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
+                let oid = atomic.oid;
+                let mut counts: [u32; 4] = [0, 0, 0, 0];
+                gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
+                gl::GetBufferSubData(
+                    gl::ATOMIC_COUNTER_BUFFER,
+                    0,
+                    size_of::<u32>() as isize * atomic.defaults.len() as isize,
+                    counts.as_mut_ptr() as *mut c_void,
+                );
+                gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+                // Now store the atomic counters' values
+                let mut cpu_counters_lock = transfer.0.inner.lock().unwrap();
+                let cpu_counters = &mut *cpu_counters_lock;
+                cpu_counters.clear();
+                cpu_counters.try_extend_from_slice(&counts).unwrap();
+            },
+            |_| {},
+            self,
+        )
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {

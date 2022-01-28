@@ -15,7 +15,7 @@ pub enum DataType {
 }
 
 impl DataType {
-    // Convert this data type to an OpenGL data type 
+    // Convert this data type to an OpenGL data type
     pub fn convert(&self) -> u32 {
         match self {
             DataType::U8 => gl::UNSIGNED_BYTE,

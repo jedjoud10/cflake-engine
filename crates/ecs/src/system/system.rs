@@ -62,13 +62,12 @@ impl System {
             lock.remove(&id);
             let mut removed_lock = self.removed.lock().unwrap();
             removed_lock.insert(id, linked_components);
-        }        
+        }
     }
     // Create a SystemExecutionData that we can actually run at a later time
     pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
         // Create the component queries
         let all_components = self.evn_run.map(|_| ComponentQueryIterType::ArcHashMap(self.linked_components.clone()));
-
 
         // Get the added components
         let added_components = {
