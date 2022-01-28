@@ -585,6 +585,23 @@ impl Pipeline {
                     gl::STATIC_DRAW,
                 );
             }
+
+            // Add some custom data if we want to
+            if model.custom.valid() {
+                // Custom data moment
+                gl::GenBuffers(1, &mut buffers.custom_vertex_data);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
+                let vec = model.custom.inner.as_ref().unwrap();
+                let byte_len = vec.len() as isize;
+                let ptr = vec.as_ptr() as *const c_void;
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    byte_len,
+                    ptr,
+                    gl::STATIC_DRAW,
+                );
+            }
+
             // Create the vertex attrib arrays
             gl::EnableVertexAttribArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);

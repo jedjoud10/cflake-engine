@@ -44,4 +44,8 @@ impl CustomVertexDataBuffer {
         let bytes = get_bytes(&vertex_data);
         self.inner.as_mut().unwrap().extend_from_slice(bytes);
     }
+    // Check if we have some custom data stored
+    pub fn valid(&self) -> bool {
+        self.inner.is_some()
+    }
 }
