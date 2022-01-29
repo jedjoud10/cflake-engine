@@ -124,7 +124,7 @@ impl ComponentQuery {
         output_vec
     }
     // Update all the components in parallel, on multiple worker threads
-    pub fn update_all_threaded<F: Fn(&mut LinkedComponents) + 'static + Sync + Send>(self, function: F) {
+    pub fn update_all_threaded<F: Fn(&mut LinkedComponents) + Sync + Send>(self, function: F) {
         if let Some(_type) = self.linked_components {
             let thread_pool = self.thread_pool.lock().unwrap();
             match _type {

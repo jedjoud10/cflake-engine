@@ -259,13 +259,13 @@ impl<Context> ECSManager<Context> {
     }
     // Run the systems in sync, but their component updates are not
     // Used only for testing
-    pub(crate) fn run_systems(&self, context: Context)
+    pub(crate) fn run_systems(&self, mut context: Context)
     where
         Context: Clone,
     {
         for system in self.systems.iter() {
             let execution_data = system.run_system(self);
-            execution_data.run(context.clone());
+            execution_data.run(&mut context.clone());
         }
     }
     /* #endregion */

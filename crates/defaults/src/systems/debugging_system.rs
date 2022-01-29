@@ -5,7 +5,7 @@ use main::{
 };
 
 // The debugging system's update loop
-fn run(context: Context, _query: ComponentQuery) {
+fn run(context: &mut Context, _query: ComponentQuery) {
     // Check if we need to debug
     let read = context.read();
     let pipeline = read.pipeline.read().unwrap();

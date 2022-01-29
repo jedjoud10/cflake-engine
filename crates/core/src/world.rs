@@ -104,8 +104,8 @@ impl World {
                     system.run_system(&world.ecs)
                 };
                 // Actually execute the system now
-                let context = Context::convert(world);
-                execution_data.run(context);
+                let mut context = Context::convert(world);
+                execution_data.run(&mut context);
                 {
                     // Run the callback after executing a single system
                     let mut world = world.write().unwrap();

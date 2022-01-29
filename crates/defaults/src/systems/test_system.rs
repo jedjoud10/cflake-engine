@@ -23,7 +23,7 @@ pub(crate) struct TestSystemData {
 }
 
 // A simple system that we can use for testing
-fn run(mut context: Context, query: ComponentQuery) {
+fn run(mut context: &mut Context, query: ComponentQuery) {
     let mut write = context.write();
     // Execute the shader
     let mut data = write.ecs.global_mut::<TestSystemData>().unwrap();

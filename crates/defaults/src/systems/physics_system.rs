@@ -4,7 +4,7 @@ use main::{
 };
 
 // The physics system update loop
-fn run(context: Context, query: ComponentQuery) {
+fn run(context: &mut Context, query: ComponentQuery) {
     let read = context.read();
     // Get the world's delta time
     let delta = read.time.delta as f32;

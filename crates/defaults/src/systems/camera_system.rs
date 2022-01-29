@@ -4,7 +4,7 @@ use main::ecs;
 use main::input::Keys;
 
 // The camera system update loop
-fn run(mut context: Context, components: ComponentQuery) {
+fn run(context: &mut Context, components: ComponentQuery) {
     let mut write = context.write();
     // Rotate the camera around
     let mouse_pos = write.input.get_mouse_position();

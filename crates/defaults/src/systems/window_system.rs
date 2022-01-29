@@ -5,7 +5,7 @@ use main::ecs;
 use main::input::Keys;
 
 // The window system's update loop
-fn run(context: Context, _query: ComponentQuery) {
+fn run(context: &mut Context, _query: ComponentQuery) {
     let read = context.read();
     let pipeline = read.pipeline.read().unwrap();
     if read.input.map_changed("toggle_fullscreen") {

@@ -14,7 +14,7 @@ pub mod test {
     // A test context
     #[derive(Clone, Copy)]
     pub struct WorldContext;
-    fn run_system(_context: WorldContext, components: ComponentQuery) {
+    fn run_system(_context: &mut WorldContext, components: ComponentQuery) {
         // Transform the _context to RefContext using some magic fuckery
         components.update_all(|components| {
             let mut name = components.component_mut::<Name>().unwrap();
@@ -69,7 +69,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        fn internal_run(_context: WorldContext, components: ComponentQuery) {
+        fn internal_run(_context: &mut WorldContext, components: ComponentQuery) {
             /*
             // Transform the _context to RefContext using some magic fuckery
             components.update_all_threaded(|components| {
@@ -132,7 +132,7 @@ pub mod test {
         let context = WorldContext;
 
         // Make a simple system
-        fn internal_run(_context: WorldContext, components: ComponentQuery) {
+        fn internal_run(_context: &mut WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
                 let mut name = components.component_mut::<Name>().unwrap();
                 dbg!("Internal Run");
@@ -140,14 +140,14 @@ pub mod test {
                 *name = Name::new("Bob");
             });
         }
-        fn internal_remove_entity(_context: WorldContext, components: ComponentQuery) {
+        fn internal_remove_entity(_context: &mut WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
                 let name = components.component_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
                 assert_eq!(*name.name, "Bob".to_string());
             });
         }
-        fn internal_add_entity(_context: WorldContext, components: ComponentQuery) {
+        fn internal_add_entity(_context: &mut WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
                 let name = components.component_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
@@ -194,7 +194,7 @@ pub mod test {
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
         ecs.add_global(GlobalComponentTest { test_value: 10 }).unwrap();
         // Make a simple system
-        fn internal_run(_context: WorldContext, _query: ComponentQuery) {}
+        fn internal_run(_context: &mut WorldContext, _query: ComponentQuery) {}
 
         assert!(ecs.global::<GlobalComponentTest>().is_ok());
         assert!(ecs.global::<GlobalComponentTest2>().is_err());
