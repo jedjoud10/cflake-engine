@@ -1,6 +1,6 @@
-use crate::impl_component;
-
+use crate::component_derive::*;
 // A name component that can be added to named entities
+#[derive(Component)]
 pub struct Name {
     pub name: String,
 }
@@ -18,6 +18,7 @@ impl Name {
 }
 
 // A tag component that can be added to entities that contain some sort of "Tag" We can then search for entities with the same tag
+#[derive(Component)]
 pub struct Tagged {
     pub tag: String,
 }
@@ -33,19 +34,3 @@ impl Tagged {
         Self { tag: tag.to_string() }
     }
 }
-
-// Load state for entities
-pub enum LoadState {
-    Loaded,
-    Unloaded,
-}
-
-impl Default for LoadState {
-    fn default() -> Self {
-        Self::Unloaded
-    }
-}
-
-impl_component!(Name);
-impl_component!(Tagged);
-impl_component!(LoadState);

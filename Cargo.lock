@@ -306,10 +306,19 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "bitfield",
+ "ecs-derive",
  "lazy_static",
  "ordered_vec",
  "others",
  "worker_threads",
+]
+
+[[package]]
+name = "ecs-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -12,3 +12,4 @@ ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 worker_threads = { path = "../worker_threads" }
 others = { path = "../others" }
+ecs-derive = { path = "./ecs-derive"  }

@@ -3,6 +3,10 @@
 #![feature(bool_to_option)]
 #![feature(hash_drain_filter)]
 #![feature(negative_impls)]
+pub mod component_derive {
+    pub use crate::component::Component;
+    pub use ecs_derive::Component;
+}
 pub mod component;
 pub mod entity;
 mod manager;

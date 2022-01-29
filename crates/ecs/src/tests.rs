@@ -3,12 +3,12 @@ pub mod test {
     use bitfield::Bitfield;
 
     use crate::{
+        component_derive::*,
         component::{
             defaults::{Name, Tagged},
             registry, ComponentQuery,
         },
-        entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
-        impl_component, ECSManager,
+        entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID}, ECSManager,
     };
 
     // A test context
@@ -179,12 +179,17 @@ pub mod test {
     pub fn test_global_component() {
         // Also create the context
         let context = WorldContext;
+        #[derive(Component)]
         struct GlobalComponentTest {
             pub test_value: i32,
         }
-        impl_component!(GlobalComponentTest);
+        #[derive(Component)]
         struct GlobalComponentTest2 {}
-        impl_component!(GlobalComponentTest2);
+
+        #[derive(Component)]
+        struct Test<T: 'static> {
+            pub data: T,
+        }
         // Create the main ECS manager
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
         ecs.add_global(GlobalComponentTest { test_value: 10 }).unwrap();
