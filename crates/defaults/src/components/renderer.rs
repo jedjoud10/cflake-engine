@@ -1,5 +1,7 @@
 use main::rendering::{self, object::ObjectID};
+use main::ecs::component::Component;
 // An Renderer component
+#[derive(Component)]
 pub struct Renderer {
     // The CPU renderer that we will store until we send the construction task
     pub(crate) renderer: Option<rendering::basics::renderer::Renderer>,
@@ -17,6 +19,3 @@ impl Renderer {
         }
     }
 }
-
-// Main traits implemented
-main::ecs::impl_component!(Renderer);

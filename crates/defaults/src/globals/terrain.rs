@@ -1,5 +1,5 @@
 use main::{
-    ecs::{component::ComponentID, entity::EntityID, impl_component},
+    ecs::{component::{ComponentID, Component}, entity::EntityID},
     math::{
         self,
         octrees::{AdvancedOctree, Octree, OctreeNode},
@@ -18,9 +18,9 @@ use main::{
         pipeline::pipec,
         utils::DataType,
     },
-    terrain::{ChunkCoords, VoxelData, MAIN_CHUNK_SIZE},
+    terrain::{ChunkCoords, VoxelData, MAIN_CHUNK_SIZE, Voxable},
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData};
 
 // Some data that we store whenever we are generating the voxels
 pub struct TerrainGenerationData {
@@ -35,8 +35,9 @@ pub struct TerrainGenerationData {
     pub chunk_id: EntityID,
 }
 
+#[derive(Component)]
 // The global terrain component that can be added at the start of the game
-pub struct Terrain<T> {
+pub struct Terrain<U: Voxable + 'static> {
     // Chunk generation
     pub octree: AdvancedOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
@@ -46,15 +47,16 @@ pub struct Terrain<T> {
     pub generating: Option<TerrainGenerationData>,
     pub base_compute: ObjectID<ComputeShader>,
     pub second_compute: ObjectID<ComputeShader>,
-    pub test: T,
     
     // Atomics
     pub counters: ObjectID<AtomicGroup>,
+
+    _phantom: PhantomData<U>,
 }
 
-impl<T> Terrain<T> {
+impl<V: Voxable + 'static> Terrain<V> {
     // Create a new terrain component
-    pub fn new(test: T, voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
+    pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
         // Check if a an already existing node could be subdivided even more
         fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
             let c: veclib::Vector3<f32> = node.get_center().into();
@@ -94,23 +96,9 @@ impl<T> Terrain<T> {
             material,
             generating: None,
             base_compute,
-            test,
             second_compute,
             counters: atomic,
+            _phantom: PhantomData::default(),
         }
     }
 }
-
-// Main traits implemented
-impl<T: 'static> main::ecs::component::Component for Terrain<T> {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn get_component_name() -> String {
-        String::from(stringify!(Terrain<T>).split(" ").last().unwrap().to_string())
-    }
-}
-

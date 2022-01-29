@@ -1,20 +1,18 @@
 use main::{
-    ecs,
+    ecs::component::Component,
     terrain::{ChunkCoords, VoxelData, Voxable},
 };
 
 // A component that will be added to chunk entities
-pub struct Chunk<V> {
+#[derive(Component)]
+pub struct Chunk<V: Voxable + 'static> {
     pub coords: ChunkCoords,
     pub voxel_data: Option<VoxelData<V>>,
     pub valid_surface: bool,
     pub valid_model: bool,
 }
 
-// Main traits implemented
-ecs::impl_component!(Chunk);
-
-impl Chunk {
+impl<V: Voxable + 'static> Chunk<V> {
     // New
     pub fn new(coords: ChunkCoords) -> Self {
         Self {

@@ -87,9 +87,15 @@ pub fn init(mut write: core::WriteContext) {
     let material = rendering::pipeline::pipec::construct(material, &*pipeline);
 
     // Create a simple voxel
-
+    pub struct SimpleVoxel;
+    impl terrain::Voxable for SimpleVoxel {
+        // Linearly interpolate between v1 and v2 using t
+        fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self {
+            Self
+        }
+    } 
 
     // Add the terrain
-    let terrain = defaults::globals::Terrain::<f32>::new(0.0, terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
+    let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
     write.ecs.add_global(terrain).unwrap();
 }

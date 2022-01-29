@@ -13,6 +13,7 @@ use main::rendering::utils::AccessType::Read;
 use main::rendering::utils::UpdateFrequency;
 
 // Some global data for the test system
+#[derive(Component)]
 pub(crate) struct TestSystemData {
     shader_storage: ObjectID<ShaderStorage>,
     compute_shader: ObjectID<ComputeShader>,
@@ -20,7 +21,6 @@ pub(crate) struct TestSystemData {
     compute: ReservedTrackedTaskID,
     read: ReservedTrackedTaskID,
 }
-ecs::impl_component!(TestSystemData);
 
 // A simple system that we can use for testing
 fn run(mut context: Context, query: ComponentQuery) {

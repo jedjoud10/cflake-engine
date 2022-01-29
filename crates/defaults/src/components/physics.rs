@@ -1,7 +1,8 @@
 use main::physics::PhysicsObject;
+use main::ecs::component::Component;
 
 // A physics component
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Component)]
 pub struct Physics {
     pub(crate) object: PhysicsObject,
 }
@@ -13,6 +14,3 @@ impl Physics {
         self.object.set_velocity(vel);
     }
 }
-
-// Main traits implemented
-main::ecs::impl_component!(Physics);

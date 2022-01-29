@@ -1,10 +1,8 @@
-use main::ecs::impl_component;
+use main::ecs::component::Component;
 
 // Some global world data
-#[derive(Default)]
+#[derive(Default, Component)]
 pub struct GlobalWorldData {
     // Camera values
     pub camera_pos: veclib::Vector3<f32>,
 }
-
-impl_component!(GlobalWorldData);

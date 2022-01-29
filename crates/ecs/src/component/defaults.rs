@@ -1,4 +1,4 @@
-use crate::component_derive::*;
+use crate::component::Component;
 // A name component that can be added to named entities
 #[derive(Component)]
 pub struct Name {

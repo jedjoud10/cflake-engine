@@ -3,10 +3,10 @@ pub mod test {
     use bitfield::Bitfield;
 
     use crate::{
-        component_derive::*,
         component::{
             defaults::{Name, Tagged},
             registry, ComponentQuery,
+            Component,
         },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID}, ECSManager,
     };

@@ -1,6 +1,6 @@
-use main::math;
+use main::{math, ecs::component::Component};
 // An AABB component
-#[derive(Default)]
+#[derive(Default, Component)]
 pub struct AABB {
     pub aabb: math::bounds::AABB,
     pub generation_type: AABBGenerationType,
@@ -33,6 +33,3 @@ impl AABB {
         aabb
     }
 }
-
-// Main traits implemented
-main::ecs::impl_component!(AABB);

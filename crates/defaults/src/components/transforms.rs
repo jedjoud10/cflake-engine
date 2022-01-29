@@ -1,5 +1,6 @@
-// Transforms components
+use main::ecs::component::Component;
 // The transform component
+#[derive(Component)]
 pub struct Transform {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
@@ -46,5 +47,3 @@ impl Transform {
         veclib::Matrix4x4::<f32>::from_translation(self.position) * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation) * veclib::Matrix4x4::<f32>::from_scale(self.scale)
     }
 }
-
-main::ecs::impl_component!(Transform);
