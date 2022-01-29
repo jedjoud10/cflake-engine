@@ -56,8 +56,7 @@ pub fn preload_default_assets() {
     // Textures
     preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png");
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png");
-    preload_asset!(".\\resources\\defaults\\textures\\rock_diffuse.png");
-    preload_asset!(".\\resources\\defaults\\textures\\rock_normal.png");
+
     println!("Finished pre-loading default assets!");
 }
 // Pre-load the default systems
@@ -68,7 +67,7 @@ pub fn preload_system(mut write: WriteContext) {
     rendering_system::system(&mut write);
     debugging_system::system(&mut write);
     window_system::system(&mut write);
-    test_system::system(&mut write);
+    //test_system::system(&mut write);
     // Terrain
     /*
     terrain::chunk_system::system(&mut write);

@@ -1,4 +1,8 @@
-use crate::{object::{PipelineObject, ObjectID, PipelineTask, ObjectBuildingTask}, basics::Buildable, utils::{UpdateFrequency, AccessType, UsageType}};
+use crate::{
+    basics::Buildable,
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    utils::{AccessType, UpdateFrequency, UsageType},
+};
 
 // An OpenGL SSBO
 pub struct ShaderStorage {
@@ -8,9 +12,8 @@ pub struct ShaderStorage {
     pub usage: UsageType,
     // Some default data
     pub(crate) bytes: Vec<u8>,
-    // The size in bytes of the underlying data 
+    // The size in bytes of the underlying data
     pub(crate) byte_size: usize,
-
 }
 
 impl PipelineObject for ShaderStorage {}
@@ -30,9 +33,9 @@ impl ShaderStorage {
     pub fn new<T: Sized>(frequency: UpdateFrequency, access: AccessType, byte_size: usize) -> Self {
         Self {
             oid: 0,
-            usage: UsageType { frequency, access }, 
-            bytes: Vec::new(),   
-            byte_size,      
+            usage: UsageType { frequency, access },
+            bytes: Vec::new(),
+            byte_size,
         }
     }
     // Create a new shader storage with some default data

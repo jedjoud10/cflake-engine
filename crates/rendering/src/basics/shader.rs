@@ -24,17 +24,37 @@ pub(crate) struct ShaderSource {
 }
 
 // Some shader settings that we can use to load the shader
-#[derive(Default)]
 pub struct ShaderSettings {
-    // Some external code that we can
+    // Some external code that we can load directly onto the shader
     pub(crate) external_code: HashMap<String, String>,
+    pub(crate) consts: HashMap<String, String>,
     pub(crate) sources: HashMap<String, ShaderSource>,
+}
+
+impl Default for ShaderSettings {
+    fn default() -> Self {
+        // Some actual default consts names and their values
+        let mut consts = HashMap::new();
+        consts.insert("fade_in_speed".to_string(), FADE_IN_SPEED.to_string());
+        consts.insert("fade_out_speed".to_string(), FADE_OUT_SPEED.to_string());
+
+        Self {
+            external_code: Default::default(),
+            consts,
+            sources: Default::default(),
+        }
+    }
 }
 
 impl ShaderSettings {
     // Load some external code that can be loading using specific include points
     pub fn external_code(mut self, id: &str, string: String) -> Self {
         self.external_code.insert(id.to_string(), string);
+        self
+    }
+    // Load some shader constants that can be loaded directly while compiling the shader
+    pub fn shader_constant<T: ToString>(mut self, id: &str, val: T) -> Self {
+        self.consts.insert(id.to_string(), val.to_string());
         self
     }
     // Load a shader source
@@ -59,23 +79,12 @@ impl ShaderSettings {
     }
 }
 
-// Shader flasg
-bitflags! {
-    pub struct ShaderFlags: u8 {
-        const NONE = 0b00000000;
-        const GENERAL = 0b00000001;
-        const RENDERER = 0b00000010;
-    }
-}
-
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
 pub struct Shader {
     // The OpenGL program linked to this shader
     pub(crate) program: u32,
     // The updated and modified shader sources
     pub(crate) sources: HashMap<String, ShaderSource>,
-    // Some shader flags
-    pub(crate) flags: ShaderFlags,
 }
 impl PipelineObject for Shader {}
 
@@ -89,7 +98,7 @@ impl Buildable for Shader {
 }
 
 // Load the files that need to be included for this specific shader and return the included lines
-pub(crate) fn load_includes(flags: &mut ShaderFlags, settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
+pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
     // Turn the string into lines
     let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
     for (_i, line) in lines.iter_mut().enumerate() {
@@ -127,33 +136,19 @@ pub(crate) fn load_includes(flags: &mut ShaderFlags, settings: &ShaderSettings, 
                 // Refactor this
                 "renderer" => {
                     *line = "#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string();
-                    *flags = ShaderFlags::RENDERER;
                     Ok(())
                 }
                 "general" => {
                     *line = "#include defaults\\shaders\\others\\default_impls\\general.func.glsl".to_string();
-                    *flags = ShaderFlags::RENDERER;
                     Ok(())
                 }
                 "renderer_main_start" => {
                     *line = "#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string();
-                    if !flags.contains(ShaderFlags::RENDERER) {
-                        Err(RenderingError::new_str(
-                            "Tried to expand #load renderer_main_start, but the current shader does not import '#load renderer' in the first place!",
-                        ))
-                    } else {
-                        Ok(())
-                    }
+                    Ok(())
                 }
                 "renderer_life_fade" => {
                     *line = "#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string();
-                    if !flags.contains(ShaderFlags::RENDERER) {
-                        Err(RenderingError::new_str(
-                            "Tried to expand #load renderer_life_fade, but the current shader does not import '#load renderer' in the first place!",
-                        ))
-                    } else {
-                        Ok(())
-                    }
+                    Ok(())
                 }
                 x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
             };
@@ -165,18 +160,17 @@ pub(crate) fn load_includes(flags: &mut ShaderFlags, settings: &ShaderSettings, 
             fn format(line: &String, val: String) -> String {
                 format!("{} {};", line.trim().split("#constant").next().unwrap(), val)
             }
-            let x = match line.split("#constant ").collect::<Vec<&str>>()[1] {
-                "fade_in_speed" => {
-                    *line = format(line, FADE_IN_SPEED.to_string());
-                    Ok(())
-                }
-                "fade_out_speed" => {
-                    *line = format(line, FADE_OUT_SPEED.to_string());
-                    Ok(())
-                }
-                x => Err(RenderingError::new(format!("Tried to expand #constant, but the given type '{}' is not valid!", x))),
-            };
-            x?;
+            let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
+            let x = settings.consts.get(const_name);
+            if let Some(x) = x {
+                *line = format(line, FADE_IN_SPEED.to_string());
+                Ok(())
+            } else {
+                Err(RenderingError::new(format!(
+                    "Tried to expand #constant, but the given const name '{}' is not valid!",
+                    const_name
+                )))
+            }?;
             break;
         }
     }
@@ -196,7 +190,6 @@ impl Shader {
         let mut shader = Self {
             program: 0,
             sources: HashMap::default(),
-            flags: ShaderFlags::NONE,
         };
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through the shader sources and edit them
@@ -205,7 +198,7 @@ impl Shader {
         for (source_path, mut source_data) in sources {
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
             // Include the includables until they cannot be included
-            while load_includes(&mut shader.flags, &settings, &mut source_data.text, &mut included_paths)? {
+            while load_includes(&settings, &mut source_data.text, &mut included_paths)? {
                 // We are still including paths
             }
             // Add this shader source to be generated as a subshader

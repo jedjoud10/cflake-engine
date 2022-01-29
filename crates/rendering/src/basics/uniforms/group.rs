@@ -6,7 +6,10 @@ use std::{
 use veclib::Vector;
 
 use crate::{
-    advanced::{atomic::{AtomicGroup, ClearCondition}, shaderstorage::ShaderStorage},
+    advanced::{
+        atomic::{AtomicGroup, ClearCondition},
+        shaderstorage::ShaderStorage,
+    },
     basics::{
         texture::{Texture, TextureAccessType},
         transfer::Transfer,

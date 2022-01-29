@@ -9,74 +9,18 @@ use crate::globals::TerrainGenerationData;
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
     // Create the compute shader execution settings and execute the compute shader
     let compute = terrain.base_compute;
-    const AXIS: u16 = (MAIN_CHUNK_SIZE + 1) as u16 / 8 + 1;  
+    const AXIS: u16 = (MAIN_CHUNK_SIZE + 1) as u16 / 8 + 1;
+
     // Set the uniforms for the compute shader as well
     let mut group = ShaderUniformsGroup::new();
-    group.set_image("base_image", terrain.base_texture, TextureAccessType::WRITE);
-
+    
     // Chunk specific uniforms
     let chunk_coords = chunk.coords;
     group.set_i32("chunk_size", (MAIN_CHUNK_SIZE + 2) as i32);
     group.set_vec3f32("node_pos", veclib::Vector3::<f32>::from(chunk_coords.position));
-    group.set_i32("node_size", chunk_coords.size as i32);
-    group.set_i32("depth", chunk_coords.depth as i32);
-
-    // Also create the uniforms for out second compute shader
-    
-
-    // Create this for the next step
-    let read_densities = TextureReadBytes::default();
-    let read_materials = TextureReadBytes::default();
-    let read_counters = AtomicGroupRead::default();
-    let read_densities_transfer = read_densities.transfer();
-    let read_materials_transfer = read_materials.transfer();
-    let read_counters_transfer = read_counters.transfer();
-    // Set the atomic counter
-    group.set_atomic_group("_", terrain.counters, 2);
-
-    // Now we can execute the compute shader and the read bytes command
-    let execution_settings = ComputeShaderExecutionSettings::new(compute, (AXIS, AXIS, AXIS)).set_uniforms(group);
-    let execution = pipec::tracked_task(PipelineTrackedTask::RunComputeShader(compute, execution_settings), None, pipeline);
-    
-    let read_densities_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.density_texture, read_densities_transfer), Some(execution), pipeline);
-    let read_materials_tracked_id = pipec::tracked_task(PipelineTrackedTask::TextureReadBytes(terrain.material_texture, read_materials_transfer), Some(execution), pipeline);
-    let read_counters_tracked_id = pipec::tracked_task(PipelineTrackedTask::AtomicGroupRead(terrain.counters, read_counters_transfer), Some(execution), pipeline);
-
-    // Combine the tasks to make a finalizer one
-    let main = pipec::tracked_finalizer(vec![execution, read_densities_tracked_id, read_materials_tracked_id, read_counters_tracked_id], pipeline).unwrap();
-    terrain.generating = Some(TerrainGenerationData {
-        main_id: main,
-        chunk_id: id,
-        texture_reads: (read_densities, read_materials),
-        atomic_read: read_counters,
-    });
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    // Load the read containers that we passed to the pipeline
-    let data = terrain.generating.take().unwrap();
-
-    // Load the actual voxels now
-    let voxel_pixels = data.texture_reads.0.fill_vec::<veclib::Vector4<f32>>().unwrap();
-    let material_pixels = data.texture_reads.1.fill_vec::<veclib::Vector2<u8>>().unwrap();
-    // Create the voxel data on the heap since it's going to be pretty big
-    let voxels = voxel_pixels
-        .into_iter()
-        .zip(material_pixels.into_iter())
-        .map(|(density, material)| Voxel {
-            density,
-            material_id: material.x,
-        }).collect::<Vec<Voxel>>();
-    let voxels = voxels.into_boxed_slice();
-    let voxel_data = VoxelData(voxels);
-    
-    let positive = data.atomic_read.get(0).unwrap();
-    let negative = data.atomic_read.get(1).unwrap();
-    // Check if we have a valid surface that we can create a mesh out of
-    let valid_surface = positive > 0 && negative > 0;
-
-    chunk.voxel_data = Some(voxel_data);
-    chunk.valid_surface = valid_surface;
 }
 
 

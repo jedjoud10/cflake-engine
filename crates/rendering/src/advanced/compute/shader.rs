@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     basics::{
-        shader::{ShaderFlags, ShaderSettings, ShaderSource},
+        shader::{ShaderSettings, ShaderSource},
         Buildable,
     },
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
@@ -15,8 +15,6 @@ pub struct ComputeShader {
     pub(crate) program: u32,
     // We only have one shader source since we are a compute shader
     pub(crate) source: ShaderSource,
-    // Some shader flags
-    pub(crate) flags: ShaderFlags,
 }
 impl PipelineObject for ComputeShader {}
 
@@ -39,15 +37,10 @@ impl ComputeShader {
         // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
         // Include the includables until they cannot be included
         let (_, mut source_data) = sources.drain().collect::<Vec<_>>().remove(0);
-        let mut flags = ShaderFlags::NONE;
-        while crate::basics::shader::load_includes(&mut flags, &settings, &mut source_data.text, &mut included_paths)? {
+        while crate::basics::shader::load_includes(&settings, &mut source_data.text, &mut included_paths)? {
             // We are still including paths
         }
         // Add this shader source to be generated as a subshader
-        Ok(Self {
-            program: 0,
-            source: source_data,
-            flags,
-        })
+        Ok(Self { program: 0, source: source_data })
     }
 }

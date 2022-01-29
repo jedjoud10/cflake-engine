@@ -61,7 +61,6 @@ where
     }
 }
 
-
 // Atomic counter that we will use to get the next reserved tracked ID
 pub(crate) static RESERVED_TRACKED_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 // A tracking TaskID that we can use to check wether a specific task has executed or not
@@ -73,5 +72,5 @@ impl Default for ReservedTrackedTaskID {
     // We should do this only once if we are running a tracked task multiple times
     fn default() -> Self {
         Self(RESERVED_TRACKED_ID_COUNTER.fetch_add(1, Ordering::Relaxed))
-    }    
+    }
 }

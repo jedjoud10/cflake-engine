@@ -39,14 +39,12 @@ pub mod pipec {
     // Detect if a multitude of tasks have all executed
     pub fn did_tasks_execute(ids: &[ReservedTrackedTaskID], pipeline: &Pipeline) -> bool {
         // Check our sparse bitfield
-        let all = ids.iter().all(|x| {
-            let y = pipeline.completed_tasks.get(x.0);
-            println!("ID {}: {}", x.0, y);
-            y
-        });
-        
+        let all = ids.iter().all(|x| pipeline.completed_tasks.get(x.0));
+
         // If they did all execute, we have to reset
-        if all { ids.iter().for_each(|x| pipeline.completed_tasks.set(x.0, false)); }
+        if all {
+            ids.iter().for_each(|x| pipeline.completed_tasks.set(x.0, false));
+        }
         all
     }
     // Create a tracked task

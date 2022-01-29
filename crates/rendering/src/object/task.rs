@@ -4,18 +4,10 @@ use super::{ObjectID, PipelineObject, ReservedTrackedTaskID};
 use crate::{
     advanced::{
         atomic::{AtomicGroup, AtomicGroupRead},
-        compute::{ComputeShader, ComputeShaderExecutionSettings}, shaderstorage::ShaderStorage,
+        compute::{ComputeShader, ComputeShaderExecutionSettings},
+        shaderstorage::ShaderStorage,
     },
-    basics::{
-        material::Material,
-        model::Model,
-        renderer::Renderer,
-        shader::Shader,
-        texture::{Texture},
-        readwrite::ReadBytes,
-        transfer::Transfer,
-        Buildable,
-    },
+    basics::{material::Material, model::Model, readwrite::ReadBytes, renderer::Renderer, shader::Shader, texture::Texture, transfer::Transfer, Buildable},
     pipeline::camera::Camera,
 };
 

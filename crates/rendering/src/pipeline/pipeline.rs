@@ -1,17 +1,18 @@
 use crate::{
     advanced::{
         atomic::{AtomicGroup, AtomicGroupRead},
-        compute::{ComputeShader, ComputeShaderExecutionSettings}, shaderstorage::ShaderStorage,
+        compute::{ComputeShader, ComputeShaderExecutionSettings},
+        shaderstorage::ShaderStorage,
     },
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
+        readwrite::ReadBytes,
         renderer::Renderer,
         shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
-        readwrite::ReadBytes,
     },
     object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID, RESERVED_TRACKED_ID_COUNTER},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
@@ -133,7 +134,7 @@ impl Pipeline {
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
         let completed_ids = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
-        
+
         // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
         for (completed, _) in completed_ids {
             self.completed_tasks.set(completed.0, true);
@@ -158,13 +159,7 @@ impl Pipeline {
                     }
                     PipelineTaskCombination::SingleTracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
-                        let valid = require.and_then(|x| {
-                            if self.completed_tasks.get(x.0) {
-                                None
-                            } else {
-                                Some(())
-                            }
-                        });
+                        let valid = require.and_then(|x| if self.completed_tasks.get(x.0) { None } else { Some(()) });
                         valid.is_none()
                     }
                     _ => true,
@@ -275,7 +270,7 @@ impl Pipeline {
             None
         }
     }
-    
+
     // Mutable
     // Get a mutable material using it's respective ID
     pub fn get_material_mut(&mut self, id: ObjectID<Material>) -> Option<&mut Material> {
@@ -963,7 +958,7 @@ impl Pipeline {
             gl::GenBuffers(1, &mut shader_storage.oid);
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
             // Get the default data if we need to
-            let data_ptr = if !shader_storage.bytes.is_empty() { 
+            let data_ptr = if !shader_storage.bytes.is_empty() {
                 shader_storage.bytes.as_ptr() as *const c_void
             } else {
                 null() as *const c_void
@@ -1000,7 +995,10 @@ impl Pipeline {
                 // Now store the shader storage's bytes
                 let mut output_bytes = read.0.bytes.lock().unwrap();
                 *output_bytes = bytes;
-            }, |_| {}, self)
+            },
+            |_| {},
+            self,
+        )
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {

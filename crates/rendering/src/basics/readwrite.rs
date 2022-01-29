@@ -14,7 +14,7 @@ pub struct ReadBytes {
 }
 
 impl ReadBytes {
-    // Create a new read bytes with a specific range 
+    // Create a new read bytes with a specific range
     pub fn with_range(range: std::ops::Range<usize>) -> Self {
         Self {
             range: Some(range),

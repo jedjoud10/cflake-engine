@@ -6,8 +6,8 @@
 #include_custom {"voxel_include_path"}
 
 const float _CHUNK_SIZE = #constant chunk_size
-const float _CSPO = _CHUNK_SIZE + 1;
-const float _CSPT = _CHUNK_SIZE + 1;
+const float _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
+const float _CSPT = _CHUNK_SIZE + 1; // Chunk size plus two
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(binding = 2) uniform atomic_uint positive_counter;
@@ -20,7 +20,6 @@ layout(std430, binding = 3) buffer buffer_data
 };
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
-layout(location = 4) uniform int chunk_size;
 
 void main() {
     // Get the pixel coord
@@ -28,7 +27,7 @@ void main() {
 
     // Get the position
     vec3 pos = vec3(pixel_coords.xzy);    
-    float size = float(node_size) / (float(chunk_size) - 2.0);
+    float size = float(node_size) / (float(_CSPT) - 2.0);
     pos *= size;
     pos += node_pos;       
     // Check if we can actually do calculations or not

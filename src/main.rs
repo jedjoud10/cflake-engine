@@ -5,6 +5,8 @@ fn main() {
 }
 pub fn preload_assets() {
     // -----Pre-load the game assets here-----
+    assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
+    assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
 }
 pub fn init(mut write: core::WriteContext) {
     // ----Start the world----
@@ -17,18 +19,17 @@ pub fn init(mut write: core::WriteContext) {
     write.ecs.add_entity(entity, id, group).unwrap();
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read().unwrap();
-
     // Create it's model
     let mut model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
     let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
 
     // Create it's material
-    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_diffuse.png")
+    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png")
         .unwrap()
         .set_mipmaps(true);
     let texture = rendering::pipeline::pipec::construct(texture, &*pipeline);
 
-    let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("defaults\\textures\\rock_normal.png")
+    let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_normal.png")
         .unwrap()
         .set_mipmaps(true);
     let texture2 = rendering::pipeline::pipec::construct(texture2, &*pipeline);
@@ -36,6 +37,7 @@ pub fn init(mut write: core::WriteContext) {
     let material = rendering::basics::material::Material::default()
         .set_diffuse_texture(texture)
         .set_normals_texture(texture2)
+        .set_normals_strength(0.3)
         .set_uv_scale(veclib::Vector2::ONE * 3.0);
     let material = rendering::pipeline::pipec::construct(material, &*pipeline);
 

@@ -1,3 +1,3 @@
 pub mod atomic;
-pub mod shaderstorage;
 pub mod compute;
+pub mod shaderstorage;

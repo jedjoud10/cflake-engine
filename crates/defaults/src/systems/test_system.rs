@@ -29,28 +29,30 @@ fn run(mut context: Context, query: ComponentQuery) {
     let mut data = write.ecs.global_mut::<TestSystemData>().unwrap();
     let pipeline = write.pipeline.read().unwrap();
     if data.transfer.is_none() && pipeline.get_shader_storage(data.shader_storage).is_some() {
-        println!("Dispatch {}", write.time.frame_count);
         // Make the shader group
         let mut group = ShaderUniformsGroup::new();
         group.set_shader_storage("_", data.shader_storage, 0);
-        
+
         let settings = ComputeShaderExecutionSettings::new(data.compute_shader, (4, 1, 1)).set_uniforms(group);
         pipec::tracked_task(PipelineTrackedTask::RunComputeShader(data.compute_shader, settings), data.compute, &*pipeline);
         let read = ReadBytes::default();
         let transfer = read.transfer();
         data.transfer = Some(read);
-        pipec::tracked_task_requirement(PipelineTrackedTask::ShaderStorageReadBytes(data.shader_storage, transfer), data.read, data.compute, &*pipeline);
+        pipec::tracked_task_requirement(
+            PipelineTrackedTask::ShaderStorageReadBytes(data.shader_storage, transfer),
+            data.read,
+            data.compute,
+            &*pipeline,
+        );
     } else {
-        println!("Check {}", write.time.frame_count);
         if pipec::did_tasks_execute(&[data.compute, data.read], &*pipeline) {
             let taken = data.transfer.take().unwrap();
             // Read the bytes as a slice
             let read = taken.fill_vec::<i32>().unwrap();
-            println!("{:?}", read);
         }
     }
 }
-    
+
 // Create the system
 pub fn system(write: &mut WriteContext) {
     write.ecs.create_system_builder().set_run_event(run).build();
@@ -58,18 +60,20 @@ pub fn system(write: &mut WriteContext) {
     let pipeline = write.pipeline.read().unwrap();
     let arr = [1, 5, 2, -9];
     let shader_storage = pipec::construct(ShaderStorage::new_default(UpdateFrequency::Static, Read, arr, 4 * 4), &*pipeline);
-    
+
     let ss = ShaderSettings::default().source("defaults\\shaders\\others\\template_compute.cmpt.glsl");
     let compute_shader = ComputeShader::new(ss).unwrap();
     let compute_shader = pipec::construct(compute_shader, &*pipeline);
-    
-    
+
     drop(pipeline);
-    write.ecs.add_global(TestSystemData {
-        shader_storage,
-        compute_shader,
-        transfer: None,
-        compute: ReservedTrackedTaskID::default(),
-        read: ReservedTrackedTaskID::default(),
-    }).unwrap();
+    write
+        .ecs
+        .add_global(TestSystemData {
+            shader_storage,
+            compute_shader,
+            transfer: None,
+            compute: ReservedTrackedTaskID::default(),
+            read: ReservedTrackedTaskID::default(),
+        })
+        .unwrap();
 }
