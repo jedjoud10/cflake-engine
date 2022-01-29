@@ -1,19 +1,34 @@
 use std::ops::{Index, IndexMut};
 
-// A voxel trait that can contain some final voxel data that we read from the compute shader
-pub trait Voxable {
-    // Interpolate between two voxels
-    fn interpolate(v1: Self, v2: Self) -> Self;
-    // Get the density of our voxable
-    fn density() -> f32 {  }
-    // Get the normals of our voxable
+use rendering::basics::model::Model;
+
+// A simple voxel wrapper that contains some default voxel values and some extra values
+#[repr(C)]
+pub struct VoxelWrapper<T: Voxable> {
+    // Default values
+    pub density: f32,
+    pub normal: veclib::Vector4<f32>,
+
+    // Voxable values
+    pub extra: T,
+}
+
+
+// A voxel trait that can contain some extra data
+pub trait Voxable
+    where Self: Sized
+{
+    // Interpolate between two voxels values
+    fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self;
+    // Add our extra values to a model (ex: custom model data like tint)
+    fn push(self, model: &mut Model) {}
 }
 
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap
-pub struct VoxelData<V: Voxable>(pub Box<[V]>);
+pub struct VoxelData<V: Voxable>(pub Box<[VoxelWrapper<V>]>);
 
 impl<U: Voxable> Index<usize> for VoxelData<U> {
-    type Output = U;
+    type Output = VoxelWrapper<U>;
 
     fn index(&self, index: usize) -> &Self::Output {
         self.0.get(index).unwrap()

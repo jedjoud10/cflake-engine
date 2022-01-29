@@ -1,12 +1,12 @@
 use main::{
     ecs,
-    terrain::{ChunkCoords, VoxelData},
+    terrain::{ChunkCoords, VoxelData, Voxable},
 };
 
 // A component that will be added to chunk entities
-pub struct Chunk {
+pub struct Chunk<V> {
     pub coords: ChunkCoords,
-    pub voxel_data: Option<VoxelData>,
+    pub voxel_data: Option<VoxelData<V>>,
     pub valid_surface: bool,
     pub valid_model: bool,
 }

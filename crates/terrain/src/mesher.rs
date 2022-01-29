@@ -6,6 +6,7 @@ use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
 use rendering::basics::model::Model;
+use veclib::Swizzable;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
@@ -69,8 +70,10 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         // Get the normal
-                        let normal: veclib::Vector3<f32> = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value.clamp(0.0, 1.0));
-
+                        let t = value.clamp(0.0, 1.0);
+                        let normal: veclib::Vector3<f32> = veclib::Vector4::<f32>::lerp(voxel1.normal, voxel2.normal, t).get3([0, 1, 2]);
+                        // But also interpolate the per voxel values if needed
+                        let per_voxel: V = V::interpolate(&voxel1.extra, &voxel2.extra, t);
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -86,6 +89,7 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
                             model.vertices.push(vertex);
                             model.normals.push(normal.normalized());
                             model.colors.push(veclib::Vector3::ONE);
+                            per_voxel.push(&mut model);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
@@ -97,6 +101,7 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
     }
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
+    /*
     if skirts {
         // Create the X skirt
         calculate_skirt(
@@ -129,9 +134,10 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
             transform_y_local,
         );
     }
+    */
     TModel { model, skirts_model, coords }
 }
-
+/*
 // Skirt vertex
 pub struct SkirtVertex {
     pub position: veclib::Vector3<f32>,
@@ -139,8 +145,8 @@ pub struct SkirtVertex {
 }
 
 // Generate a whole skirt using a specific
-pub fn calculate_skirt(
-    voxels: &VoxelData,
+pub fn calculate_skirt<V: Voxable>(
+    voxels: &VoxelData<V>,
     interpolation: bool,
     flip: bool,
     density_offset: [usize; 4],
@@ -165,14 +171,14 @@ pub fn calculate_skirt(
     }
 }
 // Calculate a marching square case and it's local voxels
-pub fn calculate_marching_square_case(
+pub fn calculate_marching_square_case<V: Voxable>(
     i: usize,
     x: usize,
     y: usize,
-    voxels: &VoxelData,
+    voxels: &VoxelData<V>,
     interpolation: bool,
     density_offset: [usize; 4],
-) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4])> {
+) -> Option<(u8, veclib::Vector2<f32>, [Voxel<V>; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4])> {
     // Get the position
     let p = veclib::Vector2::new(x as f32, y as f32);
     // Get the marching cube case
@@ -377,3 +383,4 @@ fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &vecli
 fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
     veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32)
 }
+*/
