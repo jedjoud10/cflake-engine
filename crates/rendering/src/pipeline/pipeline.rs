@@ -18,7 +18,7 @@ use crate::{
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
-    pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
+    pipeline::{camera::Camera, pipec, sender, PipelineRenderer, PipelineHandler},
     utils::{RenderWrapper, Window},
 };
 use ahash::{AHashMap, AHashSet};
@@ -34,6 +34,8 @@ use std::{
         Arc, Barrier, Mutex, RwLock,
     },
 };
+
+use super::PipelineContext;
 
 // Some default values like the default material or even the default shader
 pub struct DefaultPipelineObjects {
@@ -1115,23 +1117,6 @@ impl Pipeline {
     }
 }
 
-// Data that will be sent back to the main thread after we start the pipeline thread
-pub struct PipelineHandler {
-    // The thread handle for the render thread, so we can join it to the main thread at any time
-    pub handle: std::thread::JoinHandle<()>,
-    // A barrier that we can use to sync up with the main thread at the start of each frame
-    pub sbarrier: Arc<Barrier>,
-    // A barrier that we can use to sync up with the main thread at the end of each frame
-    pub ebarrier: Arc<Barrier>,
-    // An atomic we use to shutdown the render thread
-    pub eatomic: Arc<AtomicBool>,
-    // An atomic telling us if we are waiting for the sbarrier to start the frame
-    pub waiting: Arc<AtomicBool>,
-    // The pipeline itself
-    pub pipeline: Arc<RwLock<Pipeline>>,
-    // Some timing data that we will share with the pipeline
-    pub time: Arc<Mutex<(f64, f64)>>,
-}
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     use assets::assetc::load;
@@ -1202,7 +1187,7 @@ unsafe fn init_opengl() {
     gl::CullFace(gl::BACK);
 }
 // Create the new render thread, and return some data so we can access it from other threads
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineHandler {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineContext {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTaskCombination>(); // Main to render
@@ -1350,14 +1335,16 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     println!("Waiting for RenderThread init confirmation...");
     let pipeline = irx.recv().unwrap();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
-    // Create the pipeline start data
-    PipelineHandler {
-        handle,
-        sbarrier,
-        ebarrier,
-        eatomic,
-        waiting,
+    // Create the pipeline context
+    PipelineContext {
         pipeline,
-        time,
+        handler: PipelineHandler {
+            handle,
+            sbarrier,
+            ebarrier,
+            eatomic,
+            waiting,
+            time,
+        },
     }
 }

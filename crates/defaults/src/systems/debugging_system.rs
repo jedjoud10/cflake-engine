@@ -8,7 +8,7 @@ use main::{
 fn run(context: &mut Context, _query: ComponentQuery) {
     // Check if we need to debug
     let read = context.read();
-    let pipeline = read.pipeline.read().unwrap();
+    let pipeline = read.pipeline.read();
     if read.input.map_pressed("debug") {
         // Debug some data
         println!("Component count: '{}'", read.ecs.count_components());

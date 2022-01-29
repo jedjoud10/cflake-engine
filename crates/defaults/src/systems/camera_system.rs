@@ -52,7 +52,7 @@ fn run(context: &mut Context, components: ComponentQuery) {
         let mut camera = linked_components.component_mut::<crate::components::Camera>().unwrap();
         // And don't forget to update the camera matrices
         // Load the pipeline since we need to get the window settings
-        let pipeline = write.pipeline.read().unwrap();
+        let pipeline = write.pipeline.read();
         camera.update_aspect_ratio(pipeline.window.dimensions);
         camera.update_view_matrix(position, new_rotation);
 

@@ -4,7 +4,7 @@ use ecs::ECSManager;
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
-use rendering::pipeline::{Pipeline, PipelineHandler};
+use rendering::pipeline::{Pipeline, PipelineHandler, PipelineContext};
 use ui::UIManager;
 
 use crate::{GameConfig, TaskSenderContext};
@@ -17,8 +17,7 @@ pub struct World {
     pub ecs: ECSManager<Context>,
     pub io: SaverLoader,
     pub config: GameConfig,
-    pub pipeline: Arc<RwLock<Pipeline>>,
-    pub pipeline_handler: PipelineHandler,
+    pub pipeline: PipelineContext,
 }
 
 // A context that can mutate the world if self is mut
@@ -35,10 +34,6 @@ impl Context {
     pub fn convert(world: &Arc<RwLock<World>>) -> Self {
         Self { world: world.clone() }
     }
-    // Create a ShareableContext that we can send to other threads if they need to access the world
-    pub fn share(&self) -> ShareableContext {
-        ShareableContext { world: self.world.clone(), _phantom: PhantomData::default(), }
-    }
     // Read
     pub fn read<'a>(&'a self) -> ReadContext<'a> {
         ReadContext {
@@ -52,29 +47,16 @@ impl Context {
         }
     }
 }
-
-// A context that we can share around to other threads if they need to access the world
-pub struct ShareableContext<'a> {
-    world: Arc<RwLock<World>>,
-    _phantom: PhantomData<&'a World>,
+// A readable world context
+pub struct ReadContext<'a> {
+    world: RwLockReadGuard<'a, World>,
 }
 
-impl<'a> ShareableContext<'a> {
-    // Read
-    pub fn read(&self) -> ReadContext {
-        ReadContext {
-            world: self.world.read().unwrap(),
-        }
-    }
+impl<'a> ReadContext<'a> {
     // Create a sender that we can use to send multiple tasks the main thread
     pub fn sender(&self) -> TaskSenderContext {
         TaskSenderContext(())
     }
-}
-
-// A readable world context
-pub struct ReadContext<'a> {
-    world: RwLockReadGuard<'a, World>,
 }
 
 impl<'a> std::ops::Deref for ReadContext<'a> {

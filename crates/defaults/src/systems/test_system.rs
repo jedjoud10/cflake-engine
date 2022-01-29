@@ -27,7 +27,7 @@ fn run(mut context: &mut Context, query: ComponentQuery) {
     let mut write = context.write();
     // Execute the shader
     let mut data = write.ecs.global_mut::<TestSystemData>().unwrap();
-    let pipeline = write.pipeline.read().unwrap();
+    let pipeline = write.pipeline.read();
     if data.transfer.is_none() && pipeline.get_shader_storage(data.shader_storage).is_some() {
         // Make the shader group
         let mut group = ShaderUniformsGroup::new();
@@ -57,7 +57,7 @@ fn run(mut context: &mut Context, query: ComponentQuery) {
 pub fn system(write: &mut WriteContext) {
     write.ecs.create_system_builder().set_run_event(run).build();
 
-    let pipeline = write.pipeline.read().unwrap();
+    let pipeline = write.pipeline.read();
     let arr = [1, 5, 2, -9];
     let shader_storage = pipec::construct(ShaderStorage::new_default(UpdateFrequency::Static, Read, arr, 4 * 4), &*pipeline);
 

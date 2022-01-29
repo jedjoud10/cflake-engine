@@ -5,7 +5,7 @@ pub mod pipec {
     use crate::{
         basics::Buildable,
         object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
-        pipeline::{sender, Pipeline, PipelineHandler},
+        pipeline::{sender, Pipeline, PipelineHandler, PipelineContext},
     };
     // Debug some pipeline data
     pub fn set_debugging(debugging: bool, pipeline: &Pipeline) {
@@ -35,9 +35,9 @@ pub mod pipec {
         id
     }
     // Flush the pipeline, forcing the execution of all dispatched tasks
-    pub fn flush_and_execute(pipeline: RwLockReadGuard<Pipeline>, handler: &PipelineHandler) {
+    pub fn flush_and_execute(context: &mut PipelineContext) {
         // Run the pipeline for one frame, but make sure we have no RwLocks whenever we do so
-        drop(pipeline);
+        let handler = &context.handler;
         handler.sbarrier.wait();
         handler.ebarrier.wait();
 

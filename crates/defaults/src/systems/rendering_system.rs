@@ -8,7 +8,7 @@ use main::{
 fn run(context: &mut Context, query: ComponentQuery) {
     // For each renderer, we must update it's pipeline transform and other values
     let read = context.read();
-    let pipeline = read.pipeline.read().unwrap();
+    let pipeline = read.pipeline.read();
     let _i = std::time::Instant::now();
     let tasks = query.update_all_map_filter(move |components| {
         let renderer = components.component::<crate::components::Renderer>().unwrap();
@@ -30,12 +30,11 @@ fn run(context: &mut Context, query: ComponentQuery) {
 
 // An event fired whenever we add multiple new renderer entities
 fn added_entities(context: &mut Context, query: ComponentQuery) {
-    let share = context.share();
     // For each renderer, we must create it's pipeline renderer construction task
     query.update_all(move |components| {
         // Get the pipeline first
-        let read = share.read();
-        let pipeline = read.pipeline.read().unwrap();
+        let read = context.read();
+        let pipeline = read.pipeline.read();
 
         // Get the CPU renderer that we must construct
         let mut renderer = components.component_mut::<crate::components::Renderer>().unwrap();

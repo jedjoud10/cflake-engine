@@ -1,13 +1,13 @@
 use std::sync::{Arc, RwLock};
 
-use rendering::pipeline::PipelineHandler;
+use rendering::pipeline::{PipelineHandler, PipelineContext};
 
 use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineHandler) -> Self {
+    pub fn new(author_name: &str, app_name: &str, pipeline: PipelineContext) -> Self {
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
@@ -19,8 +19,7 @@ impl World {
             }),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
-            pipeline: pipeline_data.pipeline.clone(),
-            pipeline_handler: pipeline_data,
+            pipeline,
         };
         world.init();
         world
@@ -72,74 +71,65 @@ impl World {
     }
     // Resize window event
     pub fn resize_window_event(&mut self, new_dimensions: veclib::Vector2<u16>) {
-        let pipeline = self.pipeline.read().unwrap();
-        rendering::pipeline::pipec::task(rendering::object::PipelineTask::SetWindowDimension(new_dimensions), &*pipeline);
+        let pipeline = self.pipeline.read();
+        rendering::pipeline::pipec::task(rendering::object::PipelineTask::SetWindowDimension(new_dimensions), &pipeline);
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
     pub fn update_start(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // While we do world logic, start rendering the frame on the other thread
-        {
-            let world = world.write().unwrap();
-            let start_data = &world.pipeline_handler;
-
-            // Update the timings then we can start rendering
-            {
-                let time = &world.pipeline_handler.time;
-                let mut time = time.lock().unwrap();
-                time.0 = world.time.elapsed;
-                time.1 = world.time.delta;
-                start_data.sbarrier.wait();
-            }
-        }
-        {
-            let system_count = {
+        let mut world_ = world.write().unwrap();
+        
+        // Update the timings then we can start rendering
+        let handler = &mut world_.pipeline.handler;
+        let time = handler.time.clone();
+        let mut time_ = time.lock().unwrap();
+        time_.0 = world_.time.elapsed;
+        time_.1 = world_.time.delta;
+        let handler = &mut world_.pipeline.handler;
+        handler.sbarrier.wait();
+        drop(handler);
+        drop(world_);
+        
+        // Loop for every system and update it
+        let world_ = world.read().unwrap();
+        let count = world_.ecs.systems().len();
+        drop(world_);
+        for index in 0..count {
+            let execution_data = {
                 let world = world.read().unwrap();
-                world.ecs.count_systems()
+                let system = &world.ecs.systems()[index];
+                system.run_system(&world.ecs)
             };
-            // Loop for every system and update it
-            for system_index in 0..system_count {
-                let execution_data = {
-                    let world = world.read().unwrap();
-                    let system = &world.ecs.systems()[system_index];
-                    system.run_system(&world.ecs)
-                };
-                // Actually execute the system now
-                let mut context = Context::convert(world);
-                execution_data.run(&mut context);
-                {
-                    // Run the callback after executing a single system
-                    let mut world = world.write().unwrap();
-                    _task_receiver.flush(&mut world);
-                }
-            }
-        }
-        {
-            // Finish update
-            let mut world = world.write().unwrap();
-            world.ecs.finish_update();
-        }
+            // Actually execute the system now
+            let mut context = Context::convert(world);
+            execution_data.run(&mut context);
+            // Run the callback after executing a single system
+            let mut world_ = world.write().unwrap();
+            _task_receiver.flush(&mut world_);
+            drop(world_)
+        }        
+        // Finish update
+        let mut world = world.write().unwrap();
+        world.ecs.finish_update();
     }
     // End frame update
     pub fn update_end(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // End the frame
-        {
-            let mut world = world.write().unwrap();
-            let start_data = &world.pipeline_handler;
-            start_data.ebarrier.wait();
-            let delta = world.time.delta as f32;
-            world.input.late_update(delta);
-        }
+        let mut world = world.write().unwrap();
+        let context = &world.pipeline;
+        context.handler.ebarrier.wait();
+        let delta = world.time.delta as f32;
+        world.input.late_update(delta);
     }
     // We must destroy the world
     pub fn destroy(self) {
         // We update the pipeline's shutdown atomic, telling it to shutdown
-        //let pipeline = self.pipeline.read().unwrap();
-        let start_data = self.pipeline_handler;
+        let handler = self.pipeline.handler;
         // Run the render thread loop for one last time
-        start_data.sbarrier.wait();
-        start_data.eatomic.store(true, std::sync::atomic::Ordering::Relaxed);
-        start_data.ebarrier.wait();
+        handler.sbarrier.wait();
+        handler.eatomic.store(true, std::sync::atomic::Ordering::Relaxed);
+        handler.ebarrier.wait();
         // Join the render thread now
-        start_data.handle.join().unwrap();
+        handler.handle.join().unwrap();
     }
 }
