@@ -42,8 +42,8 @@ pub fn init(mut write: core::WriteContext) {
     let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
     // Create a simple cube
-    for x in 0..2 {
-        for y in 0..2 {
+    for x in 0..20 {
+        for y in 0..20 {
             let mut group = ecs::entity::ComponentLinkingGroup::new();
             let entity = ecs::entity::Entity::new();
             let id = ecs::entity::EntityID::new(&mut write.ecs);
