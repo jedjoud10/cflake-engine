@@ -37,7 +37,6 @@ impl<T: 'static> ThreadPool<T> {
     pub fn max_thread_count(&self) -> usize {
         self.max_thread_count
     }
-
     // Execute the thread pool using the vector filled with pointers and with a custom chunk size
     pub fn execute_raw<'a, F: Fn(&mut T) + Sync + Send>(&self, elements: Vec<*mut T>, chunk_size: usize, task: F) {
         let (barrier, end_barrier, _shutdown_barrier) = self.barriers.as_ref();

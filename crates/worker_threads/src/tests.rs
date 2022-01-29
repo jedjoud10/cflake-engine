@@ -1,6 +1,8 @@
 #[cfg(test)]
 pub mod test {
-    use crate::ThreadPool;
+    use std::sync::Arc;
+
+    use crate::{ThreadPool, SharedVec};
 
     #[test]
     // Just a normal test to see if it crashes or not
@@ -9,9 +11,26 @@ pub mod test {
         let pool = ThreadPool::<i32>::new(8, || {});
         let mut numbers = vec![0; 512];
         let data = 10;
-        pool.execute(&mut numbers, move |x| {
+        pool.execute(&mut numbers, |x| {
             *x = data;
         });
+    }
+    #[test]
+    // Test the shared vector
+    pub fn test_vec() {
+        let pool = ThreadPool::<i32>::new(1, || {});
+        let mut numbers = (0..512).collect::<Vec<_>>();
+        let shared = SharedVec::<i32>::new(512);
+        let data = 10;
+        pool.execute(&mut numbers, |x| {
+            *x += data;
+            let y = shared.write().unwrap();
+            *y += *x;
+        });
+        let vec = Arc::try_unwrap(shared.vec).unwrap();
+        for x in numbers {
+            dbg!(x);
+        }
     }
     #[test]
     // Test the speed compared to single threaded

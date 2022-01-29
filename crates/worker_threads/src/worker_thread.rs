@@ -1,4 +1,4 @@
-use crate::SharedData;
+use crate::{SharedData, CURRENT_EXECUTION_INDEX};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Barrier, RwLock,
@@ -38,18 +38,16 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
             //dbg!(start_idx);
             //dbg!(end_idx);
             if start_idx < elements.len() {
-                let mut count = 0;
                 for i in start_idx..end_idx {
                     // Execute the function
+                    CURRENT_EXECUTION_INDEX.with(|x| x.set(i));
                     let elem = elements.get(i);
                     if let Some(&elem) = elem {
                         // Unsafe magic
                         let elem = unsafe { &mut *elem };
                         function(elem);
-                        count += 1;
                     }
                 }
-                //println!("Finished executing thread '{}', executed '{}'", thread_index, count);
             }
 
             // Check if we must shutdown
