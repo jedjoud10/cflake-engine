@@ -21,25 +21,25 @@ pub fn init(mut write: core::WriteContext) {
     let pipeline = pipeline_.read().unwrap();
     // Create it's model
     let mut model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
-    let model_id = rendering::pipeline::pipec::construct(model, &*pipeline);
+    let model_id = rendering::pipeline::pipec::construct(model, &pipeline);
 
     // Create it's material
     let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png")
         .unwrap()
         .set_mipmaps(true);
-    let texture = rendering::pipeline::pipec::construct(texture, &*pipeline);
+    let texture = rendering::pipeline::pipec::construct(texture, &pipeline);
 
     let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_normal.png")
         .unwrap()
         .set_mipmaps(true);
-    let texture2 = rendering::pipeline::pipec::construct(texture2, &*pipeline);
+    let texture2 = rendering::pipeline::pipec::construct(texture2, &pipeline);
 
     let material = rendering::basics::material::Material::default()
         .set_diffuse_texture(texture)
         .set_normals_texture(texture2)
         .set_normals_strength(0.3)
         .set_uv_scale(veclib::Vector2::ONE * 3.0);
-    let material = rendering::pipeline::pipec::construct(material, &*pipeline);
+    let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
     // Create a simple cube
     for x in 0..2 {
@@ -70,21 +70,21 @@ pub fn init(mut write: core::WriteContext) {
     let settings = rendering::basics::shader::ShaderSettings::default()
         .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
         .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
-    let shader = rendering::pipeline::pipec::construct(rendering::basics::shader::Shader::new(settings).unwrap(), &*pipeline);
+    let shader = rendering::pipeline::pipec::construct(rendering::basics::shader::Shader::new(settings).unwrap(), &pipeline);
     // Then the textures
     let white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
     let normal_map = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
     let diffuse = rendering::basics::texture::Texture::convert_3d(vec![white]).unwrap();
     let normals = rendering::basics::texture::Texture::convert_3d(vec![normal_map]).unwrap();
 
-    let diffuse = rendering::pipeline::pipec::construct(diffuse, &*pipeline);
-    let normals = rendering::pipeline::pipec::construct(normals, &*pipeline);
+    let diffuse = rendering::pipeline::pipec::construct(diffuse, &pipeline);
+    let normals = rendering::pipeline::pipec::construct(normals, &pipeline);
 
     let material = rendering::basics::material::Material::default()
         .set_diffuse_texture(diffuse)
         .set_normals_texture(normals)
         .set_shader(shader);
-    let material = rendering::pipeline::pipec::construct(material, &*pipeline);
+    let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
     // Create a simple voxel
     pub struct SimpleVoxel;
@@ -96,6 +96,17 @@ pub fn init(mut write: core::WriteContext) {
     } 
 
     // Add the terrain
-    let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
-    write.ecs.add_global(terrain).unwrap();
+    //let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
+    //write.ecs.add_global(terrain).unwrap();
+    let reserved_id = rendering::object::ReservedTrackedTaskID::default();
+    rendering::pipeline::pipec::tracked_task(rendering::object::PipelineTrackedTask::Test, reserved_id, &pipeline);
+    drop(pipeline);
+    rendering::pipeline::pipec::flush_and_execute(pipeline_.read().unwrap(), &write.pipeline_handler);
+    rendering::pipeline::pipec::flush_and_execute(pipeline_.read().unwrap(), &write.pipeline_handler);
+
+    // Wait until the task executes
+    let pipeline = pipeline_.read().unwrap();
+    while !rendering::pipeline::pipec::did_tasks_execute(&[reserved_id], &pipeline) {
+        println!("Aeaeaea");
+    }
 }

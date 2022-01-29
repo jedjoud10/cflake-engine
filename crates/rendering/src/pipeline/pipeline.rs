@@ -9,7 +9,7 @@ use crate::{
         model::{Model, ModelBuffers},
         readwrite::ReadBytes,
         renderer::Renderer,
-        shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType},
+        shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType, info::{ShaderInfoQuerySettings, ShaderInfo}},
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
@@ -125,6 +125,8 @@ impl Pipeline {
             PipelineTrackedTask::TextureReadBytes(id, read) => self.fill_texture(id, read),
             PipelineTrackedTask::ShaderStorageReadBytes(id, read) => self.shader_storage_read(id, read),
             PipelineTrackedTask::AtomicGroupRead(id, read) => self.atomic_group_read(id, read),
+            PipelineTrackedTask::QueryShaderInfo(id, settings, read) => self.query_shader_info(id, settings, read),
+            PipelineTrackedTask::Test => GlTracker::fake(|_| {}, self),
         };
 
         // Add the tracked ID to our pipeline
@@ -1008,6 +1010,12 @@ impl Pipeline {
             self,
         )
     }
+    // Query some information about a shader
+    fn query_shader_info(&mut self, id: ObjectID<Shader>, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
+        GlTracker::fake(move |pipeline| unsafe {
+            // Get the query info if needed
+        }, self)
+    }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
         self.window.dimensions = new_dimensions;
@@ -1020,7 +1028,7 @@ impl Pipeline {
 }
 
 // Data that will be sent back to the main thread after we start the pipeline thread
-pub struct PipelineStartData {
+pub struct PipelineHandler {
     // The thread handle for the render thread, so we can join it to the main thread at any time
     pub handle: std::thread::JoinHandle<()>,
     // A barrier that we can use to sync up with the main thread at the start of each frame
@@ -1029,6 +1037,8 @@ pub struct PipelineStartData {
     pub ebarrier: Arc<Barrier>,
     // An atomic we use to shutdown the render thread
     pub eatomic: Arc<AtomicBool>,
+    // An atomic telling us if we are waiting for the sbarrier to start the frame
+    pub waiting: Arc<AtomicBool>,
     // The pipeline itself
     pub pipeline: Arc<RwLock<Pipeline>>,
     // Some timing data that we will share with the pipeline
@@ -1104,7 +1114,7 @@ unsafe fn init_opengl() {
     gl::CullFace(gl::BACK);
 }
 // Create the new render thread, and return some data so we can access it from other threads
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineStartData {
+pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineHandler {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTaskCombination>(); // Main to render
@@ -1120,6 +1130,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // An atomic that we use to inform the render thread to exit and shutdown
     let eatomic = Arc::new(AtomicBool::new(false));
     let eatomic_clone = eatomic.clone();
+
+    // Waiting
+    let waiting = Arc::new(AtomicBool::new(false));
+    let waiting_clone = waiting.clone();
 
     // Some timing data that we will share with the pipeline
     let time = Arc::new(Mutex::new((0.0, 0.0)));
@@ -1198,7 +1212,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let i = std::time::Instant::now();
             {
                 // At the start of each frame we must sync up with the main thread
+                waiting_clone.store(true, Ordering::Relaxed);
                 sbarrier_clone.wait();
+                waiting_clone.store(false, Ordering::Relaxed);
             }
             // This is a single frame
             {
@@ -1247,11 +1263,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     let pipeline = irx.recv().unwrap();
     println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
     // Create the pipeline start data
-    PipelineStartData {
+    PipelineHandler {
         handle,
         sbarrier,
         ebarrier,
         eatomic,
+        waiting,
         pipeline,
         time,
     }

@@ -4,7 +4,7 @@ use ecs::ECSManager;
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
-use rendering::pipeline::{Pipeline, PipelineStartData};
+use rendering::pipeline::{Pipeline, PipelineHandler};
 use ui::UIManager;
 
 use crate::{GameConfig, TaskSenderContext};
@@ -18,7 +18,7 @@ pub struct World {
     pub io: SaverLoader,
     pub config: GameConfig,
     pub pipeline: Arc<RwLock<Pipeline>>,
-    pub pipeline_thread: PipelineStartData,
+    pub pipeline_handler: PipelineHandler,
 }
 
 // A context that can mutate the world if self is mut

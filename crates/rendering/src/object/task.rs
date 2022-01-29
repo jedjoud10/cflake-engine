@@ -7,7 +7,7 @@ use crate::{
         compute::{ComputeShader, ComputeShaderExecutionSettings},
         shaderstorage::ShaderStorage,
     },
-    basics::{material::Material, model::Model, readwrite::ReadBytes, renderer::Renderer, shader::Shader, texture::Texture, transfer::Transfer, Buildable},
+    basics::{material::Material, model::Model, readwrite::ReadBytes, renderer::Renderer, shader::{Shader, info::{ShaderInfo, ShaderInfoQuerySettings}}, texture::Texture, transfer::Transfer, Buildable},
     pipeline::camera::Camera,
 };
 
@@ -39,6 +39,8 @@ pub enum PipelineTrackedTask {
     TextureReadBytes(ObjectID<Texture>, Transfer<ReadBytes>),
     ShaderStorageReadBytes(ObjectID<ShaderStorage>, Transfer<ReadBytes>),
     AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
+    QueryShaderInfo(ObjectID<Shader>, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
+    Test,
 }
 
 // Bruh

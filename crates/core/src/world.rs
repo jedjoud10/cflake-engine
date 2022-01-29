@@ -1,13 +1,13 @@
 use std::sync::{Arc, RwLock};
 
-use rendering::pipeline::PipelineStartData;
+use rendering::pipeline::PipelineHandler;
 
 use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineStartData) -> Self {
+    pub fn new(author_name: &str, app_name: &str, pipeline_data: PipelineHandler) -> Self {
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
@@ -20,7 +20,7 @@ impl World {
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline: pipeline_data.pipeline.clone(),
-            pipeline_thread: pipeline_data,
+            pipeline_handler: pipeline_data,
         };
         world.init();
         world
@@ -80,11 +80,11 @@ impl World {
         // While we do world logic, start rendering the frame on the other thread
         {
             let world = world.write().unwrap();
-            let start_data = &world.pipeline_thread;
+            let start_data = &world.pipeline_handler;
 
             // Update the timings then we can start rendering
             {
-                let time = &world.pipeline_thread.time;
+                let time = &world.pipeline_handler.time;
                 let mut time = time.lock().unwrap();
                 time.0 = world.time.elapsed;
                 time.1 = world.time.delta;
@@ -124,7 +124,7 @@ impl World {
         // End the frame
         {
             let mut world = world.write().unwrap();
-            let start_data = &world.pipeline_thread;
+            let start_data = &world.pipeline_handler;
             start_data.ebarrier.wait();
             let delta = world.time.delta as f32;
             world.input.late_update(delta);
@@ -134,7 +134,7 @@ impl World {
     pub fn destroy(self) {
         // We update the pipeline's shutdown atomic, telling it to shutdown
         //let pipeline = self.pipeline.read().unwrap();
-        let start_data = self.pipeline_thread;
+        let start_data = self.pipeline_handler;
         // Run the render thread loop for one last time
         start_data.sbarrier.wait();
         start_data.eatomic.store(true, std::sync::atomic::Ordering::Relaxed);

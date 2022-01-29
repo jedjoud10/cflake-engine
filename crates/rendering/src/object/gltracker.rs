@@ -5,7 +5,7 @@ use crate::pipeline::Pipeline;
 // A wrapper around an OpenGL fence, so we can check wether or not some GPU command has finished executing
 pub(crate) struct GlTracker {
     // An OpenGL fence object
-    fence: *const gl::types::__GLsync,
+    fence: Option<*const gl::types::__GLsync>,
     // A callback that we will execute when the fence gets signaled
     callback: RefCell<Option<Box<dyn FnOnce(&Pipeline)>>>,
 }
@@ -23,17 +23,33 @@ impl GlTracker {
             // Then finally create the fence
             let fence = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
             gl::Flush();
-            fence
+            Some(fence)
         };
         Self {
             fence,
             callback: RefCell::new(Some(Box::new(callback_finished))),
         }
     }
+    // Create a GL tracker that will actually execute synchronously, and always be completed if we query it's completed state
+    pub fn fake<F: FnOnce(&Pipeline)>(start: F, pipeline: &Pipeline) -> Self {
+        unsafe {
+            // Flush first
+            gl::Flush();
+            // Call the function
+            start(pipeline);
+            gl::Finish();
+        };
+        Self {
+            fence: None,
+            callback: RefCell::new(None),
+        }
+    }
     // Check wether the corresponding fence object has completed
     pub fn completed(&self, pipeline: &Pipeline) -> bool {
+        // Check if this tracker was made to be always completed
+        if self.fence.is_none() { return true; }
         let result = unsafe {
-            let res = gl::ClientWaitSync(self.fence, gl::SYNC_FLUSH_COMMANDS_BIT, 0);
+            let res = gl::ClientWaitSync(self.fence.unwrap(), gl::SYNC_FLUSH_COMMANDS_BIT, 0);
             res
         };
 
@@ -42,7 +58,7 @@ impl GlTracker {
         if completed {
             // Delete the fence since we won't use it anymore
             unsafe {
-                gl::DeleteSync(self.fence);
+                gl::DeleteSync(self.fence.unwrap());
             }
         }
         // If we did complete, we must execute the callback

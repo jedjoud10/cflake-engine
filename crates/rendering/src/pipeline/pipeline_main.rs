@@ -1,11 +1,11 @@
 // Some pipeline commands
 pub mod pipec {
-    use std::sync::atomic::Ordering;
+    use std::sync::{atomic::Ordering, RwLockReadGuard};
 
     use crate::{
         basics::Buildable,
         object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
-        pipeline::{sender, Pipeline},
+        pipeline::{sender, Pipeline, PipelineHandler},
     };
     // Debug some pipeline data
     pub fn set_debugging(debugging: bool, pipeline: &Pipeline) {
@@ -34,6 +34,20 @@ pub mod pipec {
         task(t, pipeline);
         id
     }
+    // Flush the pipeline, forcing the execution of all dispatched tasks
+    pub fn flush_and_execute(pipeline: RwLockReadGuard<Pipeline>, handler: &PipelineHandler) {
+        // Run the pipeline for one frame, but make sure we have no RwLocks whenever we do so
+        drop(pipeline);
+        handler.sbarrier.wait();
+        handler.ebarrier.wait();
+        
+        // Wait until we wait. Lol
+        println!("Waiting for flush completion...");
+        while !handler.waiting.load(Ordering::Relaxed) {
+        }
+        println!("Flushed!");
+    }
+
 
     // Tracked Tasks
     // Detect if a multitude of tasks have all executed

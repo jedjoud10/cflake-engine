@@ -1,11 +1,18 @@
-use std::{collections::{HashMap, HashSet}, io::BufRead};
+use crate::basics::transfer::{Transfer, Transferable};
 
-use super::{ShaderSource, ShaderSettings, load_includes};
+// Some settings to help us query shader info
+pub struct ShaderInfoQuerySettings {
 
-// Some shader source info that we can retrieve from a shader that is stored on the pipeline
-pub struct ShaderInfo {
 }
 
-impl ShaderSourceInfo {
-    
+// Some shader info that we queried from the pipeline
+#[derive(Clone)]
+pub struct ShaderInfo {
+
+}
+
+impl Transferable for ShaderInfo {
+    fn transfer(&self) -> Transfer<Self> {
+        Transfer(self.clone())
+    }
 }
