@@ -10,14 +10,14 @@ use crate::{
         readwrite::ReadBytes,
         renderer::Renderer,
         shader::{
-            info::{ShaderInfo, ShaderInfoQuerySettings},
+            info::{ShaderInfo, ShaderInfoQuerySettings, QueryResource, QueryParameter, Resource},
             Shader, ShaderSettings, ShaderSource, ShaderSourceType,
         },
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID, RESERVED_TRACKED_ID_COUNTER},
+    object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::{RenderWrapper, Window},
 };
@@ -31,7 +31,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    },
+    }, collections::hash_map::Entry,
 };
 
 // Some default values like the default material or even the default shader
@@ -1033,7 +1033,44 @@ impl Pipeline {
     fn query_shader_info(&mut self, id: ObjectID<Shader>, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
         GlTracker::fake(
             move |pipeline| unsafe {
-                // Get the query info if needed
+                // Get the query info
+                let shader = pipeline.get_shader(id).unwrap();
+                let oid = shader.program;
+
+                // Gotta count the number of unique resource types
+                let mut unique_count = AHashMap::<QueryResource, usize>::new();
+                let mut indexed_resources = AHashMap::<Resource, (Vec<QueryParameter>, usize)>::new();
+                for (x, parameters) in settings.res.iter() {
+                    let count = unique_count.entry(x.res.clone()).or_default();
+                    indexed_resources.insert(x.clone(), (parameters.clone(), *count));
+                    *count += 1;
+                }
+
+                // First we gotta get how many resources of a single type we have, and their respective max name len
+                let types_and_counts = unique_count.iter().map(|(res, _)| {
+                    let mut max_resources = 0_i32;
+                    let mut max_name_len = 0_i32;
+                    gl::GetProgramInterfaceiv(oid, res.convert(), gl::ACTIVE_RESOURCES, &mut max_resources);
+                    gl::GetProgramInterfaceiv(oid, res.convert(), gl::MAX_NAME_LENGTH, &mut max_name_len);
+                    (res.clone(), (max_resources, max_name_len as usize))
+                }).collect::<AHashMap<_, _>>();
+                
+                // Now we can actually query the parameters
+                for (res, (parameters, i)) in indexed_resources {
+                    // Get the resource's name
+                    let mut str_len = 0;
+                    let (max_unique_res_count, max_name_len) = types_and_counts.get(&res.res).unwrap(); 
+                    let mut char_vec = vec![0_u8; *max_name_len];
+                    gl::GetProgramResourceName(oid, res.convert(), i as u32, *max_unique_res_count, &mut str_len, char_vec.as_mut_ptr() as *mut i8);
+
+                    // Get the resource's index
+                    let resource_index = gl::GetProgramResourceIndex(oid, res.convert(), char_vec.as_ptr() as *const i8);
+
+                    // Now char_vec contains the name of the resource
+                    let name = String::from_utf8(char_vec).unwrap();
+
+                    // Now we can finally access the resource's parameters
+                }
             },
             self,
         )
