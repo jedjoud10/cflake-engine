@@ -102,7 +102,7 @@ pub fn init(mut write: core::WriteContext) {
     let mut settings = rendering::basics::shader::info::ShaderInfoQuerySettings::default();
     let res = rendering::basics::shader::info::Resource {
         res: rendering::basics::shader::info::QueryResource::Uniform,
-        name: "uv_scale".to_string(),
+        name: "normals_strength".to_string(),
     };
     settings.query(res.clone(), vec![rendering::basics::shader::info::QueryParameter::Location]);
     let read = rendering::basics::shader::info::ShaderInfo::default();
