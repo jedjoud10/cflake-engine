@@ -1,6 +1,6 @@
 // Some pipeline commands
 pub mod pipec {
-    use std::sync::{atomic::Ordering, RwLockReadGuard};
+    use std::sync::{atomic::Ordering, RwLockReadGuard, Arc};
 
     use crate::{
         basics::Buildable,
@@ -35,9 +35,13 @@ pub mod pipec {
         id
     }
     // Flush the pipeline, forcing the execution of all dispatched tasks
-    pub fn flush_and_execute(context: &mut PipelineContext) {
+    // This function will exit early and return None if the pipeline is in use, thus we cannot force a flush
+    pub fn flush_and_execute(context: &mut PipelineContext) -> Option<()> {
         // Run the pipeline for one frame, but make sure we have no RwLocks whenever we do so
-        let handler = &context.handler;
+        let handler = &context.handler.lock().unwrap();
+        if Arc::strong_count(&context.pipeline) != 1 {
+            return None;
+        }
         handler.sbarrier.wait();
         handler.ebarrier.wait();
 
@@ -45,6 +49,7 @@ pub mod pipec {
         println!("Waiting for flush completion...");
         while !handler.waiting.load(Ordering::Relaxed) {}
         println!("Flushed!");
+        Some(())
     }
 
     // Tracked Tasks

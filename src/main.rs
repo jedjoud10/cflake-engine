@@ -17,7 +17,8 @@ pub fn init(mut write: core::WriteContext) {
     let entity = ecs::entity::Entity::new();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
     write.ecs.add_entity(entity, id, group).unwrap();
-    let pipeline = write.pipeline.read();
+    let pipeline_ = write.pipeline.clone();
+    let pipeline = pipeline_.read();
     // Create it's model
     let mut model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
     let model_id = rendering::pipeline::pipec::construct(model, &pipeline);

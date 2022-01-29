@@ -1338,13 +1338,13 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
     // Create the pipeline context
     PipelineContext {
         pipeline,
-        handler: PipelineHandler {
+        handler: Arc::new(Mutex::new(PipelineHandler {
             handle,
             sbarrier,
             ebarrier,
             eatomic,
             waiting,
             time,
-        },
+        })),
     }
 }
