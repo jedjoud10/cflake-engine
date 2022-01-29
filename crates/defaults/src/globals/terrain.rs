@@ -36,7 +36,7 @@ pub struct TerrainGenerationData {
 }
 
 // The global terrain component that can be added at the start of the game
-pub struct Terrain {
+pub struct Terrain<T> {
     // Chunk generation
     pub octree: AdvancedOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
@@ -46,15 +46,15 @@ pub struct Terrain {
     pub generating: Option<TerrainGenerationData>,
     pub base_compute: ObjectID<ComputeShader>,
     pub second_compute: ObjectID<ComputeShader>,
+    pub test: T,
     
     // Atomics
     pub counters: ObjectID<AtomicGroup>,
-
 }
 
-impl Terrain {
+impl<T> Terrain<T> {
     // Create a new terrain component
-    pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
+    pub fn new(test: T, voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
         // Check if a an already existing node could be subdivided even more
         fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
             let c: veclib::Vector3<f32> = node.get_center().into();
@@ -94,10 +94,23 @@ impl Terrain {
             material,
             generating: None,
             base_compute,
+            test,
             second_compute,
             counters: atomic,
         }
     }
 }
 
-impl_component!(Terrain);
+// Main traits implemented
+impl<T: 'static> main::ecs::component::Component for Terrain<T> {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    fn get_component_name() -> String {
+        String::from(stringify!(Terrain<T>).split(" ").last().unwrap().to_string())
+    }
+}
+

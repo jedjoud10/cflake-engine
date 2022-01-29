@@ -1,10 +1,10 @@
 use crate::ChunkCoords;
 use crate::TModel;
+use crate::Voxable;
 use crate::VoxelData;
 use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
-use super::Voxel;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> TModel {
+pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, interpolation: bool, skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
     // Loop over every voxel

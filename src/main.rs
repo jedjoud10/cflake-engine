@@ -86,7 +86,10 @@ pub fn init(mut write: core::WriteContext) {
         .set_shader(shader);
     let material = rendering::pipeline::pipec::construct(material, &*pipeline);
 
+    // Create a simple voxel
+
+
     // Add the terrain
-    let terrain = defaults::globals::Terrain::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
+    let terrain = defaults::globals::Terrain::<f32>::new(0.0, terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
     write.ecs.add_global(terrain).unwrap();
 }

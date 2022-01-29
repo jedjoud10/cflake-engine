@@ -3,7 +3,7 @@
 #include "defaults\shaders\noises\simplex.func.glsl"
 #include "defaults\shaders\noises\voronoi.func.glsl"
 #include "defaults\shaders\others\sdf.func.glsl"
-#include_custom {"voxel_include_path"}
+#include "defaults\shaders\voxel_terrain\shared.func.glsl"
 
 const int _CHUNK_SIZE = #constant chunk_size
 const int _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
@@ -13,7 +13,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(std430, binding = 3) buffer buffer_data
 {   
     Voxel voxels[_CSPT][_CSPT][_CSPT];
-    FinalVoxel final_voxels[_CSPO][_CSPO][_CSPO];
+    BundledVoxel bundled_voxels[_CSPO][_CSPO][_CSPO];
 };
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
@@ -33,8 +33,9 @@ void main() {
         // Create the final voxel
         Voxel voxel = voxels[pc.x][pc.y][pc.z];
         FinalVoxel final_voxel = get_final_voxel(pos, voxel);
+        BundledVoxel bundled_voxel = BundledVoxel(voxel.density, final_voxel);
 
         // And store the final voxel inside our array
-        final_voxels[pc.x][pc.y][pc.z] = final_voxel;
+        bundled_voxels[pc.x][pc.y][pc.z] = bundled_voxel;
     }
 }
