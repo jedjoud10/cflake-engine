@@ -15,3 +15,8 @@ struct FinalVoxel {
 Voxel get_voxel(vec3 pos) {
     return Voxel(pos.x);
 }
+
+// Get the final voxel at a specific position (Second Pass)
+FinalVoxel get_final_voxel(vec3 pos, Voxel voxel) {
+    return FinalVoxel(voxel.density, vec3(0.0));
+}

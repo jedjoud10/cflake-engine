@@ -45,7 +45,7 @@ pub struct Terrain {
     // Voxel Generation
     pub generating: Option<TerrainGenerationData>,
     pub base_compute: ObjectID<ComputeShader>,
-    //pub second_compute: ObjectID<ComputeShader>,
+    pub second_compute: ObjectID<ComputeShader>,
     
     // Atomics
     pub counters: ObjectID<AtomicGroup>,
@@ -66,14 +66,22 @@ impl Terrain {
         let internal_octree = Octree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64);
         let octree = AdvancedOctree::new(internal_octree, can_node_subdivide_twin);
 
-        // Load the compute shader
+        // Load the first pass compute shader
         let voxel_src_path = format!("#include {}", format!(r#""{}""#, voxel_src_path.to_string()));
         let settings = ShaderSettings::default()
             .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
-            .external_code("voxel_include_path", voxel_src_path)
+            .external_code("voxel_include_path", voxel_src_path.clone())
             .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
         let base_compute = ComputeShader::new(settings).unwrap();
         let base_compute = pipec::construct(base_compute, pipeline);
+
+        // Load the second pass compute shader
+        let settings = ShaderSettings::default()
+            .source(main::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER)
+            .external_code("voxel_include_path", voxel_src_path)
+            .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
+        let second_compute = ComputeShader::new(settings).unwrap();
+        let second_compute = pipec::construct(second_compute, pipeline);
 
         // Also construct the atomic
         let atomic = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), pipeline);
@@ -86,6 +94,7 @@ impl Terrain {
             material,
             generating: None,
             base_compute,
+            second_compute,
             counters: atomic,
         }
     }
