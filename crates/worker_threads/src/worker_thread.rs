@@ -27,7 +27,8 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
             let idx = thread_index;
             let data = &*ptr;
             let function = data.function.as_ref().unwrap();
-            let function = unsafe { &**function };
+            let function = unsafe {  std::mem::transmute::<u128, *const dyn Fn(&mut T)>(*function) };
+            let function = unsafe { &*function };
             let elements = &*data.elements;
 
             // Calculate the indices

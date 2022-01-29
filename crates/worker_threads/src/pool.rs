@@ -1,6 +1,6 @@
 use std::{
     cell::UnsafeCell,
-    sync::{atomic::Ordering::Relaxed, Arc, Barrier, RwLock},
+    sync::{atomic::Ordering::Relaxed, Arc, Barrier, RwLock, RwLockWriteGuard}, mem::ManuallyDrop,
 };
 
 use crate::{SharedData, SHUTDOWN};
@@ -39,15 +39,18 @@ impl<T: 'static> ThreadPool<T> {
     }
 
     // Execute the thread pool using the vector filled with pointers and with a custom chunk size
-    pub fn execute_raw<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: Vec<*mut T>, chunk_size: usize, task: F) {
+    pub fn execute_raw<'a, F: Fn(&mut T) + Sync + Send>(&self, elements: Vec<*mut T>, chunk_size: usize, task: F) {
         let (barrier, end_barrier, _shutdown_barrier) = self.barriers.as_ref();
         // The main task
-        let task = UnsafeCell::new(task);
+        let mut task = ManuallyDrop::new(Box::new(task));
+        let ptr: &dyn Fn(&mut T) = &*task;
+        let ptr = ptr as *const dyn Fn(&mut T);
+        let new_ptr = unsafe { std::mem::transmute(ptr) };
         {
             // Update the value, then unlock
-            let mut shared_data = self.arc.write().unwrap();
+            let mut shared_data: RwLockWriteGuard<'_, SharedData<T>> = self.arc.write().unwrap();
             shared_data.elements = elements;
-            shared_data.function = Some(task.get() as *const F);
+            shared_data.function = Some(new_ptr);
             // Calculate the chunk size
             shared_data.chunk_size = chunk_size;
             // Now we can unlock
@@ -63,15 +66,16 @@ impl<T: 'static> ThreadPool<T> {
             // Update the value, then unlock
             let mut shared_data = self.arc.write().unwrap();
             shared_data.clear();
+            unsafe { ManuallyDrop::drop(&mut task) }
         }
     }
     // Execute the thread pool using the vector filled with pointers. We will guess the approppriate chunk size
-    pub fn execute_vec_ptr<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: Vec<*mut T>, task: F) {
+    pub fn execute_vec_ptr<F: Fn(&mut T) + Sync + Send>(&self, elements: Vec<*mut T>, task: F) {
         let length = elements.len();
         self.execute_raw(elements, (length / self.max_thread_count) + 1, task);
     }
     // Execute the thread pool using a vector filled with mutable refences to the elements. We will guess the appropriate chunk size
-    pub fn execute<F: Fn(&mut T) + 'static + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
+    pub fn execute<F: Fn(&mut T) + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
         let elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
         self.execute_vec_ptr(elements, task);
     }

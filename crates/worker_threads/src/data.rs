@@ -2,7 +2,7 @@
 pub struct SharedData<T> {
     // Elements, and the fn pointer
     pub elements: Vec<*mut T>,
-    pub function: Option<*const dyn Fn(&mut T)>,
+    pub function: Option<u128>,
     // Some chunk distribution data
     pub chunk_size: usize,
 }
