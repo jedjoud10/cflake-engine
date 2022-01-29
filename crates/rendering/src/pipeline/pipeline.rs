@@ -1046,7 +1046,6 @@ impl Pipeline {
                     indexed_resources.insert(x.clone(), (parameters.clone(), *count));
                     *count += 1;
                 }
-                dbg!(&indexed_resources);
 
                 // First we gotta get how many resources of a single type we have, and their respective max name len
                 let types_and_counts = unique_count
@@ -1059,7 +1058,6 @@ impl Pipeline {
                         (res.clone(), (max_resources, max_name_len as usize))
                     })
                     .collect::<AHashMap<_, _>>();
-                dbg!(&types_and_counts);
 
                 // Now we can actually query the parameters
                 let mut output_queried_resources = AHashMap::<Resource, Vec<UpdatedParameter>>::new();
@@ -1068,12 +1066,11 @@ impl Pipeline {
                     // Get the resource's index
                     let resource_index = gl::GetProgramResourceIndex(oid, res.convert(), cstring.as_ptr());
                     if resource_index == gl::INVALID_INDEX { panic!() }
-                    dbg!(resource_index);
 
                     // Now we can finally access the resource's parameters
                     let converted_params = parameters.iter().map(|x| x.convert()).collect::<Vec<_>>();
                     let max_len = converted_params.len();
-                    let mut output = vec![0; max_len];
+                    let mut output = vec![-1; max_len];
                     gl::GetProgramResourceiv(
                         oid,
                         res.convert(),
@@ -1085,7 +1082,10 @@ impl Pipeline {
                         output.as_mut_ptr(),
                     );
 
-                    dbg!(&output);
+                    // Check for negative numbers, because if we fine some, that means that we failed to retrieve a specific parameter
+                    for maybe in output.iter() {
+                        if *maybe == -1 { panic!() }
+                    }
 
                     let converted_outputs = parameters
                         .iter()
