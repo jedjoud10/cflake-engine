@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
+bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 assets = { path = "../assets" }
 math = { path = "../math" }
 others = { path = "../others" }

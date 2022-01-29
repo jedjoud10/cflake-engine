@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use super::{ObjectID, PipelineObject, TrackedTaskID};
+use super::{ObjectID, PipelineObject, ReservedTrackedTaskID};
 use crate::{
     advanced::{
         atomic::{AtomicGroup, AtomicGroupRead},
@@ -53,12 +53,9 @@ pub enum PipelineTrackedTask {
 pub enum PipelineTaskCombination {
     // Normal tasks
     Single(PipelineTask),
-    SingleReqTracked(PipelineTask, TrackedTaskID),
+    SingleReqTracked(PipelineTask, ReservedTrackedTaskID),
     Batch(Vec<PipelineTask>),
 
     // Tracking task
-    SingleTracked(PipelineTrackedTask, TrackedTaskID, Option<TrackedTaskID>),
-    SingleTrackedFinalizer(TrackedTaskID, Vec<TrackedTaskID>),
-    // Compute Shader (Self: 0)
-    // Finalizer (Self: 1, Requires: [0])
+    SingleTracked(PipelineTrackedTask, ReservedTrackedTaskID, Option<ReservedTrackedTaskID>),
 }

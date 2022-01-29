@@ -14,7 +14,7 @@ use main::{
             shader::ShaderSettings,
             texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
         },
-        object::{ObjectID, TrackedTaskID},
+        object::{ObjectID, ReservedTrackedTaskID},
         pipeline::pipec,
         utils::DataType,
     },
@@ -25,7 +25,7 @@ use std::collections::HashMap;
 // Some data that we store whenever we are generating the voxels
 pub struct TerrainGenerationData {
     // The ID of the main tracked task
-    pub main_id: TrackedTaskID,
+    pub main_id: ReservedTrackedTaskID,
     // The Entity ID of the chunk that we are generating this voxel data for
     pub chunk_id: EntityID,
 }

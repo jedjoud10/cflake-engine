@@ -7,7 +7,7 @@ use main::rendering::basics::readwrite::ReadBytes;
 use main::rendering::basics::shader::ShaderSettings;
 use main::rendering::basics::transfer::Transferable;
 use main::rendering::basics::uniforms::ShaderUniformsGroup;
-use main::rendering::object::{ObjectID, PipelineTrackedTask, TrackedTaskID};
+use main::rendering::object::{ObjectID, PipelineTrackedTask, ReservedTrackedTaskID};
 use main::rendering::pipeline::pipec;
 use main::rendering::utils::AccessType::Read;
 use main::rendering::utils::UpdateFrequency;
@@ -17,7 +17,8 @@ pub(crate) struct TestSystemData {
     shader_storage: ObjectID<ShaderStorage>,
     compute_shader: ObjectID<ComputeShader>,
     transfer: Option<ReadBytes>,
-    finalized: TrackedTaskID,
+    compute: ReservedTrackedTaskID,
+    read: ReservedTrackedTaskID,
 }
 ecs::impl_component!(TestSystemData);
 
@@ -28,21 +29,20 @@ fn run(mut context: Context, query: ComponentQuery) {
     let mut data = write.ecs.global_mut::<TestSystemData>().unwrap();
     let pipeline = write.pipeline.read().unwrap();
     if data.transfer.is_none() && pipeline.get_shader_storage(data.shader_storage).is_some() {
-        
+        println!("Dispatch {}", write.time.frame_count);
         // Make the shader group
         let mut group = ShaderUniformsGroup::new();
         group.set_shader_storage("_", data.shader_storage, 0);
         
         let settings = ComputeShaderExecutionSettings::new(data.compute_shader, (4, 1, 1)).set_uniforms(group);
-        let compute = pipec::tracked_task(PipelineTrackedTask::RunComputeShader(data.compute_shader, settings), None, &*pipeline);
+        pipec::tracked_task(PipelineTrackedTask::RunComputeShader(data.compute_shader, settings), data.compute, &*pipeline);
         let read = ReadBytes::default();
         let transfer = read.transfer();
         data.transfer = Some(read);
-        let read = pipec::tracked_task(PipelineTrackedTask::ShaderStorageReadBytes(data.shader_storage, transfer), Some(compute), &*pipeline);
-        let finalized = pipec::tracked_finalizer(vec![compute, read], &*pipeline).unwrap();
-        data.finalized = finalized;
+        pipec::tracked_task_requirement(PipelineTrackedTask::ShaderStorageReadBytes(data.shader_storage, transfer), data.read, data.compute, &*pipeline);
     } else {
-        if pipec::has_task_executed(data.finalized, &*pipeline).unwrap_or_default() {
+        println!("Check {}", write.time.frame_count);
+        if pipec::did_tasks_execute(&[data.compute, data.read], &*pipeline) {
             let taken = data.transfer.take().unwrap();
             // Read the bytes as a slice
             let read = taken.fill_vec::<i32>().unwrap();
@@ -69,6 +69,7 @@ pub fn system(write: &mut WriteContext) {
         shader_storage,
         compute_shader,
         transfer: None,
-        finalized: TrackedTaskID::default(),
+        compute: ReservedTrackedTaskID::default(),
+        read: ReservedTrackedTaskID::default(),
     }).unwrap();
 }

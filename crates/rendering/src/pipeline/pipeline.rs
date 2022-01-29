@@ -13,12 +13,11 @@ use crate::{
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
         readwrite::ReadBytes,
     },
-    object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, TrackedTaskID},
+    object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID, RESERVED_TRACKED_ID_COUNTER},
     pipeline::{camera::Camera, pipec, sender, PipelineRenderer},
     utils::{RenderWrapper, Window},
 };
 use ahash::{AHashMap, AHashSet};
-use gl::MAP_INVALIDATE_RANGE_BIT;
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
@@ -46,7 +45,7 @@ pub struct DefaultPipelineObjects {
 #[derive(Default)]
 pub(crate) struct InternalPipeline {
     // Keep track of the GlTrackers and their corresponding ID
-    gltrackers: AHashMap<TrackedTaskID, GlTracker>,
+    gltrackers: AHashMap<ReservedTrackedTaskID, GlTracker>,
 }
 
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
@@ -57,8 +56,7 @@ pub struct Pipeline {
     tasks: RwLock<Vec<PipelineTaskCombination>>,
 
     // Tracked tasks
-    completed_tracked_tasks: AHashSet<TrackedTaskID>,
-    pub(crate) completed_finalizers: AHashSet<TrackedTaskID>,
+    pub(crate) completed_tasks: bitfield::AtomicSparseBitfield,
 
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
@@ -119,7 +117,7 @@ impl Pipeline {
         }
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: TrackedTaskID) {
+    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: ReservedTrackedTaskID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
@@ -131,24 +129,16 @@ impl Pipeline {
         // Add the tracked ID to our pipeline
         internal.gltrackers.insert(tracking_id, gltracker);
     }
-    // Finalizer for the tracked task
-    fn handle_tracked_finalizer(&mut self, tracking_id: TrackedTaskID, requirements: Vec<TrackedTaskID>) {
-        // Add the finalizer since all the required tasks have finished executing
-        self.completed_finalizers.insert(tracking_id);
-        // And clean the old tasks
-        for require in requirements {
-            self.completed_tracked_tasks.remove(&require);
-        }
-    }
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
-        let completed = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
-        for (id, _) in completed {
-            self.completed_tracked_tasks.insert(id);
+        let completed_ids = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
+        
+        // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
+        for (completed, _) in completed_ids {
+            self.completed_tasks.set(completed.0, true);
         }
-        // Clean the completed tracked finalizers
-        self.completed_finalizers.clear();
+
         // Always flush during the update
         self.flush(internal, renderer);
     }
@@ -164,26 +154,18 @@ impl Pipeline {
                 .drain_filter(|task| match task {
                     PipelineTaskCombination::SingleReqTracked(_, require) => {
                         // Only let this task through if the required tracked task completed first
-                        self.completed_tracked_tasks.contains(require) || self.completed_finalizers.contains(require)
+                        self.completed_tasks.get(require.0)
                     }
                     PipelineTaskCombination::SingleTracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
                         let valid = require.and_then(|x| {
-                            if self.completed_tracked_tasks.contains(&x) || self.completed_finalizers.contains(&x) {
+                            if self.completed_tasks.get(x.0) {
                                 None
                             } else {
                                 Some(())
                             }
                         });
                         valid.is_none()
-                    }
-                    PipelineTaskCombination::SingleTrackedFinalizer(_, requirements) => {
-                        // Check each task
-                        if requirements.is_empty() {
-                            panic!();
-                        }
-                        let valid = requirements.into_iter().all(|x| self.completed_tracked_tasks.contains(&x));
-                        valid
                     }
                     _ => true,
                 })
@@ -203,7 +185,6 @@ impl Pipeline {
                 }
 
                 PipelineTaskCombination::SingleTracked(task, tracking_id, _) => self.execute_tracked_task(internal, renderer, task, tracking_id),
-                PipelineTaskCombination::SingleTrackedFinalizer(tracking_id, requirements) => self.handle_tracked_finalizer(tracking_id, requirements),
             }
         }
 

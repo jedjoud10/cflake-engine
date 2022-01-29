@@ -34,13 +34,17 @@ impl GlTracker {
     pub fn completed(&self, pipeline: &Pipeline) -> bool {
         let result = unsafe {
             let res = gl::ClientWaitSync(self.fence, gl::SYNC_FLUSH_COMMANDS_BIT, 0);
-            // Delete the fence since we won't use it anymore
-            gl::DeleteSync(self.fence);
             res
         };
 
         // Check
         let completed = result == gl::ALREADY_SIGNALED || result == gl::CONDITION_SATISFIED;
+        if completed {
+            // Delete the fence since we won't use it anymore
+            unsafe {
+                gl::DeleteSync(self.fence);
+            }
+        }
         // If we did complete, we must execute the callback
         if completed {
             let mut callback = self.callback.borrow_mut();
