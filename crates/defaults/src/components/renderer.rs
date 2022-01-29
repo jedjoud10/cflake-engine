@@ -1,5 +1,5 @@
-use main::rendering::{self, object::ObjectID};
 use main::ecs::component::Component;
+use main::rendering::{self, object::ObjectID};
 // An Renderer component
 #[derive(Component)]
 pub struct Renderer {

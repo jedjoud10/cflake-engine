@@ -5,10 +5,10 @@ pub mod test {
     use crate::{
         component::{
             defaults::{Name, Tagged},
-            registry, ComponentQuery,
-            Component,
+            registry, Component, ComponentQuery,
         },
-        entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID}, ECSManager,
+        entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
+        ECSManager,
     };
 
     // A test context

@@ -93,7 +93,7 @@ pub fn init(mut write: core::WriteContext) {
         fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self {
             Self
         }
-    } 
+    }
 
     // Add the terrain
     //let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
@@ -101,7 +101,6 @@ pub fn init(mut write: core::WriteContext) {
     let reserved_id = rendering::object::ReservedTrackedTaskID::default();
     rendering::pipeline::pipec::tracked_task(rendering::object::PipelineTrackedTask::Test, reserved_id, &pipeline);
     drop(pipeline);
-    rendering::pipeline::pipec::flush_and_execute(pipeline_.read().unwrap(), &write.pipeline_handler);
     rendering::pipeline::pipec::flush_and_execute(pipeline_.read().unwrap(), &write.pipeline_handler);
 
     // Wait until the task executes

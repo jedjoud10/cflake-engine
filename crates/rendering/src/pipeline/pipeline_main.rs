@@ -40,14 +40,12 @@ pub mod pipec {
         drop(pipeline);
         handler.sbarrier.wait();
         handler.ebarrier.wait();
-        
+
         // Wait until we wait. Lol
         println!("Waiting for flush completion...");
-        while !handler.waiting.load(Ordering::Relaxed) {
-        }
+        while !handler.waiting.load(Ordering::Relaxed) {}
         println!("Flushed!");
     }
-
 
     // Tracked Tasks
     // Detect if a multitude of tasks have all executed

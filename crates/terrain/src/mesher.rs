@@ -6,9 +6,9 @@ use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
 use rendering::basics::model::Model;
-use veclib::Swizzable;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use veclib::Swizzable;
 
 use std::time::Instant;
 

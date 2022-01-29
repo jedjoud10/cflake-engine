@@ -47,7 +47,9 @@ impl GlTracker {
     // Check wether the corresponding fence object has completed
     pub fn completed(&self, pipeline: &Pipeline) -> bool {
         // Check if this tracker was made to be always completed
-        if self.fence.is_none() { return true; }
+        if self.fence.is_none() {
+            return true;
+        }
         let result = unsafe {
             let res = gl::ClientWaitSync(self.fence.unwrap(), gl::SYNC_FLUSH_COMMANDS_BIT, 0);
             res

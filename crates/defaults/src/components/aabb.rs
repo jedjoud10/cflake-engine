@@ -1,4 +1,4 @@
-use main::{math, ecs::component::Component};
+use main::{ecs::component::Component, math};
 // An AABB component
 #[derive(Default, Component)]
 pub struct AABB {

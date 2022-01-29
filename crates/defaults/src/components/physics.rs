@@ -1,5 +1,5 @@
-use main::physics::PhysicsObject;
 use main::ecs::component::Component;
+use main::physics::PhysicsObject;
 
 // A physics component
 #[derive(Default, Clone, Component)]

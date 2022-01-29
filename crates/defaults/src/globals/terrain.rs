@@ -1,5 +1,8 @@
 use main::{
-    ecs::{component::{ComponentID, Component}, entity::EntityID},
+    ecs::{
+        component::{Component, ComponentID},
+        entity::EntityID,
+    },
     math::{
         self,
         octrees::{AdvancedOctree, Octree, OctreeNode},
@@ -7,18 +10,19 @@ use main::{
     rendering::{
         advanced::{
             atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
-            compute::ComputeShader, shaderstorage::ShaderStorage,
+            compute::ComputeShader,
+            shaderstorage::ShaderStorage,
         },
         basics::{
             material::Material,
-            shader::{ShaderSettings},
+            shader::ShaderSettings,
             texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
         },
         object::{ObjectID, ReservedTrackedTaskID},
         pipeline::pipec,
-        utils::{DataType, UpdateFrequency, AccessType},
+        utils::{AccessType, DataType, UpdateFrequency},
     },
-    terrain::{ChunkCoords, VoxelData, MAIN_CHUNK_SIZE, Voxable},
+    terrain::{ChunkCoords, Voxable, VoxelData, MAIN_CHUNK_SIZE},
 };
 use std::{collections::HashMap, marker::PhantomData};
 
@@ -49,7 +53,7 @@ pub struct Terrain<U: Voxable + 'static> {
     pub second_compute: ObjectID<ComputeShader>,
     //pub shader_storage: ObjectID<ShaderStorage>,
     pub atomics: ObjectID<AtomicGroup>,
-    
+
     _phantom: PhantomData<U>,
 }
 
@@ -76,8 +80,6 @@ impl<V: Voxable + 'static> Terrain<V> {
 
         let base_compute = ComputeShader::new(settings).unwrap();
         let base_compute = pipec::construct(base_compute, pipeline);
-        
-
 
         // Load the second pass compute shader
         let settings = ShaderSettings::default()
@@ -95,20 +97,19 @@ impl<V: Voxable + 'static> Terrain<V> {
         layout(binding = 2) uniform atomic_uint positive_counter;
         layout(binding = 2) uniform atomic_uint negative_counter;
         layout(std430, binding = 3) buffer buffer_data
-        {   
+        {
             Voxel voxels[_CSPT][_CSPT][_CSPT];
             BundledVoxel bundled_voxels[_CSPO][_CSPO][_CSPO];
         };
 
 
         // Create a Shader Storage that will hold all of our voxel data
-        let arbitrary_data = (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * 
+        let arbitrary_data = (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) *
         let shader_storage = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Read, )
         */
 
         // Also construct the atomics
         let atomics = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), pipeline);
-
 
         println!("Terrain component init done!");
         Self {

@@ -1,6 +1,6 @@
 use main::{
     ecs::component::Component,
-    terrain::{ChunkCoords, VoxelData, Voxable},
+    terrain::{ChunkCoords, Voxable, VoxelData},
 };
 
 // A component that will be added to chunk entities

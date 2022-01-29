@@ -1,6 +1,6 @@
+use main::ecs::component::Component;
 use main::math;
 use main::rendering::utils::DEFAULT_WINDOW_SIZE;
-use main::ecs::component::Component;
 // A simple camera component
 #[derive(Component)]
 pub struct Camera {

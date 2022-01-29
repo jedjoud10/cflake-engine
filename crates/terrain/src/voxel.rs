@@ -7,16 +7,16 @@ use rendering::basics::model::Model;
 pub struct VoxelWrapper<T: Voxable> {
     // Default values
     pub density: f32,
-    
+
     // Voxable values
     pub normal: veclib::Vector4<f32>,
     pub extra: T,
 }
 
-
 // A voxel trait that can contain some extra data
 pub trait Voxable
-    where Self: Sized
+where
+    Self: Sized,
 {
     // Interpolate between two voxels values
     fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self;

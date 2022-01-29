@@ -7,7 +7,19 @@ use crate::{
         compute::{ComputeShader, ComputeShaderExecutionSettings},
         shaderstorage::ShaderStorage,
     },
-    basics::{material::Material, model::Model, readwrite::ReadBytes, renderer::Renderer, shader::{Shader, info::{ShaderInfo, ShaderInfoQuerySettings}}, texture::Texture, transfer::Transfer, Buildable},
+    basics::{
+        material::Material,
+        model::Model,
+        readwrite::ReadBytes,
+        renderer::Renderer,
+        shader::{
+            info::{ShaderInfo, ShaderInfoQuerySettings},
+            Shader,
+        },
+        texture::Texture,
+        transfer::Transfer,
+        Buildable,
+    },
     pipeline::camera::Camera,
 };
 

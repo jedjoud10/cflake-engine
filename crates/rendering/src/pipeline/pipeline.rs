@@ -9,7 +9,10 @@ use crate::{
         model::{Model, ModelBuffers},
         readwrite::ReadBytes,
         renderer::Renderer,
-        shader::{Shader, ShaderSettings, ShaderSource, ShaderSourceType, info::{ShaderInfoQuerySettings, ShaderInfo}},
+        shader::{
+            info::{ShaderInfo, ShaderInfoQuerySettings},
+            Shader, ShaderSettings, ShaderSource, ShaderSourceType,
+        },
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
@@ -131,6 +134,14 @@ impl Pipeline {
 
         // Add the tracked ID to our pipeline
         internal.gltrackers.insert(tracking_id, gltracker);
+
+        // Also check each GlTracker and check if it finished executing
+        let completed_ids = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
+
+        // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
+        for (completed, _) in completed_ids {
+            self.completed_tasks.set(completed.0, true);
+        }
     }
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
@@ -393,7 +404,11 @@ impl Pipeline {
 
                     // Put the line count
                     let error_source_lines = source_data.text.lines().enumerate();
-                    let error_source = error_source_lines.into_iter().map(|(count, line)| format!("({}): {}", count+1, line)).collect::<Vec<String>>().join("\n");
+                    let error_source = error_source_lines
+                        .into_iter()
+                        .map(|(count, line)| format!("({}): {}", count + 1, line))
+                        .collect::<Vec<String>>()
+                        .join("\n");
                     println!("{}", error_source);
 
                     println!("Error: \n\x1b[31m{}", string);
@@ -483,7 +498,11 @@ impl Pipeline {
                 let string = String::from_utf8(printable_log).unwrap();
                 // Put the line count
                 let error_source_lines = shader.source.text.lines().enumerate();
-                let error_source = error_source_lines.into_iter().map(|(count, line)| format!("({}): {}", count+1, line)).collect::<Vec<String>>().join("\n");
+                let error_source = error_source_lines
+                    .into_iter()
+                    .map(|(count, line)| format!("({}): {}", count + 1, line))
+                    .collect::<Vec<String>>()
+                    .join("\n");
                 println!("{}", error_source);
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
@@ -1012,9 +1031,12 @@ impl Pipeline {
     }
     // Query some information about a shader
     fn query_shader_info(&mut self, id: ObjectID<Shader>, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
-        GlTracker::fake(move |pipeline| unsafe {
-            // Get the query info if needed
-        }, self)
+        GlTracker::fake(
+            move |pipeline| unsafe {
+                // Get the query info if needed
+            },
+            self,
+        )
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {

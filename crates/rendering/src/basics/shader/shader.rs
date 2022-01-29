@@ -126,7 +126,10 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             // Get the source
             let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
             let source_name = &c[2..(c.len() - 2)].to_string();
-            let source = settings.external_code.get(source_name).expect(&format!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
+            let source = settings
+                .external_code
+                .get(source_name)
+                .expect(&format!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
             *line = source.clone();
             break;
         }
