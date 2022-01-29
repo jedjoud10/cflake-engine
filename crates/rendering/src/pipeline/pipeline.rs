@@ -10,7 +10,7 @@ use crate::{
         readwrite::ReadBytes,
         renderer::Renderer,
         shader::{
-            info::{ShaderInfo, ShaderInfoQuerySettings, QueryResource, QueryParameter, Resource},
+            info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
             Shader, ShaderSettings, ShaderSource, ShaderSourceType,
         },
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
@@ -25,13 +25,14 @@ use ahash::{AHashMap, AHashSet};
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
+    collections::hash_map::Entry,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::{null, null_mut},
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    }, collections::hash_map::Entry,
+    },
 };
 
 // Some default values like the default material or even the default shader
@@ -1045,32 +1046,67 @@ impl Pipeline {
                     indexed_resources.insert(x.clone(), (parameters.clone(), *count));
                     *count += 1;
                 }
+                dbg!(&indexed_resources);
 
                 // First we gotta get how many resources of a single type we have, and their respective max name len
-                let types_and_counts = unique_count.iter().map(|(res, _)| {
-                    let mut max_resources = 0_i32;
-                    let mut max_name_len = 0_i32;
-                    gl::GetProgramInterfaceiv(oid, res.convert(), gl::ACTIVE_RESOURCES, &mut max_resources);
-                    gl::GetProgramInterfaceiv(oid, res.convert(), gl::MAX_NAME_LENGTH, &mut max_name_len);
-                    (res.clone(), (max_resources, max_name_len as usize))
-                }).collect::<AHashMap<_, _>>();
-                
+                let types_and_counts = unique_count
+                    .iter()
+                    .map(|(res, _)| {
+                        let mut max_resources = 0_i32;
+                        let mut max_name_len = 0_i32;
+                        gl::GetProgramInterfaceiv(oid, res.convert(), gl::ACTIVE_RESOURCES, &mut max_resources);
+                        gl::GetProgramInterfaceiv(oid, res.convert(), gl::MAX_NAME_LENGTH, &mut max_name_len);
+                        (res.clone(), (max_resources, max_name_len as usize))
+                    })
+                    .collect::<AHashMap<_, _>>();
+                dbg!(&types_and_counts);
+
                 // Now we can actually query the parameters
+                let mut output_queried_resources = AHashMap::<Resource, Vec<UpdatedParameter>>::new();
                 for (res, (parameters, i)) in indexed_resources {
                     // Get the resource's name
                     let mut str_len = 0;
-                    let (max_unique_res_count, max_name_len) = types_and_counts.get(&res.res).unwrap(); 
-                    let mut char_vec = vec![0_u8; *max_name_len];
+                    let (max_unique_res_count, max_name_len) = types_and_counts.get(&res.res).unwrap();
+                    let mut char_vec = vec![0_i8; *max_name_len + 1];
                     gl::GetProgramResourceName(oid, res.convert(), i as u32, *max_unique_res_count, &mut str_len, char_vec.as_mut_ptr() as *mut i8);
-
                     // Get the resource's index
-                    let resource_index = gl::GetProgramResourceIndex(oid, res.convert(), char_vec.as_ptr() as *const i8);
-
+                    let resource_index = gl::GetProgramResourceIndex(oid, res.convert(), char_vec.as_ptr());
+                    dbg!(resource_index);
                     // Now char_vec contains the name of the resource
+                    let char_vec = char_vec.into_iter().map(|x| x as u8).collect::<Vec<_>>();
                     let name = String::from_utf8(char_vec).unwrap();
+                    dbg!(name);
 
                     // Now we can finally access the resource's parameters
+                    let converted_params = parameters.iter().map(|x| x.convert()).collect::<Vec<_>>();
+                    let max_len = converted_params.len();
+                    let mut output = vec![0; max_len];
+                    gl::GetProgramResourceiv(
+                        oid,
+                        res.convert(),
+                        resource_index,
+                        max_len as i32,
+                        converted_params.as_ptr(),
+                        output.len() as i32,
+                        null_mut(),
+                        output.as_mut_ptr(),
+                    );
+
+                    dbg!(&output);
+
+                    let converted_outputs = parameters
+                        .iter()
+                        .zip(output)
+                        .map(|(x, opengl_val)| x.convert_output(opengl_val))
+                        .collect::<Vec<UpdatedParameter>>();
+
+                    // After reading everything, we can add convert the output values into their respective Rust enums and store them
+                    output_queried_resources.insert(res, converted_outputs);
                 }
+
+                // Finally update the mutex that holds the queried resources
+                let mut lock = read.0.res.lock().unwrap();
+                *lock = output_queried_resources;
             },
             self,
         )

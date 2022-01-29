@@ -99,9 +99,21 @@ pub fn init(mut write: core::WriteContext) {
     //let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
     //write.ecs.add_global(terrain).unwrap();
     let reserved_id = rendering::object::ReservedTrackedTaskID::default();
-    rendering::pipeline::pipec::tracked_task(rendering::object::PipelineTrackedTask::Test, reserved_id, &pipeline);
+    let mut settings = rendering::basics::shader::info::ShaderInfoQuerySettings::default();
+    let res = rendering::basics::shader::info::Resource {
+        res: rendering::basics::shader::info::QueryResource::Uniform,
+        name: "uv_scale".to_string(),
+    };
+    settings.query(res.clone(), vec![rendering::basics::shader::info::QueryParameter::Location]);
+    let read = rendering::basics::shader::info::ShaderInfo::default();
+    use cflake_engine::rendering::basics::transfer::Transferable;
+    let transfer = read.transfer();
+    rendering::pipeline::pipec::tracked_task(rendering::object::PipelineTrackedTask::QueryShaderInfo(shader, settings, transfer), reserved_id, &pipeline);
     drop(pipeline);
     rendering::pipeline::pipec::flush_and_execute(pipeline_.read().unwrap(), &write.pipeline_handler);
+
+    let info = read.get(&res).unwrap();
+    dbg!(info);
 
     // Wait until the task executes
     let pipeline = pipeline_.read().unwrap();
