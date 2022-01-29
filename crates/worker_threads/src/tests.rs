@@ -18,19 +18,17 @@ pub mod test {
     #[test]
     // Test the shared vector
     pub fn test_vec() {
-        let pool = ThreadPool::<i32>::new(1, || {});
-        let mut numbers = (0..512).collect::<Vec<_>>();
-        let shared = SharedVec::<i32>::new(512);
+        let pool = ThreadPool::<i32>::new(8, || {});
+        let mut numbers = (0..65535).collect::<Vec<_>>();
+        let shared = SharedVec::<i32>::new( 65535);
         let data = 10;
         pool.execute(&mut numbers, |x| {
             *x += data;
             let y = shared.write().unwrap();
             *y += *x;
         });
-        let vec = Arc::try_unwrap(shared.vec).unwrap();
-        for x in numbers {
-            dbg!(x);
-        }
+        let numbers2 = (10..65545).collect::<Vec<_>>();
+        assert_eq!(numbers, numbers2);
     }
     #[test]
     // Test the speed compared to single threaded

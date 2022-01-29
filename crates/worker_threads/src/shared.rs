@@ -29,7 +29,6 @@ impl<T> SharedVec<T> {
     }
     // Read the current element
     pub fn read(&self) -> Option<&T> {
-
         // Then get the index and the unsafe cell
         let idx = CURRENT_EXECUTION_INDEX.with(|x| x.get());
         let cell = self.vec.get(idx)?;
@@ -45,5 +44,10 @@ impl<T> SharedVec<T> {
 
         // Then we can read from the cell
         Some(unsafe { &mut *cell.get() })
+    }
+    // Turn this shared vec into it's safe counterpart
+    pub fn into_inner(self) -> Vec<T> {
+        let vec = Arc::try_unwrap(self.vec).unwrap();
+        vec.into_iter().map(|x| x.into_inner()).collect::<Vec<_>>()
     }
 }
