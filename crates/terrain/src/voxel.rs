@@ -7,9 +7,9 @@ use rendering::basics::model::Model;
 pub struct VoxelWrapper<T: Voxable> {
     // Default values
     pub density: f32,
-    pub normal: veclib::Vector4<f32>,
-
+    
     // Voxable values
+    pub normal: veclib::Vector4<f32>,
     pub extra: T,
 }
 
