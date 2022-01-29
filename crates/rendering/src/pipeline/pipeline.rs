@@ -389,6 +389,11 @@ impl Pipeline {
                     let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                     let string = String::from_utf8(printable_log).unwrap();
 
+                    // Put the line count
+                    let error_source_lines = source_data.text.lines().enumerate();
+                    let error_source = error_source_lines.into_iter().map(|(count, line)| format!("({}): {}", count+1, line)).collect::<Vec<String>>().join("\n");
+                    println!("{}", error_source);
+
                     println!("Error: \n\x1b[31m{}", string);
                     println!("\x1b[0m");
                     panic!();
@@ -474,7 +479,10 @@ impl Pipeline {
                 println!("Error while compiling shader source {}!:", shader.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
-
+                // Put the line count
+                let error_source_lines = shader.source.text.lines().enumerate();
+                let error_source = error_source_lines.into_iter().map(|(count, line)| format!("({}): {}", count+1, line)).collect::<Vec<String>>().join("\n");
+                println!("{}", error_source);
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
                 panic!();
@@ -1064,10 +1072,10 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     );
 
     // Create the default rendering shader
-    let ss = ShaderSettings::default()
+    let settings = ShaderSettings::default()
         .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
         .source("defaults\\shaders\\rendering\\default.frsh.glsl");
-    let shader = pipec::construct(Shader::new(ss).unwrap(), pipeline);
+    let shader = pipec::construct(Shader::new(settings).unwrap(), pipeline);
 
     // Create the default material
     let mut material = Material::default().set_shader(shader);

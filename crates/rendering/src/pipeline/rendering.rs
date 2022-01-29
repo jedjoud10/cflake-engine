@@ -133,10 +133,10 @@ impl PipelineRenderer {
         println!("Quad model {:?}", self.quad_model);
 
         // Load the screen shader
-        let ss = ShaderSettings::default()
+        let settings = ShaderSettings::default()
             .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
             .source("defaults\\shaders\\rendering\\screen.frsh.glsl");
-        self.screenshader = pipec::construct(Shader::new(ss).unwrap(), pipeline);
+        self.screenshader = pipec::construct(Shader::new(settings).unwrap(), pipeline);
 
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement

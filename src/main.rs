@@ -67,10 +67,10 @@ pub fn init(mut write: core::WriteContext) {
 
     // Load a terrain material
     // Load the shader first
-    let ss = rendering::basics::shader::ShaderSettings::default()
+    let settings = rendering::basics::shader::ShaderSettings::default()
         .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
         .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
-    let shader = rendering::pipeline::pipec::construct(rendering::basics::shader::Shader::new(ss).unwrap(), &*pipeline);
+    let shader = rendering::pipeline::pipec::construct(rendering::basics::shader::Shader::new(settings).unwrap(), &*pipeline);
     // Then the textures
     let white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
     let normal_map = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
@@ -87,6 +87,6 @@ pub fn init(mut write: core::WriteContext) {
     let material = rendering::pipeline::pipec::construct(material, &*pipeline);
 
     // Add the terrain
-    //let terrain = defaults::globals::Terrain::new(material, 6, &*pipeline);
-    //write.ecs.add_global(terrain).unwrap();
+    let terrain = defaults::globals::Terrain::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
+    write.ecs.add_global(terrain).unwrap();
 }

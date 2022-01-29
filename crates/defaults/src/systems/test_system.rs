@@ -61,8 +61,8 @@ pub fn system(write: &mut WriteContext) {
     let arr = [1, 5, 2, -9];
     let shader_storage = pipec::construct(ShaderStorage::new_default(UpdateFrequency::Static, Read, arr, 4 * 4), &*pipeline);
 
-    let ss = ShaderSettings::default().source("defaults\\shaders\\others\\template_compute.cmpt.glsl");
-    let compute_shader = ComputeShader::new(ss).unwrap();
+    let settings = ShaderSettings::default().source("defaults\\shaders\\others\\template_compute.cmpt.glsl");
+    let compute_shader = ComputeShader::new(settings).unwrap();
     let compute_shader = pipec::construct(compute_shader, &*pipeline);
 
     drop(pipeline);

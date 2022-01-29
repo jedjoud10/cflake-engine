@@ -122,11 +122,11 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             break;
         }
         // External shader code
-        if !settings.external_code.is_empty() && line.trim().starts_with("#include_custom ") {
+        if line.trim().starts_with("#include_custom ") {
             // Get the source
             let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-            let source_id = &c[2..(c.len() - 2)].to_string();
-            let source = settings.external_code.get(source_id).unwrap();
+            let source_name = &c[2..(c.len() - 2)].to_string();
+            let source = settings.external_code.get(source_name).expect(&format!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
             *line = source.clone();
             break;
         }
@@ -157,13 +157,13 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
         }
         // Constants
         if line.trim().contains("#constant ") {
-            fn format(line: &String, val: String) -> String {
-                format!("{} {};", line.trim().split("#constant").next().unwrap(), val)
+            fn format(line: &String, val: &String) -> String {
+                format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
             }
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
             let x = settings.consts.get(const_name);
             if let Some(x) = x {
-                *line = format(line, FADE_IN_SPEED.to_string());
+                *line = format(line, x);
                 Ok(())
             } else {
                 Err(RenderingError::new(format!(
