@@ -11,7 +11,7 @@ use main::{
         },
         basics::{
             material::Material,
-            shader::{ShaderSettings, info::ShaderSourceInfo},
+            shader::{ShaderSettings},
             texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
         },
         object::{ObjectID, ReservedTrackedTaskID},
@@ -73,7 +73,6 @@ impl<V: Voxable + 'static> Terrain<V> {
             .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path.clone())
             .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
-        let info = ShaderSourceInfo::new(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER, &settings);
 
         let base_compute = ComputeShader::new(settings).unwrap();
         let base_compute = pipec::construct(base_compute, pipeline);
