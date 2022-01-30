@@ -10,6 +10,7 @@ use rendering::basics::model::Model;
 use veclib::vec3;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::mem::MaybeUninit;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -241,73 +242,65 @@ pub fn solve_marching_squares(
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
+    // Allocate just enough for the maximum one
+    let mut vec = Vec::<SkirtVertex>::with_capacity(6);
     // Create the triangles from the local skirts
-    let mut skirt_vertices = match case {
-        1 => create_triangle(slice, offset, lv, ilv, &[0, 7, 1], tf),
-        2 => create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf),
+    match case {
+        1 => create_triangle(slice, offset, lv, ilv, &[0, 7, 1], tf, &mut vec),
+        2 => create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf, &mut vec),
         3 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[0, 7, 2], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 7, 3], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[0, 7, 2], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[2, 7, 3], tf, &mut vec);
         }
-        4 => create_triangle(slice, offset, lv, ilv, &[3, 5, 4], tf),
+        4 => create_triangle(slice, offset, lv, ilv, &[3, 5, 4], tf, &mut vec),
         5 => {
             // Two triangles at the corners
-            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf));
+            create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf, &mut vec);
             // Middle quad
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf, &mut vec);            
         }
         6 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[2, 1, 5], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[2, 1, 5], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf, &mut vec);
         }
         7 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[2, 0, 7], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 7, 5], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[2, 0, 7], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[2, 7, 5], tf, &mut vec);
         }
-        8 => create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf),
+        8 => create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf, &mut vec),
         9 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[1, 0, 6], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 5, 1], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[1, 0, 6], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[6, 5, 1], tf, &mut vec);
         }
         10 => {
             // Two triangles at the corners
-            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[2, 1, 3], tf));
+            create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[2, 1, 3], tf, &mut vec);
             // Middle quad
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf, &mut vec);
         }
         11 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[0, 6, 5], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 3, 2], tf));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[0, 5, 3], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[0, 6, 5], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[0, 3, 2], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[0, 5, 3], tf, &mut vec);
         }
         12 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[7, 6, 3], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[3, 6, 4], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[7, 6, 3], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[3, 6, 4], tf, &mut vec);
         }
         13 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[6, 4, 3], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 1, 0], tf));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[6, 3, 1], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[6, 4, 3], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[6, 1, 0], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[6, 3, 1], tf, &mut vec);
         }
         14 => {
-            let mut x = create_triangle(slice, offset, lv, ilv, &[4, 7, 6], tf);
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[4, 2, 1], tf));
-            x.append(&mut create_triangle(slice, offset, lv, ilv, &[4, 1, 7], tf));
-            x
+            create_triangle(slice, offset, lv, ilv, &[4, 7, 6], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[4, 2, 1], tf, &mut vec);
+            create_triangle(slice, offset, lv, ilv, &[4, 1, 7], tf, &mut vec);
         }
         0 | 15 => {
             /* Empty cases */
@@ -320,14 +313,14 @@ pub fn solve_marching_squares(
     };
     // Flip the vertices if needed
     if flip {
-        for x in 0..(skirt_vertices.len() / 3) {
+        for x in 0..(vec.len() / 3) {
             let swap_index0 = x * 3;
             let swap_index1 = x * 3 + 2;
-            skirt_vertices.swap(swap_index0, swap_index1);
+            vec.swap(swap_index0, swap_index1);
         }
     }
     // Actually add the skirt vertices
-    for x in skirt_vertices {
+    for x in vec {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(x.position);
         let normal: veclib::Vector3<f32> = vec3(x.normal.x.to_f32(), x.normal.y.to_f32(), x.normal.y.to_f32());
@@ -345,39 +338,35 @@ pub fn create_triangle(
     ilv: &[Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>],
     li: &[usize; 3],
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
-) -> Vec<SkirtVertex> {
+    vec: &mut Vec<SkirtVertex>,
+) {
     // Check if the local index is one of the interpolated ones
-    let skirt_vertices = li
-        .iter()
-        .map(|i| {
-            // Calculate the position and normal
-            let (vertex, normal, color) = match *i {
-                1 | 3 | 5 | 7 => {
-                    // Interpolated
-                    let transformed_index = (*i - 1) / 2;
-                    let v = (tf)(slice, &ilv[transformed_index].unwrap().1, &offset);
-                    let n = &ilv[transformed_index].as_ref().unwrap().0;
-                    let c = &ilv[transformed_index].as_ref().unwrap().2;
-                    (v, *n, *c)
-                }
-                0 | 2 | 4 | 6 => {
-                    // Not interpolated
-                    let transformed_index = (*i) / 2;
-                    let v = (tf)(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
-                    let n = &lv[transformed_index].normal;
-                    let c = &lv[transformed_index].color;
-                    (v, *n, *c)
-                }
-                _ => {
-                    /* The bruh funny */
-                    panic!()
-                }
-            };
-            // Return
-            SkirtVertex { position: vertex, normal, color }
-        })
-        .collect::<Vec<SkirtVertex>>();
-    skirt_vertices
+    for i in li {
+        // Calculate the position and normal
+        let (vertex, normal, color) = match i {
+            1 | 3 | 5 | 7 => {
+                // Interpolated
+                let transformed_index = (i - 1) / 2;
+                let v = (tf)(slice, &ilv[transformed_index].unwrap().1, &offset);
+                let n = &ilv[transformed_index].as_ref().unwrap().0;
+                let c = &ilv[transformed_index].as_ref().unwrap().2;
+                (v, *n, *c)
+            }
+            0 | 2 | 4 | 6 => {
+                // Not interpolated
+                let transformed_index = (i) / 2;
+                let v = (tf)(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
+                let n = &lv[transformed_index].normal;
+                let c = &lv[transformed_index].color;
+                (v, *n, *c)
+            }
+            _ => {
+                /* The bruh funny */
+                panic!()
+            }
+        };
+        vec.push(SkirtVertex { position: vertex, normal, color })        
+    }
 }
 // Tansform the 2D points into their 3D counterpart
 fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
