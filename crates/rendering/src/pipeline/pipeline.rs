@@ -539,7 +539,7 @@ impl Pipeline {
             gl::AttachShader(program, shader_source_program);
             // Finalize the shader and stuff
             gl::LinkProgram(program);
-
+            
             // Check for any errors
             let mut info_log_length: i32 = 0;
             let info_log_length_ptr: *mut i32 = &mut info_log_length;

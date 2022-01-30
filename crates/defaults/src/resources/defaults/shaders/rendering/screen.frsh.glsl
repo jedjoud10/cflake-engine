@@ -73,6 +73,6 @@ void main() {
 	if (depth > 0.999) {
 		color = sky_color;
 	} else {
-		color = diffuse;
+		color = pixel_color;
 	}
 }

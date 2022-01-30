@@ -48,7 +48,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
         // Generate the chunks if needed and only if we are not currently generating 
         if !terrain.generating {
             let octree = &mut terrain.octree;
-            if let Some((added, removed)) = octree.update(veclib::Vector3::ZERO) {
+            if let Some((added, removed)) = octree.update(camera_pos) {
                 terrain.swap_chunks = false;
                 // We have moved, thus the chunks need to be regenerated
                 

@@ -1,8 +1,4 @@
 #version 460 core
-#include "defaults\shaders\others\hashes.func.glsl"
-#include "defaults\shaders\noises\simplex.func.glsl"
-#include "defaults\shaders\noises\voronoi.func.glsl"
-#include "defaults\shaders\others\sdf.func.glsl"
 #include_custom {"voxel_include_path"}
 #include "defaults\shaders\voxel_terrain\shared.func.glsl"
 

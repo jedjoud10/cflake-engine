@@ -51,7 +51,7 @@ impl Terrain {
         // Create a new octree
         let octree = DiffOctree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64, HeuristicSettings::new(|node, target| {
             let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
-            dist < 1.2
+            dist < 1.2 || node.depth == 1
         }));
 
         // Load the first pass compute shader
@@ -93,7 +93,7 @@ impl Terrain {
 
         // Force a pipeline flush and wait till we get the results back
         pipec::flush_and_execute(pipeline_context).unwrap();
-        pipec::flush_and_execute(pipeline_context).unwrap();
+        //pipec::flush_and_execute(pipeline_context).unwrap();
 
         // Now we wait...
         let pipeline = pipeline_context.read();

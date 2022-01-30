@@ -7,12 +7,13 @@ pub fn preload_assets() {
     // -----Pre-load the game assets here-----
     assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
+    assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
 }
 pub fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 0.5, 1000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 1.0, 3000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
@@ -88,6 +89,6 @@ pub fn init(mut write: core::WriteContext) {
 
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &pipeline_);
+    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", material, 8, &pipeline_);
     write.ecs.add_global(terrain).unwrap();
 }
