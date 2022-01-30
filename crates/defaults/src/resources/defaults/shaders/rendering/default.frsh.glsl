@@ -26,7 +26,7 @@ void main() {
 	if (texture_vals.a != 1 || emissive_vals.a != 1) { discard; }
 
 	frag_emissive = emissive_vals.xyz * emissive_strength;
-	frag_diffuse = texture_vals.xyz * m_color;
+	frag_diffuse = texture_vals.xyz * m_color * tint;
 	vec3 tangent_space_normals = texture(normals_tex, (m_uv) * uv_scale).xyz * 2.0 - 1.0;
 	tangent_space_normals.xy *= normals_strength;
 	frag_normal = normalize(tbn * tangent_space_normals);

@@ -25,4 +25,5 @@ pub fn system(write: &mut WriteContext) {
     write.ecs.create_system_builder().set_run_event(run).build();
     // Set some debugging keybinds
     write.input.bind_key(Keys::F1, "debug");
+    write.input.bind_key(Keys::F2, "placeholder");
 }

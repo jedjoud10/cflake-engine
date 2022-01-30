@@ -29,13 +29,12 @@ pub struct ShaderUniformsGroup {
 // Gotta change the place where this shit is in
 impl ShaderUniformsGroup {
     // Combine a shader uniform group with an another one
-    pub fn combine(a: Self, b: Self) -> Self {
-        let mut x = a.uniforms;
-        let y = b.uniforms;
-        for a in y {
-            x.insert(a.0, a.1);
+    // This adds "second" to "main"
+    pub fn combine(mut main: Self, second: Self) -> Self {
+        for elem in second.uniforms {
+            main.uniforms.insert(elem.0, elem.1);
         }
-        Self { uniforms: x }
+        Self { uniforms: main.uniforms }
     }
     // Set singular i32 value
     pub fn set_i32(&mut self, name: &str, val: i32) {

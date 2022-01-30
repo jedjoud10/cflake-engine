@@ -18,7 +18,7 @@ use crate::{
         },
         texture::Texture,
         transfer::Transfer,
-        Buildable,
+        Buildable, uniforms::ShaderUniformsGroup,
     },
     pipeline::camera::Camera,
 };
@@ -39,6 +39,7 @@ pub enum PipelineTask {
     // Update tasks
     UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
+    UpdateRendererUniforms(ObjectID<Renderer>, ShaderUniformsGroup),
     UpdateCamera(Camera),
     // Specific pipeline tasks
     SetWindowDimension(veclib::Vector2<u16>),

@@ -113,10 +113,11 @@ impl Pipeline {
             PipelineTask::CreateComputeShader(id) => self.compute_create(id),
             PipelineTask::CreateAtomicGroup(id) => self.atomic_group_create(id),
             PipelineTask::CreateShaderStorage(id) => self.shader_storage_create(id),
-
+            
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
+            PipelineTask::UpdateRendererUniforms(id, uniforms) => { self.get_renderer_mut(id).and_then(|x| Some(x.update_uniforms(uniforms))); },
 
             // Window tasks
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),

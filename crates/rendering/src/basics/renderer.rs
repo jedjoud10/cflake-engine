@@ -5,29 +5,18 @@ use crate::{
     pipeline::Pipeline,
 };
 
-use super::{material::Material, model::Model, Buildable};
-// Yup
-bitflags! {
-    pub struct RendererFlags: u8 {
-        const WIREFRAME = 0b00000001;
-        const FADING_ANIMATION = 0b00000010;
-        const DEFAULT = Self::WIREFRAME.bits;
-    }
-}
-
-impl Default for RendererFlags {
-    fn default() -> Self {
-        Self::DEFAULT
-    }
-}
+use super::{material::Material, model::Model, Buildable, uniforms::ShaderUniformsGroup};
 
 // A component that will be linked to entities that are renderable
 #[derive(Default)]
 pub struct Renderer {
+    // Rendering
     pub model: ObjectID<Model>,
     pub material: ObjectID<Material>,
-    pub flags: RendererFlags,
     pub matrix: veclib::Matrix4x4<f32>,
+
+    // Some renderer specific uniforms that may override the material uniforms when rendering
+    pub uniforms: Option<ShaderUniformsGroup>,
 }
 
 impl PipelineObject for Renderer {}
@@ -69,14 +58,8 @@ impl Renderer {
         self.matrix = matrix;
         self
     }
-    // Add a flag to our flags
-    pub fn add_flag(mut self, flag: RendererFlags) -> Self {
-        self.flags.insert(flag);
-        self
-    }
-    // Remove a flag from our flags
-    pub fn remove_flag(mut self, flag: RendererFlags) -> Self {
-        self.flags.remove(flag);
-        self
+    // Update our uniforms
+    pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
+        self.uniforms = Some(uniforms);
     }
 }

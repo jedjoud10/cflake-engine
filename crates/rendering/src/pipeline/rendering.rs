@@ -81,7 +81,7 @@ impl PipelineRenderer {
         let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
 
         // Pass the MVP and the model matrix to the shader
-        let mut group = material.uniforms.clone();
+        let mut group = ShaderUniformsGroup::combine(material.uniforms.clone(), renderer.uniforms.clone().unwrap_or_default());
         let settings = ShaderUniformsSettings::new(material.shader);
         group.set_mat44f32("mvp_matrix", mvp_matrix);
         group.set_mat44f32("model_matrix", *model_matrix);
