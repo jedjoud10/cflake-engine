@@ -86,7 +86,9 @@ fn run(context: &mut Context, query: ComponentQuery) {
                     terrain.generating = false;
                     Some(())
                 }
-            })
+            });
+            // If we finished generating chunks, we can mass swap all of the chunks
+            terrain.swap_chunks = !terrain.generating;
         } else {
             // We must check if we have finished generating or not
             if pipec::did_tasks_execute(&[

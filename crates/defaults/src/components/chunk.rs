@@ -1,6 +1,6 @@
 use main::{
     ecs::component::Component,
-    terrain::{ChunkCoords, VoxelData},
+    terrain::{ChunkCoords, VoxelData}, rendering::{object::ObjectID, basics::model::Model},
 };
 
 // A component that will be added to chunk entities
@@ -8,8 +8,9 @@ use main::{
 pub struct Chunk {
     pub coords: ChunkCoords,
     pub voxel_data: Option<VoxelData>,
+    pub buffered_model: Option<ObjectID<Model>>,
+    pub added_renderer: bool,
     pub valid_surface: bool,
-    pub valid_model: bool,
 }
 
 impl Chunk {
@@ -18,8 +19,9 @@ impl Chunk {
         Self {
             coords,
             voxel_data: None,
+            buffered_model: None,
+            added_renderer: false,
             valid_surface: false,
-            valid_model: false,
         }
     }
 }

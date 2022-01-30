@@ -21,8 +21,10 @@ pub struct Terrain {
     // Chunk generation
     pub octree: DiffOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
+    pub chunks_to_remove: Vec<EntityID>,
     pub material: ObjectID<Material>,
     pub generating: bool,
+    pub swap_chunks: bool,
 
     // Voxel Generation
     pub compute_shader: ObjectID<ComputeShader>,
@@ -124,6 +126,7 @@ impl Terrain {
         Self {
             octree,
             chunks: Default::default(),
+            chunks_to_remove: Default::default(),
             material,
             compute_id: ReservedTrackedTaskID::default(),
             read_counters: ReservedTrackedTaskID::default(),
@@ -131,6 +134,7 @@ impl Terrain {
             read_final_voxels: ReservedTrackedTaskID::default(),
             cpu_data: None,
             generating: false,
+            swap_chunks: false,
             chunk_id: None,
             compute_shader: base_compute,
             second_compute_shader: second_compute,

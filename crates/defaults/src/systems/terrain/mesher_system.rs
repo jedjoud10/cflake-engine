@@ -16,35 +16,34 @@ fn run(context: &mut Context, query: ComponentQuery) {
             let mut chunk = components.component_mut::<crate::components::Chunk>().unwrap();
             let id = components.get_entity_id().unwrap();
             // We have created voxel data for this chunk, and it is valid
-            let model_id = if chunk.voxel_data.is_some() && chunk.valid_surface && !chunk.valid_model {
+            if chunk.voxel_data.is_some() && chunk.valid_surface && chunk.buffered_model.is_none() && !chunk.added_renderer {
                 // I guess we should create the model now
-                chunk.valid_model = true;
                 let voxels = chunk.voxel_data.as_ref().unwrap();
                 let coords = chunk.coords;
                 let model = main::terrain::mesher::generate_model(voxels, coords, true, false);
-
+                
                 // Create the actual pipeline model now
                 let skirts = model.skirts_model;
                 let model = model.model;
                 // Combine the models first
                 let model = Model::combine(model, skirts);
                 
-                // Make sure the model has all valid field
-                //model.generate_normals();
-
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);
-                Some(model_id)
-            } else { None };
-            drop(chunk);
-
-            if let Some(model_id) = model_id {
-                // Create a linking group that contains the renderer
-                let mut group = ComponentLinkingGroup::default();
-                let renderer = main::rendering::basics::renderer::Renderer::new(true).set_model(model_id).set_material(terrain.material);
-                group.link(crate::components::Renderer::new(renderer)).unwrap();
-                write.ecs.link_components(id, group).unwrap();
+                chunk.buffered_model = Some(model_id);
             }
+
+            // Check if we have a valid buffered model, and if we do, add the renderer component when needed
+            if terrain.swap_chunks {
+                if let Some(model_id) = chunk.buffered_model.take() {
+                    // Create a linking group that contains the renderer
+                    chunk.added_renderer = true;
+                    let mut group = ComponentLinkingGroup::default();
+                    let renderer = main::rendering::basics::renderer::Renderer::new(true).set_model(model_id).set_material(terrain.material);
+                    group.link(crate::components::Renderer::new(renderer)).unwrap();
+                    write.ecs.link_components(id, group).unwrap();
+                }   
+            }            
         })
     }
 }

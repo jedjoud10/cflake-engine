@@ -55,7 +55,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
                 for node in removed {
                     let coords = ChunkCoords::new(&node);
                     if let Some(id) = terrain.chunks.remove(&coords) {
-                        remove_chunk(&mut write, id)
+                        terrain.chunks_to_remove.push(id);
                     }
                 }
 
@@ -67,6 +67,15 @@ fn run(context: &mut Context, _query: ComponentQuery) {
                         let id = add_chunk(&mut write, terrain.octree.inner.size, coords);
                         terrain.chunks.insert(coords, id);
                     }
+                }
+                return;
+            }
+
+            // Mass deletion
+            if terrain.swap_chunks {
+                let chunks_to_remove = std::mem::take(&mut terrain.chunks_to_remove);
+                for id in chunks_to_remove {
+                    remove_chunk(&mut write, id)
                 }
             }
         }

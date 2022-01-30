@@ -4,6 +4,7 @@
 #include "defaults\shaders\noises\voronoi.func.glsl"
 #include "defaults\shaders\others\sdf.func.glsl"
 #include_custom {"voxel_include_path"}
+#include "defaults\shaders\voxel_terrain\shared.func.glsl"
 
 const int _CHUNK_SIZE = #constant chunk_size
 const int _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
