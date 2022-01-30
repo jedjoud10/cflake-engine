@@ -17,7 +17,7 @@ layout(std430, binding = 0) readonly buffer arbitrary_voxels
 };
 layout(std430, binding = 1) writeonly buffer output_voxels
 {   
-    FinalVoxel final_voxels[_CSPO][_CSPO][_CSPO];
+    PackedVoxel packed_voxels[_CSPO][_CSPO][_CSPO];
 };
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
@@ -43,8 +43,10 @@ void main() {
         // Calculate the normal for a voxel using the neighboring normals
         vec3 normal = vec3(vx.density-voxel.density, vy.density-voxel.density, vz.density-voxel.density);
         FinalVoxel final_voxel = get_final_voxel(pos, normal, voxel);
+        // Pack the voxel
+        PackedVoxel packed_voxel = get_packed_voxel(final_voxel);
 
         // And store the final voxel inside our array
-        final_voxels[pc.y][pc.z][pc.x] = final_voxel;
+        packed_voxels[pc.y][pc.z][pc.x] = packed_voxel;
     }
 }

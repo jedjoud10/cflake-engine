@@ -1,5 +1,6 @@
 use crate::ChunkCoords;
 use crate::TModel;
+use crate::Voxel;
 use crate::VoxelData;
 use crate::MAIN_CHUNK_SIZE;
 
@@ -16,7 +17,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, _skirts: bool) -> TModel {
+pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
     // Loop over every voxel
@@ -100,8 +101,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
         }
     }
     // Create a completely separate model for skirts
-    let skirts_model: Model = Model::default();
-    /*
+    let mut skirts_model: Model = Model::default();
     if skirts {
         // Create the X skirt
         calculate_skirt(
@@ -134,19 +134,18 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
             transform_y_local,
         );
     }
-    */
     TModel { model, skirts_model, coords }
 }
-/*
 // Skirt vertex
 pub struct SkirtVertex {
     pub position: veclib::Vector3<f32>,
     pub normal: veclib::Vector3<f32>,
+    pub color: veclib::Vector3<f32>,
 }
 
 // Generate a whole skirt using a specific
-pub fn calculate_skirt<V: Voxable>(
-    voxels: &VoxelData<V>,
+pub fn calculate_skirt(
+    voxels: &VoxelData,
     interpolation: bool,
     flip: bool,
     density_offset: [usize; 4],
@@ -160,8 +159,8 @@ pub fn calculate_skirt<V: Voxable>(
                 let i = indexf(slice, x, y);
                 match calculate_marching_square_case(i, x, y, voxels, interpolation, density_offset) {
                     Some((case, p, lv, ilv)) =>
-                    // We intersected the surface
                     {
+                        // We intersected the surface
                         solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &lv, &ilv, skirts_model, (slice == 1) ^ flip, tf)
                     }
                     None => { /* Empty */ }
@@ -171,62 +170,60 @@ pub fn calculate_skirt<V: Voxable>(
     }
 }
 // Calculate a marching square case and it's local voxels
-pub fn calculate_marching_square_case<V: Voxable>(
+pub fn calculate_marching_square_case(
     i: usize,
     x: usize,
     y: usize,
-    voxels: &VoxelData<V>,
+    voxels: &VoxelData,
     interpolation: bool,
     density_offset: [usize; 4],
-) -> Option<(u8, veclib::Vector2<f32>, [Voxel<V>; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4])> {
+) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>; 4])> {
     // Get the position
     let p = veclib::Vector2::new(x as f32, y as f32);
     // Get the marching cube case
     let mut case = 0_u8;
     // Get the local voxels
-    let local_voxels1: Vec<Voxel> = (0..4)
-        .into_iter()
-        .map(|x| {
-            let local_voxel = voxels[i + density_offset[x]];
-            // Increase the case index if we have some voxels that are below the 0.0
-            if local_voxel.density <= 0.0 {
-                case |= 2_u8.pow(x as u32);
-            }
-            local_voxel
-        })
-        .collect::<Vec<Voxel>>();
+    let mut local_voxels: [std::mem::MaybeUninit<Voxel>; 4] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+    for (j, voxel) in local_voxels.iter_mut().enumerate() {
+        let local_voxel = &voxels[i + density_offset[j]];
+        // Increase the case index if we have some voxels that are below the 0.0
+        if local_voxel.density <= f16::ZERO {
+            case |= 2_u8.pow(j as u32);
+        }        
+        unsafe { std::ptr::write(voxel.as_mut_ptr(), local_voxel.clone()) }
+    }
+    let local_voxels = unsafe { std::mem::transmute::<_, [Voxel; 4]>(local_voxels) };
     // Exit if this case is invalid
     if case == 0 || case == 15 {
         return None;
     }
-    // Slice to sized array
-    let mut local_voxels: [Voxel; 4] = [Voxel::default(); 4];
-    local_voxels.copy_from_slice(&local_voxels1[0..4]);
     // Get the interpolated voxels
-    let local_interpolated_voxels1: Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>> = (0..4)
-        .into_iter()
-        .map(|x| {
-            // This is for every edge
-            let two_voxels = MS_EDGE_TO_VERTICES[x as usize];
-            let voxel1 = voxels[i + density_offset[two_voxels[0] as usize]];
-            let voxel2 = voxels[i + density_offset[two_voxels[1] as usize]];
-            // Check if the edge is intersecting the surface
-            if (voxel1.density <= 0.0) ^ (voxel2.density <= 0.0) {
-                let value: f32 = if interpolation { inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32) } else { 0.5 };
-                // Interpolate between the two voxels
-                let normal = veclib::Vector3::<f32>::lerp(voxel1.normal, voxel2.normal, value);
-                // We must get the local offset of these two voxels
-                let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
-                let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
-                let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
-                Some((normal, offset))
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>>>();
-    let mut local_interpolated_voxels: [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>; 4] = [None; 4];
-    local_interpolated_voxels.copy_from_slice(&local_interpolated_voxels1[0..4]);
+    let mut local_interpolated_voxels: [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>; 4] = [None; 4];
+    for (j, local_interpolated_voxel) in local_interpolated_voxels.iter_mut().enumerate() {
+        // This is for every edge
+        let two_voxels = MS_EDGE_TO_VERTICES[j as usize];
+        let voxel1 = &voxels[i + density_offset[two_voxels[0] as usize]];
+        let voxel2 = &voxels[i + density_offset[two_voxels[1] as usize]];
+        // Check if the edge is intersecting the surface
+        *local_interpolated_voxel = if (voxel1.density <= f16::ZERO) ^ (voxel2.density <= f16::ZERO) {
+            let value: f32 = if interpolation { inverse_lerp(voxel1.density.to_f32(), voxel2.density.to_f32(), 0.0 as f32) } else { 0.5 };
+            // Get the normal
+            let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
+            let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
+            let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
+            // Get the color
+            let t1: veclib::Vector3<f32> = vec3(voxel1.color.x.to_f32(), voxel1.color.y.to_f32(), voxel1.color.z.to_f32());
+            let t2: veclib::Vector3<f32> = vec3(voxel2.color.x.to_f32(), voxel2.color.y.to_f32(), voxel2.color.z.to_f32());
+            let color = veclib::Vector3::<f32>::lerp(t1, t2, value);
+            // We must get the local offset of these two voxels
+            let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
+            let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
+            let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
+            Some((normal, offset, color))
+        } else {
+            None
+        }
+    }
     Some((case, p, local_voxels, local_interpolated_voxels))
     // Solve the case
 }
@@ -236,7 +233,7 @@ pub fn solve_marching_squares(
     case: u8,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
+    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>],
     model: &mut Model,
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
@@ -339,7 +336,7 @@ pub fn create_triangle(
     slice: usize,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>)>],
+    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>],
     li: &[usize; 3],
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) -> Vec<SkirtVertex> {
@@ -348,19 +345,24 @@ pub fn create_triangle(
         .iter()
         .map(|i| {
             // Calculate the position and normal
-            let (vertex, &normal) = match *i {
+            let (vertex, normal, color) = match *i {
                 1 | 3 | 5 | 7 => {
                     // Interpolated
                     let transformed_index = (*i - 1) / 2;
                     let v = (tf)(slice, &ilv[transformed_index].unwrap().1, &offset);
                     let n = &ilv[transformed_index].as_ref().unwrap().0;
-                    (v, n)
+                    let c = &ilv[transformed_index].as_ref().unwrap().2;
+                    (v, *n, *c)
                 }
                 0 | 2 | 4 | 6 => {
                     // Not interpolated
                     let transformed_index = (*i) / 2;
                     let v = (tf)(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
-                    (v, &lv[transformed_index].normal)
+                    let normal = &lv[transformed_index].normal;
+                    let color = &lv[transformed_index].color;
+                    let n: veclib::Vector3<f32> = vec3(normal.x.to_f32(), normal.y.to_f32(), normal.z.to_f32());
+                    let c: veclib::Vector3<f32> = vec3(color.x.to_f32(), color.y.to_f32(), color.z.to_f32());
+                    (v, n, c)
                 }
                 _ => {
                     /* The bruh funny */
@@ -368,7 +370,7 @@ pub fn create_triangle(
                 }
             };
             // Return
-            SkirtVertex { position: vertex, normal }
+            SkirtVertex { position: vertex, normal, color }
         })
         .collect::<Vec<SkirtVertex>>();
     skirt_vertices
@@ -383,4 +385,3 @@ fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &vecli
 fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
     veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32)
 }
-*/

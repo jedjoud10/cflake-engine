@@ -49,6 +49,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
         if !terrain.generating {
             let octree = &mut terrain.octree;
             if let Some((added, removed)) = octree.update(camera_pos) {
+                terrain.swap_chunks = false;
                 // We have moved, thus the chunks need to be regenerated
                 
                 // Remove chunks only if we already generated them

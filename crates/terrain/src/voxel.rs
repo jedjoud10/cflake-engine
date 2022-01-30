@@ -4,6 +4,7 @@ use half::f16;
 // A simple voxel that has a size of 16 bytes
 // This is the final voxel that is returned from the compute shader
 #[repr(C, align(16))]
+#[derive(Clone)]
 pub struct Voxel {
     // The density of the voxel stored in a 16 bit half float
     pub density: f16,
