@@ -2,7 +2,6 @@ use main::{ecs::{entity::EntityID, component::ComponentQuery}, rendering::{pipel
 
 // Start generating the voxel data for a specific chunk
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
-    terrain.generating = true;
     terrain.chunk_id = Some(id);
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((MAIN_CHUNK_SIZE + 1) as u16).div_ceil(8);  
@@ -47,7 +46,6 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    terrain.generating = false;
     let id = terrain.chunk_id.take().unwrap();
     let (read_counters, read_bytes) = terrain.cpu_data.take().unwrap();
     // Read back the voxel values from the SSBO
@@ -74,16 +72,19 @@ fn run(context: &mut Context, query: ComponentQuery) {
     let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // For each chunk in the terrain, we must create it's respective voxel data, if possible
-        if !terrain.generating {
+        if terrain.cpu_data.is_none() {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that we come across that needs it
             query.update_all_breakable(|components| {
                 // We break out at the first chunk if we start generating it's voxel data
                 let mut chunk = components.component_mut::<crate::components::Chunk>().unwrap();
+                // We can set our state as not generating if none of the chunks want to generate voxel data
                 if chunk.voxel_data.is_none() {
                     // We must start generating the voxel data for this chunk
                     start_generation(&mut *terrain, &pipeline, &mut *chunk, components.get_entity_id().unwrap());
+                    terrain.generating = true;
                     None
                 } else {
+                    terrain.generating = false;
                     Some(())
                 }
             })

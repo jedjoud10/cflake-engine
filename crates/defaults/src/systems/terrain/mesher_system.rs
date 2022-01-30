@@ -30,7 +30,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 let mut model = Model::combine(model, skirts);
                 
                 // Make sure the model has all valid field
-                model.generate_normals();
+                //model.generate_normals();
 
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);

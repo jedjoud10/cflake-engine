@@ -22,9 +22,9 @@ pub struct Terrain {
     pub octree: AdvancedOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
     pub material: ObjectID<Material>,
+    pub generating: bool,
 
     // Voxel Generation
-    pub generating: bool,
     pub compute_shader: ObjectID<ComputeShader>,
     pub second_compute_shader: ObjectID<ComputeShader>,
     // Our 2 shader storages

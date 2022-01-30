@@ -1,7 +1,6 @@
 use crate::basics::Buildable;
 use crate::object::ObjectID;
 use crate::object::{ObjectBuildingTask, PipelineObject, PipelineTask};
-use crate::params::{FADE_IN_SPEED, FADE_OUT_SPEED};
 use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
 
@@ -34,9 +33,7 @@ pub struct ShaderSettings {
 impl Default for ShaderSettings {
     fn default() -> Self {
         // Some actual default consts names and their values
-        let mut consts = HashMap::new();
-        consts.insert("fade_in_speed".to_string(), FADE_IN_SPEED.to_string());
-        consts.insert("fade_out_speed".to_string(), FADE_OUT_SPEED.to_string());
+        let consts = HashMap::new();
 
         Self {
             external_code: Default::default(),
@@ -143,14 +140,6 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
                 }
                 "general" => {
                     *line = "#include defaults\\shaders\\others\\default_impls\\general.func.glsl".to_string();
-                    Ok(())
-                }
-                "renderer_main_start" => {
-                    *line = "#include defaults\\shaders\\others\\default_impls\\renderer_main_start.func.glsl".to_string();
-                    Ok(())
-                }
-                "renderer_life_fade" => {
-                    *line = "#include defaults\\shaders\\others\\default_impls\\renderer_life_fade.func.glsl".to_string();
                     Ok(())
                 }
                 x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),

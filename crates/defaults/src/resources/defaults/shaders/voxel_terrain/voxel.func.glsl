@@ -14,12 +14,11 @@ struct FinalVoxel {
 
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(vec3 pos) {
-    return Voxel(pos.y + sin(pos.x * 0.1) * 10.0);
+    return Voxel(pos.y + snoise(pos * 0.006 * vec3(1.0, 2.0 + sin(pos.y * 0.2), 1.0)) * 20.0);
 }
 
 // Get the final voxel at a specific position (Second Pass)
-FinalVoxel get_final_voxel(vec3 pos, Voxel voxel) {
-    vec3 normal = vec3(100.0);
+FinalVoxel get_final_voxel(vec3 pos, vec3 normal, Voxel voxel) {
     float density = voxel.density;
     // Pack the data into 2 ints
     uint density_x = packHalf2x16(vec2(density, normal.x));

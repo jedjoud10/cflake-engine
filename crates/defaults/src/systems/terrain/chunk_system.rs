@@ -42,29 +42,30 @@ fn run(context: &mut Context, _query: ComponentQuery) {
     let mut write = context.write();
     // Get the camera position
     let camera_pos = write.ecs.global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
-    let camera_pos = veclib::Vector3::ZERO;
     let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
-        // Generate the chunks if needed
-        let octree = &mut terrain.octree;
-        if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, 1.0) {
-            // We have moved, thus the chunks need to be regenerated
-
-            // Only add the chunks that are leaf nodes in the octree
-            for node in added {
-                if node.children_indices.is_none() {
-                    // This is a leaf node
-                    let coords = ChunkCoords::new(&node);
-                    let id = add_chunk(&mut write, terrain.octree.internal_octree.size, coords);
-                    terrain.chunks.insert(coords, id);
+        // Generate the chunks if needed and only if we are not currently generating 
+        if !terrain.generating {
+            let octree = &mut terrain.octree;
+            if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, 2.0) {
+                // We have moved, thus the chunks need to be regenerated
+                
+                // Only add the chunks that are leaf nodes in the octree
+                for node in added {
+                    if node.children_indices.is_none() {
+                        // This is a leaf node
+                        let coords = ChunkCoords::new(&node);
+                        let id = add_chunk(&mut write, terrain.octree.internal_octree.size, coords);
+                        terrain.chunks.insert(coords, id);
+                    }
                 }
-            }
-
-            // Remove chunks only if we already generated them
-            for node in removed {
-                let coords = ChunkCoords::new(&node);
-                if let Some(&id) = terrain.chunks.get(&coords) {
-                    remove_chunk(&mut write, id)
+                
+                // Remove chunks only if we already generated them
+                for node in removed {
+                    let coords = ChunkCoords::new(&node);
+                    if let Some(&id) = terrain.chunks.get(&coords) {
+                        remove_chunk(&mut write, id)
+                    }
                 }
             }
         }

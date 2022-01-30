@@ -30,7 +30,7 @@ void main() {
     pos *= size;
     pos += node_pos;
     // Check if we can actually do calculations or not
-    if (all(lessThan(pixel_coords, ivec3(_CSPO, _CSPO, _CSPO)))) {        
+    if (all(lessThan(pixel_coords, ivec3(_CSPT, _CSPT, _CSPT)))) {        
         // Create the density value
         Voxel voxel = get_voxel(pos);
 

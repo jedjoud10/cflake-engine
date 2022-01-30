@@ -35,9 +35,15 @@ void main() {
     if (all(lessThan(pixel_coords, ivec3(_CSPO, _CSPO, _CSPO)))) {        
         // Create the final voxel
         Voxel voxel = voxels[pc.x][pc.y][pc.z];
-        FinalVoxel final_voxel = get_final_voxel(pos, voxel);
+        Voxel vx = voxels[pc.x+1][pc.y][pc.z];
+        Voxel vy = voxels[pc.x][pc.y+1][pc.z];
+        Voxel vz = voxels[pc.x][pc.y][pc.z+1];
+
+        // Calculate the normal for a voxel using the neighboring normals
+        vec3 normal = vec3(vx.density-voxel.density, vy.density-voxel.density, vz.density-voxel.density);
+        FinalVoxel final_voxel = get_final_voxel(pos, normal, voxel);
 
         // And store the final voxel inside our array
-        final_voxels[pc.y][pc.x][pc.z] = final_voxel;
+        final_voxels[pc.y][pc.z][pc.x] = final_voxel;
     }
 }
