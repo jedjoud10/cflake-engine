@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod test {
-    use std::{ops::DerefMut, sync::Mutex};
 
     use crate::preload_asset;
 

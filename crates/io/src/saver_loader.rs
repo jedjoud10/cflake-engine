@@ -1,9 +1,8 @@
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use platform_dirs::AppDirs;
-use serde_json;
+
 use std::{
     fs::{File, OpenOptions},
-    io::{BufReader, BufWriter, Read, Write},
+    io::{BufReader, BufWriter, Write},
     path::PathBuf,
 };
 
@@ -40,8 +39,8 @@ impl SaverLoader {
         // Load the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());
-        let x = serde_json::from_reader(reader).unwrap();
-        return x;
+
+        serde_json::from_reader(reader).unwrap()
     }
     // Save a struct to a file
     pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(&self, file_path: &str, struct_to_save: &T) {
@@ -52,5 +51,5 @@ impl SaverLoader {
         writer.write_all(string.as_bytes()).unwrap();
     }
     // Save a string to a specific log file in the local user data
-    pub fn save_string(&self, file_path: &str, string: String) {}
+    pub fn save_string(&self, _file_path: &str, _string: String) {}
 }

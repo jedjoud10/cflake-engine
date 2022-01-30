@@ -7,15 +7,4 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-ui = { path = "../ui" }
-core = { path = "../core" }
-physics = { path = "../physics" }
-math = { path = "../math" }
-fonts = { path = "../fonts"  }
-ecs = { path = "../ecs" }
-assets = { path = "../assets" }
-rendering = { path = "../rendering" }
-terrain = { path = "../terrain" }
-debug = { path = "../debug" }
-input = { path = "../input" }
-others = { path = "../others" }
+main = { path = "../main" }

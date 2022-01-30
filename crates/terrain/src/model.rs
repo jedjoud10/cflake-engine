@@ -1,5 +1,4 @@
-use rendering::basics::Model;
-use std::collections::HashMap;
+use rendering::basics::model::Model;
 
 use crate::ChunkCoords;
 // A custom terrain model

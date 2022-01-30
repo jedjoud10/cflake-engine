@@ -51,7 +51,7 @@ fn main() {
     let lines = reader.lines().map(|x| x.unwrap()).collect::<Vec<String>>();
     for line in lines {
         // Get the ASCII character ID
-        let split_line = line.split(" ").filter(|x| !x.is_empty()).collect::<Vec<&str>>();
+        let split_line = line.split(' ').filter(|x| !x.is_empty()).collect::<Vec<&str>>();
         // Check if this a char line
         if split_line[0] == "char" {
             // Get the ID
@@ -84,7 +84,7 @@ fn main() {
             .filter_map(|x| {
                 let valid = (x.0 as u16) > font_char.min.x && (x.1 as u16) > font_char.min.y && (x.0 as u16) < font_char.max.x && (x.1 as u16) < font_char.max.y;
                 if valid {
-                    Some((x.0.clone(), x.1.clone(), x.2.clone()))
+                    Some((x.0, x.1, x.2))
                 } else {
                     None
                 }
@@ -121,7 +121,7 @@ fn main() {
                     }
                 }
                 if best_distance != f32::MAX {
-                    best_distance = best_distance.max(1.41421) - 1.41421;
+                    best_distance = best_distance.max(std::f32::consts::SQRT_2) - std::f32::consts::SQRT_2;
                     // Turn the distance into a number with a range of 0, 1
                     let factor = (best_distance / MAX_SDF_WIDTH).clamp(0.0, 1.0) + 0.5;
                     (factor * 255.0) as u8

@@ -2,8 +2,8 @@
 mod angular;
 mod linear;
 mod object;
-mod physics;
+mod params;
 pub use angular::*;
 pub use linear::*;
 pub use object::*;
-pub use physics::*;
+pub use params::*;

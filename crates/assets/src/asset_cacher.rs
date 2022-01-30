@@ -9,31 +9,17 @@ pub struct AssetCacher {
 }
 
 impl AssetCacher {
-    // Guess the asset type of a specific asset using it's name
-    fn guess_asset_type(name: &str) -> AssetType {
-        let first_dot_index = name.split("").position(|c| c == ".").unwrap();
-        let extension = name.split_at(first_dot_index).1;
-        match extension {
-            "vrsh.glsl" => AssetType::VertSubshader,
-            "frsh.glsl" => AssetType::FragSubshader,
-            "mdl3d" => AssetType::Model,
-            "cmpt.glsl" => AssetType::ComputeSubshader,
-            "func.glsl" | "txt" => AssetType::Text,
-            "png" => AssetType::Texture,
-            "font" => AssetType::Font,
-            _ => {
-                /* Nothing */
-                panic!()
-            }
-        }
-    }
     // Pre-load some asset metadata
     pub fn pre_load(&mut self, name: &str, bytes: &[u8]) -> Result<(), AssetLoadError> {
         let name = name.split("resources\\").last().unwrap();
+        // Get the extension
+        let first_dot_index = name.split("").position(|c| c == ".").unwrap();
+        let extension = name.split_at(first_dot_index).1.to_string();
+
         let data = AssetMetadata {
             bytes: bytes.to_vec(),
             load_type: AssetLoadType::Dynamic,
-            asset_type: Self::guess_asset_type(name),
+            extension,
             name: name.to_string(),
         };
         self.cached_metadata.insert(name.to_string(), data);
@@ -42,30 +28,22 @@ impl AssetCacher {
 }
 
 // For how long will this asset be loaded?
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum AssetLoadType {
     Static,  // You can only load it, you can't unload it
     Dynamic, // You can load it, and you can also unload it
     Manual,  // Dispose of the bytes data, since the asset is manually cached
 }
-// Asset type
-#[derive(Debug)]
-pub enum AssetType {
-    VertSubshader,
-    FragSubshader,
-    ComputeSubshader,
-    Text,
-    Texture,
-    Model,
-    Sound,
-    Font,
-}
 // Some data
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AssetMetadata {
+    // The bytes that were loaded in whilst loading the asset metadata
     pub bytes: Vec<u8>,
+    // How should we manage the disposing of this asset?
     pub load_type: AssetLoadType,
-    pub asset_type: AssetType,
+    // The extension of the path of the asset
+    pub extension: String,
+    // The name of the asset. PS: This also contains the extension
     pub name: String,
 }
 impl AssetMetadata {

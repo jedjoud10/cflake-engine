@@ -1,43 +1,72 @@
-use crate::pipeline::object::*;
-use crate::{GPUObjectID, TextureShaderAccessType};
-
-// Some default uniforms that we will set
-#[derive(Clone)]
-pub enum Uniform {
-    // Singles
-    Bool(bool),
-    F32(f32),
-    I32(i32),
-    // Vectors
-    Vec2F32(veclib::Vector2<f32>),
-    Vec3F32(veclib::Vector3<f32>),
-    Vec4F32(veclib::Vector4<f32>),
-    Vec2I32(veclib::Vector2<i32>),
-    Vec3I32(veclib::Vector3<i32>),
-    Vec4I32(veclib::Vector4<i32>),
-    Mat44F32(veclib::Matrix4x4<f32>),
-    // Others
-    Texture1D(GPUObjectID, u32),
-    Texture2D(GPUObjectID, u32),
-    Texture3D(GPUObjectID, u32),
-    Texture2DArray(GPUObjectID, u32),
-    // Compute sheit
-    Image2D(GPUObjectID, TextureShaderAccessType),
-    Image3D(GPUObjectID, TextureShaderAccessType),
-}
-
 // Simple main OpenGL types
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum DataType {
     // 8 bit
-    UByte,
-    Byte,
+    U8,
+    I8,
     // 16 bit
-    UInt16,
-    Int16,
+    U16,
+    I16,
     // 32 bit
-    UInt32,
-    Int32,
+    U32,
+    I32,
     // FP
-    Float32,
+    F32,
+}
+
+impl DataType {
+    // Convert this data type to an OpenGL data type
+    pub fn convert(&self) -> u32 {
+        match self {
+            DataType::U8 => gl::UNSIGNED_BYTE,
+            DataType::I8 => gl::BYTE,
+            DataType::U16 => gl::UNSIGNED_SHORT,
+            DataType::I16 => gl::SHORT,
+            DataType::U32 => gl::UNSIGNED_INT,
+            DataType::I32 => gl::INT,
+            DataType::F32 => gl::FLOAT,
+        }
+    }
+}
+
+// How we will access a buffer object
+pub enum AccessType {
+    Write,
+    Read,
+    Pass,
+}
+// How frequently we will update the data of a buffer object
+pub enum UpdateFrequency {
+    Static,
+    Dynamic,
+    Stream,
+}
+
+// How we will use a buffer
+pub struct UsageType {
+    pub access: AccessType,
+    pub frequency: UpdateFrequency,
+}
+
+impl UsageType {
+    // Convert this UsageType to a valid OpenGL enum
+    pub fn convert(&self) -> u32 {
+        match self.access {
+            AccessType::Write => match self.frequency {
+                UpdateFrequency::Static => gl::STATIC_DRAW,
+                UpdateFrequency::Dynamic => gl::DYNAMIC_DRAW,
+                UpdateFrequency::Stream => gl::STREAM_DRAW,
+            },
+            AccessType::Read => match self.frequency {
+                UpdateFrequency::Static => gl::STATIC_READ,
+                UpdateFrequency::Dynamic => gl::DYNAMIC_READ,
+                UpdateFrequency::Stream => gl::STREAM_READ,
+            },
+            AccessType::Pass => match self.frequency {
+                UpdateFrequency::Static => gl::STATIC_COPY,
+                UpdateFrequency::Dynamic => gl::DYNAMIC_COPY,
+                UpdateFrequency::Stream => gl::STREAM_COPY,
+            },
+        }
+    }
 }

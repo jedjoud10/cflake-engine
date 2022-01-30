@@ -1,7 +1,10 @@
-use crate::basics::*;
+use crate::basics::model::Model;
+use crate::basics::texture::{Texture, TextureFormat, TextureType};
+
 use crate::utils::*;
 
-use assets::{Asset, Object};
+use assets::Asset;
+use image::{EncodableLayout, GenericImageView};
 
 // All the Asset trait implementations are here
 // One for the textures
@@ -10,20 +13,29 @@ impl Asset for Texture {
     where
         Self: Sized,
     {
+        // Read bytes
+        pub fn read_bytes(metadata: &assets::AssetMetadata) -> (Vec<u8>, u16, u16) {
+            // Load this texture from the bytes
+            let png_bytes = metadata.bytes.as_bytes();
+            let image = image::load_from_memory_with_format(png_bytes, image::ImageFormat::Png).unwrap();
+            let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
+            // Flip
+            let image = image.flipv();
+            (image.to_bytes(), image.width() as u16, image.height() as u16)
+        }
         // Load this texture from the bytes
-        let (bytes, width, height) = Self::read_bytes(data);
+        let (bytes, width, height) = read_bytes(data);
+
         // Return a texture with the default parameters
         let texture = self
             .set_bytes(bytes)
             .set_dimensions(TextureType::Texture2D(width, height))
             .set_format(TextureFormat::RGBA8R)
-            .set_data_type(DataType::UByte)
-            .set_name(&data.name);
+            .set_data_type(DataType::U8);
         Some(texture)
     }
 }
 
-impl Object for Texture {}
 // One for the models
 impl Asset for Model {
     // Load a model from an asset
@@ -34,7 +46,6 @@ impl Asset for Model {
         let string = data.read_string();
         let lines = string.lines();
         let mut model = Model::default();
-        model.name = data.name.clone();
         for line in lines {
             let start = line.split_once(' ').unwrap().0;
             let other = line.split_once(' ').unwrap().1;
@@ -74,30 +85,3 @@ impl Asset for Model {
         Some(model)
     }
 }
-
-// One for the subshaders obviously
-impl Asset for SubShader {
-    fn load_medadata(self, data: &assets::AssetMetadata) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        // Load a subshader from this metadata
-        let text = String::from_utf8(data.bytes.clone()).ok()?;
-        Some(Self {
-            name: data.name.clone(),
-            source: text,
-            subshader_type: match &data.asset_type {
-                assets::AssetType::VertSubshader => SubShaderType::Vertex,
-                assets::AssetType::FragSubshader => SubShaderType::Fragment,
-                assets::AssetType::ComputeSubshader => SubShaderType::Compute,
-                _ => {
-                    /* Nothing */
-                    panic!()
-                }
-            },
-        })
-    }
-}
-
-// A subshader is also an object
-impl Object for SubShader {}

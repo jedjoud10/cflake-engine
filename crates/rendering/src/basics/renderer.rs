@@ -1,71 +1,79 @@
-use super::Material;
-use crate::{GPUObjectID, MaterialGPUObject, ModelGPUObject, ShaderUniformsGroup};
+use crate::{
+    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    pipeline::Pipeline,
+};
 
-use bitflags::bitflags;
-// Yup
-bitflags! {
-    pub struct RendererFlags: u8 {
-        const WIREFRAME = 0b00000001;
-        const FADING_ANIMATION = 0b00000010;
-        const DEFAULT = Self::WIREFRAME.bits;
+use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup, Buildable};
+
+// A component that will be linked to entities that are renderable
+pub struct Renderer {
+    // Rendering
+    pub model: ObjectID<Model>,
+    pub material: ObjectID<Material>,
+    pub matrix: veclib::Matrix4x4<f32>,
+
+    // Some renderer specific uniforms that may override the material uniforms when rendering
+    pub uniforms: Option<ShaderUniformsGroup>,
+
+    // Should we dispose the model when this renderer gets destroyed?
+    pub delete_model: bool,
+}
+
+impl Renderer {
+    // Create a new renderer with default settings
+    pub fn new(delete_model: bool) -> Self {
+        Self {
+            model: Default::default(),
+            material: Default::default(),
+            matrix: Default::default(),
+            uniforms: Default::default(),
+            delete_model,
+        }
     }
 }
 
-// A component that will be linked to entities that are renderable
-#[derive(Clone)]
-pub struct Renderer {
-    pub index: Option<GPUObjectID>,    // The ID of this renderer in the pipeline
-    pub model: Option<GPUObjectID>,    // The model GPU of this renderer
-    pub material: Option<GPUObjectID>, // The CPU material of this renderer (We convert it to a GPU material when we add the renderer)
-    pub uniforms: Option<ShaderUniformsGroup>,
-    pub flags: RendererFlags, // Flags
-}
+impl PipelineObject for Renderer {}
 
-impl Default for Renderer {
-    fn default() -> Self {
-        Self {
-            index: None,
-            model: None,
-            material: None,
-            uniforms: None,
-            flags: RendererFlags::DEFAULT,
+impl Buildable for Renderer {
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
+        // Create the ID
+        let id = pipeline.renderers.get_next_id_increment();
+        let id = ObjectID::new(id);
+        (PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), id)
+    }
+    fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
+        // We must fill out our model and material if they are empty
+        let defaults = pipeline.defaults.as_ref().unwrap();
+        if !self.model.valid() {
+            self.model = defaults.model;
         }
+        if !self.material.valid() {
+            self.material = defaults.material;
+        }
+        self
     }
 }
 
 // Everything related to the creation of a renderer
 impl Renderer {
     // Set a model
-    pub fn set_model(mut self, model: GPUObjectID) -> Self {
-        self.model = Some(model);
-        self
-    }
-    // Enable / disable the wireframe rendering
-    pub fn set_wireframe(mut self, enabled: bool) -> Self {
-        if enabled {
-            self.flags.insert(RendererFlags::WIREFRAME);
-        } else {
-            self.flags.remove(RendererFlags::WIREFRAME);
-        }
-        self
-    }
-    // Enable / disable fading animation
-    pub fn set_fading_animation(mut self, enabled: bool) -> Self {
-        if enabled {
-            self.flags.insert(RendererFlags::FADING_ANIMATION);
-        } else {
-            self.flags.remove(RendererFlags::FADING_ANIMATION);
-        }
+    pub fn set_model(mut self, model: ObjectID<Model>) -> Self {
+        self.model = model;
         self
     }
     // With a specific material
-    pub fn set_material(mut self, material: GPUObjectID) -> Self {
-        self.material = Some(material);
+    pub fn set_material(mut self, material: ObjectID<Material>) -> Self {
+        self.material = material;
         self
     }
-    // Set a specific shader uniform for this renderer
-    pub fn set_shader_uniforms(mut self, shader_uniforms: ShaderUniformsGroup) -> Self {
-        self.uniforms = Some(shader_uniforms);
+    // Set the model matrix for this renderer
+    pub fn set_matrix(mut self, matrix: veclib::Matrix4x4<f32>) -> Self {
+        self.matrix = matrix;
         self
     }
+    // Update our uniforms
+    pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
+        self.uniforms = Some(uniforms);
+    }
+    // Set 
 }

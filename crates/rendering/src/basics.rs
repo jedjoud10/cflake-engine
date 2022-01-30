@@ -1,12 +1,11 @@
-mod material;
-mod model;
-mod renderer;
-mod shader;
-mod subshader;
+mod buildable;
+pub use buildable::*;
+
+pub mod material;
+pub mod model;
+pub mod readwrite;
+pub mod renderer;
+pub mod shader;
 pub mod texture;
-pub use material::*;
-pub use model::*;
-pub use renderer::*;
-pub use shader::*;
-pub use subshader::*;
-pub use texture::*;
+pub mod transfer;
+pub mod uniforms;

@@ -1,12 +1,10 @@
-use core::FrameID;
-
-// Transforms components
+use main::ecs::component::Component;
 // The transform component
+#[derive(Component)]
 pub struct Transform {
     pub position: veclib::Vector3<f32>,
     pub rotation: veclib::Quaternion<f32>,
     pub scale: veclib::Vector3<f32>,
-    pub update_frame_id: FrameID,
 }
 
 // Default transform
@@ -16,7 +14,6 @@ impl Default for Transform {
             position: veclib::Vector3::ZERO,
             rotation: veclib::Quaternion::IDENTITY,
             scale: veclib::Vector3::ONE,
-            update_frame_id: FrameID::default(),
         }
     }
 }
@@ -40,7 +37,7 @@ impl Transform {
     }
     // Get the forward vector from this transform
     pub fn get_forward_vector(&self) -> veclib::Vector3<f32> {
-        return self.rotation.mul_point(-veclib::Vector3::Z);
+        self.rotation.mul_point(-veclib::Vector3::Z)
     }
 }
 
@@ -50,5 +47,3 @@ impl Transform {
         veclib::Matrix4x4::<f32>::from_translation(self.position) * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation) * veclib::Matrix4x4::<f32>::from_scale(self.scale)
     }
 }
-
-ecs::impl_component!(Transform);

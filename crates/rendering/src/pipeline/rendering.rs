@@ -1,149 +1,40 @@
-use crate::{pipec, pipeline::object::*, MaterialFlags, Shader, Texture};
-use crate::{texture::*, DataType, GPUObjectID, Material, Window, RendererFlags};
-use glfw::Context;
+use super::{InternalPipeline, Pipeline};
+use crate::{
+    basics::{
+        material::MaterialFlags,
+        model::Model,
+        renderer::Renderer,
+        shader::{Shader, ShaderSettings},
+        texture::{Texture, TextureFormat, TextureType},
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
+    },
+    object::{ObjectID, PipelineTask},
+    pipeline::pipec,
+    utils::DataType,
+};
 use std::ptr::null;
 
-use super::buffer::PipelineBuffer;
-
-// These should be ran on the main thread btw
-pub mod window_commands {
-    // Set fullscreen
-    pub fn set_fullscreen(fullscreen: bool, glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-        if fullscreen {
-            // Set the glfw window as a fullscreen window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let videomode = monitor.unwrap().get_video_mode().unwrap();
-                window.set_monitor(glfw::WindowMode::FullScreen(monitor.unwrap()), 0, 0, videomode.width, videomode.height, None);
-                unsafe {
-                    // Update the OpenGL viewport
-                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-                }
-            });
-        } else {
-            // Set the glfw window as a windowed window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let _videomode = monitor.unwrap().get_video_mode().unwrap();
-                let size = crate::WINDOW_SIZE;
-                window.set_monitor(glfw::WindowMode::Windowed, 50, 50, size.x as u32, size.y as u32, None);
-                unsafe {
-                    // Update the OpenGL viewport
-                    gl::Viewport(0, 0, size.x as i32, size.y as i32);
-                }
-            });
-        }
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateFullscreen(fullscreen));
-    }
-    // Set vsync
-    pub fn set_vsync(vsync: bool) {
-        crate::pipec::task(crate::pipec::RenderTask::WindowUpdateVSync(vsync));
-    }
-    // Hide the cursor
-    pub fn hide_cursor(window: &mut glfw::Window) {
-        window.set_cursor_mode(glfw::CursorMode::Disabled);
-        window.set_cursor_pos(0.0, 0.0);
-    }
-}
-// The main renderer, this is stored
+// Pipeline renderer that will render our world
 #[derive(Default)]
 pub struct PipelineRenderer {
-    framebuffer: u32,              // The master frame buffer
-    diffuse_texture: GPUObjectID,  // Diffuse texture, can also store HDR values
-    normals_texture: GPUObjectID,  // World Normals texture
-    position_texture: GPUObjectID, // World Positions texture
-    depth_texture: GPUObjectID,    // Depth texture
-    debug_view: u16,               // OUr currenty debug view mode
-    wireframe: bool,               // Are we rendering in wireframe or not
-    quad_model: GPUObjectID,       // The current screen quad model that we are using
-    screen_shader: GPUObjectID,    // The current screen quad shader that we are using
-    sky_texture: GPUObjectID,      // The sky gradient texture
-    wireframe_shader: GPUObjectID, // The current wireframe shader
-    //frame_stats: FrameStats,                   // Some frame stats
-    pub window: Window,                        // Window
-    pub default_material: Option<GPUObjectID>, // Self explanatory
+    // The master frame buffer
+    framebuffer: u32,
+
+    // Our deferred textures
+    diffuse_texture: ObjectID<Texture>,
+    emissive_texture: ObjectID<Texture>,
+    normals_texture: ObjectID<Texture>,
+    position_texture: ObjectID<Texture>,
+    depth_texture: ObjectID<Texture>,
+
+    // Screen rendering
+    screenshader: ObjectID<Shader>,
+    quad_model: ObjectID<Model>,
+
+    // Others
+    sky_texture: ObjectID<Texture>,
 }
-
-// Render debug primitives
-pub fn render_debug_primitives(primitives: Vec<RendererGPUObject>, camera: &CameraDataGPUObject, dm: &MaterialGPUObject) {
-    /*
-    let _vp_m = camera.projm * camera.viewm;
-    for primitive in &primitives {
-        render(primitive, camera, dm);
-    }
-    */
-}
-
-// Render a renderer normally
-pub fn render(
-    buf: &PipelineBuffer,
-    renderer: &RendererGPUObject,
-    camera: &CameraDataGPUObject,
-    dm: &MaterialGPUObject,
-    new_time: f32,
-    delta: f32,
-    resolution: veclib::Vector2<i32>,
-) {
-    let material = buf.as_material(&renderer.material_id);
-    let mut shader = buf.as_shader(&dm.shader.as_ref().unwrap()).unwrap();
-    // If we do not have a material assigned, use the default material
-    let material = match material {
-        Some(user_material) => {
-            // If we do not have a shader assigned, use the default material's shader
-            shader = match &user_material.shader {
-                Some(id) => match buf.as_shader(&id) {
-                    Some(shader) => shader,
-                    None => shader,
-                },
-                None => shader,
-            };
-            user_material
-        }
-        None => dm,
-    };
-    let model = buf.as_model(&renderer.model_id).unwrap();
-    let model_matrix = &renderer.matrix;
-    // Calculate the mvp matrix
-    let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
-    // Pass the MVP and the model matrix to the shader
-    let group1 = &buf.as_uniforms(&material.uniforms).unwrap().uniforms;
-    let mut group2 = ShaderUniformsGroup::new();
-    let settings = ShaderUniformsSettings::new_program_id(shader);
-    group2.set_mat44("mvp_matrix", mvp_matrix);
-    group2.set_mat44("model_matrix", *model_matrix);
-    group2.set_mat44("view_matrix", camera.viewm);
-    group2.set_vec3f32("view_pos", camera.position);
-    // Set a default impl uniform
-    group2.set_f32("_active_time", renderer.time_alive);
-    group2.set_f32("_time", new_time);
-    group2.set_vec2i32("_resolution", resolution);
-    group2.set_f32("_delta", new_time);
-    group2.set_bool("_fade_anim", renderer.flags.contains(RendererFlags::FADING_ANIMATION));
-    // Combine the two groups
-    let mut combined = ShaderUniformsGroup::combine(group1, &group2);
-
-    // Use the custom renderer shader uniforms
-    if let Option::Some(group) = &renderer.uniforms {
-        // We might need to combine another time
-        combined = ShaderUniformsGroup::combine(&combined, group);
-    }
-
-    // Update the uniforms
-    combined.execute(buf, settings).unwrap();
-
-    unsafe {
-        // Enable / Disable vertex culling for double sided materials
-        if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
-            gl::Disable(gl::CULL_FACE);
-        } else {
-            gl::Enable(gl::CULL_FACE);
-        }
-
-        // Actually draw
-        gl::BindVertexArray(model.vertex_array_object);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.element_buffer_object);
-        gl::DrawElements(gl::TRIANGLES, model.element_count as i32, gl::UNSIGNED_INT, null());
-    }
-}
-
+/*
 // Render a renderer using wireframe
 fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &CameraDataGPUObject, ws: &GPUObjectID) {
     let model = buf.as_model(&renderer.model_id).unwrap();
@@ -173,18 +64,61 @@ fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: 
         gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
     }
 }
-
+*/
 impl PipelineRenderer {
-    // Init the pipeline renderer
-    pub fn init(&mut self) {
+    // Render a single renderere
+    fn render(&self, pipeline: &Pipeline, renderer: &Renderer) -> Option<()> {
+        // Pipeline data
+        let camera = &pipeline.camera;
+        let material = pipeline.get_material(renderer.material).unwrap();
+
+        // The shader will always be valid
+        let _shader = pipeline.get_shader(material.shader).unwrap();
+        let model = pipeline.get_model(renderer.model)?;
+        let model_matrix = &renderer.matrix;
+
+        // Calculate the mvp matrix
+        let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
+
+        // Pass the MVP and the model matrix to the shader
+        let mut group = ShaderUniformsGroup::combine(material.uniforms.clone(), renderer.uniforms.clone().unwrap_or_default());
+        let settings = ShaderUniformsSettings::new(material.shader);
+        group.set_mat44f32("mvp_matrix", mvp_matrix);
+        group.set_mat44f32("model_matrix", *model_matrix);
+        group.set_mat44f32("view_matrix", camera.viewm);
+        group.set_vec3f32("view_pos", camera.position);
+        /*
+        // Set a default impl uniform
+        group.set_f32("_active_time", renderer.time_alive);
+        group.set_f32("_time", new_time);
+        group.set_vec2i32("_resolution", resolution);
+        group.set_f32("_delta", new_time);
+        group.set_bool("_fade_anim", renderer.flags.contains(RendererFlags::FADING_ANIMATION));
+        */
+
+        // Update the uniforms
+        group.execute(pipeline, settings).unwrap();
+
         unsafe {
-            gl::Viewport(0, 0, 1280, 720);
+            // Enable / Disable vertex culling for double sided materials
+            if material.flags.contains(MaterialFlags::DOUBLE_SIDED) {
+                gl::Disable(gl::CULL_FACE);
+            } else {
+                gl::Enable(gl::CULL_FACE);
+            }
+
+            // Actually draw
+            gl::BindVertexArray(model.1.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.1.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, model.1.triangle_count as i32, gl::UNSIGNED_INT, null());
         }
+        Some(())
+    }
+    // Initialize this new pipeline renderer
+    pub(crate) fn initialize(&mut self, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
         println!("Initializing the pipeline renderer...");
-        self.window = Window::default();
-        // Create the quad model
-        use crate::basics::Model;
-        use veclib::consts::*;
+        // Create the quad model that we will use to render the whole screen
+        use veclib::{vec2, vec3};
         let quad = Model {
             vertices: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
             normals: vec![veclib::Vector3::ZERO; 4],
@@ -194,62 +128,58 @@ impl PipelineRenderer {
             triangles: vec![0, 1, 2, 0, 3, 1],
             ..Model::default()
         };
-        self.quad_model = pipec::model(quad);
-        self.screen_shader = pipec::shader(
-            Shader::default()
-                .load_shader(vec![
-                    "defaults\\shaders\\rendering\\passthrough.vrsh.glsl",
-                    "defaults\\shaders\\rendering\\screen.frsh.glsl",
-                ])
-                .unwrap(),
-        );
-        // Create a default material
-        self.default_material = Some(pipec::material(
-            Material::new("Default Material").set_shader(pipec::shader(
-                Shader::default()
-                    .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\rendering\\default.frsh.glsl"])
-                    .unwrap(),
-            )),
-        ));
-        println!("Loaded the default material!");
+        // Load the quad model
+        self.quad_model = pipec::construct(quad, pipeline);
+        println!("Quad model {:?}", self.quad_model);
+
+        // Load the screen shader
+        let settings = ShaderSettings::default()
+            .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
+            .source("defaults\\shaders\\rendering\\screen.frsh.glsl");
+        self.screenshader = pipec::construct(Shader::new(settings).unwrap(), pipeline);
+
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
 
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            let dims = TextureType::Texture2D(self.window.dimensions.x, self.window.dimensions.y);
+            let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
+            self.diffuse_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB16R), pipeline);
+            // Create the emissive render texture
+            self.emissive_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F), pipeline);
             // Create the normals render texture
-            self.normals_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS));
+            self.normals_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS), pipeline);
             // Create the position render texture
-            self.position_texture = pipec::texture(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F));
+            self.position_texture = pipec::construct(Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F), pipeline);
             // Create the depth render texture
-            self.depth_texture = pipec::texture(
+            self.depth_texture = pipec::construct(
                 Texture::default()
                     .set_dimensions(dims)
                     .set_format(TextureFormat::DepthComponent32)
-                    .set_data_type(DataType::Float32),
+                    .set_data_type(DataType::F32),
+                pipeline,
             );
 
             // Now bind the attachememnts
-            fn bind_attachement(attachement: u32, texture: &GPUObjectID) {
+            fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
                 // Get the textures from the GPUObjectID
-                let buf = crate::BUFFER.lock().unwrap();
-                let texture = buf.as_texture(texture).unwrap();
-                // Default target, no multisamplind
-                let target: u32 = gl::TEXTURE_2D;
+                let texture = pipeline.get_texture(*texture)?;
                 unsafe {
-                    gl::BindTexture(target, texture.texture_id);
-                    gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, target, texture.texture_id, 0);
+                    gl::BindTexture(texture.target, texture.oid);
+                    gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target, texture.oid, 0);
                 }
+                Some(())
             }
-            bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture);
-            bind_attachement(gl::COLOR_ATTACHMENT1, &self.normals_texture);
-            bind_attachement(gl::COLOR_ATTACHMENT2, &self.position_texture);
-            bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture);
-            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2];
+            // Flush
+            pipeline.flush(internal, self);
+            bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT1, &self.emissive_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT2, &self.normals_texture, pipeline).unwrap();
+            bind_attachement(gl::COLOR_ATTACHMENT3, &self.position_texture, pipeline).unwrap();
+            bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture, pipeline).unwrap();
+            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
             gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
 
             // Check if the frame buffer is okay
@@ -264,21 +194,16 @@ impl PipelineRenderer {
         /* #endregion */
         /* #region Actual pipeline renderer shit */
         // Load sky gradient texture
-        self.sky_texture = pipec::texturec(
-            assets::cachec::acache_l(
-                "defaults\\textures\\sky_gradient.png",
-                Texture::default().set_wrapping_mode(crate::texture::TextureWrapping::ClampToEdge),
-            )
-            .unwrap(),
-        );
-
-        // Load the wireframe shader
-        self.wireframe_shader = pipec::shader(
-            Shader::default()
-                .load_shader(vec!["defaults\\shaders\\rendering\\default.vrsh.glsl", "defaults\\shaders\\others\\wireframe.frsh.glsl"])
-                .unwrap(),
+        self.sky_texture = pipec::construct(
+            assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png")
+                .unwrap()
+                .set_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
+            pipeline,
         );
         /* #endregion */
+
+        // We must always flush to make sure we execute the tasks internally
+        pipeline.flush(internal, self);
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
     // Pre-render event
@@ -288,65 +213,62 @@ impl PipelineRenderer {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
     }
-    // Called each frame, for each renderer that is valid in the pipeline
-    pub fn renderer_frame(&self, buf: &PipelineBuffer, camera: &CameraDataGPUObject, new_time: f32, delta: f32) {
-        let i = std::time::Instant::now();
-        let material = buf.as_material(self.default_material.as_ref().unwrap()).unwrap();
-        for renderer in buf.renderers.iter().map(|x| buf.as_renderer(x).unwrap()) {
-            // Should we render in wireframe or not?
-            if self.wireframe {
-                render_wireframe(buf, renderer, camera, &self.wireframe_shader);
-            } else {
-                render(buf, renderer, camera, material, new_time, delta, self.window.dimensions.into());
-            }
+    // Called each frame, to render the world
+    pub fn render_frame(&mut self, pipeline: &Pipeline) {
+        let _i = std::time::Instant::now();
+        for (_id, renderer) in pipeline.renderers.iter() {
+            let _result = self.render(pipeline, renderer);
+            //if result.is_none() { println!("Could not render object with ID '{}'!", id); }
         }
     }
     // Post-render event
-    pub fn post_render(&self, buf: &PipelineBuffer, camera: &CameraDataGPUObject, window: &mut glfw::Window) {
-        // Update the frame stats texture
-        //self.frame_stats.update_texture(data.time_manager, &data.entity_manager.entities);
-        let dimensions = self.window.dimensions;
-        // Render the screen QUAD
-        let screen_shader = buf.as_shader(&self.screen_shader).unwrap();
-        let settings = ShaderUniformsSettings::new_program_id(screen_shader);
+    pub fn post_render(&mut self, pipeline: &Pipeline) {
+        // Get the pipeline data
+        let dimensions = pipeline.window.dimensions;
+        let camera = &pipeline.camera;
+
+        // Render the screen quad
         let mut group = ShaderUniformsGroup::new();
         group.set_vec2i32("resolution", dimensions.into());
         group.set_vec2f32("nf_planes", camera.clip_planes);
         group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
         // Textures
-        group.set_t2d("diffuse_texture", &self.diffuse_texture, 0);
-        group.set_t2d("normals_texture", &self.normals_texture, 1);
-        group.set_t2d("position_texture", &self.position_texture, 2);
-        group.set_t2d("depth_texture", &self.depth_texture, 3);
-        group.set_t2d("default_sky_gradient", &self.sky_texture, 4);
-        let vp_m = camera.projm * (veclib::Matrix4x4::from_quaternion(&camera.rotation));
-        group.set_mat44("custom_vp_matrix", vp_m);
+        group.set_texture("diffuse_texture", self.diffuse_texture, 0);
+        group.set_texture("emissive_texture", self.emissive_texture, 1);
+        group.set_texture("normals_texture", self.normals_texture, 2);
+        group.set_texture("position_texture", self.position_texture, 3);
+        group.set_texture("depth_texture", self.depth_texture, 4);
+        group.set_texture("default_sky_gradient", self.sky_texture, 5);
+        let vp_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
+        group.set_mat44f32("custom_vp_matrix", vp_m);
         // Other params
         group.set_vec3f32("camera_pos", camera.position);
-        group.set_i32("debug_view", 0);
-        //group.set_t2d("frame_stats", self.frame_stats.texture, 5);
-        group.execute(buf, settings).unwrap();
+        group.set_vec3f32("camera_dir", camera.rotation.mul_point(veclib::Vector3::Z));
+
+        // Update the uniform settings
+        let settings = ShaderUniformsSettings::new(self.screenshader);
+        group.execute(pipeline, settings).unwrap();
 
         // Render the screen quad
-        let quad_model = buf.as_model(&self.quad_model).unwrap();
+        let (_, quad_data) = pipeline.get_model(self.quad_model).unwrap();
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(quad_model.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_model.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, quad_model.element_count as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(quad_data.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_data.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, quad_data.triangle_count as i32, gl::UNSIGNED_INT, null());
             gl::BindVertexArray(0);
-            window.swap_buffers();
         }
     }
     // Update window
-    pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>) {
+    pub fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &Pipeline) {
         // Update the size of each texture that is bound to the framebuffer
-        let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.diffuse_texture, dims)).wait_execution();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.depth_texture, dims)).wait_execution();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.normals_texture, dims)).wait_execution();
-        pipec::task(pipec::RenderTask::TextureUpdateSize(self.position_texture, dims)).wait_execution();
+        let _dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.diffuse_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.emissive_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.normals_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.position_texture, _dims), pipeline);
+        pipec::task(PipelineTask::UpdateTextureDimensions(self.depth_texture, _dims), pipeline);
         unsafe {
             gl::Viewport(0, 0, window_dimensions.x as i32, window_dimensions.y as i32);
         }

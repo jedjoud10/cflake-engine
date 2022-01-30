@@ -1,8 +1,6 @@
-use ecs::*;
-use math;
-
-// An AABB components
-#[derive(Default)]
+use main::{ecs::component::Component, math};
+// An AABB component
+#[derive(Default, Component)]
 pub struct AABB {
     pub aabb: math::bounds::AABB,
     pub generation_type: AABBGenerationType,
@@ -34,19 +32,4 @@ impl AABB {
         aabb.center = (aabb.min + aabb.max) / 2.0;
         aabb
     }
-    // Generate the AABB from a renderer entity
-    pub fn from_components(entity: &Entity) -> Self {
-        let transform = core::global::ecs::component::<super::Transform>(entity).unwrap();
-        /*
-        let renderer = entity.get_component::<super::Renderer>(component_manager).unwrap();
-        let aabb = math::bounds::AABB::new_vertices(&renderer.model.vertices);
-        */
-        Self {
-            aabb: Self::offset(math::bounds::AABB::default(), transform),
-            ..Self::default()
-        }
-    }
 }
-
-// Main traits implemented
-ecs::impl_component!(AABB);

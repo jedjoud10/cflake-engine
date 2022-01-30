@@ -1,169 +1,88 @@
-use core::global::callbacks::CallbackType;
+use main::{
+    core::{Context, WriteContext},
+    ecs::{self, component::ComponentQuery, entity::EntityID},
+    terrain::{ChunkCoords},
+};
 
-use super::ChunkSystem;
-use ecs::SystemData;
-use math::octrees::OctreeNode;
-use others::callbacks::MutCallback;
-use terrain::ChunkCoords;
-ecs::impl_systemdata!(ChunkSystem);
+// Add a single chunk to the world
+fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) -> EntityID {
+    // Create the chunk entity
+    let entity = ecs::entity::Entity::default();
+    let id = ecs::entity::EntityID::new(&write.ecs);
+    let mut group = ecs::entity::ComponentLinkingGroup::default();
 
-// Create the chunk entity and add it to the world
-fn create_chunk_entity(data: &mut SystemData<ChunkSystem>, coords: ChunkCoords, octree_size: u64) {
-    // Create the entity
-    let name = format!("Chunk {:?} {:?}", coords.position, coords.size);
-    let entity = ecs::Entity::new();
-
-    // Create the chunk component
-    let chunk = terrain::Chunk::new(coords);
-    // Link the components
-    let mut linkings = ecs::ComponentLinkingGroup::new();
-    linkings.link::<terrain::Chunk>(chunk).unwrap();
-
+    // Link the nessecary components
     // Transform
-    linkings
-        .link::<crate::components::Transform>(
-            crate::components::Transform::default()
-                .with_position(coords.position.into())
-                .with_scale(veclib::Vector3::new(
-                    (coords.size / octree_size) as f32,
-                    (coords.size / octree_size) as f32,
-                    (coords.size / octree_size) as f32,
-                )),
-        )
-        .unwrap();
-    // Add the entity
-    let result = core::global::ecs::entity_add(entity, linkings);
-    core::global::batch::batch_add(0, true, result);
+    let position = veclib::Vector3::<f32>::from(coords.position);
+    let scale = veclib::Vector3::ONE * ((coords.size / octree_size) as f32);
+    let transform = crate::components::Transform::default().with_position(position).with_scale(scale);
+    group.link::<crate::components::Transform>(transform).unwrap();
+
+    // Chunk
+    let chunk = crate::components::Chunk::new(coords);
+    group.link::<crate::components::Chunk>(chunk).unwrap();
+
+    // Add the entity to the world
+    write.ecs.add_entity(entity, id, group).unwrap();
+    println!("Spawn chunk at {} with EntityID: {}", coords.center, id);
+    id
+}
+// Remove a single chunk
+fn remove_chunk(write: &mut WriteContext, id: EntityID) {
+    // Make sure that the chunk entity even exists
+    if write.ecs.entity(&id).is_ok() {
+        // Remove the chunk entity at that specific EntityID
+        write.ecs.remove_entity(id).unwrap();
+        println!("Remove chunk with EntityID: {}", id);
+    }
 }
 
-fn system_prefire(data: &mut SystemData<ChunkSystem>) {
-    // We must add all the chunks that the octree tells us to add
-    // First of all, we get the camera data
-    let camera_pos = {
-        if let Option::Some(camera_id) = core::global::main::world_data().main_camera_entity_id {
-            let camera = core::global::ecs::entity(camera_id).unwrap();
-            let camera_transform = core::global::ecs::component::<crate::components::Transform>(&camera).unwrap();
-            camera_transform.position
-        } else {
-            veclib::Vector3::default()
-        }
-    };
+// The chunk systems' update loop
+fn run(context: &mut Context, _query: ComponentQuery) {
+    // Get the global terrain component
+    let mut write = context.write();
+    // Get the camera position
+    let camera_pos = write.ecs.global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
+    let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
+    if let Ok(mut terrain) = terrain {
+        // Generate the chunks if needed and only if we are not currently generating 
+        if !terrain.generating {
+            let octree = &mut terrain.octree;
+            if let Some((added, removed)) = octree.update(camera_pos) {
+                terrain.swap_chunks = false;
+                // We have moved, thus the chunks need to be regenerated
+                
+                // Remove chunks only if we already generated them
+                for node in removed {
+                    let coords = ChunkCoords::new(&node);
+                    if let Some(id) = terrain.chunks.remove(&coords) {
+                        terrain.chunks_to_remove.push(id);
+                    }
+                }
 
-    // We are only allowed to update the octree in 2 conditions
-    // 1. We do not have any current chunks, so we must initialize the octree
-    // 2. We do not have any chunks that are waiting to become validated AND we do not have any chunks to delete
-    let validity_test = data.chunks_awaiting_validation.len() == 0 && data.chunks_to_delete.is_empty() && data.deleted_chunks_descending.is_empty();
-    let valid = data.chunks.is_empty() || validity_test;
-    if valid && core::global::input::map_toggled("toggle_terrain_gen") {
-        // Update the octree
-        let octree = &mut data.octree;
-        let octree_size = octree.internal_octree.size;
-        if let Option::Some((mut added, removed, total)) = octree.generate_incremental_octree(&camera_pos, terrain::DEFAULT_LOD_FACTOR) {
-            // Do a bit of filtering on the added nodes
-            added.retain(|node| node.children_indices.is_none() && math::Intersection::csgtree_aabb(&data.csgtree, &node.get_aabb()));
-            // Add the chunks into the world
-            for x in added {
-                let octree_node: OctreeNode = x;
-                let coords = ChunkCoords::new(&octree_node);
-                // Add the entity
-                create_chunk_entity(data, coords, octree_size);
-                data.chunks_awaiting_validation.insert(coords);
+                // Only add the chunks that are leaf nodes in the octree
+                for node in added {
+                    if node.children_indices.is_none() {
+                        // This is a leaf node
+                        let coords = ChunkCoords::new(&node);
+                        let id = add_chunk(&mut write, terrain.octree.inner.size, coords);
+                        terrain.chunks.insert(coords, id);
+                    }
+                }
+                return;
             }
 
-            // Buffer the chunks that must be removed
-            for octree_node in removed {
-                let coords = ChunkCoords::new(&octree_node);
-                // Get the entity ID, then we can remove it
-                if let Option::Some(entity_id) = data.chunks.remove(&coords) {
-                    // Set the state first
-                    // Now we can actually remove the entity
-                    let result = core::global::ecs::entity_remove(entity_id);
-                    data.chunks_to_delete.insert(entity_id);
-                    data.deleted_chunks_descending.insert(entity_id);
-                    core::global::batch::batch_add(1, false, result);
+            // Mass deletion
+            if terrain.swap_chunks {
+                let chunks_to_remove = std::mem::take(&mut terrain.chunks_to_remove);
+                for id in chunks_to_remove {
+                    remove_chunk(&mut write, id)
                 }
             }
         }
     }
-
-    // If we are done generating the chunks, we can safely remove the old chunks
-    if data.chunks_awaiting_validation.len() == 0 && !data.chunks_to_delete.is_empty() {
-        if data.removal_time == 0.0 { data.removal_time = core::global::timings::elapsed() as f32 }
-        // If the 0.125s have passed we can delete the chunks
-        if (core::global::timings::elapsed() - data.removal_time as f64) > 0.125 {
-            data.removal_time = 0.0;
-            core::global::batch::send_batch(1, false);
-            data.chunks_to_delete.clear();    
-        }
-    }
-    //println!("Chunks awaiting validation {}", data.chunks_awaiting_validation.len());
 }
-
-// We will loop through every chunk and update our internal state about them
-fn entity_update(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
-    let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
-    // Check if the chunk has a renderer component
-    if chunk.voxel_data.is_some() && !data.deleted_chunks_descending.contains(&entity.id) {
-        if let Option::Some(renderer) = core::global::ecs::component::<crate::components::Renderer>(entity).ok() {
-            // Check if we have a valid model
-            if renderer.internal_renderer.index.is_some() {
-                // We have valid model, we can remove self from the hashset
-                if data.chunks_awaiting_validation.remove(&chunk.coords) {
-                    data.chunks.insert(chunk.coords, entity.id);
-                } else {
-                }
-            }
-        } else {
-            // If we do not have a model, and do not expect to get one, we must remove it as well
-            if data.chunks_awaiting_validation.remove(&chunk.coords) {
-                data.chunks.insert(chunk.coords, entity.id);
-            } else {
-            }
-        }
-    }
-}
-
-// We have removed a Chunk, we must remove it's corresponding data from our internal states as well
-fn entity_removed(data: &mut SystemData<ChunkSystem>, entity: &ecs::Entity) {
-    // Remove this chunk from our total chunks
-    let chunk = core::global::ecs::component::<terrain::Chunk>(entity).unwrap();
-    if data.deleted_chunks_descending.remove(&entity.id) {
-    } else {
-        panic!()
-    }
-}
-
-// Create the Chunk Manager system
-// This system will add / remove chunks from the world and nothing else
-pub fn system(depth: u8, csgtree: math::csg::CSGTree) {
-    // Check if a an already existing node could be subdivided even more
-    fn can_node_subdivide_twin(node: &math::octrees::OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
-        let c: veclib::Vector3<f32> = node.get_center().into();
-        let max = node.depth == 1;
-        let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
-        node.children_indices.is_none() && node.depth < max_depth && result
-    }
-    // Create a new octree
-    let internal_octree = math::octrees::Octree::new(depth, (terrain::MAIN_CHUNK_SIZE) as u64);
-    let octree = math::octrees::AdvancedOctree::new(internal_octree, can_node_subdivide_twin);
-
-    // Create the system data from the given terrain settings
-    let chunk_system_data = ChunkSystem {
-        octree,
-        csgtree,
-        ..ChunkSystem::default()
-    };
-    core::global::ecs::add_system(chunk_system_data, || {
-        // Create a system
-        let mut system = ecs::System::new();
-        // Link some components to the system
-        system.link::<terrain::Chunk>();
-        // And link the events
-        core::global::input::bind_key(input::Keys::Y, "toggle_terrain_gen", input::MapType::Toggle);
-        system.event(ecs::SystemEventType::SystemPrefire(system_prefire));
-        system.event(ecs::SystemEventType::EntityUpdate(entity_update));
-        system.event(ecs::SystemEventType::EntityRemoved(entity_removed));
-        // Return the newly made system
-        system
-    });
+// Create a chunk system
+pub fn system(write: &mut WriteContext) {
+    write.ecs.create_system_builder().set_run_event(run).build()
 }

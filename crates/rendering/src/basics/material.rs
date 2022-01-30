@@ -1,7 +1,11 @@
 use crate::basics::*;
+use crate::object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask};
 use crate::pipeline::*;
-
 use bitflags::bitflags;
+
+use super::shader::Shader;
+use super::texture::Texture;
+use super::uniforms::ShaderUniformsGroup;
 
 bitflags! {
     pub struct MaterialFlags: u8 {
@@ -15,99 +19,119 @@ impl Default for MaterialFlags {
 }
 
 // A material that can have multiple parameters and such
-#[derive(Clone)]
 pub struct Material {
-    // Rendering stuff
-    pub shader: Option<GPUObjectID>,
-    pub material_name: String,
+    pub shader: ObjectID<Shader>,
     pub flags: MaterialFlags,
     pub uniforms: ShaderUniformsGroup,
-    // Is this material even visible?
-    pub visible: bool,
 }
 
 impl Default for Material {
     fn default() -> Self {
-        let material: Self = Material {
-            shader: None,
-            material_name: String::new(),
-            flags: MaterialFlags::empty(),
-            uniforms: ShaderUniformsGroup::new(),
-            visible: true,
+        let mut me = Self {
+            shader: Default::default(),
+            flags: Default::default(),
+            uniforms: Default::default(),
         };
-        material
+        // Create some default uniforms
+        let group = &mut me.uniforms;
+        group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
+        group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
+        group.set_f32("normals_strength", 1.0);
+        group.set_f32("emissive_strength", 1.0);
+        me
     }
 }
 
-impl Material {
-    // Create a new material with a name
-    pub fn new(material_name: &str) -> Self {
-        let mut material = Self::default();
-        material.material_name = material_name.to_string();
-        material
-            .uniforms
-            .set_t2d("diffuse_tex", &pipec::texturec(assets::cachec::load("defaults\\textures\\missing_texture.png").unwrap()), 0);
-        material
-            .uniforms
-            .set_t2d("normals_tex", &pipec::texturec(assets::cachec::load("default_normals").unwrap()), 1);
-        material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE);
-        material.uniforms.set_vec3f32("tint", veclib::Vector3::ONE);
-        material.uniforms.set_f32("normals_strength", 1.0);
-        material
-    }
-    // Load the diffuse texture
-    pub fn load_diffuse(mut self, diffuse_path: &str, opt: Option<TextureLoadOptions>) -> Self {
-        // Load the texture
-        let texture = pipec::texturec(
-            assets::cachec::acache_l(
-                diffuse_path,
-                Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
-            )
-            .unwrap(),
-        );
-        self.uniforms.set_t2d("diffuse_tex", &texture, 0);
-        self
-    }
-    // Load the normal texture
-    pub fn load_normal(mut self, normal_path: &str, opt: Option<TextureLoadOptions>) -> Self {
-        // Load the texture
-        let texture = pipec::texturec(
-            assets::cachec::acache_l(
-                normal_path,
-                Texture::default().enable_mipmaps().set_format(TextureFormat::RGBA8R).apply_texture_load_options(opt),
-            )
-            .unwrap(),
-        );
-        self.uniforms.set_t2d("normals_tex", &texture, 1);
-        self
-    }
-    // Set the main shader
-    pub fn set_shader(mut self, shader: GPUObjectID) -> Self {
-        self.shader = Some(shader);
-        self
-    }
-    // Toggle the double sided flag for this material
-    pub fn set_double_sided(mut self, double_sided: bool) -> Self {
-        match double_sided {
-            true => self.flags.insert(MaterialFlags::DOUBLE_SIDED),
-            false => self.flags.remove(MaterialFlags::DOUBLE_SIDED),
+impl PipelineObject for Material {}
+
+impl Buildable for Material {
+    fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
+        let defaults = pipeline.defaults.as_ref().unwrap();
+        self.set_pre_construct_settings(defaults.missing_tex, defaults.black, defaults.normals_tex);
+        // Set the default rendering shader if no shader was specified
+        if !self.shader.valid() {
+            self.shader = defaults.shader;
         }
         self
     }
-    // Toggle the visibility of this material
-    pub fn set_visible(mut self, visible: bool) -> Self {
-        self.visible = visible;
-        self
+
+    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
+        // Create the ID
+        let id = pipeline.materials.get_next_id_increment();
+        let id = ObjectID::new(id);
+        // Create the task and send it
+        (PipelineTask::CreateMaterial(ObjectBuildingTask::<Self>(self, id)), id)
     }
 }
 
-// Each material can be instanced
-use ::others::Instance;
-impl Instance for Material {
-    fn set_name(&mut self, string: String) {
-        self.material_name = string
+// This should help us create a material
+impl Material {
+    // Set the main shader
+    pub fn set_shader(mut self, shader: ObjectID<Shader>) -> Self {
+        self.shader = shader;
+        self
     }
-    fn get_name(&self) -> String {
-        self.material_name.clone()
+    // Add a flag to our flags
+    pub fn add_flag(mut self, flag: MaterialFlags) -> Self {
+        self.flags.insert(flag);
+        self
+    }
+    // Remove a flag from our flags
+    pub fn remove_flag(mut self, flag: MaterialFlags) -> Self {
+        self.flags.remove(flag);
+        self
+    }
+    // Set the uniforms group
+    pub fn set_uniforms(mut self, uniforms: ShaderUniformsGroup) -> Self {
+        self.uniforms = uniforms;
+        self
+    }
+    // Set the main diffuse texture
+    pub fn set_diffuse_texture(mut self, texture: ObjectID<Texture>) -> Self {
+        self.uniforms.set_texture("diffuse_tex", texture, 0);
+        self
+    }
+    // Set the main emissiion texture
+    pub fn set_emissive_texture(mut self, texture: ObjectID<Texture>) -> Self {
+        self.uniforms.set_texture("emissive_tex", texture, 1);
+        self
+    }
+    // Set the normal map texture
+    pub fn set_normals_texture(mut self, texture: ObjectID<Texture>) -> Self {
+        self.uniforms.set_texture("normals_tex", texture, 2);
+        self
+    }
+    // Set the UV scale
+    pub fn set_uv_scale(mut self, uv_scale: veclib::Vector2<f32>) -> Self {
+        self.uniforms.set_vec2f32("uv_scale", uv_scale);
+        self
+    }
+    // Set the tint (Color)
+    pub fn set_tint(mut self, tint: veclib::Vector3<f32>) -> Self {
+        self.uniforms.set_vec3f32("tint", tint);
+        self
+    }
+    // Set the normal map's strength
+    pub fn set_normals_strength(mut self, strength: f32) -> Self {
+        self.uniforms.set_f32("normals_strength", strength);
+        self
+    }
+    // Set the emissive map's strength
+    pub fn set_emissive_strength(mut self, strength: f32) -> Self {
+        self.uniforms.set_f32("emissive_strength", strength);
+        self
+    }
+
+    pub fn set_pre_construct_settings(&mut self, diffuse_tex: ObjectID<Texture>, emissive_tex: ObjectID<Texture>, normals_tex: ObjectID<Texture>) {
+        let group = &mut self.uniforms;
+        if !group.contains_uniform("diffuse_tex") {
+            group.set_texture("diffuse_tex", diffuse_tex, 0);
+        }
+        if !group.contains_uniform("emissive_tex") {
+            group.set_texture("emissive_tex", emissive_tex, 1);
+        }
+        if !group.contains_uniform("normals_tex") {
+            group.set_texture("normals_tex", normals_tex, 2);
+        }
     }
 }

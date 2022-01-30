@@ -1,14 +1,12 @@
 mod assets_impls;
 mod error;
-//mod frame_stats;
 mod main_types;
-mod procedural_model;
+mod render_wrapper;
 mod utils;
 mod window;
 pub use assets_impls::*;
 pub use error::*;
-//pub use frame_stats::*;
 pub use main_types::*;
-pub use procedural_model::*;
+pub use render_wrapper::*;
 pub use utils::*;
 pub use window::*;

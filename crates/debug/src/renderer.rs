@@ -1,5 +1,3 @@
-use math;
-
 pub const DRAW_DEBUG: bool = true;
 // Debug renderer functionality
 // I need to reprogram this with the new multithreaded renderer

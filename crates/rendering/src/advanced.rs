@@ -1,3 +1,3 @@
-mod array_data;
+pub mod atomic;
 pub mod compute;
-pub use array_data::*;
+pub mod shaderstorage;

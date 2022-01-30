@@ -1,7 +1,8 @@
 #version 460 core
 layout(location = 0) out vec3 frag_diffuse;
-layout(location = 1) out vec3 frag_normal;
-layout(location = 2) out vec3 frag_pos;
+layout(location = 2) out vec3 frag_emissive;
+layout(location = 3) out vec3 frag_normal;
+layout(location = 4) out vec3 frag_pos;
 uniform sampler2D diffuse_tex;
 uniform sampler2D normal_tex;
 uniform vec2 uv_scale;
@@ -13,6 +14,7 @@ in vec2 m_uv;
 in mat3 tbn;
 void main() {
 	frag_diffuse = texture(diffuse_tex, m_uv * uv_scale).xyz;
+	frag_emissive = frag_diffuse;
 	frag_normal = m_normal;
 	frag_pos = m_position;
 }

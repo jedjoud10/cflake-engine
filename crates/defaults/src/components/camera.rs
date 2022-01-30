@@ -1,7 +1,8 @@
-use ecs::*;
-use math;
-use rendering::utils::Window;
+use main::ecs::component::Component;
+use main::math;
+use main::rendering::utils::DEFAULT_WINDOW_SIZE;
 // A simple camera component
+#[derive(Component)]
 pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,
     pub projection_matrix: veclib::Matrix4x4<f32>,
@@ -18,7 +19,7 @@ impl Camera {
         let mut camera = Self {
             view_matrix: veclib::Matrix4x4::IDENTITY,
             projection_matrix: veclib::Matrix4x4::IDENTITY,
-            aspect_ratio: rendering::WINDOW_SIZE.x as f32 / rendering::WINDOW_SIZE.y as f32,
+            aspect_ratio: DEFAULT_WINDOW_SIZE.x as f32 / DEFAULT_WINDOW_SIZE.y as f32,
             frustum: math::Frustum::default(),
             horizontal_fov: fov,
             clip_planes: veclib::Vector2::new(clipn, clipf),
@@ -36,16 +37,16 @@ impl Camera {
     pub fn update_projection_matrix(&mut self) {
         // Turn the horizontal fov into a vertical one
         let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (self.aspect_ratio))).atan();
-        self.projection_matrix = veclib::Matrix4x4::from_perspective(self.clip_planes.x, self.clip_planes.y, self.aspect_ratio, vertical_fov);
+        self.projection_matrix = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, self.aspect_ratio, vertical_fov);
     }
     // Calculate the view matrix using a rotation and a position
     pub fn calculate_view_matrix(position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) -> veclib::Matrix4x4<f32> {
-        let rotation_matrix = veclib::Matrix4x4::from_quaternion(&rotation);
+        let rotation_matrix = veclib::Matrix4x4::<f32>::from_quaternion(&rotation);
         let mut forward_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0));
         forward_vector.normalize();
         let mut up_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
         up_vector.normalize();
-        veclib::Matrix4x4::look_at(&position, &up_vector, &(forward_vector + position))
+        veclib::Matrix4x4::<f32>::look_at(&position, &up_vector, &(forward_vector + position))
     }
     // Update the view matrix using a rotation and a position
     pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
@@ -63,8 +64,6 @@ impl Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        Self::new(90.0, 0.3, 4000.0)
+        Self::new(90.0, 0.3, 1000.0)
     }
 }
-
-ecs::impl_component!(Camera);

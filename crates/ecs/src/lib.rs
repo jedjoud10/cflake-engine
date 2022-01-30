@@ -1,18 +1,12 @@
 // Export
-mod component;
-pub mod component_registry;
-mod entity;
-mod error;
-pub mod identifiers;
-mod linking;
-mod macros;
+#![feature(drain_filter)]
+#![feature(bool_to_option)]
+#![feature(hash_drain_filter)]
+#![feature(negative_impls)]
+pub mod component;
+pub mod entity;
 mod manager;
 pub mod system;
-pub use component::*;
-pub use component_registry as registry;
-pub use entity::*;
-pub use error::*;
-pub use identifiers::*;
-pub use linking::*;
-pub use manager::*;
-pub use system::*;
+pub use manager::ECSManager;
+mod tests;
+pub mod utils;
