@@ -42,7 +42,7 @@ pub mod test {
         let id2 = id;
         let id3 = id;
         // The entity is not created yet, so it is null
-        ecs.add_entity(entity, id, group);
+        ecs.add_entity(entity, id, group).unwrap();
         // The ID is valid now
         assert!(ecs.entity(&id2).is_ok());
         // Run the system for two frames
@@ -110,7 +110,7 @@ pub mod test {
         // Add a new entity and play with it's components
         let entity = Entity::new();
         let id = EntityID::new(&ecs);
-        ecs.add_entity(entity, id, ComponentLinkingGroup::new());
+        ecs.add_entity(entity, id, ComponentLinkingGroup::new()).unwrap();
         assert!(ecs.entity(&id).is_ok());
         assert_eq!(ecs.entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
         let mut group = ComponentLinkingGroup::new();
@@ -167,7 +167,7 @@ pub mod test {
         let id = EntityID::new(&ecs);
         let mut group = ComponentLinkingGroup::new();
         group.link::<Name>(Name::new("John")).unwrap();
-        ecs.add_entity(entity, id, group);
+        ecs.add_entity(entity, id, group).unwrap();
         ecs.run_systems(context);
         ecs.remove_entity(id).unwrap();
         ecs.run_systems(context);
@@ -181,18 +181,18 @@ pub mod test {
         let context = WorldContext;
         #[derive(Component)]
         struct GlobalComponentTest {
-            pub test_value: i32,
+            pub _test_value: i32,
         }
         #[derive(Component)]
         struct GlobalComponentTest2 {}
 
         #[derive(Component)]
         struct Test<T: 'static> {
-            pub data: T,
+            pub _data: T,
         }
         // Create the main ECS manager
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
-        ecs.add_global(GlobalComponentTest { test_value: 10 }).unwrap();
+        ecs.add_global(GlobalComponentTest { _test_value: 10 }).unwrap();
         // Make a simple system
         fn internal_run(_context: &mut WorldContext, _query: ComponentQuery) {}
 

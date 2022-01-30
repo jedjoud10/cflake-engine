@@ -33,7 +33,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
         let mut group = ShaderUniformsGroup::new();
         group.set_shader_storage("_", data.shader_storage, 0);
 
-        let settings = ComputeShaderExecutionSettings::new(data.compute_shader, (4, 1, 1)).set_uniforms(group);
+        let settings = ComputeShaderExecutionSettings::new((4, 1, 1)).set_uniforms(group);
         pipec::tracked_task(PipelineTrackedTask::RunComputeShader(data.compute_shader, settings), data.compute, &*pipeline);
         let read = ReadBytes::default();
         let transfer = read.transfer();

@@ -122,6 +122,8 @@ impl Pipeline {
                 });
             }
 
+            PipelineTask::RemoveRenderer(id) => self.renderer_dispose(id),
+
             // Window tasks
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
             PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused),
@@ -683,6 +685,7 @@ impl Pipeline {
         self.models.insert(task.1.id.unwrap(), (model, buffers));
     }
     // Dispose of a model, also remove it from the pipeline
+    #[allow(dead_code)]
     fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Remove the model and it's buffers
         let (_model, mut buffers) = self.models.remove(id.id.unwrap()).unwrap();

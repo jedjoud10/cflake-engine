@@ -258,6 +258,7 @@ impl<Context> ECSManager<Context> {
     }
     // Run the systems in sync, but their component updates are not
     // Used only for testing
+    #[allow(dead_code)]
     pub(crate) fn run_systems(&self, context: Context)
     where
         Context: Clone,

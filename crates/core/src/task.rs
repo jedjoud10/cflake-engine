@@ -12,6 +12,7 @@ impl TaskSenderContext {
         })
     }
     // Send a batch of tasks to the main thread
+    #[allow(dead_code)]
     pub(crate) fn send_batch(&self, tasks: Vec<WorldTask>) -> Option<()> {
         crate::sender::send_task(WorldTaskBatch {
             combination: WorldTaskCombination::Batch(tasks),

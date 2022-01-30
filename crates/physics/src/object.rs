@@ -2,6 +2,7 @@ use crate::{AngularPhysics, LinearPhysics};
 
 // Main physics object class
 #[derive(Default, Clone)]
+#[allow(dead_code)]
 pub struct PhysicsObject {
     pub(crate) mass: f32,
     pub(crate) linear: LinearPhysics,

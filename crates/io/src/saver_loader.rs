@@ -2,7 +2,7 @@ use platform_dirs::AppDirs;
 
 use std::{
     fs::{File, OpenOptions},
-    io::{BufReader, BufWriter, Read, Write},
+    io::{BufReader, BufWriter, Write},
     path::PathBuf,
 };
 
