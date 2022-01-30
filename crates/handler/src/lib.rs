@@ -5,6 +5,7 @@ extern crate glfw;
 
 // World
 pub use defaults;
+use glfw::WindowHint;
 use main::core::{Context, World, WriteContext};
 pub use main::*;
 use std::sync::{Arc, RwLock};
@@ -25,6 +26,7 @@ fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(WriteContext<'_>)) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    glfw.window_hint(WindowHint::ContextVersion(1, 0));
     let (mut window, events) = glfw
         .create_window(
             rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
