@@ -7,7 +7,7 @@ use main::ecs;
 // A simple system that we can use as template
 fn run(context: &mut Context, query: ComponentQuery) {
     let read = context.read();
-    query.update_all_threaded(|components| {
+    query.update_all_threaded(|_, components| {
         let name = components.component::<Name>().unwrap();
         dbg!(&name.name);
         let time = read.time.elapsed;

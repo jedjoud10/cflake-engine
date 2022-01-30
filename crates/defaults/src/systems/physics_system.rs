@@ -10,7 +10,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
     let delta = read.time.delta as f32;
 
     // For each physics object, we must update the internal physics values and apply them to our transform
-    query.update_all_threaded(move |components| {
+    query.update_all_threaded(move |_, components| {
         // For each physics object, we want to take the transform's position as as a starting point
         let transform = components.component::<crate::components::Transform>().unwrap();
         let (position, rotation) = (transform.position, transform.rotation);

@@ -1,4 +1,4 @@
-use crate::{SharedData, CURRENT_EXECUTION_INDEX};
+use crate::{SharedData, IterExecutionID, IterExecutionInfo};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Barrier, RwLock,
@@ -27,7 +27,7 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
             let idx = thread_index;
             let data = &*ptr;
             let function = data.function.as_ref().unwrap();
-            let function = unsafe {  std::mem::transmute::<u128, *const dyn Fn(&mut T)>(*function) };
+            let function = unsafe {  std::mem::transmute::<u128, *const dyn Fn(&IterExecutionID, &mut T)>(*function) };
             let function = unsafe { &*function };
             let elements = &*data.elements;
 
@@ -40,12 +40,16 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
             if start_idx < elements.len() {
                 for i in start_idx..end_idx {
                     // Execute the function
-                    CURRENT_EXECUTION_INDEX.with(|x| x.set(i));
                     let elem = elements.get(i);
                     if let Some(&elem) = elem {
                         // Unsafe magic
                         let elem = unsafe { &mut *elem };
-                        function(elem);
+                        function(&IterExecutionID {
+                            info: IterExecutionInfo {
+                                element_index: i,
+                                thread_index,
+                            },
+                        }, elem);
                     }
                 }
             }

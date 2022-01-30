@@ -6,7 +6,7 @@ use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex, RwLock},
 };
-use worker_threads::ThreadPool;
+use threads::ThreadPool;
 
 use crate::{
     component::{

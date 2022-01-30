@@ -3,7 +3,7 @@ use std::{
     sync::{atomic::Ordering::Relaxed, Arc, Barrier, RwLock, RwLockWriteGuard}, mem::ManuallyDrop,
 };
 
-use crate::{SharedData, SHUTDOWN};
+use crate::{SharedData, SHUTDOWN, IterExecutionID};
 
 // A thread pool that contains multiple WorkerThreadInitData,
 // so we can send messages to the threads to tell them to execute something, and we will wait until all of them have executed
@@ -38,12 +38,12 @@ impl<T: 'static> ThreadPool<T> {
         self.max_thread_count
     }
     // Execute the thread pool using the vector filled with pointers and with a custom chunk size
-    pub fn execute_raw<'a, F: Fn(&mut T) + Sync + Send>(&self, elements: Vec<*mut T>, chunk_size: usize, task: F) {
+    pub fn execute_raw<'a, F: Fn(&IterExecutionID, &mut T) + Sync + Send>(&self, elements: Vec<*mut T>, chunk_size: usize, task: F) {
         let (barrier, end_barrier, _shutdown_barrier) = self.barriers.as_ref();
         // The main task
         let mut task = ManuallyDrop::new(Box::new(task));
-        let ptr: &dyn Fn(&mut T) = &*task;
-        let ptr = ptr as *const dyn Fn(&mut T);
+        let ptr: &dyn Fn(&IterExecutionID, &mut T) = &*task;
+        let ptr = ptr as *const dyn Fn(&IterExecutionID, &mut T);
         let new_ptr = unsafe { std::mem::transmute(ptr) };
         {
             // Update the value, then unlock
@@ -69,12 +69,12 @@ impl<T: 'static> ThreadPool<T> {
         }
     }
     // Execute the thread pool using the vector filled with pointers. We will guess the approppriate chunk size
-    pub fn execute_vec_ptr<F: Fn(&mut T) + Sync + Send>(&self, elements: Vec<*mut T>, task: F) {
+    pub fn execute_vec_ptr<F: Fn(&IterExecutionID, &mut T) + Sync + Send>(&self, elements: Vec<*mut T>, task: F) {
         let length = elements.len();
         self.execute_raw(elements, (length / self.max_thread_count) + 1, task);
     }
     // Execute the thread pool using a vector filled with mutable refences to the elements. We will guess the appropriate chunk size
-    pub fn execute<F: Fn(&mut T) + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
+    pub fn execute<F: Fn(&IterExecutionID, &mut T) + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
         let elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
         self.execute_vec_ptr(elements, task);
     }

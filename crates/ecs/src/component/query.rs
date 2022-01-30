@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use ahash::AHashMap;
-use worker_threads::ThreadPool;
+use threads::{ThreadPool, IterExecutionID};
 
 use crate::entity::EntityID;
 
@@ -96,43 +96,8 @@ impl ComponentQuery {
             }
         }
     }
-    // Update all the components consecutively, on the main thread, but while also mapping each element and returning a new vector that may or may not contain each element
-    pub fn update_all_map_filter<U, F: FnMut(&mut LinkedComponents) -> Option<U>>(self, mut function: F) -> Option<Vec<U>> {
-        let output_vec = if let Some(_type) = self.linked_components {
-            let len = match &_type {
-                ComponentQueryIterType::ArcHashMap(x) => x.lock().unwrap().len(),
-                ComponentQueryIterType::HashMap(x) => x.len(),
-            };
-            // Create the output vector that will store the mapped values
-            let mut output_vec = Vec::with_capacity(len);
-
-            match _type {
-                ComponentQueryIterType::ArcHashMap(arc) => {
-                    let mut lock = arc.lock().unwrap();
-                    for (_, linked_components) in lock.iter_mut() {
-                        let output = function(linked_components);
-                        if let Some(output) = output {
-                            output_vec.push(output);
-                        }
-                    }
-                }
-                ComponentQueryIterType::HashMap(hashmap) => {
-                    for (_, mut linked_components) in hashmap {
-                        let output = function(&mut linked_components);
-                        if let Some(output) = output {
-                            output_vec.push(output);
-                        }
-                    }
-                }
-            }
-            Some(output_vec)
-        } else {
-            None
-        };
-        output_vec
-    }
     // Update all the components in parallel, on multiple worker threads
-    pub fn update_all_threaded<F: Fn(&mut LinkedComponents) + Sync + Send>(self, function: F) {
+    pub fn update_all_threaded<F: Fn(&IterExecutionID, &mut LinkedComponents) + Sync + Send>(self, function: F) {
         if let Some(_type) = self.linked_components {
             let thread_pool = self.thread_pool.lock().unwrap();
             match _type {

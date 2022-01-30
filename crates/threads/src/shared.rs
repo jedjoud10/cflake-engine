@@ -1,9 +1,5 @@
 use std::{sync::{RwLock, Arc, atomic::{AtomicUsize, Ordering}}, cell::{UnsafeCell, Cell}, iter};
-
-// The power of atomics
-thread_local! {
-    pub(crate) static CURRENT_EXECUTION_INDEX: Cell<usize> = Cell::new(0);
-}
+use crate::IterExecutionID;
 
 // Creates a vector that we can modify inside the worker threads
 // This is totally safe, since we will not be accessing multiple elements while they are being written to
@@ -28,19 +24,17 @@ impl<T> SharedVec<T> {
         }
     }
     // Read the current element
-    pub fn read(&self) -> Option<&T> {
+    pub fn read(&self, id: &IterExecutionID) -> Option<&T> {
         // Then get the index and the unsafe cell
-        let idx = CURRENT_EXECUTION_INDEX.with(|x| x.get());
-        let cell = self.vec.get(idx)?;
+        let cell = self.vec.get(id.info.element_index)?;
 
         // Then we can read from the cell
         Some(unsafe { &*cell.get() })
     }
     // Write the current element
-    pub fn write(&self) -> Option<&mut T> {
+    pub fn write(&self, id: &IterExecutionID) -> Option<&mut T> {
         // Then get the index and the unsafe cell
-        let idx = CURRENT_EXECUTION_INDEX.with(|x| x.get());
-        let cell = self.vec.get(idx)?;
+        let cell = self.vec.get(id.info.element_index)?;
 
         // Then we can read from the cell
         Some(unsafe { &mut *cell.get() })

@@ -10,6 +10,6 @@ ahash = "0.7.6"
 lazy_static = "1.4.0"
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
-worker_threads = { path = "../worker_threads" }
+threads = { path = "../threads" }
 others = { path = "../others" }
 ecs-derive = { path = "./ecs-derive"  }

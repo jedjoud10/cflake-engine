@@ -1,7 +1,7 @@
 use main::{
     core::{Context, WriteContext},
     ecs::component::ComponentQuery,
-    rendering,
+    rendering::{self, object::PipelineTask},
 };
 
 // The rendering system update loop
@@ -10,22 +10,25 @@ fn run(context: &mut Context, query: ComponentQuery) {
     let read = context.read();
     let pipeline = read.pipeline.read();
     let _i = std::time::Instant::now();
-    let tasks = query.update_all_map_filter(move |components| {
+    let storage = main::threads::SharedVec::<Option<PipelineTask>>::new(query.count());
+    query.update_all_threaded(|execution_id, components| {
         let renderer = components.component::<crate::components::Renderer>().unwrap();
         let transform = components.component::<crate::components::Transform>().unwrap();
         let renderer_object_id = &renderer.object_id;
-        if renderer_object_id.valid() {
+        let task = if renderer_object_id.valid() {
             // Update the values if our renderer is valid
             Some(rendering::object::PipelineTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix()))
         } else {
             None
-        }
+        };
+        // Write the task
+        let option = storage.write(execution_id).unwrap();
+        *option = task;
     });
 
     // Since we have all the tasks, we can send them as a batch
-    if let Some(tasks) = tasks {
-        rendering::pipeline::pipec::task_batch(tasks, &*pipeline);
-    }
+    let vec = storage.into_inner().into_iter().filter_map(|x| x).collect::<Vec<_>>();
+    rendering::pipeline::pipec::task_batch(vec, &*pipeline);
 }
 
 // An event fired whenever we add multiple new renderer entities
