@@ -7,7 +7,7 @@ pub fn preload_assets() {
     // -----Pre-load the game assets here-----
     assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
-    assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
+    //assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
 }
 pub fn init(mut write: core::WriteContext) {
     // ----Start the world----
@@ -89,6 +89,6 @@ pub fn init(mut write: core::WriteContext) {
 
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", material, 8, &pipeline_);
+    let terrain = defaults::globals::Terrain::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 8, &pipeline_);
     write.ecs.add_global(terrain).unwrap();
 }

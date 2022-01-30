@@ -2,9 +2,7 @@
 #include_custom {"voxel_include_path"}
 #include "defaults\shaders\voxel_terrain\shared.func.glsl"
 
-const int _CHUNK_SIZE = #constant chunk_size
-const int _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
-const int _CSPT = _CHUNK_SIZE + 2; // Chunk size plus two
+const int CHUNK_SIZE = #constant chunk_size
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout(std430, binding = 0) readonly buffer arbitrary_voxels
@@ -25,16 +23,16 @@ void main() {
 
     // Get the position
     vec3 pos = vec3(pixel_coords.xyz);    
-    float size = float(node_size) / (float(_CHUNK_SIZE));
+    float size = float(node_size) / (float(CHUNK_SIZE));
     pos *= size;
     pos += node_pos;       
     // Check if we can actually do calculations or not
-    if (all(lessThan(pixel_coords, ivec3(_CSPO, _CSPO, _CSPO)))) {        
+    if (all(lessThan(pixel_coords, ivec3(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1)))) {        
         // Create the final voxel
-        Voxel voxel = voxels[flatten(pc, _CSPT)];
-        Voxel vx = voxels[flatten(pc+ivec3(1, 0, 0), _CSPT)];
-        Voxel vy = voxels[flatten(pc+ivec3(0, 1, 0), _CSPT)];
-        Voxel vz = voxels[flatten(pc+ivec3(0, 0, 1), _CSPT)];
+        Voxel voxel = voxels[flatten(pc, CHUNK_SIZE+2)];
+        Voxel vx = voxels[flatten(pc+ivec3(1, 0, 0), CHUNK_SIZE+2)];
+        Voxel vy = voxels[flatten(pc+ivec3(0, 1, 0), CHUNK_SIZE+2)];
+        Voxel vz = voxels[flatten(pc+ivec3(0, 0, 1), CHUNK_SIZE+2)];
 
         // Calculate the normal for a voxel using the neighboring normals
         vec3 normal = normalize(vec3(vx.density-voxel.density, vy.density-voxel.density, vz.density-voxel.density));
@@ -44,6 +42,6 @@ void main() {
         PackedVoxel packed_voxel = get_packed_voxel(final_voxel);
 
         // And store the final voxel inside our array
-        packed_voxels[flatten(pc.yzx, _CSPO)] = packed_voxel;
+        packed_voxels[flatten(pc.xzy, CHUNK_SIZE+1)] = packed_voxel;
     }
 }

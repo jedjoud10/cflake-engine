@@ -35,5 +35,5 @@ PackedVoxel get_packed_voxel(FinalVoxel voxel) {
 }
 
 int flatten(ivec3 pc, int size) {
-    return pc.x + pc.y * size + pc.z * size * size;
+    return pc.x + (pc.y * size) + (pc.z * size * size);
 }

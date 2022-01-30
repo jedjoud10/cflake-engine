@@ -8,7 +8,7 @@ struct Voxel {
 
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const vec3 pos) {
-    return Voxel(pos.y, vec3(1.0), 1.0);
+    return Voxel(pos.y + sin(pos.x * 0.008) * 100 + sin(pos.z * 0.008) * 100, vec3(1.0), 1.0);
 }
 
 // Modify the voxel after we get it's normal
