@@ -49,7 +49,7 @@ impl Terrain {
         // Create a new octree
         let octree = DiffOctree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64, HeuristicSettings::new(|node, target| {
             let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
-            dist < 1.3
+            dist < 1.2
         }));
 
         // Load the first pass compute shader

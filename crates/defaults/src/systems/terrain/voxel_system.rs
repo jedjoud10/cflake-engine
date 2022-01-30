@@ -51,7 +51,6 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     // Read back the voxel values from the SSBO
     let voxels = read_bytes.fill_vec::<Voxel>().unwrap().into_boxed_slice();
     let voxel_data = VoxelData(voxels);
-    
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
     // Check if we have a valid surface that we can create a mesh out of

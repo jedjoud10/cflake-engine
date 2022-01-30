@@ -1,18 +1,20 @@
 use std::ops::{Index, IndexMut};
 use half::f16;
 
-// A simple voxel that has a size of 8 bytes
+// A simple voxel that has a size of 16 bytes
 // This is the final voxel that is returned from the compute shader
-#[repr(C, align(8))]
+#[repr(C, align(16))]
 pub struct Voxel {
     // The density of the voxel stored in a 16 bit half float
     pub density: f16,
     // The normals stored in a vec3 full of f16s
     pub normal: veclib::Vector3<f16>,
-    /*
-    // Now we have 3 bytes to hold more arbitrary data...
-    pub arb_data: [u8; 3],
-    */
+    // The color of each voxel is also stored in vec3 of f16s
+    pub color: veclib::Vector3<f16>,
+    // Material type
+    pub material_type: u16,
+    
+    // Todo...
 }
 
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap

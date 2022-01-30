@@ -71,6 +71,10 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
                         let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
                         let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
+                        // Get the color
+                        let t1: veclib::Vector3<f32> = vec3(voxel1.color.x.to_f32(), voxel1.color.y.to_f32(), voxel1.color.z.to_f32());
+                        let t2: veclib::Vector3<f32> = vec3(voxel2.color.x.to_f32(), voxel2.color.y.to_f32(), voxel2.color.z.to_f32());
+                        let color = veclib::Vector3::<f32>::lerp(t1, t2, value);
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -85,7 +89,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
                             model.normals.push(normal.normalized());
-                            model.colors.push(veclib::Vector3::ONE);
+                            model.colors.push(color);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);
