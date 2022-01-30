@@ -10,20 +10,21 @@ use main::{
         object::{ObjectID, ReservedTrackedTaskID, PipelineTrackedTask},
         pipeline::{pipec, Pipeline, PipelineContext}, utils::{UpdateFrequency, AccessType},
     },
-    terrain::{ChunkCoords, Voxable, MAIN_CHUNK_SIZE},
+    terrain::{ChunkCoords, MAIN_CHUNK_SIZE, Voxel},
 };
 use std::{collections::HashMap, marker::PhantomData, mem::size_of};
 
 
 #[derive(Component)]
 // The global terrain component that can be added at the start of the game
-pub struct Terrain<U: Voxable + 'static> {
+pub struct Terrain {
     // Chunk generation
     pub octree: AdvancedOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
     pub material: ObjectID<Material>,
 
     // Voxel Generation
+    pub generating: bool,
     pub base_compute: ObjectID<ComputeShader>,
     pub second_compute: ObjectID<ComputeShader>,
     // Our 2 shader storages
@@ -38,11 +39,9 @@ pub struct Terrain<U: Voxable + 'static> {
     // The Entity ID of the chunk that we are generating this voxel data for
     pub chunk_id: Option<EntityID>,    
     pub atomics: ObjectID<AtomicGroup>,
-
-    _phantom: PhantomData<U>,
 }
 
-impl<V: Voxable + 'static> Terrain<V> {
+impl Terrain {
     // Create a new terrain component
     pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
         // Check if a an already existing node could be subdivided even more
@@ -109,7 +108,7 @@ impl<V: Voxable + 'static> Terrain<V> {
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
         let final_voxels_size = byte_size;
         let final_voxel_size = final_voxels_size / ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
-        if final_voxel_size != size_of::<V>() { panic!() }
+        if final_voxel_size != size_of::<Voxel>() { panic!() }
 
         // Also construct the atomics
         let atomics = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), &pipeline);
@@ -131,11 +130,11 @@ impl<V: Voxable + 'static> Terrain<V> {
             read_counters: ReservedTrackedTaskID::default(),
             compute_second: ReservedTrackedTaskID::default(),
             read_final_voxels: ReservedTrackedTaskID::default(),
+            generating: false,
             chunk_id: None,
             base_compute,
             second_compute,
             atomics,
-            _phantom: PhantomData::default(),
             shader_storage_arbitrary_voxels,
             shader_storage_final_voxels,
         }

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 rayon = "1.5.1"
+half = "1.8.2"
 math = { path = "../math" }
 ui = { path = "../ui" }
 ecs = { path = "../ecs" }

@@ -86,27 +86,8 @@ pub fn init(mut write: core::WriteContext) {
         .set_shader(shader);
     let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
-    // Create a simple voxel
-    #[repr(C, align(16))]
-    pub struct SimpleVoxel {
-        // Store the density and normals in the same vector, since that is how it is stored in the GLSL shader
-        pub normal_and_density: veclib::Vector4<f32>,
-    }
-    impl terrain::Voxable for SimpleVoxel {
-        // Linearly interpolate between v1 and v2 using t
-        fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self {
-            Self {
-                normal_and_density: veclib::Vector4::<f32>::lerp(v1.normal_and_density, v2.normal_and_density, t),
-            }
-        }
-        // Get the density of this voxel
-        fn density(&self) -> f32 { self.normal_and_density.w }
-        // Get the normal of this voxel
-        fn normal(&self) -> veclib::Vector3<f32> { self.normal_and_density.get3([0, 1, 2]) }
-    }
-
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &pipeline_);
+    let terrain = defaults::globals::Terrain::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &pipeline_);
     write.ecs.add_global(terrain).unwrap();
 }

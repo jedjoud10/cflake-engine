@@ -3,11 +3,11 @@ use main::{ecs::{component::ComponentQuery, entity::ComponentLinkingGroup}, core
 
 
 // The mesher systems' update loop
-fn run(mut context: Context, query: ComponentQuery) {
+fn run(context: &mut Context, query: ComponentQuery) {
     let mut write = context.write();
     // Get the pipeline without angering the borrow checker
     let pipeline_ = write.pipeline.clone();
-    let pipeline = pipeline_.read().unwrap();
+    let pipeline = pipeline_.read();
     
     let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
     if let Ok(terrain) = terrain {

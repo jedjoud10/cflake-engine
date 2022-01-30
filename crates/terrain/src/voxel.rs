@@ -1,34 +1,31 @@
 use std::ops::{Index, IndexMut};
+use half::f16;
 
-use rendering::basics::model::Model;
+// A simple voxel that has a size of 8 bytes
+// This is the final voxel that is returned from the compute shader
+#[repr(C, align(8))]
+pub struct Voxel {
+    // The density of the voxel stored in a 16 bit half float
+    pub density: f16,
+    // And it's normals stored in a vec3 full of signed bytes
+    pub normal: veclib::Vector3<i8>,
 
-// A voxel trait that can contain some extra data
-pub trait Voxable
-where
-    Self: Sized,
-{
-    // Interpolate between two voxels values
-    fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self;
-    // Add our extra values to a model (ex: custom model data like tint)
-    fn push(self, _model: &mut Model) {}
-    // Get the density of this voxel
-    fn density(&self) -> f32;
-    // Get the normal of this voxel
-    fn normal(&self) -> veclib::Vector3<f32>;
+    // Now we have 3 bytes to hold more arbitrary data...
+    pub arb_data: [u8; 3],
 }
 
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap
-pub struct VoxelData<V: Voxable>(pub Box<[V]>);
+pub struct VoxelData(pub Box<[Voxel]>);
 
-impl<U: Voxable> Index<usize> for VoxelData<U> {
-    type Output = U;
+impl Index<usize> for VoxelData {
+    type Output = Voxel;
 
     fn index(&self, index: usize) -> &Self::Output {
         self.0.get(index).unwrap()
     }
 }
 
-impl<U: Voxable> IndexMut<usize> for VoxelData<U> {
+impl IndexMut<usize> for VoxelData {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.0.get_mut(index).unwrap()
     }

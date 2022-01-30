@@ -1,10 +1,10 @@
 use crate::ChunkCoords;
 use crate::TModel;
-use crate::Voxable;
 use crate::VoxelData;
 use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
+use half::f16;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -15,7 +15,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, interpolation: bool, _skirts: bool) -> TModel {
+pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, _skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
     // Loop over every voxel
@@ -29,14 +29,14 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
                 let _lv = &voxels[i + DATA_OFFSET_TABLE[0]];
 
                 // Make sure we have the default submodel/material for this material ID
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density() >= 0.0) as u8) * 1;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density() >= 0.0) as u8) * 2;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density() >= 0.0) as u8) * 4;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density() >= 0.0) as u8) * 8;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density() >= 0.0) as u8) * 16;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density() >= 0.0) as u8) * 32;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density() >= 0.0) as u8) * 64;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density() >= 0.0) as u8) * 128;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= f16::ZERO) as u8) * 1;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= f16::ZERO) as u8) * 2;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= f16::ZERO) as u8) * 4;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density >= f16::ZERO) as u8) * 8;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density >= f16::ZERO) as u8) * 16;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density >= f16::ZERO) as u8) * 32;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density >= f16::ZERO) as u8) * 64;
+                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density >= f16::ZERO) as u8) * 128;
 
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -61,15 +61,15 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
                         let voxel1 = &voxels[index1];
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = if interpolation { inverse_lerp(voxel1.density(), voxel2.density(), 0.0_f32) } else { 0.5 };
+                        let value: f32 = if interpolation { inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32) } else { 0.5 }.clamp(0.0, 1.0);
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         // Get the normal
-                        let t = value.clamp(0.0, 1.0);
-                        // But also interpolate the per voxel values if needed
-                        let per_voxel: V = V::interpolate(&voxel1, &voxel2, t);
+                        let n1: veclib::Vector3<f32> = voxel1.normal.into();
+                        let n2: veclib::Vector3<f32> = voxel2.normal.into();
+                        let normal = veclib::Vector3::<f32>::lerp(n1 / 128.0, n2 / 128.0, value);
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -83,8 +83,8 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
                             e.insert(model.vertices.len() as u32);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
+                            model.normals.push(normal);
                             model.colors.push(veclib::Vector3::ONE);
-                            per_voxel.push(&mut model);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple]);

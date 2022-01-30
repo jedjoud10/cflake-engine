@@ -1,6 +1,6 @@
 use main::assets::preload_asset;
 use main::core::WriteContext;
-use systems::{camera_system, debugging_system, physics_system, rendering_system, test_system, window_system};
+use systems::{camera_system, debugging_system, physics_system, rendering_system, test_system, window_system, terrain};
 // Default components
 pub mod components;
 // Default globals
@@ -69,11 +69,9 @@ pub fn preload_system(mut write: WriteContext) {
     window_system::system(&mut write);
     //test_system::system(&mut write);
     // Terrain
-    /*
     terrain::chunk_system::system(&mut write);
     terrain::voxel_system::system(&mut write);
-    terrain::mesher_system::system(&mut write);
-    */
+    terrain::mesher_system::system(&mut write);   
 
     // We gotta add the global world data
     write.ecs.add_global(crate::globals::GlobalWorldData::default()).unwrap();

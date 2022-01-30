@@ -1,7 +1,7 @@
 use main::{
     core::{Context, WriteContext},
     ecs::{self, component::ComponentQuery, entity::EntityID},
-    terrain::{ChunkCoords, DEFAULT_LOD_FACTOR},
+    terrain::{ChunkCoords},
 };
 
 // Add a single chunk to the world
@@ -37,7 +37,7 @@ fn remove_chunk(write: &mut WriteContext, id: EntityID) {
 }
 
 // The chunk systems' update loop
-fn run(mut context: Context, _query: ComponentQuery) {
+fn run(context: &mut Context, _query: ComponentQuery) {
     // Get the global terrain component
     let mut write = context.write();
     // Get the camera position
@@ -47,7 +47,7 @@ fn run(mut context: Context, _query: ComponentQuery) {
     if let Ok(mut terrain) = terrain {
         // Generate the chunks if needed
         let octree = &mut terrain.octree;
-        if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, DEFAULT_LOD_FACTOR) {
+        if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, 1.0) {
             // We have moved, thus the chunks need to be regenerated
 
             // Only add the chunks that are leaf nodes in the octree
