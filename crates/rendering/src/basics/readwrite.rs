@@ -1,5 +1,5 @@
 use std::{
-    mem::size_of,
+    mem::{size_of, ManuallyDrop},
     sync::{Arc, Mutex},
 };
 
@@ -22,16 +22,13 @@ impl ReadBytes {
         }
     }
     // Fill a vector of type elements using the appropriate bytes
-    pub fn fill_vec<U: Default + Clone>(self) -> Option<Vec<U>> {
+    pub fn fill_vec<U>(self) -> Option<Vec<U>> {
         // Read the bytes
-        let bytes = Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?;
-        if bytes.is_empty() {
-            return None;
-        }
+        let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?);
+        if bytes.is_empty() { return None; }
         // We must now convert the bytes into the vector full of pixels
-        let mut clone_test = std::mem::ManuallyDrop::new(bytes);
-        let new_len = clone_test.len() / size_of::<U>();
-        let vec = unsafe { Vec::from_raw_parts(clone_test.as_mut_ptr() as *mut U, new_len, new_len) };
+        let new_len = bytes.len() / size_of::<U>();
+        let vec = unsafe { Vec::from_raw_parts(bytes.as_mut_ptr() as *mut U, new_len, new_len) };
         Some(vec)
     }
 }

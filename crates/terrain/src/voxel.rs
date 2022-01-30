@@ -7,11 +7,12 @@ use half::f16;
 pub struct Voxel {
     // The density of the voxel stored in a 16 bit half float
     pub density: f16,
-    // And it's normals stored in a vec3 full of signed bytes
-    pub normal: veclib::Vector3<i8>,
-
+    // The normals stored in a vec3 full of f16s
+    pub normal: veclib::Vector3<f16>,
+    /*
     // Now we have 3 bytes to hold more arbitrary data...
     pub arb_data: [u8; 3],
+    */
 }
 
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap

@@ -3,10 +3,10 @@ use main::{
     math::octrees::{AdvancedOctree, Octree, OctreeNode},
     rendering::{
         advanced::{
-            atomic::{AtomicGroup, ClearCondition},
+            atomic::{AtomicGroup, ClearCondition, AtomicGroupRead},
             compute::ComputeShader, shaderstorage::ShaderStorage,
         },
-        basics::{material::Material, shader::{ShaderSettings, self}, transfer::Transferable},
+        basics::{material::Material, shader::{ShaderSettings, self}, transfer::Transferable, readwrite::ReadBytes},
         object::{ObjectID, ReservedTrackedTaskID, PipelineTrackedTask},
         pipeline::{pipec, Pipeline, PipelineContext}, utils::{UpdateFrequency, AccessType},
     },
@@ -25,15 +25,17 @@ pub struct Terrain {
 
     // Voxel Generation
     pub generating: bool,
-    pub base_compute: ObjectID<ComputeShader>,
-    pub second_compute: ObjectID<ComputeShader>,
+    pub compute_shader: ObjectID<ComputeShader>,
+    pub second_compute_shader: ObjectID<ComputeShader>,
     // Our 2 shader storages
     pub shader_storage_arbitrary_voxels: ObjectID<ShaderStorage>,
     pub shader_storage_final_voxels: ObjectID<ShaderStorage>,
+    // Some CPU side objects that let us retrieve the GPU data
+    pub cpu_data: Option<(AtomicGroupRead, ReadBytes)>,
     // The IDs of the generation tasks
-    pub compute: ReservedTrackedTaskID,
+    pub compute_id: ReservedTrackedTaskID,
+    pub compute_id2: ReservedTrackedTaskID,
     pub read_counters: ReservedTrackedTaskID,
-    pub compute_second: ReservedTrackedTaskID,
     pub read_final_voxels: ReservedTrackedTaskID,
 
     // The Entity ID of the chunk that we are generating this voxel data for
@@ -108,6 +110,8 @@ impl Terrain {
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
         let final_voxels_size = byte_size;
         let final_voxel_size = final_voxels_size / ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
+        dbg!(final_voxel_size);
+        dbg!(size_of::<Voxel>());
         if final_voxel_size != size_of::<Voxel>() { panic!() }
 
         // Also construct the atomics
@@ -126,14 +130,15 @@ impl Terrain {
             octree,
             chunks: Default::default(),
             material,
-            compute: ReservedTrackedTaskID::default(),
+            compute_id: ReservedTrackedTaskID::default(),
             read_counters: ReservedTrackedTaskID::default(),
-            compute_second: ReservedTrackedTaskID::default(),
+            compute_id2: ReservedTrackedTaskID::default(),
             read_final_voxels: ReservedTrackedTaskID::default(),
+            cpu_data: None,
             generating: false,
             chunk_id: None,
-            base_compute,
-            second_compute,
+            compute_shader: base_compute,
+            second_compute_shader: second_compute,
             atomics,
             shader_storage_arbitrary_voxels,
             shader_storage_final_voxels,

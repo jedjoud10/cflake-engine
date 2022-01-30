@@ -6,6 +6,7 @@ use crate::MAIN_CHUNK_SIZE;
 use super::tables::*;
 use half::f16;
 use rendering::basics::model::Model;
+use veclib::vec3;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
@@ -67,9 +68,9 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         // Get the normal
-                        let n1: veclib::Vector3<f32> = voxel1.normal.into();
-                        let n2: veclib::Vector3<f32> = voxel2.normal.into();
-                        let normal = veclib::Vector3::<f32>::lerp(n1 / 128.0, n2 / 128.0, value);
+                        let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
+                        let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
+                        let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -83,7 +84,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                             e.insert(model.vertices.len() as u32);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
-                            model.normals.push(normal);
+                            model.normals.push(normal.normalized());
                             model.colors.push(veclib::Vector3::ONE);
                         } else {
                             // The vertex already exists

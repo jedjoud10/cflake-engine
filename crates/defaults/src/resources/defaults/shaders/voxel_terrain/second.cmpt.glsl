@@ -10,11 +10,11 @@ const int _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
 const int _CSPT = _CHUNK_SIZE + 2; // Chunk size plus two
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(std430, binding = 3) readonly buffer arbitrary_voxels
+layout(std430, binding = 0) readonly buffer arbitrary_voxels
 {   
     Voxel voxels[_CSPT][_CSPT][_CSPT];
 };
-layout(std430, binding = 4) writeonly buffer output_voxels
+layout(std430, binding = 1) writeonly buffer output_voxels
 {   
     FinalVoxel final_voxels[_CSPO][_CSPO][_CSPO];
 };
@@ -27,8 +27,8 @@ void main() {
     ivec3 pc = pixel_coords;
 
     // Get the position
-    vec3 pos = vec3(pixel_coords.xzy);    
-    float size = float(node_size) / (float(_CSPT) - 2.0);
+    vec3 pos = vec3(pixel_coords.xyz);    
+    float size = float(node_size) / (float(_CHUNK_SIZE));
     pos *= size;
     pos += node_pos;       
     // Check if we can actually do calculations or not
@@ -38,6 +38,6 @@ void main() {
         FinalVoxel final_voxel = get_final_voxel(pos, voxel);
 
         // And store the final voxel inside our array
-        final_voxels[pc.x][pc.y][pc.z] = final_voxel;
+        final_voxels[pc.y][pc.x][pc.z] = final_voxel;
     }
 }
