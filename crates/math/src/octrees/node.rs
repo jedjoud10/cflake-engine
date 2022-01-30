@@ -3,6 +3,8 @@ use std::hash::Hash;
 
 use crate::bounds::AABB;
 
+use super::HeuristicSettings;
+
 // Simple node in the octree
 #[derive(Clone, Debug)]
 pub struct OctreeNode {
@@ -25,6 +27,7 @@ impl PartialEq for OctreeNode {
 impl Hash for OctreeNode {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.get_center().hash(state);
+        self.depth.hash(state);
         self.children_indices.is_none().hash(state);
     }
 }
@@ -45,35 +48,9 @@ impl OctreeNode {
         self.position + self.half_extent as i64
     }
     // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8) -> bool {
-        // AABB intersection, return true if point in on the min edge though
-        let aabb = (self.get_aabb().min.elem_lte(target) & self.get_aabb().max.elem_gt(target)).all();
-        aabb && self.depth < (max_depth - 1)
-    }
-    // Recursively find the children for this node
-    pub fn find_children_recursive(&self, nodes: &UnversionnedOrderedVec<OctreeNode>) -> Vec<OctreeNode> {
-        let mut list: Vec<OctreeNode> = Vec::new();
-        let mut pending: Vec<OctreeNode> = vec![self.clone()];
-
-        while !pending.is_empty() {
-            // Get the current node to evaluate
-            let current = pending.get(0).unwrap().clone();
-            // Add children
-            match current.children_indices {
-                Some(x) => {
-                    // Add them
-                    pending.extend(x.iter().map(|index| nodes.get(*index).unwrap().clone()));
-                }
-                None => {}
-            }
-
-            // A
-            pending.remove(0);
-            if current.index != self.index {
-                list.push(current.clone());
-            }
-        }
-        list
+    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8, settings: &HeuristicSettings) -> bool {
+        let test = (settings.function)(self, target);
+        test && self.depth < (max_depth - 1)
     }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide(&mut self, nodes: &mut UnversionnedOrderedVec<OctreeNode>) -> Vec<OctreeNode> {
@@ -123,14 +100,5 @@ impl OctreeNode {
         elm.children_indices = Some(children_indices);
 
         output
-    }
-    // Check for intersection
-    pub fn intersect_bounds(&self, min: veclib::Vector3<f32>, max: veclib::Vector3<f32>) -> bool {
-        let aabb = AABB {
-            min,
-            max,
-            center: veclib::Vector3::ZERO,
-        };
-        crate::Intersection::aabb_aabb(&aabb, &self.get_aabb())
     }
 }

@@ -48,7 +48,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
         // Generate the chunks if needed and only if we are not currently generating 
         if !terrain.generating {
             let octree = &mut terrain.octree;
-            if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, 2.0) {
+            if let Some((added, removed)) = octree.update(camera_pos) {
                 // We have moved, thus the chunks need to be regenerated
                 
                 // Remove chunks only if we already generated them
@@ -64,7 +64,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
                     if node.children_indices.is_none() {
                         // This is a leaf node
                         let coords = ChunkCoords::new(&node);
-                        let id = add_chunk(&mut write, terrain.octree.internal_octree.size, coords);
+                        let id = add_chunk(&mut write, terrain.octree.inner.size, coords);
                         terrain.chunks.insert(coords, id);
                     }
                 }

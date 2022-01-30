@@ -1,6 +1,6 @@
 use main::{
     ecs::{component::Component, entity::EntityID},
-    math::octrees::{AdvancedOctree, Octree, OctreeNode},
+    math::octrees::{DiffOctree, Octree, OctreeNode, HeuristicSettings},
     rendering::{
         advanced::{
             atomic::{AtomicGroup, ClearCondition, AtomicGroupRead},
@@ -19,7 +19,7 @@ use std::{collections::HashMap, marker::PhantomData, mem::size_of};
 // The global terrain component that can be added at the start of the game
 pub struct Terrain {
     // Chunk generation
-    pub octree: AdvancedOctree,
+    pub octree: DiffOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
     pub material: ObjectID<Material>,
     pub generating: bool,
@@ -46,16 +46,11 @@ pub struct Terrain {
 impl Terrain {
     // Create a new terrain component
     pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
-        // Check if a an already existing node could be subdivided even more
-        fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
-            let c: veclib::Vector3<f32> = node.get_center().into();
-            let max = node.depth == 1 || node.depth == 2;
-            let result = c.distance(*target) < (node.half_extent as f32 * lod_factor) || max;
-            node.children_indices.is_none() && node.depth < max_depth && result
-        }
         // Create a new octree
-        let internal_octree = Octree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64);
-        let octree = AdvancedOctree::new(internal_octree, can_node_subdivide_twin);
+        let octree = DiffOctree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64, HeuristicSettings::new(|node, target| {
+            let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
+            dist < 1.3
+        }));
 
         // Load the first pass compute shader
         let pipeline = pipeline_context.read();
