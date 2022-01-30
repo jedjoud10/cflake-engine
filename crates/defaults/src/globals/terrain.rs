@@ -102,11 +102,11 @@ impl Terrain {
         // We got our shader info back!
         let params = info.get(&resource).unwrap();
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
-        let arb_voxels_size = byte_size;
+        let arb_voxels_size = byte_size * ((MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2));
         let params = info.get(&resource2).unwrap();
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
-        let final_voxels_size = byte_size;
-        let final_voxel_size = final_voxels_size / ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
+        let final_voxel_size = byte_size;
+        let final_voxels_size = byte_size * ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
         dbg!(final_voxel_size);
         dbg!(size_of::<Voxel>());
         if final_voxel_size != size_of::<Voxel>() { panic!() }

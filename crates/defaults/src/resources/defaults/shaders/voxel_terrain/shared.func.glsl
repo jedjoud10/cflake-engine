@@ -33,3 +33,7 @@ PackedVoxel get_packed_voxel(FinalVoxel voxel) {
     uint x_y_z_hardness = packUnorm4x8(vec4(voxel.color.xyz, voxel.hardness));
     return PackedVoxel(density_x, y_z, x_y_z_hardness, 0);
 }
+
+int flatten(ivec3 pc, int size) {
+    return pc.x + pc.y * size + pc.z * size * size;
+}

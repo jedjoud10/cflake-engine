@@ -7,21 +7,18 @@ const int _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
 const int _CSPT = _CHUNK_SIZE + 2; // Chunk size plus two
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-/*
 layout(std430, binding = 0) readonly buffer arbitrary_voxels
 {   
-    Voxel voxels[_CSPT][_CSPT][_CSPT];
+    Voxel voxels[];
 };
 layout(std430, binding = 1) writeonly buffer output_voxels
 {   
-    PackedVoxel packed_voxels[_CSPO][_CSPO][_CSPO];
+    PackedVoxel packed_voxels[];
 };
-*/
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
 
 void main() {
-    /*
     // Get the pixel coord
     ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);
     ivec3 pc = pixel_coords;
@@ -34,10 +31,10 @@ void main() {
     // Check if we can actually do calculations or not
     if (all(lessThan(pixel_coords, ivec3(_CSPO, _CSPO, _CSPO)))) {        
         // Create the final voxel
-        Voxel voxel = voxels[pc.x][pc.y][pc.z];
-        Voxel vx = voxels[pc.x+1][pc.y][pc.z];
-        Voxel vy = voxels[pc.x][pc.y+1][pc.z];
-        Voxel vz = voxels[pc.x][pc.y][pc.z+1];
+        Voxel voxel = voxels[flatten(pc, _CSPT)];
+        Voxel vx = voxels[flatten(pc+ivec3(1, 0, 0), _CSPT)];
+        Voxel vy = voxels[flatten(pc+ivec3(0, 1, 0), _CSPT)];
+        Voxel vz = voxels[flatten(pc+ivec3(0, 0, 1), _CSPT)];
 
         // Calculate the normal for a voxel using the neighboring normals
         vec3 normal = normalize(vec3(vx.density-voxel.density, vy.density-voxel.density, vz.density-voxel.density));
@@ -47,7 +44,6 @@ void main() {
         PackedVoxel packed_voxel = get_packed_voxel(final_voxel);
 
         // And store the final voxel inside our array
-        packed_voxels[pc.y][pc.z][pc.x] = packed_voxel;
+        packed_voxels[flatten(pc.yzx, _CSPO)] = packed_voxel;
     }
-    */
 }
