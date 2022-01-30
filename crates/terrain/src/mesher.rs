@@ -139,11 +139,20 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
     TModel { model, skirts_model, coords }
 }
 // Skirt vertex
-pub struct SkirtVertex {
-    pub position: veclib::Vector3<f32>,
-    pub normal: veclib::Vector3<f16>,
-    pub color: veclib::Vector3<u8>,
+struct SkirtVertex(veclib::Vector3<f32>);
+#[derive(Clone, Copy)]
+struct LocalSkirtVertex(veclib::Vector2<f32>);
+struct SharedSkirtVertexData {
+    normal: veclib::Vector3<f16>,
+    color: veclib::Vector3<u8>,
 }
+
+// A skirt vertex group of possibly 6 skirt vertices and their corresponding shared normal and shared color
+struct SkirtVertexGroup {
+    vertices: SkirtVertex,
+    shared_normal: veclib::Vector3<f16>,
+    shared_color: veclib::Vector3<u8>,
+} 
 
 // Generate a whole skirt using a specific
 pub fn calculate_skirt(
@@ -172,14 +181,14 @@ pub fn calculate_skirt(
     }
 }
 // Calculate a marching square case and it's local voxels
-pub fn calculate_marching_square_case(
+fn calculate_marching_square_case(
     i: usize,
     x: usize,
     y: usize,
     voxels: &VoxelData,
     interpolation: bool,
     density_offset: [usize; 4],
-) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>; 4])> {
+) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], ([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData))> {
     // Get the position
     let p = veclib::Vector2::new(x as f32, y as f32);
     // Get the marching cube case
@@ -200,7 +209,10 @@ pub fn calculate_marching_square_case(
         return None;
     }
     // Get the interpolated voxels
-    let mut local_interpolated_voxels: [Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>; 4] = [None; 4];
+    let mut local_interpolated_voxels: [Option<LocalSkirtVertex>; 4] = [None; 4];
+    let mut shared_normal = veclib::Vector3::<f32>::ZERO;
+    let mut shared_color = veclib::Vector3::<f32>::ZERO;
+    let mut count: usize = 0;
     for (j, local_interpolated_voxel) in local_interpolated_voxels.iter_mut().enumerate() {
         // This is for every edge
         let two_voxels = MS_EDGE_TO_VERTICES[j as usize];
@@ -213,31 +225,38 @@ pub fn calculate_marching_square_case(
             let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
             let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
             let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
-            let normal = veclib::vec3(f16::from_f32(normal.x), f16::from_f32(normal.y), f16::from_f32(normal.z));
             // Get the color
             let t1: veclib::Vector3<f32> = voxel1.color.into();
             let t2: veclib::Vector3<f32> = voxel2.color.into();
-            let color = veclib::Vector3::<f32>::lerp(t1, t2, value) * 255.0;
-            let color = color.into();
+            let color = veclib::Vector3::<f32>::lerp(t1, t2, value);
+            shared_normal += normal;
+            shared_color += color;
+            
             // We must get the local offset of these two voxels
             let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
             let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
             let offset = veclib::Vector2::<f32>::lerp(voxel1_local_offset, voxel2_local_offset, value);
-            Some((normal, offset, color))
+            count += 1;
+            Some(LocalSkirtVertex(offset))
         } else {
             None
         }
     }
-    Some((case, p, local_voxels, local_interpolated_voxels))
+    let normal: veclib::Vector3<f16> = vec3(f16::from_f32(shared_normal.x / count as f32), f16::from_f32(shared_normal.y / count as f32), f16::from_f32(shared_normal.z / count as f32));
+
+    Some((case, p, local_voxels, (local_interpolated_voxels, SharedSkirtVertexData {
+        normal,
+        color: (shared_color / count as f32).into(),
+    })))
     // Solve the case
 }
-// Solve a single marching squares case using a passed function for
-pub fn solve_marching_squares(
+// Solve a single marching squares case using a passed function for transforming the vertex position to world space
+fn solve_marching_squares(
     slice: usize,
     case: u8,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>],
+    ilv: &([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData),
     model: &mut Model,
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
@@ -320,22 +339,23 @@ pub fn solve_marching_squares(
         }
     }
     // Actually add the skirt vertices
-    for x in vec {
+    let shared = &ilv.1;
+    for vertex in vec {
         model.triangles.push(model.vertices.len() as u32);
-        model.vertices.push(x.position);
-        let normal: veclib::Vector3<f32> = vec3(x.normal.x.to_f32(), x.normal.y.to_f32(), x.normal.y.to_f32());
+        model.vertices.push(vertex.0);
+        let normal: veclib::Vector3<f32> = vec3(shared.normal.x.to_f32(), shared.normal.y.to_f32(), shared.normal.y.to_f32());
         model.normals.push(normal.normalized());
-        let mut color: veclib::Vector3<f32> = x.color.into();
+        let mut color: veclib::Vector3<f32> = shared.color.into();
         color /= 255.0;
         model.colors.push(color);
     }
 }
 // Create a marching squares triangle between 3 skirt voxels
-pub fn create_triangle(
+fn create_triangle(
     slice: usize,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>],
+    ilv: &([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData),
     li: &[usize; 3],
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
     vec: &mut Vec<SkirtVertex>,
@@ -343,29 +363,25 @@ pub fn create_triangle(
     // Check if the local index is one of the interpolated ones
     for i in li {
         // Calculate the position and normal
-        let (vertex, normal, color) = match i {
+        let vertex = match i {
             1 | 3 | 5 | 7 => {
                 // Interpolated
                 let transformed_index = (i - 1) / 2;
-                let v = (tf)(slice, &ilv[transformed_index].unwrap().1, &offset);
-                let n = &ilv[transformed_index].as_ref().unwrap().0;
-                let c = &ilv[transformed_index].as_ref().unwrap().2;
-                (v, *n, *c)
+                let v = (tf)(slice, &ilv.0[transformed_index].as_ref().unwrap().0, &offset);
+                v
             }
             0 | 2 | 4 | 6 => {
                 // Not interpolated
                 let transformed_index = (i) / 2;
                 let v = (tf)(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
-                let n = &lv[transformed_index].normal;
-                let c = &lv[transformed_index].color;
-                (v, *n, *c)
+                v
             }
             _ => {
                 /* The bruh funny */
                 panic!()
             }
         };
-        vec.push(SkirtVertex { position: vertex, normal, color })        
+        vec.push(SkirtVertex(vertex))        
     }
 }
 // Tansform the 2D points into their 3D counterpart

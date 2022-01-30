@@ -1072,8 +1072,8 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "veclib"
-version = "0.3.0"
-source = "git+https://github.com/jedjoud10/veclib#52281f1f0c343417f8b7ef009dd6fa9618d64453"
+version = "0.3.1"
+source = "git+https://github.com/jedjoud10/veclib#7699c3ed1786b6333d644936720f46951e2bf50e"
 
 [[package]]
 name = "vector-map"
