@@ -40,8 +40,8 @@ pub enum PipelineTask {
     UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
     UpdateRendererUniforms(ObjectID<Renderer>, ShaderUniformsGroup),
     UpdateCamera(Camera),
-    // Removal tasks
-    RemoveRenderer(ObjectID<Renderer>),
+    // Disposal tasks
+    DisposeRenderer(ObjectID<Renderer>),
     // Specific pipeline tasks
     SetWindowDimension(veclib::Vector2<u16>),
     SetWindowFocusState(bool),

@@ -11,10 +11,10 @@ pub fn preload_assets() {
 pub fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
-    let mut group = ecs::entity::ComponentLinkingGroup::new();
+    let mut group = ecs::entity::ComponentLinkingGroup::default();
     group.link(defaults::components::Camera::new(90.0, 0.5, 1000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
-    let entity = ecs::entity::Entity::new();
+    let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
     write.ecs.add_entity(entity, id, group).unwrap();
     let pipeline_ = write.pipeline.clone();
@@ -44,8 +44,8 @@ pub fn init(mut write: core::WriteContext) {
     // Create a simple cube
     for x in 0..2 {
         for y in 0..2 {
-            let mut group = ecs::entity::ComponentLinkingGroup::new();
-            let entity = ecs::entity::Entity::new();
+            let mut group = ecs::entity::ComponentLinkingGroup::default();
+            let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut write.ecs);
             let matrix = defaults::components::Transform::default().calculate_matrix();
             group
@@ -54,7 +54,7 @@ pub fn init(mut write: core::WriteContext) {
             group.link_default::<defaults::components::Physics>().unwrap();
 
             // Create it's renderer
-            let renderer = rendering::basics::renderer::Renderer::default()
+            let renderer = rendering::basics::renderer::Renderer::new(false)
                 .set_model(model_id)
                 .set_material(material)
                 .set_matrix(matrix);

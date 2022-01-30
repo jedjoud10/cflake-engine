@@ -45,8 +45,8 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     terrain.cpu_data = Some((read_counters, read_bytes));
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
-fn finish_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    let id = terrain.chunk_id.take().unwrap();
+fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
+    let _id = terrain.chunk_id.take().unwrap();
     let (read_counters, read_bytes) = terrain.cpu_data.take().unwrap();
     // Read back the voxel values from the SSBO
     let voxels = read_bytes.fill_vec::<Voxel>().unwrap().into_boxed_slice();

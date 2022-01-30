@@ -1,7 +1,7 @@
 use main::{
     core::{Context, WriteContext},
     ecs::component::ComponentQuery,
-    rendering::{self, object::PipelineTask},
+    rendering::{self, object::{PipelineTask, ObjectID}},
 };
 
 // The rendering system update loop
@@ -28,7 +28,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
 
     // Since we have all the tasks, we can send them as a batch
     let vec = storage.into_inner().into_iter().flatten().collect::<Vec<_>>();
-    rendering::pipeline::pipec::task_batch(vec, &*pipeline);
+    rendering::pipeline::pipec::task_batch(vec, &pipeline);
 }
 
 // An event fired whenever we add multiple new renderer entities
@@ -42,8 +42,26 @@ fn added_entities(context: &mut Context, query: ComponentQuery) {
         // Get the CPU renderer that we must construct
         let mut renderer = components.component_mut::<crate::components::Renderer>().unwrap();
         let cpu_renderer = renderer.renderer.take().unwrap();
-        let object_id = rendering::pipeline::pipec::construct(cpu_renderer, &*pipeline);
+        let object_id = rendering::pipeline::pipec::construct(cpu_renderer, &pipeline);
         renderer.object_id = object_id;
+    })
+}
+
+// An event fired whenever we remove multiple renderer entities
+fn removed_entities(context: &mut Context, query: ComponentQuery) {
+    // For each renderer, we must dispose of it's GPU renderer
+    query.update_all(move |components| {
+        // Get the pipeline first
+        let read = context.read();
+        let pipeline = read.pipeline.read();
+        
+        // Then get the ID of the GPU renderer
+        let mut renderer = components.component_mut::<crate::components::Renderer>().unwrap();
+        let id = renderer.object_id;
+        renderer.object_id = ObjectID::default();
+
+        // And create the task to dispose of it
+        rendering::pipeline::pipec::task(PipelineTask::DisposeRenderer(id), &pipeline);
     })
 }
 
@@ -54,6 +72,7 @@ pub fn system(write: &mut WriteContext) {
         .create_system_builder()
         .set_run_event(run)
         .set_added_entities_event(added_entities)
+        .set_removed_entities_event(removed_entities)
         .link::<crate::components::Renderer>()
         .link::<crate::components::Transform>()
         .build();

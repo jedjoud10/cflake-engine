@@ -18,9 +18,9 @@ unsafe impl Sync for Entity {}
 unsafe impl Send for Entity {}
 
 // ECS time bois
-impl Entity {
+impl Default for Entity {
     // Create a new default entity
-    pub fn new() -> Self {
+    fn default() -> Self {
         Self {
             id: None,
             cbitfield: Bitfield::default(),

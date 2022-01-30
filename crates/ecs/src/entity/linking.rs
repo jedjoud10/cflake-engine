@@ -6,6 +6,7 @@ use crate::{
     utils::ComponentLinkingError,
 };
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
+#[derive(Default)]
 pub struct ComponentLinkingGroup {
     pub linked_components: AHashMap<Bitfield<u32>, EnclosedComponent>,
     pub cbitfield: Bitfield<u32>,
@@ -13,12 +14,6 @@ pub struct ComponentLinkingGroup {
 
 // Linking methods
 impl ComponentLinkingGroup {
-    pub fn new() -> Self {
-        Self {
-            linked_components: AHashMap::new(),
-            cbitfield: Bitfield::<u32>::default(),
-        }
-    }
     // Link a component to this entity and automatically set it to the default variable
     pub fn link_default<T: Component + Send + Sync + Default + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
         // Simple wrapper around the default link component

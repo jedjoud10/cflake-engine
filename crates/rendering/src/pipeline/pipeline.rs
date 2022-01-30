@@ -122,7 +122,7 @@ impl Pipeline {
                 });
             }
 
-            PipelineTask::RemoveRenderer(id) => self.renderer_dispose(id),
+            PipelineTask::DisposeRenderer(id) => self.renderer_dispose(id),
 
             // Window tasks
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
@@ -381,7 +381,11 @@ impl Pipeline {
     }
     // Remove the renderer using it's renderer ID
     fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
-        self.renderers.remove(id.id.unwrap());
+        let renderer = self.renderers.remove(id.id.unwrap()).unwrap();
+        // Also remove the model if we want to
+        if renderer.delete_model {
+            self.model_dispose(renderer.model);
+        }
     }
     // Update a renderer's matrix
     fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
@@ -694,7 +698,6 @@ impl Pipeline {
         self.models.insert(task.1.id.unwrap(), (model, buffers));
     }
     // Dispose of a model, also remove it from the pipeline
-    #[allow(dead_code)]
     fn model_dispose(&mut self, id: ObjectID<Model>) {
         // Remove the model and it's buffers
         let (_model, mut buffers) = self.models.remove(id.id.unwrap()).unwrap();

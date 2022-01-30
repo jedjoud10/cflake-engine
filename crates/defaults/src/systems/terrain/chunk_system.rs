@@ -7,9 +7,9 @@ use main::{
 // Add a single chunk to the world
 fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) -> EntityID {
     // Create the chunk entity
-    let entity = ecs::entity::Entity::new();
+    let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&write.ecs);
-    let mut group = ecs::entity::ComponentLinkingGroup::new();
+    let mut group = ecs::entity::ComponentLinkingGroup::default();
 
     // Link the nessecary components
     // Transform
@@ -33,6 +33,7 @@ fn remove_chunk(write: &mut WriteContext, id: EntityID) {
     if write.ecs.entity(&id).is_ok() {
         // Remove the chunk entity at that specific EntityID
         write.ecs.remove_entity(id).unwrap();
+        println!("Remove chunk with EntityID: {}", id);
     }
 }
 
@@ -50,6 +51,14 @@ fn run(context: &mut Context, _query: ComponentQuery) {
             if let Some((added, removed)) = octree.generate_incremental_octree(&camera_pos, 2.0) {
                 // We have moved, thus the chunks need to be regenerated
                 
+                // Remove chunks only if we already generated them
+                for node in removed {
+                    let coords = ChunkCoords::new(&node);
+                    if let Some(id) = terrain.chunks.remove(&coords) {
+                        remove_chunk(&mut write, id)
+                    }
+                }
+
                 // Only add the chunks that are leaf nodes in the octree
                 for node in added {
                     if node.children_indices.is_none() {
@@ -57,14 +66,6 @@ fn run(context: &mut Context, _query: ComponentQuery) {
                         let coords = ChunkCoords::new(&node);
                         let id = add_chunk(&mut write, terrain.octree.internal_octree.size, coords);
                         terrain.chunks.insert(coords, id);
-                    }
-                }
-                
-                // Remove chunks only if we already generated them
-                for node in removed {
-                    let coords = ChunkCoords::new(&node);
-                    if let Some(&id) = terrain.chunks.get(&coords) {
-                        remove_chunk(&mut write, id)
                     }
                 }
             }

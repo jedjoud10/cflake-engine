@@ -35,9 +35,9 @@ pub mod test {
         builder.link::<Name>().set_run_event(run_system).build();
 
         // Create a simple entity with that component
-        let mut group = ComponentLinkingGroup::new();
+        let mut group = ComponentLinkingGroup::default();
         group.link(Name::new("Person")).unwrap();
-        let entity = Entity::new();
+        let entity = Entity::default();
         let id = EntityID::new(&ecs);
         let id2 = id;
         let id3 = id;
@@ -83,9 +83,9 @@ pub mod test {
         // Create 10k entities
         for _x in 0..10_000 {
             // Create a simple entity with that component
-            let mut group = ComponentLinkingGroup::new();
+            let mut group = ComponentLinkingGroup::default();
             group.link(Name::new("Person")).unwrap();
-            let entity = Entity::new();
+            let entity = Entity::default();
             let id = EntityID::new(&ecs);
             // The entity is not created yet, so it is null
             ecs.add_entity(entity, id, group).unwrap();
@@ -108,12 +108,12 @@ pub mod test {
         builder.link::<Name>().set_run_event(run_system).build();
 
         // Add a new entity and play with it's components
-        let entity = Entity::new();
+        let entity = Entity::default();
         let id = EntityID::new(&ecs);
-        ecs.add_entity(entity, id, ComponentLinkingGroup::new()).unwrap();
+        ecs.add_entity(entity, id, ComponentLinkingGroup::default()).unwrap();
         assert!(ecs.entity(&id).is_ok());
         assert_eq!(ecs.entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
-        let mut group = ComponentLinkingGroup::new();
+        let mut group = ComponentLinkingGroup::default();
         group.link(Name::new("Person")).unwrap();
         group.link(Tagged::new("Some interesting tag")).unwrap();
         ecs.link_components(id, group).unwrap();
@@ -163,9 +163,9 @@ pub mod test {
             .build();
 
         // Add a new entity and play with it's components
-        let entity = Entity::new();
+        let entity = Entity::default();
         let id = EntityID::new(&ecs);
-        let mut group = ComponentLinkingGroup::new();
+        let mut group = ComponentLinkingGroup::default();
         group.link::<Name>(Name::new("John")).unwrap();
         ecs.add_entity(entity, id, group).unwrap();
         ecs.run_systems(context);

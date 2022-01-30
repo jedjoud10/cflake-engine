@@ -6,7 +6,6 @@ use crate::{
 use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup, Buildable};
 
 // A component that will be linked to entities that are renderable
-#[derive(Default)]
 pub struct Renderer {
     // Rendering
     pub model: ObjectID<Model>,
@@ -15,6 +14,22 @@ pub struct Renderer {
 
     // Some renderer specific uniforms that may override the material uniforms when rendering
     pub uniforms: Option<ShaderUniformsGroup>,
+
+    // Should we dispose the model when this renderer gets destroyed?
+    pub delete_model: bool,
+}
+
+impl Renderer {
+    // Create a new renderer with default settings
+    pub fn new(delete_model: bool) -> Self {
+        Self {
+            model: Default::default(),
+            material: Default::default(),
+            matrix: Default::default(),
+            uniforms: Default::default(),
+            delete_model,
+        }
+    }
 }
 
 impl PipelineObject for Renderer {}
@@ -60,4 +75,5 @@ impl Renderer {
     pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
         self.uniforms = Some(uniforms);
     }
+    // Set 
 }

@@ -27,7 +27,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 let skirts = model.skirts_model;
                 let model = model.model;
                 // Combine the models first
-                let mut model = Model::combine(model, skirts);
+                let model = Model::combine(model, skirts);
                 
                 // Make sure the model has all valid field
                 //model.generate_normals();
@@ -40,8 +40,8 @@ fn run(context: &mut Context, query: ComponentQuery) {
 
             if let Some(model_id) = model_id {
                 // Create a linking group that contains the renderer
-                let mut group = ComponentLinkingGroup::new();
-                let renderer = main::rendering::basics::renderer::Renderer::default().set_model(model_id).set_material(terrain.material);
+                let mut group = ComponentLinkingGroup::default();
+                let renderer = main::rendering::basics::renderer::Renderer::new(true).set_model(model_id).set_material(terrain.material);
                 group.link(crate::components::Renderer::new(renderer)).unwrap();
                 write.ecs.link_components(id, group).unwrap();
             }
