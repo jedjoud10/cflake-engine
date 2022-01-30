@@ -55,7 +55,7 @@ impl Default for Texture {
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
             ttype: TextureType::Texture2D(0, 0),
-            cpu_access: TextureAccessType::all(),
+            cpu_access: TextureAccessType::empty(),
             write_pbo: None,
             read_pbo: None,
             mipmaps: false,

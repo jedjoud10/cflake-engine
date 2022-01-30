@@ -67,7 +67,7 @@ pub fn preload_system(mut write: WriteContext) {
     rendering_system::system(&mut write);
     debugging_system::system(&mut write);
     window_system::system(&mut write);
-    test_system::system(&mut write);
+    //test_system::system(&mut write);
     // Terrain
     /*
     terrain::chunk_system::system(&mut write);

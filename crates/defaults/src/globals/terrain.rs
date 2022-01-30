@@ -4,28 +4,16 @@ use main::{
     rendering::{
         advanced::{
             atomic::{AtomicGroup, ClearCondition},
-            compute::ComputeShader,
+            compute::ComputeShader, shaderstorage::ShaderStorage,
         },
         basics::{material::Material, shader::{ShaderSettings, self}, transfer::Transferable},
         object::{ObjectID, ReservedTrackedTaskID, PipelineTrackedTask},
-        pipeline::{pipec, Pipeline, PipelineContext},
+        pipeline::{pipec, Pipeline, PipelineContext}, utils::{UpdateFrequency, AccessType},
     },
     terrain::{ChunkCoords, Voxable, MAIN_CHUNK_SIZE},
 };
 use std::{collections::HashMap, marker::PhantomData, mem::size_of};
 
-// Some data that we store whenever we are generating the voxels
-pub struct TerrainGenerationData {
-    // The IDs of the generation tasks
-    pub compute: ReservedTrackedTaskID,
-    pub read_densities: ReservedTrackedTaskID,
-    pub read_counters: ReservedTrackedTaskID,
-    pub compute_second: ReservedTrackedTaskID,
-    pub read_final_voxels: ReservedTrackedTaskID,
-
-    // The Entity ID of the chunk that we are generating this voxel data for
-    pub chunk_id: EntityID,
-}
 
 #[derive(Component)]
 // The global terrain component that can be added at the start of the game
@@ -36,10 +24,19 @@ pub struct Terrain<U: Voxable + 'static> {
     pub material: ObjectID<Material>,
 
     // Voxel Generation
-    pub generating: Option<TerrainGenerationData>,
     pub base_compute: ObjectID<ComputeShader>,
     pub second_compute: ObjectID<ComputeShader>,
-    //pub shader_storage: ObjectID<ShaderStorage>,
+    // Our 2 shader storages
+    pub shader_storage_arbitrary_voxels: ObjectID<ShaderStorage>,
+    pub shader_storage_final_voxels: ObjectID<ShaderStorage>,
+    // The IDs of the generation tasks
+    pub compute: ReservedTrackedTaskID,
+    pub read_counters: ReservedTrackedTaskID,
+    pub compute_second: ReservedTrackedTaskID,
+    pub read_final_voxels: ReservedTrackedTaskID,
+
+    // The Entity ID of the chunk that we are generating this voxel data for
+    pub chunk_id: Option<EntityID>,    
     pub atomics: ObjectID<AtomicGroup>,
 
     _phantom: PhantomData<U>,
@@ -47,7 +44,7 @@ pub struct Terrain<U: Voxable + 'static> {
 
 impl<V: Voxable + 'static> Terrain<V> {
     // Create a new terrain component
-    pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline: &Pipeline) -> Self {
+    pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
         // Check if a an already existing node could be subdivided even more
         fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
             let c: veclib::Vector3<f32> = node.get_center().into();
@@ -78,7 +75,7 @@ impl<V: Voxable + 'static> Terrain<V> {
         let second_compute = ComputeShader::new(settings).unwrap();
         let second_compute = pipec::construct(second_compute, &pipeline);
         
-        // We must read the size of the buffer_data Shader Storage Block in the shader, so we will need to do a pipeline flush
+        // We must read the size of the buffer_data Shader Storage Block in the second shader, so we will need to do a pipeline flush
         let resource = shader::info::Resource {
             res: shader::info::QueryResource::ShaderStorageBlock,
             name: "arbitrary_voxels".to_string(),
@@ -93,7 +90,7 @@ impl<V: Voxable + 'static> Terrain<V> {
         let reserved_id = ReservedTrackedTaskID::default();
         let info = shader::info::ShaderInfo::default();
         let transfer = info.transfer();
-        pipec::tracked_task(PipelineTrackedTask::QueryComputeShaderInfo(base_compute, settings, transfer), reserved_id, &pipeline);
+        pipec::tracked_task(PipelineTrackedTask::QueryComputeShaderInfo(second_compute, settings, transfer), reserved_id, &pipeline);
         drop(pipeline);
 
         // Force a pipeline flush and wait till we get the results back
@@ -108,33 +105,39 @@ impl<V: Voxable + 'static> Terrain<V> {
         let params = info.get(&resource).unwrap();
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
         let arb_voxels_size = byte_size;
-        let arb_voxel_size = arb_voxels_size / ((MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2));
-        dbg!(byte_size);
         let params = info.get(&resource2).unwrap();
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
-        dbg!(byte_size);
         let final_voxels_size = byte_size;
         let final_voxel_size = final_voxels_size / ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
-
-        // We must check if they have the same size
-        if size_of::<V>() != final_voxel_size {
-            panic!();
-        }
+        if final_voxel_size != size_of::<V>() { panic!() }
 
         // Also construct the atomics
-        let pipeline = pipeline_context.read();
         let atomics = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), &pipeline);
+
+        // Load the shader storage
+        let pipeline = pipeline_context.read();
+        let shader_storage_arbitrary_voxels = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Pass, arb_voxels_size);
+        let shader_storage_arbitrary_voxels = pipec::construct(shader_storage_arbitrary_voxels, &pipeline);
+
+        let shader_storage_final_voxels = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Read, final_voxels_size);
+        let shader_storage_final_voxels = pipec::construct(shader_storage_final_voxels, &pipeline);
 
         println!("Terrain component init done!");
         Self {
             octree,
             chunks: Default::default(),
             material,
-            generating: None,
+            compute: ReservedTrackedTaskID::default(),
+            read_counters: ReservedTrackedTaskID::default(),
+            compute_second: ReservedTrackedTaskID::default(),
+            read_final_voxels: ReservedTrackedTaskID::default(),
+            chunk_id: None,
             base_compute,
             second_compute,
             atomics,
             _phantom: PhantomData::default(),
+            shader_storage_arbitrary_voxels,
+            shader_storage_final_voxels,
         }
     }
 }

@@ -1,4 +1,4 @@
-use cflake_engine::*;
+use cflake_engine::{*, veclib::Swizzable};
 fn main() {
     // Load up the engine
     start("DevJed", "DevGame", preload_assets, init);
@@ -87,19 +87,22 @@ pub fn init(mut write: core::WriteContext) {
     let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
     // Create a simple voxel
-    #[repr(C)]
+    #[repr(C, align(16))]
     pub struct SimpleVoxel {
-        pub density: f32,
-        pub normal: veclib::Vector3<f32>,
+        // Store the density and normals in the same vector, since that is how it is stored in the GLSL shader
+        pub normal_and_density: veclib::Vector4<f32>,
     }
     impl terrain::Voxable for SimpleVoxel {
         // Linearly interpolate between v1 and v2 using t
         fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self {
             Self {
-                density: 0.0,
-                normal: veclib::Vector3::<f32>::lerp(v1.normal, v2.normal, t),
+                normal_and_density: veclib::Vector4::<f32>::lerp(v1.normal_and_density, v2.normal_and_density, t),
             }
         }
+        // Get the density of this voxel
+        fn density(&self) -> f32 { self.normal_and_density.w }
+        // Get the normal of this voxel
+        fn normal(&self) -> veclib::Vector3<f32> { self.normal_and_density.get3([0, 1, 2]) }
     }
 
     // Add the terrain

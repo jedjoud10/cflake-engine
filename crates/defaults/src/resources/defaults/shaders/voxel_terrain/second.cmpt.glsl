@@ -10,11 +10,11 @@ const int _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
 const int _CSPT = _CHUNK_SIZE + 2; // Chunk size plus two
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(std430, binding = 3) buffer arbitrary_voxels
+layout(std430, binding = 3) readonly buffer arbitrary_voxels
 {   
     Voxel voxels[_CSPT][_CSPT][_CSPT];
 };
-layout(std430, binding = 4) buffer output_voxels
+layout(std430, binding = 4) writeonly buffer output_voxels
 {   
     FinalVoxel final_voxels[_CSPO][_CSPO][_CSPO];
 };
@@ -22,7 +22,6 @@ layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
 
 void main() {
-    /*
     // Get the pixel coord
     ivec3 pixel_coords = ivec3(gl_GlobalInvocationID.xyz);
     ivec3 pc = pixel_coords;
@@ -33,14 +32,12 @@ void main() {
     pos *= size;
     pos += node_pos;       
     // Check if we can actually do calculations or not
-    if (all(lessThan(pixel_coords, ivec3(33, 33, 33)))) {        
+    if (all(lessThan(pixel_coords, ivec3(_CSPO, _CSPO, _CSPO)))) {        
         // Create the final voxel
         Voxel voxel = voxels[pc.x][pc.y][pc.z];
         FinalVoxel final_voxel = get_final_voxel(pos, voxel);
-        BundledVoxel bundled_voxel = BundledVoxel(voxel.density, final_voxel);
 
         // And store the final voxel inside our array
-        bundled_voxels[pc.x][pc.y][pc.z] = bundled_voxel;
+        final_voxels[pc.x][pc.y][pc.z] = final_voxel;
     }
-    */
 }

@@ -30,7 +30,7 @@ impl Buildable for ShaderStorage {
 
 impl ShaderStorage {
     // Create a new empty shader storage
-    pub fn new<T: Sized>(frequency: UpdateFrequency, access: AccessType, byte_size: usize) -> Self {
+    pub fn new(frequency: UpdateFrequency, access: AccessType, byte_size: usize) -> Self {
         Self {
             oid: 0,
             usage: UsageType { frequency, access },
