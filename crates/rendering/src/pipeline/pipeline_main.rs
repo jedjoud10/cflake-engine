@@ -36,12 +36,9 @@ pub mod pipec {
     }
     // Flush the pipeline, forcing the execution of all dispatched tasks
     // This function will exit early and return None if the pipeline is in use, thus we cannot force a flush
-    pub fn flush_and_execute(context: &mut PipelineContext) -> Option<()> {
+    pub fn flush_and_execute(context: &PipelineContext) -> Option<()> {
         // Run the pipeline for one frame, but make sure we have no RwLocks whenever we do so
         let handler = &context.handler.lock().unwrap();
-        if Arc::strong_count(&context.pipeline) != 1 {
-            return None;
-        }
         handler.sbarrier.wait();
         handler.ebarrier.wait();
 

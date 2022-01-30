@@ -6,13 +6,13 @@ use main::{
             atomic::{AtomicGroup, ClearCondition},
             compute::ComputeShader,
         },
-        basics::{material::Material, shader::ShaderSettings},
-        object::{ObjectID, ReservedTrackedTaskID},
-        pipeline::pipec,
+        basics::{material::Material, shader::{ShaderSettings, self}, transfer::Transferable},
+        object::{ObjectID, ReservedTrackedTaskID, PipelineTrackedTask},
+        pipeline::{pipec, Pipeline, PipelineContext},
     },
     terrain::{ChunkCoords, Voxable, MAIN_CHUNK_SIZE},
 };
-use std::{collections::HashMap, marker::PhantomData};
+use std::{collections::HashMap, marker::PhantomData, mem::size_of};
 
 // Some data that we store whenever we are generating the voxels
 pub struct TerrainGenerationData {
@@ -47,7 +47,7 @@ pub struct Terrain<U: Voxable + 'static> {
 
 impl<V: Voxable + 'static> Terrain<V> {
     // Create a new terrain component
-    pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline: &main::rendering::pipeline::Pipeline) -> Self {
+    pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline: &Pipeline) -> Self {
         // Check if a an already existing node could be subdivided even more
         fn can_node_subdivide_twin(node: &OctreeNode, target: &veclib::Vector3<f32>, lod_factor: f32, max_depth: u8) -> bool {
             let c: veclib::Vector3<f32> = node.get_center().into();
@@ -60,6 +60,7 @@ impl<V: Voxable + 'static> Terrain<V> {
         let octree = AdvancedOctree::new(internal_octree, can_node_subdivide_twin);
 
         // Load the first pass compute shader
+        let pipeline = pipeline_context.read();
         let voxel_src_path = format!("#include {}", format!(r#""{}""#, voxel_src_path));
         let settings = ShaderSettings::default()
             .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
@@ -67,7 +68,7 @@ impl<V: Voxable + 'static> Terrain<V> {
             .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
 
         let base_compute = ComputeShader::new(settings).unwrap();
-        let base_compute = pipec::construct(base_compute, pipeline);
+        let base_compute = pipec::construct(base_compute, &pipeline);
 
         // Load the second pass compute shader
         let settings = ShaderSettings::default()
@@ -75,29 +76,54 @@ impl<V: Voxable + 'static> Terrain<V> {
             .external_code("voxel_include_path", voxel_src_path)
             .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
         let second_compute = ComputeShader::new(settings).unwrap();
-        let second_compute = pipec::construct(second_compute, pipeline);
-        /*
-        const int _CHUNK_SIZE = #constant chunk_size
-        const int _CSPO = _CHUNK_SIZE + 1; // Chunk size plus one
-        const int _CSPT = _CHUNK_SIZE + 2; // Chunk size plus two
-        // Load the voxel function file
-        layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-        layout(binding = 2) uniform atomic_uint positive_counter;
-        layout(binding = 2) uniform atomic_uint negative_counter;
-        layout(std430, binding = 3) buffer buffer_data
-        {
-            Voxel voxels[_CSPT][_CSPT][_CSPT];
-            BundledVoxel bundled_voxels[_CSPO][_CSPO][_CSPO];
+        let second_compute = pipec::construct(second_compute, &pipeline);
+        
+        // We must read the size of the buffer_data Shader Storage Block in the shader, so we will need to do a pipeline flush
+        let resource = shader::info::Resource {
+            res: shader::info::QueryResource::ShaderStorageBlock,
+            name: "arbitrary_voxels".to_string(),
         };
+        let resource2 = shader::info::Resource {
+            res: shader::info::QueryResource::ShaderStorageBlock,
+            name: "output_voxels".to_string(),
+        };
+        let mut settings = shader::info::ShaderInfoQuerySettings::default();
+        settings.query(resource.clone(), vec![shader::info::QueryParameter::ByteSize]);
+        settings.query(resource2.clone(), vec![shader::info::QueryParameter::ByteSize]);
+        let reserved_id = ReservedTrackedTaskID::default();
+        let info = shader::info::ShaderInfo::default();
+        let transfer = info.transfer();
+        pipec::tracked_task(PipelineTrackedTask::QueryComputeShaderInfo(base_compute, settings, transfer), reserved_id, &pipeline);
+        drop(pipeline);
 
+        // Force a pipeline flush and wait till we get the results back
+        pipec::flush_and_execute(pipeline_context).unwrap();
+        pipec::flush_and_execute(pipeline_context).unwrap();
 
-        // Create a Shader Storage that will hold all of our voxel data
-        let arbitrary_data = (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) *
-        let shader_storage = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Read, )
-        */
+        // Now we wait...
+        let pipeline = pipeline_context.read();
+        while !pipec::did_tasks_execute(&[reserved_id], &pipeline) {} 
+        
+        // We got our shader info back!
+        let params = info.get(&resource).unwrap();
+        let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
+        let arb_voxels_size = byte_size;
+        let arb_voxel_size = arb_voxels_size / ((MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2));
+        dbg!(byte_size);
+        let params = info.get(&resource2).unwrap();
+        let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
+        dbg!(byte_size);
+        let final_voxels_size = byte_size;
+        let final_voxel_size = final_voxels_size / ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
+
+        // We must check if they have the same size
+        if size_of::<V>() != final_voxel_size {
+            panic!();
+        }
 
         // Also construct the atomics
-        let atomics = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), pipeline);
+        let pipeline = pipeline_context.read();
+        let atomics = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), &pipeline);
 
         println!("Terrain component init done!");
         Self {

@@ -42,8 +42,8 @@ pub fn init(mut write: core::WriteContext) {
     let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
     // Create a simple cube
-    for x in 0..20 {
-        for y in 0..20 {
+    for x in 0..2 {
+        for y in 0..2 {
             let mut group = ecs::entity::ComponentLinkingGroup::new();
             let entity = ecs::entity::Entity::new();
             let id = ecs::entity::EntityID::new(&mut write.ecs);
@@ -87,15 +87,23 @@ pub fn init(mut write: core::WriteContext) {
     let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
     // Create a simple voxel
-    pub struct SimpleVoxel;
+    #[repr(C)]
+    pub struct SimpleVoxel {
+        pub density: f32,
+        pub normal: veclib::Vector3<f32>,
+    }
     impl terrain::Voxable for SimpleVoxel {
         // Linearly interpolate between v1 and v2 using t
-        fn interpolate(_v1: &Self, _v2: &Self, _t: f32) -> Self {
-            Self
+        fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self {
+            Self {
+                density: 0.0,
+                normal: veclib::Vector3::<f32>::lerp(v1.normal, v2.normal, t),
+            }
         }
     }
 
     // Add the terrain
-    let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &*pipeline);
+    drop(pipeline);
+    let terrain = defaults::globals::Terrain::<SimpleVoxel>::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &pipeline_);
     write.ecs.add_global(terrain).unwrap();
 }

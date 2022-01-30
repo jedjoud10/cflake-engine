@@ -137,7 +137,16 @@ impl Pipeline {
             PipelineTrackedTask::TextureReadBytes(id, read) => self.fill_texture(id, read),
             PipelineTrackedTask::ShaderStorageReadBytes(id, read) => self.shader_storage_read(id, read),
             PipelineTrackedTask::AtomicGroupRead(id, read) => self.atomic_group_read(id, read),
-            PipelineTrackedTask::QueryShaderInfo(id, settings, read) => self.query_shader_info(id, settings, read),
+            PipelineTrackedTask::QueryShaderInfo(id, settings, read) => {
+                // Get the shader OID
+                let oid = self.get_shader(id).unwrap().program;
+                self.query_shader_info(oid, settings, read)
+            },
+            PipelineTrackedTask::QueryComputeShaderInfo(id, settings, read) => {
+                // Get the shader OID
+                let oid = self.get_compute_shader(id).unwrap().program;
+                self.query_shader_info(oid, settings, read)
+            },
             PipelineTrackedTask::Test => GlTracker::fake(|_| {}, self),
         };
 
@@ -1040,12 +1049,10 @@ impl Pipeline {
         )
     }
     // Query some information about a shader
-    fn query_shader_info(&mut self, id: ObjectID<Shader>, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
+    fn query_shader_info(&mut self, oid: u32, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
         GlTracker::fake(
-            move |pipeline| unsafe {
+            move |_pipeline| unsafe {
                 // Get the query info
-                let shader = pipeline.get_shader(id).unwrap();
-                let oid = shader.program;
 
                 // Gotta count the number of unique resource types
                 let mut unique_count = AHashMap::<QueryResource, usize>::new();
