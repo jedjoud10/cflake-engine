@@ -73,9 +73,10 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
                         let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
                         // Get the color
-                        let t1: veclib::Vector3<f32> = vec3(voxel1.color.x.to_f32(), voxel1.color.y.to_f32(), voxel1.color.z.to_f32());
-                        let t2: veclib::Vector3<f32> = vec3(voxel2.color.x.to_f32(), voxel2.color.y.to_f32(), voxel2.color.z.to_f32());
-                        let color = veclib::Vector3::<f32>::lerp(t1, t2, value);
+                        let c1: veclib::Vector3<f32> = voxel1.color.into();
+                        let c2: veclib::Vector3<f32> = voxel2.color.into();
+                        let mut color = veclib::Vector3::<f32>::lerp(c1, c2, value);
+                        color /= 255.0;
                         // The edge tuple used to identify this vertex
                         let edge_tuple: (u32, u32, u32) = (
                             2 * x as u32 + vert1.x as u32 + vert2.x as u32,
@@ -139,8 +140,8 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
 // Skirt vertex
 pub struct SkirtVertex {
     pub position: veclib::Vector3<f32>,
-    pub normal: veclib::Vector3<f32>,
-    pub color: veclib::Vector3<f32>,
+    pub normal: veclib::Vector3<f16>,
+    pub color: veclib::Vector3<u8>,
 }
 
 // Generate a whole skirt using a specific
@@ -177,7 +178,7 @@ pub fn calculate_marching_square_case(
     voxels: &VoxelData,
     interpolation: bool,
     density_offset: [usize; 4],
-) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>; 4])> {
+) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], [Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>; 4])> {
     // Get the position
     let p = veclib::Vector2::new(x as f32, y as f32);
     // Get the marching cube case
@@ -198,7 +199,7 @@ pub fn calculate_marching_square_case(
         return None;
     }
     // Get the interpolated voxels
-    let mut local_interpolated_voxels: [Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>; 4] = [None; 4];
+    let mut local_interpolated_voxels: [Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>; 4] = [None; 4];
     for (j, local_interpolated_voxel) in local_interpolated_voxels.iter_mut().enumerate() {
         // This is for every edge
         let two_voxels = MS_EDGE_TO_VERTICES[j as usize];
@@ -211,10 +212,12 @@ pub fn calculate_marching_square_case(
             let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
             let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
             let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
+            let normal = veclib::vec3(f16::from_f32(normal.x), f16::from_f32(normal.y), f16::from_f32(normal.z));
             // Get the color
-            let t1: veclib::Vector3<f32> = vec3(voxel1.color.x.to_f32(), voxel1.color.y.to_f32(), voxel1.color.z.to_f32());
-            let t2: veclib::Vector3<f32> = vec3(voxel2.color.x.to_f32(), voxel2.color.y.to_f32(), voxel2.color.z.to_f32());
-            let color = veclib::Vector3::<f32>::lerp(t1, t2, value);
+            let t1: veclib::Vector3<f32> = voxel1.color.into();
+            let t2: veclib::Vector3<f32> = voxel2.color.into();
+            let color = veclib::Vector3::<f32>::lerp(t1, t2, value) * 255.0;
+            let color = color.into();
             // We must get the local offset of these two voxels
             let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
             let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
@@ -233,7 +236,7 @@ pub fn solve_marching_squares(
     case: u8,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>],
+    ilv: &[Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>],
     model: &mut Model,
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
@@ -327,8 +330,11 @@ pub fn solve_marching_squares(
     for x in skirt_vertices {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(x.position);
-        model.normals.push(x.normal.normalized());
-        model.colors.push(veclib::Vector3::ONE);
+        let normal: veclib::Vector3<f32> = vec3(x.normal.x.to_f32(), x.normal.y.to_f32(), x.normal.y.to_f32());
+        model.normals.push(normal.normalized());
+        let mut color: veclib::Vector3<f32> = x.color.into();
+        color /= 255.0;
+        model.colors.push(color);
     }
 }
 // Create a marching squares triangle between 3 skirt voxels
@@ -336,7 +342,7 @@ pub fn create_triangle(
     slice: usize,
     offset: veclib::Vector2<f32>,
     lv: &[Voxel],
-    ilv: &[Option<(veclib::Vector3<f32>, veclib::Vector2<f32>, veclib::Vector3<f32>)>],
+    ilv: &[Option<(veclib::Vector3<f16>, veclib::Vector2<f32>, veclib::Vector3<u8>)>],
     li: &[usize; 3],
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) -> Vec<SkirtVertex> {
@@ -358,11 +364,9 @@ pub fn create_triangle(
                     // Not interpolated
                     let transformed_index = (*i) / 2;
                     let v = (tf)(slice, &SQUARES_VERTEX_TABLE[transformed_index], &offset);
-                    let normal = &lv[transformed_index].normal;
-                    let color = &lv[transformed_index].color;
-                    let n: veclib::Vector3<f32> = vec3(normal.x.to_f32(), normal.y.to_f32(), normal.z.to_f32());
-                    let c: veclib::Vector3<f32> = vec3(color.x.to_f32(), color.y.to_f32(), color.z.to_f32());
-                    (v, n, c)
+                    let n = &lv[transformed_index].normal;
+                    let c = &lv[transformed_index].color;
+                    (v, *n, *c)
                 }
                 _ => {
                     /* The bruh funny */

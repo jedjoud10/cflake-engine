@@ -10,12 +10,17 @@ pub struct Voxel {
     pub density: f16,
     // The normals stored in a vec3 full of f16s
     pub normal: veclib::Vector3<f16>,
-    // The color of each voxel is also stored in vec3 of f16s
-    pub color: veclib::Vector3<f16>,
+    // 8 Bytes left
+
+    // The color of each voxel is also stored in vec3 of u8s
+    pub color: veclib::Vector3<u8>,
+    // Also store the hardness of the voxel
+    pub hardness: u8,
+    // 4 Bytes left
+
     // Material type
-    pub material_type: u16,
-    
-    // Todo...
+    pub material_type: u8,
+    pub _test: [u8; 3],
 }
 
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap

@@ -88,6 +88,6 @@ pub fn init(mut write: core::WriteContext) {
 
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 8, &pipeline_);
+    let terrain = defaults::globals::Terrain::new(terrain::DEFAULT_TERRAIN_VOXEL_SRC, material, 6, &pipeline_);
     write.ecs.add_global(terrain).unwrap();
 }
