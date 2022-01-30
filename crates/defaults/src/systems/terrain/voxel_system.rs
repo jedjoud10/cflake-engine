@@ -50,7 +50,6 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     let (read_counters, read_bytes) = terrain.cpu_data.take().unwrap();
     // Read back the voxel values from the SSBO
     let voxels = read_bytes.fill_vec::<Voxel>().unwrap().into_boxed_slice();
-    println!("{}", &voxels[0].density);
     let voxel_data = VoxelData(voxels);
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
