@@ -4,9 +4,8 @@ use crate::{
     pipeline::Pipeline,
     utils::*,
 };
-use assets::*;
+
 use gl;
-use image::{EncodableLayout, GenericImageView};
 
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping};
 

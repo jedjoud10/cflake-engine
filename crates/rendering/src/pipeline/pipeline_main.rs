@@ -1,11 +1,11 @@
 // Some pipeline commands
 pub mod pipec {
-    use std::sync::{atomic::Ordering, RwLockReadGuard, Arc};
+    use std::sync::{atomic::Ordering, Arc};
 
     use crate::{
         basics::Buildable,
         object::{ObjectID, PipelineObject, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
-        pipeline::{sender, Pipeline, PipelineHandler, PipelineContext},
+        pipeline::{sender, Pipeline, PipelineContext},
     };
     // Debug some pipeline data
     pub fn set_debugging(debugging: bool, pipeline: &Pipeline) {

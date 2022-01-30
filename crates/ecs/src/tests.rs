@@ -69,7 +69,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        fn internal_run(_context: &mut WorldContext, components: ComponentQuery) {
+        fn internal_run(_context: &mut WorldContext, _components: ComponentQuery) {
             /*
             // Transform the _context to RefContext using some magic fuckery
             components.update_all_threaded(|components| {
@@ -81,7 +81,7 @@ pub mod test {
         builder.link::<Name>().set_run_event(internal_run).build();
 
         // Create 10k entities
-        for x in 0..10_000 {
+        for _x in 0..10_000 {
             // Create a simple entity with that component
             let mut group = ComponentLinkingGroup::new();
             group.link(Name::new("Person")).unwrap();
@@ -90,7 +90,7 @@ pub mod test {
             // The entity is not created yet, so it is null
             ecs.add_entity(entity, id, group).unwrap();
         }
-        for x in 0..10 {
+        for _x in 0..10 {
             let i = std::time::Instant::now();
             ecs.run_systems(context);
             println!("Took {}µs to update", i.elapsed().as_micros())

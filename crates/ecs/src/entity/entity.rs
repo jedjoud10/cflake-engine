@@ -1,7 +1,4 @@
-use crate::{
-    component::{ComponentID, EnclosedComponent},
-    ECSManager,
-};
+use crate::ECSManager;
 use ahash::AHashMap;
 use bitfield::Bitfield;
 // A simple entity in the world
@@ -45,8 +42,6 @@ impl std::fmt::Display for EntityID {
 impl EntityID {
     // Create a new entity ID using a ShareableOrderedVecState of the entities, something that we can get by the Context<ECSManager>
     pub fn new<Context>(ecs_manager: &ECSManager<Context>) -> Self {
-        Self {
-            0: ecs_manager.entities.get_next_id_increment(),
-        }
+        Self(ecs_manager.entities.get_next_id_increment())
     }
 }

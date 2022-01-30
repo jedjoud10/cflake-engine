@@ -91,7 +91,7 @@ impl ShaderInfo {
     // Get the updated query parameters of a specific resource
     pub fn get(&self, res: &Resource) -> Option<Vec<UpdatedParameter>> {
         let lock = self.res.lock().ok()?;
-        lock.get(res).map(|x| x.clone())
+        lock.get(res).cloned()
     }
 }
 

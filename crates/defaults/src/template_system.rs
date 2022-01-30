@@ -5,7 +5,7 @@ use main::core::{Context, WriteContext};
 use main::ecs;
 
 // A simple system that we can use as template
-fn run(context: &mut Context, query: ComponentQuery) {
+fn run(_context: &mut Context, _query: ComponentQuery) {
     /*
     let read = context.read();
     query.update_all_threaded(|_, components| {

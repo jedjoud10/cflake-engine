@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use rendering::pipeline::{PipelineHandler, PipelineContext};
+use rendering::pipeline::PipelineContext;
 
 use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 
@@ -141,6 +141,6 @@ impl World {
             handler.ebarrier.wait();
             // Join the render thread now
             handler.handle.join().unwrap();
-        }        
+        }
     }
 }

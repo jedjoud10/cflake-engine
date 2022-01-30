@@ -1,15 +1,8 @@
 use crate::{
-    basics::{
-        transfer::{Transfer, Transferable},
-        Buildable,
-    },
+    basics::Buildable,
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
 };
 use arrayvec::ArrayVec;
-use std::sync::{
-    atomic::{AtomicU32, AtomicU8, Ordering},
-    Arc,
-};
 
 // The clear condition telling us when we should clear the atomic counter
 #[derive(Clone)]

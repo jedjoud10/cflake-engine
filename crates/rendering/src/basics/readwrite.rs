@@ -25,7 +25,7 @@ impl ReadBytes {
     pub fn fill_vec<U: Default + Clone>(self) -> Option<Vec<U>> {
         // Read the bytes
         let bytes = Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?;
-        if bytes.len() == 0 {
+        if bytes.is_empty() {
             return None;
         }
         // We must now convert the bytes into the vector full of pixels

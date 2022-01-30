@@ -4,7 +4,7 @@ use crate::object::{ObjectBuildingTask, PipelineObject, PipelineTask};
 use crate::params::{FADE_IN_SPEED, FADE_OUT_SPEED};
 use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
-use bitflags::bitflags;
+
 use std::collections::{HashMap, HashSet};
 
 // Shader source type
@@ -129,7 +129,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             let source = settings
                 .external_code
                 .get(source_name)
-                .expect(&format!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
+                .unwrap_or_else(|| panic!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
             *line = source.clone();
             break;
         }

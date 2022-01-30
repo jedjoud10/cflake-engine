@@ -3,14 +3,13 @@ use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
     cell::UnsafeCell,
-    collections::BTreeMap,
     sync::{Arc, Mutex, RwLock},
 };
 use threads::ThreadPool;
 
 use crate::{
     component::{
-        registry::{self, cast_component_mut},
+        registry::{self},
         Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents,
     },
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
@@ -114,7 +113,7 @@ impl<Context> ECSManager<Context> {
     // Link some components to an entity
     pub fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in link_group.linked_components {
-            let (component_id, ptr) = self.add_component(boxed, cbitfield)?;
+            let (component_id, _ptr) = self.add_component(boxed, cbitfield)?;
             let entity = self.entity_mut(&id).unwrap();
             entity.components.insert(cbitfield, component_id.idx);
         }
@@ -164,7 +163,7 @@ impl<Context> ECSManager<Context> {
         let entity = self.entity_mut(&id).unwrap();
         let components = entity
             .components
-            .drain_filter(|cbitfield, idx| unlink_group.removal_cbitfield.contains(&cbitfield))
+            .drain_filter(|cbitfield, _idx| unlink_group.removal_cbitfield.contains(cbitfield))
             .collect::<Vec<_>>();
         entity.cbitfield = new;
         for (cbitfield, idx) in components {
@@ -259,7 +258,7 @@ impl<Context> ECSManager<Context> {
     }
     // Run the systems in sync, but their component updates are not
     // Used only for testing
-    pub(crate) fn run_systems(&self, mut context: Context)
+    pub(crate) fn run_systems(&self, context: Context)
     where
         Context: Clone,
     {

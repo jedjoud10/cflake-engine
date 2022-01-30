@@ -10,15 +10,13 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use veclib::Swizzable;
 
-use std::time::Instant;
-
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
     (x - a) / (b - a)
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, interpolation: bool, skirts: bool) -> TModel {
+pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, interpolation: bool, _skirts: bool) -> TModel {
     let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let mut model: Model = Model::default();
     // Loop over every voxel
@@ -64,7 +62,7 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
                         let voxel1 = &voxels[index1];
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = if interpolation { inverse_lerp(voxel1.density, voxel2.density, 0.0 as f32) } else { 0.5 };
+                        let value: f32 = if interpolation { inverse_lerp(voxel1.density, voxel2.density, 0.0_f32) } else { 0.5 };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
@@ -100,7 +98,7 @@ pub fn generate_model<V: Voxable>(voxels: &VoxelData<V>, coords: ChunkCoords, in
         }
     }
     // Create a completely separate model for skirts
-    let mut skirts_model: Model = Model::default();
+    let skirts_model: Model = Model::default();
     /*
     if skirts {
         // Create the X skirt

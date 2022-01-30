@@ -1,11 +1,9 @@
-use bitflags::bitflags;
-
 use crate::{
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
     pipeline::Pipeline,
 };
 
-use super::{material::Material, model::Model, Buildable, uniforms::ShaderUniformsGroup};
+use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup, Buildable};
 
 // A component that will be linked to entities that are renderable
 #[derive(Default)]

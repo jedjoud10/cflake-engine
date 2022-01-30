@@ -1,5 +1,5 @@
-use std::{sync::{RwLock, Arc, atomic::{AtomicUsize, Ordering}}, cell::{UnsafeCell, Cell}, iter};
 use crate::IterExecutionID;
+use std::{cell::UnsafeCell, sync::Arc};
 
 // Creates a vector that we can modify inside the worker threads
 // This is totally safe, since we will not be accessing multiple elements while they are being written to
@@ -13,15 +13,17 @@ unsafe impl<T> Sync for SharedVec<T> {}
 impl<T> SharedVec<T> {
     // Create a new shared vector using a specific len
     pub fn new(len: usize) -> Self
-    where T:
-        Default
+    where
+        T: Default,
     {
         let mut vec = Vec::with_capacity(len);
-        for x in 0..len { vec.push(UnsafeCell::default()); }
-        unsafe { vec.set_len(len); }
-        Self {
-            vec: Arc::new(vec)
+        for _x in 0..len {
+            vec.push(UnsafeCell::default());
         }
+        unsafe {
+            vec.set_len(len);
+        }
+        Self { vec: Arc::new(vec) }
     }
     // Read the current element
     pub fn read(&self, id: &IterExecutionID) -> Option<&T> {

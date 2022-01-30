@@ -1,5 +1,3 @@
-use crate::GRAVITY_ACCELERATION;
-
 // Linear momentum
 #[derive(Default, Clone)]
 pub struct LinearPhysics {

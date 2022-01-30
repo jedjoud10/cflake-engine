@@ -1,7 +1,6 @@
-use core::slice;
-use std::{any::TypeId, marker::PhantomData, mem::size_of};
+use std::{marker::PhantomData, mem::size_of};
 
-use veclib::{SupportedValue, UnsizedVector, Vector, VectorElemCount};
+use veclib::{Vector, VectorElemCount};
 
 use crate::utils::DataType;
 

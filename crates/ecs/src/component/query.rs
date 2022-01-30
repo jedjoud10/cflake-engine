@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use ahash::AHashMap;
-use threads::{ThreadPool, IterExecutionID};
+use threads::{IterExecutionID, ThreadPool};
 
 use crate::entity::EntityID;
 
@@ -26,10 +26,10 @@ pub struct ComponentQuery {
 impl ComponentQuery {
     // Count the number of linked components that we have
     pub fn count(&self) -> usize {
-        let len = self.linked_components.as_ref().and_then(|x| Some(match x {
+        let len = self.linked_components.as_ref().map(|x| match x {
             ComponentQueryIterType::ArcHashMap(x) => (x.lock().unwrap()).len(),
             ComponentQueryIterType::HashMap(x) => x.len(),
-        }));
+        });
         len.unwrap_or_default()
     }
     // Update a single linked component from this query using it's respective entity ID
@@ -112,5 +112,5 @@ impl ComponentQuery {
                 }
             }
         }
-    }    
+    }
 }

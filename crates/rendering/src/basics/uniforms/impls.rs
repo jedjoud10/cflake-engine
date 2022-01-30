@@ -1,9 +1,6 @@
 use crate::{
     advanced::{atomic::AtomicGroup, shaderstorage::ShaderStorage},
-    basics::{
-        texture::{Texture, TextureAccessType},
-        transfer::Transfer,
-    },
+    basics::texture::{Texture, TextureAccessType},
     object::ObjectID,
 };
 

@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    ffi::{c_void, CString},
-    sync::atomic::Ordering,
-};
+use std::{collections::HashMap, ffi::CString};
 use veclib::Vector;
 
 use crate::{
@@ -10,10 +6,7 @@ use crate::{
         atomic::{AtomicGroup, ClearCondition},
         shaderstorage::ShaderStorage,
     },
-    basics::{
-        texture::{Texture, TextureAccessType},
-        transfer::Transfer,
-    },
+    basics::texture::{Texture, TextureAccessType},
     object::ObjectID,
     pipeline::Pipeline,
 };

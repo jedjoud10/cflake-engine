@@ -1,7 +1,4 @@
-use std::sync::{
-    atomic::{AtomicU32, Ordering},
-    Arc, Mutex,
-};
+use std::sync::{Arc, Mutex};
 
 use arrayvec::ArrayVec;
 

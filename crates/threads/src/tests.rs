@@ -1,8 +1,7 @@
 #[cfg(test)]
 pub mod test {
-    use std::sync::Arc;
 
-    use crate::{ThreadPool, SharedVec};
+    use crate::{SharedVec, ThreadPool};
 
     #[test]
     // Just a normal test to see if it crashes or not
@@ -21,14 +20,14 @@ pub mod test {
         let pool = ThreadPool::<i32>::new(8, || {});
         const COUNT: i32 = 100;
         let mut numbers = (0..COUNT).collect::<Vec<_>>();
-        let shared = SharedVec::<i32>::new( COUNT as usize);
+        let shared = SharedVec::<i32>::new(COUNT as usize);
         let data = 10;
         pool.execute(&mut numbers, |id, x| {
             *x += data;
             let y = shared.write(id).unwrap();
             *y += *x;
         });
-        let numbers2 = (10..(COUNT+10)).collect::<Vec<_>>();
+        let numbers2 = (10..(COUNT + 10)).collect::<Vec<_>>();
         assert_eq!(numbers, numbers2);
     }
     #[test]
@@ -37,7 +36,7 @@ pub mod test {
         let pool = ThreadPool::<i32>::new(8, || {});
         const COUNT: i32 = 100;
         let mut numbers = (0..COUNT).collect::<Vec<_>>();
-        let shared = SharedVec::<i32>::new( COUNT as usize);
+        let shared = SharedVec::<i32>::new(COUNT as usize);
         let data = 10;
         pool.execute(&mut numbers, |id, x| {
             *x += data;
@@ -45,7 +44,7 @@ pub mod test {
             *y += *x;
             println!("Thread: '{}', Index: '{}'", id.get_info().thread_index, id.get_info().element_index);
         });
-        let numbers2 = (10..(COUNT+10)).collect::<Vec<_>>();
+        let numbers2 = (10..(COUNT + 10)).collect::<Vec<_>>();
         assert_eq!(numbers, numbers2);
     }
     #[test]

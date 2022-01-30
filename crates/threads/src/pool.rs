@@ -1,9 +1,9 @@
 use std::{
-    cell::UnsafeCell,
-    sync::{atomic::Ordering::Relaxed, Arc, Barrier, RwLock, RwLockWriteGuard}, mem::ManuallyDrop,
+    mem::ManuallyDrop,
+    sync::{atomic::Ordering::Relaxed, Arc, Barrier, RwLock, RwLockWriteGuard},
 };
 
-use crate::{SharedData, SHUTDOWN, IterExecutionID};
+use crate::{IterExecutionID, SharedData, SHUTDOWN};
 
 // A thread pool that contains multiple WorkerThreadInitData,
 // so we can send messages to the threads to tell them to execute something, and we will wait until all of them have executed
@@ -75,7 +75,7 @@ impl<T: 'static> ThreadPool<T> {
     }
     // Execute the thread pool using a vector filled with mutable refences to the elements. We will guess the appropriate chunk size
     pub fn execute<F: Fn(&IterExecutionID, &mut T) + Sync + Send>(&self, elements: &mut Vec<T>, task: F) {
-        let elements = elements.into_iter().map(|x| x as *mut T).collect::<Vec<_>>();
+        let elements = elements.iter_mut().map(|x| x as *mut T).collect::<Vec<_>>();
         self.execute_vec_ptr(elements, task);
     }
     // Shutdown

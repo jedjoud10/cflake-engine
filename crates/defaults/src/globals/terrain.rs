@@ -1,28 +1,16 @@
 use main::{
-    ecs::{
-        component::{Component, ComponentID},
-        entity::EntityID,
-    },
-    math::{
-        self,
-        octrees::{AdvancedOctree, Octree, OctreeNode},
-    },
+    ecs::{component::Component, entity::EntityID},
+    math::octrees::{AdvancedOctree, Octree, OctreeNode},
     rendering::{
         advanced::{
-            atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
+            atomic::{AtomicGroup, ClearCondition},
             compute::ComputeShader,
-            shaderstorage::ShaderStorage,
         },
-        basics::{
-            material::Material,
-            shader::ShaderSettings,
-            texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
-        },
+        basics::{material::Material, shader::ShaderSettings},
         object::{ObjectID, ReservedTrackedTaskID},
         pipeline::pipec,
-        utils::{AccessType, DataType, UpdateFrequency},
     },
-    terrain::{ChunkCoords, Voxable, VoxelData, MAIN_CHUNK_SIZE},
+    terrain::{ChunkCoords, Voxable, MAIN_CHUNK_SIZE},
 };
 use std::{collections::HashMap, marker::PhantomData};
 
@@ -72,7 +60,7 @@ impl<V: Voxable + 'static> Terrain<V> {
         let octree = AdvancedOctree::new(internal_octree, can_node_subdivide_twin);
 
         // Load the first pass compute shader
-        let voxel_src_path = format!("#include {}", format!(r#""{}""#, voxel_src_path.to_string()));
+        let voxel_src_path = format!("#include {}", format!(r#""{}""#, voxel_src_path));
         let settings = ShaderSettings::default()
             .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path.clone())

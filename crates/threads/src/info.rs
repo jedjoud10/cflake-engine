@@ -3,5 +3,5 @@ pub struct IterExecutionInfo {
     // The index
     pub element_index: usize,
     // And the thread index
-    pub thread_index: usize
+    pub thread_index: usize,
 }

@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use super::{ObjectID, PipelineObject, ReservedTrackedTaskID};
 use crate::{
     advanced::{
@@ -18,7 +16,8 @@ use crate::{
         },
         texture::Texture,
         transfer::Transfer,
-        Buildable, uniforms::ShaderUniformsGroup,
+        uniforms::ShaderUniformsGroup,
+        Buildable,
     },
     pipeline::camera::Camera,
 };

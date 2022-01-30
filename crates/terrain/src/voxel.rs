@@ -21,7 +21,7 @@ where
     // Interpolate between two voxels values
     fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self;
     // Add our extra values to a model (ex: custom model data like tint)
-    fn push(self, model: &mut Model) {}
+    fn push(self, _model: &mut Model) {}
 }
 
 // Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap

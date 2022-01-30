@@ -2,14 +2,13 @@ use super::{registry, Component, ComponentID, ComponentReadGuard, ComponentWrite
 use crate::{
     entity::{Entity, EntityID},
     utils::ComponentError,
-    ECSManager,
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 use std::{
     cell::UnsafeCell,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, RwLock},
 };
 
 // Some linked components that we can mutate or read from in each system
@@ -84,7 +83,7 @@ impl LinkedComponents {
         let cbitfield = registry::get_component_bitfield::<T>();
         let idx = self.linked.get(&cbitfield).ok_or(invalid_err())?;
         let hashmap = self.components.read().map_err(|_| invalid_err())?;
-        let cell = hashmap.get(*idx).ok_or_else(|| invalid_err())?;
+        let cell = hashmap.get(*idx).ok_or_else(invalid_err)?;
 
         // Then get it's pointer and do black magic
         let ptr = cell.get();
@@ -104,7 +103,7 @@ impl LinkedComponents {
         let cbitfield = registry::get_component_bitfield::<T>();
         let idx = self.linked.get(&cbitfield).ok_or(invalid_err())?;
         let hashmap = self.components.read().map_err(|_| invalid_err())?;
-        let cell = hashmap.get(*idx).ok_or_else(|| invalid_err())?;
+        let cell = hashmap.get(*idx).ok_or_else(invalid_err)?;
 
         // Then get it's pointer and do black magic
         let ptr = cell.get();

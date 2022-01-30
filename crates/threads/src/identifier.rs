@@ -8,5 +8,7 @@ pub struct IterExecutionID {
 
 impl IterExecutionID {
     // Get the index, and on what thread ID we are executing our iteration
-    pub fn get_info(&self) -> &IterExecutionInfo { &self.info }
+    pub fn get_info(&self) -> &IterExecutionInfo {
+        &self.info
+    }
 }

@@ -14,5 +14,5 @@ pub use others;
 pub use physics;
 pub use rendering;
 pub use terrain;
-pub use ui;
 pub use threads;
+pub use ui;

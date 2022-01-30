@@ -27,7 +27,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
     });
 
     // Since we have all the tasks, we can send them as a batch
-    let vec = storage.into_inner().into_iter().filter_map(|x| x).collect::<Vec<_>>();
+    let vec = storage.into_inner().into_iter().flatten().collect::<Vec<_>>();
     rendering::pipeline::pipec::task_batch(vec, &*pipeline);
 }
 

@@ -1,16 +1,12 @@
-use std::{
-    cell::UnsafeCell,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashMap;
 use bitfield::Bitfield;
-use ordered_vec::simple::OrderedVec;
 
 use super::SystemExecutionData;
 use crate::{
-    component::{ComponentQuery, ComponentQueryIterType, EnclosedComponent, LinkedComponents},
-    entity::{Entity, EntityID},
+    component::{ComponentQuery, ComponentQueryIterType, LinkedComponents},
+    entity::EntityID,
     ECSManager,
 };
 

@@ -18,14 +18,13 @@ use crate::{
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
-    pipeline::{camera::Camera, pipec, sender, PipelineRenderer, PipelineHandler},
+    pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
     utils::{RenderWrapper, Window},
 };
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashMap;
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
-    collections::hash_map::Entry,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::{null, null_mut},
@@ -113,11 +112,15 @@ impl Pipeline {
             PipelineTask::CreateComputeShader(id) => self.compute_create(id),
             PipelineTask::CreateAtomicGroup(id) => self.atomic_group_create(id),
             PipelineTask::CreateShaderStorage(id) => self.shader_storage_create(id),
-            
+
             PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
-            PipelineTask::UpdateRendererUniforms(id, uniforms) => { self.get_renderer_mut(id).and_then(|x| Some(x.update_uniforms(uniforms))); },
+            PipelineTask::UpdateRendererUniforms(id, uniforms) => {
+                self.get_renderer_mut(id).map(|x| {
+                    x.update_uniforms(uniforms);
+                });
+            }
 
             // Window tasks
             PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
@@ -125,7 +128,7 @@ impl Pipeline {
         }
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: ReservedTrackedTaskID) {
+    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, _renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: ReservedTrackedTaskID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
@@ -140,7 +143,7 @@ impl Pipeline {
         internal.gltrackers.insert(tracking_id, gltracker);
 
         // Also check each GlTracker and check if it finished executing
-        let completed_ids = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
+        let completed_ids = internal.gltrackers.drain_filter(|_id, tracker| tracker.completed(self)).collect::<Vec<_>>();
 
         // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
         for (completed, _) in completed_ids {
@@ -150,7 +153,7 @@ impl Pipeline {
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
-        let completed_ids = internal.gltrackers.drain_filter(|id, tracker| tracker.completed(self)).collect::<Vec<_>>();
+        let completed_ids = internal.gltrackers.drain_filter(|_id, tracker| tracker.completed(self)).collect::<Vec<_>>();
 
         // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
         for (completed, _) in completed_ids {
@@ -959,7 +962,7 @@ impl Pipeline {
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, read: Transfer<AtomicGroupRead>) -> GlTracker {
         GlTracker::new(
-            move |pipeline| unsafe {
+            move |_pipeline| unsafe {
                 // Get the atomic group object first
                 let atomic = self.get_atomic_group(id).unwrap();
                 // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
@@ -1051,7 +1054,7 @@ impl Pipeline {
                 }
 
                 // First we gotta get how many resources of a single type we have, and their respective max name len
-                let types_and_counts = unique_count
+                let _types_and_counts = unique_count
                     .iter()
                     .map(|(res, _)| {
                         let mut max_resources = 0_i32;
@@ -1064,11 +1067,13 @@ impl Pipeline {
 
                 // Now we can actually query the parameters
                 let mut output_queried_resources = AHashMap::<Resource, Vec<UpdatedParameter>>::new();
-                for (res, (parameters, i)) in indexed_resources {
+                for (res, (parameters, _i)) in indexed_resources {
                     let cstring = CString::new(res.name.clone()).unwrap();
                     // Get the resource's index
                     let resource_index = gl::GetProgramResourceIndex(oid, res.convert(), cstring.as_ptr());
-                    if resource_index == gl::INVALID_INDEX { panic!() }
+                    if resource_index == gl::INVALID_INDEX {
+                        panic!()
+                    }
 
                     // Now we can finally access the resource's parameters
                     let converted_params = parameters.iter().map(|x| x.convert()).collect::<Vec<_>>();
@@ -1087,7 +1092,9 @@ impl Pipeline {
 
                     // Check for negative numbers, because if we fine some, that means that we failed to retrieve a specific parameter
                     for maybe in output.iter() {
-                        if *maybe == -1 { panic!() }
+                        if *maybe == -1 {
+                            panic!()
+                        }
                     }
 
                     let converted_outputs = parameters

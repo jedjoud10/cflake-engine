@@ -1,4 +1,4 @@
-use std::{any::TypeId, fmt::Debug};
+use std::fmt::Debug;
 
 use veclib::{Vector, VectorElemCount};
 

@@ -1,4 +1,4 @@
-use crate::{SharedData, IterExecutionID, IterExecutionInfo};
+use crate::{IterExecutionID, IterExecutionInfo, SharedData};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Barrier, RwLock,
@@ -27,7 +27,7 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
             let idx = thread_index;
             let data = &*ptr;
             let function = data.function.as_ref().unwrap();
-            let function = unsafe {  std::mem::transmute::<u128, *const dyn Fn(&IterExecutionID, &mut T)>(*function) };
+            let function = unsafe { std::mem::transmute::<u128, *const dyn Fn(&IterExecutionID, &mut T)>(*function) };
             let function = unsafe { &*function };
             let elements = &*data.elements;
 
@@ -44,12 +44,12 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
                     if let Some(&elem) = elem {
                         // Unsafe magic
                         let elem = unsafe { &mut *elem };
-                        function(&IterExecutionID {
-                            info: IterExecutionInfo {
-                                element_index: i,
-                                thread_index,
+                        function(
+                            &IterExecutionID {
+                                info: IterExecutionInfo { element_index: i, thread_index },
                             },
-                        }, elem);
+                            elem,
+                        );
                     }
                 }
             }

@@ -1,10 +1,10 @@
-use std::{sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard}, marker::PhantomData};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use ecs::ECSManager;
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
-use rendering::pipeline::{Pipeline, PipelineHandler, PipelineContext};
+use rendering::pipeline::PipelineContext;
 use ui::UIManager;
 
 use crate::{GameConfig, TaskSenderContext};

@@ -50,10 +50,7 @@ impl GlTracker {
         if self.fence.is_none() {
             return true;
         }
-        let result = unsafe {
-            let res = gl::ClientWaitSync(self.fence.unwrap(), gl::SYNC_FLUSH_COMMANDS_BIT, 0);
-            res
-        };
+        let result = unsafe { gl::ClientWaitSync(self.fence.unwrap(), gl::SYNC_FLUSH_COMMANDS_BIT, 0) };
 
         // Check
         let completed = result == gl::ALREADY_SIGNALED || result == gl::CONDITION_SATISFIED;

@@ -1,5 +1,3 @@
-use std::mem::size_of;
-
 use crate::{
     advanced::{atomic::AtomicGroup, shaderstorage::ShaderStorage},
     basics::texture::{Texture, TextureAccessType},
@@ -101,14 +99,14 @@ pub unsafe fn set_vec4bool(index: i32, val: &veclib::Vector4<bool>) {
     gl::Uniform4i(index, val[0] as i32, val[1] as i32, val[2] as i32, val[3] as i32);
 }
 // Set an atomic counter
-pub unsafe fn set_atomic(index: i32, val: &AtomicGroup, binding: &u32) {
+pub unsafe fn set_atomic(_index: i32, val: &AtomicGroup, binding: &u32) {
     gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, val.oid);
     gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, *binding as u32, val.oid);
     gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
     //gl::BindBufferRange(gl::ATOMIC_COUNTER_BUFFER, index as u32, oid, 0, size_of::<u32>() as isize);
 }
 // Set a shader storage
-pub unsafe fn set_shader_storage(index: i32, val: &ShaderStorage, binding: &u32) {
+pub unsafe fn set_shader_storage(_index: i32, val: &ShaderStorage, binding: &u32) {
     gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, val.oid);
     gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, *binding as u32, val.oid);
     gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);

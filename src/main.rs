@@ -20,7 +20,7 @@ pub fn init(mut write: core::WriteContext) {
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read();
     // Create it's model
-    let mut model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
+    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
     let model_id = rendering::pipeline::pipec::construct(model, &pipeline);
 
     // Create it's material
@@ -90,7 +90,7 @@ pub fn init(mut write: core::WriteContext) {
     pub struct SimpleVoxel;
     impl terrain::Voxable for SimpleVoxel {
         // Linearly interpolate between v1 and v2 using t
-        fn interpolate(v1: &Self, v2: &Self, t: f32) -> Self {
+        fn interpolate(_v1: &Self, _v2: &Self, _t: f32) -> Self {
             Self
         }
     }

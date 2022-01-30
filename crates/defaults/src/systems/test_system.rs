@@ -23,7 +23,7 @@ pub(crate) struct TestSystemData {
 }
 
 // A simple system that we can use for testing
-fn run(mut context: &mut Context, query: ComponentQuery) {
+fn run(context: &mut Context, _query: ComponentQuery) {
     let mut write = context.write();
     // Execute the shader
     let mut data = write.ecs.global_mut::<TestSystemData>().unwrap();
@@ -44,12 +44,10 @@ fn run(mut context: &mut Context, query: ComponentQuery) {
             data.compute,
             &*pipeline,
         );
-    } else {
-        if pipec::did_tasks_execute(&[data.compute, data.read], &*pipeline) {
-            let taken = data.transfer.take().unwrap();
-            // Read the bytes as a slice
-            let read = taken.fill_vec::<i32>().unwrap();
-        }
+    } else if pipec::did_tasks_execute(&[data.compute, data.read], &*pipeline) {
+        let taken = data.transfer.take().unwrap();
+        // Read the bytes as a slice
+        let _read = taken.fill_vec::<i32>().unwrap();
     }
 }
 
