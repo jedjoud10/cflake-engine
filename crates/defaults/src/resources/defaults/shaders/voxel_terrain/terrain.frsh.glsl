@@ -14,9 +14,9 @@ uniform vec3 tint;
 uniform float emissive_strength;
 uniform float normals_strength;
 in vec3 m_position;
-in flat vec3 m_normal;
+in vec3 m_normal;
 in vec4 m_tangent;
-in flat vec3 m_color;
+in vec3 m_color;
 in vec2 m_uv;
 void main() {
 	vec3 normal;
