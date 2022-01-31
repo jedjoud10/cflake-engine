@@ -6,7 +6,7 @@ use main::{
             atomic::{AtomicGroup, ClearCondition, AtomicGroupRead},
             compute::ComputeShader, shaderstorage::ShaderStorage,
         },
-        basics::{material::Material, shader::{ShaderSettings, self}, transfer::Transferable, readwrite::ReadBytes},
+        basics::{material::Material, shader::{ShaderSettings, self}, transfer::Transferable, readwrite::ReadBytes, uniforms::ShaderUniformsGroup},
         object::{ObjectID, ReservedTrackedTaskID, PipelineTrackedTask},
         pipeline::{pipec, Pipeline, PipelineContext}, utils::{UpdateFrequency, AccessType},
     },
@@ -27,6 +27,7 @@ pub struct Terrain {
     pub swap_chunks: bool,
 
     // Voxel Generation
+    pub custom_uniforms: ShaderUniformsGroup,
     pub compute_shader: ObjectID<ComputeShader>,
     pub second_compute_shader: ObjectID<ComputeShader>,
     // Our 2 shader storages
@@ -47,12 +48,9 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a new terrain component
-    pub fn new(voxel_src_path: &str, material: ObjectID<Material>, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
+    pub fn new(voxel_src_path: &str, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
         // Create a new octree
-        let octree = DiffOctree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64, HeuristicSettings::new(|node, target| {
-            let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
-            dist < 1.2 || node.depth == 1
-        }));
+        let octree = DiffOctree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64, HeuristicSettings::default());
 
         // Load the first pass compute shader
         let pipeline = pipeline_context.read();
@@ -102,11 +100,11 @@ impl Terrain {
         // We got our shader info back!
         let params = info.get(&resource).unwrap();
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
-        let arb_voxels_size = byte_size;
+        let arb_voxels_size = byte_size * ((MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2));
         let params = info.get(&resource2).unwrap();
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
-        let final_voxels_size = byte_size;
-        let final_voxel_size = final_voxels_size / ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
+        let final_voxel_size = byte_size;
+        let final_voxels_size = byte_size * ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
         dbg!(final_voxel_size);
         dbg!(size_of::<Voxel>());
         if final_voxel_size != size_of::<Voxel>() { panic!() }
@@ -127,7 +125,7 @@ impl Terrain {
             octree,
             chunks: Default::default(),
             chunks_to_remove: Default::default(),
-            material,
+            material: ObjectID::default(),
             compute_id: ReservedTrackedTaskID::default(),
             read_counters: ReservedTrackedTaskID::default(),
             compute_id2: ReservedTrackedTaskID::default(),
@@ -136,11 +134,27 @@ impl Terrain {
             generating: false,
             swap_chunks: false,
             chunk_id: None,
+            custom_uniforms: ShaderUniformsGroup::default(),
             compute_shader: base_compute,
             second_compute_shader: second_compute,
             atomics,
             shader_storage_arbitrary_voxels,
             shader_storage_final_voxels,
         }
+    }
+    // Generate the terrain with a specific material
+    pub fn set_material(mut self, material: ObjectID<Material>) -> Self {
+        self.material = material;
+        self
+    }
+    // Generate the terrain with a specific octree heuristic settings
+    pub fn set_heuristic(mut self, settings: HeuristicSettings) -> Self {
+        self.octree.update_heuristic(settings);
+        self
+    }
+    // Generate the terrain with some specific compute shader uniforms
+    pub fn set_uniforms(mut self, uniforms: ShaderUniformsGroup) -> Self {
+        self.custom_uniforms = uniforms;
+        self
     }
 }

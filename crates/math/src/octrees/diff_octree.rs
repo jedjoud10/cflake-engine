@@ -33,4 +33,9 @@ impl DiffOctree {
         } else { None };
         result
     }
+    // Update our underlying heuristic settings
+    // PS: This will require us to update the terrain, since we don't know what nodes have changed
+    pub fn update_heuristic(&mut self, heuristic: HeuristicSettings) {
+        self.inner.hsettings = heuristic;
+    }
 }

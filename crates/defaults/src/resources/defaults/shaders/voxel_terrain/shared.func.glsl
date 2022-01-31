@@ -34,6 +34,7 @@ PackedVoxel get_packed_voxel(FinalVoxel voxel) {
     return PackedVoxel(density_x, y_z, x_y_z_hardness, 0);
 }
 
+// Flatten a 3D position to an index that is part of a 3D flattened array of axis length "size"
 int flatten(ivec3 pc, int size) {
-    return ((pc.x) + (pc.y * size) + (pc.z * size * size));
+    return pc.x + (pc.y * size) + (pc.z * size * size);
 }

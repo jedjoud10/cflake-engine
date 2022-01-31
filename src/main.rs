@@ -13,7 +13,7 @@ pub fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 1.0, 3000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 1.0, 6000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
@@ -87,8 +87,17 @@ pub fn init(mut write: core::WriteContext) {
         .set_shader(shader);
     let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
+    
+    let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
+        let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
+        dist < 1.2 || node.depth == 1
+    });
+    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png").unwrap();
+    let tex = rendering::pipeline::pipec::construct(tex, &pipeline);
+    let mut uniforms = rendering::basics::uniforms::ShaderUniformsGroup::default();
+    uniforms.set_texture("tex", tex, 0);
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", material, 8, &pipeline_);
+    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 8,  &pipeline_).set_heuristic(heuristic).set_material(material).set_uniforms(uniforms);
     write.ecs.add_global(terrain).unwrap();
 }

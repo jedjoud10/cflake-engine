@@ -343,7 +343,7 @@ fn solve_marching_squares(
     for vertex in vec {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(vertex.0);
-        let normal: veclib::Vector3<f32> = vec3(shared.normal.x.to_f32(), shared.normal.y.to_f32(), shared.normal.y.to_f32());
+        let normal: veclib::Vector3<f32> = vec3(shared.normal.x.to_f32(), shared.normal.y.to_f32(), shared.normal.z.to_f32());
         model.normals.push(normal.normalized());
         let mut color: veclib::Vector3<f32> = shared.color.into();
         color /= 255.0;

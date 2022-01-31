@@ -1,7 +1,7 @@
 use main::{
     core::{Context, WriteContext},
     ecs::{self, component::ComponentQuery, entity::EntityID},
-    terrain::{ChunkCoords},
+    terrain::{ChunkCoords}, input::Keys,
 };
 
 // Add a single chunk to the world
@@ -46,7 +46,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
     let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // Generate the chunks if needed and only if we are not currently generating 
-        if !terrain.generating {
+        if !terrain.generating && !write.input.map_toggled("update_terrain") {
             let octree = &mut terrain.octree;
             if let Some((added, removed)) = octree.update(camera_pos) {
                 terrain.swap_chunks = false;
@@ -84,5 +84,6 @@ fn run(context: &mut Context, _query: ComponentQuery) {
 }
 // Create a chunk system
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().set_run_event(run).build()
+    write.ecs.create_system_builder().set_run_event(run).build();
+    write.input.bind_key_toggle(Keys::Y, "update_terrain");
 }
