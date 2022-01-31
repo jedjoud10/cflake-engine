@@ -21,6 +21,7 @@ impl UIManager {
     pub fn get_default_root(&self) -> &Root {
         self.roots.get("default").unwrap()
     }
+    // Get the default root mutably
     pub fn get_default_root_mut(&mut self) -> &mut Root {
         self.roots.get_mut("default").unwrap()
     }
@@ -29,7 +30,11 @@ impl UIManager {
         self.roots.entry("default".to_string()).or_insert(root);
     }
     // Get the root with the corresponding name
-    pub fn get_root_mut(&mut self, name: &str) -> &mut Root {
+    pub fn get_root(&self, name: &str) -> &Root {
+        self.roots.get(name).unwrap()
+    }
+    // Get the root with the corresponding name mutably
+    pub fn get_root_mut(&mut self, name: &str) -> &Root {
         self.roots.get_mut(name).unwrap()
     }
     // Add a root to the manager

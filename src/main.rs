@@ -3,13 +3,13 @@ fn main() {
     // Load up the engine
     start("DevJed", "DevGame", preload_assets, init);
 }
-pub fn preload_assets() {
+fn preload_assets() {
     // -----Pre-load the game assets here-----
     assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
     assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
 }
-pub fn init(mut write: core::WriteContext) {
+fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
