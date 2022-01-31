@@ -69,8 +69,6 @@ impl Font {
         let font_chars = chars.iter().map(|&x| self.get_char(x)).collect::<Vec<&FontChar>>();
         font_chars
     }
-    // Set the font parameters for this text
-    pub fn set_font_parameter(&self) {}
 }
 
 // The font is loadable

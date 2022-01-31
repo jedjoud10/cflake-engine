@@ -1,44 +1,46 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::{Mutex, Arc}};
 
 use fonts::FontManager;
 
 use crate::Root;
 
 // The UI manager, it can contain multiple UI roots, and switch between them
-#[derive(Default)]
 pub struct UIManager {
-    pub roots: HashMap<String, Root>,
+    pub roots: Arc<Mutex<HashMap<String, Root>>>,
     pub font_manager: FontManager,
+}
+
+impl Default for UIManager {
+    fn default() -> Self {
+        // Create a default root
+        let default_root = Root::default();
+        let mut roots = HashMap::new();
+        roots.insert("default".to_string(), default_root);
+        Self { roots: Arc::new(Mutex::new(roots)), font_manager: Default::default() }
+    }
 }
 
 // Actually UI functions
 impl UIManager {
-    // Check if we have a default root set
-    pub fn default_root_valid(&self) -> bool {
-        self.roots.contains_key("default")
+    // Update the default root
+    pub fn update_default<F: FnMut(&mut FontManager, &mut Root)>(&mut self, mut update_function: F) {
+        // Get the default root and update
+        let cloned_ = self.roots.clone();
+        let mut lock = cloned_.lock().unwrap();
+        let root = lock.get_mut("default").unwrap();
+        update_function(&mut self.font_manager, root);
     }
-    // Get the default root
-    pub fn get_default_root(&self) -> &Root {
-        self.roots.get("default").unwrap()
-    }
-    // Get the default root mutably
-    pub fn get_default_root_mut(&mut self) -> &mut Root {
-        self.roots.get_mut("default").unwrap()
-    }
-    // Set the default UI root that will be drawn on the screen by default
-    pub fn set_default_root(&mut self, root: Root) {
-        self.roots.entry("default".to_string()).or_insert(root);
-    }
-    // Get the root with the corresponding name
-    pub fn get_root(&self, name: &str) -> &Root {
-        self.roots.get(name).unwrap()
-    }
-    // Get the root with the corresponding name mutably
-    pub fn get_root_mut(&mut self, name: &str) -> &Root {
-        self.roots.get_mut(name).unwrap()
+    // Update a root using it's name as identifier
+    pub fn update_root<F: FnMut(&mut FontManager, &mut Root)>(&mut self, root_name: &str, mut update_function: F) {
+        // Get the root and update
+        let cloned_ = self.roots.clone();
+        let mut lock = cloned_.lock().unwrap();
+        let root = lock.get_mut(root_name).unwrap();
+        update_function(&mut self.font_manager, root);
     }
     // Add a root to the manager
     pub fn add_root(&mut self, root_name: &str, root: Root) {
-        self.roots.insert(root_name.to_string(), root);
+        let mut lock = self.roots.lock().unwrap();
+        lock.insert(root_name.to_string(), root);
     }
 }

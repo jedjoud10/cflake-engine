@@ -28,38 +28,9 @@ impl World {
     fn init(&mut self) {
         println!("Initializing world...");
         // Load the default stuff
-
-        // Create some default UI that prints some default info to the screen
-        let mut root = ui::Root::new(1);
-        // ----Add the elements here----
-
-        // Create a text element
-        for x in 0..2 {
-            let text_element_1 = ui::Element::new()
-                .set_coordinate_system(ui::CoordinateType::Pixel)
-                .set_position(veclib::Vector2::Y * 40.0 * x as f32)
-                .set_text("", 40.0);
-            root.add_element(text_element_1);
-        }
-
-        // Set this as the default root
-        self.ui.add_root("default", root);
-
-        // Create the default root for the console
-        let mut console_root = ui::Root::new(64);
-        let console_panel = ui::Element::new()
-            .set_coordinate_system(ui::CoordinateType::Factor)
-            .set_color(veclib::Vector4::new(0.0, 0.0, 0.0, 0.7));
-        let console_panel_id = console_root.add_element(console_panel);
-        let console_text = ui::Element::new()
-            .set_coordinate_system(ui::CoordinateType::Pixel)
-            .set_position(veclib::Vector2::ZERO)
-            .set_size(veclib::Vector2::ONE)
-            .set_text("text", 30.0);
-        let console_text_id = console_root.add_element(console_text);
-        ui::Element::attach(&mut console_root, console_panel_id, vec![console_text_id]);
-        console_root.visible = false;
-        self.ui.add_root("console", console_root);
+        
+        // Create an empty default UI
+        self.ui.add_root("default", ui::Root::default());
 
         // Load the config file (create it if it doesn't exist already)
         self.io.create_default("config\\game_config.json", &crate::GameConfig::default());
