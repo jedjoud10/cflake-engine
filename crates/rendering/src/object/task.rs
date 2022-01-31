@@ -32,7 +32,6 @@ pub enum PipelineTask {
     CreateShader(ObjectBuildingTask<Shader>),
     CreateComputeShader(ObjectBuildingTask<ComputeShader>),
     CreateModel(ObjectBuildingTask<Model>),
-    CreateModel2D(ObjectBuildingTask<Model2D>),
     CreateRenderer(ObjectBuildingTask<Renderer>),
     CreateAtomicGroup(ObjectBuildingTask<AtomicGroup>),
     CreateShaderStorage(ObjectBuildingTask<ShaderStorage>),

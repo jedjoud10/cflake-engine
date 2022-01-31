@@ -147,7 +147,6 @@ impl Pipeline {
                 let oid = self.get_compute_shader(id).unwrap().program;
                 self.query_shader_info(oid, settings, read)
             },
-            PipelineTrackedTask::Test => GlTracker::fake(|_| {}, self),
         };
 
         // Add the tracked ID to our pipeline
@@ -367,7 +366,6 @@ impl Pipeline {
             None
         }
     }
-
     // Actually update our data
     // Add the renderer
     fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
