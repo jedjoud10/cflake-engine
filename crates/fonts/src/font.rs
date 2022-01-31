@@ -19,7 +19,7 @@ pub struct Font {
     pub font_options: FontOptions,
 }
 
-// Font options
+// Font options that we use when rendering a specific font
 pub struct FontOptions {
     pub thickness: f32,
     pub outline_thickness: f32,
@@ -31,8 +31,8 @@ pub struct FontOptions {
 impl Default for FontOptions {
     fn default() -> Self {
         Self {
-            thickness: 0.2,
-            outline_thickness: 0.3,
+            thickness: 1.0,
+            outline_thickness: 3.0,
             color: veclib::Vector4::ZERO,
             outline_color: veclib::Vector4::ONE,
         }

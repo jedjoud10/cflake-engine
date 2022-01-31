@@ -10,6 +10,8 @@ pub struct Root {
     pub elements: OrderedVec<Element>,
     // Is the root even visible?
     pub visible: bool,
+    // Keep track of the max depth
+    pub max_depth: i32,
 }
 
 impl Default for Root {
@@ -18,6 +20,7 @@ impl Default for Root {
         let mut root = Self {
             elements: OrderedVec::<Element>::default(),
             visible: true,
+            max_depth: 0,
         };
         // And add the root element to it
         root.add_element(Element {
@@ -55,7 +58,8 @@ impl Root {
             // Get all of our children and add them, whilst removing self            
             pending.extend(self.element(parent_id)?.children.clone());
             self.elements.remove(parent_id.0.unwrap());
-        }
+        }        
+        self.max_depth = self.calculate_max_depth();
         Some(())
     }
     // Attach some child elements to an element
@@ -70,7 +74,13 @@ impl Root {
             child.parent = id;
             child.depth = depth + 1;
         }
+        self.max_depth = self.calculate_max_depth();
         Some(())
+    }
+    // Calculate the max depth
+    pub fn calculate_max_depth(&self) -> i32 {
+        let element = self.elements.iter().max_by_key(|(x, element)| element.depth);
+        element.map(|(_, element)| Some(element.depth)).flatten().unwrap_or_default()
     }
     // Get an element from the root using it's id
     pub fn element(&self, id: ElementID) -> Option<&Element> {

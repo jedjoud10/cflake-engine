@@ -6,8 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 others = { path = "../others" }
 fonts = { path = "../fonts" }
 assets = { path = "../assets" }
+rendering = { path = "../rendering" }
+multimap = "0.8.3"

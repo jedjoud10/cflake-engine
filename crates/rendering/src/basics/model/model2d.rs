@@ -1,9 +1,6 @@
 use std::fmt::Debug;
-use crate::{
-    basics::Buildable,
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    pipeline::Pipeline,
-};
+
+use crate::object::PipelineObject;
 
 // Some OpenGL data for a 2D model
 #[derive(Default, Debug)]
@@ -72,7 +69,7 @@ impl From<math::shapes2d::ShapeType2D> for Model2D {
                     triangles: vec![0, 1, 2, 2, 1, 3],
                 }
             },
-            math::shapes2d::ShapeType2D::Polygon(polygon) => {
+            math::shapes2d::ShapeType2D::Polygon(_polygon) => {
                 // Create a model2D from a polygon that contains N vertices
                 todo!()
             },
