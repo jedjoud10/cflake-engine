@@ -14,6 +14,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     let chunk_coords = chunk.coords;
     group.set_vec3f32("node_pos", chunk_coords.position.into());
     group.set_i32("node_size", chunk_coords.size as i32);
+    let group = ShaderUniformsGroup::combine(group, terrain.custom_uniforms.clone());
     
     // Now we can execute the compute shader and the read bytes command
     let execution_settings = ComputeShaderExecutionSettings::new((AXIS + 1, AXIS + 1, AXIS + 1)).set_uniforms(group);
@@ -31,6 +32,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     group.set_shader_storage("output_voxels", terrain.shader_storage_final_voxels, 1);
     group.set_vec3f32("node_pos", chunk_coords.position.into());
     group.set_i32("node_size", chunk_coords.size as i32);
+    let group = ShaderUniformsGroup::combine(group, terrain.custom_uniforms.clone());
 
     // And execute the shader
     let execution_settings2 = ComputeShaderExecutionSettings::new((AXIS, AXIS, AXIS)).set_uniforms(group);
