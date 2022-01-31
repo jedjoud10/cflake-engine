@@ -54,10 +54,6 @@ impl AABB {
             _ => veclib::Vector3::ZERO,
         }
     }
-    // Get a specific edge from this AABB
-    pub fn get_edge(&self, edge_index: u8) -> shapes::Line {
-        shapes::CUBE_EDGES[edge_index as usize]
-    }
 }
 
 // Generation functions

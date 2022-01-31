@@ -1,14 +1,10 @@
 // Export
 pub mod bounds;
-pub mod constructive_solid_geometry;
-mod frustum;
-mod intersection;
+pub mod csg;
+pub mod frustum;
+pub mod intersection;
 pub mod octrees;
 pub mod shapes;
-mod spring;
+pub mod spring;
 mod tests;
 pub mod utils;
-pub use constructive_solid_geometry as csg;
-pub use frustum::Frustum;
-pub use intersection::Intersection;
-pub use spring::Spring;

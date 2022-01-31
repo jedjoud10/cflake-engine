@@ -56,7 +56,6 @@ pub enum PipelineTrackedTask {
     AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
     QueryShaderInfo(ObjectID<Shader>, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
     QueryComputeShaderInfo(ObjectID<ComputeShader>, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
-    Test,
 }
 
 // Bruh
