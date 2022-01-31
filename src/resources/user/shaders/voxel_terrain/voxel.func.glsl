@@ -17,10 +17,9 @@ Voxel get_voxel(const vec3 pos) {
     float density = pos.y;
     float noise = 0.0;
     for(int i = 0; i < 3; i++) {
-        noise += (snoise(pos * 0.001 * pow(2.0, i) * vec3(1.0, 4.0, 1.0))) * pow(0.5, i) * 200;
+        noise += (snoise(pos * 0.001 * pow(2.0, i) * vec3(1.0, 2.0, 1.0))) * pow(0.5, i) * 100;
     }
-    //voronoi_density = opSmoothUnion(voronoi_density, -pos.y - 20.0, 30.0);
-    return Voxel(noise + pos.y, vec3(1.0), 1.0);
+    return Voxel(max((noise + pos.y), -sdSphere(pos, 30.0)), vec3(1.0), 1.0);
 }
 
 // Modify the voxel after we get it's normal

@@ -118,5 +118,5 @@ pub fn system(write: &mut WriteContext) {
         .set_run_event(run)
         .link::<crate::components::Transform>()
         .link::<crate::components::Chunk>()
-        .build()
+        .build();    
 }

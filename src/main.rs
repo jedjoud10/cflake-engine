@@ -5,8 +5,6 @@ fn main() {
 }
 pub fn preload_assets() {
     // -----Pre-load the game assets here-----
-    assets::preload_asset!(".\\resources\\user\\textures\\shion.png");
-    assets::preload_asset!(".\\resources\\user\\textures\\bricksd.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
     assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
@@ -94,7 +92,7 @@ pub fn init(mut write: core::WriteContext) {
         let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
         dist < 1.2 || node.depth == 1
     });
-    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\bricksd.png").unwrap();
+    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png").unwrap();
     let tex = rendering::pipeline::pipec::construct(tex, &pipeline);
     let mut uniforms = rendering::basics::uniforms::ShaderUniformsGroup::default();
     uniforms.set_texture("tex", tex, 0);
