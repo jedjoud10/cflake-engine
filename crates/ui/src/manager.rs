@@ -1,46 +1,28 @@
-use std::{collections::HashMap, sync::{Mutex, Arc}};
+use std::collections::HashMap;
 
 use fonts::FontManager;
 
 use crate::Root;
 
 // The UI manager, it can contain multiple UI roots, and switch between them
+#[derive(Default)]
 pub struct UIManager {
-    pub roots: Arc<Mutex<HashMap<String, Root>>>,
+    pub roots: HashMap<String, Root>,
     pub font_manager: FontManager,
-}
-
-impl Default for UIManager {
-    fn default() -> Self {
-        // Create a default root
-        let default_root = Root::default();
-        let mut roots = HashMap::new();
-        roots.insert("default".to_string(), default_root);
-        Self { roots: Arc::new(Mutex::new(roots)), font_manager: Default::default() }
-    }
 }
 
 // Actually UI functions
 impl UIManager {
-    // Update the default root
-    pub fn update_default<F: FnMut(&mut FontManager, &mut Root)>(&mut self, mut update_function: F) {
-        // Get the default root and update
-        let cloned_ = self.roots.clone();
-        let mut lock = cloned_.lock().unwrap();
-        let root = lock.get_mut("default").unwrap();
-        update_function(&mut self.font_manager, root);
+    // Get the root with the corresponding name
+    pub fn get_root(&self, name: &str) -> &Root {
+        self.roots.get(name).unwrap()
     }
-    // Update a root using it's name as identifier
-    pub fn update_root<F: FnMut(&mut FontManager, &mut Root)>(&mut self, root_name: &str, mut update_function: F) {
-        // Get the root and update
-        let cloned_ = self.roots.clone();
-        let mut lock = cloned_.lock().unwrap();
-        let root = lock.get_mut(root_name).unwrap();
-        update_function(&mut self.font_manager, root);
+    // Get the root with the corresponding name mutably
+    pub fn get_root_mut(&mut self, name: &str) -> &Root {
+        self.roots.get_mut(name).unwrap()
     }
     // Add a root to the manager
     pub fn add_root(&mut self, root_name: &str, root: Root) {
-        let mut lock = self.roots.lock().unwrap();
-        lock.insert(root_name.to_string(), root);
+        self.roots.insert(root_name.to_string(), root);
     }
 }
