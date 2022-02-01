@@ -105,7 +105,7 @@ impl Model {
         self
     }
     // Procedurally generate the normals for this model
-    pub fn generate_normals(&mut self) {
+    pub fn generate_normals(mut self) {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
 
@@ -138,7 +138,7 @@ impl Model {
         self.normals = vertex_normals;
     }
     // Add some custom vertex data
-    pub fn set_custom<T, U: Vector<T> + VectorElemCount>(&mut self, custom_vertex_buffer: CustomVertexDataBuffer<T, U>) {
+    pub fn with_custom<T, U: Vector<T> + VectorElemCount>(mut self, custom_vertex_buffer: CustomVertexDataBuffer<T, U>) {
         // We gotta serialize the data now, in native endian
         let ptr = custom_vertex_buffer.inner.as_ptr();
         let byte_size = std::mem::size_of::<U>();
