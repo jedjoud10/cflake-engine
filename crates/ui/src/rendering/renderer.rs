@@ -3,7 +3,7 @@ use crate::RenderingBuffer;
 // The renderer that will render each element using instancing
 pub struct Renderer {
     // We contain the OpenGL buffer data
-    buffer: RenderingBuffer
+    buffer: RenderingBuffer,
 }
 
 impl Renderer {

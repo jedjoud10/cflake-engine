@@ -1,7 +1,7 @@
 #![feature(int_roundings)]
 use main::assets::preload_asset;
 use main::core::WriteContext;
-use systems::{camera_system, debugging_system, physics_system, rendering_system, window_system, terrain};
+use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, window_system};
 // Default components
 pub mod components;
 // Default globals
@@ -71,7 +71,7 @@ pub fn preload_system(mut write: WriteContext) {
     // Terrain
     terrain::chunk_system::system(&mut write);
     terrain::voxel_system::system(&mut write);
-    terrain::mesher_system::system(&mut write);   
+    terrain::mesher_system::system(&mut write);
 
     // We gotta add the global world data
     write.ecs.add_global(crate::globals::GlobalWorldData::default()).unwrap();

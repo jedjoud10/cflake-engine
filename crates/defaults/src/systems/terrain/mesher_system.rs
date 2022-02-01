@@ -1,6 +1,8 @@
-use main::{ecs::{component::ComponentQuery, entity::ComponentLinkingGroup}, core::{Context, WriteContext}, rendering::{pipeline::pipec, basics::model::Model}};
-
-
+use main::{
+    core::{Context, WriteContext},
+    ecs::{component::ComponentQuery, entity::ComponentLinkingGroup},
+    rendering::{basics::model::Model, pipeline::pipec},
+};
 
 // The mesher systems' update loop
 fn run(context: &mut Context, query: ComponentQuery) {
@@ -8,7 +10,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
     // Get the pipeline without angering the borrow checker
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read();
-    
+
     let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
     if let Ok(terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
@@ -21,13 +23,13 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 let voxels = chunk.voxel_data.as_ref().unwrap();
                 let coords = chunk.coords;
                 let model = main::terrain::mesher::generate_model(voxels, coords, true, true);
-                
+
                 // Create the actual pipeline model now
                 let skirts = model.skirts_model;
                 let model = model.model;
                 // Combine the models first
                 let model = Model::combine(model, skirts);
-                
+
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);
                 chunk.buffered_model = Some(model_id);
@@ -42,8 +44,8 @@ fn run(context: &mut Context, query: ComponentQuery) {
                     let renderer = main::rendering::basics::renderer::Renderer::new(true).set_model(model_id).set_material(terrain.material);
                     group.link(crate::components::Renderer::new(renderer)).unwrap();
                     write.ecs.link_components(id, group).unwrap();
-                }   
-            }            
+                }
+            }
         })
     }
 }

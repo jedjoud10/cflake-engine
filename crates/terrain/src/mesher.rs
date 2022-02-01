@@ -7,10 +7,10 @@ use crate::MAIN_CHUNK_SIZE;
 use super::tables::*;
 use half::f16;
 use rendering::basics::model::Model;
-use veclib::vec3;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::mem::MaybeUninit;
+use veclib::vec3;
 
 // Inverse of lerp
 fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
@@ -64,7 +64,12 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         let voxel1 = &voxels[index1];
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
-                        let value: f32 = if interpolation { inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32) } else { 0.5 }.clamp(0.0, 1.0);
+                        let value: f32 = if interpolation {
+                            inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32)
+                        } else {
+                            0.5
+                        }
+                        .clamp(0.0, 1.0);
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
@@ -152,7 +157,7 @@ struct SkirtVertexGroup {
     vertices: SkirtVertex,
     shared_normal: veclib::Vector3<f16>,
     shared_color: veclib::Vector3<u8>,
-} 
+}
 
 // Generate a whole skirt using a specific
 pub fn calculate_skirt(
@@ -169,8 +174,7 @@ pub fn calculate_skirt(
             for y in 0..MAIN_CHUNK_SIZE {
                 let i = indexf(slice, x, y);
                 match calculate_marching_square_case(i, x, y, voxels, interpolation, density_offset) {
-                    Some((case, p, lv, ilv)) =>
-                    {
+                    Some((case, p, lv, ilv)) => {
                         // We intersected the surface
                         solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &lv, &ilv, skirts_model, (slice == 1) ^ flip, tf)
                     }
@@ -200,7 +204,7 @@ fn calculate_marching_square_case(
         // Increase the case index if we have some voxels that are below the 0.0
         if local_voxel.density <= f16::ZERO {
             case |= 2_u8.pow(j as u32);
-        }        
+        }
         unsafe { std::ptr::write(voxel.as_mut_ptr(), local_voxel.clone()) }
     }
     let local_voxels = unsafe { std::mem::transmute::<_, [Voxel; 4]>(local_voxels) };
@@ -220,7 +224,11 @@ fn calculate_marching_square_case(
         let voxel2 = &voxels[i + density_offset[two_voxels[1] as usize]];
         // Check if the edge is intersecting the surface
         *local_interpolated_voxel = if (voxel1.density <= f16::ZERO) ^ (voxel2.density <= f16::ZERO) {
-            let value: f32 = if interpolation { inverse_lerp(voxel1.density.to_f32(), voxel2.density.to_f32(), 0.0 as f32) } else { 0.5 };
+            let value: f32 = if interpolation {
+                inverse_lerp(voxel1.density.to_f32(), voxel2.density.to_f32(), 0.0 as f32)
+            } else {
+                0.5
+            };
             // Get the normal
             let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
             let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
@@ -231,7 +239,7 @@ fn calculate_marching_square_case(
             let color = veclib::Vector3::<f32>::lerp(t1, t2, value);
             shared_normal += normal;
             shared_color += color;
-            
+
             // We must get the local offset of these two voxels
             let voxel1_local_offset = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
             let voxel2_local_offset = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
@@ -242,12 +250,24 @@ fn calculate_marching_square_case(
             None
         }
     }
-    let normal: veclib::Vector3<f16> = vec3(f16::from_f32(shared_normal.x / count as f32), f16::from_f32(shared_normal.y / count as f32), f16::from_f32(shared_normal.z / count as f32));
+    let normal: veclib::Vector3<f16> = vec3(
+        f16::from_f32(shared_normal.x / count as f32),
+        f16::from_f32(shared_normal.y / count as f32),
+        f16::from_f32(shared_normal.z / count as f32),
+    );
 
-    Some((case, p, local_voxels, (local_interpolated_voxels, SharedSkirtVertexData {
-        normal,
-        color: (shared_color / count as f32).into(),
-    })))
+    Some((
+        case,
+        p,
+        local_voxels,
+        (
+            local_interpolated_voxels,
+            SharedSkirtVertexData {
+                normal,
+                color: (shared_color / count as f32).into(),
+            },
+        ),
+    ))
     // Solve the case
 }
 // Solve a single marching squares case using a passed function for transforming the vertex position to world space
@@ -278,7 +298,7 @@ fn solve_marching_squares(
             create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf, &mut vec);
             // Middle quad
             create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf, &mut vec);            
+            create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf, &mut vec);
         }
         6 => {
             create_triangle(slice, offset, lv, ilv, &[2, 1, 5], tf, &mut vec);
@@ -381,7 +401,7 @@ fn create_triangle(
                 panic!()
             }
         };
-        vec.push(SkirtVertex(vertex))        
+        vec.push(SkirtVertex(vertex))
     }
 }
 // Tansform the 2D points into their 3D counterpart

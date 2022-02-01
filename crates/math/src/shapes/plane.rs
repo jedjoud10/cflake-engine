@@ -1,6 +1,5 @@
 use super::Shapeable;
 
-
 // An infinite plane
 #[derive(Default, Clone, Copy)]
 pub struct Plane {

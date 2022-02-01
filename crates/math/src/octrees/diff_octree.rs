@@ -1,6 +1,6 @@
 use ahash::AHashSet;
 
-use super::{Octree, OctreeNode, HeuristicSettings};
+use super::{HeuristicSettings, Octree, OctreeNode};
 
 // A differential octree, so we can detect what nodes we have added/removes from this octree
 pub struct DiffOctree {
@@ -24,13 +24,15 @@ impl DiffOctree {
         let success = self.inner.update(target);
         let result = if success.is_some() {
             // We successfully updated the simple octree, so we must check differences now
-            let current = self.inner.nodes.iter_elements().map(|x| x.clone()).collect::<AHashSet<_>>(); 
+            let current = self.inner.nodes.iter_elements().map(|x| x.clone()).collect::<AHashSet<_>>();
             // And check for differences
             let removed = self.previous.difference(&current).cloned().collect::<Vec<_>>();
             let added = current.difference(&self.previous).cloned().collect::<Vec<_>>();
             self.previous = current;
             Some((added, removed))
-        } else { None };
+        } else {
+            None
+        };
         result
     }
     // Update our underlying heuristic settings

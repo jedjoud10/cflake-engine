@@ -1,6 +1,7 @@
 use main::{
     ecs::component::Component,
-    terrain::{ChunkCoords, VoxelData}, rendering::{object::ObjectID, basics::model::Model},
+    rendering::{basics::model::Model, object::ObjectID},
+    terrain::{ChunkCoords, VoxelData},
 };
 
 // A component that will be added to chunk entities

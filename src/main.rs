@@ -1,4 +1,4 @@
-use cflake_engine::{*, veclib::Swizzable};
+use cflake_engine::{veclib::Swizzable, *};
 fn main() {
     // Load up the engine
     start("DevJed", "DevGame", preload_assets, init);
@@ -87,7 +87,6 @@ fn init(mut write: core::WriteContext) {
         .set_shader(shader);
     let material = rendering::pipeline::pipec::construct(material, &pipeline);
 
-    
     let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
         let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
         dist < 1.2 || node.depth == 1
@@ -98,6 +97,9 @@ fn init(mut write: core::WriteContext) {
     uniforms.set_texture("tex", tex, 0);
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 8,  &pipeline_).set_heuristic(heuristic).set_material(material).set_uniforms(uniforms);
+    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 8, &pipeline_)
+        .set_heuristic(heuristic)
+        .set_material(material)
+        .set_uniforms(uniforms);
     write.ecs.add_global(terrain).unwrap();
 }

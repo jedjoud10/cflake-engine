@@ -25,7 +25,9 @@ impl ReadBytes {
     pub fn fill_vec<U>(self) -> Option<Vec<U>> {
         // Read the bytes
         let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?);
-        if bytes.is_empty() { return None; }
+        if bytes.is_empty() {
+            return None;
+        }
         // We must now convert the bytes into the vector full of pixels
         let new_len = bytes.len() / size_of::<U>();
         let vec = unsafe { Vec::from_raw_parts(bytes.as_mut_ptr() as *mut U, new_len, new_len) };

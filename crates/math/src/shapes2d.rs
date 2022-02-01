@@ -1,6 +1,6 @@
 mod polygon;
-mod square;
 mod shared;
-pub use shared::*;
+mod square;
 pub use polygon::*;
+pub use shared::*;
 pub use square::*;

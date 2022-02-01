@@ -1,5 +1,5 @@
-use crate::shapes::Sphere;
 use super::bounds;
+use crate::shapes::Sphere;
 
 // Intersection tests
 /* #region AABB stuff */

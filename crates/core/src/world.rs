@@ -28,7 +28,7 @@ impl World {
     fn init(&mut self) {
         println!("Initializing world...");
         // Load the default stuff
-        
+
         // Create an empty default UI
         self.ui.add_root("default", ui::Root::default());
 

@@ -1,4 +1,4 @@
-use crate::{basics::uniforms::ShaderUniformsGroup};
+use crate::basics::uniforms::ShaderUniformsGroup;
 
 // Some compute shader settings that we can use whenever we want to execute a compute shader
 pub struct ComputeShaderExecutionSettings {

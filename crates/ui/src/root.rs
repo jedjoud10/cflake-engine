@@ -1,24 +1,24 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use ordered_vec::simple::OrderedVec;
-use rendering::basics::shader::Shader;
-use rendering::object::ObjectID;
 use crate::Element;
 use crate::ElementID;
 use crate::ElementType;
+use crate::InstancedBatchIdentifier;
+use ordered_vec::simple::OrderedVec;
+use rendering::basics::shader::Shader;
+use rendering::object::ObjectID;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
-#[derive(Debug, Clone)]
 pub struct Root {
     // All of the UI elements that will be drawn
     pub elements: OrderedVec<Element>,
     // Is the root even visible?
     pub visible: bool,
     // The elements that we have added, replaced, and removed from the root this frame
-    pub added: HashSet<ElementID>, 
+    pub added: HashSet<ElementID>,
     pub mutated: HashSet<ElementID>,
-    pub removed: HashMap<ElementID, ObjectID<Shader>>,
+    pub removed: HashMap<ElementID, InstancedBatchIdentifier>,
 }
 
 impl Default for Root {
@@ -43,7 +43,9 @@ impl Default for Root {
 
 impl Root {
     // Get the ElementID of the root element
-    pub fn root(&self) -> ElementID { ElementID(0) }
+    pub fn root(&self) -> ElementID {
+        ElementID(0)
+    }
     // Add an element to the tree
     pub fn add_element(&mut self, mut element: Element) -> ElementID {
         // Get the ID of the element
@@ -61,23 +63,27 @@ impl Root {
     // Remove an element from the three, and recursively remove it's children
     pub fn remove_element(&mut self, id: ElementID) -> Option<()> {
         // We cannot remove the root element
-        if id == self.root() { return None }
+        if id == self.root() {
+            return None;
+        }
 
         // Recursively get the children if we need to
         let element = self.get_element(id)?;
-        let shader = element.shader.clone();
+        let shader = element.shader;
+        let texture = element.texture;
+        let batch_id = InstancedBatchIdentifier { shader, texture };
         let recurse = !element.children.is_empty();
         drop(element);
         if recurse {
             let mut pending: Vec<ElementID> = vec![id];
             while let Some(parent_id) = pending.pop() {
-                // Get all of our children and add them, whilst removing self            
+                // Get all of our children and add them, whilst removing self
                 pending.extend(self.get_element(parent_id)?.children.clone());
                 self.remove_element(id)?;
-            }        
+            }
         }
         // Update diffs
-        self.removed.insert(id, shader);
+        self.removed.insert(id, batch_id);
         self.added.remove(&id);
         self.mutated.remove(&id);
         Some(())
@@ -103,12 +109,12 @@ impl Root {
     }
     // Get an element from the root using it's id
     pub fn get_element(&self, id: ElementID) -> Option<&Element> {
-        self.elements.get(id.0) 
+        self.elements.get(id.0)
     }
     // Get a mutable element from the root using it's id
     pub fn get_element_mut(&mut self, id: ElementID) -> Option<&mut Element> {
         // Update diffs
         self.mutated.remove(&id);
-        self.elements.get_mut(id.0) 
+        self.elements.get_mut(id.0)
     }
 }

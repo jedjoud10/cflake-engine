@@ -1,4 +1,4 @@
-use std::{ptr::null, mem::size_of, ffi::c_void};
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::utils::UsageType;
 
@@ -7,10 +7,10 @@ pub struct DynamicRawBuffer<T> {
     // The OpenGL data for this buffer
     pub buffer: u32,
     _type: u32,
-    
+
     // Other data
     usage: UsageType,
-    vec: Vec<T>
+    vec: Vec<T>,
 }
 
 impl<T> DynamicRawBuffer<T> {
@@ -30,12 +30,7 @@ impl<T> DynamicRawBuffer<T> {
             gl::BindBuffer(_type, 0);
             oid
         };
-        Self {
-            buffer: oid,
-            _type,
-            vec,
-            usage,
-        }
+        Self { buffer: oid, _type, vec, usage }
     }
     // Add an element to the raw buffer
     // This may reallocate the OpenGL buffer if it's last len is insufficient
@@ -50,49 +45,66 @@ impl<T> DynamicRawBuffer<T> {
             gl::BindBuffer(self._type, self.buffer);
             if self.vec.capacity() > old_capacity {
                 // Reallocate
-                gl::BufferData(self._type, (size_of::<T>() * self.vec.capacity()) as isize, self.vec.as_ptr() as *const c_void, self.usage.convert());
+                gl::BufferData(
+                    self._type,
+                    (size_of::<T>() * self.vec.capacity()) as isize,
+                    self.vec.as_ptr() as *const c_void,
+                    self.usage.convert(),
+                );
             } else {
                 // We don't need to reallocate, we just need to update our sub-data
-                let offset = (self.vec.len()-1) * size_of::<T>();
+                let offset = (self.vec.len() - 1) * size_of::<T>();
                 let data = self.vec.last().unwrap();
                 gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
             }
-        }   
+        }
     }
     // Update a value at a specific index
     pub fn update(&mut self, index: usize, mut function: impl FnMut(&mut T)) {
         // Check first
-        if index > self.vec.len() { panic!() }
-        // Simple replace 
+        if index > self.vec.len() {
+            panic!()
+        }
+        // Simple replace
         let old = self.vec.get_mut(index).unwrap();
         function(old);
         // Also update the OpenGL buffer
         let offset = index * size_of::<T>();
         let data = self.vec.get(index).unwrap();
-        unsafe { gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void); }
+        unsafe {
+            gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
+        }
     }
     // Replace a value at a specific index
     // This returns the old value at that index
     pub fn replace(&mut self, index: usize, val: T) -> T {
         // Check first
-        if index > self.vec.len() { panic!() }
-        // Simple replace 
+        if index > self.vec.len() {
+            panic!()
+        }
+        // Simple replace
         let old = std::mem::replace(self.vec.get_mut(index).unwrap(), val);
         // Also update the OpenGL buffer
         let offset = index * size_of::<T>();
         let data = self.vec.get(index).unwrap();
-        unsafe { gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void); }
+        unsafe {
+            gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
+        }
         old
     }
     // Remove an element at a specific index, but by using swap remove, so we don't have to move all the elements
     pub fn swap_remove(&mut self, index: usize) -> T {
         // Check first
-        if index > self.vec.len() { panic!() }
+        if index > self.vec.len() {
+            panic!()
+        }
         // Simple swap remove
         let old = self.swap_remove(index);
         // Also update the whole OpenGL buffer
         let data = self.vec.as_ptr();
-        unsafe { gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void); }
+        unsafe {
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void);
+        }
         old
     }
 }

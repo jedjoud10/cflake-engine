@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use super::{Square, Polygon2D};
+use super::{Polygon2D, Square};
 
 // A shape trait that shares some common methods between different 2d shapes
 pub trait Shapeable2D {}

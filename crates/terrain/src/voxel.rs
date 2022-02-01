@@ -1,5 +1,5 @@
-use std::ops::{Index, IndexMut};
 use half::f16;
+use std::ops::{Index, IndexMut};
 
 // A simple voxel that has a size of 16 bytes
 // This is the final voxel that is returned from the compute shader

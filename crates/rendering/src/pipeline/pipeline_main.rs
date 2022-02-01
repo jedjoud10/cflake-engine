@@ -1,6 +1,6 @@
 // Some pipeline commands
 pub mod pipec {
-    use std::sync::{atomic::Ordering};
+    use std::sync::atomic::Ordering;
 
     use crate::{
         basics::Buildable,

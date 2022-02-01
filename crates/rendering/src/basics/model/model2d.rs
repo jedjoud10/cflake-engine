@@ -16,7 +16,7 @@ pub struct Model2DBuffers {
 
 impl PipelineObject for Model2DBuffers {}
 
-// Basically a 2D model that will be rendered to the screen using some 2D shaders 
+// Basically a 2D model that will be rendered to the screen using some 2D shaders
 pub struct Model2D {
     // Per vertex data
     pub vertices: Vec<veclib::Vector2<f32>>,
@@ -42,12 +42,7 @@ impl From<math::shapes2d::Square> for Model2D {
     fn from(square: math::shapes2d::Square) -> Self {
         // Create a model2D from a square
         // Create the default vertices first, then we scale them and offset
-        let mut vertices = vec![
-            veclib::vec2(-1.0, -1.0),
-            veclib::vec2(-1.0, 1.0),
-            veclib::vec2(1.0, -1.0),
-            veclib::vec2(1.0, 1.0_f32),
-        ];
+        let mut vertices = vec![veclib::vec2(-1.0, -1.0), veclib::vec2(-1.0, 1.0), veclib::vec2(1.0, -1.0), veclib::vec2(1.0, 1.0_f32)];
         // Scale then offset
         for vert in vertices.iter_mut() {
             *vert *= square.size;
@@ -56,12 +51,7 @@ impl From<math::shapes2d::Square> for Model2D {
 
         Self {
             vertices,
-            uvs: vec![
-                veclib::vec2(0.0, 0.0),
-                veclib::vec2(0.0, 1.0),
-                veclib::vec2(1.0, 0.0),
-                veclib::vec2(1.0, 1.0),
-            ],
+            uvs: vec![veclib::vec2(0.0, 0.0), veclib::vec2(0.0, 1.0), veclib::vec2(1.0, 0.0), veclib::vec2(1.0, 1.0)],
             colors: Vec::new(),
             triangles: vec![0, 1, 2, 2, 1, 3],
         }

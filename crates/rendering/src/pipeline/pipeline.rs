@@ -141,12 +141,12 @@ impl Pipeline {
                 // Get the shader OID
                 let oid = self.get_shader(id).unwrap().program;
                 self.query_shader_info(oid, settings, read)
-            },
+            }
             PipelineTrackedTask::QueryComputeShaderInfo(id, settings, read) => {
                 // Get the shader OID
                 let oid = self.get_compute_shader(id).unwrap().program;
                 self.query_shader_info(oid, settings, read)
-            },
+            }
         };
 
         // Add the tracked ID to our pipeline
@@ -537,7 +537,7 @@ impl Pipeline {
             gl::AttachShader(program, shader_source_program);
             // Finalize the shader and stuff
             gl::LinkProgram(program);
-            
+
             // Check for any errors
             let mut info_log_length: i32 = 0;
             let info_log_length_ptr: *mut i32 = &mut info_log_length;

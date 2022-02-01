@@ -1,7 +1,10 @@
 use main::{
     core::{Context, WriteContext},
     ecs::component::ComponentQuery,
-    rendering::{self, object::{PipelineTask, ObjectID}},
+    rendering::{
+        self,
+        object::{ObjectID, PipelineTask},
+    },
 };
 
 // The rendering system update loop
@@ -54,7 +57,7 @@ fn removed_entities(context: &mut Context, query: ComponentQuery) {
         // Get the pipeline first
         let read = context.read();
         let pipeline = read.pipeline.read();
-        
+
         // Then get the ID of the GPU renderer
         let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
         let id = renderer.object_id;

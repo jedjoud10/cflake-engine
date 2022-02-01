@@ -1,19 +1,26 @@
 use main::{
     ecs::{component::Component, entity::EntityID},
-    math::octrees::{DiffOctree, Octree, OctreeNode, HeuristicSettings},
+    math::octrees::{DiffOctree, HeuristicSettings, Octree, OctreeNode},
     rendering::{
         advanced::{
-            atomic::{AtomicGroup, ClearCondition, AtomicGroupRead},
-            compute::ComputeShader, shaderstorage::ShaderStorage,
+            atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
+            compute::ComputeShader,
+            shaderstorage::ShaderStorage,
         },
-        basics::{material::Material, shader::{ShaderSettings, self}, transfer::Transferable, readwrite::ReadBytes, uniforms::ShaderUniformsGroup},
-        object::{ObjectID, ReservedTrackedTaskID, PipelineTrackedTask},
-        pipeline::{pipec, Pipeline, PipelineContext}, utils::{UpdateFrequency, AccessType},
+        basics::{
+            material::Material,
+            readwrite::ReadBytes,
+            shader::{self, ShaderSettings},
+            transfer::Transferable,
+            uniforms::ShaderUniformsGroup,
+        },
+        object::{ObjectID, PipelineTrackedTask, ReservedTrackedTaskID},
+        pipeline::{pipec, Pipeline, PipelineContext},
+        utils::{AccessType, UpdateFrequency},
     },
-    terrain::{ChunkCoords, MAIN_CHUNK_SIZE, Voxel},
+    terrain::{ChunkCoords, Voxel, MAIN_CHUNK_SIZE},
 };
 use std::{collections::HashMap, marker::PhantomData, mem::size_of};
-
 
 #[derive(Component)]
 // The global terrain component that can be added at the start of the game
@@ -42,7 +49,7 @@ pub struct Terrain {
     pub read_final_voxels: ReservedTrackedTaskID,
 
     // The Entity ID of the chunk that we are generating this voxel data for
-    pub chunk_id: Option<EntityID>,    
+    pub chunk_id: Option<EntityID>,
     pub atomics: ObjectID<AtomicGroup>,
 }
 
@@ -70,7 +77,7 @@ impl Terrain {
             .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
         let second_compute = ComputeShader::new(settings).unwrap();
         let second_compute = pipec::construct(second_compute, &pipeline);
-        
+
         // We must read the size of the buffer_data Shader Storage Block in the second shader, so we will need to do a pipeline flush
         let resource = shader::info::Resource {
             res: shader::info::QueryResource::ShaderStorageBlock,
@@ -95,19 +102,29 @@ impl Terrain {
 
         // Now we wait...
         let pipeline = pipeline_context.read();
-        while !pipec::did_tasks_execute(&[reserved_id], &pipeline) {} 
-        
+        while !pipec::did_tasks_execute(&[reserved_id], &pipeline) {}
+
         // We got our shader info back!
         let params = info.get(&resource).unwrap();
-        let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
-        let arb_voxels_size = byte_size * ((MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2)*(MAIN_CHUNK_SIZE+2));
+        let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] {
+            byte_size
+        } else {
+            panic!()
+        };
+        let arb_voxels_size = byte_size * ((MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2));
         let params = info.get(&resource2).unwrap();
-        let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] { byte_size } else { panic!() };
+        let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] {
+            byte_size
+        } else {
+            panic!()
+        };
         let final_voxel_size = byte_size;
-        let final_voxels_size = byte_size * ((MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1)*(MAIN_CHUNK_SIZE+1));
+        let final_voxels_size = byte_size * ((MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1));
         dbg!(final_voxel_size);
         dbg!(size_of::<Voxel>());
-        if final_voxel_size != size_of::<Voxel>() { panic!() }
+        if final_voxel_size != size_of::<Voxel>() {
+            panic!()
+        }
 
         // Also construct the atomics
         let atomics = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), &pipeline);

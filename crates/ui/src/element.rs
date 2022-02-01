@@ -1,6 +1,9 @@
-use rendering::{object::ObjectID, basics::{texture::Texture, shader::Shader}};
+use rendering::{
+    basics::{shader::Shader, texture::Texture},
+    object::ObjectID,
+};
 
-use crate::{ElementID};
+use crate::ElementID;
 
 // A simple element, could be a button or a panel or anything, it just has some variables
 #[derive(Debug, Clone)]

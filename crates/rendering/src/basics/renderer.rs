@@ -75,5 +75,5 @@ impl Renderer {
     pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
         self.uniforms = Some(uniforms);
     }
-    // Set 
+    // Set
 }
