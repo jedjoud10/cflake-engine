@@ -69,7 +69,7 @@ impl World {
             for system_index in 0..system_count {
                 let execution_data = {
                     let world = world.read().unwrap();
-                    let system = &world.ecs.systems()[system_index];
+                    let system = &world.ecs.get_systems()[system_index];
                     system.run_system(&world.ecs)
                 };
                 // Actually execute the system now

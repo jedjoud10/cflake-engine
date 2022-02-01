@@ -59,7 +59,19 @@ impl<T> DynamicRawBuffer<T> {
             }
         }   
     }
-    // Update the value at a specific index, while not moving that element
+    // Update a value at a specific index
+    pub fn update(&mut self, index: usize, mut function: impl FnMut(&mut T)) {
+        // Check first
+        if index > self.vec.len() { panic!() }
+        // Simple replace 
+        let old = self.vec.get_mut(index).unwrap();
+        function(old);
+        // Also update the OpenGL buffer
+        let offset = index * size_of::<T>();
+        let data = self.vec.get(index).unwrap();
+        unsafe { gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void); }
+    }
+    // Replace a value at a specific index
     // This returns the old value at that index
     pub fn replace(&mut self, index: usize, val: T) -> T {
         // Check first

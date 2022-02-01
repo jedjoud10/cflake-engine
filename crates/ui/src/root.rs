@@ -1,6 +1,9 @@
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 use ordered_vec::simple::OrderedVec;
+use rendering::basics::shader::Shader;
+use rendering::object::ObjectID;
 use crate::Element;
 use crate::ElementID;
 use crate::ElementType;
@@ -12,12 +15,10 @@ pub struct Root {
     pub elements: OrderedVec<Element>,
     // Is the root even visible?
     pub visible: bool,
-    // Keep track of the max depth
-    pub max_depth: i32,
     // The elements that we have added, replaced, and removed from the root this frame
     pub added: HashSet<ElementID>, 
     pub mutated: HashSet<ElementID>,
-    pub removed: HashSet<ElementID>,
+    pub removed: HashMap<ElementID, ObjectID<Shader>>,
 }
 
 impl Default for Root {
@@ -26,10 +27,9 @@ impl Default for Root {
         let mut root = Self {
             elements: OrderedVec::<Element>::default(),
             visible: true,
-            max_depth: 0,
             added: HashSet::with_capacity(8),
             mutated: HashSet::with_capacity(8),
-            removed: HashSet::with_capacity(8),
+            removed: HashMap::with_capacity(8),
         };
         // And add the root element to it
         root.add_element(Element {
@@ -63,16 +63,21 @@ impl Root {
         // We cannot remove the root element
         if id == self.root() { return None }
 
-        // Recursively get the children
-        let mut pending: Vec<ElementID> = vec![id];
-        while let Some(parent_id) = pending.pop() {
-            // Get all of our children and add them, whilst removing self            
-            pending.extend(self.element(parent_id)?.children.clone());
-            self.elements.remove(parent_id.0);
-        }        
-        self.max_depth = self.calculate_max_depth();
+        // Recursively get the children if we need to
+        let element = self.get_element(id)?;
+        let shader = element.shader.clone();
+        let recurse = !element.children.is_empty();
+        drop(element);
+        if recurse {
+            let mut pending: Vec<ElementID> = vec![id];
+            while let Some(parent_id) = pending.pop() {
+                // Get all of our children and add them, whilst removing self            
+                pending.extend(self.get_element(parent_id)?.children.clone());
+                self.remove_element(id)?;
+            }        
+        }
         // Update diffs
-        self.removed.insert(id);
+        self.removed.insert(id, shader);
         self.added.remove(&id);
         self.mutated.remove(&id);
         Some(())
@@ -80,16 +85,15 @@ impl Root {
     // Attach some child elements to an element
     pub fn attach(&mut self, id: ElementID, children: &[ElementID]) -> Option<()> {
         // Get the element first and update it's local children
-        let elem = self.element_mut(id)?;
+        let elem = self.get_element_mut(id)?;
         let depth = elem.depth;
         elem.children.extend_from_slice(children);
         // Update the parent ID and depth of every child
         for child_id in children {
-            let child = self.element_mut(*child_id)?;
+            let child = self.get_element_mut(*child_id)?;
             child.parent = Some(id);
             child.depth = depth + 1;
         }
-        self.max_depth = self.calculate_max_depth();
         Some(())
     }
     // Calculate the max depth
@@ -98,11 +102,11 @@ impl Root {
         element.map(|(_, element)| Some(element.depth)).flatten().unwrap_or_default()
     }
     // Get an element from the root using it's id
-    pub fn element(&self, id: ElementID) -> Option<&Element> {
+    pub fn get_element(&self, id: ElementID) -> Option<&Element> {
         self.elements.get(id.0) 
     }
     // Get a mutable element from the root using it's id
-    pub fn element_mut(&mut self, id: ElementID) -> Option<&mut Element> {
+    pub fn get_element_mut(&mut self, id: ElementID) -> Option<&mut Element> {
         // Update diffs
         self.mutated.remove(&id);
         self.elements.get_mut(id.0) 

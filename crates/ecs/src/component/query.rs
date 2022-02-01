@@ -25,7 +25,7 @@ pub struct ComponentQuery {
 
 impl ComponentQuery {
     // Count the number of linked components that we have
-    pub fn count(&self) -> usize {
+    pub fn get_entity_count(&self) -> usize {
         let len = self.linked_components.as_ref().map(|x| match x {
             ComponentQueryIterType::ArcHashMap(x) => (x.lock().unwrap()).len(),
             ComponentQueryIterType::HashMap(x) => x.len(),

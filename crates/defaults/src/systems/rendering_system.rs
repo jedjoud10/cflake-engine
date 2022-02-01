@@ -10,10 +10,10 @@ fn run(context: &mut Context, query: ComponentQuery) {
     let read = context.read();
     let pipeline = read.pipeline.read();
     let _i = std::time::Instant::now();
-    let storage = main::threads::SharedVec::<Option<PipelineTask>>::new(query.count());
+    let storage = main::threads::SharedVec::<Option<PipelineTask>>::new(query.get_entity_count());
     query.update_all_threaded(|execution_id, components| {
-        let renderer = components.component::<crate::components::Renderer>().unwrap();
-        let transform = components.component::<crate::components::Transform>().unwrap();
+        let renderer = components.get_component::<crate::components::Renderer>().unwrap();
+        let transform = components.get_component::<crate::components::Transform>().unwrap();
         let renderer_object_id = &renderer.object_id;
         let task = if renderer_object_id.is_some() {
             // Update the values if our renderer is valid
@@ -40,7 +40,7 @@ fn added_entities(context: &mut Context, query: ComponentQuery) {
         let pipeline = read.pipeline.read();
 
         // Get the CPU renderer that we must construct
-        let mut renderer = components.component_mut::<crate::components::Renderer>().unwrap();
+        let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
         let cpu_renderer = renderer.renderer.take().unwrap();
         let object_id = rendering::pipeline::pipec::construct(cpu_renderer, &pipeline);
         renderer.object_id = object_id;
@@ -56,7 +56,7 @@ fn removed_entities(context: &mut Context, query: ComponentQuery) {
         let pipeline = read.pipeline.read();
         
         // Then get the ID of the GPU renderer
-        let mut renderer = components.component_mut::<crate::components::Renderer>().unwrap();
+        let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
         let id = renderer.object_id;
         renderer.object_id = ObjectID::default();
 

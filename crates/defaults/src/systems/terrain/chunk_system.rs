@@ -30,7 +30,7 @@ fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) ->
 // Remove a single chunk
 fn remove_chunk(write: &mut WriteContext, id: EntityID) {
     // Make sure that the chunk entity even exists
-    if write.ecs.entity(&id).is_ok() {
+    if write.ecs.get_entity(&id).is_ok() {
         // Remove the chunk entity at that specific EntityID
         write.ecs.remove_entity(id).unwrap();
         println!("Remove chunk with EntityID: {}", id);
@@ -42,8 +42,8 @@ fn run(context: &mut Context, _query: ComponentQuery) {
     // Get the global terrain component
     let mut write = context.write();
     // Get the camera position
-    let camera_pos = write.ecs.global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
-    let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
+    let camera_pos = write.ecs.get_global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
+    let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // Generate the chunks if needed and only if we are not currently generating 
         if !terrain.generating && !write.input.map_toggled("update_terrain") {

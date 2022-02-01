@@ -45,11 +45,11 @@ fn run(context: &mut Context, components: ComponentQuery) {
     }
     // Update the camera values now
     components.update_all(move |linked_components| {
-        let mut transform = linked_components.component_mut::<crate::components::Transform>().unwrap();
+        let mut transform = linked_components.get_component_mut::<crate::components::Transform>().unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
         let (position, rotation) = (transform.position, transform.rotation);
-        let mut camera = linked_components.component_mut::<crate::components::Camera>().unwrap();
+        let mut camera = linked_components.get_component_mut::<crate::components::Camera>().unwrap();
         // And don't forget to update the camera matrices
         // Load the pipeline since we need to get the window settings
         let pipeline = write.pipeline.read();
@@ -69,7 +69,7 @@ fn run(context: &mut Context, components: ComponentQuery) {
         drop(pipeline);
 
         // If we are the main camera, we must update our position in the global
-        let mut global = write.ecs.global_mut::<crate::globals::GlobalWorldData>().unwrap();
+        let mut global = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
         global.camera_pos = position;
     })
 }

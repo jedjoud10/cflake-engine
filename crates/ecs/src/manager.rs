@@ -55,11 +55,11 @@ impl<Context> ECSManager<Context> {
     }
     /* #region Entities */
     // Get an entity
-    pub fn entity(&self, id: &EntityID) -> Result<&Entity, EntityError> {
+    pub fn get_entity(&self, id: &EntityID) -> Result<&Entity, EntityError> {
         self.entities.get(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Get an entity mutably
-    pub fn entity_mut(&mut self, id: &EntityID) -> Result<&mut Entity, EntityError> {
+    pub fn get_entity_mut(&mut self, id: &EntityID) -> Result<&mut Entity, EntityError> {
         self.entities.get_mut(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
@@ -114,12 +114,12 @@ impl<Context> ECSManager<Context> {
     pub fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
         for (cbitfield, boxed) in link_group.linked_components {
             let (component_id, _ptr) = self.add_component(boxed, cbitfield)?;
-            let entity = self.entity_mut(&id).unwrap();
+            let entity = self.get_entity_mut(&id).unwrap();
             entity.components.insert(cbitfield, component_id.idx);
         }
         // Change the entity's bitfield
         let components = self.components.clone();
-        let entity = self.entity_mut(&id).unwrap();
+        let entity = self.get_entity_mut(&id).unwrap();
 
         // Diff
         let old = entity.cbitfield;
@@ -127,7 +127,7 @@ impl<Context> ECSManager<Context> {
         entity.cbitfield = new;
         drop(entity);
 
-        let entity = self.entity(&id).unwrap();
+        let entity = self.get_entity(&id).unwrap();
         let linked = &entity.components;
         // Check if the linked entity is valid to be added into the systems
         for system in self.systems.iter() {
@@ -143,7 +143,7 @@ impl<Context> ECSManager<Context> {
     // Unlink some components from an entity
     pub fn unlink_components(&mut self, id: EntityID, unlink_group: ComponentUnlinkGroup) -> Result<(), ComponentError> {
         // Check if the entity even have these components
-        let entity = self.entity(&id).unwrap();
+        let entity = self.get_entity(&id).unwrap();
         let valid = entity.cbitfield.contains(&unlink_group.removal_cbitfield);
         if !valid {
             return Err(ComponentError::new_without_id(
@@ -160,7 +160,7 @@ impl<Context> ECSManager<Context> {
             }
         });
         // Update the entity's components
-        let entity = self.entity_mut(&id).unwrap();
+        let entity = self.get_entity_mut(&id).unwrap();
         let components = entity
             .components
             .drain_filter(|cbitfield, _idx| unlink_group.removal_cbitfield.contains(cbitfield))
@@ -211,7 +211,7 @@ impl<Context> ECSManager<Context> {
         Ok(())
     }
     // Get a reference to a specific global component
-    pub fn global<'b, T: Component + Send + Sync + 'static>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError> {
+    pub fn get_global<'b, T: Component + Send + Sync + 'static>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError> {
         let id = registry::get_component_bitfield::<T>();
         // Kill me
         let hashmap = self.globals.lock().unwrap();
@@ -225,7 +225,7 @@ impl<Context> ECSManager<Context> {
         Ok(guard)
     }
     // Get a mutable reference to a specific global component
-    pub fn global_mut<'b, T: Component + Send + Sync + 'static>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError> {
+    pub fn get_global_mut<'b, T: Component + Send + Sync + 'static>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError> {
         let id = registry::get_component_bitfield::<T>();
         let hashmap = self.globals.lock().unwrap();
         let ptr = hashmap
@@ -249,7 +249,7 @@ impl<Context> ECSManager<Context> {
         self.systems.push(system)
     }
     // Get a reference to the ecsmanager's systems.
-    pub fn systems(&self) -> &[System] {
+    pub fn get_systems(&self) -> &[System] {
         self.systems.as_ref()
     }
     // Get the number of systems that we have

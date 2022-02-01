@@ -9,11 +9,11 @@ fn run(context: &mut Context, query: ComponentQuery) {
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read();
     
-    let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
+    let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
     if let Ok(terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
         query.update_all(|components| {
-            let mut chunk = components.component_mut::<crate::components::Chunk>().unwrap();
+            let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
             let id = components.get_entity_id().unwrap();
             // We have created voxel data for this chunk, and it is valid
             if chunk.voxel_data.is_some() && chunk.valid_surface && chunk.buffered_model.is_none() && !chunk.added_renderer {

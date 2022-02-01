@@ -17,7 +17,7 @@ pub mod test {
     fn run_system(_context: &mut WorldContext, components: ComponentQuery) {
         // Transform the _context to RefContext using some magic fuckery
         components.update_all(|components| {
-            let mut name = components.component_mut::<Name>().unwrap();
+            let mut name = components.get_component_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         });
     }
@@ -44,7 +44,7 @@ pub mod test {
         // The entity is not created yet, so it is null
         ecs.add_entity(entity, id, group).unwrap();
         // The ID is valid now
-        assert!(ecs.entity(&id2).is_ok());
+        assert!(ecs.get_entity(&id2).is_ok());
         // Run the system for two frames
         ecs.run_systems(context);
         // Remove the entity and check if the corresponding ID's became invalid
@@ -55,7 +55,7 @@ pub mod test {
         dbg!(id4);
         dbg!(should_not_be_the_same);
         assert_ne!(should_not_be_the_same, id4);
-        assert!(ecs.entity(&id4).is_err());
+        assert!(ecs.get_entity(&id4).is_err());
         ecs.run_systems(context);
         ecs.finish_update();
     }
@@ -111,18 +111,18 @@ pub mod test {
         let entity = Entity::default();
         let id = EntityID::new(&ecs);
         ecs.add_entity(entity, id, ComponentLinkingGroup::default()).unwrap();
-        assert!(ecs.entity(&id).is_ok());
-        assert_eq!(ecs.entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
+        assert!(ecs.get_entity(&id).is_ok());
+        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
         let mut group = ComponentLinkingGroup::default();
         group.link(Name::new("Person")).unwrap();
         group.link(Tagged::new("Some interesting tag")).unwrap();
         ecs.link_components(id, group).unwrap();
-        assert_ne!(ecs.entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
+        assert_ne!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
         ecs.run_systems(context);
         let mut group = ComponentUnlinkGroup::new();
         group.unlink::<Tagged>().unwrap();
         ecs.unlink_components(id, group).unwrap();
-        assert_eq!(ecs.entity(&id).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
+        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
     }
     #[test]
     pub fn test_events() {
@@ -134,7 +134,7 @@ pub mod test {
         // Make a simple system
         fn internal_run(_context: &mut WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
-                let mut name = components.component_mut::<Name>().unwrap();
+                let mut name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Run");
                 assert_eq!(*name.name, "John".to_string());
                 *name = Name::new("Bob");
@@ -142,14 +142,14 @@ pub mod test {
         }
         fn internal_remove_entity(_context: &mut WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
-                let name = components.component_mut::<Name>().unwrap();
+                let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
                 assert_eq!(*name.name, "Bob".to_string());
             });
         }
         fn internal_add_entity(_context: &mut WorldContext, components: ComponentQuery) {
             components.update_all(|components| {
-                let name = components.component_mut::<Name>().unwrap();
+                let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
                 assert_eq!(*name.name, "John".to_string());
             });
@@ -196,8 +196,8 @@ pub mod test {
         // Make a simple system
         fn internal_run(_context: &mut WorldContext, _query: ComponentQuery) {}
 
-        assert!(ecs.global::<GlobalComponentTest>().is_ok());
-        assert!(ecs.global::<GlobalComponentTest2>().is_err());
+        assert!(ecs.get_global::<GlobalComponentTest>().is_ok());
+        assert!(ecs.get_global::<GlobalComponentTest2>().is_err());
         let builder = ecs.create_system_builder();
         builder.link::<Name>().set_run_event(internal_run).build();
         ecs.run_systems(context);

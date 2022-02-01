@@ -70,14 +70,14 @@ fn run(context: &mut Context, query: ComponentQuery) {
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read();
     
-    let terrain = write.ecs.global_mut::<crate::globals::Terrain>();
+    let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // For each chunk in the terrain, we must create it's respective voxel data, if possible
         if terrain.cpu_data.is_none() {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that we come across that needs it
             query.update_all_breakable(|components| {
                 // We break out at the first chunk if we start generating it's voxel data
-                let mut chunk = components.component_mut::<crate::components::Chunk>().unwrap();
+                let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 if chunk.voxel_data.is_none() {
                     // We must start generating the voxel data for this chunk
@@ -103,7 +103,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 let id = terrain.chunk_id.unwrap();
                 query.update(id, |components| {
                     // Get our chunk and set it's new data
-                    let mut chunk = components.component_mut::<crate::components::Chunk>().unwrap();
+                    let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
                     finish_generation(&mut *terrain, &*pipeline, &mut *chunk);
                 });
             }

@@ -75,7 +75,7 @@ impl LinkedComponents {
         Some(ComponentID::new(cbitfield, *idx))
     }
     // Get a reference to a specific linked component
-    pub fn component<'b, T>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError>
+    pub fn get_component<'b, T>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
@@ -95,7 +95,7 @@ impl LinkedComponents {
         Ok(guard)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn component_mut<'b, T>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError>
+    pub fn get_component_mut<'b, T>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {

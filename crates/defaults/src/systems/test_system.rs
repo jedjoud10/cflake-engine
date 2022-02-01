@@ -26,7 +26,7 @@ pub(crate) struct TestSystemData {
 fn run(context: &mut Context, _query: ComponentQuery) {
     let mut write = context.write();
     // Execute the shader
-    let mut data = write.ecs.global_mut::<TestSystemData>().unwrap();
+    let mut data = write.ecs.get_global_mut::<TestSystemData>().unwrap();
     let pipeline = write.pipeline.read();
     if data.transfer.is_none() && pipeline.get_shader_storage(data.shader_storage).is_some() {
         // Make the shader group
