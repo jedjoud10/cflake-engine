@@ -26,79 +26,80 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
     let mut min: f16 = f16::MAX;
     let mut max: f16 = f16::MIN;
     // Loop over every voxel
-    for i in 0..(MAIN_CHUNK_SIZE*MAIN_CHUNK_SIZE*MAIN_CHUNK_SIZE) {
-        let (x, y, z) = crate::utils::unflatten(i);
-        // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
-        let mut case_index = 0u8;
-        // Make sure we have the default submodel/material for this material ID
-        for l in 0..8 {
-            let density = voxels[i + DATA_OFFSET_TABLE[l]].density;
-            min = min.min(density);
-            max = max.max(density);
-            // Bit shifting moment
-            let valid = (density >= f16::ZERO) as u8;
-            case_index |= valid << l;
-        }        
-        continue;
-        // Skip the completely empty and completely filled cases
-        if case_index == 0 || case_index == 255 {
-            continue;
-        }
-        // Get triangles
-        let edges: [i8; 16] = TRI_TABLE[case_index as usize];
+    for x in 0..MAIN_CHUNK_SIZE {
+        for y in 0..MAIN_CHUNK_SIZE {
+            for z in 0..MAIN_CHUNK_SIZE {
+                let i = super::flatten((x, y, z));
+                // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
+                let mut case_index = 0u8;
+                // Make sure we have the default submodel/material for this material ID
+                for l in 0..8 {
+                    let density = voxels[i + DATA_OFFSET_TABLE[l]].density;
+                    min = min.min(density);
+                    max = max.max(density);
+                    case_index |= ((density >= f16::ZERO) as u8) * u8::pow(2, l as u32);
+                }          
+                // Skip the completely empty and completely filled cases
+                if case_index == 0 || case_index == 255 {
+                    continue;
+                }
+                // Get triangles
+                let edges: [i8; 16] = TRI_TABLE[case_index as usize];
 
-        // The vertex indices that are gonna be used for the skirts
-        for edge in edges {
-            // Make sure the triangle is valid
-            if edge != -1 {
-                // Get the vertex in local space
-                let vert1 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]];
-                let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
+                // The vertex indices that are gonna be used for the skirts
+                for edge in edges {
+                    // Make sure the triangle is valid
+                    if edge != -1 {
+                        // Get the vertex in local space
+                        let vert1 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]];
+                        let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
 
-                // In global space here
-                let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
-                let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
-                let index1 = super::flatten(vert1_usize);
-                let index2 = super::flatten(vert2_usize);
-                let voxel1 = &voxels[index1];
-                let voxel2 = &voxels[index2];
-                // Do inverse linear interpolation to find the factor value
-                let value: f32 = if interpolation {
-                    inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32).clamp(0.0, 1.0)
-                } else {
-                    0.5
-                };
-                // Create the vertex
-                let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
-                // Offset the vertex
-                vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
-                // Get the normal
-                let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
-                let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
-                let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
-                // Get the color
-                let c1: veclib::Vector3<f32> = voxel1.color.into();
-                let c2: veclib::Vector3<f32> = voxel2.color.into();
-                let mut color = veclib::Vector3::<f32>::lerp(c1, c2, value);
-                color /= 255.0;
-                // The edge tuple used to identify this vertex
-                let edge_tuple: (u16, u16, u16) = (
-                    2 * x as u16 + vert1.x as u16 + vert2.x as u16,
-                    2 * y as u16 + vert1.y as u16 + vert2.y as u16,
-                    2 * z as u16 + vert1.z as u16 + vert2.z as u16,
-                );
+                        // In global space here
+                        let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
+                        let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
+                        let index1 = super::flatten(vert1_usize);
+                        let index2 = super::flatten(vert2_usize);
+                        let voxel1 = &voxels[index1];
+                        let voxel2 = &voxels[index2];
+                        // Do inverse linear interpolation to find the factor value
+                        let value: f32 = if interpolation {
+                            inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32).clamp(0.0, 1.0)
+                        } else {
+                            0.5
+                        };
+                        // Create the vertex
+                        let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
+                        // Offset the vertex
+                        vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
+                        // Get the normal
+                        let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
+                        let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
+                        let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
+                        // Get the color
+                        let c1: veclib::Vector3<f32> = voxel1.color.into();
+                        let c2: veclib::Vector3<f32> = voxel2.color.into();
+                        let mut color = veclib::Vector3::<f32>::lerp(c1, c2, value);
+                        color /= 255.0;
+                        // The edge tuple used to identify this vertex
+                        let edge_tuple: (u16, u16, u16) = (
+                            2 * x as u16 + vert1.x as u16 + vert2.x as u16,
+                            2 * y as u16 + vert1.y as u16 + vert2.y as u16,
+                            2 * z as u16 + vert1.z as u16 + vert2.z as u16,
+                        );
 
-                // Check if this vertex was already added
-                if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
-                    // Add this vertex
-                    e.insert(model.vertices.len() as u16);
-                    model.triangles.push(model.vertices.len() as u32);
-                    model.vertices.push(vertex);
-                    model.normals.push(normal.normalized());
-                    model.colors.push(color);
-                } else {
-                    // The vertex already exists
-                    model.triangles.push(duplicate_vertices[&edge_tuple] as u32);
+                        // Check if this vertex was already added
+                        if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
+                            // Add this vertex
+                            e.insert(model.vertices.len() as u16);
+                            model.triangles.push(model.vertices.len() as u32);
+                            model.vertices.push(vertex);
+                            model.normals.push(normal.normalized());
+                            model.colors.push(color);
+                        } else {
+                            // The vertex already exists
+                            model.triangles.push(duplicate_vertices[&edge_tuple] as u32);
+                        }
+                    }
                 }
             }
         }

@@ -9,7 +9,7 @@ uniform sampler2D tex;
 struct Voxel {
     float density;
     vec3 color;
-    float hardness;
+    uint material;
 };
 
 // Get the voxel at a specific position (First Pass)
@@ -19,7 +19,7 @@ Voxel get_voxel(const vec3 pos) {
     for(int i = 0; i < 3; i++) {
         noise += (snoise(pos * 0.001 * pow(2.0, i) * vec3(1.0, 2.0, 1.0))) * pow(0.5, i) * 100;
     }
-    return Voxel(max((noise + pos.y), -sdBox(pos, vec3(30.0))), vec3(1.0), 1.0);
+    return Voxel(max((noise + pos.y), -sdBox(pos, vec3(30.0))), vec3(1.0), 0);
 }
 
 // Modify the voxel after we get it's normal
