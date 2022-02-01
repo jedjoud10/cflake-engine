@@ -5,7 +5,7 @@ use crate::utils::UsageType;
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add to many elements to it
 pub struct DynamicRawBuffer<T> {
     // The OpenGL data for this buffer
-    pub oid: u32,
+    pub buffer: u32,
     _type: u32,
     
     // Other data
@@ -27,10 +27,11 @@ impl<T> DynamicRawBuffer<T> {
             gl::GenBuffers(1, &mut oid);
             gl::BindBuffer(_type, oid);
             gl::BufferData(_type, 0, null(), usage.convert());
+            gl::BindBuffer(_type, 0);
             oid
         };
         Self {
-            oid,
+            buffer: oid,
             _type,
             vec,
             usage,
@@ -45,7 +46,7 @@ impl<T> DynamicRawBuffer<T> {
         self.vec.push(val);
 
         // Reallocate the OpenGL buffer if needed
-        gl::BindBuffer(self._type, self.oid);
+        gl::BindBuffer(self._type, self.buffer);
         if self.vec.capacity() > old_capacity {
             // Reallocate
             gl::BufferData(self._type, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void, self.usage.convert());
@@ -55,5 +56,29 @@ impl<T> DynamicRawBuffer<T> {
             let data = self.vec.last().unwrap();
             gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
         }
+    }
+    // Update the value at a specific index, while not moving that element
+    // This returns the old value at that index
+    pub unsafe fn replace(&mut self, index: usize, val: T) -> T {
+        // Check first
+        if index > self.vec.len() { panic!() }
+        // Simple replace 
+        let old = std::mem::replace(self.vec.get_mut(index).unwrap(), val);
+        // Also update the OpenGL buffer
+        let offset = index * size_of::<T>();
+        let data = self.vec.get(index).unwrap();
+        gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
+        old
+    }
+    // Remove an element at a specific index, but by using swap remove, so we don't have to move all the elements
+    pub unsafe fn swap_remove(&mut self, index: usize) -> T {
+        // Check first
+        if index > self.vec.len() { panic!() }
+        // Simple swap remove
+        let old = self.swap_remove(index);
+        // Also update the whole OpenGL buffer
+        let data = self.vec.as_ptr();
+        gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void);
+        old
     }
 }

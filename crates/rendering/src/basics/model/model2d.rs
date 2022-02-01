@@ -38,41 +38,32 @@ impl Debug for Model2D {
     }
 }
 
-impl From<math::shapes2d::ShapeType2D> for Model2D {
-    fn from(shape: math::shapes2d::ShapeType2D) -> Self {
-        // Convert each shape to a model 2D
-        match shape {
-            math::shapes2d::ShapeType2D::Square(square) => {
-                // Create a model2D from a square
-                // Create the default vertices first, then we scale them and offset
-                let mut vertices = vec![
-                    veclib::vec2(-1.0, -1.0),
-                    veclib::vec2(-1.0, 1.0),
-                    veclib::vec2(1.0, -1.0),
-                    veclib::vec2(1.0, 1.0_f32),
-                ];
-                // Scale then offset
-                for vert in vertices.iter_mut() {
-                    *vert *= square.size;
-                    *vert += square.center;
-                }
+impl From<math::shapes2d::Square> for Model2D {
+    fn from(square: math::shapes2d::Square) -> Self {
+        // Create a model2D from a square
+        // Create the default vertices first, then we scale them and offset
+        let mut vertices = vec![
+            veclib::vec2(-1.0, -1.0),
+            veclib::vec2(-1.0, 1.0),
+            veclib::vec2(1.0, -1.0),
+            veclib::vec2(1.0, 1.0_f32),
+        ];
+        // Scale then offset
+        for vert in vertices.iter_mut() {
+            *vert *= square.size;
+            *vert += square.center;
+        }
 
-                Self {
-                    vertices,
-                    uvs: vec![
-                        veclib::vec2(0.0, 0.0),
-                        veclib::vec2(0.0, 1.0),
-                        veclib::vec2(1.0, 0.0),
-                        veclib::vec2(1.0, 1.0),
-                    ],
-                    colors: Vec::new(),
-                    triangles: vec![0, 1, 2, 2, 1, 3],
-                }
-            },
-            math::shapes2d::ShapeType2D::Polygon(_polygon) => {
-                // Create a model2D from a polygon that contains N vertices
-                todo!()
-            },
+        Self {
+            vertices,
+            uvs: vec![
+                veclib::vec2(0.0, 0.0),
+                veclib::vec2(0.0, 1.0),
+                veclib::vec2(1.0, 0.0),
+                veclib::vec2(1.0, 1.0),
+            ],
+            colors: Vec::new(),
+            triangles: vec![0, 1, 2, 2, 1, 3],
         }
     }
 }
