@@ -22,7 +22,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
 }
 // Create the debugging system
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().set_run_event(run).build();
+    write.ecs.create_system_builder().with_run_event(run).build();
     // Set some debugging keybinds
     write.input.bind_key(Keys::F1, "debug");
     write.input.bind_key(Keys::F2, "placeholder");

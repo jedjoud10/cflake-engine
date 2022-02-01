@@ -32,7 +32,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        builder.link::<Name>().set_run_event(run_system).build();
+        builder.link::<Name>().with_run_event(run_system).build();
 
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::default();
@@ -78,7 +78,7 @@ pub mod test {
             });
             */
         }
-        builder.link::<Name>().set_run_event(internal_run).build();
+        builder.link::<Name>().with_run_event(internal_run).build();
 
         // Create 10k entities
         for _x in 0..10_000 {
@@ -105,7 +105,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        builder.link::<Name>().set_run_event(run_system).build();
+        builder.link::<Name>().with_run_event(run_system).build();
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
@@ -157,9 +157,9 @@ pub mod test {
         let builder = ecs.create_system_builder();
         builder
             .link::<Name>()
-            .set_run_event(internal_run)
-            .set_removed_entities_event(internal_remove_entity)
-            .set_added_entities_event(internal_add_entity)
+            .with_run_event(internal_run)
+            .with_removed_entities_event(internal_remove_entity)
+            .with_added_entities_event(internal_add_entity)
             .build();
 
         // Add a new entity and play with it's components
@@ -199,7 +199,7 @@ pub mod test {
         assert!(ecs.get_global::<GlobalComponentTest>().is_ok());
         assert!(ecs.get_global::<GlobalComponentTest2>().is_err());
         let builder = ecs.create_system_builder();
-        builder.link::<Name>().set_run_event(internal_run).build();
+        builder.link::<Name>().with_run_event(internal_run).build();
         ecs.run_systems(context);
     }
 }

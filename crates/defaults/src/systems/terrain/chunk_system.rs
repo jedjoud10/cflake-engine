@@ -84,6 +84,6 @@ fn run(context: &mut Context, _query: ComponentQuery) {
 }
 // Create a chunk system
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().set_run_event(run).build();
+    write.ecs.create_system_builder().with_run_event(run).build();
     write.input.bind_key_toggle(Keys::Y, "update_terrain");
 }

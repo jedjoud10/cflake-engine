@@ -19,5 +19,5 @@ fn run(_context: &mut Context, _query: ComponentQuery) {
 
 // Create the system
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().set_run_event(run).link::<Name>().build();
+    write.ecs.create_system_builder().with_run_event(run).link::<Name>().build();
 }

@@ -79,7 +79,7 @@ pub fn system(write: &mut WriteContext) {
     write
         .ecs
         .create_system_builder()
-        .set_run_event(run)
+        .with_run_event(run)
         .link::<crate::components::Camera>()
         .link::<crate::components::Transform>()
         .build();

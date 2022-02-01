@@ -32,7 +32,7 @@ pub fn system(write: &mut WriteContext) {
     write
         .ecs
         .create_system_builder()
-        .set_run_event(run)
+        .with_run_event(run)
         .link::<crate::components::Transform>()
         .link::<crate::components::Physics>()
         .build()

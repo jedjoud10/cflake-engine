@@ -70,9 +70,9 @@ pub fn system(write: &mut WriteContext) {
     write
         .ecs
         .create_system_builder()
-        .set_run_event(run)
-        .set_added_entities_event(added_entities)
-        .set_removed_entities_event(removed_entities)
+        .with_run_event(run)
+        .with_added_entities_event(added_entities)
+        .with_removed_entities_event(removed_entities)
         .link::<crate::components::Renderer>()
         .link::<crate::components::Transform>()
         .build();

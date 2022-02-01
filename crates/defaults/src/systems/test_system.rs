@@ -53,7 +53,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
 
 // Create the system
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().set_run_event(run).build();
+    write.ecs.create_system_builder().with_run_event(run).build();
 
     let pipeline = write.pipeline.read();
     let arr = [1, 5, 2, -9];

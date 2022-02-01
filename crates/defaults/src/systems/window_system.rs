@@ -18,7 +18,7 @@ fn run(context: &mut Context, _query: ComponentQuery) {
 
 // Create a system that'll allow us to disable/enable fullscreen and vsync
 pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().set_run_event(run).build();
+    write.ecs.create_system_builder().with_run_event(run).build();
     write.input.bind_key_toggle(Keys::F5, "toggle_fullscreen");
     write.input.bind_key_toggle(Keys::F6, "toggle_vsync");
 }
