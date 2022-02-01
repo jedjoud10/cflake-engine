@@ -69,7 +69,7 @@ fn init(mut write: core::WriteContext) {
     // Load a terrain material
     // Load the shader first
     let settings = rendering::basics::shader::ShaderSettings::default()
-        .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
+        .source("defaults\\shaders\\voxel_terrain\\terrain.vrsh.glsl")
         .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
     let shader = rendering::pipeline::pipec::construct(rendering::basics::shader::Shader::new(settings).unwrap(), &pipeline);
     // Then the textures
@@ -89,7 +89,7 @@ fn init(mut write: core::WriteContext) {
 
     let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
         let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
-        dist < 1.2 || node.depth == 1
+        dist < 1.2 || node.depth < 4
     });
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png").unwrap();
     let tex = rendering::pipeline::pipec::construct(tex, &pipeline);

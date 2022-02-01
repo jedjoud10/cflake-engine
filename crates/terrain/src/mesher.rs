@@ -6,9 +6,9 @@ use crate::MAIN_CHUNK_SIZE;
 use super::tables::*;
 use ahash::AHashMap;
 use half::f16;
+use rendering::basics::model::CustomVertexDataBuffer;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
 use std::ptr::null;
 use veclib::vec3;
 
@@ -21,6 +21,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> Model {
     let mut duplicate_vertices: AHashMap<(u16, u16, u16), u16> = AHashMap::with_capacity(200);
     let mut model: Model = Model::default();
+    let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(200, rendering::utils::DataType::U32);    
     let i = std::time::Instant::now();
     // Since we're iterating through every voxel, might as well keep track of the min max densities
     let mut min: f16 = f16::MAX;
@@ -95,6 +96,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                             model.vertices.push(vertex);
                             model.normals.push(normal.normalized());
                             model.colors.push(color);
+                            materials.push(voxel1.material_type as u32);
                         } else {
                             // The vertex already exists
                             model.triangles.push(duplicate_vertices[&edge_tuple] as u32);
@@ -146,7 +148,7 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
             transform_y_local,
         );
     }
-    Model::combine(model, skirts_model)
+    Model::combine(model.with_custom(materials), skirts_model)
 }
 // Skirt vertex
 struct SkirtVertex(veclib::Vector3<f32>);

@@ -22,9 +22,9 @@ pub struct CustomVertexDataBuffer<T, U: Vector<T> + VectorElemCount> {
 impl<T, U: Vector<T> + VectorElemCount> CustomVertexDataBuffer<T, U> {
     // Allocate enough size so we can add multiple Ts without the need to reallocate our inner buffer
     // This also clears the vector
-    pub fn new(size: usize, _type: DataType) -> Self {
+    pub fn with_capacity(capacity: usize, _type: DataType) -> Self {
         Self {
-            inner: Vec::with_capacity(size * size_of::<U>()),
+            inner: Vec::with_capacity(capacity * size_of::<U>()),
             _phantom: PhantomData::default(),
             _type,
         }

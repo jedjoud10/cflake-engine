@@ -138,7 +138,7 @@ impl Model {
         self.normals = vertex_normals;
     }
     // Add some custom vertex data
-    pub fn with_custom<T, U: Vector<T> + VectorElemCount>(mut self, custom_vertex_buffer: CustomVertexDataBuffer<T, U>) {
+    pub fn with_custom<T, U: Vector<T> + VectorElemCount>(mut self, custom_vertex_buffer: CustomVertexDataBuffer<T, U>) -> Self {
         // We gotta serialize the data now, in native endian
         let ptr = custom_vertex_buffer.inner.as_ptr();
         let byte_size = std::mem::size_of::<U>();
@@ -149,6 +149,7 @@ impl Model {
             inner: vec,
             size_per_component: U::ELEM_COUNT,
             _type: custom_vertex_buffer._type,
-        })
+        });
+        self
     }
 }

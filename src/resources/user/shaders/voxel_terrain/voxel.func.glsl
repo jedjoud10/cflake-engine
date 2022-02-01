@@ -24,5 +24,6 @@ Voxel get_voxel(const vec3 pos) {
 
 // Modify the voxel after we get it's normal
 void modify_voxel(const vec3 pos, inout vec3 normal, inout Voxel voxel) {
+    float val = clamp(snoise(pos * 0.0002) * 10.0, 0, 1);
     voxel.color = texture(tex, pos.xz / 128.0).rgb;
 }

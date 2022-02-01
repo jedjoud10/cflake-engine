@@ -18,6 +18,7 @@ in vec3 m_normal;
 in vec4 m_tangent;
 in vec3 m_color;
 in vec2 m_uv;
+in flat uint m_material_type;
 void main() {
 	vec3 normal;
 	vec3 diffuse;

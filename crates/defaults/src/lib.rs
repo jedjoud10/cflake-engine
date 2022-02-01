@@ -53,6 +53,7 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\shared.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_shader.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.vrsh.glsl");
     // Textures
     preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png");
     preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png");
