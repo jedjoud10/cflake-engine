@@ -567,7 +567,7 @@ impl Pipeline {
     }
     // Create a model
     fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
-        let model = task.0;
+        let mut model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
         unsafe {
@@ -691,7 +691,6 @@ impl Pipeline {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
-
         // Add the model normally and also add it's corresponding buffers
         self.models.insert(task.1.id.unwrap(), (model, buffers));
     }
@@ -1301,7 +1300,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // We must render every frame
         loop {
-            let mut debug = false; 
+            let debug; 
             {
                 // At the start of each frame we must sync up with the main thread
                 waiting_clone.store(true, Ordering::Relaxed);

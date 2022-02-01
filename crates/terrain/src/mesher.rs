@@ -1,6 +1,6 @@
 use crate::ChunkCoords;
+use crate::ValidGeneratedVoxelData;
 use crate::Voxel;
-use crate::VoxelData;
 use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
@@ -18,7 +18,9 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> Model {
+pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> Model {
+    let voxels = &valid_data.voxels;
+    let valid_subregions = valid_data.valid_sub_regions;
     let mut duplicate_vertices: AHashMap<(u16, u16, u16), u16> = AHashMap::with_capacity(200);
     let mut model: Model = Model::default();
     let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(200, rendering::utils::DataType::U32);    
@@ -31,6 +33,9 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
         for y in 0..MAIN_CHUNK_SIZE {
             for z in 0..MAIN_CHUNK_SIZE {
                 let i = super::flatten((x, y, z));
+                // If we are not part of a valid subregion, no need to generate
+                let current_sub_region = super::flatten_custom((x / (MAIN_CHUNK_SIZE / 2), y / (MAIN_CHUNK_SIZE / 2), z / (MAIN_CHUNK_SIZE / 2)), 2) as u8;
+                if valid_subregions >> current_sub_region % 2 == 0 { continue; }
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
                 // Make sure we have the default submodel/material for this material ID
@@ -161,7 +166,7 @@ struct SharedSkirtVertexData {
 
 // Generate a whole skirt using a specific
 pub fn calculate_skirt(
-    voxels: &VoxelData,
+    voxels: &[Voxel],
     interpolation: bool,
     flip: bool,
     global_min: f16,
@@ -193,7 +198,7 @@ fn calculate_marching_square_case(
     y: usize,
     global_min: f16,
     chunk_size_factor: f32,
-    voxels: &VoxelData,
+    voxels: &[Voxel],
     interpolation: bool,
     density_offset: [usize; 4],
 ) -> Option<(u8, veclib::Vector2<f32>, ([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData))> {

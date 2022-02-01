@@ -5,7 +5,7 @@ use veclib::{Vector, VectorElemCount};
 use crate::{
     basics::Buildable,
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    pipeline::Pipeline,
+    pipeline::Pipeline, utils::UsageType,
 };
 
 use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};

@@ -7,7 +7,7 @@ use main::{
         object::PipelineTrackedTask,
         pipeline::{pipec, Pipeline},
     },
-    terrain::{Voxel, VoxelData, MAIN_CHUNK_SIZE},
+    terrain::{Voxel, MAIN_CHUNK_SIZE, ValidGeneratedVoxelData},
 };
 
 // Start generating the voxel data for a specific chunk
@@ -17,8 +17,6 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     const AXIS: u16 = ((MAIN_CHUNK_SIZE + 1) as u16).div_ceil(8);
     // Set the uniforms for the first compute shader
     let mut group = ShaderUniformsGroup::new();
-    // Set the atomic counters
-    group.set_atomic_group("_", terrain.atomics, 0);
     // Chunk specific uniforms
     group.set_shader_storage("arbitrary_voxels", terrain.shader_storage_arbitrary_voxels, 1);
     let chunk_coords = chunk.coords;
@@ -33,19 +31,12 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         terrain.compute_id,
         pipeline,
     );
-    // And also read from the atomic counters
-    let read_counters = AtomicGroupRead::default();
-    let read_counters_transfer = read_counters.transfer();
-    pipec::tracked_task_requirement(
-        PipelineTrackedTask::AtomicGroupRead(terrain.atomics, read_counters_transfer),
-        terrain.read_counters,
-        terrain.compute_id,
-        pipeline,
-    );
-    // After we run the first compute shader and read it's counters, we must run the second compute shader, then read from the final SSBO
+    // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
     // Set the uniforms for the second compute shader
-    let mut group = ShaderUniformsGroup::new();
+    let mut group = ShaderUniformsGroup::new();    
+    // Set the atomic counters
+    group.set_atomic_group("_", terrain.atomics, 0);
     // Chunk specific uniforms
     group.set_shader_storage("arbitrary_voxels", terrain.shader_storage_arbitrary_voxels, 0);
     group.set_shader_storage("output_voxels", terrain.shader_storage_final_voxels, 1);
@@ -59,6 +50,15 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         PipelineTrackedTask::RunComputeShader(terrain.second_compute_shader, execution_settings2),
         terrain.compute_id2,
         terrain.compute_id,
+        pipeline,
+    );
+    // And also read from the atomic counters
+    let read_counters = AtomicGroupRead::default();
+    let read_counters_transfer = read_counters.transfer();
+    pipec::tracked_task_requirement(
+        PipelineTrackedTask::AtomicGroupRead(terrain.atomics, read_counters_transfer),
+        terrain.read_counters,
+        terrain.compute_id2,
         pipeline,
     );
 
@@ -78,16 +78,21 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
     let _id = terrain.chunk_id.take().unwrap();
-    chunk.generated_voxel_data = true;
+    chunk.voxel_data.generated = true;
     let (read_counters, read_bytes) = terrain.cpu_data.take().unwrap();
-
+    // Get the valid sub-regions
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
-    // If we do not have a valid surface, we skip this chunk
-    if positive == 0 || negative == 0 { return }
+    let diff = positive ^ negative;
+    if positive == negative { return; }
     
-    let voxels = read_bytes.fill_vec::<Voxel>().unwrap().into_boxed_slice();
-    chunk.voxel_data = Some(VoxelData(voxels));
+    // We can read from the SSBO now
+    let voxels = read_bytes.fill_vec::<Voxel>().unwrap();
+    let valid = ValidGeneratedVoxelData {
+        voxels,
+        valid_sub_regions: diff as u8,
+    };
+    chunk.voxel_data.data = Some(valid);
 }
 
 // The voxel systems' update loop
@@ -106,7 +111,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 // We break out at the first chunk if we start generating it's voxel data
                 let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
-                if chunk.voxel_data.is_none() && !chunk.generated_voxel_data {
+                if chunk.voxel_data.data.is_none() && !chunk.voxel_data.generated {
                     // We must start generating the voxel data for this chunk
                     start_generation(&mut *terrain, &pipeline, &mut *chunk, components.get_entity_id().unwrap());
                     terrain.generating = true;

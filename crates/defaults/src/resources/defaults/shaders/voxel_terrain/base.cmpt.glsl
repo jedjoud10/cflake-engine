@@ -5,8 +5,6 @@
 const int CHUNK_SIZE = #constant chunk_size
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(binding = 0) uniform atomic_uint positive_counter;
-layout(binding = 0) uniform atomic_uint negative_counter;
 layout(std430, binding = 1) writeonly buffer arbitrary_voxels
 {   
     Voxel voxels[];
@@ -31,12 +29,5 @@ void main() {
 
         // And store the voxel inside our array
         voxels[flatten(pc, CHUNK_SIZE+2)] = voxel;
-
-        // Atomic counter moment    
-        if (voxel.density <= 0.0) {
-            atomicCounterIncrement(negative_counter);
-        } else {
-            atomicCounterIncrement(positive_counter);
-        }
     }
 }

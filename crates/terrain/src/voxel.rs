@@ -20,19 +20,15 @@ pub struct Voxel {
     pub _test: [u8; 4],
 }
 
-// Some voxel data. Thiis contains the whole voxels array, that is actually stored on the heap
-pub struct VoxelData(pub Box<[Voxel]>);
-
-impl Index<usize> for VoxelData {
-    type Output = Voxel;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        self.0.get(index).unwrap()
-    }
+// Some details about a valid voxel generation
+pub struct ValidGeneratedVoxelData {
+    pub voxels: Vec<Voxel>,
+    pub valid_sub_regions: u8,
 }
 
-impl IndexMut<usize> for VoxelData {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.0.get_mut(index).unwrap()
-    }
+// Some info about some generated voxel data
+#[derive(Default)]
+pub struct GeneratedVoxelData {
+    pub data: Option<ValidGeneratedVoxelData>,
+    pub generated: bool,    
 }
