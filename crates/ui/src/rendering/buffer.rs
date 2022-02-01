@@ -23,6 +23,7 @@ pub struct UIRenderingBuffer {
 impl UIRenderingBuffer {
     // Update our internal instanced model data
     pub fn update_data(&mut self, root: &Root) {
+        // Count the number of instances, and check if we modified any of them 
     }
     // Draw all the elements that are part of the root
     pub fn draw(&self, root: &Root) {
