@@ -1301,7 +1301,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // We must render every frame
         loop {
-            let i = std::time::Instant::now();
+            let mut debug = false; 
             {
                 // At the start of each frame we must sync up with the main thread
                 waiting_clone.store(true, Ordering::Relaxed);
@@ -1313,8 +1313,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let mut pipeline = pipeline.write().unwrap();
                 let time = time_clone.lock().unwrap();
                 pipeline.update_global_shader_uniforms(time.0, time.1);
+                debug = pipeline.debugging.load(Ordering::Relaxed);
             }
             {
+                let i = std::time::Instant::now();
                 // We render the world here
                 let pipeline = pipeline.read().unwrap();
                 renderer.pre_render();
@@ -1323,11 +1325,17 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 // Do not forget to switch buffers at the end of the frame
                 window.swap_buffers();
 
+                // Debug if needed
+                if debug {
+                    println!("Pipeline Render Frame Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+                }
+
                 // And we also sync at the end of each frame
                 ebarrier_clone.wait();
             }
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
             {
+                let i = std::time::Instant::now();
                 let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
                 let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
                 // Set the buffer
@@ -1337,8 +1345,8 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 pipeline.update(&mut internal, &mut renderer);
 
                 // Debug if needed
-                if pipeline.debugging.load(Ordering::Relaxed) {
-                    println!("Pipeline Frame Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+                if debug {
+                    println!("Pipeline Update Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
                 }
 
                 // Check if we must exit from the render thread

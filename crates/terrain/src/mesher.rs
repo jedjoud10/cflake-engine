@@ -1,10 +1,10 @@
 use crate::ChunkCoords;
-use crate::TModel;
 use crate::Voxel;
 use crate::VoxelData;
 use crate::MAIN_CHUNK_SIZE;
 
 use super::tables::*;
+use ahash::AHashMap;
 use half::f16;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
@@ -17,9 +17,13 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 }
 
 // Generate the Marching Cubes model
-pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> TModel {
-    let mut duplicate_vertices: HashMap<(u32, u32, u32), u32> = HashMap::new();
+pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> Model {
+    let mut duplicate_vertices: AHashMap<(u16, u16, u16), u16> = AHashMap::with_capacity(200);
     let mut model: Model = Model::default();
+    let i = std::time::Instant::now();
+    // Since we're iterating through every voxel, might as well keep track of the min max densities
+    let mut min: f16 = f16::MAX;
+    let mut max: f16 = f16::MIN;
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
@@ -27,19 +31,14 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
-                // Leading Voxel
-                let _lv = &voxels[i + DATA_OFFSET_TABLE[0]];
-
                 // Make sure we have the default submodel/material for this material ID
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[0]].density >= f16::ZERO) as u8) * 1;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[1]].density >= f16::ZERO) as u8) * 2;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[2]].density >= f16::ZERO) as u8) * 4;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[3]].density >= f16::ZERO) as u8) * 8;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[4]].density >= f16::ZERO) as u8) * 16;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[5]].density >= f16::ZERO) as u8) * 32;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[6]].density >= f16::ZERO) as u8) * 64;
-                case_index |= ((voxels[i + DATA_OFFSET_TABLE[7]].density >= f16::ZERO) as u8) * 128;
-
+                for l in 0..8 {
+                    let density = voxels[i + DATA_OFFSET_TABLE[l]].density;
+                    min = min.min(density);
+                    max = max.max(density);
+                    case_index |= ((density >= f16::ZERO) as u8) * u8::pow(2, l as u32);
+                }               
+                continue;
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
                     continue;
@@ -64,11 +63,10 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation {
-                            inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32)
+                            inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32).clamp(0.0, 1.0)
                         } else {
                             0.5
-                        }
-                        .clamp(0.0, 1.0);
+                        };
                         // Create the vertex
                         let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
                         // Offset the vertex
@@ -83,37 +81,41 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
                         let mut color = veclib::Vector3::<f32>::lerp(c1, c2, value);
                         color /= 255.0;
                         // The edge tuple used to identify this vertex
-                        let edge_tuple: (u32, u32, u32) = (
-                            2 * x as u32 + vert1.x as u32 + vert2.x as u32,
-                            2 * y as u32 + vert1.y as u32 + vert2.y as u32,
-                            2 * z as u32 + vert1.z as u32 + vert2.z as u32,
+                        let edge_tuple: (u16, u16, u16) = (
+                            2 * x as u16 + vert1.x as u16 + vert2.x as u16,
+                            2 * y as u16 + vert1.y as u16 + vert2.y as u16,
+                            2 * z as u16 + vert1.z as u16 + vert2.z as u16,
                         );
 
                         // Check if this vertex was already added
                         if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
                             // Add this vertex
-                            e.insert(model.vertices.len() as u32);
+                            e.insert(model.vertices.len() as u16);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
                             model.normals.push(normal.normalized());
                             model.colors.push(color);
                         } else {
                             // The vertex already exists
-                            model.triangles.push(duplicate_vertices[&edge_tuple]);
+                            model.triangles.push(duplicate_vertices[&edge_tuple] as u32);
                         }
                     }
                 }
             }
         }
     }
+    println!("{}ms", i.elapsed().as_millis());
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
+    let chunk_size_factor = (coords.size / MAIN_CHUNK_SIZE as u64) as f32;
     if skirts {
         // Create the X skirt
         calculate_skirt(
             voxels,
             interpolation,
             false,
+            min,
+            chunk_size_factor,
             DENSITY_OFFSET_X,
             &mut skirts_model,
             |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
@@ -124,6 +126,8 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
             voxels,
             interpolation,
             true,
+            min,
+            chunk_size_factor,
             DENSITY_OFFSET_Z,
             &mut skirts_model,
             |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
@@ -134,13 +138,15 @@ pub fn generate_model(voxels: &VoxelData, coords: ChunkCoords, interpolation: bo
             voxels,
             interpolation,
             true,
+            min,
+            chunk_size_factor,
             DENSITY_OFFSET_Y,
             &mut skirts_model,
             |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
             transform_y_local,
         );
     }
-    TModel { model, skirts_model, coords }
+    Model::combine(model, skirts_model)
 }
 // Skirt vertex
 struct SkirtVertex(veclib::Vector3<f32>);
@@ -156,6 +162,8 @@ pub fn calculate_skirt(
     voxels: &VoxelData,
     interpolation: bool,
     flip: bool,
+    global_min: f16,
+    chunk_size_factor: f32,
     density_offset: [usize; 4],
     skirts_model: &mut Model,
     indexf: fn(usize, usize, usize) -> usize,
@@ -165,7 +173,7 @@ pub fn calculate_skirt(
         for x in 0..MAIN_CHUNK_SIZE {
             for y in 0..MAIN_CHUNK_SIZE {
                 let i = indexf(slice, x, y);
-                match calculate_marching_square_case(i, x, y, voxels, interpolation, density_offset) {
+                match calculate_marching_square_case(i, x, y, global_min, chunk_size_factor, voxels, interpolation, density_offset) {
                     Some((case, p, ilv)) => {
                         // We intersected the surface
                         solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &ilv, skirts_model, (slice == 1) ^ flip, tf)
@@ -181,6 +189,8 @@ fn calculate_marching_square_case(
     i: usize,
     x: usize,
     y: usize,
+    global_min: f16,
+    chunk_size_factor: f32,
     voxels: &VoxelData,
     interpolation: bool,
     density_offset: [usize; 4],
@@ -191,28 +201,48 @@ fn calculate_marching_square_case(
     let mut case = 0_u8;
     // Get the local voxels
     let mut local_voxels: [std::mem::MaybeUninit<Voxel>; 4] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+    // Keep track of the min density
+    let mut min = f16::MAX;
     for (j, voxel) in local_voxels.iter_mut().enumerate() {
         let local_voxel = &voxels[i + density_offset[j]];
         // Increase the case index if we have some voxels that are below the 0.0
         if local_voxel.density <= f16::ZERO {
             case |= 2_u8.pow(j as u32);
         }
+        min = min.min(local_voxel.density);
         unsafe { std::ptr::write(voxel.as_mut_ptr(), local_voxel.clone()) }
     }
+    // If the difference between this skirt voxel's min density and the global min density is below a threshold we can force the generation for this skirt voxel
+    let force = (min - global_min).to_f32().abs() > (32.0 * chunk_size_factor);
+
     // Exit if this case is invalid
-    if case == 0 || case == 15 {
+    if case == 0 || ((case == 15) && !force) {
         return None;
     }
     // Get the interpolated voxels
     let mut local_interpolated_voxels: [Option<LocalSkirtVertex>; 4] = [None; 4];
     let mut shared_normal = veclib::Vector3::<f32>::ZERO;
-    let mut shared_color = veclib::Vector3::<f32>::ZERO;
+    let mut shared_color = veclib::Vector3::<f32>::ZERO;    
     let mut count: usize = 0;
     for (j, local_interpolated_voxel) in local_interpolated_voxels.iter_mut().enumerate() {
         // This is for every edge
         let two_voxels = MS_EDGE_TO_VERTICES[j as usize];
         let voxel1 = &voxels[i + density_offset[two_voxels[0] as usize]];
         let voxel2 = &voxels[i + density_offset[two_voxels[1] as usize]];
+        // If we are completely filled we must take the average
+        if case == 15 {
+            // Get the normal
+            let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
+            let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
+            // Get the color
+            let c1: veclib::Vector3<f32> = voxel1.color.into();
+            let c2: veclib::Vector3<f32> = voxel2.color.into();
+            shared_normal += n1 + n2;
+            shared_color += c1 + c2;
+            count += 2;
+            *local_interpolated_voxel = None;
+            continue;
+        }
         // Check if the edge is intersecting the surface
         *local_interpolated_voxel = if (voxel1.density <= f16::ZERO) ^ (voxel2.density <= f16::ZERO) {
             let value: f32 = if interpolation {
@@ -225,9 +255,9 @@ fn calculate_marching_square_case(
             let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
             let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
             // Get the color
-            let t1: veclib::Vector3<f32> = voxel1.color.into();
-            let t2: veclib::Vector3<f32> = voxel2.color.into();
-            let color = veclib::Vector3::<f32>::lerp(t1, t2, value);
+            let c1: veclib::Vector3<f32> = voxel1.color.into();
+            let c2: veclib::Vector3<f32> = voxel2.color.into();
+            let color = veclib::Vector3::<f32>::lerp(c1, c2, value);
             shared_normal += normal;
             shared_color += color;
 
@@ -270,7 +300,7 @@ fn solve_marching_squares(
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
-    // Allocate just enough for the maximum one
+    // Allocate just enough
     let mut vec = Vec::<SkirtVertex>::with_capacity(6);
     // Create the triangles from the local skirts
     match case {
@@ -330,7 +360,11 @@ fn solve_marching_squares(
             create_triangle(slice, offset, ilv, &[4, 2, 1], tf, &mut vec);
             create_triangle(slice, offset, ilv, &[4, 1, 7], tf, &mut vec);
         }
-        0 | 15 => {
+        15 => {
+            create_triangle(slice, offset, ilv, &[0, 6, 2], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[6, 4, 2], tf, &mut vec);
+        }
+        0 => {
             /* Empty cases */
             return;
         }

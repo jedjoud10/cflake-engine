@@ -22,13 +22,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 // I guess we should create the model now
                 let voxels = chunk.voxel_data.as_ref().unwrap();
                 let coords = chunk.coords;
-                let model = main::terrain::mesher::generate_model(voxels, coords, true, true);
-
-                // Create the actual pipeline model now
-                let skirts = model.skirts_model;
-                let model = model.model;
-                // Combine the models first
-                let model = Model::combine(model, skirts);
+                let model = main::terrain::mesher::generate_model(voxels, coords, true, false);
 
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);
