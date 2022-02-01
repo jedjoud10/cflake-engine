@@ -49,7 +49,7 @@ impl Buildable for Material {
         let defaults = pipeline.defaults.as_ref().unwrap();
         self.set_pre_construct_settings(defaults.missing_tex, defaults.black, defaults.normals_tex);
         // Set the default rendering shader if no shader was specified
-        if !self.shader.valid() {
+        if !self.shader.is_some() {
             self.shader = defaults.shader;
         }
         self

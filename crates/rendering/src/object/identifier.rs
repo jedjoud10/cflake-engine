@@ -25,6 +25,17 @@ impl<T: PipelineObject> Clone for ObjectID<T> {
 }
 
 impl<T: PipelineObject> Copy for ObjectID<T> {}
+impl<T: PipelineObject> std::hash::Hash for ObjectID<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+impl<T: PipelineObject> PartialEq for ObjectID<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+impl<T: PipelineObject> Eq for ObjectID<T> {}
 
 impl<T: PipelineObject> Debug for ObjectID<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -56,7 +67,7 @@ where
         }
     }
     // Check if this ID is even valid LOCALLY
-    pub fn valid(&self) -> bool {
+    pub fn is_some(&self) -> bool {
         self.id.is_some()
     }
 }

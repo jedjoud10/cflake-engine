@@ -1,45 +1,48 @@
+use rendering::{object::ObjectID, basics::{texture::Texture, shader::Shader}};
+
 use crate::{ElementID};
 
 // A simple element, could be a button or a panel or anything, it just has some variables
 #[derive(Debug, Clone)]
 pub struct Element {
     // Indexing
-    pub id: ElementID,
-    pub parent: ElementID,
+    pub id: Option<ElementID>,
+    pub parent: Option<ElementID>,
+    pub children: Vec<ElementID>,
 
     // Position and scale
     pub position: veclib::Vector2<f32>,
     pub size: veclib::Vector2<f32>,
-    
-    // Our color in RGBA form
+    // Rendering
     pub color: veclib::Vector4<f32>,
-    // If the element is even visible, this propagates down to it's children
     pub visible: bool,
-    // The depth of this node, further depth nodes get rendered front to back
     pub depth: i32,
-    // Our children
-    pub children: Vec<ElementID>,
+    pub texture: ObjectID<Texture>,
+    pub shader: ObjectID<Shader>,
+
+    // Others
     pub _type: ElementType,
-    // Coordinate system type
     pub coords: CoordinateType,
 }
 
 impl Default for Element {
     fn default() -> Self {
         Self {
-            // Parent stuff
-            id: ElementID(None),
-            parent: ElementID(None),
-            // Data
+            id: None,
+            parent: None,
+            children: Vec::new(),
+
             position: veclib::Vector2::ZERO,
             size: veclib::Vector2::ONE,
+
             color: veclib::Vector4::ONE,
             visible: true,
-            coords: CoordinateType::Factor,
-            _type: ElementType::Panel,
-            // Internal data
             depth: 0,
-            children: Vec::new(),
+            texture: Default::default(),
+            shader: Default::default(),
+
+            _type: ElementType::Panel,
+            coords: CoordinateType::Factor,
         }
     }
 }

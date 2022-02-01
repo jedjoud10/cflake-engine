@@ -44,10 +44,10 @@ impl Buildable for Renderer {
     fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
         // We must fill out our model and material if they are empty
         let defaults = pipeline.defaults.as_ref().unwrap();
-        if !self.model.valid() {
+        if !self.model.is_some() {
             self.model = defaults.model;
         }
-        if !self.material.valid() {
+        if !self.material.is_some() {
             self.material = defaults.material;
         }
         self

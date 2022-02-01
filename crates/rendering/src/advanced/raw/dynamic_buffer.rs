@@ -16,17 +16,17 @@ pub struct DynamicRawBuffer<T> {
 impl<T> DynamicRawBuffer<T> {
     // Create the dynamic raw buffer
     // This can only be called on the render thread
-    pub unsafe fn new(_type: u32, usage: UsageType) -> Self {
+    pub fn new(_type: u32, usage: UsageType) -> Self {
         Self::with_capacity(_type, 0, usage)
     }
     // Create a new dynamic raw buffer with a specified capacity
-    pub unsafe fn with_capacity(_type: u32, capacity: usize, usage: UsageType) -> Self {
+    pub fn with_capacity(_type: u32, capacity: usize, usage: UsageType) -> Self {
         let vec = Vec::<T>::with_capacity(capacity);
-        let oid = {
+        let oid = unsafe {
             let mut oid = 0;
             gl::GenBuffers(1, &mut oid);
             gl::BindBuffer(_type, oid);
-            gl::BufferData(_type, 0, null(), usage.convert());
+            gl::BufferData(_type, (size_of::<T>() * capacity) as isize, null(), usage.convert());
             gl::BindBuffer(_type, 0);
             oid
         };
@@ -39,27 +39,29 @@ impl<T> DynamicRawBuffer<T> {
     }
     // Add an element to the raw buffer
     // This may reallocate the OpenGL buffer if it's last len is insufficient
-    pub unsafe fn push(&mut self, val: T) {
+    pub fn push(&mut self, val: T) {
         // Get our old capacity and compare with our new capacity
         let old_capacity = self.vec.capacity();
         // Add the element to our rust vector anyways
         self.vec.push(val);
 
         // Reallocate the OpenGL buffer if needed
-        gl::BindBuffer(self._type, self.buffer);
-        if self.vec.capacity() > old_capacity {
-            // Reallocate
-            gl::BufferData(self._type, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void, self.usage.convert());
-        } else {
-            // We don't need to reallocate, we just need to update our sub-data
-            let offset = (self.vec.len()-1) * size_of::<T>();
-            let data = self.vec.last().unwrap();
-            gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
-        }
+        unsafe {
+            gl::BindBuffer(self._type, self.buffer);
+            if self.vec.capacity() > old_capacity {
+                // Reallocate
+                gl::BufferData(self._type, (size_of::<T>() * self.vec.capacity()) as isize, self.vec.as_ptr() as *const c_void, self.usage.convert());
+            } else {
+                // We don't need to reallocate, we just need to update our sub-data
+                let offset = (self.vec.len()-1) * size_of::<T>();
+                let data = self.vec.last().unwrap();
+                gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
+            }
+        }   
     }
     // Update the value at a specific index, while not moving that element
     // This returns the old value at that index
-    pub unsafe fn replace(&mut self, index: usize, val: T) -> T {
+    pub fn replace(&mut self, index: usize, val: T) -> T {
         // Check first
         if index > self.vec.len() { panic!() }
         // Simple replace 
@@ -67,18 +69,18 @@ impl<T> DynamicRawBuffer<T> {
         // Also update the OpenGL buffer
         let offset = index * size_of::<T>();
         let data = self.vec.get(index).unwrap();
-        gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
+        unsafe { gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void); }
         old
     }
     // Remove an element at a specific index, but by using swap remove, so we don't have to move all the elements
-    pub unsafe fn swap_remove(&mut self, index: usize) -> T {
+    pub fn swap_remove(&mut self, index: usize) -> T {
         // Check first
         if index > self.vec.len() { panic!() }
         // Simple swap remove
         let old = self.swap_remove(index);
         // Also update the whole OpenGL buffer
         let data = self.vec.as_ptr();
-        gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void);
+        unsafe { gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void); }
         old
     }
 }

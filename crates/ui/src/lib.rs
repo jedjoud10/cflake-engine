@@ -4,6 +4,7 @@ mod manager;
 mod root;
 mod identifier;
 mod rendering;
+mod tests;
 pub use self::rendering::*;
 pub use identifier::*;
 pub use element::*;

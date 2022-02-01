@@ -1,7 +1,16 @@
-use crate::UIRenderingBuffer;
+use crate::RenderingBuffer;
 
 // The renderer that will render each element using instancing
-pub struct UIRenderer {
+pub struct Renderer {
     // We contain the OpenGL buffer data
-    buffer: UIRenderingBuffer
+    buffer: RenderingBuffer
+}
+
+impl Renderer {
+    // Create a new UI renderer
+    pub fn new() -> Self {
+        Self {
+            buffer: unsafe { RenderingBuffer::new(100) },
+        }
+    }
 }

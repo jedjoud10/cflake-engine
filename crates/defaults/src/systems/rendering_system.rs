@@ -15,7 +15,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
         let renderer = components.component::<crate::components::Renderer>().unwrap();
         let transform = components.component::<crate::components::Transform>().unwrap();
         let renderer_object_id = &renderer.object_id;
-        let task = if renderer_object_id.valid() {
+        let task = if renderer_object_id.is_some() {
             // Update the values if our renderer is valid
             Some(rendering::object::PipelineTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix()))
         } else {
