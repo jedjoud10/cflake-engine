@@ -9,7 +9,6 @@ use half::f16;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::mem::MaybeUninit;
 use veclib::vec3;
 
 // Inverse of lerp
@@ -152,13 +151,6 @@ struct SharedSkirtVertexData {
     color: veclib::Vector3<u8>,
 }
 
-// A skirt vertex group of possibly 6 skirt vertices and their corresponding shared normal and shared color
-struct SkirtVertexGroup {
-    vertices: SkirtVertex,
-    shared_normal: veclib::Vector3<f16>,
-    shared_color: veclib::Vector3<u8>,
-}
-
 // Generate a whole skirt using a specific
 pub fn calculate_skirt(
     voxels: &VoxelData,
@@ -174,9 +166,9 @@ pub fn calculate_skirt(
             for y in 0..MAIN_CHUNK_SIZE {
                 let i = indexf(slice, x, y);
                 match calculate_marching_square_case(i, x, y, voxels, interpolation, density_offset) {
-                    Some((case, p, lv, ilv)) => {
+                    Some((case, p, ilv)) => {
                         // We intersected the surface
-                        solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &lv, &ilv, skirts_model, (slice == 1) ^ flip, tf)
+                        solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &ilv, skirts_model, (slice == 1) ^ flip, tf)
                     }
                     None => { /* Empty */ }
                 }
@@ -192,7 +184,7 @@ fn calculate_marching_square_case(
     voxels: &VoxelData,
     interpolation: bool,
     density_offset: [usize; 4],
-) -> Option<(u8, veclib::Vector2<f32>, [Voxel; 4], ([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData))> {
+) -> Option<(u8, veclib::Vector2<f32>, ([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData))> {
     // Get the position
     let p = veclib::Vector2::new(x as f32, y as f32);
     // Get the marching cube case
@@ -207,7 +199,6 @@ fn calculate_marching_square_case(
         }
         unsafe { std::ptr::write(voxel.as_mut_ptr(), local_voxel.clone()) }
     }
-    let local_voxels = unsafe { std::mem::transmute::<_, [Voxel; 4]>(local_voxels) };
     // Exit if this case is invalid
     if case == 0 || case == 15 {
         return None;
@@ -259,7 +250,6 @@ fn calculate_marching_square_case(
     Some((
         case,
         p,
-        local_voxels,
         (
             local_interpolated_voxels,
             SharedSkirtVertexData {
@@ -275,7 +265,6 @@ fn solve_marching_squares(
     slice: usize,
     case: u8,
     offset: veclib::Vector2<f32>,
-    lv: &[Voxel],
     ilv: &([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData),
     model: &mut Model,
     flip: bool,
@@ -285,61 +274,61 @@ fn solve_marching_squares(
     let mut vec = Vec::<SkirtVertex>::with_capacity(6);
     // Create the triangles from the local skirts
     match case {
-        1 => create_triangle(slice, offset, lv, ilv, &[0, 7, 1], tf, &mut vec),
-        2 => create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf, &mut vec),
+        1 => create_triangle(slice, offset, ilv, &[0, 7, 1], tf, &mut vec),
+        2 => create_triangle(slice, offset, ilv, &[1, 3, 2], tf, &mut vec),
         3 => {
-            create_triangle(slice, offset, lv, ilv, &[0, 7, 2], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[2, 7, 3], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[0, 7, 2], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[2, 7, 3], tf, &mut vec);
         }
-        4 => create_triangle(slice, offset, lv, ilv, &[3, 5, 4], tf, &mut vec),
+        4 => create_triangle(slice, offset, ilv, &[3, 5, 4], tf, &mut vec),
         5 => {
             // Two triangles at the corners
-            create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[1, 3, 2], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[7, 6, 5], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[1, 3, 2], tf, &mut vec);
             // Middle quad
-            create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[1, 7, 3], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[3, 7, 5], tf, &mut vec);
         }
         6 => {
-            create_triangle(slice, offset, lv, ilv, &[2, 1, 5], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[2, 1, 5], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[2, 5, 4], tf, &mut vec);
         }
         7 => {
-            create_triangle(slice, offset, lv, ilv, &[2, 0, 7], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[2, 5, 4], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[2, 7, 5], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[2, 0, 7], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[2, 5, 4], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[2, 7, 5], tf, &mut vec);
         }
-        8 => create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf, &mut vec),
+        8 => create_triangle(slice, offset, ilv, &[7, 6, 5], tf, &mut vec),
         9 => {
-            create_triangle(slice, offset, lv, ilv, &[1, 0, 6], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[6, 5, 1], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[1, 0, 6], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[6, 5, 1], tf, &mut vec);
         }
         10 => {
             // Two triangles at the corners
-            create_triangle(slice, offset, lv, ilv, &[7, 6, 5], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[2, 1, 3], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[7, 6, 5], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[2, 1, 3], tf, &mut vec);
             // Middle quad
-            create_triangle(slice, offset, lv, ilv, &[1, 7, 3], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[3, 7, 5], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[1, 7, 3], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[3, 7, 5], tf, &mut vec);
         }
         11 => {
-            create_triangle(slice, offset, lv, ilv, &[0, 6, 5], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[0, 3, 2], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[0, 5, 3], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[0, 6, 5], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[0, 3, 2], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[0, 5, 3], tf, &mut vec);
         }
         12 => {
-            create_triangle(slice, offset, lv, ilv, &[7, 6, 3], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[3, 6, 4], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[7, 6, 3], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[3, 6, 4], tf, &mut vec);
         }
         13 => {
-            create_triangle(slice, offset, lv, ilv, &[6, 4, 3], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[6, 1, 0], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[6, 3, 1], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[6, 4, 3], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[6, 1, 0], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[6, 3, 1], tf, &mut vec);
         }
         14 => {
-            create_triangle(slice, offset, lv, ilv, &[4, 7, 6], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[4, 2, 1], tf, &mut vec);
-            create_triangle(slice, offset, lv, ilv, &[4, 1, 7], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[4, 7, 6], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[4, 2, 1], tf, &mut vec);
+            create_triangle(slice, offset, ilv, &[4, 1, 7], tf, &mut vec);
         }
         0 | 15 => {
             /* Empty cases */
@@ -374,7 +363,6 @@ fn solve_marching_squares(
 fn create_triangle(
     slice: usize,
     offset: veclib::Vector2<f32>,
-    lv: &[Voxel],
     ilv: &([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData),
     li: &[usize; 3],
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,

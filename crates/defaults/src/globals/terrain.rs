@@ -1,6 +1,6 @@
 use main::{
     ecs::{component::Component, entity::EntityID},
-    math::octrees::{DiffOctree, HeuristicSettings, Octree, OctreeNode},
+    math::octrees::{DiffOctree, HeuristicSettings},
     rendering::{
         advanced::{
             atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
@@ -15,12 +15,12 @@ use main::{
             uniforms::ShaderUniformsGroup,
         },
         object::{ObjectID, PipelineTrackedTask, ReservedTrackedTaskID},
-        pipeline::{pipec, Pipeline, PipelineContext},
+        pipeline::{pipec, PipelineContext},
         utils::{AccessType, UpdateFrequency},
     },
     terrain::{ChunkCoords, Voxel, MAIN_CHUNK_SIZE},
 };
-use std::{collections::HashMap, marker::PhantomData, mem::size_of};
+use std::{collections::HashMap, mem::size_of};
 
 #[derive(Component)]
 // The global terrain component that can be added at the start of the game

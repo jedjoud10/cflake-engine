@@ -1,5 +1,3 @@
-use super::shapes;
-
 // An aabb bound
 #[derive(Clone, Copy, Debug)]
 pub struct AABB {

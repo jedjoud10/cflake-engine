@@ -7,7 +7,7 @@ use crate::{
     },
     basics::{
         material::Material,
-        model::{Model, Model2D},
+        model::{Model},
         readwrite::ReadBytes,
         renderer::Renderer,
         shader::{

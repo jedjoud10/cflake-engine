@@ -1,8 +1,5 @@
 use ordered_vec::simple::UnversionnedOrderedVec;
 use std::hash::Hash;
-
-use crate::bounds::AABB;
-
 use super::HeuristicSettings;
 
 // Simple node in the octree

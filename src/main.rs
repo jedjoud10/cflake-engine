@@ -1,4 +1,4 @@
-use cflake_engine::{veclib::Swizzable, *};
+use cflake_engine::{*};
 fn main() {
     // Load up the engine
     start("DevJed", "DevGame", preload_assets, init);

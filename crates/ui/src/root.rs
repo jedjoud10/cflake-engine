@@ -3,11 +3,8 @@ use std::collections::HashSet;
 
 use crate::Element;
 use crate::ElementID;
-use crate::ElementType;
 use crate::InstancedBatchIdentifier;
 use ordered_vec::simple::OrderedVec;
-use rendering::basics::shader::Shader;
-use rendering::object::ObjectID;
 
 // The root UI element on the screen, contains all the elements in a binary tree fashion
 pub struct Root {
@@ -103,7 +100,7 @@ impl Root {
     }
     // Calculate the max depth
     pub fn calculate_max_depth(&self) -> i32 {
-        let element = self.elements.iter().max_by_key(|(x, element)| element.depth);
+        let element = self.elements.iter().max_by_key(|(_, element)| element.depth);
         element.map(|(_, element)| Some(element.depth)).flatten().unwrap_or_default()
     }
     // Get an element from the root using it's id
