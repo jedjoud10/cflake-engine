@@ -125,7 +125,6 @@ impl<Context> ECSManager<Context> {
         let old = entity.cbitfield;
         let new = entity.cbitfield.add(&link_group.cbitfield);
         entity.cbitfield = new;
-        drop(entity);
 
         let entity = self.get_entity(&id).unwrap();
         let linked = &entity.components;

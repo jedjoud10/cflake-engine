@@ -73,7 +73,6 @@ impl Root {
         let texture = element.texture;
         let batch_id = InstancedBatchIdentifier { shader, texture };
         let recurse = !element.children.is_empty();
-        drop(element);
         if recurse {
             let mut pending: Vec<ElementID> = vec![id];
             while let Some(parent_id) = pending.pop() {
