@@ -9,9 +9,9 @@ use main::{
 pub struct Chunk {
     pub coords: ChunkCoords,
     pub voxel_data: Option<VoxelData>,
+    pub generated_voxel_data: bool,
     pub buffered_model: Option<ObjectID<Model>>,
     pub added_renderer: bool,
-    pub valid_surface: bool,
 }
 
 impl Chunk {
@@ -20,9 +20,9 @@ impl Chunk {
         Self {
             coords,
             voxel_data: None,
+            generated_voxel_data: false,
             buffered_model: None,
             added_renderer: false,
-            valid_surface: false,
         }
     }
 }

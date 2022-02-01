@@ -18,11 +18,11 @@ fn run(context: &mut Context, query: ComponentQuery) {
             let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
             let id = components.get_entity_id().unwrap();
             // We have created voxel data for this chunk, and it is valid
-            if chunk.voxel_data.is_some() && chunk.valid_surface && chunk.buffered_model.is_none() && !chunk.added_renderer {
+            if chunk.voxel_data.is_some() && chunk.generated_voxel_data && chunk.buffered_model.is_none() && !chunk.added_renderer {
                 // I guess we should create the model now
-                let voxels = chunk.voxel_data.as_ref().unwrap();
+                let voxels = chunk.voxel_data.take().unwrap();
                 let coords = chunk.coords;
-                let model = main::terrain::mesher::generate_model(voxels, coords, true, false);
+                let model = main::terrain::mesher::generate_model(&voxels, coords, true, false);
 
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);

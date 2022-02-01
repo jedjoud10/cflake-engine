@@ -78,17 +78,16 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
     let _id = terrain.chunk_id.take().unwrap();
+    chunk.generated_voxel_data = true;
     let (read_counters, read_bytes) = terrain.cpu_data.take().unwrap();
-    // Read back the voxel values from the SSBO
-    let voxels = read_bytes.fill_vec::<Voxel>().unwrap().into_boxed_slice();
-    let voxel_data = VoxelData(voxels);
+
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
-    // Check if we have a valid surface that we can create a mesh out of
-    let valid_surface = positive > 0 && negative > 0;
-
-    chunk.voxel_data = Some(voxel_data);
-    chunk.valid_surface = valid_surface;
+    // If we do not have a valid surface, we skip this chunk
+    if positive == 0 || negative == 0 { return }
+    
+    let voxels = read_bytes.fill_vec::<Voxel>().unwrap().into_boxed_slice();
+    chunk.voxel_data = Some(VoxelData(voxels));
 }
 
 // The voxel systems' update loop
@@ -107,7 +106,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 // We break out at the first chunk if we start generating it's voxel data
                 let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
-                if chunk.voxel_data.is_none() {
+                if chunk.voxel_data.is_none() && !chunk.generated_voxel_data {
                     // We must start generating the voxel data for this chunk
                     start_generation(&mut *terrain, &pipeline, &mut *chunk, components.get_entity_id().unwrap());
                     terrain.generating = true;
