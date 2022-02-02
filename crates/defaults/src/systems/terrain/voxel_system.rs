@@ -7,14 +7,14 @@ use main::{
         object::PipelineTrackedTask,
         pipeline::{pipec, Pipeline},
     },
-    terrain::{Voxel, MAIN_CHUNK_SIZE, ValidGeneratedVoxelData},
+    terrain::{Voxel, CHUNK_SIZE, ValidGeneratedVoxelData},
 };
 
 // Start generating the voxel data for a specific chunk
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
     terrain.chunk_id = Some(id);
     // Create the compute shader execution settings and execute the compute shader
-    const AXIS: u16 = ((MAIN_CHUNK_SIZE + 1) as u16).div_ceil(8);
+    const AXIS: u16 = ((CHUNK_SIZE + 1) as u16).div_ceil(8);
     // Set the uniforms for the first compute shader
     let mut group = ShaderUniformsGroup::new();
     // Chunk specific uniforms

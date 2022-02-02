@@ -1020,15 +1020,8 @@ name = "terrain"
 version = "0.1.0"
 dependencies = [
  "ahash",
- "assets",
- "debug",
- "ecs",
- "input",
  "math",
- "others",
- "rayon",
  "rendering",
- "ui",
  "veclib",
 ]
 

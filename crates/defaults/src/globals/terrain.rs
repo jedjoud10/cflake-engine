@@ -18,7 +18,7 @@ use main::{
         pipeline::{pipec, PipelineContext},
         utils::{AccessType, UpdateFrequency},
     },
-    terrain::{ChunkCoords, Voxel, MAIN_CHUNK_SIZE},
+    terrain::{ChunkCoords, Voxel, CHUNK_SIZE},
 };
 use std::{collections::{HashMap, HashSet}, mem::size_of};
 
@@ -57,7 +57,7 @@ impl Terrain {
     // Create a new terrain component
     pub fn new(voxel_src_path: &str, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
         // Create a new octree
-        let octree = DiffOctree::new(octree_depth, (MAIN_CHUNK_SIZE) as u64, HeuristicSettings::default());
+        let octree = DiffOctree::new(octree_depth, (CHUNK_SIZE) as u64, HeuristicSettings::default());
 
         // Load the first pass compute shader
         let pipeline = pipeline_context.read();
@@ -65,7 +65,7 @@ impl Terrain {
         let settings = ShaderSettings::default()
             .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path.clone())
-            .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
+            .shader_constant("chunk_size", CHUNK_SIZE);
 
         let base_compute = ComputeShader::new(settings).unwrap();
         let base_compute = pipec::construct(base_compute, &pipeline);
@@ -74,7 +74,7 @@ impl Terrain {
         let settings = ShaderSettings::default()
             .source(main::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path)
-            .shader_constant("chunk_size", MAIN_CHUNK_SIZE);
+            .shader_constant("chunk_size", CHUNK_SIZE);
         let second_compute = ComputeShader::new(settings).unwrap();
         let second_compute = pipec::construct(second_compute, &pipeline);
 
@@ -111,7 +111,7 @@ impl Terrain {
         } else {
             panic!()
         };
-        let arb_voxels_size = byte_size * ((MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2) * (MAIN_CHUNK_SIZE + 2));
+        let arb_voxels_size = byte_size * ((CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2));
         let params = info.get(&resource2).unwrap();
         let byte_size = if let shader::info::UpdatedParameter::ByteSize(byte_size) = params[0] {
             byte_size
@@ -119,7 +119,7 @@ impl Terrain {
             panic!()
         };
         let final_voxel_size = byte_size;
-        let final_voxels_size = byte_size * ((MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1));
+        let final_voxels_size = byte_size * ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1));
         dbg!(final_voxel_size);
         dbg!(size_of::<Voxel>());
         if final_voxel_size != size_of::<Voxel>() {

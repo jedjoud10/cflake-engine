@@ -1,6 +1,6 @@
-use crate::MAIN_CHUNK_SIZE;
+use crate::CHUNK_SIZE;
 
-const VOXEL_CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 1;
+const VOXEL_CHUNK_SIZE: usize = CHUNK_SIZE + 1;
 // Triangulation table
 pub const TRI_TABLE: [[i8; 16]; 256] = [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],

@@ -1,5 +1,5 @@
 mod mesher;
 mod settings;
-mod marching_cubes;
-mod skirts;
+mod builder;
+mod tables;
 pub use mesher::*;
