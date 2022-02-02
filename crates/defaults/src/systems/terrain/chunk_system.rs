@@ -28,7 +28,6 @@ fn add_chunk(write: &mut WriteContext, camera_position: veclib::Vector3<f32>, ca
 
     // Add the entity to the world
     write.ecs.add_entity(entity, id, group).unwrap();
-    println!("Spawn chunk at {} with EntityID: {}", coords.center, id);
     (id, priority)
 }
 // Remove a single chunk
@@ -37,7 +36,6 @@ fn remove_chunk(write: &mut WriteContext, id: EntityID) {
     if write.ecs.get_entity(&id).is_ok() {
         // Remove the chunk entity at that specific EntityID
         write.ecs.remove_entity(id).unwrap();
-        println!("Remove chunk with EntityID: {}", id);
     }
 }
 

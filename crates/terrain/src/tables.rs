@@ -1,6 +1,6 @@
 use crate::MAIN_CHUNK_SIZE;
 
-const CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 1;
+const VOXEL_CHUNK_SIZE: usize = MAIN_CHUNK_SIZE + 1;
 // Triangulation table
 pub const TRI_TABLE: [[i8; 16]; 256] = [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -271,13 +271,25 @@ pub const EDGE_TABLE: [usize; 24] = [
 // Data offset table
 pub const DATA_OFFSET_TABLE: [usize; 8] = [
     /* None */ 0,
-    /* Z */ CHUNK_SIZE,
-    /* X+Z */ CHUNK_SIZE + 1,
+    /* Z */ VOXEL_CHUNK_SIZE,
+    /* X+Z */ VOXEL_CHUNK_SIZE + 1,
     /* X */ 1,
-    /* Y */ CHUNK_SIZE * CHUNK_SIZE,
-    /* Y+Z */ CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE,
-    /* X+Y+Z */ CHUNK_SIZE * CHUNK_SIZE + CHUNK_SIZE + 1,
-    /* Y+X */ CHUNK_SIZE * CHUNK_SIZE + 1,
+    /* Y */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE,
+    /* Y+Z */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + VOXEL_CHUNK_SIZE,
+    /* X+Y+Z */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + VOXEL_CHUNK_SIZE + 1,
+    /* Y+X */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + 1,
+];
+
+// Data offset table
+pub const OPTIMIZED_DATA_OFFSET_TABLE: [usize; 8] = [
+    /* None */ 0,
+    /* X */ 1,
+    /* Z */ VOXEL_CHUNK_SIZE,
+    /* X+Z */ VOXEL_CHUNK_SIZE + 1,
+    /* Y */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE,
+    /* Y+X */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + 1,
+    /* Y+Z */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + VOXEL_CHUNK_SIZE,
+    /* X+Y+Z */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + VOXEL_CHUNK_SIZE + 1,
 ];
 
 // Vertex table
@@ -303,19 +315,7 @@ pub const DENSITY_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABL
 
 // Density offset for the Z axis
 pub const DENSITY_OFFSET_Z: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[7], DATA_OFFSET_TABLE[3]];
-/*
-// Marching squares vertex table
-pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 8] = [
-    veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
-    veclib::Vector2::<f32> { x: -1.0, y: -1.0 },
-    veclib::Vector2::<f32> { x: 0.0, y: 1.0 },
-    veclib::Vector2::<f32> { x: -1.0, y: -1.0 },
-    veclib::Vector2::<f32> { x: 1.0, y: 1.0 },
-    veclib::Vector2::<f32> { x: -1.0, y: -1.0 },
-    veclib::Vector2::<f32> { x: 1.0, y: 0.0 },
-    veclib::Vector2::<f32> { x: -1.0, y: -1.0 },
-];
-*/
+
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 4] = [
     veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
     veclib::Vector2::<f32> { x: 1.0, y: 0.0 },

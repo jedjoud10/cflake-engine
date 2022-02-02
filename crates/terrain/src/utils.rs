@@ -17,3 +17,7 @@ pub fn flatten(position: (usize, usize, usize)) -> usize {
 pub fn flatten_custom(position: veclib::Vector3<usize>, size: usize) -> usize {
     position.x + (position.y * size) + (position.z * size * size)
 }
+// Inverse of lerp
+fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
+    (x - a) / (b - a)
+}

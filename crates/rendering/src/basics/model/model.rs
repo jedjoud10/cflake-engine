@@ -70,6 +70,18 @@ impl Debug for Model {
 }
 
 impl Model {
+    // Create a new model with some certain capacity to hold a number of vertices
+    pub fn with_capacity(vertices_count: usize) -> Self {
+        Self {
+            vertices: Vec::with_capacity(vertices_count),
+            normals: Vec::with_capacity(vertices_count),
+            tangents: Vec::with_capacity(vertices_count),
+            uvs: Vec::with_capacity(vertices_count),
+            colors: Vec::with_capacity(vertices_count),
+            custom: None,
+            triangles: Vec::with_capacity(vertices_count * 3),
+        }
+    }
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
         for i in (0..self.triangles.len()).step_by(3) {
