@@ -24,9 +24,9 @@ void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inou
     vec3 color = vec3(0.0);
     // Some colors
     if (dot(normal, vec3(0, 1, 0)) > 0.9) {
-        color = vec3(24, 120, 50) / 255;
+        color = vec3(94, 128, 25) / 255;
     } else if (dot(normal, vec3(0, 1, 0)) > 0.7) {
-        color = vec3(102, 67, 30) / 255;
+        color = vec3(43, 27, 5) / 255;
     } else {
         color = vec3(0.2);
     }

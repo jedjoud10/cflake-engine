@@ -30,3 +30,6 @@ members = [
     "crates\\ui",
     "crates\\threads"
 ]
+
+[profile.dev]
+opt-level = 3

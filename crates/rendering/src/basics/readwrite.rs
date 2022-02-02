@@ -38,8 +38,7 @@ impl ReadBytes {
         let len = arr.len();
         let byte_count = len * size_of::<U>();
         // Read the bytes
-        let locked = self.bytes.lock().ok()?;
-        let bytes = &*locked;
+        let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?);
         let src_ptr = bytes.as_ptr();
         let dst_ptr = arr.as_mut_ptr() as *mut u8;
         let new_len = bytes.len() / size_of::<U>();
@@ -48,7 +47,8 @@ impl ReadBytes {
         unsafe { 
             // Write
             // Does this cause a memory leak? I have no fucking clue.
-            std::ptr::copy(src_ptr, dst_ptr, arr.len())
+            std::ptr::copy_nonoverlapping(src_ptr, dst_ptr, byte_count);
+            ManuallyDrop::drop(&mut bytes);
         }
         Some(())
     }

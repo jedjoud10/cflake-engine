@@ -138,7 +138,7 @@ impl MarchingCubes {
             );
         }
         */
-        println!("{}ms", i.elapsed().as_millis());
+        println!("{:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
         let (skirts_model, skirts_model_custom_data) = skirts_model_combined;
         Model::combine(model.with_custom(materials), skirts_model.with_custom(skirts_model_custom_data))
     }
