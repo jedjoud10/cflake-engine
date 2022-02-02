@@ -7,13 +7,14 @@ fn preload_assets() {
     // -----Pre-load the game assets here-----
     assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
+    assets::preload_asset!(".\\resources\\user\\textures\\saber.png");
     assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
 }
 fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 1.0, 6000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 10.0, 20000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
@@ -89,9 +90,9 @@ fn init(mut write: core::WriteContext) {
 
     let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
         let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
-        dist < 1.3
+        dist < 1.2
     });
-    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png").unwrap();
+    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
     let tex = rendering::pipeline::pipec::construct(tex, &pipeline);
     let mut uniforms = rendering::basics::uniforms::ShaderUniformsGroup::default();
     uniforms.set_texture("tex", tex, 0);

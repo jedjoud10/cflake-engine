@@ -52,7 +52,7 @@ void main() {
 	vec3 ambient_lighting_color = texture(default_sky_gradient, vec2(0, sky_light_val)).xyz;
 	
 	// Add everything
-	vec3 ambient_lighting = diffuse * ambient_lighting_color * ambient_lighting_strength;
+	vec3 ambient_lighting = ambient_lighting_color * ambient_lighting_strength;
 	vec3 pixel_color = ambient_lighting;
 	pixel_color += diffuse * light_val;
 	
@@ -70,7 +70,7 @@ void main() {
 	float depth = (nf_planes.x * odepth) / (nf_planes.y - odepth * (nf_planes.y - nf_planes.x));	
 
 	// Depth test the sky
-	if (depth > 0.999) {
+	if (depth == 1.0) {
 		color = sky_color;
 	} else {
 		color = pixel_color;

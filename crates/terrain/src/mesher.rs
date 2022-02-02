@@ -23,8 +23,6 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
     let mut model: Model = Model::default();
     let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(100, rendering::utils::DataType::U32);  
     let i = std::time::Instant::now();
-    // Since we're iterating through every voxel, might as well keep track of the min max densities
-    let mut min: f32 = f32::MAX;
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
@@ -34,8 +32,7 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
                 let mut case_index = 0u8;
                 for l in 0..8 {
                     let density = voxels[i + DATA_OFFSET_TABLE[l]].density;
-                    min = min.min(density);
-                    case_index |= ((density >= 0.0) as u8) << l;
+                    case_index |= ((density > 0.0) as u8) << l;
                 }          
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -58,7 +55,7 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
                         let index1 = super::flatten(vert1_usize);
                         let index2 = super::flatten(vert2_usize);
                         let voxel1 = &voxels[index1];
-                        let voxel2 = &voxels[index2];
+                        let voxel2 = &voxels[index2];   
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation {
                             inverse_lerp(voxel1.density, voxel2.density, 0.0)
@@ -112,7 +109,6 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
             voxels,
             interpolation,
             false,
-            min,
             chunk_size_factor,
             DENSITY_OFFSET_X,
             &mut skirts_model_combined,
@@ -124,7 +120,6 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
             voxels,
             interpolation,
             true,
-            min,
             chunk_size_factor,
             DENSITY_OFFSET_Z,
             &mut skirts_model_combined,
@@ -136,7 +131,6 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
             voxels,
             interpolation,
             true,
-            min,
             chunk_size_factor,
             DENSITY_OFFSET_Y,
             &mut skirts_model_combined,
@@ -163,7 +157,6 @@ pub fn calculate_skirt(
     voxels: &[Voxel],
     interpolation: bool,
     flip: bool,
-    global_min: f32,
     chunk_size_factor: f32,
     density_offset: [usize; 4],
     skirts_model: &mut (Model, CustomVertexDataBuffer<u32, u32>),
@@ -174,7 +167,7 @@ pub fn calculate_skirt(
         for x in 0..MAIN_CHUNK_SIZE {
             for y in 0..MAIN_CHUNK_SIZE {
                 let i = indexf(slice, x, y);
-                match calculate_marching_square_case(i, x, y, global_min, chunk_size_factor, voxels, interpolation, density_offset) {
+                match calculate_marching_square_case(i, x, y, chunk_size_factor, voxels, interpolation, density_offset) {
                     Some((case, p, ilv)) => {
                         // We intersected the surface
                         solve_marching_squares(slice * MAIN_CHUNK_SIZE, case, p, &ilv, skirts_model, (slice == 1) ^ flip, tf)
@@ -190,7 +183,6 @@ fn calculate_marching_square_case(
     i: usize,
     x: usize,
     y: usize,
-    global_min: f32,
     chunk_size_factor: f32,
     voxels: &[Voxel],
     interpolation: bool,
@@ -208,8 +200,7 @@ fn calculate_marching_square_case(
         case |= ((local_voxel.density <= 0.0) as u8) << j;
         min = min.min(local_voxel.density);
     }
-    // If the difference between this skirt voxel's min density and the global min density is below a threshold we can force the generation for this skirt voxel
-    let force = (min - global_min).abs() > (32.0 * chunk_size_factor);
+    let force = min > -3.0 * chunk_size_factor - 30.0;
 
     // Exit if this case is invalid
     if case == 0 || ((case == 15) && !force) {

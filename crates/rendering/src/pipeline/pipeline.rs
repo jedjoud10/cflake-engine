@@ -230,8 +230,8 @@ impl Pipeline {
         for (id, _shader) in self.shaders.iter() {
             // Set the uniforms
             let mut group = ShaderUniformsGroup::new();
-            group.set_f64("_time", time);
-            group.set_f64("_delta", delta);
+            group.set_f32("_time", time as f32);
+            group.set_f32("_delta", delta as f32);
             let id = ShaderUniformsSettings::new(ObjectID::new(id));
             group.execute(self, id).unwrap();
         }
