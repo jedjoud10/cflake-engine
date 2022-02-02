@@ -18,7 +18,7 @@ use main::{
         pipeline::{pipec, PipelineContext},
         utils::{AccessType, UpdateFrequency},
     },
-    terrain::{ChunkCoords, Voxel, CHUNK_SIZE},
+    terrain::{ChunkCoords, CHUNK_SIZE, PackedVoxelData, PackedVoxel, StoredVoxelData, mesher::Mesher},
 };
 use std::{collections::{HashMap, HashSet}, mem::size_of};
 
@@ -51,6 +51,11 @@ pub struct Terrain {
 
     // The Entity ID of the chunk that we are generating this voxel data for
     pub chunk_id: Option<EntityID>,
+    // And the voxel data for said chunk
+    pub packed_chunk_voxel_data: PackedVoxelData,
+    pub stored_chunk_voxel_data: StoredVoxelData,
+    // We also store the Entity ID of the chunk whom we must create the mesh for
+    pub mesh_gen_chunk_id: Option<EntityID>,
 }
 
 impl Terrain {
@@ -121,8 +126,8 @@ impl Terrain {
         let final_voxel_size = byte_size;
         let final_voxels_size = byte_size * ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1));
         dbg!(final_voxel_size);
-        dbg!(size_of::<Voxel>());
-        if final_voxel_size != size_of::<Voxel>() {
+        dbg!(size_of::<PackedVoxel>());
+        if final_voxel_size != size_of::<PackedVoxel>() {
             panic!()
         }
 
@@ -143,6 +148,8 @@ impl Terrain {
             chunks: Default::default(),
             chunks_generating: Default::default(),
             chunks_to_remove: Default::default(),
+            packed_chunk_voxel_data: PackedVoxelData::with_voxel_size(),
+            stored_chunk_voxel_data: StoredVoxelData::new(),
             sorted_chunks_generating: Default::default(),
             material: ObjectID::default(),
             compute_id: ReservedTrackedTaskID::default(),
@@ -151,6 +158,7 @@ impl Terrain {
             read_final_voxels: ReservedTrackedTaskID::default(),
             cpu_data: None,
             chunk_id: None,
+            mesh_gen_chunk_id: None,
             custom_uniforms: ShaderUniformsGroup::default(),
             compute_shader: base_compute,
             second_compute_shader: second_compute,

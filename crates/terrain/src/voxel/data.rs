@@ -1,6 +1,6 @@
 use std::{alloc::Layout, ptr::NonNull};
 
-use crate::CHUNK_SIZE;
+use crate::{CHUNK_SIZE, PackedVoxelData};
 
 use super::packed::PackedVoxel;
 
@@ -11,6 +11,9 @@ pub struct StoredVoxelData {
     colors: NonNull<veclib::Vector3<u8>>,
     material_types: NonNull<u8>,
 }
+
+unsafe impl Send for StoredVoxelData {}
+unsafe impl Sync for StoredVoxelData {}
 
 impl StoredVoxelData {
     // Allocate enough space to store all the voxels voxels
@@ -36,9 +39,9 @@ impl StoredVoxelData {
         }
     }
     // Update the stored voxel data using some packed data that came from the GPU
-    pub fn store(&mut self, packed: Vec<PackedVoxel>) {
+    pub fn store(&mut self, packed: &PackedVoxelData) {
         // We do a bit of overwriting
-        for (i, voxel) in packed.into_iter().enumerate() {
+        for (i, voxel) in packed.0.iter().enumerate() {
             // Read the voxel attributes
             let density = voxel.density;
             let normal = voxel.normal;

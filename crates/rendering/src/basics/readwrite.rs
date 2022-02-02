@@ -28,10 +28,29 @@ impl ReadBytes {
         if bytes.is_empty() {
             return None;
         }
-        // We must now convert the bytes into the vector full of pixels
+        // We must now convert the bytes into the vector full of elements
         let new_len = bytes.len() / size_of::<U>();
         let vec = unsafe { Vec::from_raw_parts(bytes.as_mut_ptr() as *mut U, new_len, new_len) };
         Some(vec)
+    }
+    // Fill an already allocated array
+    pub fn fill_array<U>(self, arr: &mut [U]) -> Option<()> {
+        let len = arr.len();
+        let byte_count = len * size_of::<U>();
+        // Read the bytes
+        let locked = self.bytes.lock().ok()?;
+        let bytes = &*locked;
+        let src_ptr = bytes.as_ptr();
+        let dst_ptr = arr.as_mut_ptr() as *mut u8;
+        let new_len = bytes.len() / size_of::<U>();
+        // Check if the byte count is legal
+        if byte_count != bytes.len() || bytes.is_empty() { return None }
+        unsafe { 
+            // Write
+            // Does this cause a memory leak? I have no fucking clue.
+            std::ptr::copy(src_ptr, dst_ptr, arr.len())
+        }
+        Some(())
     }
 }
 
