@@ -80,17 +80,15 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     let _id = terrain.chunk_id.take().unwrap();
     chunk.voxel_data.generated = true;
     let (read_counters, read_bytes) = terrain.cpu_data.take().unwrap();
-    // Get the valid sub-regions
+    // Get the valid counters
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
-    let diff = positive ^ negative;
-    if positive == negative { return; }
+    if positive == 0 || negative == 0 { return; }
     
     // We can read from the SSBO now
     let voxels = read_bytes.fill_vec::<Voxel>().unwrap();
     let valid = ValidGeneratedVoxelData {
         voxels,
-        valid_sub_regions: diff as u16,
     };
     chunk.voxel_data.data = Some(valid);
 }

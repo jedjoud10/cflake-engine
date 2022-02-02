@@ -18,13 +18,10 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 // Generate the Marching Cubes model
 pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> Model {
     let voxels = &valid_data.voxels;
-    let valid_subregions = valid_data.valid_sub_regions;
-    println!("{:b}", valid_subregions);
     // Pre-allocate so we don't allocate more than needed
     let mut duplicate_vertices: AHashMap<(u8, u8, u8), u16> = AHashMap::with_capacity(100);
     let mut model: Model = Model::default();
-    let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(100, rendering::utils::DataType::U32);    
-
+    let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(100, rendering::utils::DataType::U32);  
     let i = std::time::Instant::now();
     // Since we're iterating through every voxel, might as well keep track of the min max densities
     let mut min: f32 = f32::MAX;
@@ -32,10 +29,6 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
             for z in 0..MAIN_CHUNK_SIZE {
-                // If we are not part of a valid subregion, no need to generate the marching cube cases
-                let half_coords = (veclib::vec3(x as f32, y as f32, z as f32) / (MAIN_CHUNK_SIZE as f32 / 2.0)).clamp(veclib::vec3(0.0, 0.0, 0.0), veclib::vec3(1.0, 1.0, 1.0)).floor();
-                let current_sub_region = (super::flatten_custom(half_coords.into(), 2) as u8).clamp(0, 7);
-                if ((valid_subregions >> current_sub_region) % 2) == 1 { continue; }
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
@@ -111,8 +104,7 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
         }
     }    
     // Create a completely separate model for skirts
-    let mut skirts_model: Model = Model::default();
-    /*
+    let mut skirts_model_combined = (Model::default(), CustomVertexDataBuffer::with_capacity(32, rendering::utils::DataType::U32));
     let chunk_size_factor = (coords.size / MAIN_CHUNK_SIZE as u64) as f32;
     if skirts {
         // Create the X skirt
@@ -123,7 +115,7 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
             min,
             chunk_size_factor,
             DENSITY_OFFSET_X,
-            &mut skirts_model,
+            &mut skirts_model_combined,
             |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
             transform_x_local,
         );
@@ -135,7 +127,7 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
             min,
             chunk_size_factor,
             DENSITY_OFFSET_Z,
-            &mut skirts_model,
+            &mut skirts_model_combined,
             |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
             transform_z_local,
         );
@@ -147,14 +139,14 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
             min,
             chunk_size_factor,
             DENSITY_OFFSET_Y,
-            &mut skirts_model,
+            &mut skirts_model_combined,
             |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
             transform_y_local,
         );
     }
-    */
     println!("{}ms", i.elapsed().as_millis());
-    Model::combine(model.with_custom(materials), skirts_model)
+    let (skirts_model, skirts_model_custom_data) = skirts_model_combined;
+    Model::combine(model.with_custom(materials), skirts_model.with_custom(skirts_model_custom_data))
 }
 // Skirt vertex
 struct SkirtVertex(veclib::Vector3<f32>);
@@ -163,6 +155,7 @@ struct LocalSkirtVertex(veclib::Vector2<f32>);
 struct SharedSkirtVertexData {
     normal: veclib::Vector3<f32>,
     color: veclib::Vector3<f32>,
+    material_type: u8,
 }
 
 // Generate a whole skirt using a specific
@@ -173,7 +166,7 @@ pub fn calculate_skirt(
     global_min: f32,
     chunk_size_factor: f32,
     density_offset: [usize; 4],
-    skirts_model: &mut Model,
+    skirts_model: &mut (Model, CustomVertexDataBuffer<u32, u32>),
     indexf: fn(usize, usize, usize) -> usize,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
@@ -278,6 +271,7 @@ fn calculate_marching_square_case(
             SharedSkirtVertexData {
                 normal: (shared_normal / count as f32) / 128.0,
                 color: (shared_color / count as f32) / 255.0,
+                material_type: voxels[0].material_type,
             },
         ),
     ))
@@ -289,7 +283,7 @@ fn solve_marching_squares(
     case: u8,
     offset: veclib::Vector2<f32>,
     ilv: &([Option<LocalSkirtVertex>; 4], SharedSkirtVertexData),
-    model: &mut Model,
+    model: &mut (Model, CustomVertexDataBuffer<u32, u32>),
     flip: bool,
     tf: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 ) {
@@ -377,10 +371,11 @@ fn solve_marching_squares(
     // Actually add the skirt vertices
     let shared = &ilv.1;
     for vertex in vec {
-        model.triangles.push(model.vertices.len() as u32);
-        model.vertices.push(vertex.0);
-        model.normals.push(shared.normal.normalized());
-        model.colors.push(shared.color);
+        model.0.triangles.push(model.0.vertices.len() as u32);
+        model.0.vertices.push(vertex.0);
+        model.0.normals.push(shared.normal.normalized());
+        model.0.colors.push(shared.color);
+        model.1.push(shared.material_type as u32);
     }
 }
 // Create a marching squares triangle between 3 skirt voxels

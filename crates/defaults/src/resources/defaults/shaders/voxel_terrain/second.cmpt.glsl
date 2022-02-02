@@ -5,8 +5,8 @@
 const int CHUNK_SIZE = #constant chunk_size
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(binding = 0) uniform atomic_uint chunk_subregion_positive_check;
-layout(binding = 0) uniform atomic_uint chunk_subregion_negative_check;
+layout(binding = 0) uniform atomic_uint positive_counter;
+layout(binding = 0) uniform atomic_uint negative_counter;
 layout(std430, binding = 0) readonly buffer arbitrary_voxels
 {   
     Voxel voxels[];
@@ -47,14 +47,10 @@ void main() {
         packed_voxels[flatten(pc.xzy, CHUNK_SIZE+1)] = packed_voxel;
 
         // Atomic counter moment   
-        
-        // Get the chunk sub region that we are in
-        ivec3 chunk_subregion = clamp(pc.xyz / (CHUNK_SIZE/2), ivec3(0), ivec3(1));
-        uint chunk_subregion_index = clamp(flatten(chunk_subregion, 2), 0, 7); 
         if (final_voxel.density <= 0.0) {
-            atomicCounterOr(chunk_subregion_negative_check, 1 << chunk_subregion_index);
+            atomicCounterIncrement(negative_counter);
         } else {
-            atomicCounterOr(chunk_subregion_positive_check, 1 << chunk_subregion_index);
+            atomicCounterIncrement(positive_counter);
         }
     }
 }

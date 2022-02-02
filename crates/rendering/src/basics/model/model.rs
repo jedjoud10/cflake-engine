@@ -79,6 +79,12 @@ impl Model {
     }
     // Combine a model with this one, and return the new model
     pub fn combine(mut self, other: Self) -> Self {
+        // We must have matching custom vertex buffers
+        if self.custom.is_some() != other.custom.is_some() { panic!() };
+        if self.custom.is_some() {
+            if self.custom.as_ref().unwrap().size_per_component != other.custom.as_ref().unwrap().size_per_component { panic!() }
+        }
+
         let max_triangle_index: u32 = self.vertices.len() as u32;
         // Get the max triangle inde
         let mut final_tris = other.triangles.clone();
@@ -91,6 +97,9 @@ impl Model {
         self.uvs.extend(other.uvs.into_iter());
         self.colors.extend(other.colors.into_iter());
         self.tangents.extend(other.tangents.into_iter());
+        if let Some(custom) = other.custom {
+            self.custom.as_mut().unwrap().inner.extend(custom.inner.into_iter());
+        }
         self
     }
     // Combine a model with this one
