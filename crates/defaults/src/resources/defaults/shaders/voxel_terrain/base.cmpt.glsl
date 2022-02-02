@@ -25,7 +25,7 @@ void main() {
     // Check if we can actually do calculations or not
     if (all(lessThan(pixel_coords, ivec3(CHUNK_SIZE+2, CHUNK_SIZE+2, CHUNK_SIZE+2)))) {        
         // Create the density value
-        Voxel voxel = get_voxel(pos);
+        Voxel voxel = get_voxel(uvec3(pc), pos);
 
         // And store the voxel inside our array
         voxels[flatten(pc, CHUNK_SIZE+2)] = voxel;

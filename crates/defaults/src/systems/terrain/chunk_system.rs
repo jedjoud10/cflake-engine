@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use main::{
     core::{Context, WriteContext},
     ecs::{self, component::ComponentQuery, entity::EntityID},
@@ -6,7 +8,7 @@ use main::{
 };
 
 // Add a single chunk to the world
-fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) -> EntityID {
+fn add_chunk(write: &mut WriteContext, camera_position: veclib::Vector3<f32>, camera_direction: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
     // Create the chunk entity
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&write.ecs);
@@ -19,14 +21,15 @@ fn add_chunk(write: &mut WriteContext, octree_size: u64, coords: ChunkCoords) ->
     let transform = crate::components::Transform::default().with_position(position).with_scale(scale);
     group.link::<crate::components::Transform>(transform).unwrap();
 
-    // Chunk
+    // Calculate the chunk's priory and create it
+    let priority = (camera_direction - position).dot(camera_direction);
     let chunk = crate::components::Chunk::new(coords);
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world
     write.ecs.add_entity(entity, id, group).unwrap();
     println!("Spawn chunk at {} with EntityID: {}", coords.center, id);
-    id
+    (id, priority)
 }
 // Remove a single chunk
 fn remove_chunk(write: &mut WriteContext, id: EntityID) {
@@ -43,7 +46,10 @@ fn run(context: &mut Context, _query: ComponentQuery) {
     // Get the global terrain component
     let mut write = context.write();
     // Get the camera position
-    let camera_pos = write.ecs.get_global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
+    let (camera_pos, camera_dir) = {
+        let cam = write.ecs.get_global::<crate::globals::GlobalWorldData>().unwrap();
+        (cam.camera_pos, cam.camera_dir)
+    };
     let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
     if write.input.map_toggled("update_terrain") { return; }
     if let Ok(mut terrain) = terrain {
@@ -65,11 +71,13 @@ fn run(context: &mut Context, _query: ComponentQuery) {
                     if node.children_indices.is_none() {
                         // This is a leaf node
                         let coords = ChunkCoords::new(&node);
-                        let id = add_chunk(&mut write, terrain.octree.inner.size, coords);
+                        let (id, priority) = add_chunk(&mut write, camera_pos, camera_dir, terrain.octree.inner.size, coords);
+                        terrain.sorted_chunks_generating.push((id, priority));
                         terrain.chunks.insert(coords, id);
                         terrain.chunks_generating.insert(coords);
                     }
                 }
+                terrain.sorted_chunks_generating.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
                 return;
             }
         } else {

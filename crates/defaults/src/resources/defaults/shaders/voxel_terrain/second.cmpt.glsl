@@ -38,7 +38,7 @@ void main() {
 
         // Calculate the normal for a voxel using the neighboring normals
         vec3 normal = normalize(vec3(vx.density-voxel.density, vy.density-voxel.density, vz.density-voxel.density));
-        modify_voxel(pos, normal, voxel);
+        modify_voxel(uvec3(pc), pos, normal, voxel);
         FinalVoxel final_voxel = get_final_voxel(pos, normalize(normal), voxel);
         // Pack the voxel
         PackedVoxel packed_voxel = get_packed_voxel(final_voxel);

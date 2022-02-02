@@ -23,6 +23,11 @@ fn run(context: &mut Context, components: ComponentQuery) {
     // Custom speed
     let original_speed = 0.1 + (write.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
     let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * write.time.delta as f32;
+    let fov_delta = if write.input.map_held("camera_zoom") {
+        1.0
+    } else if write.input.map_held("camera_unzoom") {
+        -1.0 
+    } else { 0.0 } * write.time.delta as f32 * 10.0;
 
     // Actually update the velocity
     // Forward and backward
@@ -50,6 +55,7 @@ fn run(context: &mut Context, components: ComponentQuery) {
         transform.rotation = new_rotation;
         let (position, rotation) = (transform.position, transform.rotation);
         let mut camera = linked_components.get_component_mut::<crate::components::Camera>().unwrap();
+        camera.horizontal_fov += fov_delta;
         // And don't forget to update the camera matrices
         // Load the pipeline since we need to get the window settings
         let pipeline = write.pipeline.read();
@@ -71,6 +77,7 @@ fn run(context: &mut Context, components: ComponentQuery) {
         // If we are the main camera, we must update our position in the global
         let mut global = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
         global.camera_pos = position;
+        global.camera_dir = rotation.mul_point(veclib::Vector3::Z);
     })
 }
 
@@ -89,5 +96,7 @@ pub fn system(write: &mut WriteContext) {
     write.input.bind_key(Keys::A, "camera_left");
     write.input.bind_key(Keys::Space, "camera_up");
     write.input.bind_key(Keys::LeftShift, "camera_down");
+    write.input.bind_key(Keys::Z, "camera_zoom");
+    write.input.bind_key(Keys::X, "camera_unzoom");
     write.input.bind_key(Keys::RightShift, "cull_update");
 }

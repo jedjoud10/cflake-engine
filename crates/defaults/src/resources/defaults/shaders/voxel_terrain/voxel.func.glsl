@@ -7,10 +7,10 @@ struct Voxel {
 };
 
 // Get the voxel at a specific position (First Pass)
-Voxel get_voxel(const vec3 pos) {
+Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
     return Voxel(pos.y, vec3(1.0), 0);
 }
 
 // Modify the voxel after we get it's normal
-void modify_voxel(const vec3 pos, inout vec3 normal, inout Voxel voxel) {
+void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inout Voxel voxel) {
 }
