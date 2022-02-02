@@ -20,7 +20,7 @@ use main::{
     },
     terrain::{ChunkCoords, Voxel, MAIN_CHUNK_SIZE},
 };
-use std::{collections::HashMap, mem::size_of};
+use std::{collections::{HashMap, HashSet}, mem::size_of};
 
 #[derive(Component)]
 // The global terrain component that can be added at the start of the game
@@ -28,15 +28,15 @@ pub struct Terrain {
     // Chunk generation
     pub octree: DiffOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
+    pub chunks_generating: HashSet<ChunkCoords>,
     pub chunks_to_remove: Vec<EntityID>,
     pub material: ObjectID<Material>,
-    pub generating: bool,
-    pub swap_chunks: bool,
 
     // Voxel Generation
     pub custom_uniforms: ShaderUniformsGroup,
     pub compute_shader: ObjectID<ComputeShader>,
     pub second_compute_shader: ObjectID<ComputeShader>,
+    pub atomics: ObjectID<AtomicGroup>,
     // Our 2 shader storages
     pub shader_storage_arbitrary_voxels: ObjectID<ShaderStorage>,
     pub shader_storage_final_voxels: ObjectID<ShaderStorage>,
@@ -50,7 +50,6 @@ pub struct Terrain {
 
     // The Entity ID of the chunk that we are generating this voxel data for
     pub chunk_id: Option<EntityID>,
-    pub atomics: ObjectID<AtomicGroup>,
 }
 
 impl Terrain {
@@ -141,6 +140,7 @@ impl Terrain {
         Self {
             octree,
             chunks: Default::default(),
+            chunks_generating: Default::default(),
             chunks_to_remove: Default::default(),
             material: ObjectID::default(),
             compute_id: ReservedTrackedTaskID::default(),
@@ -148,8 +148,6 @@ impl Terrain {
             compute_id2: ReservedTrackedTaskID::default(),
             read_final_voxels: ReservedTrackedTaskID::default(),
             cpu_data: None,
-            generating: false,
-            swap_chunks: false,
             chunk_id: None,
             custom_uniforms: ShaderUniformsGroup::default(),
             compute_shader: base_compute,

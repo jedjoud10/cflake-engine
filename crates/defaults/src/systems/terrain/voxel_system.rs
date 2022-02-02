@@ -83,7 +83,11 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     // Get the valid counters
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
-    if positive == 0 || negative == 0 { return; }
+    if positive == 0 || negative == 0 { 
+        // We must manually remove this chunk since we will never be able to generate it's mesh
+        terrain.chunks_generating.remove(&chunk.coords);
+        return;
+    }
     
     // We can read from the SSBO now
     let voxels = read_bytes.fill_vec::<Voxel>().unwrap();
@@ -112,15 +116,11 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 if chunk.voxel_data.data.is_none() && !chunk.voxel_data.generated {
                     // We must start generating the voxel data for this chunk
                     start_generation(&mut *terrain, &pipeline, &mut *chunk, components.get_entity_id().unwrap());
-                    terrain.generating = true;
                     None
                 } else {
-                    terrain.generating = false;
                     Some(())
                 }
             });
-            // If we finished generating chunks, we can mass swap all of the chunks
-            terrain.swap_chunks = !terrain.generating;
         } else {
             // We must check if we have finished generating or not
             if pipec::did_tasks_execute(&[terrain.compute_id, terrain.compute_id2, terrain.read_counters, terrain.read_final_voxels], &pipeline) {

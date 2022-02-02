@@ -12,7 +12,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
     let pipeline = pipeline_.read();
 
     let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
-    if let Ok(terrain) = terrain {
+    if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
         query.update_all(|components| {
             let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
@@ -27,18 +27,14 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);
                 chunk.buffered_model = Some(model_id);
-            }
 
-            // Check if we have a valid buffered model, and if we do, add the renderer component when needed
-            if terrain.swap_chunks {
-                if let Some(model_id) = chunk.buffered_model.take() {
-                    // Create a linking group that contains the renderer
-                    chunk.added_renderer = true;
-                    let mut group = ComponentLinkingGroup::default();
-                    let renderer = main::rendering::basics::renderer::Renderer::new(true).set_model(model_id).set_material(terrain.material);
-                    group.link(crate::components::Renderer::new(renderer)).unwrap();
-                    write.ecs.link_components(id, group).unwrap();
-                }
+                // Create a linking group that contains the renderer
+                chunk.added_renderer = true;
+                let mut group = ComponentLinkingGroup::default();
+                let renderer = main::rendering::basics::renderer::Renderer::new(true).set_model(model_id).set_material(terrain.material);
+                group.link(crate::components::Renderer::new(renderer)).unwrap();
+                write.ecs.link_components(id, group).unwrap();
+                terrain.chunks_generating.remove(&coords);
             }
         })
     }

@@ -45,14 +45,13 @@ fn run(context: &mut Context, _query: ComponentQuery) {
     // Get the camera position
     let camera_pos = write.ecs.get_global::<crate::globals::GlobalWorldData>().unwrap().camera_pos;
     let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
+    if write.input.map_toggled("update_terrain") { return; }
     if let Ok(mut terrain) = terrain {
         // Generate the chunks if needed and only if we are not currently generating
-        if !terrain.generating && !write.input.map_toggled("update_terrain") {
+        if terrain.chunks_generating.is_empty() && terrain.chunks_to_remove.is_empty() {
             let octree = &mut terrain.octree;
             if let Some((added, removed)) = octree.update(camera_pos) {
-                terrain.swap_chunks = false;
                 // We have moved, thus the chunks need to be regenerated
-
                 // Remove chunks only if we already generated them
                 for node in removed {
                     let coords = ChunkCoords::new(&node);
@@ -68,16 +67,17 @@ fn run(context: &mut Context, _query: ComponentQuery) {
                         let coords = ChunkCoords::new(&node);
                         let id = add_chunk(&mut write, terrain.octree.inner.size, coords);
                         terrain.chunks.insert(coords, id);
+                        terrain.chunks_generating.insert(coords);
                     }
                 }
                 return;
             }
-
-            // Mass deletion
-            if terrain.swap_chunks {
+        } else {
+            // Mass deletion when we have no more chunks
+            if terrain.chunks_generating.is_empty() {
                 let chunks_to_remove = std::mem::take(&mut terrain.chunks_to_remove);
                 for id in chunks_to_remove {
-                    remove_chunk(&mut write, id)
+                    remove_chunk(&mut write, id);
                 }
             }
         }
