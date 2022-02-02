@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 use ahash::AHashMap;
 use rendering::basics::model::{Model, CustomVertexDataBuffer};
-use crate::{mesher::{settings::MesherSettings, tables::{DATA_OFFSET_TABLE, TRI_TABLE, VERTEX_TABLE, EDGE_TABLE}}, StoredVoxelData, ChunkCoords, CHUNK_SIZE, flatten};
+use crate::{mesher::{settings::MesherSettings, tables::{DATA_OFFSET_TABLE, TRI_TABLE, VERTEX_TABLE, EDGE_TABLE, VERTEX_TABLE_USIZE}}, StoredVoxelData, ChunkCoords, CHUNK_SIZE, flatten, flatten_vec3};
 
 // Struct that contains everything related to the marching cubes mesh generation
 pub(crate) struct MarchingCubes {
@@ -35,10 +35,12 @@ impl MarchingCubes {
                     let i = flatten((x, y, z));
                     // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                     let mut case_index = 0u8;
+                    let mut arr = [0.0_f32; 8];
                     for l in 0..8 {
                         let density = *voxels.density(i + DATA_OFFSET_TABLE[l]);
-                        case_index |= ((density > 0.0) as u8) << l;
+                        arr[l] = density;
                     }          
+                    f32x8.is_sign_positive().to_int().
                     // Skip the completely empty and completely filled cases
                     if case_index == 0 || case_index == 255 {
                         continue;
@@ -48,21 +50,22 @@ impl MarchingCubes {
 
                     // The vertex indices that are gonna be used for the skirts
                     for edge in edges {
-                        // Make sure the triangle is valid
+                        // Make sure the tria
+                        ngle is valid
                         if edge != -1 {
                             // Get the vertex in local space
-                            let vert1 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]];
-                            let vert2 = VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]];
+                            let vert1 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2]];
+                            let vert2 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2 + 1]];
 
                             // In global space here
-                            let vert1_usize = (vert1.x as usize + x, vert1.y as usize + y, vert1.z as usize + z);
-                            let vert2_usize = (vert2.x as usize + x, vert2.y as usize + y, vert2.z as usize + z);
-                            let index1 = flatten(vert1_usize);
-                            let index2 = flatten(vert2_usize);
+                            let vert1_usize = veclib::vec3(x, y, z) + vert1;
+                            let vert2_usize = veclib::vec3(x, y, z) + vert2;
+                            let index1 = flatten_vec3(vert1_usize);
+                            let index2 = flatten_vec3(vert2_usize);
                             // Do inverse linear interpolation to find the factor value
                             let value = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
                             // Create the vertex
-                            let mut vertex = veclib::Vector3::<f32>::lerp(vert1, vert2, value);
+                            let mut vertex = veclib::Vector3::<f32>::lerp(VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], value);
                             // Offset the vertex
                             vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                             // Get the normal
@@ -73,7 +76,7 @@ impl MarchingCubes {
                             let c1: veclib::Vector3<f32> = (*voxels.color(index1)).into();
                             let c2: veclib::Vector3<f32> = (*voxels.color(index1)).into();
                             let color = veclib::Vector3::<f32>::lerp(c1, c2, value) / 255.0;
-                            // The edge tuple used to identify this vertex
+                            // The edge tuple used to identify this vertex                            
                             let edge_tuple: (u8, u8, u8) = (
                                 2 * x as u8 + vert1.x as u8 + vert2.x as u8,
                                 2 * y as u8 + vert1.y as u8 + vert2.y as u8,

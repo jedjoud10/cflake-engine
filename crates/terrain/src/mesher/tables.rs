@@ -280,18 +280,6 @@ pub const DATA_OFFSET_TABLE: [usize; 8] = [
     /* Y+X */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + 1,
 ];
 
-// Data offset table
-pub const OPTIMIZED_DATA_OFFSET_TABLE: [usize; 8] = [
-    /* None */ 0,
-    /* X */ 1,
-    /* Z */ VOXEL_CHUNK_SIZE,
-    /* X+Z */ VOXEL_CHUNK_SIZE + 1,
-    /* Y */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE,
-    /* Y+X */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + 1,
-    /* Y+Z */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + VOXEL_CHUNK_SIZE,
-    /* X+Y+Z */ VOXEL_CHUNK_SIZE * VOXEL_CHUNK_SIZE + VOXEL_CHUNK_SIZE + 1,
-];
-
 // Vertex table
 pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
     veclib::Vector3::<f32> { x: 0.0, y: 0.0, z: 0.0 },
@@ -302,6 +290,16 @@ pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
     veclib::Vector3::<f32> { x: 0.0, y: 1.0, z: 1.0 },
     veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 1.0 },
     veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 0.0 },
+];
+pub const VERTEX_TABLE_USIZE: [veclib::Vector3<usize>; 8] = [
+    veclib::Vector3::<usize> { x: 0, y: 0, z: 0 },
+    veclib::Vector3::<usize> { x: 0, y: 0, z: 1 },
+    veclib::Vector3::<usize> { x: 1, y: 0, z: 1 },
+    veclib::Vector3::<usize> { x: 1, y: 0, z: 0 },
+    veclib::Vector3::<usize> { x: 0, y: 1, z: 0 },
+    veclib::Vector3::<usize> { x: 0, y: 1, z: 1 },
+    veclib::Vector3::<usize> { x: 1, y: 1, z: 1 },
+    veclib::Vector3::<usize> { x: 1, y: 1, z: 0 },
 ];
 
 // The marching squares table that indiquates what vertices are part of which edges

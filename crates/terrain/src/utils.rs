@@ -13,3 +13,6 @@ pub fn unflatten(mut index: usize) -> (usize, usize, usize) {
 pub fn flatten(position: (usize, usize, usize)) -> usize {
     position.0 + (position.1 * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) + (position.2 * (CHUNK_SIZE + 1))
 }
+pub fn flatten_vec3(position: veclib::Vector3<usize>) -> usize {
+    position.x + (position.y * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) + (position.z * (CHUNK_SIZE + 1))
+}
