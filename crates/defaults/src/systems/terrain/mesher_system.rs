@@ -22,7 +22,7 @@ fn run(context: &mut Context, query: ComponentQuery) {
                 // I guess we should create the model now
                 let valid_data = chunk.voxel_data.data.take().unwrap();
                 let coords = chunk.coords;
-                let model = main::terrain::mesher::generate_model(&valid_data, coords, true, false);
+                let model = main::terrain::mesher::generate_model(&valid_data, coords, true, true);
 
                 // Construct the model and add it to the chunk entity
                 let model_id = pipec::construct(model, &*pipeline);

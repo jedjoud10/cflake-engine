@@ -13,9 +13,9 @@ FinalVoxel get_final_voxel(vec3 pos, vec3 normal, Voxel voxel) {
 
 // A packed voxel that is also stored in an array, but we will read it back eventually on the CPU
 struct PackedVoxel {
-    // Normal { X, Y, Z } and Density components stored in two ints (4bytes each)
-    uint density_x;
-    uint y_z;     
+    float density;
+    // Normal { X, Y, Z } in a single uints
+    uint x_y_z_padding;     
     // Color { X, Y, Z } and Material stored in a single uint
     uint x_y_z_material;
     uint nothing;
@@ -27,11 +27,10 @@ PackedVoxel get_packed_voxel(FinalVoxel voxel) {
     voxel.normal = normalize(voxel.normal);
     voxel.color = clamp(voxel.color, 0, 1);
     // Pack the data into 2 ints
-    uint density_x = packHalf2x16(vec2(voxel.density, voxel.normal.x));
-    uint y_z = packHalf2x16(voxel.normal.yz);
+    uint x_y_z_padding = packSnorm4x8(vec4(voxel.normal.xyz, 0.0));
     // Pack some more data into two ints
     uint x_y_z_material = packUnorm4x8(vec4(voxel.color.xyz, (float(voxel.material)/255.0)));
-    return PackedVoxel(density_x, y_z, x_y_z_material, 0);
+    return PackedVoxel(voxel.density, x_y_z_padding, x_y_z_material, 0);
 }
 
 // Flatten a 3D position to an index that is part of a 3D flattened array of axis length "size"

@@ -1,23 +1,14 @@
-use half::f16;
 use std::ops::{Index, IndexMut};
 
 // A simple voxel that has a size of 16 bytes
 // This is the final voxel that is returned from the compute shader
 #[repr(align(16))]
 pub struct Voxel {
-    // The density of the voxel stored in a 16 bit half float
-    pub density: f16,
-    // The normals stored in a vec3 full of f16s
-    pub normal: veclib::Vector3<f16>,
-    // 8 Bytes left
-
-    // The color of each voxel is also stored in vec3 of u8s
+    pub density: f32,
+    pub normal: veclib::Vector3<i8>,
+    padding_: u8,
     pub color: veclib::Vector3<u8>,
-    // 5 Bytes left
-
-    // Material type
     pub material_type: u8,
-    pub _test: [u8; 4],
 }
 
 // Some details about a valid voxel generation

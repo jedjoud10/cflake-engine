@@ -14,6 +14,6 @@ pub fn flatten(position: (usize, usize, usize)) -> usize {
     position.0 + (position.1 * (MAIN_CHUNK_SIZE + 1) * (MAIN_CHUNK_SIZE + 1)) + (position.2 * (MAIN_CHUNK_SIZE + 1))
 }
 // Get the index from a position
-pub fn flatten_custom(position: (usize, usize, usize), size: usize) -> usize {
-    position.0 + ((position.1 * size) * size) + (position.2 * size)
+pub fn flatten_custom(position: veclib::Vector3<usize>, size: usize) -> usize {
+    position.x + (position.y * size) + (position.z * size * size)
 }

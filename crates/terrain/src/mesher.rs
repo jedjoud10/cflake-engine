@@ -2,10 +2,8 @@ use crate::ChunkCoords;
 use crate::ValidGeneratedVoxelData;
 use crate::Voxel;
 use crate::MAIN_CHUNK_SIZE;
-
 use super::tables::*;
 use ahash::AHashMap;
-use half::f16;
 use rendering::basics::model::CustomVertexDataBuffer;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
@@ -21,29 +19,29 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> Model {
     let voxels = &valid_data.voxels;
     let valid_subregions = valid_data.valid_sub_regions;
-    let mut duplicate_vertices: AHashMap<(u16, u16, u16), u16> = AHashMap::with_capacity(200);
+    // Pre-allocate so we don't allocate more than needed
+    let mut duplicate_vertices: AHashMap<(u8, u8, u8), u16> = AHashMap::with_capacity(100);
     let mut model: Model = Model::default();
-    let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(200, rendering::utils::DataType::U32);    
+    let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(100, rendering::utils::DataType::U32);    
+
     let i = std::time::Instant::now();
     // Since we're iterating through every voxel, might as well keep track of the min max densities
-    let mut min: f16 = f16::MAX;
-    let mut max: f16 = f16::MIN;
+    let mut min: f32 = f32::MAX;
     // Loop over every voxel
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
             for z in 0..MAIN_CHUNK_SIZE {
-                let i = super::flatten((x, y, z));
                 // If we are not part of a valid subregion, no need to generate
-                let current_sub_region = super::flatten_custom((x / (MAIN_CHUNK_SIZE / 2), y / (MAIN_CHUNK_SIZE / 2), z / (MAIN_CHUNK_SIZE / 2)), 2) as u8;
-                if valid_subregions >> current_sub_region % 2 == 0 { continue; }
+                let half_coords = veclib::vec3(x, y, z) / MAIN_CHUNK_SIZE;
+                let current_sub_region = (super::flatten_custom(half_coords, 2) as u8).clamp(0, 7);
+                if ((valid_subregions >> current_sub_region) % 2) == 0 { continue; }
+                let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
-                // Make sure we have the default submodel/material for this material ID
                 for l in 0..8 {
                     let density = voxels[i + DATA_OFFSET_TABLE[l]].density;
                     min = min.min(density);
-                    max = max.max(density);
-                    case_index |= ((density >= f16::ZERO) as u8) * u8::pow(2, l as u32);
+                    case_index |= ((density >= 0.0) as u8) << l;
                 }          
                 // Skip the completely empty and completely filled cases
                 if case_index == 0 || case_index == 255 {
@@ -69,7 +67,7 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
                         let voxel2 = &voxels[index2];
                         // Do inverse linear interpolation to find the factor value
                         let value: f32 = if interpolation {
-                            inverse_lerp(voxel1.density.into(), voxel2.density.into(), 0.0_f32).clamp(0.0, 1.0)
+                            inverse_lerp(voxel1.density, voxel2.density, 0.0)
                         } else {
                             0.5
                         };
@@ -78,8 +76,8 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
                         // Offset the vertex
                         vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                         // Get the normal
-                        let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
-                        let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
+                        let n1: veclib::Vector3<f32> = voxel1.normal.into();
+                        let n2: veclib::Vector3<f32> = voxel2.normal.into();
                         let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
                         // Get the color
                         let c1: veclib::Vector3<f32> = voxel1.color.into();
@@ -87,10 +85,10 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
                         let mut color = veclib::Vector3::<f32>::lerp(c1, c2, value);
                         color /= 255.0;
                         // The edge tuple used to identify this vertex
-                        let edge_tuple: (u16, u16, u16) = (
-                            2 * x as u16 + vert1.x as u16 + vert2.x as u16,
-                            2 * y as u16 + vert1.y as u16 + vert2.y as u16,
-                            2 * z as u16 + vert1.z as u16 + vert2.z as u16,
+                        let edge_tuple: (u8, u8, u8) = (
+                            2 * x as u8 + vert1.x as u8 + vert2.x as u8,
+                            2 * y as u8 + vert1.y as u8 + vert2.y as u8,
+                            2 * z as u8 + vert1.z as u8 + vert2.z as u8,
                         );
 
                         // Check if this vertex was already added
@@ -99,7 +97,7 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
                             e.insert(model.vertices.len() as u16);
                             model.triangles.push(model.vertices.len() as u32);
                             model.vertices.push(vertex);
-                            model.normals.push(normal.normalized());
+                            model.normals.push(normal);
                             model.colors.push(color);
                             materials.push(voxel1.material_type as u32);
                         } else {
@@ -110,10 +108,10 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
                 }
             }
         }
-    }
-    println!("{}ms", i.elapsed().as_millis());
+    }    
     // Create a completely separate model for skirts
     let mut skirts_model: Model = Model::default();
+    /*
     let chunk_size_factor = (coords.size / MAIN_CHUNK_SIZE as u64) as f32;
     if skirts {
         // Create the X skirt
@@ -153,6 +151,8 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
             transform_y_local,
         );
     }
+    */
+    println!("{}ms", i.elapsed().as_millis());
     Model::combine(model.with_custom(materials), skirts_model)
 }
 // Skirt vertex
@@ -160,8 +160,8 @@ struct SkirtVertex(veclib::Vector3<f32>);
 #[derive(Clone, Copy)]
 struct LocalSkirtVertex(veclib::Vector2<f32>);
 struct SharedSkirtVertexData {
-    normal: veclib::Vector3<f16>,
-    color: veclib::Vector3<u8>,
+    normal: veclib::Vector3<f32>,
+    color: veclib::Vector3<f32>,
 }
 
 // Generate a whole skirt using a specific
@@ -169,7 +169,7 @@ pub fn calculate_skirt(
     voxels: &[Voxel],
     interpolation: bool,
     flip: bool,
-    global_min: f16,
+    global_min: f32,
     chunk_size_factor: f32,
     density_offset: [usize; 4],
     skirts_model: &mut Model,
@@ -196,7 +196,7 @@ fn calculate_marching_square_case(
     i: usize,
     x: usize,
     y: usize,
-    global_min: f16,
+    global_min: f32,
     chunk_size_factor: f32,
     voxels: &[Voxel],
     interpolation: bool,
@@ -206,21 +206,16 @@ fn calculate_marching_square_case(
     let p = veclib::Vector2::new(x as f32, y as f32);
     // Get the marching cube case
     let mut case = 0_u8;
-    // Get the local voxels
-    let mut local_voxels: [*const Voxel; 4] = [null(); 4];
     // Keep track of the min density
-    let mut min = f16::MAX;
-    for (j, voxel) in local_voxels.iter_mut().enumerate() {
+    let mut min = f32::MAX;
+    for j in 0..4 {
         let local_voxel = &voxels[i + density_offset[j]];
         // Increase the case index if we have some voxels that are below the 0.0
-        if local_voxel.density <= f16::ZERO {
-            case |= 2_u8.pow(j as u32);
-        }
+        case |= ((local_voxel.density <= 0.0) as u8) << j;
         min = min.min(local_voxel.density);
-        *voxel = local_voxel as *const Voxel;
     }
     // If the difference between this skirt voxel's min density and the global min density is below a threshold we can force the generation for this skirt voxel
-    let force = (min - global_min).to_f32().abs() > (32.0 * chunk_size_factor);
+    let force = (min - global_min).abs() > (32.0 * chunk_size_factor);
 
     // Exit if this case is invalid
     if case == 0 || ((case == 15) && !force) {
@@ -239,8 +234,8 @@ fn calculate_marching_square_case(
         // If we are completely filled we must take the average
         if case == 15 {
             // Get the normal
-            let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
-            let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
+            let n1: veclib::Vector3<f32> = voxel1.normal.into();
+            let n2: veclib::Vector3<f32> = voxel2.normal.into();
             // Get the color
             let c1: veclib::Vector3<f32> = voxel1.color.into();
             let c2: veclib::Vector3<f32> = voxel2.color.into();
@@ -251,20 +246,16 @@ fn calculate_marching_square_case(
             continue;
         }
         // Check if the edge is intersecting the surface
-        *local_interpolated_voxel = if (voxel1.density <= f16::ZERO) ^ (voxel2.density <= f16::ZERO) {
+        *local_interpolated_voxel = if (voxel1.density <= 0.0) ^ (voxel2.density <= 0.0) {
             let value: f32 = if interpolation {
-                inverse_lerp(voxel1.density.to_f32(), voxel2.density.to_f32(), 0.0 as f32)
+                inverse_lerp(voxel1.density, voxel2.density, 0.0)
             } else {
                 0.5
             };
             // Get the normal
-            let n1: veclib::Vector3<f32> = vec3(voxel1.normal.x.to_f32(), voxel1.normal.y.to_f32(), voxel1.normal.z.to_f32());
-            let n2: veclib::Vector3<f32> = vec3(voxel2.normal.x.to_f32(), voxel2.normal.y.to_f32(), voxel2.normal.z.to_f32());
-            let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
+            let normal = veclib::Vector3::<f32>::lerp(voxel1.normal.into(), voxel2.normal.into(), value);
             // Get the color
-            let c1: veclib::Vector3<f32> = voxel1.color.into();
-            let c2: veclib::Vector3<f32> = voxel2.color.into();
-            let color = veclib::Vector3::<f32>::lerp(c1, c2, value);
+            let color = veclib::Vector3::<f32>::lerp(voxel1.color.into(), voxel2.color.into(), value);
             shared_normal += normal;
             shared_color += color;
 
@@ -278,20 +269,14 @@ fn calculate_marching_square_case(
             None
         }
     }
-    let normal: veclib::Vector3<f16> = vec3(
-        f16::from_f32(shared_normal.x / count as f32),
-        f16::from_f32(shared_normal.y / count as f32),
-        f16::from_f32(shared_normal.z / count as f32),
-    );
-
     Some((
         case,
         p,
         (
             local_interpolated_voxels,
             SharedSkirtVertexData {
-                normal,
-                color: (shared_color / count as f32).into(),
+                normal: (shared_normal / count as f32) / 128.0,
+                color: (shared_color / count as f32) / 255.0,
             },
         ),
     ))
@@ -393,11 +378,8 @@ fn solve_marching_squares(
     for vertex in vec {
         model.triangles.push(model.vertices.len() as u32);
         model.vertices.push(vertex.0);
-        let normal: veclib::Vector3<f32> = vec3(shared.normal.x.to_f32(), shared.normal.y.to_f32(), shared.normal.z.to_f32());
-        model.normals.push(normal.normalized());
-        let mut color: veclib::Vector3<f32> = shared.color.into();
-        color /= 255.0;
-        model.colors.push(color);
+        model.normals.push(shared.normal.normalized());
+        model.colors.push(shared.color);
     }
 }
 // Create a marching squares triangle between 3 skirt voxels

@@ -49,7 +49,7 @@ void main() {
         // Atomic counter moment   
         
         // Get the chunk sub region that we are in
-        ivec3 chunk_subregion = clamp(pc.xzy / (CHUNK_SIZE/2), ivec3(0), ivec3(1));
+        ivec3 chunk_subregion = clamp(pc.xyz / (CHUNK_SIZE/2), ivec3(0), ivec3(1));
         uint chunk_subregion_index = clamp(flatten(chunk_subregion, 2), 0, 7); 
         if (final_voxel.density <= 0.0) {
             atomicCounterOr(chunk_subregion_negative_check, 1 << chunk_subregion_index);
