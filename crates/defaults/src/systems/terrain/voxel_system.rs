@@ -90,7 +90,7 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     let voxels = read_bytes.fill_vec::<Voxel>().unwrap();
     let valid = ValidGeneratedVoxelData {
         voxels,
-        valid_sub_regions: diff as u8,
+        valid_sub_regions: diff as u16,
     };
     chunk.voxel_data.data = Some(valid);
 }

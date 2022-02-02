@@ -14,7 +14,7 @@ pub struct Voxel {
 // Some details about a valid voxel generation
 pub struct ValidGeneratedVoxelData {
     pub voxels: Vec<Voxel>,
-    pub valid_sub_regions: u8,
+    pub valid_sub_regions: u16,
 }
 
 // Some info about some generated voxel data

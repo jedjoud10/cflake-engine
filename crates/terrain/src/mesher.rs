@@ -19,6 +19,7 @@ fn inverse_lerp(a: f32, b: f32, x: f32) -> f32 {
 pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords, interpolation: bool, skirts: bool) -> Model {
     let voxels = &valid_data.voxels;
     let valid_subregions = valid_data.valid_sub_regions;
+    println!("{:b}", valid_subregions);
     // Pre-allocate so we don't allocate more than needed
     let mut duplicate_vertices: AHashMap<(u8, u8, u8), u16> = AHashMap::with_capacity(100);
     let mut model: Model = Model::default();
@@ -31,10 +32,10 @@ pub fn generate_model(valid_data: &ValidGeneratedVoxelData, coords: ChunkCoords,
     for x in 0..MAIN_CHUNK_SIZE {
         for y in 0..MAIN_CHUNK_SIZE {
             for z in 0..MAIN_CHUNK_SIZE {
-                // If we are not part of a valid subregion, no need to generate
-                let half_coords = veclib::vec3(x, y, z) / MAIN_CHUNK_SIZE;
-                let current_sub_region = (super::flatten_custom(half_coords, 2) as u8).clamp(0, 7);
-                if ((valid_subregions >> current_sub_region) % 2) == 0 { continue; }
+                // If we are not part of a valid subregion, no need to generate the marching cube cases
+                let half_coords = (veclib::vec3(x as f32, y as f32, z as f32) / (MAIN_CHUNK_SIZE as f32 / 2.0)).clamp(veclib::vec3(0.0, 0.0, 0.0), veclib::vec3(1.0, 1.0, 1.0)).floor();
+                let current_sub_region = (super::flatten_custom(half_coords.into(), 2) as u8).clamp(0, 7);
+                if ((valid_subregions >> current_sub_region) % 2) == 1 { continue; }
                 let i = super::flatten((x, y, z));
                 // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                 let mut case_index = 0u8;
