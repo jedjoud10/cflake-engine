@@ -134,7 +134,7 @@ pub mod test {
 
         // Make a simple system
         fn internal_run(_context: &mut WorldContext, data: EventKey) {
-            let (components, _) = data.decompose();
+            let (components, _) = data.decompose().unwrap();
             components.unwrap().update_all(|components| {
                 let mut name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Run");
@@ -143,7 +143,7 @@ pub mod test {
             });
         }
         fn internal_remove_entity(_context: &mut WorldContext, data: EventKey) {
-            let (components, _) = data.decompose();
+            let (components, _) = data.decompose().unwrap();
             components.unwrap().update_all(|components| {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
@@ -151,7 +151,7 @@ pub mod test {
             });
         }
         fn internal_add_entity(_context: &mut WorldContext, data: EventKey) {
-            let (components, _) = data.decompose();
+            let (components, _) = data.decompose().unwrap();
             components.unwrap().update_all(|components| {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
